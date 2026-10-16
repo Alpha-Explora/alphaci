@@ -2,43 +2,43 @@
 
 import { useState } from "react";
 
-import { resolveStudioPanel, studioPanelKey } from "../../model/qa-studio-rules";
-import { useRememberedChoice } from "./use-remembered-flag";
-
-/** Which edge of the preview the run panel floats over. */
-export type FloatingSide = "right" | "left";
+import { studioRailPinnedKey } from "../../model/qa-studio-rules";
+import { useRememberedFlag } from "./use-remembered-flag";
 
 export interface StudioPanelState {
   /**
-   * Whether the run panel (Checklist | Playwright) floats over the preview.
-   * Hidden, the same panel stays mounted, so drafts, the sign-off dialog and
-   * automation polling carry on untouched; a button brings it back.
+   * The run rail is pinned open and the page moves aside. Unpinned, it is a
+   * strip that opens over the page on hover or keyboard focus (CSS alone, as
+   * the app's left rail does). Either way the same panel stays mounted, so
+   * drafts, the sign-off dialog and automation polling carry on untouched.
    */
-  isChecklistOpen: boolean;
-  floatingSide: FloatingSide;
-  openChecklist: () => void;
-  hideChecklist: () => void;
-  toggleChecklist: () => void;
-  /** Move the panel (and its button) to the other edge. */
-  snapChecklist: () => void;
+  isRailPinned: boolean;
+  toggleRailPinned: () => void;
+  /**
+   * True from an unpin until the pointer leaves the rail: unpinning under the
+   * cursor would otherwise leave it open on hover, and the press would seem
+   * to do nothing. Keyboard focus is never suppressed.
+   */
+  railHoverSuppressed: boolean;
+  releaseRailHover: () => void;
 }
 
 /**
- * The run panel's state, the same docked and in full screen. Open or hidden
- * is remembered per viewer and per studio in this browser; the side is for
- * this visit only.
+ * The run rail's state, the same docked and in full screen. Pinned or not is
+ * remembered per viewer and per studio in this browser; a first visit is
+ * unpinned, like the app's left rail.
  */
 export function useStudioPanel(studio: "qa" | "po"): StudioPanelState {
-  const [panel, choose] = useRememberedChoice(studioPanelKey(studio), resolveStudioPanel);
-  const [floatingSide, setFloatingSide] = useState<FloatingSide>("right");
-  const isChecklistOpen = panel === "open";
+  const [isRailPinned, togglePinned] = useRememberedFlag(studioRailPinnedKey(studio), false);
+  const [railHoverSuppressed, setSuppressed] = useState(false);
 
   return {
-    isChecklistOpen,
-    floatingSide,
-    openChecklist: () => choose("open"),
-    hideChecklist: () => choose("hidden"),
-    toggleChecklist: () => choose(isChecklistOpen ? "hidden" : "open"),
-    snapChecklist: () => setFloatingSide((side) => (side === "right" ? "left" : "right")),
+    isRailPinned,
+    toggleRailPinned: () => {
+      if (isRailPinned) setSuppressed(true);
+      togglePinned();
+    },
+    railHoverSuppressed,
+    releaseRailHover: () => setSuppressed(false),
   };
 }

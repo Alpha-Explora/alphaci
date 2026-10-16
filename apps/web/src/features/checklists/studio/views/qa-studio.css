@@ -1,7 +1,7 @@
 /* ── Project → QA Studio ─────────────────────────────────────────────────────
-   Toolbar across the top, then the deployed page across the whole width, with
-   the run panel (Checklist | Playwright) floating over its edge or hidden
-   behind a button. Surfaces follow
+   Toolbar across the top, then the deployed page, with the run panel
+   (Checklist | Playwright) as a rail on its right edge, like the app's left
+   rail. Surfaces follow
    the project page's graphite ladder (layer-1 cards, border-layer edges) so
    the tab reads as part of the same product; colour is reserved for state —
    success / danger / warning / brand — and nothing else. Tokens only; the
@@ -10,9 +10,11 @@
 
 .qa-studio {
   --qa-pane-height: clamp(32rem, calc(100dvh - 8rem), 54rem);
-  /* The floating run panel's width, docked: the full-screen drawer's 28rem,
-     never wider than the preview it floats over. */
-  --qa-panel-width: min(28rem, calc(100% - 1.5rem));
+  /* The run rail: closed at the app rail's collapsed width, open at 30rem
+     (where the tab bar and the automation rows sit on one line), never wider
+     than the studio. */
+  --qa-rail-closed: var(--sidebar-collapsed, 52px);
+  --qa-rail-open: min(30rem, calc(100% - 1.5rem));
 
   display: grid;
   /* One column that may shrink below its content: with the implicit auto
@@ -273,46 +275,25 @@
 }
 
 /* ── Panes ───────────────────────────────────────────────────────────────────
-   The page under test always has the studio's whole width: a desktop page in
-   a shared column was drawn at about half size. The run panel floats over the
-   preview's edge (28rem, where the tab bar and the automation rows still sit
-   on one line), on the right or the left (`data-side`), and hides behind a
-   button (`data-checklist="hidden"`). The panes are its positioning box.
-   Below 1100px there is no width to float over: the panel stacks under the
-   page instead. */
+   The page takes the studio's width less the run rail on its right edge. The
+   rail works like the app's left rail: closed it is a strip (the pin, the
+   panel's icon, progress and CI dot); hover or keyboard focus opens it over
+   the page; pinned (`data-rail="pinned"`) it stays open and the page moves
+   aside. The panes reserve the strip, or the open rail when pinned, and are
+   the rail's positioning box, so it starts right under the tab row and runs
+   the pane's height. Below 1100px the rail stacks under the page, open. */
 .qa-studio__panes {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
-}
-
-/* Open, the panel needs the pane's height even when the preview is only a
-   message; and the message steps aside rather than sitting under it. */
-.qa-studio[data-checklist="open"] .qa-studio__panes {
   min-height: var(--qa-pane-height);
+  padding-right: calc(var(--qa-rail-closed) + 0.75rem);
 }
 
-.qa-studio[data-checklist="open"] .qa-studio__preview[data-framed="false"] {
-  margin-right: calc(var(--qa-panel-width) + 1.5rem);
-}
-
-.qa-studio[data-checklist="open"][data-side="left"] .qa-studio__preview[data-framed="false"] {
-  margin-right: 0;
-  margin-left: calc(var(--qa-panel-width) + 1.5rem);
-}
-
-/* The caption (device, "Scaled to") stays readable beside an open panel
-   instead of peeking out from under its edge. Full screen floats the panel
-   below the caption, so it needs none of this. */
-.qa-studio[data-checklist="open"]:not([data-full-screen="true"]) .qa-preview__caption {
-  padding-right: calc(var(--qa-panel-width) + 1.5rem);
-}
-
-.qa-studio[data-checklist="open"][data-side="left"]:not([data-full-screen="true"]) .qa-preview__caption {
-  padding-right: 0.85rem;
-  padding-left: calc(var(--qa-panel-width) + 1.5rem);
+.qa-studio[data-rail="pinned"] .qa-studio__panes {
+  padding-right: calc(var(--qa-rail-open) + 0.75rem);
 }
 
 /* Both panes share one height and only the item list scrolls: the app shell
@@ -329,41 +310,129 @@
   height: auto;
 }
 
-/* The run panel is ONE container: its header, the tab bar (Checklist |
-   Playwright, the "Ready for production" chip, Merge to main), then the
-   selected tab's panel, which takes the rest. Docked it floats over the
-   preview's edge at the pane's height; the run card inside is flattened into
-   it. A solid surface, and no transform or filter (the slide is opacity
-   only): either would make it the containing block for the Sign-off dialog's
-   fixed backdrop and trap the dialog inside. Overflow stays visible: the
-   Export menu and the chip's popover must never be clipped. */
-.qa-studio__run {
+/* The rail: one solid surface — no backdrop-filter or transform (the app
+   rail's glass would make it the containing block for the Sign-off dialog's
+   fixed backdrop and trap the dialog inside). Closed it clips: the panel is
+   not drawn. */
+.qa-rail {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  bottom: 0.75rem;
+  top: 0;
+  right: 0;
+  bottom: 0;
   z-index: 3;
   display: flex;
-  flex-direction: column;
-  width: var(--qa-panel-width);
-  min-width: 0;
-  border: 1px solid var(--border-tile);
-  border-radius: 1rem;
+  flex-direction: row-reverse;
+  width: var(--qa-rail-closed);
+  overflow: clip;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.9rem;
   background: var(--layer-1);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Open: pinned; or peeking — under the pointer (unless an unpin under it
+   just suppressed that), on keyboard focus (:focus-visible, as the app rail),
+   or while anything in the panel itself has focus, so choosing a status or
+   typing a note never closes it when the pointer drifts. A click into the
+   page moves focus out, and it folds. Overflow is visible open: the Export
+   menu and the chip's popover must never be clipped. */
+.qa-rail[data-pinned="true"],
+.qa-rail:has(:focus-visible),
+.qa-rail:has(.qa-studio__run:focus-within),
+.qa-rail:not([data-hover-suppressed="true"]):hover {
+  width: var(--qa-rail-open);
+  overflow: visible;
+}
+
+/* Peeking paints over the page, so it lifts off it. */
+.qa-rail:not([data-pinned="true"]):has(:focus-visible),
+.qa-rail:not([data-pinned="true"]):has(.qa-studio__run:focus-within),
+.qa-rail:not([data-pinned="true"]):not([data-hover-suppressed="true"]):hover {
+  border-color: var(--border-tile);
   box-shadow: var(--shadow-hard);
+}
+
+/* The strip: the rail's own column at the edge, in every state. */
+.qa-rail__strip {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  width: calc(var(--qa-rail-closed) - 2px);
+  padding: 0.55rem 0;
+}
+
+.qa-rail__pin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid transparent;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background-color 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.qa-rail__pin:hover {
+  border-color: var(--border-tile);
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+}
+
+.qa-rail__pin[aria-pressed="true"] {
+  color: var(--brand);
+}
+
+.qa-rail__divider {
+  width: 1.5rem;
+  height: 1px;
+  background: var(--border);
+}
+
+.qa-rail__summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--brand);
+}
+
+.qa-rail__count {
+  font-size: 0.68rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+/* The panel: the one run column, beside the strip. Not drawn while the rail
+   is closed (still mounted: drafts, dialogs and polling carry on). */
+.qa-studio__run {
+  display: none;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--border);
   animation: qa-drawer-in 160ms ease-out;
 }
 
-.qa-studio[data-side="left"] .qa-studio__run {
-  right: auto;
-  left: 0.75rem;
+.qa-rail[data-pinned="true"] > .qa-studio__run,
+.qa-rail:has(:focus-visible) > .qa-studio__run,
+.qa-rail:has(.qa-studio__run:focus-within) > .qa-studio__run,
+.qa-rail:not([data-hover-suppressed="true"]):hover > .qa-studio__run {
+  display: flex;
 }
 
-/* A capture takes the tab's pixels where the page is: the panel and its
-   button go transparent for that moment, never hidden, so focus stays on
-   Capture and nothing remounts. */
-.qa-studio[data-capturing="true"] .qa-studio__run,
-.qa-studio[data-capturing="true"] .qa-launcher {
+/* A capture takes the tab's pixels where the page is: a rail open over it
+   goes transparent for that moment, never hidden, so focus stays on Capture
+   and nothing remounts. */
+.qa-studio[data-capturing="true"] .qa-rail {
   opacity: 0;
   pointer-events: none;
   animation: none;
@@ -1506,8 +1575,8 @@
 
 /* ── Full screen ─────────────────────────────────────────────────────────────
    The same tree, re-laid out: the studio covers the viewport (above the
-   header at 110 and the rail at 100, below dialogs at 400) and the run column
-   becomes a floating drawer. Nothing up the tree may carry a transform,
+   header at 110 and the rail at 100, below dialogs at 400), the run rail on
+   its right edge as docked. Nothing up the tree may carry a transform,
    filter or backdrop-filter, or `position: fixed` would stop meaning "the
    viewport" — and nothing here adds one. */
 .qa-studio[data-full-screen="true"] {
@@ -1536,28 +1605,6 @@
 .qa-studio[data-full-screen="true"] .qa-stage {
   place-items: center;
   padding: 1.25rem;
-}
-
-/* The same panel, fixed to the viewport's corner instead of the preview's
-   edge, and as tall as its content allows. Only the item list scrolls. */
-.qa-studio[data-full-screen="true"] .qa-studio__run {
-  position: fixed;
-  top: auto;
-  right: 1rem;
-  bottom: 1rem;
-  gap: 0;
-  width: min(28rem, 92vw);
-  max-height: calc(100dvh - 6.5rem);
-}
-
-.qa-studio[data-full-screen="true"][data-side="left"] .qa-studio__run {
-  right: auto;
-  left: 1rem;
-}
-
-/* Hidden: still mounted — drafts, dialogs and polling carry on. */
-.qa-studio[data-checklist="hidden"] .qa-studio__run {
-  display: none;
 }
 
 .qa-studio[data-full-screen="true"] .qa-colpanel > .qa-run-card {
@@ -1646,101 +1693,14 @@
   white-space: nowrap;
 }
 
-.qa-drawer__actions {
-  display: flex;
-  flex-shrink: 0;
-  gap: 0.2rem;
-}
-
-.qa-drawer__button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid transparent;
-  border-radius: 0.5rem;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition:
-    color 0.16s ease,
-    background-color 0.16s ease,
-    border-color 0.16s ease;
-}
-
-.qa-drawer__button:hover {
-  border-color: var(--border-tile);
-  background: var(--layer-2-hover);
-  color: var(--text-primary);
-}
-
-.qa-drawer__button:focus-visible,
-.qa-launcher:focus-visible,
+.qa-rail__pin:focus-visible,
 .qa-icon-button:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
 
-/* The button a hidden panel collapses to: the preview's bottom corner on the
-   panel's side (the top carries the device and scale), the viewport's in full
-   screen. */
-.qa-launcher {
-  position: absolute;
-  right: 0.75rem;
-  bottom: 0.75rem;
-  z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-height: 2.75rem;
-  padding: 0.5rem 0.95rem 0.5rem 0.85rem;
-  border: 1px solid var(--border-tile);
-  border-radius: var(--radius-pill);
-  background: var(--layer-1);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-card);
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 650;
-  cursor: pointer;
-  animation: qa-drawer-in 160ms ease-out;
-  transition:
-    border-color 0.16s ease,
-    background-color 0.16s ease;
-}
-
-.qa-studio[data-side="left"] .qa-launcher {
-  right: auto;
-  left: 0.75rem;
-}
-
-.qa-studio[data-full-screen="true"] .qa-launcher {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-}
-
-.qa-studio[data-full-screen="true"][data-side="left"] .qa-launcher {
-  right: auto;
-  left: 1rem;
-}
-
-.qa-launcher:hover {
-  border-color: var(--border-brand);
-  background: var(--layer-1-hover);
-}
-
-.qa-launcher > .qa-glyph {
-  color: var(--brand);
-}
-
-.qa-launcher__text {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.qa-launcher__dot {
+/* The CI dot on the closed strip. */
+.qa-rail__dot {
   width: 0.55rem;
   height: 0.55rem;
   flex-shrink: 0;
@@ -1749,15 +1709,15 @@
   box-shadow: 0 0 0 3px var(--bg-soft);
 }
 
-.qa-launcher__dot[data-tone="passed"] {
+.qa-rail__dot[data-tone="passed"] {
   background: var(--success);
 }
 
-.qa-launcher__dot[data-tone="failed"] {
+.qa-rail__dot[data-tone="failed"] {
   background: var(--danger);
 }
 
-.qa-launcher__dot[data-tone="running"] {
+.qa-rail__dot[data-tone="running"] {
   background: var(--brand);
   animation: qa-dot-pulse 1.4s ease-in-out infinite;
 }
@@ -1768,41 +1728,30 @@
   }
 }
 
-/* Narrower full screen: the toolbar row wraps to two lines, so the drawer starts
-   lower. (Wide, it is one row and the base 6.5rem top edge clears it.) */
-@media (max-width: 1199px) {
-  .qa-studio[data-full-screen="true"] .qa-studio__run {
-    max-height: calc(100dvh - 10.5rem);
-  }
-}
-
 /* ── Narrow screens ──────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
-  /* No width to float over: the panel (or its button) stacks under the page. */
-  .qa-studio[data-checklist="open"] .qa-studio__panes {
+  /* No width to float over: the rail stacks under the page, open, and its
+     strip (the pin among it) has nothing to do. */
+  .qa-studio:not([data-full-screen="true"]) .qa-studio__panes,
+  .qa-studio[data-rail="pinned"]:not([data-full-screen="true"]) .qa-studio__panes {
     min-height: 0;
+    padding-right: 0;
   }
 
-  .qa-studio:not([data-full-screen="true"]) .qa-studio__run {
+  .qa-studio:not([data-full-screen="true"]) .qa-rail {
     position: static;
     width: auto;
-    box-shadow: var(--shadow-soft);
+    overflow: visible;
+  }
+
+  .qa-studio:not([data-full-screen="true"]) .qa-rail > .qa-studio__run {
+    display: flex;
+    border-right: 0;
     animation: none;
   }
 
-  .qa-studio:not([data-full-screen="true"]) .qa-launcher {
-    position: static;
-    justify-self: end;
-  }
-
-  .qa-studio[data-checklist="open"] .qa-studio__preview[data-framed="false"] {
-    margin-right: 0;
-    margin-left: 0;
-  }
-
-  .qa-studio[data-checklist="open"]:not([data-full-screen="true"]) .qa-preview__caption {
-    padding-right: 0.85rem;
-    padding-left: 0.85rem;
+  .qa-studio:not([data-full-screen="true"]) .qa-rail__strip {
+    display: none;
   }
 
   .qa-studio__preview {
@@ -1857,16 +1806,6 @@
     padding: 0.5rem;
   }
 
-  .qa-studio[data-full-screen="true"] .qa-studio__run {
-    right: 4vw;
-    bottom: 0.75rem;
-    max-height: 62dvh;
-  }
-
-  .qa-studio[data-full-screen="true"][data-side="left"] .qa-studio__run {
-    left: 4vw;
-  }
-
   .qa-run-item {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.55rem;
@@ -1900,14 +1839,12 @@
   .qa-icon-button,
   .qa-run-item,
   .qa-verdict,
-  .qa-drawer__button,
-  .qa-launcher {
+  .qa-rail__pin {
     transition: none;
   }
 
   .qa-studio__run,
-  .qa-launcher,
-  .qa-launcher__dot[data-tone="running"] {
+  .qa-rail__dot[data-tone="running"] {
     animation: none;
   }
 }

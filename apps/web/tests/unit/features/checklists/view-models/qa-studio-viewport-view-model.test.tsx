@@ -129,46 +129,54 @@ describe("useStudioFullScreen", () => {
 });
 
 describe("useStudioPanel", () => {
-  it("starts open on a first visit, hides, opens and toggles, and snaps between sides", () => {
+  it("starts unpinned, like the app's left rail, and pins and unpins", () => {
     const vm = renderHook(() => useStudioPanel("qa"));
-    expect(vm().isChecklistOpen).toBe(true);
-    expect(vm().floatingSide).toBe("right");
-    act(() => vm().hideChecklist());
-    expect(vm().isChecklistOpen).toBe(false);
-    act(() => vm().openChecklist());
-    expect(vm().isChecklistOpen).toBe(true);
-    act(() => vm().toggleChecklist());
-    expect(vm().isChecklistOpen).toBe(false);
-    act(() => vm().snapChecklist());
-    expect(vm().floatingSide).toBe("left");
-    act(() => vm().snapChecklist());
-    expect(vm().floatingSide).toBe("right");
+    expect(vm().isRailPinned).toBe(false);
+    expect(vm().railHoverSuppressed).toBe(false);
+    act(() => vm().toggleRailPinned());
+    expect(vm().isRailPinned).toBe(true);
+    // Pinning never suppresses the hover: the rail is open anyway.
+    expect(vm().railHoverSuppressed).toBe(false);
+    act(() => vm().toggleRailPinned());
+    expect(vm().isRailPinned).toBe(false);
   });
 
-  it("remembers a hidden panel in this browser, per studio", () => {
+  it("folds on unpin even under the pointer, until the pointer leaves", () => {
     const vm = renderHook(() => useStudioPanel("qa"));
-    act(() => vm().hideChecklist());
-    expect(window.localStorage.getItem("alphaci.qa-studio.panel")).toBe("hidden");
-    unmount();
-    expect(renderHook(() => useStudioPanel("qa"))().isChecklistOpen).toBe(false);
-    unmount();
-    // PO Studio's panel is its own choice.
-    expect(renderHook(() => useStudioPanel("po"))().isChecklistOpen).toBe(true);
+    act(() => vm().toggleRailPinned());
+    act(() => vm().toggleRailPinned());
+    expect(vm().railHoverSuppressed).toBe(true);
+    act(() => vm().releaseRailHover());
+    expect(vm().railHoverSuppressed).toBe(false);
   });
 
-  it("still hides and shows when storage throws, and starts open", () => {
+  it("remembers the pin in this browser, per studio", () => {
+    const vm = renderHook(() => useStudioPanel("qa"));
+    act(() => vm().toggleRailPinned());
+    expect(window.localStorage.getItem("alphaci.qa-studio.rail-pinned")).toBe("1");
+    unmount();
+    expect(renderHook(() => useStudioPanel("qa"))().isRailPinned).toBe(true);
+    unmount();
+    // PO Studio's rail is its own choice.
+    expect(renderHook(() => useStudioPanel("po"))().isRailPinned).toBe(false);
+  });
+
+  it("still pins when storage throws, and starts unpinned", () => {
     const get = jest.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("blocked");
     });
     const set = jest.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("blocked");
     });
-    const vm = renderHook(() => useStudioPanel("po"));
-    expect(vm().isChecklistOpen).toBe(true);
-    act(() => vm().hideChecklist());
-    expect(vm().isChecklistOpen).toBe(false);
-    get.mockRestore();
-    set.mockRestore();
+    try {
+      const vm = renderHook(() => useStudioPanel("po"));
+      expect(vm().isRailPinned).toBe(false);
+      act(() => vm().toggleRailPinned());
+      expect(vm().isRailPinned).toBe(true);
+    } finally {
+      get.mockRestore();
+      set.mockRestore();
+    }
   });
 });
 
@@ -241,15 +249,15 @@ describe("useStudioViewportViewModel", () => {
     expect(vm().dimensions).toEqual({ width: 375, height: 812, orientation: "portrait" });
   });
 
-  it("never changes the frame key for device, orientation, the panel or full screen — only for a new page", async () => {
+  it("never changes the frame key for device, orientation, the rail or full screen — only for a new page", async () => {
     const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
     await flush();
     const key = vm().frameKey;
     act(() => vm().setDevice("mobile"));
     act(() => vm().rotate());
-    act(() => vm().hideChecklist());
+    act(() => vm().toggleRailPinned());
     act(() => vm().enterFullScreen());
-    act(() => vm().openChecklist());
+    act(() => vm().toggleRailPinned());
     act(() => vm().exitFullScreen());
     expect(vm().frameKey).toBe(key);
     act(() => vm().reload());
@@ -425,19 +433,19 @@ describe("useStudioViewportViewModel copy link", () => {
   });
 });
 
-describe("the run panel on the viewport ViewModel", () => {
+describe("the run rail on the viewport ViewModel", () => {
   it("rides on it, so every studio on the shell has it, read for its own studio", async () => {
     projects.previews.mockResolvedValue({ enabled: true, liveProvidersEnabled: true, providerError: null, branches: [] });
-    window.localStorage.setItem("alphaci.po-studio.panel", "hidden");
+    window.localStorage.setItem("alphaci.po-studio.rail-pinned", "1");
     const po = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true, studio: "po" }));
     await flush();
-    expect(po().isChecklistOpen).toBe(false);
-    act(() => po().openChecklist());
-    expect(po().isChecklistOpen).toBe(true);
+    expect(po().isRailPinned).toBe(true);
+    act(() => po().toggleRailPinned());
+    expect(po().isRailPinned).toBe(false);
     unmount();
-    // QA Studio (the default) was never hidden.
+    // QA Studio (the default) was never pinned.
     const qa = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
     await flush();
-    expect(qa().isChecklistOpen).toBe(true);
+    expect(qa().isRailPinned).toBe(false);
   });
 });

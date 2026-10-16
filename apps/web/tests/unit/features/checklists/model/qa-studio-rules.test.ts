@@ -21,9 +21,8 @@ import {
   resolveDeviceDimensions,
   resolveEnvironment,
   resolveResolution,
-  resolveStudioPanel,
   scaleLabel,
-  studioPanelKey,
+  studioRailPinnedKey,
   studioEnvironments,
   validateCustomResolution,
 } from "../../../../../src/features/checklists/model/qa-studio-rules";
@@ -170,19 +169,10 @@ describe("fitDeviceScale (both axes, never above 1)", () => {
   });
 });
 
-describe("studio run panel", () => {
-  it("is remembered per studio", () => {
-    expect(studioPanelKey("qa")).toBe("alphaci.qa-studio.panel");
-    expect(studioPanelKey("po")).toBe("alphaci.po-studio.panel");
-  });
-
-  it("is open unless the viewer hid it: a first visit or anything unknown shows the checklist", () => {
-    expect(resolveStudioPanel("hidden")).toBe("hidden");
-    expect(resolveStudioPanel("open")).toBe("open");
-    expect(resolveStudioPanel(null)).toBe("open");
-    expect(resolveStudioPanel("")).toBe("open");
-    expect(resolveStudioPanel("split")).toBe("open");
-    expect(resolveStudioPanel("HIDDEN")).toBe("open");
+describe("studio run rail", () => {
+  it("remembers the pin per studio", () => {
+    expect(studioRailPinnedKey("qa")).toBe("alphaci.qa-studio.rail-pinned");
+    expect(studioRailPinnedKey("po")).toBe("alphaci.po-studio.rail-pinned");
   });
 });
 

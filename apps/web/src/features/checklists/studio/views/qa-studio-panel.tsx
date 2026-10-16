@@ -2,7 +2,7 @@
 
 import "./qa-studio.css";
 
-import { useId, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import { useId, type ReactNode, type Ref } from "react";
 import { createPortal } from "react-dom";
 
 import type { AppRole } from "@/shared/api/contracts";
@@ -30,7 +30,6 @@ import { PreviewCaptureContext, type PreviewCaptureTarget } from "../view-models
 import { ShowRepositoriesContext } from "../view-models/repository-visibility";
 import { useFloatingChecklistFocus } from "../view-models/use-floating-checklist-focus";
 import { useStudioCaptureTarget } from "../view-models/use-studio-capture-target";
-import { escapeIsUnclaimed } from "../view-models/use-studio-full-screen";
 import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
@@ -55,7 +54,7 @@ import { PreviewPane } from "./preview-pane";
 import { ProjectRunPanel } from "./project-run-panel";
 import { PromotionBarFoot, PromotionStatusChip, StudioMergeAction } from "./promotion-bar";
 import { RunPanel } from "./run-panel";
-import { ChecklistIcon, ChevronLeftIcon, ChevronRightIcon, SwapIcon } from "./studio-icons";
+import { ChecklistIcon, RailPinIcon } from "./studio-icons";
 import { StudioToolbar, type StudioToolbarPlacement } from "./studio-toolbar";
 
 function StudioNotice({
@@ -205,117 +204,74 @@ function PreviewColumn({ vm, frameRef }: Readonly<{ vm: StudioViewportViewModel;
   return <PreviewPane vm={vm} frameRef={frameRef} />;
 }
 
-/** What the drawer and its launcher read of a run: a repository run, or a Project run. */
+/** What the rail reads of a run: a repository run, or a Project run. */
 type DrawerRun = { summary: QaRunSummaryCounts; automation?: unknown };
 
-/** The floating panel's header: what it is, how far the run is, which side, and Hide. */
-function DrawerHeader({
-  vm,
+/** The open panel's header: what it is and how far the run is. */
+function PanelHeader({
   run,
   title,
-  drawerId,
   headingId,
-  headingRef,
-}: Readonly<{
-  vm: StudioViewportViewModel;
-  run: DrawerRun | null;
-  title: string;
-  drawerId: string;
-  headingId: string;
-  headingRef: Ref<HTMLHeadingElement>;
-}>) {
-  const other = vm.floatingSide === "right" ? "left" : "right";
-  // Points the way the panel goes: towards the edge it sits on.
-  const HideIcon = vm.floatingSide === "right" ? ChevronRightIcon : ChevronLeftIcon;
+}: Readonly<{ run: DrawerRun | null; title: string; headingId: string }>) {
   return (
     <div className="qa-drawer__head">
       <div className="qa-drawer__heading">
         <ChecklistIcon />
-        <h2 className="qa-drawer__title" id={headingId} ref={headingRef} tabIndex={-1}>
+        <h2 className="qa-drawer__title" id={headingId}>
           {title}
         </h2>
         {run ? <span className="qa-drawer__progress">{passedLabel(run)}</span> : null}
-      </div>
-      <div className="qa-drawer__actions">
-        <button
-          type="button"
-          className="qa-drawer__button"
-          onClick={vm.snapChecklist}
-          aria-label={`Move to the ${other} side`}
-          title={`Move to the ${other} side`}
-        >
-          <SwapIcon />
-        </button>
-        <button
-          type="button"
-          className="qa-drawer__button"
-          onClick={vm.hideChecklist}
-          aria-label={`Hide ${title}`}
-          aria-expanded="true"
-          aria-controls={drawerId}
-          title={`Hide ${title} (Esc)`}
-        >
-          <HideIcon />
-        </button>
       </div>
     </div>
   );
 }
 
+/** "3/5" for the closed strip, where "passed" does not fit. */
+function compactProgress(run: DrawerRun): string {
+  return `${String(run.summary.byStatus.passed ?? 0)}/${String(run.summary.total)}`;
+}
+
 /**
- * The button a hidden panel collapses to, in the preview's corner on the
- * panel's side: its title, the run's progress and the CI state.
+ * The rail's own column, at the studio's right edge in every state: the pin
+ * first (as the app's left rail has its toggle first), then what the panel
+ * holds — its icon, the run's progress and the CI dot — readable while the
+ * rail is closed.
  */
-function ChecklistLauncher({
+function RailStrip({
   vm,
   run,
   title,
-  drawerId,
-  launcherRef,
-}: Readonly<{
-  vm: StudioViewportViewModel;
-  run: DrawerRun | null;
-  title: string;
-  drawerId: string;
-  launcherRef: Ref<HTMLButtonElement>;
-}>) {
+  panelId,
+}: Readonly<{ vm: StudioViewportViewModel; run: DrawerRun | null; title: string; panelId: string }>) {
   const signal = automationSignal(run ? { automation: run.automation } : null);
+  const summary = launcherLabel(run, title);
   return (
-    <button
-      ref={launcherRef}
-      type="button"
-      className="qa-launcher"
-      onClick={vm.toggleChecklist}
-      aria-expanded={vm.isChecklistOpen}
-      aria-controls={drawerId}
-      title={`Show ${title}`}
-    >
-      <ChecklistIcon />
-      <span className="qa-launcher__text">{launcherLabel(run, title)}</span>
-      <span className="qa-launcher__dot" data-tone={signal.tone} title={signal.label} aria-hidden="true" />
-      <span className="sr-only">{signal.label}</span>
-    </button>
+    <div className="qa-rail__strip">
+      <button
+        type="button"
+        className="qa-rail__pin"
+        aria-label={`Keep ${title} open`}
+        aria-pressed={vm.isRailPinned}
+        aria-controls={panelId}
+        title={vm.isRailPinned ? `Collapse ${title}` : `Keep ${title} open`}
+        onClick={vm.toggleRailPinned}
+      >
+        <RailPinIcon pinned={vm.isRailPinned} />
+      </button>
+      <span className="qa-rail__divider" aria-hidden="true" />
+      <div className="qa-rail__summary" title={summary}>
+        <ChecklistIcon />
+        {run ? <span className="qa-rail__count" aria-hidden="true">{compactProgress(run)}</span> : null}
+        <span className="qa-rail__dot" data-tone={signal.tone} aria-hidden="true" />
+        <span className="sr-only">{`${summary}. ${signal.label}`}</span>
+      </div>
+    </div>
   );
-}
-
-/** The run panel floats over the preview ("open"), or is collapsed to its button ("hidden"). */
-function checklistMode(vm: StudioViewportViewModel): "open" | "hidden" {
-  return vm.isChecklistOpen ? "open" : "hidden";
-}
-
-/** Escape inside the panel hides it, unless a menu, popover or dialog in it took the key. */
-function hideOnEscape(vm: StudioViewportViewModel) {
-  return (event: KeyboardEvent<HTMLDivElement>) => {
-    if (!escapeIsUnclaimed(event)) return;
-    // Claimed, so full screen (listening on the document) stays.
-    event.preventDefault();
-    vm.hideChecklist();
-  };
 }
 
 type CommitChip = { commitSha: string | null; commitSource: QaRunViewModel["commitSource"] } | null;
 
-/** What the toolbar's commit chip and the drawer/launcher show, once the run lookup has answered. */
+/** What the toolbar's commit chip and the rail show, once the run lookup has answered. */
 function runSnapshot(run: QaRunViewModel): { commit: CommitChip; current: QaRun | null } {
   if (run.status !== "ready") return { commit: null, current: null };
   return { commit: { commitSha: run.commitSha, commitSource: run.commitSource }, current: run.run };
@@ -338,43 +294,42 @@ function projectSnapshot(run: ProjectRunViewModel, projectId: string): { commit:
 type DockScroll = "items" | "column";
 
 /**
- * The run panel's one container: its header (title, progress, side, Hide),
- * the tab bar (Checklist | Playwright, the "Ready for production" chip and
- * Merge to main), then the panels (`children`). CSS floats it over the
- * preview's edge, docked or full screen, and hides it behind its button;
- * nothing in it ever remounts.
+ * The run rail, like the app's left rail but on the right: the strip at the
+ * edge, and beside it the panel — its header, the tab bar (Checklist |
+ * Playwright, the "Ready for production" chip and Merge to main), then the
+ * panels (`children`). Closed, only the strip shows; hover or keyboard focus
+ * opens it over the page (CSS), the pin keeps it open and moves the page
+ * aside. The panel is the one `.qa-studio__run`, mounted once in every state.
  */
-function RunDock({
+function RunRail({
   vm,
   run,
   title,
   scroll,
-  drawerId,
+  panelId,
   headingId,
-  headingRef,
   children,
 }: Readonly<{
   vm: StudioViewportViewModel;
   run: DrawerRun | null;
   title: string;
   scroll: DockScroll;
-  drawerId: string;
+  panelId: string;
   headingId: string;
-  headingRef: Ref<HTMLHeadingElement>;
   children: ReactNode;
 }>) {
   return (
-    // A region, not a widget: Escape bubbles here from whatever in it has focus.
     <div
-      className="qa-studio__run"
-      data-scroll={scroll}
-      id={drawerId}
-      role="region"
-      aria-labelledby={headingId}
-      onKeyDown={hideOnEscape(vm)}
+      className="qa-rail"
+      data-pinned={String(vm.isRailPinned)}
+      data-hover-suppressed={String(vm.railHoverSuppressed)}
+      onPointerLeave={vm.releaseRailHover}
     >
-      <DrawerHeader vm={vm} run={run} title={title} drawerId={drawerId} headingId={headingId} headingRef={headingRef} />
-      {children}
+      <RailStrip vm={vm} run={run} title={title} panelId={panelId} />
+      <div className="qa-studio__run" data-scroll={scroll} id={panelId} role="region" aria-labelledby={headingId}>
+        <PanelHeader run={run} title={title} headingId={headingId} />
+        {children}
+      </div>
     </div>
   );
 }
@@ -655,24 +610,24 @@ function previewFramed(vm: StudioViewportViewModel): "true" | "false" {
 }
 
 /**
- * QA Studio: the deployed page across the studio's whole width, and the
- * checklist being verified in a panel floating over its edge, so a tester
- * never leaves the page to record what they saw. Every right comes from the
- * server; this view only arranges it.
+ * QA Studio: the deployed page, and the checklist being verified in a rail
+ * on its right edge, so a tester never leaves the page to record what they
+ * saw. Every right comes from the server; this view only arranges it.
  *
  * The same shell is PO Studio (`studio="po"`): the same uat preview, frames
  * and layouts, with the Product owner's acceptance and the merge to main in
  * the column instead of the items QA verifies.
  *
- * The panel is open or hidden behind its button (`data-checklist`, kept per
- * viewer and studio), on either edge (`data-side`); CSS alone applies both,
- * so switching never touches the tree. Full screen re-lays out the SAME tree
- * with CSS (`data-full-screen`): the studio covers the viewport and the panel
- * floats the same way. The run column is mounted exactly once — never a
- * second copy — because it owns item drafts, the sign-off dialog, the export
- * timer and automation polling. Hiding only hides it. Nothing is portalled:
- * the theme tokens are scoped to the dashboard shell, and the sign-off dialog
- * needs the viewport, not the panel, as its containing block.
+ * The rail works like the app's left rail: a strip that opens over the page
+ * on hover or keyboard focus, or pinned open with the page moved aside
+ * (`data-rail`, kept per viewer and studio). CSS alone applies it, so nothing
+ * in the tree changes. Full screen re-lays out the SAME tree with CSS
+ * (`data-full-screen`): the studio covers the viewport, the rail on its edge.
+ * The run column is mounted exactly once — never a second copy — because it
+ * owns item drafts, the sign-off dialog, the export timer and automation
+ * polling. A closed rail only hides it. Nothing is portalled: the theme
+ * tokens are scoped to the dashboard shell, and the sign-off dialog needs the
+ * viewport, not the rail, as its containing block.
  *
  * The one exception is the toolbar, and only into `toolbarSlot`: an element
  * the project page renders in its own tab row, inside the same dashboard shell
@@ -722,14 +677,10 @@ export function QaStudioPanel({
   const viewport = useStudioViewportViewModel({ projectId, enabled: Boolean(projectId), studio });
   const runs = useStudioRunsViewModel({ projectId, appRole, qaScope, branch: viewport.environment?.branch ?? null });
   const { projectMode, projectRun, checklists, run, promotion, delivery } = runs;
-  const focus = useFloatingChecklistFocus({
-    isFullScreen: viewport.isFullScreen,
-    isChecklistOpen: viewport.isChecklistOpen,
-  });
-  const drawerId = useId();
+  const focus = useFloatingChecklistFocus({ isFullScreen: viewport.isFullScreen });
+  const panelId = useId();
   const headingId = useId();
   const snapshot = projectMode ? projectSnapshot(projectRun, projectId) : runSnapshot(run);
-  const mode = checklistMode(viewport);
   const columnTab = useStudioColumnTab(studio);
   const tabsId = useId();
   const rules = studioColumnRules(appRole);
@@ -752,8 +703,7 @@ export function QaStudioPanel({
         className="qa-studio"
         data-studio={studio}
         data-full-screen={String(viewport.isFullScreen)}
-        data-checklist={mode}
-        data-side={viewport.floatingSide}
+        data-rail={viewport.isRailPinned ? "pinned" : "collapsed"}
         data-capturing={String(capture.capturing)}
       >
         <StudioControls vm={viewport} commit={snapshot.commit} fullScreenRef={focus.toggleRef} slot={toolbarSlot} />
@@ -761,14 +711,13 @@ export function QaStudioPanel({
           <div className="qa-studio__preview" data-framed={previewFramed(viewport)}>
             <PreviewColumn vm={viewport} frameRef={capture.target} />
           </div>
-          <RunDock
+          <RunRail
             vm={viewport}
             run={snapshot.current}
             title={DRAWER_TITLES[studio]}
             scroll={projectMode ? "column" : "items"}
-            drawerId={drawerId}
+            panelId={panelId}
             headingId={headingId}
-            headingRef={focus.drawerRef}
           >
             <ColumnHead
               rules={rules}
@@ -814,16 +763,7 @@ export function QaStudioPanel({
                 />
               }
             />
-          </RunDock>
-          {mode === "hidden" ? (
-            <ChecklistLauncher
-              vm={viewport}
-              run={snapshot.current}
-              title={DRAWER_TITLES[studio]}
-              drawerId={drawerId}
-              launcherRef={focus.launcherRef}
-            />
-          ) : null}
+          </RunRail>
         </div>
       </div>
     </ShowRepositoriesContext.Provider>

@@ -257,20 +257,19 @@ describe("PO Studio", () => {
     expect(container.textContent).not.toContain("View the QA run");
   });
 
-  it("floats its Acceptance panel over the page and hides it behind its own button, remembered apart from QA Studio's", async () => {
+  it("keeps its Acceptance in a rail with its own pin, remembered apart from QA Studio's", async () => {
     setup(projectGate({ run: null, reasons: ["The Project has no signed-off QA run yet."] }));
     projectRuns.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire({ items: [runItemWire()] }) }));
     const container = await studio("lead", PROJECT_SCOPE, {});
     const studioRoot = container.querySelector(".qa-studio")!;
-    expect(studioRoot.getAttribute("data-checklist")).toBe("open");
+    expect(studioRoot.getAttribute("data-rail")).toBe("collapsed");
     expect(container.querySelector(".qa-drawer__title")?.textContent).toBe("Acceptance");
+    expect(container.querySelector(".qa-rail__summary")?.getAttribute("title")).toMatch(/^Acceptance/);
 
-    await click(container.querySelector('button[aria-label="Hide Acceptance"]'));
-    expect(studioRoot.getAttribute("data-checklist")).toBe("hidden");
-    expect(container.querySelector(".qa-launcher")?.getAttribute("title")).toBe("Show Acceptance");
-    expect(container.querySelector(".qa-launcher__text")?.textContent).toMatch(/^Acceptance/);
-    expect(window.localStorage.getItem("alphaci.po-studio.panel")).toBe("hidden");
-    expect(window.localStorage.getItem("alphaci.qa-studio.panel")).toBeNull();
+    await click(container.querySelector('button[aria-label="Keep Acceptance open"]'));
+    expect(studioRoot.getAttribute("data-rail")).toBe("pinned");
+    expect(window.localStorage.getItem("alphaci.po-studio.rail-pinned")).toBe("1");
+    expect(window.localStorage.getItem("alphaci.qa-studio.rail-pinned")).toBeNull();
   });
 
   it("tells a Product owner an unfiled repository has nothing to accept", async () => {

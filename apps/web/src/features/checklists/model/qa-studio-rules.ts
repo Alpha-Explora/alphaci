@@ -362,35 +362,25 @@ export function scaleLabel(scale: number): string | null {
   return `Scaled to ${Math.round(scale * 100)}%`;
 }
 
-/* ── The run panel ───────────────────────────────────────────────────────── */
+/* ── The run rail ────────────────────────────────────────────────────────── */
 
 /**
- * The page under test always gets the studio's whole width; the run panel
- * (Checklist | Playwright) floats over its edge and can be hidden behind a
- * button. Whether it is open is a per-viewer, per-studio preference: a tester
- * who works with it hidden in QA Studio is not making that choice for PO
- * Studio. Hiding only restyles: the panel stays mounted either way.
+ * The page under test gets the studio's width; the run panel (Checklist |
+ * Playwright) is a rail on the studio's right edge, like the app's left rail:
+ * a narrow strip that opens over the page on hover or keyboard focus, and a
+ * pin that keeps it open and moves the page aside. Pinned or not is a
+ * per-viewer, per-studio preference: pinning it in QA Studio is not a choice
+ * for PO Studio. The rail stays mounted either way.
  */
-export function studioPanelKey(studio: "qa" | "po"): string {
-  return `alphaci.${studio}-studio.panel`;
+export function studioRailPinnedKey(studio: "qa" | "po"): string {
+  return `alphaci.${studio}-studio.rail-pinned`;
 }
 
-export type StudioPanelState = "open" | "hidden";
+/* ── The rail's strip ─────────────────────────────────────────────────────── */
 
 /**
- * What storage holds, as a panel state. Open unless the viewer hid it: the
- * checklist is what the studio is for, so a first visit, unreadable storage
- * or an unknown value shows it.
- */
-export function resolveStudioPanel(stored: string | null): StudioPanelState {
-  return stored === "hidden" ? "hidden" : "open";
-}
-
-/* ── Floating checklist launcher ─────────────────────────────────────────── */
-
-/**
- * "QA checklist · 3/5 passed", or just the title before a run exists. PO
- * Studio's panel is its "Acceptance".
+ * "QA checklist · 3/5 passed", or just the title before a run exists: what
+ * the closed rail says it holds. PO Studio's panel is its "Acceptance".
  */
 export function launcherLabel(run: Pick<QaRun, "summary"> | null, title = "QA checklist"): string {
   return run ? `${title} · ${passedLabel(run)}` : title;

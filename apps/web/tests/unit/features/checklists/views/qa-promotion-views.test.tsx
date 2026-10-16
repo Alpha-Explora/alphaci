@@ -276,8 +276,6 @@ describe("QA Studio — the readiness popover", () => {
     await key(chip(container), "Escape");
     expect(popover(container).hidden).toBe(true);
     expect(container.querySelector(".qa-studio")?.getAttribute("data-full-screen")).toBe("true");
-    // The popover took that Escape: the panel stays open too.
-    expect(container.querySelector(".qa-studio")?.getAttribute("data-checklist")).toBe("open");
   });
 
   it("closes on a press outside, without taking focus", async () => {
