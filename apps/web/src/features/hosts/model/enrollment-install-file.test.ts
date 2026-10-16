@@ -362,16 +362,12 @@ function runBatch(paths: ReturnType<typeof fixture>, netExitCode: number) {
 }
 
 /** Process env with the given names replaced; Windows names are case-insensitive. */
-function childEnv(overrides: Record<string, string>) {
+function childEnv(overrides: Record<string, string>): NodeJS.ProcessEnv {
   const names = Object.keys(overrides).map((name) => name.toUpperCase());
-  return {
-    ...Object.fromEntries(
-      Object.entries(process.env).filter(
-        ([key]) => !names.includes(key.toUpperCase()),
-      ),
-    ),
-    ...overrides,
-  };
+  const env: NodeJS.ProcessEnv = { ...process.env };
+  for (const key of Object.keys(env))
+    if (names.includes(key.toUpperCase())) delete env[key];
+  return { ...env, ...overrides };
 }
 
 const itOnWindows = onWindows ? it : it.skip;
