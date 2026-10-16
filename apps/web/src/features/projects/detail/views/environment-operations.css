@@ -65,7 +65,7 @@
   width: 1.8rem;
   height: 1.8rem;
   border-radius: 999px;
-  background: rgba(88, 166, 255, 0.12);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
   color: var(--brand);
   font-size: 0.8rem;
   font-weight: 700;
@@ -103,7 +103,7 @@
 }
 
 .envops-chip--prod {
-  border-color: rgba(251, 191, 36, 0.35);
+  border-color: var(--border-amber);
   color: var(--accent-amber);
 }
 
@@ -164,7 +164,7 @@
 .envops-target__slot {
   padding: 0.05rem 0.45rem;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-frost);
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
