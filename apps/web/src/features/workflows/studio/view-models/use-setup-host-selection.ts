@@ -2,7 +2,12 @@
 import { useEffect, useState } from "react";
 import { listHosts, type MachineSummary } from "@/features/hosts";
 import { useWorkspaceSelection } from "@/features/workspace/selection";
-export function useSetupHostSelection() {
+/**
+ * The machines the Delivery step's on-prem rows choose from. Nothing is
+ * requested unless `enabled`, so a wizard that is not on-prem makes no host
+ * request at all.
+ */
+export function useSetupHostSelection({ enabled }: { enabled: boolean }) {
   const { selectedWorkspaceId } = useWorkspaceSelection();
   const [loaded, setLoaded] = useState<{
       workspaceId: string;
@@ -11,7 +16,7 @@ export function useSetupHostSelection() {
     [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
   useEffect(() => {
-    if (!selectedWorkspaceId) return;
+    if (!enabled || !selectedWorkspaceId) return;
     let active = true;
     listHosts(selectedWorkspaceId)
       .then((hosts) => {
@@ -36,10 +41,11 @@ export function useSetupHostSelection() {
     return () => {
       active = false;
     };
-  }, [selectedWorkspaceId, revision]);
+  }, [enabled, selectedWorkspaceId, revision]);
   return {
     workspaceId: selectedWorkspaceId,
-    hosts: loaded?.workspaceId === selectedWorkspaceId ? loaded.hosts : [],
+    hosts:
+      enabled && loaded?.workspaceId === selectedWorkspaceId ? loaded.hosts : [],
     error,
     refresh: () => setRevision((value) => value + 1),
   };

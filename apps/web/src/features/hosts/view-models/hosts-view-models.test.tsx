@@ -145,6 +145,56 @@ it("reuses an assignment request after a network failure without creating anothe
     jest.mocked(assignHost).mock.calls[0]?.[2].expectedAssignmentId,
   ).toBeNull();
 });
+const connected = (id: string) => ({
+  id,
+  workspaceId: "workspace",
+  name: id,
+  platform: "ubuntu" as const,
+  agentVersion: "0.1.0",
+  lastSeenAt: new Date().toISOString(),
+  status: "connected" as const,
+  checks: [],
+});
+it("assigns the only connected machine without a choice or host ports", async () => {
+  jest
+    .mocked(listHosts)
+    .mockResolvedValue([
+      connected("only"),
+      { ...connected("old"), status: "offline" },
+    ]);
+  jest.mocked(assignHost).mockResolvedValue({
+    id: "a",
+    machineId: "only",
+    projectId: "project",
+    environmentId: "env",
+    revision: 1,
+    config: {
+      ports: [{ slot: "frontend", hostPort: 8080, containerPort: 3000 }],
+      health: [{ slot: "frontend", path: "/" }],
+      ingress: { mode: "direct", publicUrl: null },
+    },
+  });
+  const seen = probe(() => useHostAssignmentViewModel(options));
+  await settle();
+  expect(seen().choices).toHaveLength(1);
+  expect(seen().automatic?.id).toBe("only");
+  expect(seen().canAssign).toBe(true);
+  await act(() => seen().assign());
+  const sent = jest.mocked(assignHost).mock.calls[0]?.[2];
+  expect(sent).not.toHaveProperty("machineId");
+  expect(sent?.config.ports).toEqual([
+    { slot: "frontend", containerPort: 3000 },
+  ]);
+});
+it("requires a choice when several machines are connected", async () => {
+  jest.mocked(listHosts).mockResolvedValue([connected("a"), connected("b")]);
+  const seen = probe(() => useHostAssignmentViewModel(options));
+  await settle();
+  expect(seen().canAssign).toBe(false);
+  act(() => seen().setSelected("b"));
+  await act(() => seen().assign());
+  expect(jest.mocked(assignHost).mock.calls[0]?.[2].machineId).toBe("b");
+});
 it("shows legacy bindings and invalidates replacement confirmation after edits", async () => {
   jest.mocked(getAssignment).mockResolvedValue({
     id: "legacy",

@@ -7,11 +7,13 @@ import {
   getReadiness,
   unassignHost,
 } from "../data/assignments-api";
-import type {
-  AssignmentConfig,
-  HostAssignment,
-  MachineSummary,
-  ReadinessCheck,
+import {
+  healthyHosts,
+  requestedConfig,
+  type AssignmentRequestConfig,
+  type HostAssignment,
+  type MachineSummary,
+  type ReadinessCheck,
 } from "../model/host-types";
 export interface HostAssignmentOptions {
   projectId: string;
@@ -37,10 +39,9 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
     [confirmation, setConfirmation] = useState<"replace" | "unassign" | null>(
       null,
     );
-  const [config, setConfig] = useState<AssignmentConfig>(() => ({
-    ports: options.slots.map((slot, index) => ({
+  const [config, setConfig] = useState<AssignmentRequestConfig>(() => ({
+    ports: options.slots.map((slot) => ({
       slot,
-      hostPort: 8080 + index,
       containerPort: slot === "frontend" ? 3000 : 4000,
     })),
     health: options.slots.map((slot) => ({ slot, path: "/" })),
@@ -76,7 +77,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
         setError(null);
         if (assignment?.config) {
           setSelected(assignment.machineId);
-          setConfig(assignment.config);
+          setConfig(requestedConfig(assignment.config));
         }
       })
       .catch((cause: unknown) => {
@@ -115,19 +116,24 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
     }, 20_000);
     return () => clearInterval(timer);
   }, [workspaceId]);
+  // A picker is needed only when several machines could take the environment;
+  // with exactly one, the server assigns it without a choice.
+  const choices = healthyHosts(hosts);
+  const automatic = choices.length === 1 ? choices[0]! : null;
+  const machineId = selected || automatic?.id || "";
   async function assign() {
-    if (!canManage || pending.current || !selected) return;
+    if (!canManage || pending.current || !machineId) return;
     if (current && confirmation !== "replace") {
       setConfirmation("replace");
       return;
     }
-    const key = JSON.stringify({ selected, current: current?.id, config });
+    const key = JSON.stringify({ machineId, current: current?.id, config });
     if (request.current?.key !== key)
       request.current = { key, id: crypto.randomUUID() };
     const requestId = request.current.id;
     await perform(async () => {
       const result = await assignHost(projectId, environmentId, {
-        machineId: selected,
+        ...(selected ? { machineId: selected } : {}),
         expectedAssignmentId: current?.id ?? null,
         requestId,
         config,
@@ -182,15 +188,11 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
       if (active.current) setBusy(false);
     }
   }
-  function port(
-    slot: "frontend" | "backend",
-    field: "hostPort" | "containerPort",
-    value: string,
-  ) {
+  function port(slot: "frontend" | "backend", value: string) {
     setConfig((old) => ({
       ...old,
       ports: old.ports.map((item) =>
-        item.slot === slot ? { ...item, [field]: Number(value) } : item,
+        item.slot === slot ? { ...item, containerPort: Number(value) } : item,
       ),
     }));
     setConfirmation(null);
@@ -206,6 +208,11 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
   }
   return {
     hosts,
+    /** Machines to choose between; the picker shows only for several. */
+    choices,
+    /** The only healthy machine, used without asking. */
+    automatic,
+    canAssign: Boolean(machineId),
     current,
     checks,
     error,

@@ -130,6 +130,18 @@ jest.mock("../../src/features/workspace/selection/data/workspaces-api", () => ({
   getMyWorkspaces: jest.fn(),
 }));
 
+// The machines the on-prem rows choose from, read through the hosts API so a
+// test can count the requests. Only on-prem hosting asks for them.
+jest.mock("../../src/features/hosts/data/hosts-api", () => ({
+  ...jest.requireActual("../../src/features/hosts/data/hosts-api"),
+  listHosts: jest.fn(),
+}));
+const mockedListHosts = (
+  jest.requireMock("../../src/features/hosts/data/hosts-api") as {
+    listHosts: jest.Mock;
+  }
+).listHosts;
+
 const mockedListFolders = (
   jest.requireMock("../../src/features/teams/project-folders/data/project-folders-repository") as {
     projectFoldersRepository: { list: jest.Mock };
@@ -392,6 +404,10 @@ describe("WorkflowBuilder project setup", () => {
     mockAppRole = undefined;
     mockedGetGroups.mockResolvedValue([]);
     mockedListDeploymentProviders.mockResolvedValue([]);
+    mockedListHosts.mockReset();
+    mockedListHosts.mockResolvedValue([
+      { id: "machine-1", workspaceId: "workspace-1", name: "Build box", status: "connected", checks: [] },
+    ]);
     mockedListFolders.mockResolvedValue(folders([["dp-1", "testfinals"], ["dp-2", "wallet"]]));
     mockedGetCapabilities.mockResolvedValue({
       envProvisioning: {
@@ -499,15 +515,29 @@ describe("WorkflowBuilder project setup", () => {
    * dialog). An admin by default — the one role with today's free Project
    * name; a Developer chooses one of the team's Projects instead.
    */
-  async function renderBuilder(appRole: "admin" | "lead" | "qa" | "member" = "admin") {
+  /**
+   * `initialWorkspaceId` renders under the workspace provider the app gives
+   * the builder, for the tests that read the selected team (the machines).
+   */
+  async function renderBuilder(
+    appRole: "admin" | "lead" | "qa" | "member" = "admin",
+    initialWorkspaceId: string | null = null,
+  ) {
     if (!mockSearch) mockSearch = "tab=setup";
+    const builder = (
+      <WorkflowBuilder
+        login="tone"
+        plan="pro"
+        session={leadSession(appRole)}
+      />
+    );
     await act(async () => {
       root.render(
-        <WorkflowBuilder
-          login="tone"
-          plan="pro"
-          session={leadSession(appRole)}
-        />,
+        initialWorkspaceId ? (
+          <WorkspaceProvider initialWorkspaceId={initialWorkspaceId}>{builder}</WorkspaceProvider>
+        ) : (
+          builder
+        ),
       );
     });
 
@@ -742,6 +772,25 @@ describe("WorkflowBuilder project setup", () => {
         "[data-testid='setup-project-button']",
       )?.disabled,
     ).toBe(true);
+  });
+
+  it("gives the reason Create is blocked above the Review button, not only in the top banner", async () => {
+    mockedGetMyUsage.mockResolvedValueOnce({
+      enabled: true,
+      plan: "free",
+      items: [{ code: "projects", current: 5, limit: 5, upgradeRequired: true }],
+    });
+
+    await renderBuilder();
+    await advanceToStep(3, { projectTypeId: "nextjs-app", repoName: "demo-next-app" });
+    await clickContinue();
+
+    const button = container.querySelector<HTMLButtonElement>("[data-testid='setup-project-button']");
+    expect(button?.disabled).toBe(true);
+    const blocker = button?.previousElementSibling;
+    expect(blocker?.getAttribute("role")).toBe("alert");
+    expect(blocker?.textContent).toBe("Project quota: Limit reached. Upgrade to continue.");
+    expect(button?.getAttribute("aria-describedby")).toBe(blocker?.id);
   });
 
   it("shows a create project error when createProject rejects", async () => {
@@ -1511,7 +1560,7 @@ describe("WorkflowBuilder project setup", () => {
       "Every environment runs on your on-prem host. After the project is created, register the host on the project's Hosting tab.";
 
     async function openDeliveryStep(projectTypeId: string) {
-      await renderBuilder();
+      await renderBuilder("admin", "workspace-1");
       await advanceToStep(3, { projectTypeId, repoName: "ledger" });
       await waitForCondition(() => hostingRadio("hosted") !== null);
     }
@@ -1612,6 +1661,93 @@ describe("WorkflowBuilder project setup", () => {
         "frontend",
         "frontend",
       ]);
+    });
+
+    it("asks for the machines only once on-prem is chosen, never on Vercel / Render", async () => {
+      mockedListDeploymentProviders.mockResolvedValue([{ id: "onprem-compose", enabled: true }]);
+      await openDeliveryStep("nestjs-api");
+      await waitForCondition(() => hostingRadio("onprem") !== null);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(mockedListHosts).not.toHaveBeenCalled();
+
+      act(() => hostingRadio("onprem")!.click());
+      await waitForCondition(() => mockedListHosts.mock.calls.length > 0);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(mockedListHosts).toHaveBeenCalledTimes(1);
+      expect(mockedListHosts).toHaveBeenCalledWith("workspace-1");
+    });
+
+    describe("a machine on Delivery", () => {
+      const PRODUCTION_BLOCKER = "Add an HTTPS URL for Production, or choose Assign later.";
+
+      /** The fieldset of one environment in the machine list, found by its name. */
+      function machineFieldset(name: string): HTMLFieldSetElement | null {
+        const fieldsets = container.querySelectorAll<HTMLFieldSetElement>(
+          "section[aria-label='Choose on-prem machines'] fieldset",
+        );
+        return Array.from(fieldsets).find((fieldset) => fieldset.querySelector("legend")?.textContent === name) ?? null;
+      }
+
+      /** The text of the whole machine list, where each problem is shown. */
+      function sectionText(): string {
+        return container.querySelector("section[aria-label='Choose on-prem machines']")?.textContent ?? "";
+      }
+
+      function productionUrl(): HTMLInputElement {
+        return machineFieldset("Production")!.querySelector<HTMLInputElement>("input[type='url']")!;
+      }
+
+      /** Opens Delivery with on-prem hosting chosen: Continue is open until a machine needs a URL. */
+      async function openOnpremDelivery() {
+        mockedListDeploymentProviders.mockResolvedValue([{ id: "onprem-compose", enabled: true }]);
+        await openDeliveryStep("nestjs-api");
+        await waitForCondition(() => hostingRadio("onprem") !== null);
+        act(() => hostingRadio("onprem")!.click());
+        // The machines arrive from the hosts request, after the choice.
+        await waitForCondition(() => machineFieldset("Production") !== null);
+        expect(findButton("Continue")).not.toBeDisabled();
+      }
+
+      it("holds Continue for Production on a machine with no HTTPS URL, and says how to fix it", async () => {
+        await openOnpremDelivery();
+
+        // Test is on the machine with its defaults: it has no problem to name.
+        changeValue(machineFieldset("Test")!.querySelector("select")!, "automatic");
+        expect(findButton("Continue")).not.toBeDisabled();
+
+        changeValue(machineFieldset("Production")!.querySelector("select")!, "automatic");
+        expect(findButton("Continue")).toBeDisabled();
+        // Exactly one message on the page, and it is inside Production.
+        expect(sectionText().split(PRODUCTION_BLOCKER).length - 1).toBe(1);
+        expect(machineFieldset("Production")?.textContent).toContain(PRODUCTION_BLOCKER);
+        expect(machineFieldset("Test")?.textContent).not.toContain(PRODUCTION_BLOCKER);
+        expect(container.textContent).toContain("Continue is off until the host problem above is fixed.");
+
+        // An http address is not HTTPS, so Production stays held. Each change
+        // re-queries the field: the test's framer-motion mock remounts the step.
+        changeValue(productionUrl(), "http://ledger.example.com");
+        expect(findButton("Continue")).toBeDisabled();
+
+        changeValue(productionUrl(), "https://ledger.example.com");
+        expect(findButton("Continue")).not.toBeDisabled();
+        expect(machineFieldset("Production")?.textContent).not.toContain(PRODUCTION_BLOCKER);
+        expect(container.textContent).not.toContain("Continue is off until the host problem above is fixed.");
+      });
+
+      it("unblocks Continue when Production goes back to Assign later", async () => {
+        await openOnpremDelivery();
+
+        changeValue(machineFieldset("Production")!.querySelector("select")!, "automatic");
+        expect(findButton("Continue")).toBeDisabled();
+
+        changeValue(machineFieldset("Production")!.querySelector("select")!, "");
+        expect(findButton("Continue")).not.toBeDisabled();
+        expect(machineFieldset("Production")?.textContent).not.toContain(PRODUCTION_BLOCKER);
+      });
     });
   });
 

@@ -1,6 +1,6 @@
 import { request } from "@/shared/api/request";
 import type {
-  AssignmentConfig,
+  AssignmentRequestConfig,
   MachineAssignment,
   HostAssignment,
   ReadinessCheck,
@@ -21,10 +21,11 @@ export function assignHost(
   projectId: string,
   environmentId: string,
   input: {
-    machineId: string;
+    /** Omitted: the workspace's only connected machine. */
+    machineId?: string;
     expectedAssignmentId: string | null;
     requestId: string;
-    config: AssignmentConfig;
+    config: AssignmentRequestConfig;
   },
 ) {
   return request<MachineAssignment>(
