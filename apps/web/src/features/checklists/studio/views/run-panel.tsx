@@ -135,7 +135,8 @@ function RunBody({
   projectId,
   vm,
   run,
-}: Readonly<{ projectId: string; vm: QaRunViewModel; run: QaRun }>) {
+  summaryShown,
+}: Readonly<{ projectId: string; vm: QaRunViewModel; run: QaRun; summaryShown: boolean }>) {
   const editor = useQaItemEditorViewModel({ projectId, run, onRun: vm.applyRun });
   const signoff = useQaSignoffViewModel({ projectId, run, onRun: vm.applyRun });
   const reopen = useQaReopenViewModel({ projectId, run, onRun: vm.applyRun });
@@ -149,7 +150,7 @@ function RunBody({
     <div className="qa-run">
       <RunHeader run={run} exporter={exporter} />
       <SignoffBanner run={run} subject={commitLabel(run.branch, run.commitSha)} reopen={reopen} />
-      <RunSummary run={run} />
+      {summaryShown ? <RunSummary run={run} /> : null}
       <ol className="qa-run__items">
         {items.map((item, index) => (
           <RunItem
@@ -179,6 +180,7 @@ export function RunPanel({
   branch,
   appRole,
   startBlockedReason = null,
+  summaryShown = true,
 }: Readonly<{
   projectId: string;
   vm: QaRunViewModel;
@@ -189,6 +191,8 @@ export function RunPanel({
    * the Project). Null keeps the Start button.
    */
   startBlockedReason?: string | null;
+  /** False where the host shows the run's progress itself (QA Studio's column heading). */
+  summaryShown?: boolean;
 }>) {
   if (vm.status === "idle" || vm.status === "loading") return <RunSkeleton />;
   if (vm.status === "error") {
@@ -202,5 +206,5 @@ export function RunPanel({
   }
   if (!vm.run) return <StartRun vm={vm} branch={branch} appRole={appRole} blockedReason={startBlockedReason} />;
   // Keyed by run: a reopened or newly started run gets fresh drafts and dialogs.
-  return <RunBody key={vm.run.id} projectId={projectId} vm={vm} run={vm.run} />;
+  return <RunBody key={vm.run.id} projectId={projectId} vm={vm} run={vm.run} summaryShown={summaryShown} />;
 }

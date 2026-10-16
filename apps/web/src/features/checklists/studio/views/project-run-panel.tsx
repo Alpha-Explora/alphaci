@@ -329,6 +329,7 @@ function RunBody({
   run,
   appRole,
   next,
+  summaryShown,
 }: Readonly<{
   deliveryProjectId: string;
   vm: ProjectRunViewModel;
@@ -336,6 +337,7 @@ function RunBody({
   appRole: AppRole | null | undefined;
   /** After a delivered iteration: the waiting sentence, or Start iteration N+1. */
   next: StartIterationViewModel;
+  summaryShown: boolean;
 }>) {
   const permissions = resolveProjectRunPermissions(run, appRole);
   const editor = useProjectVerificationViewModel({
@@ -360,7 +362,7 @@ function RunBody({
       <RequirementsChangedNotice run={run} changed={vm.requirementsChanged} />
       <SignoffBanner run={run} subject={signedSubject(run, shown)} reopen={reopen} />
       <HeadsList heads={vm.heads.length > 0 ? vm.heads : run.repositories} withRun shown={shown} />
-      <RunSummary run={run} />
+      {summaryShown ? <RunSummary run={run} /> : null}
       <RunFilters list={list} />
       {list.status === "empty" ? <p className="pqa-note">{runFilterEmptyText(list.filter)}</p> : null}
       {list.groups.map((group) => (
@@ -435,6 +437,7 @@ export function ProjectRunPanel({
   appRole,
   fallback,
   onOpenHistory,
+  summaryShown,
 }: Readonly<{
   deliveryProjectId: string;
   vm: ProjectRunViewModel;
@@ -442,6 +445,8 @@ export function ProjectRunPanel({
   fallback?: ReactNode;
   /** Opens the page's History tab, where a delivered iteration's run is kept. */
   onOpenHistory?: () => void;
+  /** False where the host shows the run's progress itself (QA Studio's column heading). */
+  summaryShown?: boolean;
 }>) {
   const next = useNextIterationViewModel({ deliveryProjectId, enabled: true, appRole });
   const deliveredNumber = vm.run ? lockedIterationNumber(vm.run.iteration) : null;
@@ -472,6 +477,7 @@ export function ProjectRunPanel({
         run={vm.run}
         appRole={appRole}
         next={next}
+        summaryShown={summaryShown !== false}
       />
     );
   }

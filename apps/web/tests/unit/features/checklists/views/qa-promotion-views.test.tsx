@@ -129,16 +129,16 @@ function dialogButton(name: string): HTMLButtonElement | undefined {
   return [...(dialog()?.querySelectorAll("button") ?? [])].find((button) => button.textContent === name);
 }
 
-describe("QA Studio — the readiness chip in the tab bar", () => {
-  it("draws no promotion strip above the tabs: the chip sits in the tab bar, beside the tablist", async () => {
+describe("QA Studio — the readiness chip in the panel header", () => {
+  it("draws no promotion strip: the chip sits in the panel header, apart from the rail's tablist", async () => {
     setup(promotionWire());
     const container = await studio("admin");
     expect(container.querySelector(".qa-promo")).toBeNull();
     expect(container.querySelector('section[aria-label="Production readiness"]')).toBeNull();
-    const bar = container.querySelector(".qa-coltabs-bar")!;
+    const bar = container.querySelector(".qa-drawer__head > .qa-coltabs-bar")!;
     expect(bar.contains(chip(container))).toBe(true);
-    // The tablist holds only the tabs; the chip and the button sit beside it.
-    const tablist = bar.querySelector('[role="tablist"]')!;
+    // The tablist (on the rail strip) holds only the tabs; the chip and the button are in the header.
+    const tablist = container.querySelector('.qa-rail__strip [role="tablist"]')!;
     expect(tablist.contains(chip(container))).toBe(false);
     expect([...tablist.children].every((child) => child.getAttribute("role") === "tab")).toBe(true);
   });
@@ -354,7 +354,7 @@ describe("QA Studio — Merge to main beside the chip", () => {
     expect(dialog()?.textContent).toContain(
       "Merge tone/storefront-web uat @ 9f8e7d6 into main through pull request #42, with your GitHub account.",
     );
-    // The confirmation is not inside the tab bar (a size container is a containing block).
+    // The confirmation is not inside the header's bar: it is fixed to the viewport.
     expect(container.querySelector(".qa-coltabs-bar")?.contains(dialog())).toBe(false);
     expect(runs.mergePromotion).not.toHaveBeenCalled();
     await click(dialogButton("Merge to main"));
@@ -364,12 +364,12 @@ describe("QA Studio — Merge to main beside the chip", () => {
     expect(outcome.getAttribute("data-tone")).toBe("success");
     expect(outcome.textContent).toContain("Merged into main");
     expect(outcome.textContent).toContain("main updated · merge commit 5555555");
-    // In view: in the run column's live region under the bar, not in the closed popover.
+    // In view: in the run column's live region under the header, not in the closed popover.
     expect(popover(container).hidden).toBe(true);
     expect(popover(container).contains(outcome)).toBe(false);
     const live = outcome.closest('[role="status"]')!;
     expect(live.parentElement?.classList.contains("qa-studio__run")).toBe(true);
-    expect(live.previousElementSibling?.classList.contains("qa-coltabs-bar")).toBe(true);
+    expect(live.previousElementSibling?.classList.contains("qa-drawer__head")).toBe(true);
     expect(runs.promotion).toHaveBeenCalledTimes(2);
     expect(mergeButton(container)!.disabled).toBe(true);
     await click([...outcome.querySelectorAll("button")].find((b) => b.textContent === "Dismiss"));
@@ -436,7 +436,7 @@ describe("QA Studio — Merge to main beside the chip", () => {
     expect(container.querySelectorAll(".qa-promo-chip")).toHaveLength(1);
     expect(container.querySelectorAll("button.qa-promo__merge")).toHaveLength(1);
     expect(chip(container)).toBe(before);
-    expect(drawer.querySelector(".qa-drawer__head")?.nextElementSibling?.classList.contains("qa-coltabs-bar")).toBe(true);
+    expect(drawer.querySelector(".qa-drawer__head")?.lastElementChild?.classList.contains("qa-coltabs-bar")).toBe(true);
     expect(container.querySelector(".qa-run-card")).toBe(runCard);
   });
 

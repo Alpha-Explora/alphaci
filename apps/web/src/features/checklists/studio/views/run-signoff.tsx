@@ -28,11 +28,42 @@ function segmentsLabel(run: Pick<QaRun, "summary">): string {
 }
 
 /** Passed out of total, the run's mix as one bar, and what is still open. */
-export function RunSummary({ run }: Readonly<{ run: Pick<QaRun, "summary"> }>) {
-  const segments = statusSegments(run);
-  const { openDefects, blockers } = run.summary;
+/**
+ * The open defects and blockers under the bar. Inline, only those there are
+ * (none at all when both are zero); in a card, both always.
+ */
+function SummaryFacts({ summary, inline }: Readonly<{ summary: QaRun["summary"]; inline: boolean }>) {
+  const { openDefects, blockers } = summary;
+  const facts = [
+    { shown: !inline || openDefects > 0, tone: openDefects > 0 ? "qa-summary__fact--warn" : undefined, label: openDefectsLabel(openDefects) },
+    { shown: !inline || blockers > 0, tone: blockers > 0 ? "qa-summary__fact--danger" : undefined, label: blockersLabel(blockers) },
+  ].filter((fact) => fact.shown);
+  if (facts.length === 0) return null;
   return (
-    <div className="qa-summary">
+    <ul className="qa-summary__facts">
+      {facts.map((fact) => (
+        <li key={fact.label} className={fact.tone}>
+          {fact.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * The run's progress: passed of total, a bar of every status, and the open
+ * defects and blockers. `card` is its own box in the run; `inline` sits at
+ * the end of the column's first row (QA Studio), so its facts appear only
+ * once there is something to flag.
+ */
+export function RunSummary({
+  run,
+  variant = "card",
+}: Readonly<{ run: Pick<QaRun, "summary">; variant?: "card" | "inline" }>) {
+  const segments = statusSegments(run);
+  const inline = variant === "inline";
+  return (
+    <div className={inline ? "qa-summary qa-summary--inline" : "qa-summary"}>
       <p className="qa-summary__score">
         <span className="qa-summary__passed">{run.summary.byStatus.passed ?? 0}</span>
         <span className="qa-summary__total">/{run.summary.total} passed</span>
@@ -51,14 +82,7 @@ export function RunSummary({ run }: Readonly<{ run: Pick<QaRun, "summary"> }>) {
           />
         ))}
       </div>
-      <ul className="qa-summary__facts">
-        <li className={openDefects > 0 ? "qa-summary__fact--warn" : undefined}>
-          {openDefectsLabel(openDefects)}
-        </li>
-        <li className={blockers > 0 ? "qa-summary__fact--danger" : undefined}>
-          {blockersLabel(blockers)}
-        </li>
-      </ul>
+      <SummaryFacts summary={run.summary} inline={inline} />
     </div>
   );
 }

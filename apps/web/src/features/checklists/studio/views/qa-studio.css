@@ -24,12 +24,12 @@
   min-width: 0;
 }
 
-/* Docked, the studio takes the page body's right gutter and bottom padding,
-   so the rail sits on the window's right edge (as the app rail sits on the
-   left) and both panes run to the bottom edge. */
+/* Docked, the studio takes the page body's right gutter, so the rail sits on
+   the window's right edge (as the app rail sits on the left). The project
+   page drops its bottom padding on a studio tab, so both panes run to the
+   bottom edge and the page itself never scrolls. */
 .qa-studio:not([data-full-screen="true"]) {
   margin-right: calc(-1 * var(--layout-gutter));
-  margin-bottom: -2.5rem;
 }
 
 /* The global ghost button draws a transparent border; give it an edge here. */
@@ -47,7 +47,7 @@
   gap: 0.5rem;
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--border-layer);
-  border-radius: 0.8rem;
+  border-radius: 0;
   background: var(--layer-1);
 }
 
@@ -350,7 +350,7 @@
   border: 1px solid var(--border-layer);
   border-right: 0;
   border-bottom: 0;
-  border-radius: 0.9rem 0 0;
+  border-radius: 0;
   background: var(--layer-1);
   box-shadow: var(--shadow-soft);
 }
@@ -383,9 +383,9 @@
   flex: 0 0 auto;
   flex-direction: column;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.45rem;
   width: calc(var(--qa-rail-closed) - 2px);
-  padding: 0.55rem 0;
+  padding: 0.55rem 0 0;
 }
 
 .qa-rail__pin {
@@ -602,7 +602,7 @@
 /* Desktop: the page itself, no mock browser window. One hairline edge, so a
    page the same colour as the app still shows where it ends. */
 .qa-device[data-frame="browser"] .qa-device__screen {
-  border-radius: 0.6rem;
+  border-radius: 0;
   box-shadow: 0 0 0 1px var(--border-layer);
 }
 
@@ -874,9 +874,9 @@
 
 .qa-run-card__head {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.75rem 1.25rem;
   padding-bottom: 0.85rem;
   border-bottom: 1px solid var(--border);
 }
@@ -1045,6 +1045,85 @@
 .qa-summary__fact--danger {
   color: var(--danger);
   font-weight: 600;
+}
+
+/* In the column's first row (QA Studio, beside "QA testing"): the count over
+   a slim bar at the row's end, no box of its own; the open defects and
+   blockers show under it only when there are any. */
+.qa-summary--inline {
+  flex: 0 1 11rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+  min-width: 7.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.qa-summary--inline .qa-summary__score {
+  justify-content: flex-end;
+}
+
+.qa-summary--inline .qa-summary__passed {
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.qa-summary--inline .qa-summary__total {
+  font-size: 0.74rem;
+}
+
+.qa-summary--inline .qa-summary__bar {
+  height: 0.35rem;
+  border-radius: 0;
+}
+
+.qa-summary--inline .qa-summary__facts {
+  justify-content: flex-end;
+  gap: 0.2rem 0.75rem;
+  font-size: 0.7rem;
+}
+
+/* ── Square edges ────────────────────────────────────────────────────────
+   Every box in the studio has square corners, the rail's panel included;
+   only pills (the chips, filters and status tags) and the buttons keep their
+   rounding. Scoped to the studio: other pages share some of these classes. */
+.qa-studio
+  :is(
+    .qa-panel-state,
+    .qa-skeleton-card,
+    .qa-skeleton-stage,
+    .qa-run-card,
+    .qa-run-card__history,
+    .qa-summary,
+    .qa-run-item,
+    .qa-run-item__facts,
+    .qa-fix-note,
+    .qa-item-editor,
+    .qa-inline-alert,
+    .qa-signoff-banner,
+    .qa-signoff-banner__conditions,
+    .pqa-head,
+    .pqa-alert,
+    .pqa-delivered,
+    .pqa-criteria,
+    .qa-evidence,
+    .qa-evidence__draft,
+    .qa-evidence__thumb,
+    .qa-promo,
+    .qa-promo__row,
+    .qa-promo-outcome,
+    .qa-promo-error,
+    .qa-promo-skeleton,
+    .qa-auto-detail,
+    .qa-auto__warning,
+    .qa-auto__failures,
+    .qa-auto-stage,
+    .qa-auto__empty,
+    .qa-live,
+    .qa-pw-item
+  ) {
+  border-radius: 0;
 }
 
 /* ── Items ───────────────────────────────────────────────────────────────── */
@@ -1588,14 +1667,18 @@
   }
 }
 
+/* One row: the view's name on the left, the readiness chip and Merge to
+   main on the right. As tall as the strip's pin and divider beside it, so
+   the header's rule and the strip's line up. */
 .qa-drawer__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.55rem 0.55rem 0.55rem 0.95rem;
-  border-bottom: 1px solid var(--border);
-  border-radius: 1rem 1rem 0 0;
+  gap: 0.45rem 0.75rem;
+  min-height: 3.25rem;
+  padding: 0.45rem 0.75rem 0.45rem 1rem;
+  border-bottom: 1px solid var(--border-layer);
   background: var(--layer-2);
 }
 
@@ -1624,18 +1707,6 @@
   outline: 2px solid var(--brand);
   outline-offset: 3px;
   border-radius: 0.25rem;
-}
-
-.qa-drawer__progress {
-  padding: 0.1rem 0.5rem;
-  border: 1px solid var(--border-layer);
-  border-radius: var(--radius-pill);
-  background: var(--bg-soft);
-  font-size: 0.72rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
-  white-space: nowrap;
 }
 
 .qa-rail__pin:focus-visible,

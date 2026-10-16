@@ -680,13 +680,18 @@ describe("QA Studio — device viewports and full screen", () => {
     expect(column?.getAttribute("role")).toBe("region");
     expect(container.querySelector(".qa-drawer__title")?.textContent).toBe("QA checklist");
 
-    // The closed strip says what it holds.
+    // The closed strip says what it holds: the pin, then Checklist and Playwright, each with its progress.
     const pin = container.querySelector<HTMLButtonElement>(".qa-rail__pin")!;
     expect(pin.getAttribute("aria-label")).toBe("Keep QA checklist open");
     expect(pin.getAttribute("aria-pressed")).toBe("false");
     expect(pin.getAttribute("aria-controls")).toBe(column?.id);
-    expect(container.querySelector(".qa-rail__count")?.textContent).toBe("0/3");
-    expect(container.querySelector(".qa-rail__summary")?.getAttribute("title")).toBe("QA checklist · 0/3 passed");
+    const checklistTab = container.querySelector<HTMLButtonElement>('.qa-rail__strip .qa-coltab[data-tab="checklist"]')!;
+    expect(checklistTab.querySelector(".qa-coltab__status")?.textContent).toBe("0/3");
+    expect(checklistTab.getAttribute("title")).toBe("QA checklist · 0/3 passed");
+    expect(container.querySelector('.qa-rail__strip .qa-coltab[data-tab="playwright"]')).not.toBeNull();
+    // Progress sits on the column's first row, not in a card of its own.
+    expect(container.querySelector(".qa-run-card__head .qa-summary--inline")?.textContent).toContain("/3 passed");
+    expect(container.querySelectorAll(".qa-summary")).toHaveLength(1);
 
     // Pin: open, the page moves aside; the same column and card stay mounted.
     await click(pin);
@@ -735,12 +740,13 @@ describe("QA Studio — device viewports and full screen", () => {
     expect(container.querySelector(".qa-studio")?.getAttribute("data-full-screen")).toBe("true");
   });
 
-  it("says when CI is failing on the closed rail's dot", async () => {
+  it("says when CI is failing on the closed rail's dot, on the Playwright tab", async () => {
     setup({ run: runAs("qa", { items: ITEMS, automation: automation() }) });
     const container = await studio("qa");
-    const dot = container.querySelector(".qa-rail__dot");
+    const playwrightTab = container.querySelector('.qa-rail__strip .qa-coltab[data-tab="playwright"]');
+    const dot = playwrightTab?.querySelector(".qa-rail__dot");
     expect(dot?.getAttribute("data-tone")).toBe("failed");
-    expect(container.querySelector(".qa-rail__summary")?.textContent).toContain("Automated tests failed");
+    expect(playwrightTab?.textContent).toContain("Automated tests failed");
   });
 });
 
