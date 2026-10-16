@@ -144,9 +144,9 @@ export const PLATFORM_GUIDES: Record<HostPlatform, PlatformGuide> = {
       "Administrator access on the machine",
     ],
     runIn:
-      "Paste it into Windows PowerShell opened as Administrator (the prompt starts with PS C:\\>), signed in as the account that owns Ubuntu. Do not open Ubuntu or type wsl first; the installer sets up Ubuntu for you.",
+      "Paste it into Windows PowerShell opened as Administrator (the prompt starts with PS C:\\>), signed in as the account that owns Ubuntu. Ubuntu must already be installed in WSL2; the installer does not install it and stops with a message if it is missing.",
     fileRunIn:
-      "Double-click the file on the Windows machine, signed in as the account that owns Ubuntu. It asks for administrator permission itself. Do not open Ubuntu or type wsl first; the installer sets up Ubuntu for you.",
+      "Double-click the file on the Windows machine, signed in as the account that owns Ubuntu. It asks for administrator permission itself. Ubuntu must already be installed in WSL2; the installer does not install it and stops with a message if it is missing.",
   },
   ubuntu: {
     label: "Ubuntu",

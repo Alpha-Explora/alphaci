@@ -25,6 +25,7 @@ function vmWith(overrides: Partial<Vm> = {}): Vm {
     enrolled: { name: "Office", platform: "ubuntu" },
     progress: "waiting",
     now: Date.now(),
+    canDownloadInstallFile: true,
     downloadInstallFile: jest.fn(),
     dismiss: jest.fn(),
     ...overrides,
@@ -61,4 +62,16 @@ it("offers the install file beside the copy-paste command, and keeps the command
   expect(
     container.querySelector(".hosts-code--secret pre")?.textContent,
   ).toBe(code);
+});
+
+it("hides the install file for an installer older than 0.2.0, and keeps the copy-paste command", () => {
+  const vm = vmWith({ canDownloadInstallFile: false });
+  act(() => root.render(<EnrollmentCard vm={vm} />));
+
+  expect(buttonNamed("Download install file")).toBeUndefined();
+  expect(container.textContent).not.toContain("scp -p");
+  expect(container.querySelector(".hosts-code pre")?.textContent).toContain(
+    "install.sh",
+  );
+  expect(container.querySelectorAll(".hosts-copy")).toHaveLength(2);
 });

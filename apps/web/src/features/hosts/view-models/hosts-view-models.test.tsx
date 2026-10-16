@@ -56,7 +56,7 @@ const receipt = {
   code: "private-code",
   expiresAt: new Date(Date.now() + 600_000).toISOString(),
   installer: {
-    version: "0.1.0",
+    version: "0.2.0",
     url: "https://api.example/installer",
     sha256: "a".repeat(64),
   },
@@ -138,6 +138,7 @@ it("saves an install file named for the machine, and refuses a code it cannot wr
     seen().setPlatform("ubuntu");
   });
   await act(() => seen().enroll());
+  expect(seen().canDownloadInstallFile).toBe(true);
   act(() => seen().downloadInstallFile());
   expect(downloadBlob).toHaveBeenCalledWith(
     "alphaci-install-office-server.sh",
@@ -153,6 +154,25 @@ it("saves an install file named for the machine, and refuses a code it cannot wr
   act(() => seen().downloadInstallFile());
   expect(downloadBlob).not.toHaveBeenCalled();
   expect(seen().error).toBe("Invalid enrollment code.");
+});
+
+it("offers no install file for an installer older than 0.2.0", async () => {
+  jest.mocked(createHostEnrollment).mockResolvedValue({
+    ...receipt,
+    code: "Qz9_-".repeat(8) + "Qz9",
+    installer: { ...receipt.installer, version: "0.1.9" },
+  });
+  const seen = probe(() => useHostsViewModel("workspace", true));
+  await settle();
+  act(() => {
+    seen().setName("Old server");
+    seen().setPlatform("ubuntu");
+  });
+  await act(() => seen().enroll());
+  expect(seen().canDownloadInstallFile).toBe(false);
+  act(() => seen().downloadInstallFile());
+  expect(downloadBlob).not.toHaveBeenCalled();
+  expect(seen().error).toBeNull();
 });
 
 const options = {

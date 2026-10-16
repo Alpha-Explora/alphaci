@@ -10,6 +10,26 @@ export interface EnrollmentInstallFile {
 /** The server issues 43-character base64url codes. Anything else never reaches a file. */
 const ENROLLMENT_CODE = /^[A-Za-z0-9_-]{43}$/;
 
+/** The first installer release whose enroll.sh and Install-AlphaCIHost.ps1 read the code from a file. */
+export const INSTALL_FILE_MIN_VERSION = "0.2.0";
+
+/**
+ * True when an installer version can run an install file. The parts are
+ * compared as numbers, so "0.10.0" is newer than "0.2.0". Anything that is not
+ * dotted digits counts as too old.
+ */
+export function installFileSupported(version: string): boolean {
+  if (!/^\d+(\.\d+)*$/.test(version)) return false;
+  const have = version.split(".").map(Number);
+  const need = INSTALL_FILE_MIN_VERSION.split(".").map(Number);
+  for (let index = 0; index < Math.max(have.length, need.length); index++) {
+    const a = have[index] ?? 0;
+    const b = need[index] ?? 0;
+    if (a !== b) return a > b;
+  }
+  return true;
+}
+
 /**
  * A self-contained installer for one enrollment. It downloads and checks the
  * agent archive, then gives the one-time code to the installer by file path.
@@ -27,6 +47,8 @@ export function enrollmentInstallFile(
     throw new Error("Invalid installer checksum.");
   if (!ENROLLMENT_CODE.test(receipt.code))
     throw new Error("Invalid enrollment code.");
+  if (!installFileSupported(receipt.installer.version))
+    throw new Error("This installer version has no install file.");
   const install: InstallFacts = {
     url,
     sha256,
@@ -126,6 +148,8 @@ function windowsScript({ url, sha256, apiUrl, code, replace }: InstallFacts) {
     `powershell -NoProfile -ExecutionPolicy Bypass -Command "$t=[IO.File]::ReadAllText($env:ALPHACI_INSTALL_FILE); & ([scriptblock]::Create($t.Substring($t.LastIndexOf(':__POWERSHELL__')+15)))"`,
     'set "ALPHACI_RESULT=%ERRORLEVEL%"',
     "echo.",
+    // 3010: Windows must restart before the installer can finish. Nothing is deleted.
+    'if "%ALPHACI_RESULT%"=="3010" echo Windows needs a restart before AlphaCI can finish. Restart this machine, then run this same file again. The file is kept for that.',
     "pause",
     'if not "%ALPHACI_RESULT%"=="0" exit /b %ALPHACI_RESULT%',
     // Success only: (goto) ends the script first, so the file is no longer in use
@@ -139,6 +163,8 @@ function windowsScript({ url, sha256, apiUrl, code, replace }: InstallFacts) {
     "$enrollCodeFile = Join-Path $env:TEMP ('alphaci-enroll-' + [guid]::NewGuid() + '.txt')",
     "$archive = Join-Path $env:TEMP ('alphaci-agent-' + [guid]::NewGuid() + '.tar.gz')",
     "$directory = Join-Path $env:TEMP ('alphaci-agent-' + [guid]::NewGuid())",
+    "$exitCode = 0",
+    "$keepCodeFile = $false",
     "try {",
     "  # The installer reads the code file and deletes it. Only this user may touch it.",
     "  # WA is needed: Remove-Item fails with read and delete alone, even though",
@@ -154,12 +180,20 @@ function windowsScript({ url, sha256, apiUrl, code, replace }: InstallFacts) {
     '  & "$env:SystemRoot\\System32\\tar.exe" -xzf $archive -C $directory',
     "  if ($LASTEXITCODE -ne 0) { throw 'Archive extraction failed.' }",
     "  Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force",
+    // Reset first, so a stale code from an earlier command cannot pass for the result.
+    "  $LASTEXITCODE = 0",
     `  & (Join-Path $directory 'windows/Install-AlphaCIHost.ps1') -Distro Ubuntu -ClientSubnets LocalSubnet -ApiUrl ${psQuote(apiUrl)}${replace ? " -ReplaceCredential" : ""} -OnlyWhenSignedIn -EnrollCodeFile $enrollCodeFile`,
+    "  $exitCode = $LASTEXITCODE",
+    // 3010: a restart is needed. The installer reads the code file only after its
+    // restart check, so the file stays for the rerun.
+    "  $keepCodeFile = ($exitCode -eq 3010)",
     "} finally {",
-    "  Remove-Item -LiteralPath $enrollCodeFile -Force -ErrorAction SilentlyContinue",
+    "  if (-not $keepCodeFile) { Remove-Item -LiteralPath $enrollCodeFile -Force -ErrorAction SilentlyContinue }",
     "  Remove-Item -LiteralPath $archive -Force -ErrorAction SilentlyContinue",
     "  Remove-Item -LiteralPath $directory -Recurse -Force -ErrorAction SilentlyContinue",
     "}",
+    // Propagate the installer's result: the batch deletes itself only on 0.
+    "exit $exitCode",
     "",
   ].join("\r\n");
 }

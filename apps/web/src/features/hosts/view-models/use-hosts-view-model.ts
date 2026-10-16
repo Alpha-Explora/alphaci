@@ -2,7 +2,10 @@
 import { useEffect, useRef, useState } from "react";
 import { downloadBlob } from "@/shared/browser/download-blob";
 import { createHostEnrollment, listHosts, revokeHost } from "../data/hosts-api";
-import { enrollmentInstallFile } from "../model/enrollment-install-file";
+import {
+  enrollmentInstallFile,
+  installFileSupported,
+} from "../model/enrollment-install-file";
 import {
   enrollmentProgress,
   type EnrollmentReceipt,
@@ -126,7 +129,8 @@ export function useHostsViewModel(
   }
   /** Saves the install file for the enrollment on screen. The code goes only into that file. */
   function downloadInstallFile() {
-    if (!receipt || !enrolled) return;
+    if (!receipt || !enrolled || !installFileSupported(receipt.installer.version))
+      return;
     try {
       const file = enrollmentInstallFile(
         receipt,
@@ -178,6 +182,10 @@ export function useHostsViewModel(
     enroll,
     revoke,
     downloadInstallFile,
+    /** False for installer versions that predate install files. */
+    canDownloadInstallFile: Boolean(
+      receipt && installFileSupported(receipt.installer.version),
+    ),
     startAdding: () => {
       setAdding(true);
       setConfirmation(null);

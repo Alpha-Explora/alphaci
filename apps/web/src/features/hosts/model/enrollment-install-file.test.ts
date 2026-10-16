@@ -11,7 +11,10 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { enrollmentInstallFile } from "./enrollment-install-file";
+import {
+  enrollmentInstallFile,
+  installFileSupported,
+} from "./enrollment-install-file";
 import type { EnrollmentReceipt } from "./host-types";
 
 const bash =
@@ -32,7 +35,7 @@ const receipt: EnrollmentReceipt = {
   code,
   expiresAt: "later",
   installer: {
-    version: "0.1.0",
+    version: "0.2.0",
     url: "https://download.example.com/agent.tar.gz",
     sha256: "a".repeat(64),
   },
@@ -154,6 +157,30 @@ it("refuses malformed checksums and enrollment codes before building anything", 
     expect(() =>
       enrollmentInstallFile({ ...receipt, code: bad }, "ubuntu", "box"),
     ).toThrow("Invalid enrollment code.");
+});
+
+it("offers install files only from installer 0.2.0, comparing version parts as numbers", () => {
+  expect(installFileSupported("0.2.0")).toBe(true);
+  expect(installFileSupported("0.2")).toBe(true);
+  expect(installFileSupported("0.10.0")).toBe(true);
+  expect(installFileSupported("1.0.0")).toBe(true);
+  expect(installFileSupported("0.1.9")).toBe(false);
+  expect(installFileSupported("0.1.10")).toBe(false);
+  expect(installFileSupported("0.1.0")).toBe(false);
+  // Not plain dotted digits: treated as too old rather than guessed at.
+  expect(installFileSupported("0.2.0-rc1")).toBe(false);
+  expect(installFileSupported("v0.2.0")).toBe(false);
+  expect(installFileSupported("")).toBe(false);
+});
+
+it("refuses to build a file for an installer that predates install files", () => {
+  expect(() =>
+    enrollmentInstallFile(
+      { ...receipt, installer: { ...receipt.installer, version: "0.1.0" } },
+      "ubuntu",
+      "box",
+    ),
+  ).toThrow("This installer version has no install file.");
 });
 
 it("uses the machine name only for a sanitized file name", () => {
@@ -317,6 +344,37 @@ describe("Windows install file", () => {
     expect(stop).toBeGreaterThan(-1);
     expect(stop).toBeLessThan(selfDelete);
     expect(selfDelete).toBeLessThan(contents.lastIndexOf(":__POWERSHELL__"));
+  });
+
+  it("keeps the install file and asks for a restart when the installer exits 3010", () => {
+    const restart = contents.indexOf(
+      'if "%ALPHACI_RESULT%"=="3010" echo Windows needs a restart',
+    );
+    const stop = contents.indexOf(
+      'if not "%ALPHACI_RESULT%"=="0" exit /b %ALPHACI_RESULT%',
+    );
+    expect(restart).toBeGreaterThan(-1);
+    expect(restart).toBeLessThan(stop);
+    expect(contents).toContain(
+      "Restart this machine, then run this same file again. The file is kept for that.",
+    );
+  });
+
+  it("propagates the installer's exit code and keeps the code file only for 3010", () => {
+    const call = contents.indexOf("-EnrollCodeFile $enrollCodeFile");
+    const reset = contents.indexOf("$LASTEXITCODE = 0");
+    const result = contents.indexOf("$exitCode = $LASTEXITCODE");
+    const keep = contents.indexOf("$keepCodeFile = ($exitCode -eq 3010)");
+    const finallyAt = contents.indexOf("} finally {");
+    expect(reset).toBeGreaterThan(-1);
+    expect(reset).toBeLessThan(call);
+    expect(call).toBeLessThan(result);
+    expect(result).toBeLessThan(keep);
+    expect(keep).toBeLessThan(finallyAt);
+    expect(contents).toContain(
+      "if (-not $keepCodeFile) { Remove-Item -LiteralPath $enrollCodeFile",
+    );
+    expect(contents).toContain("\r\nexit $exitCode\r\n");
   });
 
   it("finds its PowerShell steps by the label, not by the text in the batch line", () => {
@@ -483,6 +541,14 @@ itOnWindows("keeps itself after a failed run, so it can be run again", () => {
   expect(existsSync(run.batch)).toBe(true);
 });
 
+itOnWindows("keeps itself and asks for a restart when the installer exits 3010", () => {
+  const paths = fixture();
+  const run = runBatch(paths, { fltmc: 0, powershell: 3010 });
+  expect(run.status).toBe(3010);
+  expect(run.output).toContain("needs a restart");
+  expect(existsSync(run.batch)).toBe(true);
+});
+
 const powershellWrapper = String.raw`function Invoke-WebRequest {
   param([string]$Uri, [string]$OutFile)
   Copy-Item -LiteralPath $env:TEST_ARCHIVE -Destination $OutFile
@@ -490,8 +556,11 @@ const powershellWrapper = String.raw`function Invoke-WebRequest {
 `;
 
 // Stands in for the real installer: it records what it was given and the access
-// list of the code file, then deletes the file the way the real one does.
+// list of the code file, then deletes the file the way the real one does. With
+// TEST_INSTALLER_EXIT set, it exits before reading the file, as a restart check
+// does.
 const installerStub = String.raw`param([string]$Distro, [string]$ClientSubnets, [string]$ApiUrl, [switch]$ReplaceCredential, [switch]$OnlyWhenSignedIn, [string]$EnrollCodeFile)
+if ($env:TEST_INSTALLER_EXIT) { exit [int]$env:TEST_INSTALLER_EXIT }
 $entries = @(Get-Acl -LiteralPath $EnrollCodeFile).Access
 [pscustomobject]@{
   code = [IO.File]::ReadAllText($EnrollCodeFile)
@@ -520,7 +589,11 @@ function windowsArchive(paths: Fixture) {
 }
 
 /** Runs the Windows file's PowerShell block for real, with a stub download. */
-function runWindowsBlock(paths: Fixture, sha256: string) {
+function runWindowsBlock(
+  paths: Fixture,
+  sha256: string,
+  options: { installerExit?: number } = {},
+) {
   const { contents } = enrollmentInstallFile(
     { ...receipt, installer: { ...receipt.installer, sha256 } },
     "windows",
@@ -543,6 +616,9 @@ function runWindowsBlock(paths: Fixture, sha256: string) {
         TMP: paths.scratch,
         TEST_ARCHIVE: paths.windowsArchive,
         TEST_INSTALLER_LOG: paths.log,
+        ...(options.installerExit === undefined
+          ? {}
+          : { TEST_INSTALLER_EXIT: String(options.installerExit) }),
       }),
       encoding: "utf8",
     },
@@ -569,6 +645,26 @@ itOnWindows("runs the PowerShell block: the installer gets the code from a user-
   // Delete is granted, and writing the file's data is not (WriteAttributes is).
   expect(String(seen.rights)).toContain("Delete");
   expect(String(seen.rights)).not.toMatch(/WriteData|AppendData|Modify|FullControl/);
+  expect(readdirSync(paths.scratch)).toEqual([]);
+});
+
+itOnWindows("keeps the code file, and returns 3010, when the installer needs a restart", () => {
+  const paths = fixture();
+  const sha256 = windowsArchive(paths);
+  const run = runWindowsBlock(paths, sha256, { installerExit: 3010 });
+  expect(run.status).toBe(3010);
+  // Only the code file is left: the archive and the extracted directory are removed.
+  const left = readdirSync(paths.scratch);
+  expect(left).toHaveLength(1);
+  expect(left[0]).toMatch(/^alphaci-enroll-.*\.txt$/);
+  expect(readFileSync(join(paths.scratch, left[0]), "utf8")).toBe(code);
+});
+
+itOnWindows("removes the code file and passes other installer failures through", () => {
+  const paths = fixture();
+  const sha256 = windowsArchive(paths);
+  const run = runWindowsBlock(paths, sha256, { installerExit: 2 });
+  expect(run.status).toBe(2);
   expect(readdirSync(paths.scratch)).toEqual([]);
 });
 

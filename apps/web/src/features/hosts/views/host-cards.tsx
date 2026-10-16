@@ -1,6 +1,11 @@
 "use client";
 import { useState } from "react";
-import type { HostPlatform, MachineSummary } from "../model/host-types";
+import type {
+  EnrollmentReceipt,
+  HostPlatform,
+  MachineSummary,
+  PlatformGuide,
+} from "../model/host-types";
 import {
   PLATFORM_GUIDES,
   countdownLabel,
@@ -126,6 +131,65 @@ export function AddHostForm({ vm }: { vm: HostsVm }) {
   );
 }
 
+/** Step 2: the install file, when this installer version has one, and the copy-paste command. */
+function InstallStep({
+  vm,
+  receipt,
+  guide,
+  command,
+}: {
+  vm: HostsVm;
+  receipt: EnrollmentReceipt;
+  guide: PlatformGuide;
+  command: string;
+}) {
+  return (
+    <div className="hosts-task">
+      <span className="hosts-task__num">2</span>
+      <div className="hosts-task__body">
+        <p className="hosts-task__title">Run the installer on this machine</p>
+        {vm.canDownloadInstallFile ? (
+          <p className="hosts-muted">{guide.fileRunIn}</p>
+        ) : null}
+        {receipt.replacesMachineId ? (
+          <p className="hosts-muted">
+            This code replaces the machine&apos;s credential. Run the{" "}
+            {vm.canDownloadInstallFile ? "file or command" : "command"} on that
+            machine; its current credential stops working once the code is used.
+          </p>
+        ) : null}
+        {vm.canDownloadInstallFile ? (
+          <div className="hosts-install">
+            <button
+              className="primary-button"
+              type="button"
+              onClick={vm.downloadInstallFile}
+            >
+              Download install file
+            </button>
+            <p className="hosts-muted">
+              The file contains this machine&apos;s one-time code. Keep it
+              private: run <code>chmod 600</code> on the file, then copy it with{" "}
+              <code>scp -p</code>. It deletes itself after a successful install.
+              Delete any other copy once you have used it.
+            </p>
+          </div>
+        ) : null}
+        <p className="hosts-muted">
+          {vm.canDownloadInstallFile
+            ? "Or copy the command instead; the installer then asks for the code in step 3."
+            : "Copy the command and run it on the machine; the installer asks for the code in step 3."}{" "}
+          {guide.runIn}
+        </p>
+        <div className="hosts-code">
+          <pre>{command}</pre>
+          <CopyButton value={command} label="install command" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function EnrollmentCard({ vm }: { vm: HostsVm }) {
   const { receipt, enrolled, progress } = vm;
   if (!receipt || !enrolled || !progress) return null;
@@ -196,43 +260,12 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
         </div>
       </div>
 
-      <div className="hosts-task">
-        <span className="hosts-task__num">2</span>
-        <div className="hosts-task__body">
-          <p className="hosts-task__title">Run the installer on this machine</p>
-          <p className="hosts-muted">{guide.fileRunIn}</p>
-          {receipt.replacesMachineId ? (
-            <p className="hosts-muted">
-              This code replaces the machine&apos;s credential. Run the file or
-              command on that machine; its current credential stops working once
-              the code is used.
-            </p>
-          ) : null}
-          <div className="hosts-install">
-            <button
-              className="primary-button"
-              type="button"
-              onClick={vm.downloadInstallFile}
-            >
-              Download install file
-            </button>
-            <p className="hosts-muted">
-              The file contains this machine&apos;s one-time code. Keep it
-              private: copy it with <code>scp -p</code>, or run{" "}
-              <code>chmod 600</code> on it. It deletes itself after a successful
-              install. Delete any other copy once you have used it.
-            </p>
-          </div>
-          <p className="hosts-muted">
-            Or copy the command instead; the installer then asks for the code in
-            step 3. {guide.runIn}
-          </p>
-          <div className="hosts-code">
-            <pre>{command}</pre>
-            <CopyButton value={command} label="install command" />
-          </div>
-        </div>
-      </div>
+      <InstallStep
+        vm={vm}
+        receipt={receipt}
+        guide={guide}
+        command={command}
+      />
 
       <div className="hosts-task">
         <span className="hosts-task__num">3</span>
@@ -262,9 +295,11 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
         <summary>Troubleshooting and manual verification</summary>
         <ul>
           <li>
-            The install file and the command check the download against
-            SHA-256 <code>{receipt.installer.sha256}</code> before running
-            anything.
+            {vm.canDownloadInstallFile
+              ? "The install file and the command check"
+              : "The command checks"}{" "}
+            the download against SHA-256{" "}
+            <code>{receipt.installer.sha256}</code> before running anything.
             Installer {receipt.installer.version}:{" "}
             <a href={receipt.installer.url}>download the archive</a>.
           </li>
@@ -277,7 +312,9 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
           ) : null}
           <li>
             If the installer reports a missing prerequisite, fix it and run the
-            same file again, or the same command with this code.
+            same{" "}
+            {vm.canDownloadInstallFile ? "file again, or the same command" : "command"}{" "}
+            with this code.
           </li>
         </ul>
       </details>

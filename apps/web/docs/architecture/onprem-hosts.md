@@ -28,7 +28,8 @@ Enrollment/revoke controls follow application hosting roles and non-viewer
 workspace membership. A code remains only in the mounted workspace view state,
 expires at the server timestamp, and can be hidden. The browser can also save
 an install file for the machine (`.sh` on Ubuntu, `.cmd` on Windows). It is
-built from the receipt in the browser and never sent back to the server. Its
+offered only for installer 0.2.0 and later, compared as numbers. It is built
+from the receipt in the browser and never sent back to the server. Its
 body carries the code. Each file hands it to the installer through a file that
 the installer deletes, and the install file deletes itself after a successful
 run, so a failed run keeps it for a rerun. The copy-paste command still has the
