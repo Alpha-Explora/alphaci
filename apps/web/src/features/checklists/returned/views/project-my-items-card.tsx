@@ -17,7 +17,6 @@ import {
   projectMyItemsCount,
 } from "../../model/project-run-rules";
 import type { MyItemsBucket, ProjectFeedItem } from "../../model/project-run-types";
-import { agoLabel } from "../../model/qa-run-rules";
 import { canSetProgress, itemProgressEditable, kindCopy } from "../../model/requirement-rules";
 import { useItemProgressViewModel, type ItemProgressViewModel } from "../view-models/use-item-progress-view-model";
 import {
@@ -25,6 +24,7 @@ import {
   type ProjectMyItemsViewModel,
 } from "../view-models/use-project-my-items-view-model";
 import { ProgressControl } from "./progress-control";
+import { QaFindings } from "./qa-findings";
 
 function Detail({ label, text }: Readonly<{ label: string; text: string | null }>) {
   if (!text) return null;
@@ -33,28 +33,6 @@ function Detail({ label, text }: Readonly<{ label: string; text: string | null }
       <span className="qa-returned__detail-label">{label}</span>
       <p>{text}</p>
     </div>
-  );
-}
-
-/** What QA recorded, on a returned item: who, how bad, and how to reproduce it. */
-function QaFindings({ entry }: Readonly<{ entry: ProjectFeedItem }>) {
-  const runItem = entry.runItem;
-  if (!runItem) return null;
-  const by = runItem.verifiedBy;
-  const ago = agoLabel(runItem.verifiedAt);
-  return (
-    <>
-      {by ? (
-        <p className="qa-returned__meta">
-          <span>
-            Returned by <strong>@{by.login}</strong>
-            {ago ? ` · ${ago}` : ""}
-          </span>
-        </p>
-      ) : null}
-      <Detail label="QA notes" text={runItem.notes} />
-      <Detail label="Reproduction steps" text={runItem.reproductionSteps} />
-    </>
   );
 }
 
@@ -86,7 +64,7 @@ function FeedRow({
         <span>{requirement.name}</span>
       </p>
       <Detail label="Acceptance criteria" text={item.acceptanceCriteria} />
-      {bucket === "returned" ? <QaFindings entry={entry} /> : null}
+      {bucket === "returned" ? <QaFindings runItem={runItem} /> : null}
       <ProgressControl
         item={item}
         editable={itemProgressEditable(item, canSet)}

@@ -11,48 +11,6 @@
   gap: 0.9rem;
 }
 
-.rq-tabs {
-  display: inline-flex;
-  justify-self: start;
-  gap: 0.2rem;
-  padding: 0.2rem;
-  border: 1px solid var(--border-layer);
-  border-radius: var(--radius-pill);
-  background: var(--bg-soft);
-}
-
-.rq-tab {
-  min-height: 2rem;
-  padding: 0 0.95rem;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: none;
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background-color 160ms ease-out,
-    color 160ms ease-out,
-    box-shadow 160ms ease-out;
-}
-
-.rq-tab:hover {
-  color: var(--text-primary);
-}
-
-.rq-tab:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 1px;
-}
-
-.rq-tab[aria-selected="true"] {
-  background: var(--layer-1);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-soft);
-}
-
 .rq-tabpanel {
   display: grid;
   gap: 0.9rem;
@@ -204,6 +162,72 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+/* A chip that matches nothing in this section: one quiet line. */
+.rq-empty--filtered {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* The checklist chips: All, Returned by QA, To do, In progress, Done,
+   each with its count. The same pills as the QA run's filters. */
+.rq-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.rq-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.85rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--layer-2);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.rq-filter:hover {
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+}
+
+.rq-filter:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.rq-filter[aria-pressed="true"] {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+/* QA's word is the one a Developer acts on, so "Returned by QA" reads in its colour when it holds anything. */
+.rq-filter[data-filter="returned"][data-has="true"]:not([aria-pressed="true"]) {
+  border-color: var(--border-amber);
+  color: var(--warning);
+}
+
+.rq-filter__count {
+  min-width: 1.1rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .rq-cards {
@@ -435,6 +459,14 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.4rem 0.75rem;
+}
+
+/* QA's verdict beside the title: severity first, then the status. */
+.rq-item__verdict {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .rq-item__title {
@@ -1133,7 +1165,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rq-tab,
+  .rq-filter,
   .rq-item,
   .rq-meter__fill,
   .rq-rail__entry,

@@ -2,14 +2,15 @@
 
 import type { FormEvent } from "react";
 
-import { VerificationBadge } from "../../items";
-import { ProgressControl, type ItemProgressViewModel } from "../../returned";
+import { SeverityBadge, StatusPill, VerificationBadge } from "../../items";
+import { ProgressControl, QaFindings, type ItemProgressViewModel } from "../../returned";
 import {
   needsTestIdentifier,
   testIdentifierPlaceholder,
   VERIFICATION_TYPE_OPTIONS,
 } from "../../model/checklist-rules";
 import type { ChecklistVerificationType } from "../../model/checklist-types";
+import type { ProjectQaRunItem } from "../../model/project-run-types";
 import { agoLabel } from "../../model/qa-run-rules";
 import { ACCEPTANCE_CRITERIA_MAX, REQUIREMENT_ITEM_TITLE_MAX } from "../../model/requirement-rules";
 import type { RequirementItem, RequirementItemDraft } from "../../model/requirement-types";
@@ -226,9 +227,25 @@ function ItemFoot({
 }
 
 /**
+ * QA's verdict on the item, beside its title: nothing while it is pending
+ * (QA has not looked), and how bad it is when QA failed it or sent it back.
+ */
+function Verdict({ verdict }: Readonly<{ verdict: ProjectQaRunItem | undefined }>) {
+  if (!verdict || verdict.status === "pending") return null;
+  return (
+    <span className="rq-item__verdict">
+      {verdict.defectSeverity ? <SeverityBadge severity={verdict.defectSeverity} /> : null}
+      <StatusPill status={verdict.status} />
+    </span>
+  );
+}
+
+/**
  * One story or item: what it is, how QA knows it is done, and its Progress.
  * Developers get the Progress control and nothing else; Product owners and
- * admins also edit, reorder and delete it.
+ * admins also edit, reorder and delete it. Given QA's `verdict` (the
+ * Project checklist), it shows that too, with QA's notes when the item
+ * was sent back, failed or blocked.
  */
 export function RequirementItemRow({
   item,
@@ -240,6 +257,7 @@ export function RequirementItemRow({
   items,
   progress,
   onReload,
+  verdict,
 }: Readonly<{
   item: RequirementItem;
   index: number;
@@ -250,6 +268,7 @@ export function RequirementItemRow({
   items: RequirementItemsViewModel;
   progress: ItemProgressViewModel;
   onReload: () => void;
+  verdict?: ProjectQaRunItem;
 }>) {
   if (isEditing(items, item.id)) {
     return (
@@ -259,16 +278,18 @@ export function RequirementItemRow({
     );
   }
   return (
-    <li className="rq-item" data-progress={item.progress}>
+    <li className="rq-item" data-progress={item.progress} data-verdict={verdict?.status}>
       <span className="rq-item__index" aria-hidden="true">
         {String(index + 1).padStart(2, "0")}
       </span>
       <div className="rq-item__body">
         <div className="rq-item__head">
           <span className="rq-item__title">{item.title}</span>
+          <Verdict verdict={verdict} />
           {canManage ? <ManageActions item={item} index={index} count={count} vm={items} /> : null}
         </div>
         {item.acceptanceCriteria ? <p className="rq-item__criteria">{item.acceptanceCriteria}</p> : null}
+        <QaFindings runItem={verdict} />
         <ItemFoot item={item} editable={progressEditable} progress={progress} onReload={onReload} />
         <RowError vm={items} itemId={item.id} onReload={onReload} />
       </div>

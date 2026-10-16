@@ -1,5 +1,4 @@
 import {
-  addressLabel,
   automationSignal,
   chromeSize,
   defaultEnvironmentKey,
@@ -22,6 +21,7 @@ import {
   resolveEnvironment,
   resolveResolution,
   scaleLabel,
+  scalePercent,
   studioRailPinnedKey,
   studioEnvironments,
   validateCustomResolution,
@@ -120,8 +120,9 @@ describe("devices", () => {
     expect(orientationLabel("landscape")).toBe("Landscape");
   });
 
-  it("draws the chrome outside the screen: a browser bar on top, a symmetric tablet bezel, a phone chassis that turns", () => {
-    expect(frameChrome("browser", "landscape")).toMatchObject({ top: 40, right: 0, bottom: 0, left: 0 });
+  it("draws no chrome for Desktop, a symmetric tablet bezel and a phone chassis that turns", () => {
+    // Desktop is the page itself, edge to edge: no mock browser bar takes its height.
+    expect(chromeSize(frameChrome("browser", "landscape"))).toEqual({ width: 0, height: 0 });
     expect(frameChrome("tablet", "portrait")).toEqual(frameChrome("tablet", "landscape"));
     const portrait = frameChrome("phone", "portrait");
     const landscape = frameChrome("phone", "landscape");
@@ -166,6 +167,8 @@ describe("fitDeviceScale (both axes, never above 1)", () => {
   it("labels a scaled-down device and says nothing at 100%", () => {
     expect(scaleLabel(0.509)).toBe("Scaled to 51%");
     expect(scaleLabel(1)).toBeNull();
+    expect(scalePercent(0.509)).toBe("51%");
+    expect(scalePercent(1)).toBeNull();
   });
 });
 
@@ -204,11 +207,6 @@ describe("floating checklist launcher", () => {
     ).toBe("none");
   });
 
-  it("puts the host and path in the browser frame's address pill", () => {
-    expect(addressLabel("https://shop.example.com/")).toBe("shop.example.com");
-    expect(addressLabel("https://shop.example.com/checkout?step=2")).toBe("shop.example.com/checkout?step=2");
-    expect(addressLabel("not a url")).toBe("not a url");
-  });
 });
 
 describe("previewPageUrl", () => {

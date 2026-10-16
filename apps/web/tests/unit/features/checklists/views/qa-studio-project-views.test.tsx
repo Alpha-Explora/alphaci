@@ -88,7 +88,7 @@ async function settle() {
 async function studio(
   role: AppRole,
   qaScope?: QaScope,
-  po?: { onOpenQaRun?: () => void },
+  po?: Record<string, never>,
 ): Promise<HTMLElement> {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -101,7 +101,6 @@ async function studio(
         projectName="tone/storefront-web"
         qaScope={qaScope}
         studio={po ? "po" : undefined}
-        onOpenQaRun={po?.onOpenQaRun}
       />,
     );
   });
@@ -219,13 +218,12 @@ const SIGNED_APPROVED = {
 /* PO Studio: QA Studio's shell for a Product owner — the same uat preview,
  * with acceptance and the merge to main in the column. */
 describe("PO Studio", () => {
-  it("stays locked while QA has not signed off, and points at the QA run", async () => {
+  it("stays locked while QA has not signed off, and shows QA's run read-only in its own rail", async () => {
     setup(projectGate({ run: null, reasons: ["The Project has no signed-off QA run yet."] }));
     projectRuns.current.mockResolvedValue(
       normalizeProjectRunCurrent({ run: projectRunWire({ items: [runItemWire({ status: "passed" }), runItemWire({ id: "run-item-2", position: 1 })] }) }),
     );
-    const onOpenQaRun = jest.fn();
-    const container = await studio("lead", PROJECT_SCOPE, { onOpenQaRun });
+    const container = await studio("lead", PROJECT_SCOPE, {});
 
     const panel = container.querySelector("[role='tabpanel']");
     expect(panel?.id).toBe("project-detail-panel-po");
@@ -239,9 +237,41 @@ describe("PO Studio", () => {
     // The preview is the same uat deployment QA tests.
     expect(container.querySelector(".qa-device__frame")?.getAttribute("src")).toBe("https://shop.example.com/");
 
-    const open = [...container.querySelectorAll("button")].find((button) => button.textContent === "View the QA run");
-    await click(open);
-    expect(onOpenQaRun).toHaveBeenCalledTimes(1);
+    // QA's results, a click away and still in PO Studio: closed at first, read-only once open.
+    const toggle = container.querySelector<HTMLButtonElement>(".po-run__toggle")!;
+    expect(toggle.textContent).toBe("View the QA run2 items");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(container.querySelector(".po-run__groups")?.hasAttribute("hidden")).toBe(true);
+    await click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    const items = [...container.querySelectorAll(".po-run__item")];
+    expect(items.map((item) => item.getAttribute("data-status"))).toEqual(["passed", "pending"]);
+    expect(container.querySelector(".po-run__passed")?.textContent).toBe("1 of 2 passed");
+    expect(container.querySelector(".po-run select, .po-run input, .pqa-verify")).toBeNull();
+  });
+
+  it("shows why QA sent an item back, in the rail", async () => {
+    setup(projectGate({ run: null, reasons: ["The Project has no signed-off QA run yet."] }));
+    projectRuns.current.mockResolvedValue(
+      normalizeProjectRunCurrent({
+        run: projectRunWire({
+          items: [
+            runItemWire({
+              status: "returned_to_dev",
+              defectSeverity: "major",
+              notes: "Card declined",
+              verifiedBy: { id: "u", login: "ana-qa" },
+            }),
+          ],
+        }),
+      }),
+    );
+    const container = await studio("lead", PROJECT_SCOPE, {});
+    await click(container.querySelector(".po-run__toggle"));
+    const item = container.querySelector(".po-run__item");
+    expect(item?.querySelector(".qa-severity")).not.toBeNull();
+    expect(item?.textContent).toContain("Returned by @ana-qa");
+    expect(item?.textContent).toContain("Card declined");
   });
 
   it("unlocks once QA signed off Approved: who signed, Reopen, and Merge to main", async () => {
@@ -254,7 +284,8 @@ describe("PO Studio", () => {
     expect(container.querySelector(".qa-signoff-banner")?.textContent).toContain("@ana-qa");
     expect([...container.querySelectorAll("button")].some((button) => button.textContent === "Reopen run")).toBe(true);
     expect([...container.querySelectorAll("button")].some((button) => button.textContent?.includes("Merge to main"))).toBe(true);
-    expect(container.textContent).not.toContain("View the QA run");
+    // The signed-off run stays readable before the merge.
+    expect(container.querySelector(".po-run__toggle")).not.toBeNull();
   });
 
   it("keeps its Acceptance in a rail with its own pin, remembered apart from QA Studio's", async () => {

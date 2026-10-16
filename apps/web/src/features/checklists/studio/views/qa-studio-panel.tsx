@@ -30,6 +30,7 @@ import { PreviewCaptureContext, type PreviewCaptureTarget } from "../view-models
 import { ShowRepositoriesContext } from "../view-models/repository-visibility";
 import { useFloatingChecklistFocus } from "../view-models/use-floating-checklist-focus";
 import { useStudioCaptureTarget } from "../view-models/use-studio-capture-target";
+import { useStudioFitHeight } from "../view-models/use-studio-fit-height";
 import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
@@ -342,7 +343,6 @@ function RunRail({
  */
 function StudioColumn({
   studio,
-  onOpenQaRun,
   qaScope,
   projectMode,
   projectRun,
@@ -355,7 +355,6 @@ function StudioColumn({
   delivery,
 }: Readonly<{
   studio: StudioKind;
-  onOpenQaRun?: () => void;
   qaScope: QaScope;
   projectMode: boolean;
   projectRun: ProjectRunViewModel;
@@ -376,7 +375,6 @@ function StudioColumn({
         promotion={promotion}
         delivery={delivery}
         appRole={appRole}
-        onOpenQaRun={onOpenQaRun}
       />
     );
   }
@@ -643,7 +641,6 @@ export function QaStudioPanel({
   projectName,
   qaScope = REPOSITORY_SCOPE,
   studio = "qa",
-  onOpenQaRun,
   toolbarSlot,
   renderRepositoryChecks,
 }: Readonly<{
@@ -659,8 +656,6 @@ export function QaStudioPanel({
   qaScope?: QaScope;
   /** QA Studio (the default) or PO Studio. Decides the tabpanel id and the column. */
   studio?: StudioKind;
-  /** PO Studio's way to the Project's QA run, while the release candidate is locked. */
-  onOpenQaRun?: () => void;
   /**
    * Where the docked toolbar goes: an element in the project page's tab row.
    * Omitted, the toolbar stays atop the studio; null, the slot is not mounted yet.
@@ -687,6 +682,8 @@ export function QaStudioPanel({
   const roles = repositoryRoles(qaScope);
   // The preview iframe, for an item's "Capture" (cropped to it, the panel made transparent meanwhile).
   const capture = useStudioCaptureTarget();
+  // Docked, the panes run to the window's bottom edge (full screen sizes them by CSS alone).
+  const { attach: attachPanes, style: panesStyle } = useStudioFitHeight<HTMLDivElement>();
   const source = playwrightSource(runs, qaScope);
   const results = scopePlaywrightResults(
     playwrightResults(source, { projectId, repoFullName: projectName ?? null }),
@@ -707,7 +704,11 @@ export function QaStudioPanel({
         data-capturing={String(capture.capturing)}
       >
         <StudioControls vm={viewport} commit={snapshot.commit} fullScreenRef={focus.toggleRef} slot={toolbarSlot} />
-        <div className="qa-studio__panes">
+        <div
+          className="qa-studio__panes"
+          ref={attachPanes}
+          style={panesStyle}
+        >
           <div className="qa-studio__preview" data-framed={previewFramed(viewport)}>
             <PreviewColumn vm={viewport} frameRef={capture.target} />
           </div>
@@ -737,7 +738,6 @@ export function QaStudioPanel({
                 <PreviewCaptureContext.Provider value={capture.target}>
                   <StudioColumn
                     studio={studio}
-                    onOpenQaRun={onOpenQaRun}
                     qaScope={qaScope}
                     projectMode={projectMode}
                     projectRun={projectRun}

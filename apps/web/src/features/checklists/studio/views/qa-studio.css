@@ -9,7 +9,6 @@
    ------------------------------------------------------------------------- */
 
 .qa-studio {
-  --qa-pane-height: clamp(32rem, calc(100dvh - 8rem), 54rem);
   /* The run rail: closed at the app rail's collapsed width, open at 30rem
      (where the tab bar and the automation rows sit on one line), never wider
      than the studio. */
@@ -23,6 +22,14 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   min-width: 0;
+}
+
+/* Docked, the studio takes the page body's right gutter and bottom padding,
+   so the rail sits on the window's right edge (as the app rail sits on the
+   left) and both panes run to the bottom edge. */
+.qa-studio:not([data-full-screen="true"]) {
+  margin-right: calc(-1 * var(--layout-gutter));
+  margin-bottom: -2.5rem;
 }
 
 /* The global ghost button draws a transparent border; give it an edge here. */
@@ -270,8 +277,18 @@
   color: var(--brand);
 }
 
-.qa-preview__device {
+/* How far the page is shrunk: the preview has no caption, so the toolbar says it. */
+.qa-scale {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--radius-pill);
+  background: var(--brand-light);
+  color: var(--brand);
+  font-size: 0.74rem;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* ── Panes ───────────────────────────────────────────────────────────────────
@@ -281,8 +298,12 @@
    the page; pinned (`data-rail="pinned"`) it stays open and the page moves
    aside. The panes reserve the strip, or the open rail when pinned, and are
    the rail's positioning box, so it starts right under the tab row and runs
-   the pane's height. Below 1100px the rail stacks under the page, open. */
+   the pane's height: from where the panes start (`--qa-pane-top`, measured)
+   to the window's bottom edge. Below 1100px the rail stays on the right and
+   opens over the page, pinned or not: there is no width to move it aside. */
 .qa-studio__panes {
+  --qa-pane-height: max(24rem, calc(100dvh - var(--qa-pane-top, 9rem)));
+
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -324,8 +345,12 @@
   flex-direction: row-reverse;
   width: var(--qa-rail-closed);
   overflow: clip;
+  /* On the window's right and bottom edges, like the app rail on the left:
+     an edge only where it meets the page. */
   border: 1px solid var(--border-layer);
-  border-radius: 0.9rem;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 0.9rem 0 0;
   background: var(--layer-1);
   box-shadow: var(--shadow-soft);
 }
@@ -494,50 +519,29 @@
   scrollbar-width: thin;
 }
 
+/* No card, caption or surface around the page: the preview IS the hosted
+   page, so every pixel of the pane goes to it. */
 .qa-preview {
   display: flex;
   flex-direction: column;
   height: 100%;
-  border: 1px solid var(--border-layer);
-  border-radius: 0.9rem;
-  background: var(--layer-1);
-  overflow: hidden;
 }
 
-.qa-preview__caption {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.5rem 0.85rem;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.74rem;
-  color: var(--text-muted);
-}
-
-.qa-preview__scale {
-  padding: 0.1rem 0.45rem;
-  border-radius: var(--radius-pill);
-  background: var(--brand-light);
-  color: var(--brand);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-/* The stage the device sits on: a faint dot grid, so the device reads as an
-   object placed on a surface. The padding is the device's breathing room; the
-   fit rule measures the content box, so it is never counted as screen. */
+/* The stage the device is fitted into. Desktop fills it edge to edge; a
+   tablet or a phone gets a little room for its hardware. The fit rule
+   measures the content box, so the padding is never counted as screen. */
 .qa-stage {
   position: relative;
   display: grid;
   place-items: start center;
   flex: 1 1 auto;
   min-height: 0;
-  padding: 1rem;
+  padding: 0;
   overflow: hidden;
-  background-color: var(--bg-soft);
-  background-image: radial-gradient(var(--border-strong) 1px, transparent 1px);
-  background-size: 18px 18px;
+}
+
+.qa-stage:not([data-frame="browser"]) {
+  padding: 0.75rem;
 }
 
 /* ── Device ───────────────────────────────────────────────────────────────
@@ -595,82 +599,11 @@
   position: absolute;
 }
 
-/* Browser: a window with a top bar — traffic lights, the address, the size. */
-.qa-device[data-frame="browser"] {
-  border-radius: 10px;
-  background: var(--layer-2);
-  box-shadow:
-    0 0 0 1px var(--border-tile),
-    var(--shadow-elevated);
-}
-
+/* Desktop: the page itself, no mock browser window. One hairline edge, so a
+   page the same colour as the app still shows where it ends. */
 .qa-device[data-frame="browser"] .qa-device__screen {
-  border-radius: 0 0 10px 10px;
-}
-
-.qa-device[data-frame="browser"] .qa-device__bar {
-  top: 0;
-  right: 0;
-  left: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.75rem;
-  height: var(--qa-chrome-top);
-  padding: 0 0.8rem;
-  border-bottom: 1px solid var(--border-layer);
-}
-
-.qa-device__dots {
-  display: inline-flex;
-  gap: 0.4rem;
-}
-
-.qa-device__dots > span {
-  width: 0.62rem;
-  height: 0.62rem;
-  border-radius: 50%;
-  background: var(--border-tile);
-}
-
-.qa-device__dots > span:nth-child(1) {
-  background: var(--danger);
-}
-
-.qa-device__dots > span:nth-child(2) {
-  background: var(--warning);
-}
-
-.qa-device__dots > span:nth-child(3) {
-  background: var(--success);
-}
-
-.qa-device__address {
-  justify-self: center;
-  min-width: 0;
-  max-width: min(30rem, 100%);
-  padding: 0.22rem 0.9rem;
-  overflow: hidden;
-  border: 1px solid var(--border-layer);
-  border-radius: var(--radius-pill);
-  background: var(--bg-soft);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.qa-device__size {
-  justify-self: end;
-  padding: 0.12rem 0.45rem;
-  border: 1px solid var(--border-layer);
-  border-radius: 0.35rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.68rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-  white-space: nowrap;
+  border-radius: 0.6rem;
+  box-shadow: 0 0 0 1px var(--border-layer);
 }
 
 /* Tablet and phone: a dark chassis, whichever theme — hardware is dark. */
@@ -825,8 +758,11 @@
   gap: 0.9rem;
   min-height: 20rem;
   padding: 2rem 1.5rem;
+  /* Nothing to show: the message gets the surface the page would have had. */
+  border: 1px solid var(--border-layer);
+  border-radius: 0.9rem;
+  background: var(--layer-1);
   text-align: center;
-  background-image: none;
 }
 
 .qa-stage__reason {
@@ -1585,9 +1521,15 @@
   z-index: 120;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 0.75rem;
-  padding: 0.75rem;
+  /* None on the right or bottom: the rail sits on the window's edges, as docked. */
+  padding: 0.75rem 0 0 0.75rem;
   background: var(--bg-base);
   overscroll-behavior: contain;
+}
+
+/* The studio has no right padding (the rail is on the edge); the toolbar keeps its own. */
+.qa-studio[data-full-screen="true"] .qa-toolbar {
+  margin-right: 0.75rem;
 }
 
 .qa-studio[data-full-screen="true"] .qa-studio__panes {
@@ -1604,6 +1546,9 @@
 
 .qa-studio[data-full-screen="true"] .qa-stage {
   place-items: center;
+}
+
+.qa-studio[data-full-screen="true"] .qa-stage:not([data-frame="browser"]) {
   padding: 1.25rem;
 }
 
@@ -1729,53 +1674,33 @@
 }
 
 /* ── Narrow screens ──────────────────────────────────────────────────────── */
-@media (max-width: 1100px) {
-  /* No width to float over: the rail stacks under the page, open, and its
-     strip (the pin among it) has nothing to do. */
-  .qa-studio:not([data-full-screen="true"]) .qa-studio__panes,
-  .qa-studio[data-rail="pinned"]:not([data-full-screen="true"]) .qa-studio__panes {
-    min-height: 0;
-    padding-right: 0;
-  }
-
-  .qa-studio:not([data-full-screen="true"]) .qa-rail {
-    position: static;
-    width: auto;
-    overflow: visible;
-  }
-
-  .qa-studio:not([data-full-screen="true"]) .qa-rail > .qa-studio__run {
-    display: flex;
-    border-right: 0;
-    animation: none;
-  }
-
-  .qa-studio:not([data-full-screen="true"]) .qa-rail__strip {
+/* The tab row has no room for the scale beside the tabs: it would push them
+   onto a second line. Full screen keeps it. */
+@media (max-width: 1199px) {
+  .qa-toolbar[data-placement="tab-row"] .qa-scale {
     display: none;
   }
+}
 
-  .qa-studio__preview {
-    height: 32rem;
+@media (max-width: 1100px) {
+  /* The rail stays on the right edge, a strip as on a wide screen. Too narrow
+     to move the page aside, so pinned it opens over the page too: the page
+     keeps its width and the strip is all it ever gives up. */
+  .qa-studio[data-rail="pinned"] .qa-studio__panes {
+    padding-right: calc(var(--qa-rail-closed) + 0.75rem);
   }
 
-  .qa-studio__run,
-  .qa-colpanel > .qa-run-card {
-    max-height: none;
-  }
-
-  .qa-colpanel[data-tab="playwright"],
-  .qa-studio__run[data-scroll="column"] > .qa-colpanel {
-    overflow-y: visible;
-  }
-
-  .qa-run > .qa-run__items {
-    overflow-y: visible;
+  .qa-rail[data-pinned="true"] {
+    border-color: var(--border-tile);
+    box-shadow: var(--shadow-hard);
   }
 }
 
 @media (max-width: 560px) {
-  .qa-studio__preview {
-    height: 28rem;
+  /* A phone: the open rail covers the page but leaves the left edge showing,
+     so it still reads as a panel over it. */
+  .qa-studio {
+    --qa-rail-open: calc(100% - 1rem);
   }
 
   .qa-toolbar .qa-toolbar__env {
@@ -1794,16 +1719,12 @@
     max-width: none;
   }
 
-  .qa-device__size {
-    display: none;
-  }
-
-  .qa-stage {
-    padding: 0.75rem;
+  .qa-stage:not([data-frame="browser"]) {
+    padding: 0.5rem;
   }
 
   .qa-studio[data-full-screen="true"] {
-    padding: 0.5rem;
+    padding: 0.5rem 0 0 0.5rem;
   }
 
   .qa-run-item {
