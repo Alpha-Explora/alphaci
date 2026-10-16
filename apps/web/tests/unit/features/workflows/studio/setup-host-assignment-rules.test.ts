@@ -59,7 +59,7 @@ it("still requires production ingress when production is assigned now", () => {
         hostAssignment: defaultHostAssignment(production, "frontend"),
       },
     ]),
-  ).toMatch(/HTTPS ingress/);
+  ).toMatch(/HTTPS URL/);
 });
 
 it("explains when a machine choice is needed", () => {

@@ -1,24 +1,28 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { healthyHosts, type MachineSummary } from "@/features/hosts";
 import type { EnvironmentDraft } from "../model/project-environments-rules";
 import { defaultHostAssignment } from "../model/setup-host-assignment-rules";
-import { useSetupHostSelection } from "../view-models/use-setup-host-selection";
+import type { useSetupHostSelection } from "../view-models/use-setup-host-selection";
 
 /** Select value for the workspace's only connected machine, chosen by the server. */
 const AUTOMATIC = "automatic";
 
 export function SetupHostSelection({
   environments,
+  hostProblems,
+  hostSelection: vm,
   onChange,
   slot,
 }: {
   environments: readonly EnvironmentDraft[];
+  /** Each environment's problem, or null; computed once by the wizard. */
+  hostProblems: readonly (string | null)[];
+  hostSelection: ReturnType<typeof useSetupHostSelection>;
   onChange: (value: EnvironmentDraft[]) => void;
   slot: "frontend" | "backend";
 }) {
-  const vm = useSetupHostSelection();
   const workspace = useRef(vm.workspaceId);
   useEffect(() => {
     if (workspace.current === vm.workspaceId) return;
@@ -105,6 +109,7 @@ export function SetupHostSelection({
               environment={environment}
               index={index}
               choices={choices}
+              problem={hostProblems[index] ?? null}
               select={select}
               change={change}
             />
@@ -126,12 +131,15 @@ function SetupHostRow({
   environment,
   index,
   choices,
+  problem,
   select,
   change,
 }: {
   environment: EnvironmentDraft;
   index: number;
   choices: readonly MachineSummary[];
+  /** Why this environment's assignment cannot be sent yet, or null. */
+  problem: string | null;
   select: (index: number, value: string) => void;
   change: (
     index: number,
@@ -139,15 +147,20 @@ function SetupHostRow({
     value: string,
   ) => void;
 }) {
+  const messageId = useId();
   const binding = environment.hostAssignment;
   const single = choices.length === 1 ? choices[0]! : null;
   const value = binding ? (binding.machineId ?? AUTOMATIC) : "";
+  // The problem is plain text, read with the fields it concerns; the Delivery
+  // step's one live region announces that Continue is held.
+  const describedBy = problem ? messageId : undefined;
   return (
     <fieldset>
       <legend>{environment.displayName}</legend>
       <label>
         Machine{" "}
         <select
+          aria-describedby={describedBy}
           value={value}
           onChange={(event) => select(index, event.target.value)}
         >
@@ -172,9 +185,15 @@ function SetupHostRow({
           )}
         </select>
       </label>
+      {problem ? (
+        <p className="wizard-field__hint wizard-field__hint--error" id={messageId}>
+          {problem}
+        </p>
+      ) : null}
       <SetupAssignmentFields
         environment={environment}
         index={index}
+        problemId={describedBy}
         change={change}
       />
     </fieldset>
@@ -184,13 +203,19 @@ function SetupHostRow({
 function SetupAssignmentFields({
   environment,
   index,
+  problemId,
   change,
 }: Pick<
   Parameters<typeof SetupHostRow>[0],
   "environment" | "index" | "change"
->) {
+> & { problemId?: string }) {
   const binding = environment.hostAssignment;
   if (!binding) return null;
+  // The fields of an assignment that has a problem are marked invalid and read
+  // the problem out with the field.
+  const invalid = problemId
+    ? { "aria-invalid": true, "aria-describedby": problemId }
+    : {};
   return (
     <>
       {" "}
@@ -201,6 +226,7 @@ function SetupAssignmentFields({
           min={1}
           max={65535}
           required
+          {...invalid}
           value={binding.config.ports[0]?.containerPort ?? 3000}
           onChange={(event) =>
             change(index, "containerPort", event.target.value)
@@ -211,6 +237,7 @@ function SetupAssignmentFields({
         Health path{" "}
         <input
           required
+          {...invalid}
           value={binding.config.health[0]?.path ?? ""}
           onChange={(event) => change(index, "health", event.target.value)}
         />
@@ -221,6 +248,7 @@ function SetupAssignmentFields({
           <input
             type="url"
             required
+            {...invalid}
             value={binding.config.ingress.publicUrl ?? ""}
             onChange={(event) => change(index, "ingress", event.target.value)}
           />
