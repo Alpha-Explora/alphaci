@@ -11,6 +11,24 @@ export function AssignmentForm({ vm }: { vm: AssignmentVm }) {
         void vm.assign();
       }}
     >
+      <MachineField vm={vm} />
+      {vm.config.ports.map((port) => (
+        <PortFields key={port.slot} port={port} vm={vm} />
+      ))}
+      <IngressFields vm={vm} />
+      <p className="hassign-hint">
+        AlphaCI picks a free host port on the machine for each service. The
+        health path must return a success response. Production needs an HTTPS
+        ingress URL.
+      </p>
+      <AssignmentActions vm={vm} />
+    </form>
+  );
+}
+/** A choice only when several machines are connected. */
+function MachineField({ vm }: { vm: AssignmentVm }) {
+  if (vm.choices.length > 1)
+    return (
       <label className="hassign-field">
         <span className="hassign-field__label">Machine</span>
         <select
@@ -18,24 +36,29 @@ export function AssignmentForm({ vm }: { vm: AssignmentVm }) {
           onChange={(event) => vm.setSelected(event.target.value)}
           required
         >
-          <option value="">Choose an enrolled machine</option>
-          {vm.hosts.map((host) => (
+          <option value="">Choose a connected machine</option>
+          {vm.choices.map((host) => (
             <option value={host.id} key={host.id}>
               {host.name} · {hostConnectionLabel(host)}
             </option>
           ))}
         </select>
       </label>
-      {vm.config.ports.map((port) => (
-        <PortFields key={port.slot} port={port} vm={vm} />
-      ))}
-      <IngressFields vm={vm} />
-      <p className="hassign-hint">
-        Each environment on a machine needs its own host port. The health path
-        must return a success response. Production needs an HTTPS ingress URL.
-      </p>
-      <AssignmentActions vm={vm} />
-    </form>
+    );
+  const machine =
+    vm.hosts.find((host) => host.id === vm.selected) ?? vm.automatic;
+  return (
+    <div className="hassign-field">
+      <span className="hassign-field__label">Machine</span>
+      {machine ? (
+        <p className="hassign-summary__name">{machine.name}</p>
+      ) : (
+        <p role="status" className="hassign-hint">
+          No machine is connected. Enroll a host, or start its agent, then
+          assign.
+        </p>
+      )}
+    </div>
   );
 }
 function PortFields({
@@ -50,19 +73,6 @@ function PortFields({
       <legend className="hassign-field__label">{port.slot}</legend>
       <div className="hassign-ports__grid">
         <label className="hassign-field">
-          <span className="hassign-field__hint">Host port</span>
-          <input
-            type="number"
-            required
-            min={1}
-            max={65535}
-            value={port.hostPort}
-            onChange={(event) =>
-              vm.port(port.slot, "hostPort", event.target.value)
-            }
-          />
-        </label>
-        <label className="hassign-field">
           <span className="hassign-field__hint">Container port</span>
           <input
             type="number"
@@ -70,9 +80,7 @@ function PortFields({
             min={1}
             max={65535}
             value={port.containerPort}
-            onChange={(event) =>
-              vm.port(port.slot, "containerPort", event.target.value)
-            }
+            onChange={(event) => vm.port(port.slot, event.target.value)}
           />
         </label>
         <label className="hassign-field">
@@ -149,7 +157,7 @@ function AssignmentActions({ vm }: { vm: AssignmentVm }) {
         <button
           className="primary-button"
           type="submit"
-          disabled={vm.busy || !vm.selected}
+          disabled={vm.busy || !vm.canAssign}
         >
           {assignLabel(vm)}
         </button>

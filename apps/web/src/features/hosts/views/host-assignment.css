@@ -71,9 +71,9 @@
 .hassign-alert {
   margin: 0;
   padding: 0.65rem 0.85rem;
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  border: 1px solid var(--border-danger);
   border-radius: 8px;
-  background: rgba(248, 113, 113, 0.08);
+  background: var(--danger-light);
   font-size: 0.8rem;
   color: var(--text-primary);
 }

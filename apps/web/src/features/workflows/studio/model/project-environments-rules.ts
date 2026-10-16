@@ -15,9 +15,10 @@ export type EnvironmentRunsOn = "managed" | "onprem";
 
 export interface EnvironmentDraft {
   hostAssignment?: {
-    machineId: string;
+    /** Omitted: the workspace's only connected machine. */
+    machineId?: string;
     requestId: string;
-    config: import("@/shared/api/contracts").OnpremAssignmentConfig;
+    config: import("@/shared/api/contracts").OnpremAssignmentRequestConfig;
   };
   slug: string;
   displayName: string;

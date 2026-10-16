@@ -201,6 +201,13 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
         <div className="hosts-task__body">
           <p className="hosts-task__title">Copy and run this command</p>
           <p className="hosts-muted">{guide.runIn}</p>
+          {receipt.replacesMachineId ? (
+            <p className="hosts-muted">
+              This code replaces the machine&apos;s credential. Run the command
+              on that machine; its current credential stops working once the
+              code is used.
+            </p>
+          ) : null}
           <div className="hosts-code">
             <pre>{command}</pre>
             <CopyButton value={command} label="install command" />
@@ -242,10 +249,9 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
           </li>
           {enrolled.platform === "windows" ? (
             <li>
-              The command opens ports 8080–8082 to your local network. If an
-              environment uses another port, rerun it with that port added to{" "}
-              <code>-Ports</code>. A restart may be needed the first time WSL is
-              set up.
+              The host opens the port of each environment assigned to it to your
+              local network, and closes it when the environment is unassigned. A
+              restart may be needed the first time WSL is set up.
             </li>
           ) : null}
           <li>
