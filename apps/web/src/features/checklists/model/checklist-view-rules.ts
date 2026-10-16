@@ -7,7 +7,7 @@ import type { AppRole } from "@/shared/api/contracts";
  * - `author`: the Product owner (and an admin) writes the requirements and
  *   reads where every item stands.
  * - `developer`: the same checklist, moving each item To do, In progress
- *   or Done, with what QA sent back on top.
+ *   or Done, with QA's verdict on each and chips to narrow it.
  * - `qa`: verifies the items on uat (the same run QA Studio shows).
  */
 export type ChecklistView = "author" | "developer" | "qa";

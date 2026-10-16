@@ -10,14 +10,13 @@ jest.mock("../../../../../../src/features/checklists/project", () => ({
   ProjectChecklistsPanel: ({ myItems }: { myItems?: React.ReactNode }) => <div data-testid="panel">{myItems}</div>,
 }));
 jest.mock("../../../../../../src/features/checklists/requirements", () => ({
-  ProjectQaWorkspace: (props: { deliveryProjectId: string; appRole: string; enabled?: boolean; itemsFallback?: React.ReactNode }) => (
+  ProjectQaWorkspace: (props: { deliveryProjectId: string; appRole: string; enabled?: boolean }) => (
     <div
       data-testid="qa-workspace"
       data-project={props.deliveryProjectId}
       data-role={props.appRole}
       data-enabled={String(props.enabled)}
     >
-      {props.itemsFallback}
     </div>
   ),
 }));
@@ -79,11 +78,13 @@ describe("Checklists tab My QA items", () => {
     expect(container.querySelector("[data-testid='panel']")).toBeNull();
   });
 
-  it("hands the workspace the per-repository card as its older-backend fallback", () => {
+  /* A Project's checklist carries QA's word on each item itself, so the
+   * per-repository list has no place inside it. */
+  it("gives the Project workspace no per-repository list", () => {
     const vm = { ...VM, appRole: "member", qaChecklistsEnabled: true } as unknown as ProjectDetailTabsViewModel;
-    const item = render(PROJECT_SCOPE, vm).querySelector("[data-testid='qa-workspace'] [data-testid='my-items']");
-    expect(item?.textContent).toBe("p1");
-    expect(item?.getAttribute("data-elsewhere")).toBe("false");
+    const container = render(PROJECT_SCOPE, vm);
+    expect(container.querySelector("[data-testid='qa-workspace']")).not.toBeNull();
+    expect(container.querySelector("[data-testid='my-items']")).toBeNull();
   });
 
   it("keeps the per-repository panel while the Project is still being read", () => {
