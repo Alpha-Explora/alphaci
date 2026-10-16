@@ -12,8 +12,7 @@ import { studioChecksRenderer } from "./studio-repository-checks";
 /**
  * The PO Studio tab: QA Studio's shell in its Product owner mode. The studio
  * belongs to the checklists domain; this file only adapts the project page's
- * panel contract to it. "View the QA run" opens the Checklists tab, where the
- * Project's QA run is.
+ * panel contract to it. QA's results show read-only in the studio's own rail.
  */
 export function PoStudioTabPanel({
   project,
@@ -37,7 +36,6 @@ export function PoStudioTabPanel({
       toolbarSlot={studioToolbarSlot}
       renderRepositoryChecks={studioChecksRenderer(project.id, vm)}
       studio="po"
-      onOpenQaRun={() => vm.setTab("checklists")}
     />
   );
 }

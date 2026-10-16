@@ -38,8 +38,113 @@
   color: var(--text-secondary);
 }
 
-.po-accept__open {
+/* ── The QA run, read-only ────────────────────────────────────────────────
+   Closed behind one button so the acceptance stays on top; open, each
+   Feature with "n of m passed" and its items with QA's verdict and, for an
+   item sent back, failed or blocked, QA's findings (shared with Progress). */
+.po-run {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.po-run__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   justify-self: start;
+}
+
+.po-run__count {
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.po-run__groups {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.po-run__groups[hidden] {
+  display: none;
+}
+
+.po-run__group {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.po-run__group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.5rem;
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.po-run__kind {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.po-run__name {
+  flex: 1 1 10rem;
+  min-width: 0;
+  font-weight: 650;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.po-run__passed {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.po-run__items {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.po-run__item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.6rem;
+  background: var(--layer-2);
+}
+
+.po-run__item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.35rem 0.6rem;
+}
+
+.po-run__title {
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.po-run__verdict {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 /* ── Delivery (Iterations) ────────────────────────────────────────────────

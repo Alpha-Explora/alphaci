@@ -67,7 +67,7 @@ function emptyCopy(kind: RequirementKind, canManage: boolean): string {
 }
 
 /**
- * The Developer's chips: everything, or only what QA sent back, what is left
+ * The checklist chips: everything, or only what QA sent back, what is left
  * to do, in progress or Done, each with how many items it holds.
  */
 function FilterChips({
@@ -224,7 +224,7 @@ function DeliveredRequirements({
 }
 
 /**
- * The chips' state. Only a filterable panel (the Developer's checklist) has
+ * The chips' state. Only a filterable panel (the Project checklist, Product owner and Developer) has
  * one; it opens on "Returned by QA" for Home's #my-qa-items link. Read once
  * at mount: the panel renders client-side, after its Project has loaded.
  */
@@ -268,7 +268,7 @@ function useFeatureRequest(
  * Product owners and admins write them; Developers move Progress; the QA
  * Team reads them here and verifies them on the Project QA run.
  *
- * The Developer's checklist also passes `verdicts` (QA's word on each item,
+ * The Project checklist (Product owner and Developer) also passes `verdicts` (QA's word on each item,
  * from the current run) and `filterable` (the chips above the Features).
  */
 export function ProjectRequirementsPanel({
@@ -293,9 +293,9 @@ export function ProjectRequirementsPanel({
   onFeatureCount?: (count: number) => void;
   /** Opens the page's History tab, where a delivered iteration's Features are kept. */
   onOpenHistory?: () => void;
-  /** QA's verdict on each item, by item id (the Developer's checklist). */
+  /** QA's verdict on each item, by item id (the Project checklist, Product owner and Developer). */
   verdicts?: ItemVerdicts;
-  /** Show the filter chips (the Developer's checklist). */
+  /** Show the filter chips (the Project checklist, Product owner and Developer). */
   filterable?: boolean;
 }>) {
   const vm = useProjectRequirementsViewModel({ deliveryProjectId, enabled, appRole });
@@ -345,7 +345,7 @@ function kindRequirements(vm: ProjectRequirementsViewModel, kind: RequirementKin
   return kind === "functional" ? vm.functional : vm.system;
 }
 
-/** The loaded list: the role line, the chips (the Developer's), each shown kind, and the author's dialogs. */
+/** The loaded list: the role line, the chips, each shown kind, and the author's dialogs. */
 function ReadyRequirements({
   vm,
   dialog,

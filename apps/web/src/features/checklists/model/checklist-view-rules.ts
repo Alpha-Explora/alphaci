@@ -5,7 +5,7 @@ import type { AppRole } from "@/shared/api/contracts";
  * works one part of the flow, so each sees only that part.
  *
  * - `author`: the Product owner (and an admin) writes the requirements and
- *   reads where every item stands.
+ *   reads where every item stands: the chips' counts and QA's verdicts.
  * - `developer`: the same checklist, moving each item To do, In progress
  *   or Done, with QA's verdict on each and chips to narrow it.
  * - `qa`: verifies the items on uat (the same run QA Studio shows).

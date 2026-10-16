@@ -172,7 +172,7 @@
   color: var(--text-secondary);
 }
 
-/* The Developer's chips: All, Returned by QA, To do, In progress, Done,
+/* The checklist chips: All, Returned by QA, To do, In progress, Done,
    each with its count. The same pills as the QA run's filters. */
 .rq-filters {
   display: flex;

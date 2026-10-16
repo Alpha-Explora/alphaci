@@ -41,21 +41,33 @@ function RunView({
 }
 
 /**
- * The Developer's checklist: the Features, each item's Progress to move, and
- * QA's verdict on it from the current run (its notes when it was sent back,
- * failed or blocked), narrowed by the chips. No run yet, or an older backend
- * without Project runs, simply means no verdicts.
+ * The checklist a Product owner and a Developer share: the Features with each
+ * item's Progress and QA's verdict on it from the current run (its notes when
+ * it was sent back, failed or blocked), and the chips, whose counts are where
+ * the Project stands. What each can change is the requirements panel's (the
+ * server's) to decide: the Product owner writes, the Developer moves Progress.
+ * No run yet, or an older backend without Project runs, means no verdicts.
  */
-function DeveloperView({
+function ChecklistWithVerdicts({
   deliveryProjectId,
   appRole,
   onOpenHistory,
-}: Readonly<{ deliveryProjectId: string; appRole: AppRole | null | undefined; onOpenHistory?: () => void }>) {
+  newFeatureRequest,
+  onFeatureCount,
+}: Readonly<{
+  deliveryProjectId: string;
+  appRole: AppRole | null | undefined;
+  onOpenHistory?: () => void;
+  newFeatureRequest?: number;
+  onFeatureCount?: (count: number) => void;
+}>) {
   const run = useProjectRunViewModel({ deliveryProjectId, enabled: true });
   return (
     <ProjectRequirementsPanel
       deliveryProjectId={deliveryProjectId}
       appRole={appRole}
+      newFeatureRequest={newFeatureRequest}
+      onFeatureCount={onFeatureCount}
       onOpenHistory={onOpenHistory}
       verdicts={verdictsBySourceItem(run.run)}
       filterable
@@ -106,7 +118,7 @@ export function ProjectQaWorkspace({
       <div className="rq-tabpanel" role="region" aria-label={CHECKLIST_VIEW_LABELS[view]}>
         {/* Between iterations the requirements say so themselves, with Start iteration N+1 for an author. */}
         {view === "author" ? (
-          <ProjectRequirementsPanel
+          <ChecklistWithVerdicts
             deliveryProjectId={deliveryProjectId}
             appRole={appRole}
             newFeatureRequest={pendingRequest}
@@ -118,7 +130,7 @@ export function ProjectQaWorkspace({
           <RunView deliveryProjectId={deliveryProjectId} appRole={appRole} onOpenHistory={onOpenHistory} />
         ) : null}
         {view === "developer" ? (
-          <DeveloperView deliveryProjectId={deliveryProjectId} appRole={appRole} onOpenHistory={onOpenHistory} />
+          <ChecklistWithVerdicts deliveryProjectId={deliveryProjectId} appRole={appRole} onOpenHistory={onOpenHistory} />
         ) : null}
       </div>
     </section>

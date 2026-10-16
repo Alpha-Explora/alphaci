@@ -343,7 +343,6 @@ function RunRail({
  */
 function StudioColumn({
   studio,
-  onOpenQaRun,
   qaScope,
   projectMode,
   projectRun,
@@ -356,7 +355,6 @@ function StudioColumn({
   delivery,
 }: Readonly<{
   studio: StudioKind;
-  onOpenQaRun?: () => void;
   qaScope: QaScope;
   projectMode: boolean;
   projectRun: ProjectRunViewModel;
@@ -377,7 +375,6 @@ function StudioColumn({
         promotion={promotion}
         delivery={delivery}
         appRole={appRole}
-        onOpenQaRun={onOpenQaRun}
       />
     );
   }
@@ -644,7 +641,6 @@ export function QaStudioPanel({
   projectName,
   qaScope = REPOSITORY_SCOPE,
   studio = "qa",
-  onOpenQaRun,
   toolbarSlot,
   renderRepositoryChecks,
 }: Readonly<{
@@ -660,8 +656,6 @@ export function QaStudioPanel({
   qaScope?: QaScope;
   /** QA Studio (the default) or PO Studio. Decides the tabpanel id and the column. */
   studio?: StudioKind;
-  /** PO Studio's way to the Project's QA run, while the release candidate is locked. */
-  onOpenQaRun?: () => void;
   /**
    * Where the docked toolbar goes: an element in the project page's tab row.
    * Omitted, the toolbar stays atop the studio; null, the slot is not mounted yet.
@@ -744,7 +738,6 @@ export function QaStudioPanel({
                 <PreviewCaptureContext.Provider value={capture.target}>
                   <StudioColumn
                     studio={studio}
-                    onOpenQaRun={onOpenQaRun}
                     qaScope={qaScope}
                     projectMode={projectMode}
                     projectRun={projectRun}
