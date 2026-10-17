@@ -275,7 +275,7 @@ export function ProjectRunItem(props: ItemProps) {
   const { item, index, editor } = props;
   const open = editor.openItemId === item.id;
   return (
-    <li className={`qa-run-item${open ? " qa-run-item--open" : ""}`}>
+    <li className={`qa-run-item${open ? " qa-run-item--open" : ""}`} data-status={item.status}>
       <StatusMarker status={item.status} index={index} />
       <div className="qa-run-item__body">
         <div className="qa-run-item__head">

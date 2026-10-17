@@ -317,7 +317,7 @@ export function RunItem(props: ItemProps) {
   const readOnly =
     run.status === "open" && !canEditItem(item, run) && !canRequestRetest(item, run);
   return (
-    <li className={`qa-run-item${editor.openItemId === item.id ? " qa-run-item--open" : ""}`}>
+    <li className={`qa-run-item${editor.openItemId === item.id ? " qa-run-item--open" : ""}`} data-status={item.status}>
       <StatusMarker status={item.status} index={index} />
       <div className="qa-run-item__body">
         <ItemHead item={item} run={run} automation={props.automation} />
