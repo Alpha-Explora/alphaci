@@ -15,13 +15,13 @@ export interface StudioColumnTabViewModel {
   /** True once the Playwright tab has been shown: its extra reads wait for it. */
   playwrightOpened: boolean;
   select: (tab: StudioColumnTab) => void;
-  /** Left / Right move between the tabs (and focus), wrapping; Home / End jump. */
+  /** Up / Down (the rail's tabs are stacked), or Left / Right, move between the tabs (and focus), wrapping; Home / End jump. */
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
   /** Where each tab button registers, so arrow keys can focus it. */
   tabRef: (tab: StudioColumnTab) => (node: HTMLButtonElement | null) => void;
 }
 
-const STEPS: Readonly<Record<string, number>> = { ArrowRight: 1, ArrowLeft: -1 };
+const STEPS: Readonly<Record<string, number>> = { ArrowDown: 1, ArrowUp: -1, ArrowRight: 1, ArrowLeft: -1 };
 
 function keyTarget(key: string, current: StudioColumnTab): StudioColumnTab | null {
   if (key === "Home") return STUDIO_COLUMN_TABS[0];

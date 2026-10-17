@@ -2708,7 +2708,7 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   // Unpinned under the pointer, it folds at once; away from it, it stays folded.
   await page.mouse.move(200, 450);
   await absent(drawer, 'the folded rail');
-  assert.equal(await page.locator('.qa-rail__summary').getAttribute('title'), 'QA checklist · 1/3 passed', 'the strip after item 1 passed');
+  assert.equal(await page.locator('.qa-coltab[data-tab="checklist"]').getAttribute('title'), 'QA checklist · 1/3 passed', 'the strip after item 1 passed');
   await pin.click();
   await visible(editor, 'the item 2 draft after re-opening');
   assert.equal(await editor.getByPlaceholder('What went wrong').inputValue(), 'Coupon applied twice on a two-line cart.', 'the draft survived hiding');
@@ -3378,7 +3378,7 @@ async function leadMergesToMain({ page, backend, baseUrl }: JourneyContext) {
   await expectText(popover.locator('.qa-promo__pr'), 'Promotion PR #42', 'the promotion PR name');
   await absent(popover.locator('a.qa-promo__pr'), 'a link out to the promotion PR');
 
-  // Full screen: the SAME tab bar rides in the floating panel, under its header.
+  // Full screen: the SAME header bar (chip, Merge to main) rides in the floating panel.
   await page.getByRole('button', { name: 'Full screen' }).click();
   const drawer = page.getByRole('region', { name: 'Acceptance' });
   await visible(drawer, 'the floating drawer');

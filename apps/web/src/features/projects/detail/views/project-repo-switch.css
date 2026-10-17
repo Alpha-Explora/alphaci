@@ -339,6 +339,24 @@
   margin-top: -0.55rem;
 }
 
+/* A studio tab is a workspace that fills the window: the tab row sits close
+ * under the app header, and neither the page body nor the shell keeps bottom
+ * padding, so the studio (which sizes itself to the window's bottom edge)
+ * leaves nothing for the page to scroll. Only the studio tabs render the
+ * controls slot, so the other tabs keep the page's usual spacing. */
+.dash-shell:has(.project-studio-controls) {
+  padding-bottom: 0;
+}
+
+.project-page-body:has(.project-studio-controls) {
+  padding-top: 0.4rem;
+  padding-bottom: 0;
+}
+
+.project-page-body:has(.project-studio-controls) .project-detail-header.project-detail-header--tabs {
+  padding-bottom: 0;
+}
+
 @media (max-width: 640px) {
   /* A phone: the tabs take the full first line and scroll, as before. */
   .project-tabs-bar__tabs {
