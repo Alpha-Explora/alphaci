@@ -2,6 +2,8 @@ import {
   failureEntries,
   failureForJob,
   failurePreview,
+  jobLogPendingMessage,
+  jobLogReady,
   logUnavailableMessage,
   omittedFailuresLabel,
 } from "@/features/projects/detail/model/failure-log-rules";
@@ -66,6 +68,21 @@ describe("logUnavailableMessage", () => {
 
   it("reads a missing reason from an older backend as expiry", () => {
     expect(logUnavailableMessage(undefined)).toBe(logUnavailableMessage("log-expired"));
+  });
+});
+
+describe("jobLogReady", () => {
+  it("is true only once GitHub reports the job completed", () => {
+    expect(jobLogReady("completed")).toBe(true);
+    expect(jobLogReady("in_progress")).toBe(false);
+    expect(jobLogReady("queued")).toBe(false);
+    expect(jobLogReady("waiting")).toBe(false);
+  });
+
+  it("says a running or queued job has no log yet, never that access is missing", () => {
+    expect(jobLogPendingMessage("in_progress")).toContain("this job is still running");
+    expect(jobLogPendingMessage("queued")).toContain("has not started yet");
+    expect(jobLogPendingMessage("in_progress")).not.toContain("access");
   });
 });
 

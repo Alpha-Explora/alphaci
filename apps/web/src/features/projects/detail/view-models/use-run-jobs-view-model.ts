@@ -97,12 +97,17 @@ export interface JobLogViewModel {
 /**
  * One job's full log: the largest response in the product, so it loads when
  * someone opens it, once, and is never polled.
+ *
+ * `ready` is false while the job is queued or running: GitHub has no log to
+ * give until the job finishes, so opening it then fetches nothing. Once the
+ * job finishes the panel offers to load it.
  */
 export function useJobLogViewModel(options: {
   projectId: string;
   jobId: number;
+  ready?: boolean;
 }): JobLogViewModel {
-  const { projectId, jobId } = options;
+  const { projectId, jobId, ready = true } = options;
   const [open, setOpen] = useState(false);
   const [log, setLog] = useState<JobLogResponse | null>(null);
   const [status, setStatus] = useState<ProjectStatus>("ready");
@@ -125,8 +130,8 @@ export function useJobLogViewModel(options: {
   const toggle = useCallback(() => {
     const next = !open;
     setOpen(next);
-    if (next && log === null && status !== "loading") void load();
-  }, [open, log, status, load]);
+    if (next && ready && log === null && status !== "loading") void load();
+  }, [open, ready, log, status, load]);
 
   const retry = useCallback(() => void load(), [load]);
 
