@@ -435,6 +435,26 @@ describe("ProjectExplorer", () => {
     expect(container.querySelectorAll("li.pf-card")).toHaveLength(2);
   });
 
+  it.each([
+    ["lead", true],
+    ["admin", true],
+    ["member", false],
+    ["qa", false],
+  ])("offers %s the Project's Members: %s", async (role, offered) => {
+    mockSession.appRole = role;
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.requirementCounts.mockResolvedValue({});
+    const container = await renderExplorer();
+    await act(async () => manage(container, "testfinals")!.click());
+
+    const members = link(container, "Members");
+    if (offered) {
+      expect(members?.getAttribute("href")).toBe(`/groups/${GROUP_ID}/delivery-projects/dp-1#members`);
+    } else {
+      expect(members).toBeUndefined();
+    }
+  });
+
   it("lets the QA Team and Product owners open only the frontend repository", async () => {
     for (const role of ["lead", "qa"]) {
       mockSession.appRole = role;

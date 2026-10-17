@@ -28,6 +28,19 @@ export function canManageProjectMembers(appRole: Role): boolean {
   return appRole !== null && appRole !== undefined && MEMBER_MANAGERS.includes(appRole);
 }
 
+/** The members panel's anchor on the Project page. */
+export const PROJECT_MEMBERS_ANCHOR = "members";
+
+/** The Project page, opened on its members panel. */
+export function projectMembersHref(groupId: string, deliveryProjectId: string): string {
+  return `/groups/${encodeURIComponent(groupId)}/delivery-projects/${encodeURIComponent(deliveryProjectId)}#${PROJECT_MEMBERS_ANCHOR}`;
+}
+
+/** Whether the page was opened through a link to the members panel. */
+export function opensOnProjectMembers(hash: string): boolean {
+  return hash === `#${PROJECT_MEMBERS_ANCHOR}`;
+}
+
 export const MEMBER_KIND_LABELS: Readonly<Record<DeliveryProjectMemberKind, string>> = {
   developer: "Developer",
   qa: "QA Team",
