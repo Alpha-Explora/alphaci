@@ -67,6 +67,7 @@
 
 ### Fixed
 
+- Opening the log of a queued or running job no longer says "ALPHACI can't read this log: its GitHub connection has no access to Actions logs". GitHub provides a job's log only once the job finishes and answers 404 until then, which the backend reports as missing access. A job row now asks for nothing while its job is unfinished and says "Log not ready yet: GitHub only provides a job's log once the job finishes, and this job is still running" (or "has not started yet"). When the job finishes, which the run's polling picks up, the open panel offers **Show log**.
 - Dark theme: secondary buttons (`.ghost-button`, and the Hosting tab's buttons and "⋯" trigger) had a `#363642` edge on `#24242d` cards (about 1.3:1), so Refresh, Preview, Check again and the like read as plain text. They now use a new `--border-control` token (`#787886`, at least 3:1 on the card, page and nested tile) and `--control-text` (`#e4e4ea`) for the label; hover fill and the focus ring are unchanged. Light theme keeps its existing values.
 - Home's stage dots drew `stalled` and `blocked` stages as grey pending dots on a red card. Stalled is now an amber ring that does not pulse; blocked is a muted outline with a slash.
 - A GitHub run that concluded `startup_failure` (GitHub refused to start the workflow) is a failure: red on the Pipeline tab's commit headline, run and job chips, run rows and CI run list, failed in promotion readiness and in a tool check's tone. It used to be neutral grey. One rule, `isFailedConclusion`, now decides this for the project page.
