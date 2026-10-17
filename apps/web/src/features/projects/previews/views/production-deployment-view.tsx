@@ -8,6 +8,7 @@ import { ProductionDeploymentCard } from "./production-deployment-card";
 
 /** Rows before the rest are left to the Hosting tab, which lists them all. */
 const ACTIVE_BRANCH_ROWS = 5;
+const BRANCHES_WITH_PRODUCTION = new Set(["main", "uat"]);
 
 export type ProductionDeploymentViewProps = Pick<
   BranchPreviewsViewProps,
@@ -26,8 +27,8 @@ export type ProductionDeploymentViewProps = Pick<
 
 /**
  * The Overview's deployment summary: the production environment as a card,
- * and every other branch as a one-line row under it, as the provider's own
- * project page lays them out.
+ * and active branches underneath. Once a production deploy is live, keep only
+ * main and uat in that shorter list; Hosting still has every preview.
  *
  * Anything short of a loaded production environment falls back to the branch
  * list. It already words every "not yet" case - loading, switched off, no
@@ -46,6 +47,10 @@ export function ProductionDeploymentView({
     status === "ready"
       ? splitOverviewPreviews(previews)
       : { production: [], branches: [] };
+  const hasLiveProduction = production.some((preview) => preview.status === "ready");
+  const visibleBranches = hasLiveProduction
+    ? branches.filter((preview) => BRANCHES_WITH_PRODUCTION.has(preview.branch.toLowerCase()))
+    : branches;
 
   if (production.length === 0) {
     return (
@@ -75,7 +80,7 @@ export function ProductionDeploymentView({
         />
       ))}
       <ActiveBranchesList
-        branches={branches}
+        branches={visibleBranches}
         limit={ACTIVE_BRANCH_ROWS}
         onOpenPullRequest={onOpenPullRequest}
       />
