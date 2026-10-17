@@ -1126,6 +1126,147 @@
   border-radius: 0;
 }
 
+/* ── Sections, not boxes ─────────────────────────────────────────────────
+   In the rail's panel a checklist item, a browser test, a CI stage, a live
+   run and a requirement's tests are sections of one surface: no frame and
+   no fill. A thin line on the left edge carries the state (green passed,
+   red failed, amber blocked or returned, blue in progress), hairlines part
+   the rows of a list, and hover lifts a row with a soft wash of its own
+   tone and a bolder line. Scoped to the panel; the Runs report keeps its
+   cards. */
+.qa-studio__run
+  :is(.qa-run-item, .tr-case, .qa-auto-stage, .qa-live, .qa-pw-item, .qa-auto-detail, .qa-auto-failure) {
+  --qa-accent: var(--border-strong);
+
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: inset 2px 0 0 var(--qa-accent);
+  transition:
+    background-color 180ms ease-out,
+    box-shadow 180ms ease-out;
+}
+
+.qa-studio__run .qa-live {
+  --qa-accent: var(--qa-live-tone);
+}
+
+.qa-studio__run :is(.qa-auto-stage, .qa-pw-item, .qa-auto-detail) {
+  --qa-accent: var(--qa-tone);
+}
+
+.qa-studio__run .qa-auto-failure,
+.qa-studio__run .tr-case[data-tone="danger"],
+.qa-studio__run .qa-run-item[data-status="failed"] {
+  --qa-accent: var(--danger);
+}
+
+.qa-studio__run .tr-case[data-tone="success"],
+.qa-studio__run .qa-run-item[data-status="passed"] {
+  --qa-accent: var(--success);
+}
+
+.qa-studio__run .tr-case[data-tone="warning"],
+.qa-studio__run .qa-run-item[data-status="returned_to_dev"] {
+  --qa-accent: var(--warning);
+}
+
+.qa-studio__run .qa-run-item[data-status="blocked"] {
+  --qa-accent: var(--accent-rose);
+}
+
+.qa-studio__run .qa-run-item[data-status="in_progress"] {
+  --qa-accent: var(--brand);
+}
+
+/* Rows of a list sit flush, parted by a hairline. */
+.qa-studio__run :is(.qa-run__items, .tr-cases__list, .qa-pw-items__list, .qa-auto__stages, .qa-auto-failures__list) {
+  gap: 0;
+}
+
+.qa-studio__run
+  :is(.qa-run__items, .tr-cases__list, .qa-pw-items__list, .qa-auto__stages, .qa-auto-failures__list)
+  > * + * {
+  border-top: 1px solid var(--border);
+}
+
+/* Hover: the row under the pointer, never a section and the row inside it
+   at once. An item being edited keeps the wash. */
+.qa-studio__run :is(.qa-run-item, .tr-case, .qa-pw-item, .qa-auto-failure):hover,
+.qa-studio__run :is(.qa-auto-stage, .qa-live, .qa-auto-detail):hover:not(:has(:is(.tr-case, .qa-auto-failure):hover)),
+.qa-studio__run .qa-run-item--open {
+  background: color-mix(in srgb, var(--qa-accent) 8%, transparent);
+  box-shadow: inset 3px 0 0 var(--qa-accent);
+}
+
+.qa-studio__run :is(.qa-run-item, .tr-case, .qa-pw-item):hover :is(.qa-run-item__title, .tr-case__name, .qa-pw-item__title) {
+  color: var(--text-primary);
+}
+
+/* What sat in a framed box inside a row is plain content of the row: notes
+   and findings hang off a short line of their own, evidence opens under a
+   dashed rule, the criteria and empty states lose their fill and frame. */
+.qa-studio__run .qa-run-item__facts {
+  padding: 0.15rem 0 0.15rem 0.75rem;
+  border: 0;
+  background: none;
+  box-shadow: inset 2px 0 0 var(--border-strong);
+}
+
+.qa-studio__run .qa-run-item__facts--defect {
+  box-shadow: inset 2px 0 0 var(--danger);
+}
+
+.qa-studio__run .qa-evidence {
+  padding: 0.65rem 0 0;
+  border: 0;
+  border-top: 1px dashed var(--border-strong);
+  border-radius: 0;
+  background: none;
+}
+
+.qa-studio__run .qa-evidence:focus-visible {
+  border-top-color: var(--border-brand);
+}
+
+.qa-studio__run .pqa-criteria {
+  padding: 0;
+  background: none;
+}
+
+.qa-studio__run :is(.qa-panel-state, .qa-auto__empty) {
+  border: 0;
+  background: none;
+}
+
+/* ── No scrollbar ────────────────────────────────────────────────────────
+   The panel and its lists still scroll (wheel, touch, keyboard); the bar is
+   not drawn. Instead the bottom edge of a scrolling area fades out, so more
+   below still reads, and a matching pad lets the last row clear the fade. */
+.qa-studio__run,
+.qa-studio__run * {
+  scrollbar-width: none;
+}
+
+.qa-studio__run::-webkit-scrollbar,
+.qa-studio__run ::-webkit-scrollbar {
+  display: none;
+}
+
+.qa-studio__run :is(.qa-colpanel[data-tab="playwright"], .qa-run > .qa-run__items),
+.qa-studio__run[data-scroll="column"] > .qa-colpanel {
+  padding-bottom: 1.5rem;
+  /* A mask reads only alpha: any opaque token draws the visible part. */
+  mask-image: linear-gradient(to bottom, var(--bg-base) calc(100% - 1.5rem), transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-studio__run
+    :is(.qa-run-item, .tr-case, .qa-auto-stage, .qa-live, .qa-pw-item, .qa-auto-detail, .qa-auto-failure) {
+    transition: none;
+  }
+}
+
 /* ── Items ───────────────────────────────────────────────────────────────── */
 .qa-run__items {
   list-style: none;
