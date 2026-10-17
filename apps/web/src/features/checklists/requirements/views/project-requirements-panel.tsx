@@ -77,23 +77,35 @@ function FilterChips({
 }: Readonly<{ filter: ChecklistFilter; counts: Record<ChecklistFilter, number>; onChange: (next: ChecklistFilter) => void }>) {
   // Nothing to narrow yet: the sections say why.
   if (counts.all === 0) return null;
+  const active = CHECKLIST_FILTERS.find((entry) => entry.id === filter)!;
   return (
-    <div className="rq-filters" role="group" aria-label="Show items">
-      {CHECKLIST_FILTERS.map((entry) => (
-        <button
-          key={entry.id}
-          type="button"
-          className="rq-filter"
-          data-filter={entry.id}
-          aria-pressed={filter === entry.id}
-          data-has={String(counts[entry.id] > 0)}
-          onClick={() => onChange(entry.id)}
-        >
-          {entry.label}
-          <span className="rq-filter__count">{counts[entry.id]}</span>
-        </button>
-      ))}
-    </div>
+    <details className="rq-filter-menu">
+      <summary className="rq-filter-menu__trigger">
+        <span>Filter</span>
+        <strong>{active.label}</strong>
+        <span className="rq-filter__count">{counts[active.id]}</span>
+      </summary>
+      <div className="rq-filter-menu__options" role="group" aria-label="Filter items by progress">
+        {CHECKLIST_FILTERS.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            className="rq-filter"
+            data-filter={entry.id}
+            aria-pressed={filter === entry.id}
+            data-has={String(counts[entry.id] > 0)}
+            onClick={(event) => {
+              onChange(entry.id);
+              const menu = event.currentTarget.closest("details");
+              if (menu) menu.open = false;
+            }}
+          >
+            {entry.label}
+            <span className="rq-filter__count">{counts[entry.id]}</span>
+          </button>
+        ))}
+      </div>
+    </details>
   );
 }
 
@@ -101,6 +113,49 @@ function FilterChips({
 function filteredRequirements(requirements: Requirement[], verdicts: ItemVerdicts, filter: ChecklistFilter): Requirement[] {
   if (filter === "all") return requirements;
   return requirements.filter((requirement) => requirement.items.some((item) => itemMatches(item, verdicts, filter)));
+}
+
+function SectionHeading({
+  kind,
+  copy,
+  titleId,
+  count,
+  filterable,
+  canManage,
+  onCreate,
+}: Readonly<{
+  kind: RequirementKind;
+  copy: ReturnType<typeof kindCopy>;
+  titleId: string;
+  count: number;
+  filterable: boolean;
+  canManage: boolean;
+  onCreate: () => void;
+}>) {
+  return (
+    <div className="rq-section__head">
+      {!filterable ? (
+        <>
+          <span className="rq-section__icon" aria-hidden="true">
+            {kind === "functional" ? <FeatureIcon /> : <SystemIcon />}
+          </span>
+          <div className="rq-section__titles">
+            <h3 className="rq-section__title" id={titleId}>
+              {copy.section}
+              <span className="rq-count">{count}</span>
+            </h3>
+            <p className="rq-section__lede">{copy.lede}</p>
+          </div>
+        </>
+      ) : null}
+      {canManage && count > 0 ? (
+        <button type="button" className="primary-button rq-section__create" onClick={onCreate}>
+          <PlusIcon />
+          {copy.create}
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 function KindSection({
@@ -111,6 +166,7 @@ function KindSection({
   progress,
   verdicts,
   filter,
+  filterable,
 }: Readonly<{
   kind: RequirementKind;
   requirements: Requirement[];
@@ -119,6 +175,7 @@ function KindSection({
   progress: ItemProgressViewModel;
   verdicts: ItemVerdicts;
   filter: ChecklistFilter;
+  filterable: boolean;
 }>) {
   const reduced = useReducedMotion();
   const copy = kindCopy(kind);
@@ -126,25 +183,21 @@ function KindSection({
   const titleId = `rq-section-${kind}`;
   const requirements = filteredRequirements(allRequirements, verdicts, filter);
   return (
-    <section className="rq-section" data-kind={kind} aria-labelledby={titleId}>
-      <div className="rq-section__head">
-        <span className="rq-section__icon" aria-hidden="true">
-          {kind === "functional" ? <FeatureIcon /> : <SystemIcon />}
-        </span>
-        <div className="rq-section__titles">
-          <h3 className="rq-section__title" id={titleId}>
-            {copy.section}
-            <span className="rq-count">{allRequirements.length}</span>
-          </h3>
-          <p className="rq-section__lede">{copy.lede}</p>
-        </div>
-        {canManage && allRequirements.length > 0 ? (
-          <button type="button" className="primary-button rq-section__create" onClick={() => dialog.openCreate(kind)}>
-            <PlusIcon />
-            {copy.create}
-          </button>
-        ) : null}
-      </div>
+    <section
+      className="rq-section"
+      data-kind={kind}
+      aria-label={filterable ? copy.section : undefined}
+      aria-labelledby={filterable ? undefined : titleId}
+    >
+      <SectionHeading
+        kind={kind}
+        copy={copy}
+        titleId={titleId}
+        count={allRequirements.length}
+        filterable={filterable}
+        canManage={canManage}
+        onCreate={() => dialog.openCreate(kind)}
+      />
       {allRequirements.length > 0 && requirements.length === 0 ? (
         <p className="rq-empty rq-empty--filtered">{emptyFilterText(filter)}</p>
       ) : null}
@@ -370,7 +423,7 @@ function ReadyRequirements({
 }>) {
   return (
     <div className="rq-panel">
-      <p className="rq-panel__role">{roleLine(vm.permissions, appRole)}</p>
+      {!filterable ? <p className="rq-panel__role">{roleLine(vm.permissions, appRole)}</p> : null}
       {filterable ? (
         <FilterChips
           filter={filter}
@@ -388,6 +441,7 @@ function ReadyRequirements({
           progress={progress}
           verdicts={verdicts}
           filter={filter}
+          filterable={Boolean(filterable)}
         />
       ))}
       {vm.permissions.canManage ? (
