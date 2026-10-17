@@ -220,8 +220,10 @@ function ItemFoot({
         <code className="rq-item__test">{item.testIdentifier}</code>
       ) : null}
       <span className="rq-item__spacer" aria-hidden="true" />
-      <ProgressControl item={item} editable={editable} vm={progress} onReload={onReload} />
-      <ProgressBy item={item} />
+      <span className="rq-item__progress-meta">
+        <ProgressControl item={item} editable={editable} vm={progress} onReload={onReload} />
+        <ProgressBy item={item} />
+      </span>
     </div>
   );
 }
