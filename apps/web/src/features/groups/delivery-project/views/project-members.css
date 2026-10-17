@@ -6,6 +6,7 @@
   gap: 0.75rem;
   margin-top: 1.75rem;
   min-width: 0;
+  scroll-margin-top: 1rem;
 }
 
 .project-members .hier-section-head {

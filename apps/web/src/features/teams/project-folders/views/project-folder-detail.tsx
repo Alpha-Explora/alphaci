@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useId } from "react";
 
 import { ProjectQaWorkspace } from "@/features/checklists/requirements";
-import { projectStatusVariant } from "@/features/groups";
+import { canManageProjectMembers, projectMembersHref, projectStatusVariant } from "@/features/groups";
 import type { AppRole } from "@/shared/api/contracts";
 
 import {
@@ -21,12 +21,13 @@ import {
 import type { FolderRepository, ProjectFolder } from "../model/project-folder-types";
 import type { ProjectFoldersViewModel } from "../view-models/use-project-folders-view-model";
 import { AddRepositoryAction, FeatureNudge, FeaturesRequiredNote } from "./feature-gate";
-import { BackIcon, StudioIcon } from "./project-folder-icons";
+import { BackIcon, PeopleIcon, StudioIcon } from "./project-folder-icons";
 import { RepoChip } from "./repo-chip";
 
 /**
  * The viewer's studio (Verify in QA Studio for the QA Team and admins, Open
- * PO Studio for a Product owner) and Add repository
+ * PO Studio for a Product owner), Members (Product owner, admin: who works on
+ * the Project, and the GitHub Write Developers get from it) and Add repository
  * (Developer, admin): a Product owner creates the Project, a Developer fills
  * it, once the Project has its first Feature.
  */
@@ -38,13 +39,22 @@ function DetailActions({
 }: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder; gate: FolderFeatureGate; noteId: string }>) {
   const verifyId = vm.canVerifyInQaStudio ? verifyProjectId(folder) : null;
   const studio = verifyId ? studioLinkFor(vm.appRole, verifyId) : null;
-  if (!studio && gate.addRepository === "hidden") return null;
+  const membersHref = canManageProjectMembers(vm.appRole)
+    ? projectMembersHref(vm.groupId, folder.deliveryProjectId)
+    : null;
+  if (!studio && !membersHref && gate.addRepository === "hidden") return null;
   return (
     <div className="pf-detail__actions">
       {studio ? (
         <Link className="ghost-button" href={studio.href}>
           <StudioIcon />
           {studio.label}
+        </Link>
+      ) : null}
+      {membersHref ? (
+        <Link className="ghost-button" href={membersHref}>
+          <PeopleIcon />
+          Members
         </Link>
       ) : null}
       <AddRepositoryAction

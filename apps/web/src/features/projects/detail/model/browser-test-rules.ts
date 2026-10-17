@@ -258,7 +258,7 @@ const MESSAGES: Readonly<Record<Exclude<BrowserTestsErrorKind, "pr-open" | "pr-r
   reauth: "GitHub needs you to sign in again before ALPHACI can open this pull request.",
   forbidden: "Only Developers, Product owners and admins can add browser tests.",
   "write-forbidden":
-    "GitHub did not let your account write to this repository, so no pull request was opened. Ask a repository admin for write access.",
+    "GitHub did not let your account write to this repository, so no pull request was opened. A Developer gets write access when the Product owner adds them to this Project; anyone else needs a repository admin to grant it.",
   "no-dev-branch": "This repository has no dev branch yet, and browser tests are added there. Create dev, then try again.",
   "nothing-to-add": "The browser tests are already in this repository, so there was nothing to add.",
   "branch-taken":

@@ -3,7 +3,9 @@ import {
   canManageProjectMembers,
   candidateKind,
   eligibleProjectMemberCandidates,
+  opensOnProjectMembers,
   projectMemberErrorMessage,
+  projectMembersHref,
   removedMessage,
   resyncedMessage,
   DEVELOPER_ACCESS_NOTE,
@@ -64,6 +66,18 @@ describe("canManageProjectMembers", () => {
     expect(canManageProjectMembers("qa")).toBe(false);
     expect(canManageProjectMembers(null)).toBe(false);
     expect(canManageProjectMembers(undefined)).toBe(false);
+  });
+});
+
+describe("projectMembersHref", () => {
+  it("opens the Project page on its members panel", () => {
+    expect(projectMembersHref("g 1", "dp/1")).toBe("/groups/g%201/delivery-projects/dp%2F1#members");
+  });
+
+  it("recognises only the members anchor", () => {
+    expect(opensOnProjectMembers("#members")).toBe(true);
+    expect(opensOnProjectMembers("")).toBe(false);
+    expect(opensOnProjectMembers("#requirements")).toBe(false);
   });
 });
 
