@@ -47,11 +47,14 @@ function assignmentProblem(environment: EnvironmentDraft): string | null {
 }
 
 function productionIngressProblem(environment: EnvironmentDraft) {
-  return environment.role === "production" &&
-    environment.hostAssignment &&
-    !environment.hostAssignment.config.ingress.publicUrl?.startsWith("https://")
-    ? "Add an HTTPS URL for Production, or choose Assign later."
-    : null;
+  const binding = environment.hostAssignment;
+  if (environment.role !== "production" || !binding) return null;
+  // The machine creates a tunnel's HTTPS address, so the mode itself meets the
+  // requirement; the address shows up once the machine reports it.
+  const { mode, publicUrl } = binding.config.ingress;
+  if (mode === "tunnel") return null;
+  if (mode === "configured" && publicUrl?.startsWith("https://")) return null;
+  return "Add an HTTPS URL or choose the automatic HTTPS address for Production, or choose Assign later.";
 }
 
 /** A new assignment with defaults; no machine means the only connected one. */

@@ -1,5 +1,9 @@
 "use client";
-import { hostConnectionLabel, hostStatusTone } from "../model/host-types";
+import {
+  hostConnectionLabel,
+  hostStatusTone,
+  reachedAt,
+} from "../model/host-types";
 import type { useHostAssignmentViewModel } from "../view-models/use-host-assignment-view-model";
 export type AssignmentVm = ReturnType<typeof useHostAssignmentViewModel>;
 export function AssignmentForm({ vm }: { vm: AssignmentVm }) {
@@ -19,7 +23,7 @@ export function AssignmentForm({ vm }: { vm: AssignmentVm }) {
       <p className="hassign-hint">
         AlphaCI picks a free host port on the machine for each service. The
         health path must return a success response. Production needs an HTTPS
-        ingress URL.
+        address: your own URL, or the automatic tunnel.
       </p>
       <AssignmentActions vm={vm} />
     </form>
@@ -99,29 +103,39 @@ function PortFields({
   );
 }
 function IngressFields({ vm }: { vm: AssignmentVm }) {
+  const mode = vm.config.ingress.mode;
   return (
     <div className="hassign-ingress">
       <label className="hassign-field">
         <span className="hassign-field__label">How users reach it</span>
         <select
-          value={vm.config.ingress.mode}
-          onChange={(event) =>
+          value={mode}
+          onChange={(event) => {
+            const next = event.target.value as typeof mode;
             vm.setConfig((old) => ({
               ...old,
               ingress: {
-                ...old.ingress,
-                mode: event.target.value as "direct" | "configured",
+                mode: next,
+                // A tunnel's address is created by the machine, never typed in.
+                publicUrl: next === "tunnel" ? null : old.ingress.publicUrl,
               },
-            }))
-          }
+            }));
+          }}
         >
           <option value="direct">Directly on the host port</option>
           <option value="configured">
             Through an existing proxy or domain
           </option>
+          <option value="tunnel">Automatic HTTPS address (tunnel)</option>
         </select>
       </label>
-      {vm.config.ingress.mode === "configured" ? (
+      {mode === "tunnel" ? (
+        <p className="hassign-hint">
+          The machine creates this HTTPS address. It changes whenever the tunnel
+          restarts; a named domain is the production upgrade.
+        </p>
+      ) : null}
+      {mode === "configured" ? (
         <label className="hassign-field">
           <span className="hassign-field__label">Public application URL</span>
           <input
@@ -212,7 +226,8 @@ export function AssignmentSummary({ vm }: { vm: AssignmentVm }) {
     );
   const machine = vm.hosts.find((host) => host.id === vm.current?.machineId);
   const label = machine ? hostConnectionLabel(machine) : "Unavailable";
-  const { ports, ingress } = vm.current.config;
+  const { ports } = vm.current.config;
+  const reach = reachedAt(vm.current.config, vm.current.tunnel);
   return (
     <div className="hassign-summary">
       <div className="hassign-summary__row">
@@ -235,12 +250,12 @@ export function AssignmentSummary({ vm }: { vm: AssignmentVm }) {
         <div>
           <dt>Reached at</dt>
           <dd>
-            {ingress.mode === "configured" && ingress.publicUrl ? (
-              <a href={ingress.publicUrl} target="_blank" rel="noreferrer">
-                {ingress.publicUrl}
+            {reach.kind === "link" ? (
+              <a href={reach.href} target="_blank" rel="noreferrer">
+                {reach.href}
               </a>
             ) : (
-              "host port on the local network"
+              reach.text
             )}
           </dd>
         </div>

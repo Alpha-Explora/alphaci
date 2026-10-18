@@ -1682,7 +1682,8 @@ describe("WorkflowBuilder project setup", () => {
     });
 
     describe("a machine on Delivery", () => {
-      const PRODUCTION_BLOCKER = "Add an HTTPS URL for Production, or choose Assign later.";
+      const PRODUCTION_BLOCKER =
+        "Add an HTTPS URL or choose the automatic HTTPS address for Production, or choose Assign later.";
 
       /** The fieldset of one environment in the machine list, found by its name. */
       function machineFieldset(name: string): HTMLFieldSetElement | null {

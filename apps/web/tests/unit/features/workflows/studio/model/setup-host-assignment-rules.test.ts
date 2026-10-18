@@ -15,7 +15,8 @@ import {
  * Host ports are chosen by AlphaCI on the machine, so they are never checked here.
  */
 
-const PRODUCTION = "Add an HTTPS URL for Production, or choose Assign later.";
+const PRODUCTION =
+  "Add an HTTPS URL or choose the automatic HTTPS address for Production, or choose Assign later.";
 
 /** The fixed dev, uat, main path, every environment on-prem. */
 function onprem(): EnvironmentDraft[] {
@@ -32,6 +33,7 @@ function assigned(
     containerPort?: number;
     healthPath?: string | null;
     publicUrl?: string | null;
+    mode?: "direct" | "configured" | "tunnel";
   } = {},
 ): EnvironmentDraft {
   return {
@@ -44,7 +46,8 @@ function assigned(
         ],
         health: [{ slot: "backend", path: overrides.healthPath ?? "/" }],
         ingress: {
-          mode: overrides.publicUrl ? "configured" : "direct",
+          mode:
+            overrides.mode ?? (overrides.publicUrl ? "configured" : "direct"),
           publicUrl: overrides.publicUrl ?? null,
         },
       },
@@ -90,6 +93,50 @@ describe("setupHostAssignmentsProblem", () => {
         dev!,
         uat!,
         assigned(main!, { publicUrl: "https://ledger.example.com" }),
+      ]),
+    ).toBeNull();
+  });
+
+  it("accepts Production on the automatic tunnel before the machine reports an address", () => {
+    const [dev, uat, main] = onprem();
+    expect(
+      setupHostAssignmentsProblem([
+        dev!,
+        uat!,
+        assigned(main!, { mode: "tunnel" }),
+      ]),
+    ).toBeNull();
+  });
+
+  it("refuses Production configured without an HTTPS URL", () => {
+    const [dev, uat, main] = onprem();
+    expect(
+      setupHostAssignmentsProblem([
+        dev!,
+        uat!,
+        assigned(main!, { mode: "configured" }),
+      ]),
+    ).toBe(PRODUCTION);
+  });
+
+  it("refuses Production on the direct host port, even with an HTTPS URL", () => {
+    const [dev, uat, main] = onprem();
+    expect(
+      setupHostAssignmentsProblem([
+        dev!,
+        uat!,
+        assigned(main!, { mode: "direct", publicUrl: "https://ledger.example.com" }),
+      ]),
+    ).toBe(PRODUCTION);
+  });
+
+  it("leaves a non-production tunnel alone", () => {
+    const [dev, uat, main] = onprem();
+    expect(
+      setupHostAssignmentsProblem([
+        assigned(dev!, { mode: "tunnel" }),
+        assigned(uat!, { mode: "tunnel" }),
+        main!,
       ]),
     ).toBeNull();
   });

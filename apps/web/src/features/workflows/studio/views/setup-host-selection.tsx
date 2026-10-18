@@ -9,6 +9,9 @@ import type { useSetupHostSelection } from "../view-models/use-setup-host-select
 /** Select value for the workspace's only connected machine, chosen by the server. */
 const AUTOMATIC = "automatic";
 
+/** The per-environment fields a change can write. */
+type HostField = "containerPort" | "health" | "ingress" | "ingressMode";
+
 export function SetupHostSelection({
   environments,
   hostProblems,
@@ -54,11 +57,7 @@ export function SetupHostSelection({
       }),
     );
   }
-  function change(
-    index: number,
-    field: "containerPort" | "health" | "ingress",
-    value: string,
-  ) {
+  function change(index: number, field: HostField, value: string) {
     onChange(
       environments.map((environment, position) => {
         if (index !== position || !environment.hostAssignment)
@@ -75,14 +74,27 @@ export function SetupHostSelection({
                     ...config,
                     ingress: { mode: "configured", publicUrl: value || null },
                   }
-                : field === "health"
-                  ? { ...config, health: [{ slot, path: value || null }] }
-                  : {
+                : field === "ingressMode"
+                  ? {
                       ...config,
-                      ports: [
-                        { ...config.ports[0]!, containerPort: Number(value) },
-                      ],
-                    },
+                      // A tunnel's address is created by the machine, so the
+                      // mode switch clears any typed URL.
+                      ingress:
+                        value === "tunnel"
+                          ? { mode: "tunnel", publicUrl: null }
+                          : {
+                              mode: "configured",
+                              publicUrl: config.ingress.publicUrl,
+                            },
+                    }
+                  : field === "health"
+                    ? { ...config, health: [{ slot, path: value || null }] }
+                    : {
+                        ...config,
+                        ports: [
+                          { ...config.ports[0]!, containerPort: Number(value) },
+                        ],
+                      },
           },
         };
       }),
@@ -123,7 +135,7 @@ export function setupHostIntro(choices: readonly MachineSummary[]): string {
   if (!choices.length)
     return "No machine is connected yet. Enroll one; environments are assigned to it from Hosting.";
   if (choices.length === 1)
-    return `Non-production environments run on ${choices[0]!.name} automatically, on host ports AlphaCI picks. Production needs its HTTPS ingress URL first.`;
+    return `Non-production environments run on ${choices[0]!.name} automatically, on host ports AlphaCI picks. Production needs an HTTPS address first.`;
   return "Choose a machine for each environment now, or assign them from Hosting after creation. AlphaCI picks the host ports.";
 }
 
@@ -141,11 +153,7 @@ function SetupHostRow({
   /** Why this environment's assignment cannot be sent yet, or null. */
   problem: string | null;
   select: (index: number, value: string) => void;
-  change: (
-    index: number,
-    field: "containerPort" | "health" | "ingress",
-    value: string,
-  ) => void;
+  change: (index: number, field: HostField, value: string) => void;
 }) {
   const messageId = useId();
   const binding = environment.hostAssignment;
@@ -213,9 +221,7 @@ function SetupAssignmentFields({
   if (!binding) return null;
   // The fields of an assignment that has a problem are marked invalid and read
   // the problem out with the field.
-  const invalid = problemId
-    ? { "aria-invalid": true, "aria-describedby": problemId }
-    : {};
+  const invalid = invalidAttributes(problemId);
   return (
     <>
       {" "}
@@ -243,17 +249,68 @@ function SetupAssignmentFields({
         />
       </label>
       {environment.role === "production" ? (
+        <ProductionIngressFields
+          binding={binding}
+          index={index}
+          problemId={problemId}
+          change={change}
+        />
+      ) : null}
+    </>
+  );
+}
+
+/** The fields of an assignment that has a problem are marked invalid and read the problem out with the field. */
+function invalidAttributes(problemId?: string) {
+  return problemId
+    ? { "aria-invalid": true, "aria-describedby": problemId }
+    : {};
+}
+
+/** Production reaches the environment through an existing URL or the automatic tunnel. */
+function ProductionIngressFields({
+  binding,
+  index,
+  problemId,
+  change,
+}: {
+  binding: NonNullable<EnvironmentDraft["hostAssignment"]>;
+  index: number;
+  problemId?: string;
+  change: (index: number, field: HostField, value: string) => void;
+}) {
+  const tunnel = binding.config.ingress.mode === "tunnel";
+  return (
+    <>
+      <label>
+        How users reach it{" "}
+        <select
+          value={tunnel ? "tunnel" : "configured"}
+          onChange={(event) => change(index, "ingressMode", event.target.value)}
+        >
+          <option value="configured">
+            Through an existing proxy or domain
+          </option>
+          <option value="tunnel">Automatic HTTPS address (tunnel)</option>
+        </select>
+      </label>
+      {tunnel ? (
+        <p className="wizard-field__hint">
+          The machine creates this HTTPS address. It changes whenever the tunnel
+          restarts; a named domain is the production upgrade.
+        </p>
+      ) : (
         <label>
           Configured HTTPS ingress URL{" "}
           <input
             type="url"
             required
-            {...invalid}
+            {...invalidAttributes(problemId)}
             value={binding.config.ingress.publicUrl ?? ""}
             onChange={(event) => change(index, "ingress", event.target.value)}
           />
         </label>
-      ) : null}
+      )}
     </>
   );
 }

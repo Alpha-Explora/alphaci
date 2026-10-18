@@ -5,7 +5,11 @@ import {
   hostStatusTone,
   lastSeenLabel,
   hostConnectionLabel,
+  reachedAt,
+  TUNNEL_WAITING_MESSAGE,
+  type AssignmentConfig,
   type MachineSummary,
+  type TunnelReport,
 } from "./host-types";
 const host: MachineSummary = {
   id: "m",
@@ -63,6 +67,61 @@ describe("enrollmentProgress", () => {
         Date.parse(receipt.expiresAt),
       ),
     ).toBe("expired");
+  });
+});
+describe("reachedAt", () => {
+  const configWith = (
+    ingress: AssignmentConfig["ingress"],
+  ): AssignmentConfig => ({ ports: [], health: [], ingress });
+  const tunnel = configWith({ mode: "tunnel", publicUrl: null });
+  const report = (overrides: Partial<TunnelReport>): TunnelReport => ({
+    status: "waiting",
+    publicUrl: null,
+    message: "",
+    reportedAt: null,
+    ...overrides,
+  });
+  it("links the tunnel address the machine reported", () => {
+    expect(
+      reachedAt(
+        tunnel,
+        report({
+          status: "running",
+          publicUrl: "https://quick-words.trycloudflare.com",
+          message: "The tunnel is running.",
+        }),
+      ),
+    ).toEqual({ kind: "link", href: "https://quick-words.trycloudflare.com" });
+  });
+  it("says it is waiting until the machine reports an address", () => {
+    expect(reachedAt(tunnel, null)).toEqual({
+      kind: "text",
+      text: TUNNEL_WAITING_MESSAGE,
+    });
+    expect(reachedAt(tunnel, report({ status: "waiting" }))).toEqual({
+      kind: "text",
+      text: TUNNEL_WAITING_MESSAGE,
+    });
+  });
+  it("shows the machine's own sentence when there is no address", () => {
+    const sentence = "The tunnel client could not start on this machine.";
+    expect(
+      reachedAt(tunnel, report({ status: "unavailable", message: sentence })),
+    ).toEqual({ kind: "text", text: sentence });
+    expect(
+      reachedAt(tunnel, report({ status: "failed", message: sentence })),
+    ).toEqual({ kind: "text", text: sentence });
+  });
+  it("keeps a configured URL as a link and direct on the host port", () => {
+    expect(
+      reachedAt(
+        configWith({ mode: "configured", publicUrl: "https://app.example.com" }),
+        null,
+      ),
+    ).toEqual({ kind: "link", href: "https://app.example.com" });
+    expect(
+      reachedAt(configWith({ mode: "direct", publicUrl: null }), null),
+    ).toEqual({ kind: "text", text: "host port on the local network" });
   });
 });
 it("maps connection labels to tones and formats the code countdown", () => {
