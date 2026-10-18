@@ -29,7 +29,7 @@ This snapshot is generated from the current source tree. It is descriptive evide
 |---|---:|
 | Feature domains | 657 |
 | `src/shared` | 20 |
-| `src/app` | 33 |
+| `src/app` | 34 |
 
 ## Executable gates
 
