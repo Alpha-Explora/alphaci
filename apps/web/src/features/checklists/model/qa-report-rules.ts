@@ -175,7 +175,10 @@ export function reportBaseName(report: Pick<QaReport, "project" | "run">): strin
   return `QA-Report-${repo}-${branch}-${sha}`;
 }
 
-export function reportFilename(report: Pick<QaReport, "project" | "run">, extension: "json" | "md" | "pdf"): string {
+export function reportFilename(
+  report: Pick<QaReport, "project" | "run">,
+  extension: "json" | "md" | "pdf" | "xlsx",
+): string {
   return `${reportBaseName(report)}.${extension}`;
 }
 
@@ -225,12 +228,19 @@ export function reportErrorCopy(cause: unknown): QaReportErrorCopy {
   };
 }
 
+/** The Excel report's media type, as the server sends it. */
+export const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
 /** What went wrong with an export action, phrased for the person who clicked it. */
-export function exportErrorMessage(action: "copy-fetch" | "copy-clipboard" | "download", cause: unknown): string {
+export function exportErrorMessage(
+  action: "copy-fetch" | "copy-clipboard" | "download" | "download-excel",
+  cause: unknown,
+): string {
   if (errorStatus(cause) === 404) return "This run's report is not available any more. Reload the run.";
   if (action === "copy-clipboard") {
     return "Your browser blocked clipboard access, so nothing was copied. Allow clipboard access for this site, or use Download JSON.";
   }
   if (action === "copy-fetch") return "The Markdown report could not be fetched. Try again in a moment.";
+  if (action === "download-excel") return "The Excel report could not be downloaded. Try again in a moment.";
   return "The JSON report could not be downloaded. Try again in a moment.";
 }

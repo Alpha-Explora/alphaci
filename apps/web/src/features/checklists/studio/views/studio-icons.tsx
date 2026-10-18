@@ -194,6 +194,16 @@ export function BracesIcon() {
   );
 }
 
+/** A spreadsheet: the Excel export. */
+export function SheetIcon() {
+  return (
+    <Glyph>
+      <rect x="2.25" y="2.25" width="11.5" height="11.5" rx="1.5" />
+      <path d="M2.25 6.25h11.5M2.25 10h11.5M6.25 6.25v7.5" />
+    </Glyph>
+  );
+}
+
 export function PlayIcon() {
   return (
     <Glyph size={14}>
