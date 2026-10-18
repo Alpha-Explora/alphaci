@@ -3,17 +3,11 @@
 import { motion } from "framer-motion";
 
 import type { useAuthSession } from "@/features/auth/session";
-import type {
-  NotificationItem,
-  NotificationsStatus,
-} from "@/features/notifications";
-import { NotificationsPreferencesView } from "@/features/notifications/preferences";
 import EnterpriseClientCompositionSettingsView from "@/features/settings/client-composition";
 import type { ClientCompositionInfo } from "@/shared/api/contracts";
 
 import type { WorkspacesMeResponse } from "../../model/settings-types";
 import {
-  AlertTriangleIcon,
   GithubIcon,
   HoverField,
   SettingsSection,
@@ -159,19 +153,9 @@ function AccountIdentitySection({
   return (
     <SettingsSection icon={<UserIcon />} title="Account" index={0}>
       <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.5rem",
-        }}
+        className="settings-account-fields"
       >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "0.5rem",
-          }}
-        >
+        <div className="settings-account-fields__row">
           <HoverField
             label="Display name"
             value={session?.user.name ?? "—"}
@@ -215,61 +199,18 @@ function AccountWorkspaceSection({
   if (workspaces?.items.length) {
     return (
       <SettingsSection icon={<UserIcon />} title="Workspace" index={1}>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-          }}
-        >
+        <div className="settings-workspaces">
           {workspaces.items.map((workspace) => (
-            <div
+            <article
               key={workspace.id}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.75rem",
-              }}
+              className="settings-workspace"
             >
-              <div
-                className="hover-field"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "1rem",
-                  flexWrap: "wrap",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.25rem",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: "0.9rem",
-                      fontWeight: 700,
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    {workspace.name}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "0.78rem",
-                      color: "var(--text-muted)",
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {workspace.kind} / {workspace.role}
-                  </span>
-                </div>
+              <div className="settings-workspace__header">
+                <strong>{workspace.name}</strong>
+                <span>{workspace.kind} / {workspace.role}</span>
               </div>
               <WorkspaceMembersSection workspace={workspace} />
-            </div>
+            </article>
           ))}
         </div>
       </SettingsSection>
@@ -291,203 +232,6 @@ function AccountWorkspaceSection({
   );
 }
 
-function NotificationReadControl({
-  notification,
-  markingNotificationId,
-  onMarkRead,
-}: Readonly<{
-  notification: NotificationItem;
-  markingNotificationId: string | null;
-  onMarkRead: (id: string) => void;
-}>) {
-  if (notification.readAt) {
-    return <span className="dash-badge-violet">Read</span>;
-  }
-  const saving = markingNotificationId === notification.id;
-  return (
-    <button
-      type="button"
-      className="dash-action-btn"
-      disabled={saving}
-      onClick={() => void onMarkRead(notification.id)}
-    >
-      {saving ? "Saving..." : "Mark read"}
-    </button>
-  );
-}
-
-function AccountNotificationsList({
-  notificationItems,
-  markingNotificationId,
-  onMarkRead,
-}: Readonly<{
-  notificationItems: NotificationItem[];
-  markingNotificationId: string | null;
-  onMarkRead: (id: string) => void;
-}>) {
-  if (!notificationItems.length) {
-    return (
-      <p
-        style={{
-          margin: 0,
-          fontSize: "0.8rem",
-          color: "var(--text-muted)",
-        }}
-      >
-        No notifications.
-      </p>
-    );
-  }
-
-  return (
-    <>
-      {notificationItems.map((notification) => (
-        <div
-          key={notification.id}
-          className="hover-field"
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: "1rem",
-            flexWrap: "wrap",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.25rem",
-              maxWidth: "min(100%, 560px)",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "0.9rem",
-                fontWeight: 700,
-                color: "var(--text-primary)",
-              }}
-            >
-              {notification.title}
-            </span>
-            <span
-              style={{
-                fontSize: "0.8rem",
-                color: "var(--text-secondary)",
-              }}
-            >
-              {notification.body}
-            </span>
-            <span
-              style={{
-                fontSize: "0.72rem",
-                color: "var(--text-muted)",
-                fontFamily: "ui-monospace, monospace",
-              }}
-            >
-              {notification.eventCode}
-            </span>
-          </div>
-          <NotificationReadControl
-            notification={notification}
-            markingNotificationId={markingNotificationId}
-            onMarkRead={onMarkRead}
-          />
-        </div>
-      ))}
-    </>
-  );
-}
-
-function AccountNotificationsSection({
-  notificationsError,
-  notificationsStatus,
-  notificationUnreadCount,
-  notificationItems,
-  markingNotificationId,
-  onMarkRead,
-}: Readonly<{
-  notificationsError: string | null;
-  notificationsStatus: NotificationsStatus;
-  notificationUnreadCount: number;
-  notificationItems: NotificationItem[];
-  markingNotificationId: string | null;
-  onMarkRead: (id: string) => void;
-}>) {
-  if (notificationsError) {
-    return (
-      <SettingsSection
-        icon={<AlertTriangleIcon />}
-        title="Notifications"
-        index={2}
-      >
-        <p className="error-text" style={{ margin: 0 }}>
-          {notificationsError}
-        </p>
-      </SettingsSection>
-    );
-  }
-
-  if (notificationsStatus !== "loading") {
-    return (
-      <SettingsSection
-        icon={<AlertTriangleIcon />}
-        title="Notifications"
-        index={2}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "0.88rem",
-              fontWeight: 700,
-              color: "var(--text-primary)",
-            }}
-          >
-            {notificationUnreadCount} unread
-          </span>
-          <AccountNotificationsList
-            notificationItems={notificationItems}
-            markingNotificationId={markingNotificationId}
-            onMarkRead={onMarkRead}
-          />
-          <div
-            style={{
-              borderTop: "1px solid var(--border-soft)",
-              paddingTop: "0.75rem",
-            }}
-          >
-            <NotificationsPreferencesView />
-          </div>
-        </div>
-      </SettingsSection>
-    );
-  }
-
-  return (
-    <SettingsSection
-      icon={<AlertTriangleIcon />}
-      title="Notifications"
-      index={2}
-    >
-      <p
-        style={{
-          margin: 0,
-          fontSize: "0.8rem",
-          color: "var(--text-muted)",
-        }}
-      >
-        Loading notifications...
-      </p>
-    </SettingsSection>
-  );
-}
-
 export function SettingsAccountSection({
   session,
   prefersReducedMotion,
@@ -495,13 +239,6 @@ export function SettingsAccountSection({
   workspaces,
   workspacesError,
   clientComposition,
-  notificationsEnabled,
-  notificationsError,
-  notificationsStatus,
-  notificationUnreadCount,
-  notificationItems,
-  markingNotificationId,
-  onMarkRead,
 }: Readonly<{
   session: SettingsSession;
   prefersReducedMotion: boolean | null;
@@ -509,13 +246,6 @@ export function SettingsAccountSection({
   workspaces: WorkspacesMeResponse | null;
   workspacesError: string | null;
   clientComposition: ClientCompositionInfo | null;
-  notificationsEnabled: boolean;
-  notificationsError: string | null;
-  notificationsStatus: NotificationsStatus;
-  notificationUnreadCount: number;
-  notificationItems: NotificationItem[];
-  markingNotificationId: string | null;
-  onMarkRead: (id: string) => void;
 }>) {
   return (
     <>
@@ -528,16 +258,6 @@ export function SettingsAccountSection({
         <AccountWorkspaceSection
           workspaces={workspaces}
           workspacesError={workspacesError}
-        />
-      ) : null}
-      {notificationsEnabled ? (
-        <AccountNotificationsSection
-          notificationsError={notificationsError}
-          notificationsStatus={notificationsStatus}
-          notificationUnreadCount={notificationUnreadCount}
-          notificationItems={notificationItems}
-          markingNotificationId={markingNotificationId}
-          onMarkRead={onMarkRead}
         />
       ) : null}
       {clientComposition ? (

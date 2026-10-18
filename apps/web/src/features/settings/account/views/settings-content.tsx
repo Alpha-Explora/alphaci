@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
-import { useNotificationsInboxViewModel } from "@/features/notifications/inbox";
 import type { useAuthSession } from "@/features/auth/session";
 import { useCapabilities } from "@/features/capabilities/current";
 import { isGuest } from "@/features/auth/session";
@@ -60,7 +59,6 @@ export function SettingsContent({
     capabilities,
     clientCompositionEnabled,
     workspacesEnabled,
-    notificationsEnabled,
   } = useCapabilities();
   const vm = useSettingsViewModel({
     workspacesEnabled,
@@ -71,20 +69,6 @@ export function SettingsContent({
   const guest = isGuest(session);
   const activeSection = vm.activeSection;
   const setActiveSection = vm.setActiveSection;
-
-  /* Notifications state comes from the feature's ViewModel — the same hook the
-   * inbox uses. This page used to re-implement the fetch, the optimistic
-   * mark-read and the error strings by hand. */
-  const {
-    items: notificationItems,
-    unreadCount: notificationUnreadCount,
-    status: notificationsStatus,
-    error: notificationsError,
-    markingId: markingNotificationId,
-    markRead: handleMarkNotificationRead,
-  } = useNotificationsInboxViewModel(
-    activeSection === "account" && notificationsEnabled,
-  );
 
   async function handleDeleteAccount() {
     if (await vm.deleteAccount()) onDeleted();
@@ -147,13 +131,6 @@ export function SettingsContent({
                     ? capabilities?.clientComposition ?? null
                     : null
                 }
-                notificationsEnabled={notificationsEnabled}
-                notificationsError={notificationsError}
-                notificationsStatus={notificationsStatus}
-                notificationUnreadCount={notificationUnreadCount}
-                notificationItems={notificationItems}
-                markingNotificationId={markingNotificationId}
-                onMarkRead={handleMarkNotificationRead}
                 onLogout={onLogout}
                 isLoggingOut={isLoggingOut}
                 logoutMessage={logoutMessage}
@@ -192,17 +169,6 @@ function SettingsSectionSwitch(
     workspaces: ReturnType<typeof useSettingsViewModel>["workspaces"];
     workspacesError: string | null;
     clientComposition: import("@/shared/api/contracts").ClientCompositionInfo | null;
-    notificationsEnabled: boolean;
-    notificationsError: string | null;
-    notificationsStatus: ReturnType<
-      typeof useNotificationsInboxViewModel
-    >["status"];
-    notificationUnreadCount: number;
-    notificationItems: ReturnType<
-      typeof useNotificationsInboxViewModel
-    >["items"];
-    markingNotificationId: string | null;
-    onMarkRead: (id: string) => void;
     onLogout: () => void;
     isLoggingOut: boolean;
     logoutMessage: string | null;
@@ -225,13 +191,6 @@ function SettingsSectionSwitch(
         workspaces={props.workspaces}
         workspacesError={props.workspacesError}
         clientComposition={props.clientComposition}
-        notificationsEnabled={props.notificationsEnabled}
-        notificationsError={props.notificationsError}
-        notificationsStatus={props.notificationsStatus}
-        notificationUnreadCount={props.notificationUnreadCount}
-        notificationItems={props.notificationItems}
-        markingNotificationId={props.markingNotificationId}
-        onMarkRead={props.onMarkRead}
       />
     );
   }
