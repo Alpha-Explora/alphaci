@@ -112,21 +112,22 @@ function VerificationButtons({ item, index, editor }: Pick<ItemProps, "item" | "
   const value = draft?.status ?? item.status;
   const offered = VERIFICATION_STATUSES.filter((status) => status === value || allowed.includes(status));
   return (
-    <div className="pqa-verify" role="group" aria-label={`Verification of item ${String(index + 1)}`}>
-      {offered.map((status: VerificationStatus) => (
-        <button
-          key={status}
-          type="button"
-          className="pqa-verify__option"
-          data-status={status}
-          aria-pressed={status === value}
-          disabled={editor.savingItemId !== null || !allowed.includes(status)}
-          onClick={() => editor.chooseStatus(item, status)}
-        >
-          {itemStatusLabel(status)}
-        </button>
-      ))}
-    </div>
+    <label className="pqa-verify">
+      <span className="sr-only">Verification of item {String(index + 1)}</span>
+      <select
+        className="hier-select pqa-verify__select"
+        aria-label={`Verification of item ${String(index + 1)}`}
+        value={value}
+        disabled={editor.savingItemId !== null}
+        onChange={(event) => editor.chooseStatus(item, event.target.value as VerificationStatus)}
+      >
+        {offered.map((status: VerificationStatus) => (
+          <option key={status} value={status} disabled={!allowed.includes(status)}>
+            {itemStatusLabel(status)}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
