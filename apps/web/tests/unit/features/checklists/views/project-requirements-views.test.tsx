@@ -568,11 +568,11 @@ describe("ProjectRunPanel", () => {
     const controls = [...container.querySelectorAll<HTMLElement>(".pqa-verify")];
     expect(controls).toHaveLength(2);
     const offered = (group: HTMLElement) =>
-      [...group.querySelectorAll<HTMLButtonElement>("button")].filter((button) => !button.disabled).map((button) => button.dataset.status);
+      [...group.querySelectorAll<HTMLOptionElement>("option")].filter((option) => !option.disabled).map((option) => option.value);
     expect(offered(controls[0])).toContain("passed");
     expect(offered(controls[1])).not.toContain("passed");
     expect(offered(controls[1])).not.toContain("in_progress");
-    expect(controls[0].querySelector('[aria-pressed="true"]')?.getAttribute("data-status")).toBe("pending");
+    expect(controls[0].querySelector("select")?.value).toBe("pending");
     expect(container.textContent).toContain("A Developer marks this Done before QA can pass it.");
     expect(container.textContent).toContain("Progress: Done");
     // Features first, then System requirements.
@@ -584,16 +584,23 @@ describe("ProjectRunPanel", () => {
     runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire(), heads: [] }));
     runs.setVerification.mockResolvedValue(null);
     const container = await render(<RunHarness role="qa" />);
+    const choose = async (control: HTMLElement, status: string) => {
+      const select = control.querySelector<HTMLSelectElement>("select")!;
+      await act(async () => {
+        select.value = status;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    };
     const first = container.querySelector<HTMLElement>(".pqa-verify")!;
-    await act(async () => first.querySelector<HTMLButtonElement>('[data-status="passed"]')!.click());
+    await choose(first, "passed");
     expect(runs.setVerification).toHaveBeenCalledWith("dp-1", "prun-1", "run-item-1", expect.objectContaining({ status: "passed" }));
 
     runs.setVerification.mockClear();
     const second = container.querySelectorAll<HTMLElement>(".pqa-verify")[1];
-    await act(async () => second.querySelector<HTMLButtonElement>('[data-status="failed"]')!.click());
+    await choose(second, "failed");
     expect(runs.setVerification).not.toHaveBeenCalled();
     expect(container.querySelector("form.qa-item-editor")?.textContent).toContain("Severity");
-    expect(second.querySelector('[aria-pressed="true"]')?.getAttribute("data-status")).toBe("failed");
+    expect(container.querySelectorAll<HTMLElement>(".pqa-verify")[1]?.querySelector("select")?.value).toBe("failed");
   });
 
   it("folds a fully passed requirement and filters to what is left to verify", async () => {

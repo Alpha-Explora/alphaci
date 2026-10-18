@@ -13,12 +13,15 @@ function item(overrides: Partial<LinkItem> & Pick<LinkItem, "eventCode">): LinkI
 }
 
 describe("notificationHref", () => {
-  describe("qa.item.returned_to_dev (spec §6)", () => {
-    it("sends the developer to Overview with the My QA items focus flag", () => {
-      expect(
-        notificationHref(item({ eventCode: "qa.item.returned_to_dev", projectId: "proj-1" }), "member"),
-      ).toBe("/projects/proj-1?focus=my-qa-items#overview");
-    });
+  describe("QA refusals: returned, failed, blocked (spec §6)", () => {
+    it.each(["qa.item.returned_to_dev", "qa.item.failed", "qa.item.blocked"])(
+      "sends the developer to Overview with the My QA items focus flag (%s)",
+      (eventCode) => {
+        expect(notificationHref(item({ eventCode, projectId: "proj-1" }), "member")).toBe(
+          "/projects/proj-1?focus=my-qa-items#overview",
+        );
+      },
+    );
 
     it("is not clickable without a projectId", () => {
       expect(notificationHref(item({ eventCode: "qa.item.returned_to_dev" }), "member")).toBeNull();
@@ -80,11 +83,10 @@ describe("notificationHref", () => {
     });
   });
 
-  describe("QA Studio deep-links (qa.run.signed_off, qa.item.retest_requested, qa.item.blocked, qa.promotion.merged)", () => {
+  describe("QA Studio deep-links (qa.run.signed_off, qa.item.retest_requested, qa.promotion.merged)", () => {
     const qaStudioEvents = [
       "qa.run.signed_off",
       "qa.item.retest_requested",
-      "qa.item.blocked",
       "qa.promotion.merged",
     ] as const;
 

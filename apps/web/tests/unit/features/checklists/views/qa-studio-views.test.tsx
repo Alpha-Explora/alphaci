@@ -73,6 +73,11 @@ const ITEMS = [
   }),
 ];
 
+/** ITEMS with no failure open, so Sign off can be opened. */
+const ITEMS_NO_DEFECT = ITEMS.map((item) =>
+  item.status === "returned_to_dev" ? { ...item, status: "pending" as const, defectSeverity: null, notes: null } : item,
+);
+
 function setup(options: {
   run: QaRun | null;
   previews?: ProjectBranchPreview[];
@@ -502,15 +507,28 @@ describe("QaStudioPanel", () => {
   });
 
   it("shows the signoff dialog with the reasons a verdict is unavailable", async () => {
-    setup({ run: runAs("qa", { items: ITEMS }) });
+    setup({ run: runAs("qa", { items: ITEMS_NO_DEFECT }) });
     const container = await studio("qa");
     await act(async () => buttonNamed(container, "Sign off")!.click());
     const dialog = document.querySelector('[role="dialog"]')!;
     expect(dialog.textContent).toContain("3 items are not passed yet.");
-    expect(dialog.textContent).toContain("2 items are still pending or in progress.");
+    expect(dialog.textContent).toContain("3 items are still pending or in progress.");
     const approved = dialog.querySelector<HTMLInputElement>('input[value="APPROVED"]')!;
     expect(approved.disabled).toBe(true);
     expect(dialog.querySelector<HTMLInputElement>('input[value="REJECTED"]')!.checked).toBe(true);
+  });
+
+  it("greys Sign off out while an item is failed, blocked or returned, and says why", async () => {
+    setup({ run: runAs("qa", { items: ITEMS }) });
+    const container = await studio("qa");
+    const button = buttonNamed(container, "Sign off")!;
+    expect(button.disabled).toBe(true);
+    const reason = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+    expect(reason?.textContent).toBe(
+      "1 item is failed, blocked or returned to dev. Sign off once QA has verified the fix.",
+    );
+    await act(async () => button.click());
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it("makes a signed-off run read-only, with Reopen only for those allowed", async () => {
@@ -729,7 +747,7 @@ describe("QA Studio — device viewports and full screen", () => {
   });
 
   it("opens Sign off from the rail and keeps full screen while its Escape closes it", async () => {
-    setup({ run: runAs("qa", { items: ITEMS }) });
+    setup({ run: runAs("qa", { items: ITEMS_NO_DEFECT }) });
     const container = await studio("qa");
     await click(fullScreenButton(container));
     await click(buttonNamed(container, "Sign off"));
