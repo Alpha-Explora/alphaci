@@ -26,11 +26,16 @@ export interface QaExportViewModel {
   pdfHref: string;
   copyMarkdown: () => Promise<void>;
   downloadJson: () => Promise<void>;
+  /**
+   * Saves the server's .xlsx workbook. Null where the server has no Excel
+   * export (a CI run report): that menu keeps Copy PR Markdown and Download JSON.
+   */
+  downloadExcel: (() => Promise<void>) | null;
   dismiss: () => void;
 }
 
 /**
- * Where one kind of run gets its three exports. The menu and its status line
+ * Where one kind of run gets its exports. The menu and its status line
  * are the same for a repository run and a Project run; only these differ.
  */
 export interface QaExportSource {
@@ -39,6 +44,8 @@ export interface QaExportSource {
   fetchMarkdown: () => Promise<string>;
   /** The JSON report to save, and the file name to save it under. */
   fetchJson: () => Promise<{ filename: string; report: unknown }>;
+  /** The Excel workbook to save, and the file name to save it under. */
+  fetchExcel?: () => Promise<{ filename: string; workbook: Blob }>;
 }
 
 /** How long "Copied" stays before the control settles back. */
@@ -127,12 +134,25 @@ export function useExportViewModel(source: QaExportSource): QaExportViewModel {
     }
   }
 
+  async function downloadExcel() {
+    if (!source.fetchExcel || !begin("downloading")) return;
+    try {
+      const { filename, workbook } = await source.fetchExcel();
+      downloadBlob(filename, workbook);
+      busy.current = false;
+      setStatus("idle");
+    } catch (cause) {
+      fail(exportErrorMessage("download-excel", cause));
+    }
+  }
+
   return {
     status,
     message,
     pdfHref: source.pdfHref,
     copyMarkdown,
     downloadJson,
+    downloadExcel: source.fetchExcel ? downloadExcel : null,
     dismiss,
   };
 }
@@ -146,6 +166,14 @@ export function useQaExportViewModel(options: { projectId: string; runId: string
     fetchJson: async () => {
       const report = await qaRunsRepository.report(projectId, runId);
       return { filename: reportFilename(report, "json"), report };
+    },
+    fetchExcel: async () => {
+      // The JSON only names the file; the workbook is saved as the server built it.
+      const [report, workbook] = await Promise.all([
+        qaRunsRepository.report(projectId, runId),
+        qaRunsRepository.reportExcel(projectId, runId),
+      ]);
+      return { filename: reportFilename(report, "xlsx"), workbook };
     },
   });
 }
@@ -165,6 +193,13 @@ export function useProjectQaExportViewModel(options: {
       const named = normalizeProjectReport(body);
       if (!named) throw new Error("The server did not return the QA report.");
       return { filename: projectReportFilename(named, "json"), report: body };
+    },
+    fetchExcel: async () => {
+      const [report, workbook] = await Promise.all([
+        projectQaRunsRepository.report(deliveryProjectId, runId),
+        projectQaRunsRepository.reportExcel(deliveryProjectId, runId),
+      ]);
+      return { filename: projectReportFilename(report, "xlsx"), workbook };
     },
   });
 }

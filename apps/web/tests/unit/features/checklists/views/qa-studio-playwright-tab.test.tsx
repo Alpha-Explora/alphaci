@@ -407,8 +407,7 @@ describe("Studio column — the Playwright tab", () => {
     const items = [...playwright.querySelectorAll<HTMLElement>('[role="menuitem"]')];
     expect(items.map((item) => item.querySelector(".qa-export__item-title")?.textContent)).toEqual([
       "Download PDF",
-      "Copy PR Markdown",
-      "Download JSON",
+      "Download Excel",
     ]);
     expect(items[0]?.getAttribute("href")).toBe("/qa/project-report/dp-1/prun-1?print=1");
     expect(panel(container, "checklist").querySelector(".qa-export__trigger")).toBeNull();

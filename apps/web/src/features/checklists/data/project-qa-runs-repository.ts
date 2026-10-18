@@ -1,6 +1,7 @@
-import { request, requestText } from "@/shared/api/request";
+import { request, requestBlob, requestText } from "@/shared/api/request";
 
 import { normalizeProjectReport } from "../model/project-report-rules";
+import { XLSX_TYPE } from "../model/qa-report-rules";
 import type { QaProjectReport } from "../model/project-report-types";
 import { normalizeProjectDispatch } from "../model/project-run-automation-rules";
 import {
@@ -130,6 +131,13 @@ export const projectQaRunsRepository = {
   reportMarkdown(deliveryProjectId: string, runId: string): Promise<string> {
     return requestText(`${runPath(deliveryProjectId, runId)}/report?format=md`, {
       headers: { Accept: "text/markdown" },
+    });
+  },
+
+  /** The same report as an Excel workbook (.xlsx), one sheet per section. */
+  reportExcel(deliveryProjectId: string, runId: string): Promise<Blob> {
+    return requestBlob(`${runPath(deliveryProjectId, runId)}/report?format=xlsx`, {
+      headers: { Accept: XLSX_TYPE },
     });
   },
 

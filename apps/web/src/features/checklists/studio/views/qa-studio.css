@@ -477,12 +477,13 @@
 }
 
 /* The Playwright tab scrolls as one; so does the Checklist tab of a Project
-   run (and PO Studio's acceptance), which has no single item list. */
+   run (and PO Studio's acceptance), which has no single item list. No
+   scrollbar-width here: it would outrank the "No scrollbar" rule below and
+   draw a light bar on the dark column. */
 .qa-colpanel[data-tab="playwright"],
 .qa-studio__run[data-scroll="column"] > .qa-colpanel {
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
 }
 
 .qa-colpanel > .qa-run-card {
@@ -516,7 +517,6 @@
   padding-right: 0.4rem;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
 }
 
 /* No card, caption or surface around the page: the preview IS the hosted

@@ -171,3 +171,8 @@ export function testListHeading(cases: readonly TestCase[], total: number | null
       : `${String(listed)} ${listed === 1 ? "test" : "tests"}`;
   return failed > 0 ? `${head} · ${String(failed)} failed` : head;
 }
+
+/** A folding test list starts open only when a test failed: a passing run stays one line. */
+export function testListStartsOpen(cases: readonly TestCase[]): boolean {
+  return cases.some((test) => test.status === "failed");
+}

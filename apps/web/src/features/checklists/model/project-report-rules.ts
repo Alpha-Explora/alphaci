@@ -80,7 +80,7 @@ export function projectReportBaseName(report: Pick<QaProjectReport, "project" | 
 
 export function projectReportFilename(
   report: Pick<QaProjectReport, "project" | "run">,
-  extension: "json" | "md" | "pdf",
+  extension: "json" | "md" | "pdf" | "xlsx",
 ): string {
   return `${projectReportBaseName(report)}.${extension}`;
 }
