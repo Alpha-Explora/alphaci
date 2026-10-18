@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-19
+
+- **Creation**: Added the self-hosted frontend image runbook (`runbook-selfhost.md`), covering the fixed build arguments, the same-origin reverse-proxy contract and the `/healthz` liveness route. The Dockerfile gained a `HEALTHCHECK`, and the generated architecture counts include the new route.
+
 ## 2026-10-15
 
 - **Creation**: Added the workspace Hosts route and lean MVVM feature, checksum-verifying installer instructions, explicit Hosting assignments, readiness reasons, and optional project setup selections. Added the on-prem Hosts contract and preserved existing normal sign-in and promotion rules.
