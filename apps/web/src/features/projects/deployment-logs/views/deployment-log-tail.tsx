@@ -4,7 +4,10 @@ import type {
   DeploymentLogFocus,
   LogWindow,
 } from "../model/deployment-logs-types";
+import { formatLogTime } from "../model/log-format";
+import { quietAgo, quietSince } from "../model/log-quiet";
 import { useDeploymentLogsViewModel } from "../view-models/use-deployment-logs-view-model";
+import { useMinuteClock } from "../view-models/use-minute-clock";
 import { ErrorsChip, LogBody, LogSourceBadge, TimeZoneLabel } from "./log-parts";
 
 export interface DeploymentLogTailProps {
@@ -16,6 +19,19 @@ export interface DeploymentLogTailProps {
   providerLabel: string;
   /** Opens the full console for this target. Omitted, the link is not shown. */
   onOpenFullLogs?: (focus: DeploymentLogFocus) => void;
+}
+
+/**
+ * Said under a live tail that has been silent for a while, so a sleeping free
+ * instance does not read as a stale or broken log.
+ */
+function QuietNote({ since, now }: Readonly<{ since: string; now: number }>) {
+  return (
+    <p className="deploy-logs-tail__quiet">
+      No new lines since {formatLogTime(since)}, {quietAgo(since, now)}. The service may be asleep: a free instance
+      stops after 15 minutes without traffic and starts again on the next request.
+    </p>
+  );
 }
 
 /**
@@ -31,6 +47,8 @@ export function DeploymentLogTail({
   onOpenFullLogs,
 }: Readonly<DeploymentLogTailProps>) {
   const vm = useDeploymentLogsViewModel({ projectId, targetId, window: logWindow });
+  const now = useMinuteClock();
+  const since = vm.source === "live" && logWindow.endTime === null ? quietSince(vm.lines, now) : null;
 
   return (
     <section aria-label={`${providerLabel} deploy logs`} className="deploy-logs-tail">
@@ -52,6 +70,7 @@ export function DeploymentLogTail({
       <div className="deploy-logs__body">
         <LogBody label="Deploy log lines" providerLabel={providerLabel} vm={vm} />
       </div>
+      {since ? <QuietNote since={since} now={now} /> : null}
     </section>
   );
 }

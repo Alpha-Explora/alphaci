@@ -116,6 +116,25 @@ describe("deriveHostingEnvironments", () => {
     expect(fromTarget.map((environment) => environment.kind)).toEqual(["production", "uat"]);
   });
 
+  it("leaves a branch another service of the slot tracks to that service", () => {
+    const uatService = { id: "t-uat", branchName: "uat" };
+    const mainService = { id: "t-main", branchName: "main" };
+    const siblings = [uatService, mainService];
+
+    const uat = deriveHostingEnvironments({ target: uatService, siblings, previews: [], metadata: [], deployments: [] });
+    expect(uat.map((environment) => environment.kind)).toEqual(["uat"]);
+    expect(selectEnvironment(uat, "production").kind).toBe("uat");
+
+    const main = deriveHostingEnvironments({
+      target: mainService,
+      siblings,
+      previews: [],
+      metadata: [variable("API_URL", { lane: "preview", gitBranch: "uat" })],
+      deployments: [],
+    });
+    expect(main.map((environment) => environment.kind)).toEqual(["production"]);
+  });
+
   it("collects every other branch under Previews, counted and coloured by the loudest", () => {
     const environments = deriveHostingEnvironments({
       target: TARGET,
@@ -331,14 +350,29 @@ describe("serviceMeta", () => {
   it("reads provider, slot and source, with the build command and root apart", () => {
     expect(serviceMeta({ provider: "vercel", slot: "frontend", buildCommand: "npm run build", rootDirectory: "apps/web" })).toEqual({
       summary: "Vercel · Frontend · deploys from Git",
+      builds: true,
       buildCommand: "npm run build",
       rootDirectory: "apps/web",
     });
     expect(serviceMeta({ provider: "render", slot: "backend", buildCommand: " ", rootDirectory: null, imageUrl: "ghcr.io/x" })).toEqual({
-      summary: "Render · Backend · deploys an image",
+      summary: "Render · Backend · deploys the pipeline's image",
+      builds: false,
       buildCommand: null,
       rootDirectory: ".",
     });
+  });
+
+  it("calls an image-pushed service an image service even before its image is recorded", () => {
+    const meta = serviceMeta({
+      provider: "render",
+      slot: "backend",
+      buildCommand: "npm ci && npm run build",
+      rootDirectory: ".",
+      imageUrl: null,
+      deploymentStrategy: "render_image_pushed",
+    });
+    expect(meta.summary).toBe("Render · Backend · deploys the pipeline's image");
+    expect(meta.builds).toBe(false);
   });
 });
 

@@ -43,10 +43,10 @@ export function ProductionDeploymentView({
   onOpenFullLogs,
   onOpenPullRequest,
 }: Readonly<ProductionDeploymentViewProps>) {
-  const { production, branches } =
+  const { production, environments, branches } =
     status === "ready"
       ? splitOverviewPreviews(previews)
-      : { production: [], branches: [] };
+      : { production: [], environments: [], branches: [] };
   const hasLiveProduction = production.some((preview) => preview.status === "ready");
   const visibleBranches = hasLiveProduction
     ? branches.filter((preview) => BRANCHES_WITH_PRODUCTION.has(preview.branch.toLowerCase()))
@@ -70,8 +70,8 @@ export function ProductionDeploymentView({
   }
 
   return (
-    <section aria-label="Production deployment" className="deploy-cards">
-      {production.map((preview) => (
+    <section aria-label="Deployments" className="deploy-cards">
+      {[...production, ...environments].map((preview) => (
         <ProductionDeploymentCard
           key={previewKey(preview)}
           onOpenFullLogs={onOpenFullLogs}

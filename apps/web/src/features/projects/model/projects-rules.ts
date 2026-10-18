@@ -77,6 +77,7 @@ const PREVIEW_STATUS_LABELS: Record<
   ready: "Live",
   failed: "Failed",
   canceled: "Canceled",
+  superseded: "Replaced",
   unknown: "Unknown",
   not_deployed: "Not deployed yet",
 };
@@ -191,9 +192,22 @@ export function previewFrameSandbox(
 export type OverviewPreviews = {
   /** At most one per target: the Production Deployment cards. */
   production: ProjectBranchPreview[];
+  /**
+   * A backend's other named environments (uat), each its own card with live
+   * logs and recent deploys, like Production: a JSON API has no page to show
+   * in a row, and its logs are what a reader opens it for.
+   */
+  environments: ProjectBranchPreview[];
   /** Everything else, in the order received: the Active branches rows. */
   branches: ProjectBranchPreview[];
 };
+
+/** The branches besides main that get an environment card when their service shows logs. */
+const ENVIRONMENT_CARD_BRANCHES = new Set(["uat"]);
+
+function isEnvironmentCard(preview: ProjectBranchPreview): boolean {
+  return previewSurface(preview) === "logs" && ENVIRONMENT_CARD_BRANCHES.has(preview.branch.toLowerCase());
+}
 
 /**
  * The Overview's split: a production card per target, every other branch a row.
@@ -210,6 +224,7 @@ export function splitOverviewPreviews(
   previews: ProjectPreviewsResponse | null,
 ): OverviewPreviews {
   const production: ProjectBranchPreview[] = [];
+  const environments: ProjectBranchPreview[] = [];
   const branches: ProjectBranchPreview[] = [];
   const carded = new Set<string>();
 
@@ -217,12 +232,22 @@ export function splitOverviewPreviews(
     if (preview.isProduction && !carded.has(preview.targetId)) {
       carded.add(preview.targetId);
       production.push(preview);
+    } else if (!preview.isProduction && isEnvironmentCard(preview)) {
+      environments.push(preview);
     } else {
       branches.push(preview);
     }
   }
 
-  return { production, branches };
+  return { production, environments, branches };
+}
+
+/** "Production Deployment", "UAT Deployment": a card's title, from its environment. */
+export function deploymentCardTitle(preview: Pick<ProjectBranchPreview, "isProduction" | "branch">): string {
+  if (preview.isProduction) return "Production Deployment";
+  const branch = preview.branch.trim();
+  const name = branch.length <= 3 ? branch.toUpperCase() : `${branch.slice(0, 1).toUpperCase()}${branch.slice(1)}`;
+  return `${name} Deployment`;
 }
 
 /** "https://web-app.vercel.app/" -> "web-app.vercel.app". Unparseable URLs pass through. */
