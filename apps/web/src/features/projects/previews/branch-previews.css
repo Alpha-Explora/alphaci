@@ -401,6 +401,56 @@
   background: var(--text-muted);
 }
 
+/* ── Environment tabs: one environment's card shows at a time ─────────── */
+
+.deploy-envs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.deploy-envs__tab {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 9.5rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.deploy-envs__tab:hover {
+  background: var(--layer-1-hover);
+}
+
+.deploy-envs__tab[aria-selected="true"] {
+  border-color: var(--border-brand);
+  background: var(--layer-1);
+  color: var(--text-primary);
+}
+
+.deploy-envs__tab:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.deploy-envs__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.deploy-envs__line {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
 /* Identifiers keep the mono stack the branch cards use. */
 .deploy-card__branch,
 .deploy-card__sha {
