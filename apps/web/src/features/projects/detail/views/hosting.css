@@ -585,6 +585,11 @@
   color: var(--text-muted);
 }
 
+.hosting-row__how {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
 .hosting-row__failed {
   color: var(--danger);
 }

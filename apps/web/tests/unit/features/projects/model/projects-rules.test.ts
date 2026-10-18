@@ -5,6 +5,7 @@ import {
   commitUrl,
   createdLabel,
   deployedAgo,
+  deploymentCardTitle,
   displayHost,
   domainNextStep,
   domainScopeLabel,
@@ -356,8 +357,28 @@ describe("splitOverviewPreviews", () => {
 
     expect(split([web, api, uat])).toEqual({
       production: [web, api],
+      environments: [],
       branches: [uat],
     });
+  });
+
+  it("gives a backend's uat its own card, and keeps a frontend's uat a row", () => {
+    const api = preview({ isProduction: true, branch: "main", targetId: "api-main", surface: "logs" });
+    const apiUat = preview({ branch: "uat", targetId: "api-uat", surface: "logs" });
+    const webUat = preview({ branch: "uat", targetId: "web", surface: "page" });
+    const feature = preview({ branch: "feat/x", targetId: "api-uat", surface: "logs" });
+
+    expect(split([api, apiUat, webUat, feature])).toEqual({
+      production: [api],
+      environments: [apiUat],
+      branches: [webUat, feature],
+    });
+  });
+
+  it("titles each card by its environment", () => {
+    expect(deploymentCardTitle({ isProduction: true, branch: "main" })).toBe("Production Deployment");
+    expect(deploymentCardTitle({ isProduction: false, branch: "uat" })).toBe("UAT Deployment");
+    expect(deploymentCardTitle({ isProduction: false, branch: "staging" })).toBe("Staging Deployment");
   });
 
   /* Vercel labels any deployment made with the production target as
@@ -374,12 +395,13 @@ describe("splitOverviewPreviews", () => {
 
     expect(split([main, feature])).toEqual({
       production: [main],
+      environments: [],
       branches: [feature],
     });
   });
 
   it("is empty before previews have loaded", () => {
-    expect(splitOverviewPreviews(null)).toEqual({ production: [], branches: [] });
+    expect(splitOverviewPreviews(null)).toEqual({ production: [], environments: [], branches: [] });
   });
 });
 

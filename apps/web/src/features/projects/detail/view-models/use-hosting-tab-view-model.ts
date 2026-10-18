@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { useBranchPreviewsViewModel } from "@/features/projects/previews";
+import { withPreviewCommitMessages } from "../../model/deploy-facts-rules";
 import type { ProjectStatus } from "../../model/projects-types";
 import type {
   DeploymentTarget,
@@ -76,10 +77,15 @@ export function useHostingTabViewModel(options: {
 
   const target = targets.find((item) => item.id === targetId) ?? targets[0];
   const previews = previewsEnabled ? (branchPreviews.previews?.branches ?? null) : null;
-  const history = useMemo(() => deployments?.deployments ?? [], [deployments]);
+  // Messages the host did not send (a Render image deploy) come from the branch previews' lookup.
+  const history = useMemo(
+    () => withPreviewCommitMessages(deployments?.deployments ?? [], previews),
+    [deployments, previews],
+  );
+  const siblings = useMemo(() => targets.filter((item) => item.slot === target.slot), [target.slot, targets]);
   const environments = useMemo(
-    () => deriveHostingEnvironments({ target, previews, metadata, deployments: history }),
-    [history, metadata, previews, target],
+    () => deriveHostingEnvironments({ target, siblings, previews, metadata, deployments: history }),
+    [history, metadata, previews, siblings, target],
   );
   const environment = selectEnvironment(environments, kind);
 

@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useId,
   useRef,
   useState,
   type CSSProperties,
@@ -13,8 +14,16 @@ import {
   type DeploymentLogFocus,
 } from "@/features/projects/deployment-logs";
 import {
+  deployDurationLabel,
+  deployDotTone,
+  deployStatusWord,
+  deployTriggerLabel,
+} from "../../model/deploy-facts-rules";
+import {
   canFramePreview,
   createdLabel,
+  deployedAgo,
+  deploymentCardTitle,
   displayHost,
   previewFrameSandbox,
   previewHostLabel,
@@ -28,6 +37,7 @@ import type {
   ProjectBranchPreview,
   ProjectBranchPreviewSurface,
 } from "../../model/projects-types";
+import type { ProjectPreviewDeploy } from "@/shared/api/contracts";
 import { useDashboardOrigin } from "../view-models/use-dashboard-origin";
 import {
   BranchIcon,
@@ -230,6 +240,8 @@ function CommitLine({ preview }: CardProps) {
 
 function DeploymentFacts({ preview }: CardProps) {
   const tone = previewStatusTone(preview.status);
+  const took = deployDurationLabel(preview);
+  const trigger = deployTriggerLabel(preview.trigger);
 
   return (
     <dl className="deploy-card__facts">
@@ -251,6 +263,8 @@ function DeploymentFacts({ preview }: CardProps) {
         </span>
       </Fact>
       <Fact label="Created">{createdLabel(preview)}</Fact>
+      {took ? <Fact label="Took">{took}</Fact> : null}
+      {trigger ? <Fact label="Trigger">{trigger}</Fact> : null}
       <Fact label="Source" wide>
         <span className="deploy-card__source-line">
           <BranchIcon />
@@ -259,6 +273,61 @@ function DeploymentFacts({ preview }: CardProps) {
         <CommitLine preview={preview} />
       </Fact>
     </dl>
+  );
+}
+
+/** One deploy: its status, commit, how it started and how long it took. */
+function RecentDeployRow({ deploy }: Readonly<{ deploy: ProjectPreviewDeploy }>) {
+  const sha = shortCommitSha(deploy.commitSha);
+  const trigger = deployTriggerLabel(deploy.trigger);
+  const took = deployDurationLabel(deploy);
+  return (
+    <li className="deploy-card__deploy">
+      <span className="deploy-card__deploy-status">
+        <span
+          aria-hidden="true"
+          className={`deploy-card__dot deploy-card__dot--${deployDotTone(deploy.status)}`}
+        />
+        {deployStatusWord(deploy.status)}
+      </span>
+      <span className="deploy-card__deploy-commit">
+        {sha ? <span className="deploy-card__sha">{sha}</span> : null}
+        {deploy.commitMessage ? <span className="deploy-card__commit-message">{deploy.commitMessage}</span> : null}
+      </span>
+      <span className="deploy-card__deploy-meta">
+        {[trigger, took, deployedAgo(deploy.createdAt)].filter(Boolean).join(" · ")}
+      </span>
+    </li>
+  );
+}
+
+/**
+ * The environment's recent deploys, folded under the card so the logs stay the
+ * card's subject. Absent when the backend sends none (an older server, or
+ * nothing deployed yet).
+ */
+function RecentDeploys({ preview }: CardProps) {
+  const listId = useId();
+  const [open, setOpen] = useState(false);
+  const deploys = preview.recentDeploys ?? [];
+  if (deploys.length === 0) return null;
+  return (
+    <div className="deploy-card__recent">
+      <button
+        aria-controls={listId}
+        aria-expanded={open}
+        className="deploy-card__recent-toggle"
+        onClick={() => setOpen(!open)}
+        type="button"
+      >
+        Recent deploys ({deploys.length})
+      </button>
+      <ul aria-label="Recent deploys" className="deploy-card__deploys" hidden={!open} id={listId}>
+        {deploys.map((deploy) => (
+          <RecentDeployRow deploy={deploy} key={deploy.id} />
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -292,8 +361,9 @@ function DeploymentActions({ preview }: CardProps) {
 }
 
 /**
- * One production environment, laid out like the provider's own deployment
- * page: what is live, where it answers, and what put it there.
+ * One environment (Production, or a backend's UAT), laid out like the
+ * provider's own deployment page: what is live, where it answers, what put it
+ * there, and the deploys before it.
  */
 export function ProductionDeploymentCard({
   preview,
@@ -307,7 +377,7 @@ export function ProductionDeploymentCard({
     <article className="deploy-card" data-surface={surface}>
       <header className="deploy-card__head">
         <div>
-          <h2 className="deploy-card__title">Production Deployment</h2>
+          <h2 className="deploy-card__title">{deploymentCardTitle(preview)}</h2>
           <p className="deploy-card__subtitle">
             {previewHostLabel(preview)} · {preview.targetName}
           </p>
@@ -322,6 +392,7 @@ export function ProductionDeploymentCard({
         />
         <DeploymentFacts preview={preview} />
       </div>
+      <RecentDeploys preview={preview} />
     </article>
   );
 }

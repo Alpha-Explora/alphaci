@@ -108,6 +108,96 @@ describe("Production Deployment card surface", () => {
     expect(text()).toContain("Render · alphaci-api");
   });
 
+  it("shows one environment at a time: Production first, UAT behind its tab, with recent deploys folded", () => {
+    const uat = production({
+      ...LOGS,
+      branch: "uat",
+      isProduction: false,
+      targetId: "target-api-uat",
+      targetName: "alphaci-api-uat",
+      trigger: "api",
+      startedAt: "2026-09-24T09:59:04.000Z",
+      readyAt: "2026-09-24T09:59:25.000Z",
+      recentDeploys: [
+        {
+          id: "dep-2",
+          status: "ready",
+          commitSha: "b0f1855e663b",
+          commitMessage: "fix(a11y): labels",
+          trigger: "api",
+          createdAt: "2026-09-24T09:59:00.000Z",
+          startedAt: "2026-09-24T09:59:04.000Z",
+          readyAt: "2026-09-24T09:59:25.000Z",
+        },
+        {
+          id: "dep-1",
+          status: "superseded",
+          commitSha: "b0f1855e663b",
+          commitMessage: "fix(a11y): labels",
+          trigger: "api",
+          createdAt: "2026-09-24T09:58:00.000Z",
+          startedAt: null,
+          readyAt: "2026-09-24T09:58:34.000Z",
+        },
+      ],
+    });
+    act(() => {
+      root.render(
+        <ProductionDeploymentView
+          error={null}
+          previews={{ enabled: true, liveProvidersEnabled: true, branches: [production(LOGS), uat], providerError: null }}
+          projectId="proj-1"
+          status="ready"
+        />,
+      );
+    });
+
+    const titles = () => Array.from(container.querySelectorAll(".deploy-card__title")).map((node) => node.textContent);
+    const tabs = () => Array.from(container.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    expect(titles()).toEqual(["Production Deployment"]);
+    expect(container.querySelector(".active-branch")).toBeNull();
+    expect(tabs().map((tab) => tab.textContent)).toEqual(["Productionmain · live", "UATuat · live"]);
+    expect(tabs().map((tab) => tab.getAttribute("aria-selected"))).toEqual(["true", "false"]);
+    expect(FakeEventSource.latest().url).toContain("/deployment-targets/target-api/logs/stream");
+
+    act(() => tabs()[1]?.click());
+    expect(titles()).toEqual(["UAT Deployment"]);
+    expect(tabs()[1]?.getAttribute("tabindex")).toBe("0");
+    expect(container.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby")).toBe(tabs()[1]?.id);
+    expect(FakeEventSource.latest().url).toContain("/deployment-targets/target-api-uat/logs/stream");
+
+    act(() => {
+      tabs()[1]?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    });
+    expect(titles()).toEqual(["Production Deployment"]);
+    act(() => tabs()[1]?.click());
+
+    const card = container.querySelector("article") as HTMLElement;
+    expect(card.textContent).toContain("Took21s");
+    expect(card.textContent).toContain("TriggerAPI");
+    const toggle = card.querySelector<HTMLButtonElement>(".deploy-card__recent-toggle");
+    const list = card.querySelector<HTMLElement>(".deploy-card__deploys");
+    expect(toggle?.textContent).toBe("Recent deploys (2)");
+    expect(list?.hidden).toBe(true);
+    act(() => toggle?.click());
+    expect(toggle?.getAttribute("aria-expanded")).toBe("true");
+    expect(list?.hidden).toBe(false);
+    const rows = Array.from(list?.querySelectorAll("li") ?? []).map((row) => row.textContent ?? "");
+    expect(rows[0]).toContain("Live");
+    expect(rows[0]).toContain("b0f1855");
+    expect(rows[0]).toContain("fix(a11y): labels");
+    expect(rows[0]).toContain("API · 21s");
+    expect(rows[1]).toContain("Replaced");
+  });
+
+  it("says a live tail that has gone quiet may be a sleeping service", () => {
+    render(production(LOGS));
+    act(() => FakeEventSource.latest().emit({ kind: "snapshot", ...page([line("a", 1)]) }));
+
+    expect(container.querySelector(".deploy-logs-tail__quiet")?.textContent).toContain("No new lines since");
+    expect(text()).toContain("starts again on the next request");
+  });
+
   it("toggles errors only from the chip, as a server-side filter", () => {
     render(production(LOGS));
     act(() => FakeEventSource.latest().emit({ kind: "snapshot", ...page([line("a", 1, { level: "error" })]) }));

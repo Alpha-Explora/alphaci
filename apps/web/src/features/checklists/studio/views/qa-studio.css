@@ -14,6 +14,11 @@
      than the studio. */
   --qa-rail-closed: var(--sidebar-collapsed, 52px);
   --qa-rail-open: min(30rem, calc(100% - 1.5rem));
+  /* "Hard offset": the rail floats this far in from the right and bottom
+     edges so its crisp offset shadow (a dark step, then an outline step,
+     down and to the right) is never cut off by the window. */
+  --qa-rail-inset: 0.5rem;
+  --qa-rail-offset: 3px 3px 0 var(--bg-soft), 4px 4px 0 var(--border-tile);
 
   display: grid;
   /* One column that may shrink below its content: with the implicit auto
@@ -310,11 +315,11 @@
   gap: 1rem;
   align-items: start;
   min-height: var(--qa-pane-height);
-  padding-right: calc(var(--qa-rail-closed) + 0.75rem);
+  padding-right: calc(var(--qa-rail-closed) + var(--qa-rail-inset) + 0.75rem);
 }
 
 .qa-studio[data-rail="pinned"] .qa-studio__panes {
-  padding-right: calc(var(--qa-rail-open) + 0.75rem);
+  padding-right: calc(var(--qa-rail-open) + var(--qa-rail-inset) + 0.75rem);
 }
 
 /* Both panes share one height and only the item list scrolls: the app shell
@@ -334,25 +339,22 @@
 /* The rail: one solid surface — no backdrop-filter or transform (the app
    rail's glass would make it the containing block for the Sign-off dialog's
    fixed backdrop and trap the dialog inside). Closed it clips: the panel is
-   not drawn. */
+   not drawn. "Hard offset" look: a rounded, fully outlined rail held off the
+   window edges, with a crisp stepped shadow instead of a soft one. */
 .qa-rail {
   position: absolute;
   top: 0;
-  right: 0;
-  bottom: 0;
+  right: calc(var(--qa-rail-inset) - 0.25rem);
+  bottom: var(--qa-rail-inset);
   z-index: 3;
   display: flex;
   flex-direction: row-reverse;
   width: var(--qa-rail-closed);
   overflow: clip;
-  /* On the window's right and bottom edges, like the app rail on the left:
-     an edge only where it meets the page. */
-  border: 1px solid var(--border-layer);
-  border-right: 0;
-  border-bottom: 0;
-  border-radius: 0;
+  border: 1px solid var(--border-tile);
+  border-radius: 0.625rem;
   background: var(--layer-1);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--qa-rail-offset);
 }
 
 /* Open: pinned; or peeking — under the pointer (unless an unpin under it
@@ -373,8 +375,7 @@
 .qa-rail:not([data-pinned="true"]):has(:focus-visible),
 .qa-rail:not([data-pinned="true"]):has(.qa-studio__run:focus-within),
 .qa-rail:not([data-pinned="true"]):not([data-hover-suppressed="true"]):hover {
-  border-color: var(--border-tile);
-  box-shadow: var(--shadow-hard);
+  box-shadow: var(--qa-rail-offset), var(--shadow-hard);
 }
 
 /* The strip: the rail's own column at the edge, in every state. */
@@ -937,6 +938,10 @@
   margin: 0;
   font-size: 0.8rem;
   color: var(--text-secondary);
+}
+
+.qa-run-card__foot > .primary-button {
+  margin-left: auto;
 }
 
 .qa-run {
@@ -1899,12 +1904,11 @@
      to move the page aside, so pinned it opens over the page too: the page
      keeps its width and the strip is all it ever gives up. */
   .qa-studio[data-rail="pinned"] .qa-studio__panes {
-    padding-right: calc(var(--qa-rail-closed) + 0.75rem);
+    padding-right: calc(var(--qa-rail-closed) + var(--qa-rail-inset) + 0.75rem);
   }
 
   .qa-rail[data-pinned="true"] {
-    border-color: var(--border-tile);
-    box-shadow: var(--shadow-hard);
+    box-shadow: var(--qa-rail-offset), var(--shadow-hard);
   }
 }
 
