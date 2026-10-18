@@ -204,22 +204,8 @@ export function resolvePreviewBranch(branches: ReadonlyArray<string>, asked: str
 
 /* ── Roving tab focus (WAI-ARIA tabs) ─────────────────────────────────────── */
 
-const TAB_STEPS: Readonly<Record<string, number>> = {
-  ArrowRight: 1,
-  ArrowDown: 1,
-  ArrowLeft: -1,
-  ArrowUp: -1,
-};
-
-/** The tab a key moves to from `index`, wrapping; null for any other key. */
-export function nextTabIndex(key: string, index: number, count: number): number | null {
-  if (count <= 0) return null;
-  if (key === "Home") return 0;
-  if (key === "End") return count - 1;
-  const step = TAB_STEPS[key];
-  if (step === undefined) return null;
-  return (index + step + count) % count;
-}
+/** Shared with the Overview's environment switcher. */
+export { nextTabIndex } from "../../model/projects-rules";
 
 /* ── Deploys ──────────────────────────────────────────────────────────────── */
 
