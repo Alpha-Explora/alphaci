@@ -940,6 +940,10 @@
   color: var(--text-secondary);
 }
 
+.qa-run-card__foot > .primary-button {
+  margin-left: auto;
+}
+
 .qa-run {
   display: grid;
   gap: 0.85rem;

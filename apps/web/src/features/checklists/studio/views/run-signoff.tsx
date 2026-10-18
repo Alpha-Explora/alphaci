@@ -174,16 +174,18 @@ const VERDICT_HINTS: Record<QaVerdict, string> = {
   REJECTED: "Not ready. Send it back.",
 };
 
-function readinessText(vm: QaSignoffViewModel): string {
+function readinessText(vm: QaSignoffViewModel): string | null {
   const approved = vm.eligibility.find((entry) => entry.verdict === "APPROVED");
   if (approved?.allowed) return "Every item passed — ready to approve.";
-  return approved?.reason ?? "";
+  const reason = approved?.reason ?? "";
+  return /^\d+ items? (?:is|are) not passed yet\.$/.test(reason) ? null : reason || null;
 }
 
 export function SignoffFooter({ vm }: Readonly<{ vm: QaSignoffViewModel }>) {
+  const text = readinessText(vm);
   return (
     <div className="qa-run-card__foot">
-      <p className="qa-run-card__foot-text">{readinessText(vm)}</p>
+      {text ? <p className="qa-run-card__foot-text">{text}</p> : null}
       {vm.canSignOff ? (
         <button type="button" className="primary-button" onClick={vm.openDialog}>
           Sign off
