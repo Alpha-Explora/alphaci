@@ -344,7 +344,7 @@
 .qa-rail {
   position: absolute;
   top: 0;
-  right: var(--qa-rail-inset);
+  right: calc(var(--qa-rail-inset) - 0.25rem);
   bottom: var(--qa-rail-inset);
   z-index: 3;
   display: flex;
