@@ -172,6 +172,40 @@ export function getProjectFiles(
   return request<RepoContentListing>(`${base(projectId)}/files${suffix}`);
 }
 
+/** The most recent commit that touched a path. */
+export interface RepoPathCommit {
+  sha: string;
+  shortSha: string;
+  /** First line of the commit message. */
+  message: string;
+  committedAt: string;
+  authorLogin: string | null;
+  authorName: string | null;
+  authorAvatarUrl: string | null;
+}
+
+/** GET workspace/files/commits: the Code tab's commit column for one path. */
+export interface RepoFileCommits {
+  path: string;
+  ref: string;
+  /** The latest commit of the opened folder (or file) itself. */
+  latest: RepoPathCommit | null;
+  /** Commits that touched it; for the repository root, the branch's total. */
+  totalCommits: number | null;
+  /** Keyed by entry path; null when there is none to show. */
+  entries: Record<string, RepoPathCommit | null>;
+}
+
+/** Once per opened folder or file, after its listing. Never polled. */
+export function getProjectFileCommits(
+  projectId: string,
+  params: { path: string; ref: string },
+) {
+  const query = new URLSearchParams({ ref: params.ref });
+  if (params.path) query.set("path", params.path);
+  return request<RepoFileCommits>(`${base(projectId)}/files/commits?${query.toString()}`);
+}
+
 /** Safe to poll. */
 export function getProjectWorkflowRuns(
   projectId: string,
