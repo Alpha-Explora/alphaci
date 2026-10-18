@@ -1263,6 +1263,8 @@ export type DeploymentHistoryStatus =
   | "ready"
   | "failed"
   | "canceled"
+  /** Went live, then a newer deploy replaced it (Render's "deactivated"). */
+  | "superseded"
   | "unknown";
 
 export interface ProjectDeploymentHistoryItem {
@@ -1277,7 +1279,11 @@ export interface ProjectDeploymentHistoryItem {
   commitMessage: string | null;
   status: DeploymentHistoryStatus;
   createdAt: string;
+  /** When the host began the deploy, where it reports that apart from createdAt. Absent on older backends. */
+  startedAt?: string | null;
   readyAt: string | null;
+  /** What started it, in the host's word (Render: api, new_commit, manual, deploy_hook…). */
+  trigger?: string | null;
   /** The deployed site itself — per-deployment on Vercel, per-service on Render. */
   deploymentUrl: string | null;
   /** Set when the deployment was built for a pull request. */
@@ -1318,6 +1324,18 @@ export type ProjectBranchPreviewStatus =
   | DeploymentHistoryStatus
   | "not_deployed";
 
+/** One of an environment's recent deploys, as its Overview card lists them. */
+export interface ProjectPreviewDeploy {
+  id: string;
+  status: DeploymentHistoryStatus;
+  commitSha: string | null;
+  commitMessage: string | null;
+  trigger: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  readyAt: string | null;
+}
+
 export interface ProjectBranchPreview {
   branch: string;
   isProduction: boolean;
@@ -1349,6 +1367,16 @@ export interface ProjectBranchPreview {
   /** Null for an environment with no deployment to date. */
   createdAt: string | null;
   readyAt: string | null;
+  /*
+   * The three fields below are absent on a backend older than them; the card
+   * then shows no trigger, no duration and no recent deploys.
+   */
+  /** What started the current deploy, in the host's word. */
+  trigger?: string | null;
+  /** When the host began the current deploy. */
+  startedAt?: string | null;
+  /** The environment's newest deploys, newest first, the current one included. */
+  recentDeploys?: ProjectPreviewDeploy[];
   /**
    * null means undetermined. The UI must not frame it in that case — a browser
    * fires no error event for an X-Frame-Options refusal, so an unverified

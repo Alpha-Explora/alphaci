@@ -1168,7 +1168,7 @@ describe("Project env provisioning UI", () => {
     const recent = () =>
       rendered.container.querySelector('[aria-label="Recent deploys"]');
     expect(recent()?.textContent).toContain("abc123");
-    expect(recent()?.textContent).toContain("ready");
+    expect(recent()?.textContent).toContain("Live");
     expect(recent()?.textContent).not.toContain("def456");
 
     // The Vercel service's production deploy is its own.
@@ -1178,7 +1178,7 @@ describe("Project env provisioning UI", () => {
         .dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     expect(recent()?.textContent).toContain("def456");
-    expect(recent()?.textContent).toContain("building");
+    expect(recent()?.textContent).toContain("Building");
     // Provider consoles are not linked from the history any more.
     expect(
       rendered.container.querySelector(

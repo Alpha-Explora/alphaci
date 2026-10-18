@@ -9,6 +9,7 @@ import type {
   ProjectDeploymentsResponse,
 } from "@/shared/api/contracts";
 import { deployedAgo, shortCommitSha } from "../../model/projects-rules";
+import { deployDurationLabel, deployStatusWord, deployTriggerLabel } from "../../model/deploy-facts-rules";
 import {
   deployTone,
   environmentAddress,
@@ -281,11 +282,12 @@ function DeployRow({
   onOpenPullRequest,
 }: Readonly<{ deploy: ProjectDeploymentHistoryItem; showBranch: boolean; onOpenPullRequest: OpenPullRequest }>) {
   const sha = shortCommitSha(deploy.commitSha);
+  const how = [deployTriggerLabel(deploy.trigger), deployDurationLabel(deploy)].filter(Boolean).join(" · ");
   return (
     <li className="hosting-row">
       <span className="hosting-row__status">
         <HostingDot tone={deployTone(deploy.status)} />
-        {deploy.status}
+        {deployStatusWord(deploy.status)}
       </span>
       <span className="hosting-row__main">
         {sha ? <code className="hosting-mono">{sha}</code> : null}
@@ -293,6 +295,7 @@ function DeployRow({
       </span>
       {showBranch && deploy.branch ? <code className="hosting-mono hosting-chip">{deploy.branch}</code> : null}
       <PullRequestChip number={deploy.pullRequestNumber} onOpenPullRequest={onOpenPullRequest} />
+      {how ? <span className="hosting-row__how">{how}</span> : null}
       <span className="hosting-row__time">{deployedAgo(deploy.createdAt)}</span>
     </li>
   );

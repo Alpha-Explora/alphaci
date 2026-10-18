@@ -269,6 +269,8 @@ function ServiceIdentity({ target }: Readonly<{ target: DeploymentTarget }>) {
 
 function ServiceMetaLine({ target }: Readonly<{ target: DeploymentTarget }>) {
   const meta = serviceMeta(target);
+  // A pushed image has no build or directory on the host; saying one would be wrong.
+  if (!meta.builds) return <p className="hosting-service__meta">{meta.summary}</p>;
   return (
     <p className="hosting-service__meta">
       {meta.summary} ·{" "}
