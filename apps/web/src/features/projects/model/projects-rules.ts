@@ -244,10 +244,36 @@ export function splitOverviewPreviews(
 
 /** "Production Deployment", "UAT Deployment": a card's title, from its environment. */
 export function deploymentCardTitle(preview: Pick<ProjectBranchPreview, "isProduction" | "branch">): string {
-  if (preview.isProduction) return "Production Deployment";
+  return `${environmentName(preview)} Deployment`;
+}
+
+/** "Production", "UAT", "Staging": an environment's name, as its tab and card say it. */
+export function environmentName(preview: Pick<ProjectBranchPreview, "isProduction" | "branch">): string {
+  if (preview.isProduction) return "Production";
   const branch = preview.branch.trim();
-  const name = branch.length <= 3 ? branch.toUpperCase() : `${branch.slice(0, 1).toUpperCase()}${branch.slice(1)}`;
-  return `${name} Deployment`;
+  return branch.length <= 3 ? branch.toUpperCase() : `${branch.slice(0, 1).toUpperCase()}${branch.slice(1)}`;
+}
+
+/** "main · live": the line under an environment tab's name. */
+export function environmentTabLine(preview: Pick<ProjectBranchPreview, "branch" | "status">): string {
+  return `${preview.branch} · ${previewStatusLabel(preview.status).toLowerCase()}`;
+}
+
+const TAB_STEPS: Readonly<Record<string, number>> = {
+  ArrowRight: 1,
+  ArrowDown: 1,
+  ArrowLeft: -1,
+  ArrowUp: -1,
+};
+
+/** WAI-ARIA tabs: the tab a key moves to from `index`, wrapping; null for any other key. */
+export function nextTabIndex(key: string, index: number, count: number): number | null {
+  if (count <= 0) return null;
+  if (key === "Home") return 0;
+  if (key === "End") return count - 1;
+  const step = TAB_STEPS[key];
+  if (step === undefined) return null;
+  return (index + step + count) % count;
 }
 
 /** "https://web-app.vercel.app/" -> "web-app.vercel.app". Unparseable URLs pass through. */

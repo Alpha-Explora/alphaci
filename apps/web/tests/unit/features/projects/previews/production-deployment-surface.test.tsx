@@ -108,7 +108,7 @@ describe("Production Deployment card surface", () => {
     expect(text()).toContain("Render · alphaci-api");
   });
 
-  it("gives a backend's uat its own card, with its recent deploys folded under it", () => {
+  it("shows one environment at a time: Production first, UAT behind its tab, with recent deploys folded", () => {
     const uat = production({
       ...LOGS,
       branch: "uat",
@@ -152,11 +152,27 @@ describe("Production Deployment card surface", () => {
       );
     });
 
-    const titles = Array.from(container.querySelectorAll(".deploy-card__title")).map((node) => node.textContent);
-    expect(titles).toEqual(["Production Deployment", "UAT Deployment"]);
+    const titles = () => Array.from(container.querySelectorAll(".deploy-card__title")).map((node) => node.textContent);
+    const tabs = () => Array.from(container.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    expect(titles()).toEqual(["Production Deployment"]);
     expect(container.querySelector(".active-branch")).toBeNull();
+    expect(tabs().map((tab) => tab.textContent)).toEqual(["Productionmain · live", "UATuat · live"]);
+    expect(tabs().map((tab) => tab.getAttribute("aria-selected"))).toEqual(["true", "false"]);
+    expect(FakeEventSource.latest().url).toContain("/deployment-targets/target-api/logs/stream");
 
-    const card = container.querySelectorAll("article")[1] as HTMLElement;
+    act(() => tabs()[1]?.click());
+    expect(titles()).toEqual(["UAT Deployment"]);
+    expect(tabs()[1]?.getAttribute("tabindex")).toBe("0");
+    expect(container.querySelector('[role="tabpanel"]')?.getAttribute("aria-labelledby")).toBe(tabs()[1]?.id);
+    expect(FakeEventSource.latest().url).toContain("/deployment-targets/target-api-uat/logs/stream");
+
+    act(() => {
+      tabs()[1]?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    });
+    expect(titles()).toEqual(["Production Deployment"]);
+    act(() => tabs()[1]?.click());
+
+    const card = container.querySelector("article") as HTMLElement;
     expect(card.textContent).toContain("Took21s");
     expect(card.textContent).toContain("TriggerAPI");
     const toggle = card.querySelector<HTMLButtonElement>(".deploy-card__recent-toggle");

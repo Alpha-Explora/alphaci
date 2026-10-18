@@ -308,6 +308,16 @@
   line-height: 1.4;
 }
 
+/* The Overview card's tail still scrolls (wheel, touch, keyboard) but draws
+   no bar: the browser's default one is a light strip on the dark card. */
+.deploy-logs-tail .deploy-logs__scroller {
+  scrollbar-width: none;
+}
+
+.deploy-logs-tail .deploy-logs__scroller::-webkit-scrollbar {
+  display: none;
+}
+
 
 /* ── Hosting console ──────────────────────────────────────────────────── */
 
