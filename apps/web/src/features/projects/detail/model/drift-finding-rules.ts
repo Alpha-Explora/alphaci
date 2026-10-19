@@ -59,12 +59,32 @@ export function driftAffectedFiles(
   });
 }
 
-/** The pull request a repair opened, or found already open, when it made one. */
-export function driftPullRequestUrl(
+/**
+ * The number of the pull request a repair opened, or found already open, so
+ * it opens in the Pull requests tab: from `pullRequestNumber`, else read off
+ * the end of `pullRequestUrl`. The GitHub address itself is never linked.
+ */
+export function driftPullRequestNumber(
   response: Pick<ProjectDriftRepairResponse, "result">,
-): string | null {
+): number | null {
+  const number = response.result?.["pullRequestNumber"];
+  if (typeof number === "number" && Number.isInteger(number) && number > 0) return number;
   const url = response.result?.["pullRequestUrl"];
-  return typeof url === "string" && url.length > 0 ? url : null;
+  const match = typeof url === "string" ? /\/pull\/(\d+)(?:[/?#]|$)/.exec(url) : null;
+  return match ? Number(match[1]) : null;
+}
+
+/**
+ * A repair's sentence without GitHub addresses: "Opened a pull request into
+ * dev: https://github.com/…/pull/42" reads "Opened a pull request into dev.",
+ * and the pull request opens in the app instead.
+ */
+export function driftRepairMessage(message: string): string {
+  return message
+    .replace(/:?\s*https?:\/\/(?:www\.)?github\.com\/\S*/gi, "")
+    .replace(/\s+([.,;])/g, "$1")
+    .trim()
+    .replace(/([^.!?])$/, "$1.");
 }
 
 /**

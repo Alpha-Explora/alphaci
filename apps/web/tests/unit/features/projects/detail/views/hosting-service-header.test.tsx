@@ -167,8 +167,9 @@ describe("Hosting service header", () => {
     expect(menuItem("Edit build settings")).toBeDefined();
     expect(menuItem("Reinstall deployment secrets")).toBeDefined();
     expect(menuItem("Detach")).toBeDefined();
-    const open = menuItem("Open in Render");
-    expect(open?.getAttribute("href")).toBe("https://dashboard.render.com/web/srv-1");
+    // No way into the provider's dashboard: it is ALPHACI's own account.
+    expect(menuItem("Open in Render")).toBeUndefined();
+    expect(container.querySelector('a[href*="render.com"], a[href*="vercel.com"]')).toBeNull();
     expect(container.querySelector('a[href*="github.com"]')).toBeNull();
   });
 
@@ -290,7 +291,7 @@ describe("hosting mutation gate (HOSTING_LEAD_ONLY)", () => {
     openMenu();
     expect(menuItem("Edit build settings")).toBeUndefined();
     expect(menuItem("Detach")).toBeUndefined();
-    expect(menuItem("Open in Render")).toBeDefined();
+    expect(menuItem("Open in Render")).toBeUndefined();
     expect(container.textContent).toContain("Developers and admins can");
   });
 

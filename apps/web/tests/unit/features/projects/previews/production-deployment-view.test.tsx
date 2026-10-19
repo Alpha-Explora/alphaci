@@ -161,7 +161,9 @@ describe("ProductionDeploymentView", () => {
       "web-app.vercel.app",
     );
     expect(link("Visit")).toBeUndefined();
-    expect(link("Provider dashboard")).toBeDefined();
+    // No provider dashboard: Vercel and Render are ALPHACI's own accounts.
+    expect(link("Provider dashboard")).toBeUndefined();
+    expect(container.querySelector('a[href*="vercel.com"], a[href*="render.com"]')).toBeNull();
     expect(container.textContent).toContain("Nothing deployed yet");
   });
 

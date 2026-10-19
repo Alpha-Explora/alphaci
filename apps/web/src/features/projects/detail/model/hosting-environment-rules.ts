@@ -334,14 +334,6 @@ export function targetStatusPill(status: DeploymentTarget["status"]): { label: s
   return TARGET_STATUS[status] ?? { label: status, tone: "idle" };
 }
 
-/** Where "Open in Vercel" goes: the server's dashboard URL, else the provider's convention. */
-export function providerDashboardHref(
-  target: Pick<DeploymentTarget, "dashboardUrl">,
-  fallback: string | null,
-): string | null {
-  return target.dashboardUrl?.trim() || fallback;
-}
-
 /* ── Variables ────────────────────────────────────────────────────────────── */
 
 function laneKeys(

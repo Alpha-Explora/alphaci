@@ -2,8 +2,9 @@ import {
   canRunDriftRepair,
   driftAffectedFiles,
   driftFindingTitle,
-  driftPullRequestUrl,
+  driftPullRequestNumber,
   driftRepairBaseBranch,
+  driftRepairMessage,
   driftRepairActionFor,
 } from "@/features/projects/detail/model/drift-finding-rules";
 
@@ -50,16 +51,26 @@ describe("drift finding rules", () => {
   });
 });
 
-describe("driftPullRequestUrl", () => {
-  it("returns the pull request a repair opened, and null when it opened none", () => {
-    expect(
-      driftPullRequestUrl({
-        result: { pullRequestUrl: "https://github.com/acme/shop/pull/3" },
-      }),
-    ).toBe("https://github.com/acme/shop/pull/3");
-    expect(driftPullRequestUrl({ result: {} })).toBeNull();
-    expect(driftPullRequestUrl({ result: { pullRequestUrl: "" } })).toBeNull();
-    expect(driftPullRequestUrl({})).toBeNull();
+describe("driftPullRequestNumber", () => {
+  it("returns the number of the pull request a repair opened, and null when it opened none", () => {
+    expect(driftPullRequestNumber({ result: { pullRequestNumber: 7, pullRequestUrl: "https://github.com/acme/shop/pull/3" } })).toBe(7);
+    expect(driftPullRequestNumber({ result: { pullRequestUrl: "https://github.com/acme/shop/pull/3" } })).toBe(3);
+    expect(driftPullRequestNumber({ result: { pullRequestUrl: "https://github.com/acme/shop/pull/3/files" } })).toBe(3);
+    expect(driftPullRequestNumber({ result: {} })).toBeNull();
+    expect(driftPullRequestNumber({ result: { pullRequestUrl: "" } })).toBeNull();
+    expect(driftPullRequestNumber({})).toBeNull();
+  });
+});
+
+describe("driftRepairMessage", () => {
+  it("drops GitHub addresses and keeps every other word", () => {
+    expect(driftRepairMessage("Opened a pull request into dev: https://github.com/acme/shop/pull/42")).toBe(
+      "Opened a pull request into dev.",
+    );
+    expect(driftRepairMessage("Found https://github.com/acme/shop/pull/9 already open.")).toBe("Found already open.");
+    expect(driftRepairMessage("CI points at https://api.alphaci.test; no change was needed.")).toBe(
+      "CI points at https://api.alphaci.test; no change was needed.",
+    );
   });
 });
 

@@ -106,16 +106,6 @@ function PreviewActions({
           </button>
         </>
       ) : null}
-      {preview.status === "not_deployed" && preview.inspectorUrl ? (
-        <a
-          className="ghost-button target-action-btn"
-          href={preview.inspectorUrl}
-          target="_blank"
-          rel="noreferrer noopener"
-        >
-          Provider dashboard
-        </a>
-      ) : null}
     </footer>
   );
 }
