@@ -24,9 +24,9 @@ describe("headerTeam", () => {
     expect(headerTeam(TEAMS, "g-2")?.id).toBe("g-2");
   });
 
-  it("falls back to the first team while the header has nothing this list knows", () => {
+  it("falls back only when the header has no selection", () => {
     expect(headerTeam(TEAMS, null)?.id).toBe("g-1");
-    expect(headerTeam(TEAMS, "gone")?.id).toBe("g-1");
+    expect(headerTeam(TEAMS, "new-workspace")).toBeNull();
   });
 
   it("is null with no teams", () => {
