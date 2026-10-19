@@ -1,8 +1,13 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { WorkspaceProvider } from "../../../../../../src/features/workspace/selection/views/workspace-selection-context";
+import { WorkspaceProvider, useWorkspaceSelection } from "../../../../../../src/features/workspace/selection/views/workspace-selection-context";
 import { WorkspaceSwitcher } from "../../../../../../src/features/workspace/selection/views/workspace-switcher";
+
+const mockPush = jest.fn();
+jest.mock("next/navigation", () => ({ useRouter: () => ({ push: mockPush }) }));
+jest.mock("../../../../../../src/features/groups", () => ({ createGroup: jest.fn() }));
+import { createGroup } from "../../../../../../src/features/groups";
 
 const workspaces = {
   enabled: true,
@@ -21,6 +26,7 @@ afterEach(() => {
   root = null;
   document.body.innerHTML = "";
   window.localStorage.clear();
+  jest.clearAllMocks();
 });
 
 function renderSwitcher(node: React.ReactNode): HTMLElement {
@@ -68,6 +74,34 @@ function headingText(container: HTMLElement): string | undefined {
 }
 
 describe("WorkspaceSwitcher", () => {
+  it("selects a created workspace before redirecting to its fresh Projects page", async () => {
+    (createGroup as jest.Mock).mockResolvedValue({ id: "workspace-new", name: "Team Alpha" });
+    const refreshed = jest.fn();
+    function Selection() {
+      const selection = useWorkspaceSelection();
+      return <output>{selection.selectedWorkspaceId}:{selection.selectedWorkspace?.name ?? "loading"}</output>;
+    }
+    const container = renderSwitcher(<>
+      <Selection />
+      <WorkspaceSwitcher workspaces={workspaces} appRole="admin" onWorkspaceCreated={refreshed} />
+    </>);
+    click(trigger(container)!);
+    click(createAction(container)!);
+    const name = container.querySelector<HTMLInputElement>("#group-name")!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(name, "Team Alpha");
+      name.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    const submit = [...container.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')]
+      .find((button) => button.textContent === "Create workspace")!;
+    await act(async () => submit.click());
+    expect(createGroup).toHaveBeenCalledWith({ name: "Team Alpha", description: undefined });
+    expect(window.localStorage.getItem("flowci.workspaceId")).toBe("workspace-new");
+    expect(container.querySelector("output")?.textContent).toBe("workspace-new:loading");
+    expect(refreshed).toHaveBeenCalledWith("workspace-new");
+    expect(mockPush).toHaveBeenCalledWith("/workflows?group=workspace-new&created=workspace");
+  });
+
   // Deliberately a picker even with ONE entry. Falling back to plain text
   // meant a lead with a single team learned the app had no switcher and never
   // looked again after joining a second.
