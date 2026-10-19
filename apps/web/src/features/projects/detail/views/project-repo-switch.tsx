@@ -21,16 +21,6 @@ function tabStopIndex(options: ReadonlyArray<RepoSwitchOption>): number {
   return options.findIndex((option) => !option.disabled);
 }
 
-/** The data attributes the styles read: role colour, name shown, opening. */
-function optionData(option: RepoSwitchOption, pendingId: string | null) {
-  return {
-    "data-role": option.role ?? undefined,
-    "data-show-name": option.showName || undefined,
-    "data-pending":
-      (!option.current && pendingId !== null && option.projectId === pendingId) || undefined,
-  };
-}
-
 /**
  * The segmented switch between a Project's repositories.
  *
@@ -101,11 +91,11 @@ export function ProjectRepoSwitch({
             type="button"
             role="radio"
             className="repo-switch__option"
-            {...optionData(option, pendingId)}
+            data-role={option.role ?? undefined}
+            data-pending={(!option.current && option.projectId === pendingId && pendingId !== null) || undefined}
             data-tooltip={option.disabled ? UNLINKED_REPO_HINT : undefined}
-            // In the tab row the name is hidden to fit beside nine tabs, unless
-            // another repository shares the role; the native tooltip still
-            // names the repository on hover.
+            // In the tab row the name is hidden to fit beside nine tabs; the
+            // native tooltip still names the repository on hover.
             title={option.disabled ? undefined : option.label}
             aria-checked={option.current}
             aria-disabled={option.disabled || undefined}

@@ -51,11 +51,6 @@ export interface RepoSwitchOption {
   roleLabel: string;
   /** The short repository name, "Org/shop-fe" -> "shop-fe". */
   label: string;
-  /**
-   * Another repository in the Project has the same role, so the role alone
-   * cannot tell them apart: the switch shows this one by name.
-   */
-  showName: boolean;
   repoFullName: string | null;
   /** The page on screen. */
   current: boolean;

@@ -176,24 +176,9 @@ describe("repoSwitchOptions", () => {
       ],
     });
     expect(repoSwitchOptions(shop, "proj-be")).toEqual([
-      { key: "proj-fe", projectId: "proj-fe", role: "frontend", roleLabel: "FRONTEND", label: "shop-fe", showName: false, repoFullName: "Org/shop-fe", current: false, disabled: false },
-      { key: "proj-be", projectId: "proj-be", role: "backend", roleLabel: "BACKEND", label: "shop-be", showName: false, repoFullName: "Org/shop-be", current: true, disabled: false },
-      { key: "repo:shop-worker", projectId: null, role: null, roleLabel: "REPO", label: "shop-worker", showName: false, repoFullName: null, current: false, disabled: true },
-    ]);
-  });
-
-  it("names the repositories that share a role, and only those", () => {
-    const shop = folder({
-      repositories: [
-        repo(),
-        repo({ projectId: "proj-fe-2", repoFullName: "Org/shop-fe-2" }),
-        repo({ projectId: "proj-be", repoFullName: "Org/shop-be", role: "backend" }),
-      ],
-    });
-    expect(repoSwitchOptions(shop, "proj-be").map((option) => [option.label, option.showName])).toEqual([
-      ["shop-fe", true],
-      ["shop-fe-2", true],
-      ["shop-be", false],
+      { key: "proj-fe", projectId: "proj-fe", role: "frontend", roleLabel: "FRONTEND", label: "shop-fe", repoFullName: "Org/shop-fe", current: false, disabled: false },
+      { key: "proj-be", projectId: "proj-be", role: "backend", roleLabel: "BACKEND", label: "shop-be", repoFullName: "Org/shop-be", current: true, disabled: false },
+      { key: "repo:shop-worker", projectId: null, role: null, roleLabel: "REPO", label: "shop-worker", repoFullName: null, current: false, disabled: true },
     ]);
   });
 
@@ -244,6 +229,51 @@ describe("repoSwitchPresentation", () => {
     const shown = repoSwitchPresentation(folder(), "proj-fe");
     expect(shown.projectName).toBe("shop");
     expect(shown.options.map((option) => option.current)).toEqual([true, false]);
+  });
+
+  // The Tone-Testing Project: three test pairs and two apps under one Project.
+  const crowded = folder({
+    repositories: [
+      repo({ projectId: "a-fe", repoFullName: "Org/asfasga-fe" }),
+      repo({ projectId: "b-fe", repoFullName: "Org/afghwrwga-fe" }),
+      repo({ projectId: "a-be", repoFullName: "Org/asfasga-be", role: "backend" }),
+      repo({ projectId: "b-be", repoFullName: "Org/afghwrwga-be", role: "backend" }),
+      repo({ projectId: "app-1", repoFullName: "Org/asgh-e", role: "app" }),
+      repo({ projectId: "app-2", repoFullName: "Org/eatta", role: "app" }),
+    ],
+  });
+
+  it("offers only the open repository's own pair, from either half", () => {
+    for (const current of ["b-fe", "b-be"]) {
+      const shown = repoSwitchPresentation(crowded, current);
+      expect(shown.projectName).toBe("shop");
+      expect(shown.options.map((option) => [option.roleLabel, option.label])).toEqual([
+        ["FRONTEND", "afghwrwga-fe"],
+        ["BACKEND", "afghwrwga-be"],
+      ]);
+      expect(shown.options.find((option) => option.current)?.projectId).toBe(current);
+    }
+  });
+
+  it("titles the page without a switch when roles repeat and the repository has no pair", () => {
+    const shown = repoSwitchPresentation(crowded, "app-1");
+    expect(shown.projectName).toBe("shop");
+    expect(shown.options).toEqual([]);
+  });
+
+  it("offers a Project of hand-filed repositories whose roles all differ", () => {
+    const filed = folder({
+      repositories: [
+        repo({ repoFullName: "Org/shop-web" }),
+        repo({ projectId: "proj-be", repoFullName: "Org/shop-api", role: "backend" }),
+        repo({ projectId: "proj-app", repoFullName: "Org/shop-mobile", role: "app" }),
+      ],
+    });
+    expect(repoSwitchPresentation(filed, "proj-be").options.map((option) => option.label)).toEqual([
+      "shop-web",
+      "shop-api",
+      "shop-mobile",
+    ]);
   });
 
   it("leaves the page as it was for one repository, no folder, or a nameless Project", () => {
