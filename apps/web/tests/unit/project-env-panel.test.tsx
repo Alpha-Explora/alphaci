@@ -226,18 +226,37 @@ function render(ui: React.ReactNode) {
   return { container, root };
 }
 
-/** Opens the Pipeline tab on a view: the strip's tab, then the Runs | Configuration toggle. */
-async function openPipelineView(container: HTMLElement, view: "Runs" | "Configuration") {
-  const button = (label: string) =>
-    Array.from(container.querySelectorAll("button")).find((candidate) => candidate.textContent === label)!;
+/** Opens the Pipeline tab from the strip; it opens on Runs and offers no view toggle. */
+async function openPipelineRuns(container: HTMLElement) {
   await act(async () => {
-    button("Pipeline").click();
+    Array.from(container.querySelectorAll("button"))
+      .find((candidate) => candidate.textContent === "Pipeline")!
+      .click();
     await Promise.resolve();
   });
+  expect(container.querySelector('[aria-label="Pipeline views"]')).toBeNull();
+  expect(container.querySelector("#project-detail-panel-pipeline .pipeline-tab__run-view")).not.toBeNull();
+}
+
+/**
+ * The Runs | Configuration toggle is gone; Configuration opens from the
+ * retired Workflow tab's `#workflow` link, which the page reads at mount.
+ * Render with `renderAtWorkflowLink`, then confirm the view is on screen.
+ */
+function renderAtWorkflowLink(ui: React.ReactNode) {
+  window.history.replaceState(null, "", "#workflow");
+  return render(ui);
+}
+
+async function expectPipelineConfiguration(container: HTMLElement) {
   await act(async () => {
-    button(view).click();
     await Promise.resolve();
   });
+  // Configuration heads the panel itself; the runs list has its own head.
+  expect(container.querySelector("#project-detail-panel-pipeline > .pipeline-tab__head h2")?.textContent).toBe(
+    "Workflows",
+  );
+  expect(container.querySelector("#project-detail-panel-pipeline .pipeline-tab__run-view")).toBeNull();
 }
 
 function changeValue(
@@ -671,6 +690,7 @@ describe("Project env provisioning UI", () => {
     }
     root = null;
     document.body.innerHTML = "";
+    window.history.replaceState(null, "", window.location.pathname);
     jest.clearAllMocks();
   });
 
@@ -914,7 +934,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    await openPipelineView(rendered.container, "Runs");
+    await openPipelineRuns(rendered.container);
 
     expect(mockedProjectApi.getProjectCiRuns).toHaveBeenCalledWith("project-1");
     expect(rendered.container.textContent).toContain(
@@ -969,7 +989,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    await openPipelineView(rendered.container, "Runs");
+    await openPipelineRuns(rendered.container);
 
     expect(rendered.container.textContent).toContain("ALPHACI Quality");
     expect(rendered.container.textContent).toContain("quality");
@@ -1014,7 +1034,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    await openPipelineView(rendered.container, "Runs");
+    await openPipelineRuns(rendered.container);
 
     expect(rendered.container.textContent).not.toContain(
       "Live GitHub run sync is not enabled",
@@ -1630,7 +1650,7 @@ describe("Project env provisioning UI", () => {
       },
     });
 
-    const rendered = render(
+    const rendered = renderAtWorkflowLink(
       <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
@@ -1639,7 +1659,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    await openPipelineView(rendered.container, "Configuration");
+    await expectPipelineConfiguration(rendered.container);
 
     expect(mockedProjectApi.getWorkflowSettings).toHaveBeenCalledWith(
       "project-1",
@@ -1712,7 +1732,7 @@ describe("Project env provisioning UI", () => {
       },
     });
 
-    const rendered = render(
+    const rendered = renderAtWorkflowLink(
       <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
@@ -1721,7 +1741,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    await openPipelineView(rendered.container, "Configuration");
+    await expectPipelineConfiguration(rendered.container);
 
     const previewButton = Array.from(
       rendered.container.querySelectorAll("button"),
@@ -1800,7 +1820,7 @@ describe("Project env provisioning UI", () => {
       },
     });
 
-    const rendered = render(
+    const rendered = renderAtWorkflowLink(
       <ProjectDetailTabs project={provisionedProject} appRole={role} />,
     );
     root = rendered.root;
@@ -1809,7 +1829,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    await openPipelineView(rendered.container, "Configuration");
+    await expectPipelineConfiguration(rendered.container);
 
     const previewButton = Array.from(
       rendered.container.querySelectorAll("button"),
@@ -1870,7 +1890,7 @@ describe("Project env provisioning UI", () => {
       },
     });
 
-    const rendered = render(
+    const rendered = renderAtWorkflowLink(
       <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
@@ -1879,7 +1899,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    await openPipelineView(rendered.container, "Configuration");
+    await expectPipelineConfiguration(rendered.container);
 
     const previewButton = Array.from(
       rendered.container.querySelectorAll("button"),
@@ -1937,7 +1957,7 @@ describe("Project env provisioning UI", () => {
       new Error("settings unavailable"),
     );
 
-    const rendered = render(
+    let rendered = render(
       <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
@@ -1956,10 +1976,21 @@ describe("Project env provisioning UI", () => {
     expect(mockedProjectApi.getProjectDrift).not.toHaveBeenCalled();
 
     // Pipeline opens on Runs, so the runs are read before Configuration's settings.
-    await openPipelineView(rendered.container, "Runs");
+    await openPipelineRuns(rendered.container);
     expect(rendered.container.textContent).toContain("Unable to load CI runs.");
+    expect(mockedProjectApi.getWorkflowSettings).not.toHaveBeenCalled();
 
-    await openPipelineView(rendered.container, "Configuration");
+    // Configuration opens only from the #workflow link, read at mount.
+    act(() => root?.unmount());
+    document.body.innerHTML = "";
+    rendered = renderAtWorkflowLink(
+      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
+    );
+    root = rendered.root;
+    await expectPipelineConfiguration(rendered.container);
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(rendered.container.textContent).toContain(
       "Unable to load workflow settings.",
     );
@@ -2039,7 +2070,7 @@ describe("Project env provisioning UI", () => {
       new Error("preview unavailable"),
     );
 
-    const previewErrorRendered = render(
+    const previewErrorRendered = renderAtWorkflowLink(
       <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = previewErrorRendered.root;
@@ -2048,7 +2079,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    await openPipelineView(previewErrorRendered.container, "Configuration");
+    await expectPipelineConfiguration(previewErrorRendered.container);
     await act(async () => {
       Array.from(previewErrorRendered.container.querySelectorAll("button"))
         .find((button) => button.textContent === "Preview")!
@@ -2068,7 +2099,7 @@ describe("Project env provisioning UI", () => {
       projectOverviewWithTargets([]),
     );
 
-    const rendered = render(
+    const rendered = renderAtWorkflowLink(
       <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
@@ -2077,7 +2108,7 @@ describe("Project env provisioning UI", () => {
       await Promise.resolve();
     });
 
-    await openPipelineView(rendered.container, "Configuration");
+    await expectPipelineConfiguration(rendered.container);
 
     await act(async () => {
       await Promise.resolve();

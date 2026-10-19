@@ -47,12 +47,15 @@ afterEach(() => {
 });
 
 describe("PipelineTab", () => {
-  it("opens on Workflows without a description or view toggle", () => {
+  // The runs list draws its own "Workflows" heading beside its branch picker
+  // (covered in pipeline-runs-branch-picker.test.tsx), so on the runs view the
+  // tab adds no second heading.
+  it("opens on the runs list without its own heading, description or view toggle", () => {
     const container = render();
     const panel = container.querySelector("#project-detail-panel-pipeline")!;
     expect(panel.getAttribute("role")).toBe("tabpanel");
     expect(panel.getAttribute("aria-labelledby")).toBe("project-detail-tab-pipeline");
-    expect(container.querySelector(".pipeline-tab__head h2")?.textContent).toBe("Workflows");
+    expect(container.querySelector(".pipeline-tab__head")).toBeNull();
     expect(container.querySelector(".pipeline-tab__hint")).toBeNull();
     expect(container.querySelector("[role=tablist]")).toBeNull();
     expect(shownView(container)).toBe("runs");
@@ -68,7 +71,7 @@ describe("PipelineTab", () => {
   it("shows no legacy view controls when Configuration is not offered", () => {
     const container = render("runs", false);
     expect(container.querySelector('[role="tablist"]')).toBeNull();
-    expect(container.querySelector(".pipeline-tab__head h2")?.textContent).toBe("Workflows");
+    expect(container.querySelector(".pipeline-tab__head")).toBeNull();
     expect(shownView(container)).toBe("runs");
   });
 });

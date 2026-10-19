@@ -51,9 +51,10 @@ describe("HistoryTabPanel", () => {
     expect(iterations.list).toHaveBeenCalledWith("dp-1");
   });
 
-  it("says a repository in no Project has no iterations, and reads nothing", async () => {
+  it("says a repository in no Project has no versions, and reads nothing", async () => {
     const container = await render(<HistoryTabPanel project={project} vm={vm} qaScope={{ kind: "repository" }} />);
-    expect(container.textContent).toContain("Iterations belong to a Project.");
+    expect(container.textContent).toContain("No versions here");
+    expect(container.textContent).toContain("Versions belong to a Project.");
     expect(iterations.list).not.toHaveBeenCalled();
   });
 });

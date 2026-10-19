@@ -10,6 +10,7 @@ import type {
   ProjectFolderRepository,
   ProjectFolderSummary,
   RepoSwitchOption,
+  RepoSwitchOptionDisplay,
   RepoSwitchPresentation,
 } from "./project-folder-types";
 import { tabFromHash, type ProjectDetailTab } from "./project-detail-tab-rules";
@@ -259,6 +260,47 @@ export function repoSwitchPresentation(
       repositories.length >= 2
         ? repoSwitchOptions({ ...folder, repositories }, currentProjectId)
         : [],
+  };
+}
+
+/**
+ * How a switch option draws. A pair's name heads its first half once; the
+ * halves then show only their role and are announced as "shop frontend".
+ * `pendingId` is the project whose page is being opened, else null.
+ */
+export function repoSwitchOptionDisplay(
+  option: RepoSwitchOption,
+  pendingId: string | null,
+): RepoSwitchOptionDisplay {
+  return { ...pairDisplay(option), ...availabilityDisplay(option, pendingId) };
+}
+
+function pairDisplay(
+  option: RepoSwitchOption,
+): Pick<RepoSwitchOptionDisplay, "pairHeading" | "ariaLabel" | "paired" | "showName"> {
+  const { pairName } = option;
+  if (!pairName) {
+    return { pairHeading: null, ariaLabel: undefined, paired: undefined, showName: true };
+  }
+  return {
+    pairHeading: option.startsPair ? pairName : null,
+    ariaLabel: `${pairName} ${option.roleLabel.toLowerCase()}`,
+    paired: true,
+    showName: false,
+  };
+}
+
+function availabilityDisplay(
+  option: RepoSwitchOption,
+  pendingId: string | null,
+): Pick<RepoSwitchOptionDisplay, "pending" | "tooltip" | "title"> {
+  const pending = !option.current && pendingId !== null && option.projectId === pendingId;
+  return {
+    pending: pending || undefined,
+    tooltip: option.disabled ? UNLINKED_REPO_HINT : undefined,
+    // In the tab row the name is hidden to fit beside nine tabs; the native
+    // tooltip still names the repository on hover.
+    title: option.disabled ? undefined : option.label,
   };
 }
 

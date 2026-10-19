@@ -48,7 +48,7 @@ describe("myWorkProjects (Developer)", () => {
     const projects = myWorkProjects(FOLDERS, latestRunByRepo(RUNS), links, delivered);
     const byName = new Map(projects.map((project) => [project.name, project.waiting]));
     expect(byName.get("Storefront")).toMatch(
-      /^Iteration 3 was delivered on .+\. Waiting for the Product owner to start iteration 4\.$/,
+      /^Version 3 was delivered on .+\. Waiting for the Product owner to start version 4\.$/,
     );
     expect(byName.get("Payments")).toBeNull();
     expect(byName.get("Loyalty")).toBeNull();

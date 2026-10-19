@@ -17,7 +17,7 @@ jest.mock("../../../../../src/features/checklists/data/project-qa-runs-repositor
   projectQaRunsRepository: { get: jest.fn() },
 }));
 
-const versions = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
+const iterations = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
 const runs = projectQaRunsRepository as jest.Mocked<typeof projectQaRunsRepository>;
 
 let root: Root | null = null;
@@ -120,7 +120,7 @@ describe("IterationHistoryPanel", () => {
     iterations.list.mockResolvedValue(HISTORY);
     const container = await render(panel());
     expect(iterations.list).toHaveBeenCalledWith("dp-1");
-    expect(container.querySelector(".ihist__title")?.textContent).toBe("Logistics2 history");
+    expect(container.querySelector(".ihist__title")?.textContent).toBe("Logistics2 release history");
     expect(toggles(container).map((toggle) => toggle.textContent)).toEqual([
       "Version 2 · Loyalty points",
       "Version 1",
@@ -219,6 +219,6 @@ describe("IterationHistoryPanel", () => {
 
     iterations.list.mockResolvedValue([]);
     const empty = await render(panel());
-    expect(empty.textContent).toContain("No version yet.");
+    expect(empty.textContent).toContain("No versions yet. Version 1 appears here once the Project has requirements.");
   });
 });

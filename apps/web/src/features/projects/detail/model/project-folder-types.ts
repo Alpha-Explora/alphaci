@@ -62,6 +62,26 @@ export interface RepoSwitchOption {
   disabled: boolean;
 }
 
+/**
+ * How one switch option draws, derived from the option and the page being
+ * opened. `undefined` leaves the attribute off the button.
+ */
+export interface RepoSwitchOptionDisplay {
+  /** The pair's name, drawn once before its first half; else null. */
+  pairHeading: string | null;
+  /** "shop frontend" for a pair's half, whose visible name is left out. */
+  ariaLabel: string | undefined;
+  paired: true | undefined;
+  /** Draw the repository name beside the role (not for a pair's halves). */
+  showName: boolean;
+  /** The option whose page is loading. */
+  pending: true | undefined;
+  /** The unlinked hint, for a disabled option. */
+  tooltip: string | undefined;
+  /** The native tooltip naming the repository, for an enabled option. */
+  title: string | undefined;
+}
+
 /** What the page header draws from the folder. All-null: the single-repo page. */
 export interface RepoSwitchPresentation {
   /** The Project name to title the page with, or null to title it as before. */
