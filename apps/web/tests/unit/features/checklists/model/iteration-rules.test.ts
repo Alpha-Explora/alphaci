@@ -201,6 +201,8 @@ describe("a delivered iteration's run", () => {
       canReopen: false,
       canDispatch: false,
       canManageTestCases: false,
+      canRecordTestCases: false,
+      canAccept: false,
     });
     expect(run.items.every((item) => item.canUpdate === false)).toBe(true);
     expect(run.attachments).toEqual({ enabled: true, canAdd: false });

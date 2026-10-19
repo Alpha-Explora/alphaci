@@ -166,6 +166,17 @@ export function normalizeProjectRunItem(value: unknown, runId: string): ProjectQ
     rowVersion: wholeOrNull(raw.rowVersion),
     progress: oneOf(raw.progress, PROGRESS_VALUES),
     testCategories: normalizeRunTestCategories(raw.testCategories),
+    poAcceptance: poAcceptanceFrom(raw.poAcceptance),
+  };
+}
+
+function poAcceptanceFrom(value: unknown): ProjectQaRunItem["poAcceptance"] {
+  const raw = record(value);
+  const passed = raw?.status === "passed";
+  return {
+    status: passed ? "passed" : "pending",
+    acceptedBy: passed && raw?.acceptedBy ? actorFrom(raw.acceptedBy) : null,
+    acceptedAt: passed ? text(raw?.acceptedAt) : null,
   };
 }
 
@@ -216,6 +227,8 @@ function permissionFlagsFrom(value: unknown): ProjectQaRun["permissions"] {
     canReopen: flag(raw?.canReopen),
     canDispatch: flag(raw?.canDispatch),
     canManageTestCases: flag(raw?.canManageTestCases),
+    canRecordTestCases: flag(raw?.canRecordTestCases),
+    canAccept: flag(raw?.canAccept),
   };
 }
 
@@ -257,6 +270,8 @@ export function lockDeliveredRun(run: ProjectQaRun): ProjectQaRun {
       canReopen: false,
       canDispatch: false,
       canManageTestCases: false,
+      canRecordTestCases: false,
+      canAccept: false,
     },
     items: run.items.map((item) => ({ ...item, canUpdate: false })),
     attachments: run.attachments ? { ...run.attachments, canAdd: false } : null,
@@ -326,6 +341,10 @@ export function resolveProjectRunPermissions(
     canReopen: resolveFlag(flags?.canReopen, canReopenProjectRun(role)),
     canDispatch: resolveFlag(flags?.canDispatch, verifier),
     canManageTestCases: resolveFlag(flags?.canManageTestCases, canManageTestCases(role)),
+    // Recording a test case's result is the QA Team's, like writing them.
+    canRecordTestCases: resolveFlag(flags?.canRecordTestCases, canManageTestCases(role)),
+    // Only a server that offers acceptance says so: no fallback.
+    canAccept: flags?.canAccept === true,
   };
 }
 

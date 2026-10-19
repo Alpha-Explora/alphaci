@@ -2,18 +2,39 @@
 
 import type { NotificationItem } from "./notifications-types";
 
-/** QA refused an item: a Developer acts on it from the "My QA items" card. */
+/**
+ * QA (or, after QA's sign-off, the Product owner) refused an item: a
+ * Developer acts on it from the "My QA items" card.
+ */
 const QA_REFUSAL_EVENTS: ReadonlySet<string> = new Set([
   "qa.item.returned_to_dev",
   "qa.item.failed",
   "qa.item.blocked",
+  "qa.item.po_rejected",
 ]);
 
-/** Whether a notification says QA failed, blocked or returned an item. */
+/** QA signed a run off: the Product owner's turn to check it, in PO Studio. */
+const QA_SIGNED_OFF_EVENT = "qa.run.signed_off";
+
+/** Whether a notification says QA (or the Product owner) failed, blocked or returned an item. */
 export function isQaRefusal(
   item: Pick<NotificationItem, "eventCode">,
 ): boolean {
   return QA_REFUSAL_EVENTS.has(item.eventCode);
+}
+
+/** Whether a notification pops up live: a refusal, or QA's sign-off. */
+export function isQaLiveAlert(
+  item: Pick<NotificationItem, "eventCode">,
+): boolean {
+  return isQaRefusal(item) || item.eventCode === QA_SIGNED_OFF_EVENT;
+}
+
+/** Whether a notification is QA's sign-off of a run. */
+export function isQaSignoff(
+  item: Pick<NotificationItem, "eventCode">,
+): boolean {
+  return item.eventCode === QA_SIGNED_OFF_EVENT;
 }
 
 export function isMembershipNotification(
@@ -25,6 +46,12 @@ export function isMembershipNotification(
 export function notificationAlertHref(item: NotificationItem): string | null {
   if (isMembershipNotification(item)) {
     return item.groupId ? `/groups/${encodeURIComponent(item.groupId)}` : null;
+  }
+  if (isQaSignoff(item)) {
+    // The Product owner checks the signed-off run in PO Studio.
+    return item.projectId
+      ? `/projects/${encodeURIComponent(item.projectId)}#po`
+      : null;
   }
   return qaRefusalHref(item);
 }
@@ -46,15 +73,16 @@ export function qaRefusalHref(
 export const MAX_QA_ALERTS = 3;
 
 /**
- * The QA refusals to pop up: unread, not popped up before in this browser,
- * newest first, at most MAX_QA_ALERTS. Everything else stays in the Inbox only.
+ * The QA alerts to pop up (refusals and sign-offs): unread, not popped up
+ * before in this browser, newest first, at most MAX_QA_ALERTS. Everything
+ * else stays in the Inbox only.
  */
 export function qaAlertsToShow(
   items: ReadonlyArray<NotificationItem>,
   seen: ReadonlySet<string>,
 ): NotificationItem[] {
   return items
-    .filter((item) => !item.readAt && isQaRefusal(item) && !seen.has(item.id))
+    .filter((item) => !item.readAt && isQaLiveAlert(item) && !seen.has(item.id))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, MAX_QA_ALERTS);
 }
