@@ -4,7 +4,7 @@ import type { FormEvent } from "react";
 
 import { SeverityBadge, StatusPill, TonePill, VerificationBadge } from "../../items";
 import { needsTestIdentifier } from "../../model/checklist-rules";
-import { passedUnavailableReason, VERIFICATION_STATUSES } from "../../model/project-run-rules";
+import { FAILED_RETURNS_NOTE, passedUnavailableReason, VERIFICATION_STATUSES } from "../../model/project-run-rules";
 import type { ProjectQaRunItem, VerificationStatus } from "../../model/project-run-types";
 import {
   agoLabel,
@@ -114,7 +114,9 @@ function VerificationButtons({ item, index, editor }: Pick<ItemProps, "item" | "
   const allowed = editor.allowedStatuses(item);
   const draft = editor.openItemId === item.id ? editor.draft : null;
   const value = draft?.status ?? item.status;
-  const offered = VERIFICATION_STATUSES.filter((status) => status === value || allowed.includes(status));
+  // Pending, Passed and Failed; an item saved earlier as Blocked or Returned to dev still shows that value.
+  const settable = VERIFICATION_STATUSES.filter((status) => status === value || allowed.includes(status));
+  const offered = settable.includes(value as VerificationStatus) ? settable : [value as VerificationStatus, ...settable];
   return (
     <label className="pqa-verify">
       <span className="sr-only">Verification of item {String(index + 1)}</span>
@@ -180,6 +182,7 @@ function ItemEditor({ item, editor }: Readonly<{ item: ProjectQaRunItem; editor:
 
   return (
     <form className="qa-item-editor" onSubmit={handleSubmit} noValidate>
+      {draft.status === "failed" ? <p className="pqa-pass-hint">{FAILED_RETURNS_NOTE}</p> : null}
       {defect ? <SeverityField draft={draft} onChange={(value) => editor.updateDraft({ defectSeverity: value })} /> : null}
       <label className="hier-field qa-editor-field">
         <span className="hier-field-label">Notes</span>

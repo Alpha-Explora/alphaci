@@ -36,9 +36,9 @@ describe("itemFilterKey (the backend's bucketMyQaItem, for the chips)", () => {
     }
   });
 
-  it("otherwise files it by Progress, whatever else QA said", () => {
+  it("files a failed item as returned (Failed sends it back to the Developers), otherwise by Progress", () => {
     const verdicts = verdictsBySourceItem(run([verdict("item-1", "failed"), verdict("item-2", "passed")]));
-    expect(itemFilterKey({ id: "item-1", progress: "in_progress" }, verdicts)).toBe("in_progress");
+    expect(itemFilterKey({ id: "item-1", progress: "in_progress" }, verdicts)).toBe("returned");
     expect(itemFilterKey({ id: "item-2", progress: "done" }, verdicts)).toBe("done");
     expect(itemFilterKey({ id: "item-3", progress: "todo" }, NO_VERDICTS)).toBe("todo");
   });

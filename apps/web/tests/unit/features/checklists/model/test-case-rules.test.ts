@@ -137,7 +137,7 @@ describe("Passed waits for every test case", () => {
       expect(canPass(item)).toBe(false);
       expect(allowedVerificationStatuses(item, OPEN, CAN)).not.toContain("passed");
       expect(passedUnavailableReason(item)).toBe(
-        "Pass every test case of this story (or mark it N/A) before passing the story.",
+        "Pass every test case of this story before passing the story.",
       );
     }
   });

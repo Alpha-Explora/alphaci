@@ -13,7 +13,9 @@
      (where the tab bar and the automation rows sit on one line), never wider
      than the studio. */
   --qa-rail-closed: var(--sidebar-collapsed, 52px);
-  --qa-rail-open: min(30rem, calc(100% - 1.5rem));
+  /* --qa-rail-width is the width dragged from the panel's left edge (set
+     inline on this element); unset, the panel opens at 30rem. */
+  --qa-rail-open: min(var(--qa-rail-width, 30rem), calc(100% - 1.5rem));
   /* "Hard offset": the rail floats this far in from the right and bottom
      edges so its crisp offset shadow (a dark step, then an outline step,
      down and to the right) is never cut off by the window. */
@@ -449,6 +451,57 @@
   min-width: 0;
   border-right: 1px solid var(--border);
   animation: qa-drawer-in 160ms ease-out;
+  /* The resize edge is placed against it. */
+  position: relative;
+}
+
+/* The panel's left edge: drag it towards the page to widen the panel. A
+   12px hit area over the rail's border, the grip shown on hover, focus and
+   while dragging. */
+.qa-rail__resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -7px;
+  z-index: 4;
+  width: 12px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.qa-rail__resize::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: 4px;
+  height: 2.75rem;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity 0.16s ease;
+}
+
+.qa-rail__resize:hover::after,
+.qa-rail__resize:focus-visible::after,
+.qa-rail__resize[data-active="true"]::after {
+  opacity: 1;
+}
+
+.qa-rail__resize:focus-visible {
+  outline: none;
+}
+
+/* While dragging: no text selection, and the preview iframe never takes the
+   pointer (it would swallow the moves). */
+.qa-studio[data-resizing="true"] {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.qa-studio[data-resizing="true"] iframe {
+  pointer-events: none;
 }
 
 .qa-rail[data-pinned="true"] > .qa-studio__run,

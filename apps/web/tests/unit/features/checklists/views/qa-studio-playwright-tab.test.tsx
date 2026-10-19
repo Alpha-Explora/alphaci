@@ -188,7 +188,8 @@ describe("Studio column — one container", () => {
     const container = await studio("qa");
     const column = container.querySelector<HTMLElement>(".qa-studio__run")!;
     const order = [...column.children].map((child) => child.getAttribute("role") ?? child.className);
-    expect(order).toEqual(["qa-drawer__head", "status", "tabpanel", "tabpanel"]);
+    // The resize edge comes first: it is drawn against the panel's left side.
+    expect(order).toEqual(["separator", "qa-drawer__head", "status", "tabpanel", "tabpanel"]);
     // No promotion strip: the checklist panel starts right under the header (the live region is empty).
     expect(column.querySelector(".qa-promo")).toBeNull();
     expect(column.querySelector('[role="status"]')?.childElementCount).toBe(0);

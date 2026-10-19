@@ -7,9 +7,9 @@ import { useId, type FormEvent, type ReactNode } from "react";
 import type { ProjectQaRunItem } from "../../model/project-run-types";
 import {
   countTestCases,
-  TEST_CASE_STATUSES,
   testCasesAttentionLabel,
   testCasesProgressLabel,
+  testCaseStatusChoices,
   testCaseStatusLabel,
   testCaseTone,
 } from "../../model/test-case-rules";
@@ -148,7 +148,7 @@ function ResultControl({ item, testCase, vm }: Readonly<{ item: ProjectQaRunItem
       disabled={vm.busyKey !== null}
       onChange={(event) => vm.setResult(item, testCase, event.target.value as RunTestCase["status"])}
     >
-      {TEST_CASE_STATUSES.map((status) => (
+      {testCaseStatusChoices(testCase.status).map((status) => (
         <option key={status} value={status}>
           {testCaseStatusLabel(status)}
         </option>

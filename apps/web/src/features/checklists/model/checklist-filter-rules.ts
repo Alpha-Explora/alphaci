@@ -34,7 +34,9 @@ export function verdictsBySourceItem(run: ProjectQaRun | null | undefined): Item
 
 /** The one filter an item belongs to. */
 export function itemFilterKey(item: Pick<RequirementItem, "id" | "progress">, verdicts: ItemVerdicts): Exclude<ChecklistFilter, "all"> {
-  if (verdicts.get(item.id)?.status === "returned_to_dev") return "returned";
+  // Failed always sends the story back to the Developers; returned_to_dev is the same on older runs.
+  const status = verdicts.get(item.id)?.status;
+  if (status === "failed" || status === "returned_to_dev") return "returned";
   return item.progress;
 }
 

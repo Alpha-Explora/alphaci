@@ -2,6 +2,7 @@
 
 /* A <details>, like the acceptance criteria: open while a test case is unresolved. */
 .pqa-tests {
+  min-width: 0;
   padding: 0.45rem 0.65rem 0.55rem;
   border: 1px solid var(--border);
   border-radius: 0.55rem;
@@ -103,7 +104,10 @@
 .pqa-test {
   --pqa-test-accent: var(--border-strong);
   display: grid;
+  /* One track that may shrink: the row never grows past its card. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.25rem;
+  min-width: 0;
   padding: 0.4rem 0.55rem;
   border: 1px solid var(--border);
   border-left: 3px solid var(--pqa-test-accent);
@@ -125,21 +129,29 @@
 
 .pqa-test__head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .pqa-test__title {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 0.8rem;
   line-height: 1.4;
   color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
-.pqa-test__select {
-  flex: none;
-  min-width: 6.5rem;
+/* Two classes: the shared .hier-select is width: 100%, which took the whole
+   row, squeezed the title to a sliver and pushed the control out of the card. */
+.pqa-test__head .pqa-test__select {
+  flex: 0 0 7.25rem;
+  width: 7.25rem;
+  min-width: 0;
   min-height: 1.85rem;
+  padding: 0.3rem 0.5rem;
   font-size: 0.74rem;
   font-weight: 600;
 }
