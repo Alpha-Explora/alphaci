@@ -63,7 +63,7 @@ describe("iterationNextStep", () => {
     }
   });
 
-  it("says nothing while an version is active, or when the server did not say", () => {
+  it("says nothing while a version is active, or when the server did not say", () => {
     expect(iterationNextStep(current(currentWire()), "lead")).toEqual({ kind: "none" });
     expect(iterationNextStep(current(currentWire({ canStartNext: false })), "qa")).toEqual({ kind: "none" });
     const older = deliveredWire();
@@ -148,7 +148,7 @@ describe("startIterationErrorMessage", () => {
       "Version 4 is still active. Deliver it before starting the next one.",
     );
     expect(startIterationErrorMessage(apiErrorWith(409, { code: "ITERATION_ACTIVE" }))).toBe(
-      "This Project already has an active iteration. Deliver it before starting the next one.",
+      "This Project already has an active version. Deliver it before starting the next one.",
     );
     expect(
       startIterationErrorMessage(

@@ -7,8 +7,8 @@ import {
   useStartIterationViewModel,
   type StartIterationViewModel,
 } from "../../../../../src/features/checklists/iteration";
-import { normalizeCurrentVersion } from "../../../../../src/features/checklists/model/iteration-rules";
-import type { StartedVersion } from "../../../../../src/features/checklists/model/iteration-types";
+import { normalizeCurrentIteration } from "../../../../../src/features/checklists/model/iteration-rules";
+import type { StartedIteration } from "../../../../../src/features/checklists/model/iteration-types";
 import type { AppRole } from "../../../../../src/shared/api/contracts";
 import { currentWire, startableWire, waitingWire } from "../iteration-fixtures";
 import { apiErrorWith } from "../qa-promotion-fixtures";
@@ -17,9 +17,9 @@ jest.mock("../../../../../src/features/checklists/data/iterations-repository", (
   iterationsRepository: { current: jest.fn(), mergeAll: jest.fn(), start: jest.fn() },
 }));
 
-const versions = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
+const iterations = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
 
-const STARTED: StartedVersion = {
+const STARTED: StartedIteration = {
   iteration: { id: "it-4", number: 4, status: "active", goal: "Loyalty points", deliveredAt: null, deliveredByLogin: null },
 };
 
@@ -31,7 +31,7 @@ function Harness({
   deliveryProjectId,
   onStarted,
 }: Readonly<{ role: AppRole; deliveryProjectId: string; onStarted?: (started: StartedIteration) => void }>) {
-  const version = useCurrentIterationViewModel({ deliveryProjectId, enabled: true });
+  const iteration = useCurrentIterationViewModel({ deliveryProjectId, enabled: true });
   const vm = useStartIterationViewModel({ deliveryProjectId, current: iteration.current, appRole: role, onStarted });
   useEffect(() => {
     latest.vm = vm;

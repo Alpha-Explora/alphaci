@@ -116,6 +116,17 @@ describe("PipelineRunsTab branch picker", () => {
     expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Add browser tests")).toBe(false);
   });
 
+  it("heads the runs with Workflows, the branch picker beside it", async () => {
+    await act(async () => {
+      root = createRoot(host);
+      root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
+    });
+
+    const head = host.querySelector(".pipeline-tab__head");
+    expect(head?.querySelector("h2")?.textContent).toBe("Workflows");
+    expect(head?.querySelector(".ws-branchpick select")).not.toBeNull();
+  });
+
   it("lists every declared branch, not just the selected one", async () => {
     await act(async () => {
       root = createRoot(host);

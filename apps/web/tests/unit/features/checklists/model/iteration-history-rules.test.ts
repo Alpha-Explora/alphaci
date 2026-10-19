@@ -47,7 +47,7 @@ describe("normalizeIterationHistory", () => {
     expect(history[0]).toMatchObject({ goal: "Loyalty points", signoffRunId: null });
   });
 
-  it("drops what is not an version and reads a body that is not a list as empty", () => {
+  it("drops what is not a version and reads a body that is not a list as empty", () => {
     expect(normalizeIterationHistory({ iterations: [ONE, { id: "x" }, null] })).toHaveLength(1);
     expect(normalizeIterationHistory(null)).toEqual([]);
     expect(normalizeIterationHistory({ iterations: "nope" })).toEqual([]);
@@ -57,7 +57,7 @@ describe("normalizeIterationHistory", () => {
 describe("the History sentences", () => {
   const [two, one] = normalizeIterationHistory({ iterations: [ONE, TWO] });
 
-  it("says when and by whom an version was delivered, and when it started", () => {
+  it("says when and by whom a version was delivered, and when it started", () => {
     expect(historyMetaLabel(one!, "en-GB")).toBe("Delivered 15 Oct 2026 by @ana · started 2 Oct 2026");
     expect(historyMetaLabel(two!, "en-GB")).toBe("In progress · started 16 Oct 2026");
   });
@@ -68,7 +68,7 @@ describe("the History sentences", () => {
     );
     expect(historyNoReportText(one!)).toBeNull();
     expect(historyNoReportText({ status: "delivered", signoffRunId: null })).toBe(
-      "No QA sign-off was recorded for this iteration.",
+      "No QA sign-off was recorded for this version.",
     );
   });
 

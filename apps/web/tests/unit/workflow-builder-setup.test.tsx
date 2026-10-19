@@ -1702,6 +1702,13 @@ describe("WorkflowBuilder project setup", () => {
         return machineFieldset("Production")!.querySelector<HTMLInputElement>("input[type='url']")!;
       }
 
+      /** Production's "How users reach it" choice: the automatic HTTPS address or an existing proxy. */
+      function productionIngress(): HTMLSelectElement {
+        return Array.from(machineFieldset("Production")!.querySelectorAll("select")).find(
+          (select) => select.querySelector("option[value='tunnel']") !== null,
+        )!;
+      }
+
       /** Opens Delivery with on-prem hosting chosen: Continue is open until a machine needs a URL. */
       async function openOnpremDelivery() {
         mockedListDeploymentProviders.mockResolvedValue([{ id: "onprem-compose", enabled: true }]);
@@ -1713,7 +1720,17 @@ describe("WorkflowBuilder project setup", () => {
         expect(findButton("Continue")).not.toBeDisabled();
       }
 
-      it("holds Continue for Production on a machine with no HTTPS URL, and says how to fix it", async () => {
+      it("gives Production on a machine the automatic HTTPS address, which needs no URL", async () => {
+        await openOnpremDelivery();
+
+        changeValue(machineFieldset("Production")!.querySelector("select")!, "automatic");
+        expect(productionIngress().value).toBe("tunnel");
+        expect(machineFieldset("Production")!.querySelector("input[type='url']")).toBeNull();
+        expect(findButton("Continue")).not.toBeDisabled();
+        expect(sectionText()).not.toContain(PRODUCTION_BLOCKER);
+      });
+
+      it("holds Continue for Production through a proxy with no HTTPS URL, and says how to fix it", async () => {
         await openOnpremDelivery();
 
         // Test is on the machine with its defaults: it has no problem to name.
@@ -1721,6 +1738,7 @@ describe("WorkflowBuilder project setup", () => {
         expect(findButton("Continue")).not.toBeDisabled();
 
         changeValue(machineFieldset("Production")!.querySelector("select")!, "automatic");
+        changeValue(productionIngress(), "configured");
         expect(findButton("Continue")).toBeDisabled();
         // Exactly one message on the page, and it is inside Production.
         expect(sectionText().split(PRODUCTION_BLOCKER).length - 1).toBe(1);
@@ -1743,6 +1761,7 @@ describe("WorkflowBuilder project setup", () => {
         await openOnpremDelivery();
 
         changeValue(machineFieldset("Production")!.querySelector("select")!, "automatic");
+        changeValue(productionIngress(), "configured");
         expect(findButton("Continue")).toBeDisabled();
 
         changeValue(machineFieldset("Production")!.querySelector("select")!, "");

@@ -5,7 +5,7 @@ import { iterationsRepository } from "../../../../../src/features/checklists/dat
 import { projectQaRunsRepository } from "../../../../../src/features/checklists/data/project-qa-runs-repository";
 import { requirementsRepository } from "../../../../../src/features/checklists/data/requirements-repository";
 import { IterationStatus } from "../../../../../src/features/checklists/iteration";
-import { normalizeCurrentVersion } from "../../../../../src/features/checklists/model/iteration-rules";
+import { normalizeCurrentIteration } from "../../../../../src/features/checklists/model/iteration-rules";
 import { normalizeProjectRunCurrent } from "../../../../../src/features/checklists/model/project-run-rules";
 import { normalizePromotionStatus } from "../../../../../src/features/checklists/model/qa-promotion-rules";
 import type { QaPromotionStatus } from "../../../../../src/features/checklists/model/qa-promotion-types";
@@ -36,7 +36,7 @@ jest.mock("../../../../../src/features/checklists/data/project-qa-runs-repositor
   projectQaRunsRepository: { current: jest.fn(), reopen: jest.fn() },
 }));
 
-const versions = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
+const iterations = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
 const requirements = requirementsRepository as jest.Mocked<typeof requirementsRepository>;
 const runs = projectQaRunsRepository as jest.Mocked<typeof projectQaRunsRepository>;
 
@@ -280,12 +280,12 @@ function thisRepositoryMerged(data: QaPromotionStatus): QaPromotionViewModel {
 }
 
 describe("PO Studio: Merge to main on a Project of two repositories", () => {
-  it("shows each covered repository's state in the column, and the one merge button in the tab bar", async () => {
+  it("shows no Delivery to main section in the column, and the one merge button in the tab bar", async () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
     const container = await render(po(thisRepositoryMerged(READY)));
-    const rows = [...container.querySelectorAll(".po-delivery__row")].map((row) => row.textContent);
-    expect(rows).toEqual(["tone/storefront-webMerged into main", "tone/orders-apiNot in main yet"]);
-    expect(container.querySelector(".po-delivery button")).toBeNull();
+    // PO Studio's column no longer lists each covered repository's state (df2a1727).
+    expect(container.querySelector(".po-delivery")).toBeNull();
+    expect(container.textContent).not.toContain("Delivery to main");
     expect(buttonNamed(container, "Merge all repositories")).toBeUndefined();
     const merge = buttonNamed(bar(container), "Merge to main");
     // Enabled although this repository is in main: it merges the rest.
@@ -352,7 +352,9 @@ describe("PO Studio: Merge to main on a Project of two repositories", () => {
     const container = await render(po(promotionVm(READY)));
     expect(container.querySelector(".po-delivery")).toBeNull();
     expect(container.querySelector(".po-delivered")).toBeNull();
-    expect(container.querySelector(".po-accept__status")?.textContent).toContain("Ready for production");
+    // Ready: no status box, the tab bar's chip says so (df2a1727).
+    expect(container.querySelector(".po-accept")?.getAttribute("data-state")).toBe("ready");
+    expect(container.querySelector(".po-accept__status")).toBeNull();
   });
 });
 
@@ -394,13 +396,14 @@ describe("PO Studio: a delivered iteration", () => {
     expect(container.textContent).not.toContain("abc1234");
   });
 
-  it("shows a Product owner one row for the Project on its way to main", async () => {
+  it("shows a Product owner the Project on its way to main, never its repositories", async () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
     const container = await render(
       <ShowRepositoriesContext.Provider value={false}>{po(promotionVm(READY))}</ShowRepositoriesContext.Provider>,
     );
-    const rows = [...container.querySelectorAll(".po-delivery__row")].map((row) => row.textContent);
-    expect(rows).toEqual(["StorefrontPartly in main: Merge to main finishes it"]);
+    // No Delivery to main rows in the column any more (df2a1727): the merge confirmation names the Project.
+    expect(container.querySelector(".po-delivery")).toBeNull();
+    expect(container.textContent).not.toContain("tone/orders-api");
     await click(buttonNamed(bar(container), "Merge to main"));
     expect(dialog()?.textContent).toContain("Merge Storefront into main?");
     expect(dialog()?.textContent).not.toContain("tone/orders-api");

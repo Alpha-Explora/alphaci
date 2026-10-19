@@ -5,7 +5,7 @@ import { iterationsRepository } from "../../../../../src/features/checklists/dat
 import { projectQaRunsRepository } from "../../../../../src/features/checklists/data/project-qa-runs-repository";
 import { IterationHeader } from "../../../../../src/features/checklists/iteration";
 import { requirementsRepository } from "../../../../../src/features/checklists/data/requirements-repository";
-import { normalizeCurrentVersion } from "../../../../../src/features/checklists/model/iteration-rules";
+import { normalizeCurrentIteration } from "../../../../../src/features/checklists/model/iteration-rules";
 import { EMPTY_PROJECT_MY_ITEMS, normalizeProjectRunCurrent } from "../../../../../src/features/checklists/model/project-run-rules";
 import { normalizePromotionStatus } from "../../../../../src/features/checklists/model/qa-promotion-rules";
 import type { QaPromotionStatus } from "../../../../../src/features/checklists/model/qa-promotion-types";
@@ -36,7 +36,7 @@ jest.mock("../../../../../src/features/checklists/data/requirements-repository",
   requirementsRepository: { listForProject: jest.fn() },
 }));
 
-const versions = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
+const iterations = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
 const runs = projectQaRunsRepository as jest.Mocked<typeof projectQaRunsRepository>;
 
 /** "Version 3 was delivered on <date>. Waiting for the Product owner to start version 4." in any locale. */
@@ -159,7 +159,7 @@ describe("The Project QA run between iterations", () => {
     expect(waitingText(container)).toMatch(WAITING);
   });
 
-  it("is exactly as before while an version is active, and on an older backend", async () => {
+  it("is exactly as before while a version is active, and on an older backend", async () => {
     noRunYet();
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
     const active = await render(<RunHarness role="qa" />);
@@ -214,7 +214,7 @@ describe("The Checklists tab between iterations", () => {
     expect(container.querySelectorAll(".iteration-waiting__text")).toHaveLength(1);
   });
 
-  it("adds nothing above the requirements while an version is active", async () => {
+  it("adds nothing above the requirements while a version is active", async () => {
     noRunYet();
     requirements.listForProject.mockResolvedValue(normalizeProjectRequirements(projectRequirementsWire()));
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
@@ -413,7 +413,7 @@ describe("My QA items between iterations", () => {
     expect(container.querySelector(".qa-summary__chips")).toBeNull();
   });
 
-  it("the summary stays quiet while an version is active and nothing is assigned", async () => {
+  it("the summary stays quiet while a version is active and nothing is assigned", async () => {
     runs.myItems.mockResolvedValue(EMPTY_PROJECT_MY_ITEMS);
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
     const container = await render(
