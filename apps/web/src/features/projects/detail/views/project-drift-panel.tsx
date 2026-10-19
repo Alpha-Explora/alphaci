@@ -13,8 +13,9 @@ import {
   canRunDriftRepair,
   driftAffectedFiles,
   driftFindingTitle,
-  driftPullRequestUrl,
+  driftPullRequestNumber,
   driftRepairBaseBranch,
+  driftRepairMessage,
   driftRepairActionFor,
 } from "../model/drift-finding-rules";
 import { useProjectDriftViewModel } from "../view-models/use-project-drift-view-model";
@@ -25,7 +26,7 @@ type PendingRepair = {
 } | null;
 
 /** What a repair reports: the message, and the pull request it opened, if any. */
-type RepairNotice = { text: string; url: string | null } | null;
+type RepairNotice = { text: string; pullRequest: number | null } | null;
 
 /**
  * The project's health findings, for Settings. Anyone may run the checks; the
@@ -35,9 +36,12 @@ type RepairNotice = { text: string; url: string | null } | null;
 export function ProjectDriftPanel({
   projectId,
   appRole,
+  onOpenPullRequest,
 }: Readonly<{
   projectId: string;
   appRole?: AppRole | null;
+  /** Opens the Pull requests tab on a pull request; without it the number is plain text. */
+  onOpenPullRequest?: (pullRequestNumber: number) => void;
 }>) {
   const vm = useProjectDriftViewModel(projectId);
   const [pending, setPending] = useState<PendingRepair>(null);
@@ -52,7 +56,7 @@ export function ProjectDriftPanel({
       setPending({ findingId: finding.id, action });
       setNotice({
         text: `Confirm to reset the two AlphaCI CI secrets and open a pull request into ${driftRepairBaseBranch(finding) ?? "the project's first environment branch"} that points the workflows at this deployment.`,
-        url: null,
+        pullRequest: null,
       });
       return;
     }
@@ -60,11 +64,11 @@ export function ProjectDriftPanel({
     setNotice(null);
     try {
       const outcome = await vm.repair(finding.id, action);
-      setNotice({ text: outcome.message, url: driftPullRequestUrl(outcome) });
+      setNotice({ text: driftRepairMessage(outcome.message), pullRequest: driftPullRequestNumber(outcome) });
     } catch (caught) {
       setNotice({
         text: apiErrorReason(caught, "Unable to apply the repair."),
-        url: null,
+        pullRequest: null,
       });
     } finally {
       setPending(null);
@@ -116,14 +120,7 @@ export function ProjectDriftPanel({
       {notice ? (
         <p className="env-empty-state" role="status" style={{ margin: 0 }}>
           {notice.text}
-          {notice.url ? (
-            <>
-              {" "}
-              <a href={notice.url} target="_blank" rel="noreferrer">
-                Open pull request
-              </a>
-            </>
-          ) : null}
+          <RepairPullRequest number={notice.pullRequest} onOpen={onOpenPullRequest} />
         </p>
       ) : null}
       {vm.error ? (
@@ -283,5 +280,22 @@ function RepairControl({
     >
       {busy ? "Repairing..." : confirming ? "Confirm repair" : "Repair"}
     </button>
+  );
+}
+
+/** The pull request a repair opened: in the Pull requests tab when there is one, else its number. */
+function RepairPullRequest({
+  number,
+  onOpen,
+}: Readonly<{ number: number | null; onOpen?: (pullRequestNumber: number) => void }>) {
+  if (number === null) return null;
+  if (!onOpen) return <> Pull request #{number}.</>;
+  return (
+    <>
+      {" "}
+      <button type="button" className="inline-link" onClick={() => onOpen(number)}>
+        Open pull request #{number}
+      </button>
+    </>
   );
 }

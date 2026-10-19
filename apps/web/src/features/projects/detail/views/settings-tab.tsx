@@ -12,9 +12,14 @@ export function SettingsTab({
   dangerZone,
 }: Readonly<{
   project: ProvisionedProject;
-  vm?: { appRole?: AppRole | null };
+  vm?: {
+    appRole?: AppRole | null;
+    visibleTabs?: ReadonlyArray<string>;
+    openPullRequest?: (pullRequestNumber: number) => void;
+  };
   dangerZone?: ReactNode;
 }>) {
+  const openPullRequest = vm?.visibleTabs?.includes("pulls") ? vm.openPullRequest : undefined;
   return (
     <>
       <dl className="project-detail-grid">
@@ -44,7 +49,7 @@ export function SettingsTab({
         </div>
       </dl>
       <div style={{ marginTop: "1.25rem" }}>
-        <ProjectDriftPanel projectId={project.id} appRole={vm?.appRole} />
+        <ProjectDriftPanel projectId={project.id} appRole={vm?.appRole} onOpenPullRequest={openPullRequest} />
       </div>
       <SettingsDangerZone dangerZone={dangerZone} />
     </>

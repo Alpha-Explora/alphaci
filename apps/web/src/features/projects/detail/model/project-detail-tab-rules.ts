@@ -615,8 +615,7 @@ function detachProviderErrorMessage(
   providerDeleteError: string,
   target: DeploymentTarget,
 ): string {
-  const dashboard = target.dashboardUrl ? ` (${target.dashboardUrl})` : "";
-  return `Target detached from ALPHACI, but the ${target.provider} resource could not be deleted automatically (${providerDeleteError}). Delete it manually from the provider dashboard${dashboard}.`;
+  return `Target detached from ALPHACI, but the ${target.provider} resource could not be deleted automatically (${providerDeleteError}). Ask an ALPHACI admin to remove it.`;
 }
 
 export function replaceDeploymentTarget(
