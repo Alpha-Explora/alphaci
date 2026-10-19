@@ -176,9 +176,24 @@ describe("repoSwitchOptions", () => {
       ],
     });
     expect(repoSwitchOptions(shop, "proj-be")).toEqual([
-      { key: "proj-fe", projectId: "proj-fe", role: "frontend", roleLabel: "FRONTEND", label: "shop-fe", repoFullName: "Org/shop-fe", current: false, disabled: false },
-      { key: "proj-be", projectId: "proj-be", role: "backend", roleLabel: "BACKEND", label: "shop-be", repoFullName: "Org/shop-be", current: true, disabled: false },
-      { key: "repo:shop-worker", projectId: null, role: null, roleLabel: "REPO", label: "shop-worker", repoFullName: null, current: false, disabled: true },
+      { key: "proj-fe", projectId: "proj-fe", role: "frontend", roleLabel: "FRONTEND", label: "shop-fe", showName: false, repoFullName: "Org/shop-fe", current: false, disabled: false },
+      { key: "proj-be", projectId: "proj-be", role: "backend", roleLabel: "BACKEND", label: "shop-be", showName: false, repoFullName: "Org/shop-be", current: true, disabled: false },
+      { key: "repo:shop-worker", projectId: null, role: null, roleLabel: "REPO", label: "shop-worker", showName: false, repoFullName: null, current: false, disabled: true },
+    ]);
+  });
+
+  it("names the repositories that share a role, and only those", () => {
+    const shop = folder({
+      repositories: [
+        repo(),
+        repo({ projectId: "proj-fe-2", repoFullName: "Org/shop-fe-2" }),
+        repo({ projectId: "proj-be", repoFullName: "Org/shop-be", role: "backend" }),
+      ],
+    });
+    expect(repoSwitchOptions(shop, "proj-be").map((option) => [option.label, option.showName])).toEqual([
+      ["shop-fe", true],
+      ["shop-fe-2", true],
+      ["shop-be", false],
     ]);
   });
 
