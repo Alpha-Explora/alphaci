@@ -212,14 +212,15 @@ function TitleRowTabs({ controls, tabs }: Readonly<{ controls: ReactNode; tabs: 
 /**
  * The repository switch, which ends the tab row: it changes which page the
  * tabs belong to, so it sits with them rather than in the header above. Only a
- * named multi-repository Project has one, and the product view never does.
+ * named Project with two repositories to offer (see `switchRepositories`) has
+ * one, and the product view never does.
  */
 function repoSwitchFor(
   folder: ProjectFolderViewModel | undefined,
   productView: boolean,
   vm: ProjectDetailTabsViewModel,
 ): ReactNode {
-  if (!folder?.projectName || productView) return undefined;
+  if (!folder?.projectName || productView || folder.options.length < 2) return undefined;
   return (
     <ProjectRepoSwitch
       options={folder.options}

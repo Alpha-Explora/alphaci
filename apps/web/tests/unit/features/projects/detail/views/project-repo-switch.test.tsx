@@ -15,7 +15,6 @@ function option(overrides: Partial<RepoSwitchOption>): RepoSwitchOption {
     role: "frontend",
     roleLabel: "FRONTEND",
     label: "shop-fe",
-    showName: false,
     repoFullName: "Org/shop-fe",
     current: false,
     disabled: false,
@@ -74,28 +73,6 @@ describe("ProjectRepoSwitch", () => {
     ]);
     expect(radios().map((radio) => radio.getAttribute("aria-checked"))).toEqual(["true", "false", "false", "false"]);
     expect(radios().map((radio) => radio.dataset.role ?? null)).toEqual(["frontend", null, "backend", "service"]);
-    expect(radios().some((radio) => radio.dataset.showName !== undefined)).toBe(false);
-  });
-
-  it("marks the options that must show their name", () => {
-    container = document.createElement("div");
-    document.body.appendChild(container);
-    root = createRoot(container);
-    act(() => {
-      root!.render(
-        <ProjectRepoSwitch
-          options={[
-            option({ current: true, showName: true }),
-            option({ key: "proj-fe-2", projectId: "proj-fe-2", label: "shop-fe-2", showName: true }),
-            option({ key: "proj-be", projectId: "proj-be", role: "backend", roleLabel: "BACKEND", label: "shop-be" }),
-          ]}
-          projectName="shop"
-          currentTab="hosting"
-          visibleTabs={["overview", "hosting"]}
-        />,
-      );
-    });
-    expect(radios().map((radio) => radio.dataset.showName ?? null)).toEqual(["true", "true", null]);
   });
 
   it("gives the group one tab stop, on the page on screen", () => {

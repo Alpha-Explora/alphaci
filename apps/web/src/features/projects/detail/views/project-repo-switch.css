@@ -239,25 +239,13 @@
  * and pushed the last tab ("Settings") under it at 1440px. The page title
  * already names the open repository; the name stays in the accessible name
  * (visually hidden, not display:none) and in the hover tooltip. */
-.project-tabs-row .repo-switch__option:not([data-show-name]) .repo-switch__name {
+.project-tabs-row .repo-switch__name {
   position: absolute;
   width: 1px;
   height: 1px;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-}
-
-/* Two repositories share a role (two frontends): the role alone would draw
- * identical pills, so those show the repository name after the role's dot.
- * The role word stays in the accessible name and the tooltip; font-size 0
- * hides it while the dot, sized in rem, still shows. */
-.project-tabs-row .repo-switch__option[data-show-name] .repo-switch__role {
-  font-size: 0;
-}
-
-.project-tabs-row .repo-switch__option[data-show-name] .repo-switch__name {
-  max-width: 9rem;
 }
 
 /* ── Sections in the title row (QA Team, Product owner) ─────────────────
