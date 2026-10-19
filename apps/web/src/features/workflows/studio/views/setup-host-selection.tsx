@@ -16,12 +16,20 @@ import type { useSetupHostSelection } from "../view-models/use-setup-host-select
 /** Select value for the workspace's only connected machine, chosen by the server. */
 const AUTOMATIC = "automatic";
 
-type AssignmentConfig = NonNullable<EnvironmentDraft["hostAssignment"]>["config"];
+type AssignmentConfig = NonNullable<
+  EnvironmentDraft["hostAssignment"]
+>["config"];
 
 /** A change to one environment's assignment config. */
-type ConfigChange = (index: number, update: (config: AssignmentConfig) => AssignmentConfig) => void;
+type ConfigChange = (
+  index: number,
+  update: (config: AssignmentConfig) => AssignmentConfig,
+) => void;
 
-const SLOT_LABELS: Record<HostSlot, string> = { backend: "Backend", frontend: "Frontend" };
+const SLOT_LABELS: Record<HostSlot, string> = {
+  backend: "Backend",
+  frontend: "Frontend",
+};
 
 export function SetupHostSelection({
   environments,
@@ -83,21 +91,38 @@ export function SetupHostSelection({
     );
   };
   return (
-    <section aria-label="Choose on-prem machines">
-      <h4>Machines</h4>
-      <p>{setupHostIntro(choices)}</p>
-      {vm.error ? <p role="status">{vm.error}</p> : null}
-      <Link
-        target="_blank"
-        href={`/hosts${vm.workspaceId ? `?workspace=${encodeURIComponent(vm.workspaceId)}` : ""}`}
-      >
-        Add a host
-      </Link>
-      <button type="button" className="ghost-button" onClick={vm.refresh}>
-        Refresh hosts
-      </button>
-      {choices.length
-        ? environments.map((environment, index) => (
+    <section className="wizard-machines" aria-label="Choose on-prem machines">
+      <div className="wizard-machines__header">
+        <h4 className="wizard-field__label">Machines</h4>
+        <div className="wizard-machines__actions">
+          <Link
+            className="ghost-button wizard-machines__action"
+            target="_blank"
+            href={`/hosts${vm.workspaceId ? `?workspace=${encodeURIComponent(vm.workspaceId)}` : ""}`}
+          >
+            Add a host
+          </Link>
+          <button
+            type="button"
+            className="ghost-button wizard-machines__action"
+            onClick={vm.refresh}
+          >
+            Refresh hosts
+          </button>
+        </div>
+      </div>
+      <p className="wizard-field__hint">{setupHostIntro(choices)}</p>
+      {vm.error ? (
+        <p
+          className="wizard-field__hint wizard-field__hint--error"
+          role="status"
+        >
+          {vm.error}
+        </p>
+      ) : null}
+      {choices.length ? (
+        <div className="wizard-machines__rows">
+          {environments.map((environment, index) => (
             <SetupHostRow
               key={environment.slug}
               environment={environment}
@@ -108,8 +133,9 @@ export function SetupHostSelection({
               change={change}
               slots={slots}
             />
-          ))
-        : null}
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -148,48 +174,55 @@ function SetupHostRow({
   // step's one live region announces that Continue is held.
   const describedBy = problem ? messageId : undefined;
   return (
-    <fieldset>
-      <legend>{environment.displayName}</legend>
-      <label>
-        Machine{" "}
-        <select
-          aria-describedby={describedBy}
-          value={value}
-          onChange={(event) => select(index, event.target.value)}
-        >
-          {single ? (
-            <>
-              <option value="">
-                {environment.role === "production"
-                  ? "Assign later"
-                  : `${single.name} (defaults)`}
-              </option>
-              <option value={AUTOMATIC}>{single.name} (configure)</option>
-            </>
-          ) : (
-            <>
-              <option value="">Assign later</option>
-              {choices.map((host) => (
-                <option key={host.id} value={host.id}>
-                  {host.name} · {host.status}
+    <fieldset className="wizard-machines__row">
+      <legend className="wizard-machines__env">
+        {environment.displayName}
+      </legend>
+      <div className="wizard-machines__fields">
+        <label className="wizard-machines__field wizard-machines__field--full">
+          <span className="sr-only">Machine</span>
+          <select
+            aria-describedby={describedBy}
+            value={value}
+            onChange={(event) => select(index, event.target.value)}
+          >
+            {single ? (
+              <>
+                <option value="">
+                  {environment.role === "production"
+                    ? "Assign later"
+                    : `${single.name} (defaults)`}
                 </option>
-              ))}
-            </>
-          )}
-        </select>
-      </label>
-      {problem ? (
-        <p className="wizard-field__hint wizard-field__hint--error" id={messageId}>
-          {problem}
-        </p>
-      ) : null}
-      <SetupAssignmentFields
-        environment={environment}
-        index={index}
-        problemId={describedBy}
-        change={change}
-        slots={slots}
-      />
+                <option value={AUTOMATIC}>{single.name} (configure)</option>
+              </>
+            ) : (
+              <>
+                <option value="">Assign later</option>
+                {choices.map((host) => (
+                  <option key={host.id} value={host.id}>
+                    {host.name} · {host.status}
+                  </option>
+                ))}
+              </>
+            )}
+          </select>
+        </label>
+        {problem ? (
+          <p
+            className="wizard-field__hint wizard-field__hint--error wizard-machines__field--full"
+            id={messageId}
+          >
+            {problem}
+          </p>
+        ) : null}
+        <SetupAssignmentFields
+          environment={environment}
+          index={index}
+          problemId={describedBy}
+          change={change}
+          slots={slots}
+        />
+      </div>
     </fieldset>
   );
 }
@@ -211,14 +244,18 @@ function SetupAssignmentFields({
   const invalid = invalidAttributes(problemId);
   // One container port and health path per container: with two repositories
   // the host runs the backend and the frontend, so each field names its own.
-  const prefix = (slot: HostSlot) => (slots.length > 1 ? `${SLOT_LABELS[slot]} ` : "");
+  const prefix = (slot: HostSlot) =>
+    slots.length > 1 ? `${SLOT_LABELS[slot]} ` : "";
   return (
     <>
       {slots.map((slot) => (
         <Fragment key={slot}>
-          {" "}
-          <label>
-            {prefix(slot) ? `${prefix(slot)}container port` : "Container port"}{" "}
+          <label className="wizard-machines__field">
+            <span className="wizard-machines__label">
+              {prefix(slot)
+                ? `${prefix(slot)}container port`
+                : "Container port"}
+            </span>
             <input
               type="number"
               min={1}
@@ -228,13 +265,19 @@ function SetupAssignmentFields({
               value={slotContainerPort(binding.config, slot)}
               onChange={(event) =>
                 change(index, (config) =>
-                  withSlotContainerPort(config, slot, Number(event.target.value)),
+                  withSlotContainerPort(
+                    config,
+                    slot,
+                    Number(event.target.value),
+                  ),
                 )
               }
             />
           </label>
-          <label>
-            {prefix(slot) ? `${prefix(slot)}health path` : "Health path"}{" "}
+          <label className="wizard-machines__field">
+            <span className="wizard-machines__label">
+              {prefix(slot) ? `${prefix(slot)}health path` : "Health path"}
+            </span>
             <input
               required
               {...invalid}
@@ -282,8 +325,8 @@ function ProductionIngressFields({
   const tunnel = binding.config.ingress.mode === "tunnel";
   return (
     <>
-      <label>
-        How users reach it{" "}
+      <label className="wizard-machines__field wizard-machines__field--full">
+        <span className="wizard-machines__label">How users reach it</span>
         <select
           value={tunnel ? "tunnel" : "configured"}
           onChange={(event) =>
@@ -305,13 +348,15 @@ function ProductionIngressFields({
         </select>
       </label>
       {tunnel ? (
-        <p className="wizard-field__hint">
+        <p className="wizard-field__hint wizard-machines__field--full">
           The machine creates this HTTPS address. It changes whenever the tunnel
           restarts; a named domain is the production upgrade.
         </p>
       ) : (
-        <label>
-          Configured HTTPS ingress URL{" "}
+        <label className="wizard-machines__field wizard-machines__field--full">
+          <span className="wizard-machines__label">
+            Configured HTTPS ingress URL
+          </span>
           <input
             type="url"
             required
@@ -320,7 +365,10 @@ function ProductionIngressFields({
             onChange={(event) =>
               change(index, (config) => ({
                 ...config,
-                ingress: { mode: "configured", publicUrl: event.target.value || null },
+                ingress: {
+                  mode: "configured",
+                  publicUrl: event.target.value || null,
+                },
               }))
             }
           />
