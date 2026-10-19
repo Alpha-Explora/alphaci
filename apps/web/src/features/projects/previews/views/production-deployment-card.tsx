@@ -240,8 +240,6 @@ function CommitLine({ preview }: CardProps) {
 
 function DeploymentFacts({ preview }: CardProps) {
   const tone = previewStatusTone(preview.status);
-  const took = deployDurationLabel(preview);
-  const trigger = deployTriggerLabel(preview.trigger);
   const source = (
     <Fact label="Source">
       <span className="deploy-card__source-line">
@@ -284,8 +282,6 @@ function DeploymentFacts({ preview }: CardProps) {
         </span>
       </Fact>
       <Fact label="Created">{createdLabel(preview)}</Fact>
-      {took ? <Fact label="Took">{took}</Fact> : null}
-      {trigger ? <Fact label="Trigger">{trigger}</Fact> : null}
     </dl>
   );
 }

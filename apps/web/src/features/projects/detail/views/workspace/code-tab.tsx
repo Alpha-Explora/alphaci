@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { Avatar } from "@/features/groups/workspace";
 import {
+  createProjectBranch,
   getProjectBranches,
   getProjectFiles,
   type RepoBranch,
@@ -49,6 +50,7 @@ export function CodeTab({
   commit: initialCommit = null,
 }: Readonly<{ projectId: string; commit?: BrowseCommit | null }>) {
   const [branches, setBranches] = useState<RepoBranch[]>([]);
+  const [canCreateBranch, setCanCreateBranch] = useState(false);
   // The commit being browsed. Its SHA is the first `chosenRef`, so the branch
   // list's default below never replaces it.
   const [commit, setCommit] = useState<BrowseCommit | null>(initialCommit);
@@ -79,6 +81,7 @@ export function CodeTab({
       .then((data) => {
         if (cancelled) return;
         setBranches(data.branches);
+        setCanCreateBranch(data.canCreateBranch);
         // Display only — this must not move `chosenRef`, or the fetch effect
         // fires a second time for a listing it already has.
         setResolvedRef((current) => current ?? data.defaultBranch);
@@ -186,7 +189,14 @@ export function CodeTab({
         resolvedRef={resolvedRef}
         commit={commit}
         crumbs={crumbs}
+        canCreateBranch={canCreateBranch}
         onPickBranch={showBranch}
+        onCreateBranch={async (branchName) => {
+          await createProjectBranch(projectId, branchName);
+          const updated = await getProjectBranches(projectId);
+          setBranches(updated.branches);
+          showBranch(branchName);
+        }}
         onLeaveCommit={() => showBranch(browseCommitBranch(commit))}
         onGoTo={goTo}
       />
@@ -211,7 +221,9 @@ function CodeToolbar({
   resolvedRef,
   commit,
   crumbs,
+  canCreateBranch,
   onPickBranch,
+  onCreateBranch,
   onLeaveCommit,
   onGoTo,
 }: Readonly<{
@@ -220,7 +232,9 @@ function CodeToolbar({
   resolvedRef: string | null;
   commit: BrowseCommit | null;
   crumbs: Array<{ label: string; path: string }>;
+  canCreateBranch: boolean;
   onPickBranch: (nextRef: string) => void;
+  onCreateBranch: (branchName: string) => Promise<void>;
   onLeaveCommit: () => void;
   onGoTo: (nextPath: string) => void;
 }>) {
@@ -246,6 +260,9 @@ function CodeToolbar({
             ))}
           </select>
         </label>
+      ) : null}
+      {canCreateBranch && branches.some((branch) => branch.name === "dev") ? (
+        <BranchCreateControl onCreateBranch={onCreateBranch} />
       ) : null}
       {commit ? <CommitMarker commit={commit} onLeave={onLeaveCommit} /> : null}
 
@@ -284,6 +301,68 @@ function CodeToolbar({
           </span>
         ))}
       </nav>
+      ) : null}
+    </div>
+  );
+}
+
+function BranchCreateControl({
+  onCreateBranch,
+}: Readonly<{ onCreateBranch: (branchName: string) => Promise<void> }>) {
+  const [creating, setCreating] = useState(false);
+  const [branchName, setBranchName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = branchName.trim();
+    if (!name) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onCreateBranch(name);
+      setCreating(false);
+      setBranchName("");
+    } catch {
+      setError("Branch could not be created. Check the name and your GitHub access.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="ws-branch-create-wrap">
+      <button
+        type="button"
+        className="ws-branch-create__toggle"
+        aria-expanded={creating}
+        onClick={() => {
+          setCreating((open) => !open);
+          setError(null);
+        }}
+      >
+        {creating ? "Cancel" : "Create branch"}
+      </button>
+      {creating ? (
+        <form className="ws-branch-create" onSubmit={submit}>
+          <label className="ws-branch-create__field">
+            <span>Branch name</span>
+            <input
+              autoFocus
+              maxLength={255}
+              value={branchName}
+              onChange={(event) => setBranchName(event.target.value)}
+              placeholder="feature/your-change"
+              required
+            />
+          </label>
+          <span className="ws-branch-create__source">Based on dev</span>
+          <button type="submit" disabled={saving || !branchName.trim()}>
+            {saving ? "Creating…" : "Create"}
+          </button>
+          {error ? <span className="ws-branch-create__error" role="alert">{error}</span> : null}
+        </form>
       ) : null}
     </div>
   );

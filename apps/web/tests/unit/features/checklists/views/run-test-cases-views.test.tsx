@@ -37,14 +37,19 @@ const QA: ProjectQaRunPermissions = {
   canReopen: false,
   canDispatch: true,
   canManageTestCases: true,
+  canRecordTestCases: true,
+  canAccept: false,
 };
-const LEAD: ProjectQaRunPermissions = { ...QA, canReopen: true, canManageTestCases: false };
+// A Product owner reads test cases and their results; it neither writes nor records them.
+const LEAD: ProjectQaRunPermissions = { ...QA, canReopen: true, canManageTestCases: false, canRecordTestCases: false };
 const DEVELOPER: ProjectQaRunPermissions = {
   canSetVerification: false,
   canSignOff: false,
   canReopen: false,
   canDispatch: false,
   canManageTestCases: false,
+  canRecordTestCases: false,
+  canAccept: false,
 };
 
 function testCase(overrides: Record<string, unknown> = {}) {
@@ -247,11 +252,13 @@ describe("RunTestCases for the QA Team", () => {
 });
 
 describe("RunTestCases for everyone else", () => {
-  it("a Product owner records results but cannot write test cases", () => {
+  it("a Product owner reads each result, and can neither record one nor write test cases", () => {
     const { container } = mount(runWith([testCase()]), LEAD);
-    expect(container.querySelector("select")).not.toBeNull();
+    expect(container.querySelector("select")).toBeNull();
+    expect(container.querySelector(".pqa-test__status")?.textContent).toBe("Pending");
     expect(container.textContent).not.toContain("+ Add test case");
     expect(container.textContent).not.toContain("Edit");
+    expect(container.textContent).not.toContain("Add note");
   });
 
   it("a Developer sees each result as text, and nothing to change", () => {

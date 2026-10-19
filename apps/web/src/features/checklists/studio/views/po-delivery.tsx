@@ -7,11 +7,9 @@ import type { ReactNode } from "react";
 import { FormDialog } from "@/features/groups/workspace";
 
 import {
-  coveredRepositoryState,
   deliveredBannerTitle,
   deliveredRepositoryDetail,
   mergeAllConfirmText,
-  projectDeliveryState,
   projectMergeConfirmText,
   mergeAllErrorTitle,
   mergeAllFailures,
@@ -25,9 +23,8 @@ import { useShowRepositories } from "../view-models/repository-visibility";
 import { CheckIcon, MergeIcon } from "./studio-icons";
 
 /* A Project's delivery: the delivered banner once its iteration reached main
- * and, before that, each covered repository's stored state (PO Studio's
- * column); and the tab bar's Merge to main on a Project of two or more
- * repositories, which merges every one not in main yet, with its
+ * (PO Studio's column); and the tab bar's Merge to main on a Project of two
+ * or more repositories, which merges every one not in main yet, with its
  * confirmation and per-repository results. */
 
 function bannerTitle(delivered: CurrentIteration | null, fallback: QaPromotionIteration | null): string {
@@ -75,24 +72,6 @@ export function PoDeliveredBanner({
       ) : null}
       {next ? <div className="po-delivered__next">{next}</div> : null}
     </div>
-  );
-}
-
-/** Each covered repository on the active iteration: in main already, or not yet (stored, so a reload keeps it). */
-function CoveredRows({ current }: Readonly<{ current: CurrentIteration }>) {
-  if (current.coveredRepositories.length === 0) return null;
-  return (
-    <ul className="po-delivery__rows" aria-label="Repositories in this iteration">
-      {current.coveredRepositories.map((repository) => {
-        const state = coveredRepositoryState(repository);
-        return (
-          <li key={repository.projectId} className="po-delivery__row" data-tone={state.tone}>
-            <span className="po-delivery__name">{repository.repoFullName}</span>
-            <span className="po-delivery__state">{state.label}</span>
-          </li>
-        );
-      })}
-    </ul>
   );
 }
 
@@ -187,34 +166,6 @@ export function MergeAllOutcome({ vm }: Readonly<{ vm: PoDeliveryViewModel }>) {
   if (outcome?.kind === "result") return <ResultOutcome vm={vm} result={outcome.result} />;
   if (outcome?.kind === "error") return <ErrorOutcome vm={vm} error={outcome.error} />;
   return null;
-}
-
-/**
- * The active iteration's delivery in PO Studio's column: each covered
- * repository's stored state. Merging is the tab bar's Merge to main. Nothing
- * on a backend without iterations.
- */
-export function PoDeliveryState({ vm, projectName }: Readonly<{ vm: PoDeliveryViewModel; projectName: string }>) {
-  const current = vm.iteration.current;
-  const showRepositories = useShowRepositories();
-  if (!current || current.iteration.status !== "active") return null;
-  if (current.coveredRepositories.length === 0) return null;
-  const project = projectDeliveryState(current.coveredRepositories);
-  return (
-    <section className="po-delivery" aria-label="Delivery to main">
-      <p className="qa-toolbar__label">Delivery to main</p>
-      {showRepositories ? (
-        <CoveredRows current={current} />
-      ) : (
-        <ul className="po-delivery__rows" aria-label="This Project on the way to main">
-          <li className="po-delivery__row" data-tone={project.tone}>
-            <span className="po-delivery__name">{projectName}</span>
-            <span className="po-delivery__state">{project.label}</span>
-          </li>
-        </ul>
-      )}
-    </section>
-  );
 }
 
 /**

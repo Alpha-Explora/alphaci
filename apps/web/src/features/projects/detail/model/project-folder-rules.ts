@@ -167,38 +167,11 @@ export const SINGLE_REPO_PRESENTATION: RepoSwitchPresentation = {
   options: [],
 };
 
-/** A two-repository project's halves are named `<name>-fe` and `<name>-be`. */
-const PAIR_SUFFIX = /-(fe|be)$/i;
-
-/** `shop-fe` -> `shop`; null for a name that is not one half of a pair. */
-function pairStem(repo: ProjectFolderRepository): string | null {
-  const name = repoShortName(repo);
-  return PAIR_SUFFIX.test(name) ? name.replace(PAIR_SUFFIX, "").toLowerCase() : null;
-}
-
-/**
- * The repositories the switch offers from the page on screen.
- *
- * The switch moves between the halves of one application. A Project can hold
- * several (every test pair filed under one Project showed FRONTEND FRONTEND
- * BACKEND BACKEND …), so a repository created as a two-repository pair offers
- * only its own pair: `shop-fe` and `shop-be`. Any other repository offers the
- * Project's repositories while each role appears once, which is how a
- * Project of hand-filed repositories (`shop-web`, `shop-api`) reads; with a
- * role repeated it offers none, rather than pills that cannot be told apart.
- */
+/** Offer every repository linked to the Project, including repeated roles. */
 export function switchRepositories(
   folder: ProjectFolderSummary,
-  currentProjectId: string,
 ): ProjectFolderRepository[] {
-  const current = folder.repositories.find((repo) => repo.projectId === currentProjectId);
-  const stem = current ? pairStem(current) : null;
-  if (stem) {
-    const pair = folder.repositories.filter((repo) => pairStem(repo) === stem);
-    if (pair.length === 2 && pair[0]!.role !== pair[1]!.role) return pair;
-  }
-  const roles = folder.repositories.map((repo) => repo.role);
-  return new Set(roles).size === roles.length ? [...folder.repositories] : [];
+  return [...folder.repositories];
 }
 
 /**
@@ -212,7 +185,7 @@ export function repoSwitchPresentation(
   currentProjectId: string,
 ): RepoSwitchPresentation {
   if (!hasRepoSwitch(folder) || !folder.name) return SINGLE_REPO_PRESENTATION;
-  const repositories = switchRepositories(folder, currentProjectId);
+  const repositories = switchRepositories(folder);
   return {
     projectName: folder.name,
     options:

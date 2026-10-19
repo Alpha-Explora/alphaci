@@ -110,8 +110,15 @@ export function defaultHostAssignment(
         containerPort: slotRuntime(slot, runtimes).containerPort,
       })),
       health: slots.map((slot) => ({ slot, path: slotRuntime(slot, runtimes).healthPath })),
+      // A frontend is what people open (QA Studio, reviewers), so it gets the
+      // automatic HTTPS address; direct access only answers on the machine's
+      // own network. A backend alone stays direct, or asks Production for a URL.
       ingress: {
-        mode: environment.role === "production" ? "configured" : "direct",
+        mode: slots.includes("frontend")
+          ? "tunnel"
+          : environment.role === "production"
+            ? "configured"
+            : "direct",
         publicUrl: null,
       },
     },

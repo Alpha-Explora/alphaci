@@ -142,6 +142,8 @@ describe("who may record Verification", () => {
       canReopen: false,
       canDispatch: true,
       canManageTestCases: false,
+      canRecordTestCases: false,
+      canAccept: false,
     });
     const unflagged = {
       permissions: {
@@ -150,6 +152,8 @@ describe("who may record Verification", () => {
         canReopen: null,
         canDispatch: null,
         canManageTestCases: null,
+        canRecordTestCases: null,
+        canAccept: null,
       },
     };
     expect(resolveProjectRunPermissions(unflagged, "member")).toEqual({
@@ -158,6 +162,8 @@ describe("who may record Verification", () => {
       canReopen: false,
       canDispatch: false,
       canManageTestCases: false,
+      canRecordTestCases: false,
+      canAccept: false,
     });
     expect(resolveProjectRunPermissions(unflagged, "lead")).toEqual({
       canSetVerification: true,
@@ -165,10 +171,37 @@ describe("who may record Verification", () => {
       canReopen: true,
       canDispatch: true,
       canManageTestCases: false,
+      // A Product owner reads test case results, and accepts only where the server says so.
+      canRecordTestCases: false,
+      canAccept: false,
     });
     // The QA Team writes test cases; a Product owner verifies but does not.
     expect(resolveProjectRunPermissions(unflagged, "qa").canManageTestCases).toBe(true);
+    expect(resolveProjectRunPermissions(unflagged, "qa").canRecordTestCases).toBe(true);
     expect(resolveProjectRunPermissions(null, "qa").canReopen).toBe(false);
+  });
+
+  it("reads each item's Product owner acceptance, pending unless the server says passed", () => {
+    const accepted = normalizeProjectRun(
+      projectRunWire({
+        items: [
+          runItemWire({
+            poAcceptance: {
+              status: "passed",
+              acceptedBy: { id: "po-1", login: "pia-po" },
+              acceptedAt: "2026-10-02T09:00:00Z",
+            },
+          }),
+          runItemWire({ id: "run-item-2", position: 1 }),
+        ],
+        permissions: { canSetVerification: false, canSignOff: false, canReopen: true, canDispatch: false, canAccept: true },
+      }),
+    )!;
+    expect(accepted.items.map((item) => item.poAcceptance)).toEqual([
+      { status: "passed", acceptedBy: { id: "po-1", login: "pia-po" }, acceptedAt: "2026-10-02T09:00:00Z" },
+      { status: "pending", acceptedBy: null, acceptedAt: null },
+    ]);
+    expect(resolveProjectRunPermissions(accepted, "lead").canAccept).toBe(true);
   });
 
   it("starts runs for QA Team, Product owners and admins only", () => {

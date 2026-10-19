@@ -173,8 +173,10 @@ describe("Production Deployment card surface", () => {
     act(() => tabs()[1]?.click());
 
     const card = container.querySelector("article") as HTMLElement;
-    expect(card.textContent).toContain("Took21s");
-    expect(card.textContent).toContain("TriggerAPI");
+    expect(card.textContent).not.toContain("Took");
+    expect(card.textContent).not.toContain("Trigger");
+    expect(Array.from(card.querySelectorAll(".deploy-card__facts dt"), (node) => node.textContent)).not.toContain("Took");
+    expect(Array.from(card.querySelectorAll(".deploy-card__facts dt"), (node) => node.textContent)).not.toContain("Trigger");
     const toggle = card.querySelector<HTMLButtonElement>(".deploy-card__recent-toggle");
     const list = card.querySelector<HTMLElement>(".deploy-card__deploys");
     expect(toggle?.textContent).toBe("Recent deploys (2)");
