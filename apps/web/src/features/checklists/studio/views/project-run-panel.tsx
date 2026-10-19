@@ -278,6 +278,7 @@ function RunToolbar({
       <RunFilters list={list} />
       {!checklistMode && canEditTestCases ? (
         <button type="button" className="ghost-button pqa-run__edit-test-cases" onClick={onCreateTestCases}>
+          <span aria-hidden="true">+</span>
           Create test cases
         </button>
       ) : null}

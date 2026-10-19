@@ -1181,6 +1181,32 @@
   gap: 0.55rem;
 }
 
+/* QA's way into the test suite editor: tinted blue, so it reads as an action. */
+.pqa-run__toolbar .ghost-button.pqa-run__edit-test-cases {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+  font-weight: 700;
+  transition:
+    background-color 140ms ease-out,
+    color 140ms ease-out,
+    border-color 140ms ease-out;
+}
+
+.pqa-run__toolbar .ghost-button.pqa-run__edit-test-cases:hover {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 28%, transparent);
+  color: var(--text-primary);
+}
+
+.pqa-run__toolbar .ghost-button.pqa-run__edit-test-cases:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
 /* ── Square edges ────────────────────────────────────────────────────────
    Every box in the studio has square corners, the rail's panel included;
    only pills (the chips, filters and status tags) and the buttons keep their
