@@ -3,7 +3,6 @@
 import "./pipeline-runs.css";
 
 import { useMemo } from "react";
-import Link from "next/link";
 
 import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-states";
 import { CommitCard } from "./pipeline-commit-card";
@@ -13,7 +12,6 @@ import type { AppRole } from "@/shared/api/contracts";
 import type { BranchRunSection } from "../../model/runs-by-branch";
 import {
   ALL_BRANCHES,
-  RUNS_POLL_MS,
   usePipelineRunsViewModel,
   type WorkflowRunSummary,
 } from "../../view-models/use-pipeline-runs-view-model";
@@ -104,27 +102,6 @@ export function PipelineRunsTab({
             <option value={ALL_BRANCHES}>All branches</option>
           </select>
         </label>
-        <span className="ws-hint">
-          Refreshes every {RUNS_POLL_MS / 1000} seconds
-        </span>
-        <span className="ws-toolbar__links">
-          {/*
-            The cross-project view. This tab answers "what happened to THIS
-            project"; /runs answers "what is red anywhere", which no per-project
-            tab can. Since Pipeline runs replaced the rail bar that used to lead
-            there, this is the link that keeps it reachable from a project.
-          */}
-          <Link
-            className="ws-link"
-            href={
-              runsView.repoFullName
-                ? `/runs?repoFullName=${encodeURIComponent(runsView.repoFullName)}`
-                : "/runs"
-            }
-          >
-            Runs across all projects →
-          </Link>
-        </span>
       </div>
 
       {runsView.reportsUnavailable && (
@@ -143,6 +120,7 @@ export function PipelineRunsTab({
           appRole={appRole}
           repoFullName={runsView.repoFullName}
           visual={browserTests.visual}
+          showBranchHeading={runsView.selectedBranch === ALL_BRANCHES}
         />
       ))}
     </div>
@@ -157,6 +135,7 @@ function BranchSection({
   appRole,
   repoFullName,
   visual,
+  showBranchHeading,
 }: {
   projectId: string;
   repoFullName: string | null;
@@ -165,6 +144,7 @@ function BranchSection({
   appRole?: AppRole;
   /** The workflow's visual setting, from the browser-tests status; null when unknown. */
   visual: BrowserTestsVisual | null;
+  showBranchHeading: boolean;
 }) {
   // Computed across the section: a title is only worth showing when it tells
   // this commit apart from the others on the branch.
@@ -172,14 +152,16 @@ function BranchSection({
 
   return (
     <section className="ws-runsection" aria-label={`${section.branch} branch`}>
-      <div className="ws-runsection__head">
-        <h3 className="ws-runsection__branch">{section.branch}</h3>
-        <span className="ws-runsection__count">
-          {section.commits.length === 1
-            ? "1 commit"
-            : `${section.commits.length} commits`}
-        </span>
-      </div>
+      {showBranchHeading ? (
+        <div className="ws-runsection__head">
+          <h3 className="ws-runsection__branch">{section.branch}</h3>
+          <span className="ws-runsection__count">
+            {section.commits.length === 1
+              ? "1 commit"
+              : `${section.commits.length} commits`}
+          </span>
+        </div>
+      ) : null}
 
       {section.commits.length === 0 ? (
         <p className="ws-runsection__empty">
