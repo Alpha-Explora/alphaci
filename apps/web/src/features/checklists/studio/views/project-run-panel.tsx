@@ -3,7 +3,7 @@
 import "./qa-studio.css";
 import "./project-run.css";
 
-import { useId, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 
 import type { AppRole } from "@/shared/api/contracts";
 import { FilterMenu } from "@/shared/ui/filter-menu";
@@ -52,6 +52,7 @@ import { useRunEvidenceViewModel, type RunEvidenceViewModel } from "../view-mode
 import { useRunTestCasesViewModel, type RunTestCasesViewModel } from "../view-models/use-run-test-cases-view-model";
 import { ProjectRunItem } from "./project-run-item";
 import { RunSummary, SignoffBanner, SignoffDialog, SignoffFooter } from "./run-signoff";
+import { TestCaseEditorDialog } from "./test-case-editor-dialog";
 
 function PanelState({
   title,
@@ -250,6 +251,82 @@ function RunFilters({ list }: Readonly<{ list: ProjectRunListViewModel }>) {
   );
 }
 
+function RunToolbar({
+  checklistMode,
+  summaryShown,
+  run,
+  list,
+  shown,
+  canEditTestCases,
+  onCreateTestCases,
+}: Readonly<{
+  checklistMode: boolean;
+  summaryShown: boolean;
+  run: ProjectQaRun;
+  list: ProjectRunListViewModel;
+  shown: boolean;
+  canEditTestCases: boolean;
+  onCreateTestCases: () => void;
+}>) {
+  return (
+    <div className="pqa-run__toolbar">
+      {checklistMode && summaryShown ? (
+        <RunSummary run={run} variant="compact">
+          <RunHead run={run} showRepositories={shown} />
+        </RunSummary>
+      ) : null}
+      <RunFilters list={list} />
+      {!checklistMode && canEditTestCases ? (
+        <button type="button" className="ghost-button pqa-run__edit-test-cases" onClick={onCreateTestCases}>
+          Create test cases
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function RunStartSummary({
+  run,
+  shown,
+  summaryShown,
+  checklistMode,
+}: Readonly<{ run: ProjectQaRun; shown: boolean; summaryShown: boolean; checklistMode: boolean }>) {
+  if (!summaryShown) return <RunHead run={run} showRepositories={shown} />;
+  if (checklistMode) return null;
+  return (
+    <RunSummary run={run}>
+      <RunHead run={run} showRepositories={shown} />
+    </RunSummary>
+  );
+}
+
+function RunTestCaseEditorSlot({
+  checklistMode,
+  open,
+  onClose,
+  run,
+  vm,
+  testCases,
+}: Readonly<{
+  checklistMode: boolean;
+  open: boolean;
+  onClose: () => void;
+  run: ProjectQaRun;
+  vm: ProjectRunViewModel;
+  testCases: RunTestCasesViewModel;
+}>) {
+  if (checklistMode) return null;
+  return (
+    <TestCaseEditorDialog
+      items={run.items}
+      vm={testCases}
+      open={open}
+      onClose={onClose}
+      onReload={vm.reload}
+    />
+  );
+}
+
 /**
  * One requirement's items. Under "All" its heading folds it away (a fully
  * passed requirement starts folded); under a filter it always shows what
@@ -312,7 +389,7 @@ function RunGroup({
               evidence={evidence}
               testCases={testCases}
               showEvidence={!checklistMode}
-              showTestCaseEditToggle={!checklistMode}
+              canEditTestCases={checklistMode}
               onReload={onReload}
             />
           ))}
@@ -341,6 +418,7 @@ function RunBody({
   summaryShown: boolean;
   checklistMode: boolean;
 }>) {
+  const [testCaseEditorOpen, setTestCaseEditorOpen] = useState(false);
   const permissions = resolveProjectRunPermissions(run, appRole);
   const editor = useProjectVerificationViewModel({
     deliveryProjectId,
@@ -366,29 +444,21 @@ function RunBody({
   return (
     <div className="qa-run pqa-run__body">
       <IterationNextStepView vm={next} />
-      {summaryShown ? null : <RunHead run={run} showRepositories={shown} />}
+      <RunStartSummary run={run} shown={shown} summaryShown={summaryShown} checklistMode={checklistMode} />
       <StaleNotice vm={vm} run={run} appRole={appRole} />
       <RequirementsChangedNotice run={run} changed={vm.requirementsChanged} />
       <SignoffBanner run={run} subject={signedSubject(run, shown)} reopen={reopen} />
       <HeadsList heads={vm.heads.length > 0 ? vm.heads : run.repositories} withRun shown={shown} />
       {/* Who started the run sits in its progress box, under the count. */}
-      {summaryShown && !checklistMode ? (
-        <RunSummary run={run}>
-          <RunHead run={run} showRepositories={shown} />
-        </RunSummary>
-      ) : null}
-      {checklistMode ? (
-        <div className="pqa-run__toolbar">
-          {summaryShown ? (
-            <RunSummary run={run} variant="compact">
-              <RunHead run={run} showRepositories={shown} />
-            </RunSummary>
-          ) : null}
-          <RunFilters list={list} />
-        </div>
-      ) : (
-        <RunFilters list={list} />
-      )}
+      <RunToolbar
+        checklistMode={checklistMode}
+        summaryShown={summaryShown}
+        run={run}
+        list={list}
+        shown={shown}
+        canEditTestCases={run.items.some((item) => testCases.canManage(item))}
+        onCreateTestCases={() => setTestCaseEditorOpen(true)}
+      />
       {list.status === "empty" ? <p className="pqa-note">{runFilterEmptyText(list.filter)}</p> : null}
       {list.groups.map((group) => (
         <RunGroup
@@ -402,6 +472,14 @@ function RunBody({
           onReload={vm.reload}
         />
       ))}
+      <RunTestCaseEditorSlot
+        checklistMode={checklistMode}
+        open={testCaseEditorOpen}
+        onClose={() => setTestCaseEditorOpen(false)}
+        run={run}
+        vm={vm}
+        testCases={testCases}
+      />
       {run.status === "open" && lockedNumber === null ? <SignoffFooter vm={signoff} /> : null}
       {signoff.canSignOff ? (
         <SignoffDialog
@@ -486,6 +564,38 @@ export function ProjectRunPanel({
   checklistMode?: boolean;
 }>) {
   const next = useNextIterationViewModel({ deliveryProjectId, enabled: true, appRole });
+  const body = projectRunBody({
+    deliveryProjectId,
+    vm,
+    appRole,
+    fallback,
+    onOpenHistory,
+    summaryShown,
+    checklistMode,
+    next,
+  });
+  return <div className="pqa-run">{body}</div>;
+}
+
+function projectRunBody({
+  deliveryProjectId,
+  vm,
+  appRole,
+  fallback,
+  onOpenHistory,
+  summaryShown,
+  checklistMode,
+  next,
+}: Readonly<{
+  deliveryProjectId: string;
+  vm: ProjectRunViewModel;
+  appRole: AppRole | null | undefined;
+  fallback?: ReactNode;
+  onOpenHistory?: () => void;
+  summaryShown?: boolean;
+  checklistMode: boolean;
+  next: StartIterationViewModel;
+}>) {
   const deliveredNumber = vm.run ? lockedIterationNumber(vm.run.iteration) : null;
   let body: ReactNode;
   if (vm.status === "idle" || vm.status === "loading") body = <RunSkeleton />;
@@ -519,5 +629,5 @@ export function ProjectRunPanel({
       />
     );
   }
-  return <div className="pqa-run">{body}</div>;
+  return body;
 }

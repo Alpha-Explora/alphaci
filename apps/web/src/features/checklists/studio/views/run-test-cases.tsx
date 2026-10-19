@@ -2,7 +2,7 @@
 
 import "./test-cases.css";
 
-import { useId, useState, type FormEvent, type ReactNode } from "react";
+import { useId, type FormEvent, type ReactNode } from "react";
 
 import type { ProjectQaRunItem } from "../../model/project-run-types";
 import {
@@ -262,27 +262,33 @@ function EditTestCase({
   );
 }
 
-function TestCaseRow({ item, testCase, vm, canEdit }: RowProps & Readonly<{ canEdit: boolean }>) {
+function TestCaseRow({
+  item,
+  testCase,
+  vm,
+  canEdit,
+  managementOnly,
+}: RowProps & Readonly<{ canEdit: boolean; managementOnly: boolean }>) {
   const editing = formOf(vm, item, "edit-case", (open) => open.testCaseId === testCase.sourceTestCaseId);
   if (editing) return <EditTestCase item={item} testCase={testCase} vm={vm} form={editing} />;
   return (
     <li className="pqa-test" data-status={testCase.status}>
       <div className="pqa-test__head">
         <span className="pqa-test__title">{testCase.title}</span>
-        <ResultControl item={item} testCase={testCase} vm={vm} />
+        {!managementOnly ? <ResultControl item={item} testCase={testCase} vm={vm} /> : null}
       </div>
       {testCase.expectedResult ? (
         <p className="pqa-test__expected">
           <span className="pqa-test__expected-label">Expected:</span> {testCase.expectedResult}
         </p>
       ) : null}
-      <NoteArea item={item} testCase={testCase} vm={vm} />
+      {!managementOnly ? <NoteArea item={item} testCase={testCase} vm={vm} /> : null}
       {vm.busyKey === testCase.id ? (
         <span className="qa-run-item__saving" role="status">
           Saving…
         </span>
       ) : null}
-      <TestCaseActions item={item} testCase={testCase} vm={vm} canEdit={canEdit} />
+      {!managementOnly ? <TestCaseActions item={item} testCase={testCase} vm={vm} canEdit={canEdit} /> : null}
     </li>
   );
 }
@@ -422,36 +428,43 @@ function SectionError({ item, vm, onReload }: Props) {
  * records a result per test case. Hidden on a System item, and on a story
  * with no test cases for a viewer who cannot add any.
  */
-export function RunTestCases({ item, vm, onReload, showEditToggle = false }: Props & Readonly<{ showEditToggle?: boolean }>) {
-  const [editing, setEditing] = useState(false);
+export function RunTestCases({
+  item,
+  vm,
+  onReload,
+  canEditDefinitions = true,
+  managementOnly = false,
+}: Props & Readonly<{ canEditDefinitions?: boolean; managementOnly?: boolean }>) {
   const headingId = useId();
   if (item.requirementKind !== "functional") return null;
   const categories = item.testCategories;
   const manage = vm.canManage(item);
-  const canEdit = manage && (!showEditToggle || editing);
+  const canEdit = manage && canEditDefinitions;
   if (categories.length === 0 && !manage) return null;
   const counts = countTestCases(categories);
   const attention = testCasesAttentionLabel(counts);
   return (
-    <details className="pqa-tests" open={counts.open > 0 || counts.total === 0}>
+    <details className="pqa-tests" open={managementOnly || counts.open > 0 || counts.total === 0}>
       <summary className="pqa-tests__summary" id={headingId}>
         <span className="pqa-tests__label">Test cases</span>
         <span className="pqa-tests__count">{testCasesProgressLabel(counts)}</span>
         {attention ? <span className="pqa-tests__attention">{attention}</span> : null}
       </summary>
       <div className="pqa-tests__body" role="group" aria-labelledby={headingId}>
-        {showEditToggle && manage ? (
-          <button type="button" className="qa-text-button pqa-tests__edit-toggle" onClick={() => setEditing((value) => !value)}>
-            {editing ? "Done editing" : "Edit test cases"}
-          </button>
-        ) : null}
         {categories.map((category) => (
           <section key={category.id ?? `name:${category.name}`} className="pqa-tests__category">
             <CategoryHead item={item} category={category} vm={vm} canEdit={canEdit} />
             {category.testCases.length > 0 ? (
               <ul className="pqa-tests__list">
                 {category.testCases.map((testCase) => (
-                  <TestCaseRow key={testCase.id} item={item} testCase={testCase} vm={vm} canEdit={canEdit} />
+                  <TestCaseRow
+                    key={testCase.id}
+                    item={item}
+                    testCase={testCase}
+                    vm={vm}
+                    canEdit={canEdit}
+                    managementOnly={managementOnly}
+                  />
                 ))}
               </ul>
             ) : (

@@ -49,8 +49,18 @@
   margin-top: 0.5rem;
 }
 
-.pqa-tests__edit-toggle {
-  justify-self: start;
+.pqa-test-editor {
+  display: grid;
+  gap: 0.8rem;
+  max-height: min(72vh, 48rem);
+  overflow: auto;
+  padding: 0.4rem 0.15rem;
+}
+
+.pqa-test-editor__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.4rem;
 }
 
 .pqa-tests__category {
