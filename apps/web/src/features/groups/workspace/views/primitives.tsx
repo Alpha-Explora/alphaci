@@ -294,6 +294,7 @@ export function Dialog({
   description,
   describedBy,
   size = "default",
+  portal = false,
   children,
 }: {
   open: boolean;
@@ -306,6 +307,12 @@ export function Dialog({
    */
   describedBy?: string;
   size?: DialogSize;
+  /**
+   * Render the default card in <body> as well (a wide sheet always is). For a
+   * dialog opened from inside a panel that clips or contains fixed children,
+   * such as QA Studio's resizable checklist panel.
+   */
+  portal?: boolean;
   children: ReactNode;
 }) {
   const reduced = useReducedMotion();
@@ -352,7 +359,7 @@ export function Dialog({
   }, [open]);
 
   return (
-    <DialogLayer portal={size === "wide"}>
+    <DialogLayer portal={portal || size === "wide"}>
     <AnimatePresence>
       {open && (
         <motion.div
@@ -453,6 +460,7 @@ export function FormDialog({
   error,
   canSubmit = true,
   size = "default",
+  portal = false,
   onSubmit,
   children,
 }: {
@@ -465,6 +473,8 @@ export function FormDialog({
   error?: string | null;
   canSubmit?: boolean;
   size?: DialogSize;
+  /** See Dialog: render the default card in <body>. */
+  portal?: boolean;
   onSubmit: () => void;
   children: ReactNode;
 }) {
@@ -484,7 +494,7 @@ export function FormDialog({
   );
   if (size !== "wide") {
     return (
-      <Dialog open={open} onClose={onClose} title={title} description={description}>
+      <Dialog open={open} onClose={onClose} title={title} description={description} portal={portal}>
         <form onSubmit={handleSubmit} noValidate>
           {children}
           {footer}

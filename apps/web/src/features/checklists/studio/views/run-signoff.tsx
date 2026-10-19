@@ -164,6 +164,7 @@ export function ReopenDialog({ reopen }: Readonly<{ reopen: QaReopenViewModel }>
     <FormDialog
       open={reopen.confirming}
       onClose={reopen.cancel}
+      portal
       title={REOPEN_CONFIRM.title}
       description={REOPEN_CONFIRM.text}
       submitLabel="Reopen run"
@@ -260,6 +261,8 @@ export function SignoffDialog({
     <FormDialog
       open={vm.status !== "closed"}
       onClose={vm.closeDialog}
+      // In <body>: inside the QA checklist panel the card was cut to the panel's width.
+      portal
       title="Sign off this run"
       description={`${description}. Signing off locks the run.`}
       submitLabel="Sign off"

@@ -174,6 +174,7 @@ export function MergeDialog({
     <FormDialog
       open={vm.mergeState !== "idle"}
       onClose={vm.cancelConfirm}
+      portal
       title={showRepositories ? `Merge ${data.qaBranch} into ${data.targetBranch}?` : `Merge ${projectName} into main?`}
       description={showRepositories ? mergeConfirmText(data, projectName) : projectMergeConfirmText(projectName)}
       submitLabel="Merge to main"
