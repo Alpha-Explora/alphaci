@@ -21,7 +21,7 @@ import { oneOf, record, records, text, type Loose } from "./wire-readers";
 
 type Role = AppRole | null | undefined;
 
-/** Every result, in the order a tester weighs them. */
+/** Every result a run can hold, as the server sends it (older test cases may read Blocked or N/A). */
 export const TEST_CASE_STATUSES: ReadonlyArray<TestCaseStatus> = [
   "pending",
   "passed",
@@ -29,6 +29,16 @@ export const TEST_CASE_STATUSES: ReadonlyArray<TestCaseStatus> = [
   "blocked",
   "not_applicable",
 ];
+
+/** What QA can set on a test case: Pending, Passed or Failed. */
+export const SETTABLE_TEST_CASE_STATUSES: ReadonlyArray<TestCaseStatus> = ["pending", "passed", "failed"];
+
+/** The choices a result control offers: the settable ones, plus the current value when it is an older one. */
+export function testCaseStatusChoices(current: TestCaseStatus): TestCaseStatus[] {
+  return SETTABLE_TEST_CASE_STATUSES.includes(current)
+    ? [...SETTABLE_TEST_CASE_STATUSES]
+    : [...SETTABLE_TEST_CASE_STATUSES, current];
+}
 
 /** Results that keep the story from passing. */
 export const OPEN_TEST_CASE_STATUSES: ReadonlyArray<TestCaseStatus> = ["pending", "failed", "blocked"];

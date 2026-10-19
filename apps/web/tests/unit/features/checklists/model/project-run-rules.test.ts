@@ -177,11 +177,11 @@ describe("who may record Verification", () => {
     expect(canStartProjectRun(undefined)).toBe(false);
   });
 
-  it("offers Passed only once a Developer marked the item Done, and never In progress", () => {
+  it("offers Pending, Passed and Failed (Passed once a Developer marked the item Done), never Blocked or Returned to dev", () => {
     const done = run().items[0];
     const todo = run().items[1];
-    expect(allowedVerificationStatuses(done, OPEN, CAN)).toEqual(["pending", "passed", "failed", "blocked", "returned_to_dev"]);
-    expect(allowedVerificationStatuses(todo, OPEN, CAN)).toEqual(["pending", "failed", "blocked", "returned_to_dev"]);
+    expect(allowedVerificationStatuses(done, OPEN, CAN)).toEqual(["pending", "passed", "failed"]);
+    expect(allowedVerificationStatuses(todo, OPEN, CAN)).toEqual(["pending", "failed"]);
     expect(allowedVerificationStatuses({ ...done, progress: null }, OPEN, CAN)).not.toContain("passed");
     expect(canPass(done)).toBe(true);
     expect(passedUnavailableReason(done)).toBeNull();

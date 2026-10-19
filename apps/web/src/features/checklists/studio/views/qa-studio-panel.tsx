@@ -31,6 +31,7 @@ import { automationSignal, launcherLabel, NO_QA_ENVIRONMENT } from "../../model/
 import { PreviewCaptureContext, type PreviewCaptureTarget } from "../view-models/preview-capture-target";
 import { ShowRepositoriesContext } from "../view-models/repository-visibility";
 import { useFloatingChecklistFocus } from "../view-models/use-floating-checklist-focus";
+import { useRailWidth, type RailWidthViewModel } from "../view-models/use-rail-width";
 import { useStudioCaptureTarget } from "../view-models/use-studio-capture-target";
 import { useStudioFitHeight } from "../view-models/use-studio-fit-height";
 import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
@@ -56,6 +57,7 @@ import { MergeAllDialog, MergeAllOutcome } from "./po-delivery";
 import { PreviewPane } from "./preview-pane";
 import { ProjectRunPanel } from "./project-run-panel";
 import { PromotionBarFoot, PromotionStatusChip, StudioMergeAction } from "./promotion-bar";
+import { RailResizeHandle } from "./rail-resize-handle";
 import { RunPanel } from "./run-panel";
 import { RunSummary } from "./run-signoff";
 import { ChecklistIcon, FlaskIcon, RailPinIcon } from "./studio-icons";
@@ -389,6 +391,7 @@ function RunRail({
   hasTabs,
   bar,
   playwright,
+  resize,
   children,
 }: Readonly<{
   vm: StudioViewportViewModel;
@@ -404,6 +407,8 @@ function RunRail({
   bar: ReactNode;
   /** The Playwright view is on show. */
   playwright: boolean;
+  /** The open panel's width, dragged from its left edge. */
+  resize: RailWidthViewModel;
   children: ReactNode;
 }>) {
   return (
@@ -415,6 +420,7 @@ function RunRail({
     >
       <RailStrip vm={vm} run={run} title={title} panelId={panelId} tabs={tabs} hasTabs={hasTabs} />
       <div className="qa-studio__run" data-scroll={scroll} id={panelId} role="region" aria-labelledby={headingId}>
+        <RailResizeHandle vm={resize} label={title} />
         <PanelHeader title={panelTitle} headingId={headingId} bar={bar} playwright={playwright} />
         {children}
       </div>
@@ -781,6 +787,7 @@ export function QaStudioPanel({
   renderRepositoryChecks?: RenderRepositoryChecks;
 }>) {
   const viewport = useStudioViewportViewModel({ projectId, enabled: Boolean(projectId), studio });
+  const railWidth = useRailWidth(studio);
   const runs = useStudioRunsViewModel({ projectId, appRole, qaScope, branch: viewport.environment?.branch ?? null });
   const { projectMode, projectRun, checklists, run, promotion, delivery } = runs;
   const focus = useFloatingChecklistFocus({ isFullScreen: viewport.isFullScreen });
@@ -813,6 +820,8 @@ export function QaStudioPanel({
         data-full-screen={String(viewport.isFullScreen)}
         data-rail={viewport.isRailPinned ? "pinned" : "collapsed"}
         data-capturing={String(capture.capturing)}
+        data-resizing={String(railWidth.resizing)}
+        style={railWidth.style}
       >
         <StudioControls vm={viewport} commit={snapshot.commit} fullScreenRef={focus.toggleRef} slot={toolbarSlot} />
         <div
@@ -832,6 +841,7 @@ export function QaStudioPanel({
             scroll={projectMode ? "column" : "items"}
             panelId={panelId}
             headingId={headingId}
+            resize={railWidth}
             tabs={
               <RailTabs
                 viewport={viewport}

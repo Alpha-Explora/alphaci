@@ -26,7 +26,7 @@ export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
     "This repository is not filed under a Project, and QA requirements belong to Projects. A Product owner moves it into a Project first.",
   QA_PROGRESS_NOT_DONE: "A Developer marks this Done before QA can pass it.",
   QA_VERIFICATION_STATUS_INVALID:
-    "That verification status is not available. Choose Pending, Passed, Failed, Blocked or Returned to dev.",
+    "That verification status is not available. Choose Pending, Passed or Failed (Failed sends it back to the Developers).",
   VERIFICATION_FORBIDDEN: "Only the QA Team, Product owners and admins set Verification.",
   PROGRESS_FORBIDDEN:
     "Developers, Product owners and admins update Progress. The QA Team records Verification instead.",
@@ -56,7 +56,7 @@ export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   ITERATION_CARRY_INVALID:
     "Items are no longer carried over: a new iteration starts with an empty checklist. Close this dialog, reload the page and start it again.",
   /* Test cases under a User story (written by the QA Team). */
-  QA_TEST_CASES_OPEN: "Pass every test case of this story (or mark it N/A) before passing the story.",
+  QA_TEST_CASES_OPEN: "Pass every test case of this story before passing the story.",
   TEST_CASE_MANAGE_FORBIDDEN: "Only the QA Team and admins write test cases.",
   TEST_CASES_STORY_ONLY: "Test cases belong to User stories of a Feature, not to System requirement items.",
   TEST_CATEGORY_NAME_TAKEN: "This story already has a category with that name. Pick another name.",

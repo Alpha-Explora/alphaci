@@ -447,3 +447,36 @@ export function previewPageUrl(previewUrl: string, path: string): string | null 
   if (!base) return null;
   return new URL(path || "/", base.origin).toString();
 }
+
+/* ── The rail's width ─────────────────────────────────────────────────────── */
+
+/** The panel's default open width: 30rem at the root font size. */
+export const RAIL_WIDTH_DEFAULT = 480;
+/** Narrower than this and the tab bar and the test case rows no longer fit. */
+export const RAIL_WIDTH_MIN = 360;
+/** One arrow-key step on the panel's edge. */
+export const RAIL_WIDTH_STEP = 32;
+/** The page keeps at least this much beside the widest panel. */
+const RAIL_PAGE_MIN = 240;
+
+export function studioRailWidthKey(studio: "qa" | "po"): string {
+  return `alphaci.${studio}-studio.rail-width`;
+}
+
+/** The widest the panel may be in panes this wide: the page keeps a strip, never below the minimum. */
+export function railWidthMax(panesWidth: number): number {
+  return Math.max(RAIL_WIDTH_MIN, Math.round(panesWidth - RAIL_PAGE_MIN));
+}
+
+/** A width within [minimum, max], whole pixels. */
+export function clampRailWidth(width: number, max: number): number {
+  return Math.round(Math.min(Math.max(width, RAIL_WIDTH_MIN), Math.max(RAIL_WIDTH_MIN, max)));
+}
+
+/** A remembered width, or null (the default) for nothing, garbage or a value below the minimum. */
+export function parseRailWidth(raw: string | null): number | null {
+  if (!raw) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= RAIL_WIDTH_MIN ? Math.round(value) : null;
+}
+

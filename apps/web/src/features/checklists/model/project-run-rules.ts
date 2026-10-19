@@ -52,14 +52,20 @@ import { oneOf, record, records, text, type Loose } from "./wire-readers";
 
 type Role = AppRole | null | undefined;
 
-/** Every Verification a Project run accepts, in the order a tester weighs them. */
+/**
+ * Every Verification QA can set on a Project run: Pending, Passed or Failed.
+ * Failed always sends the story back to the Developers (the server puts its
+ * Progress back to In progress), so there is no separate Blocked or Returned
+ * to dev. Items saved earlier with those still show them.
+ */
 export const VERIFICATION_STATUSES: ReadonlyArray<VerificationStatus> = [
   "pending",
   "passed",
   "failed",
-  "blocked",
-  "returned_to_dev",
 ];
+
+/** Failed, said where QA chooses it. */
+export const FAILED_RETURNS_NOTE = "Failed sends this story back to the Developers: its Progress returns to In progress.";
 
 const RUN_STATUSES: ReadonlyArray<QaRunStatus> = ["open", "signed_off"];
 const VERIFICATION_TYPES: ReadonlyArray<ChecklistVerificationType> = VERIFICATION_TYPE_OPTIONS.map(

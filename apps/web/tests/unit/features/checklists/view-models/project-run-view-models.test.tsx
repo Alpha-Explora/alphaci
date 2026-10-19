@@ -187,11 +187,11 @@ describe("useProjectVerificationViewModel", () => {
     expect(repo.setVerification).not.toHaveBeenCalled();
   });
 
-  it("asks for a severity before Returned to dev, then sends it", async () => {
+  it("asks for a severity before Failed (which sends it back to the Developers), then sends it", async () => {
     const value = run();
     repo.setVerification.mockResolvedValue(null);
     const { vm, onReload } = hook(value);
-    act(() => vm.current().chooseStatus(value.items[0], "returned_to_dev"));
+    act(() => vm.current().chooseStatus(value.items[0], "failed"));
     expect(vm.current().openItemId).toBe("run-item-1");
     expect(repo.setVerification).not.toHaveBeenCalled();
     await act(async () => vm.current().saveDraft(value.items[0]));
@@ -199,7 +199,7 @@ describe("useProjectVerificationViewModel", () => {
     act(() => vm.current().updateDraft({ defectSeverity: "major", notes: "Card declined" }));
     await act(async () => vm.current().saveDraft(value.items[0]));
     expect(repo.setVerification).toHaveBeenCalledWith("dp-1", "prun-1", "run-item-1", {
-      status: "returned_to_dev",
+      status: "failed",
       expectedRowVersion: 1,
       notes: "Card declined",
       defectSeverity: "major",
@@ -218,7 +218,7 @@ describe("useProjectVerificationViewModel", () => {
 
     repo.setVerification.mockRejectedValue(apiErrorWith(409, { code: "QA_ITEM_STALE", message: "changed" }));
     const { vm } = hook(value);
-    act(() => vm.current().chooseStatus(value.items[0], "blocked"));
+    act(() => vm.current().chooseStatus(value.items[0], "passed"));
     await flush();
     expect(vm.current().error).toMatchObject({ itemId: "run-item-1", stale: true });
     act(() => vm.current().dismissError());
@@ -226,6 +226,16 @@ describe("useProjectVerificationViewModel", () => {
     act(() => vm.current().openDetails(value.items[0]));
     act(() => vm.current().closeDetails());
     expect(vm.current().openItemId).toBeNull();
+  });
+
+  it("never sends Blocked or Returned to dev: QA picks Pending, Passed or Failed", async () => {
+    const value = run();
+    const { vm } = hook(value);
+    expect(vm.current().allowedStatuses(value.items[0])).toEqual(["pending", "passed", "failed"]);
+    act(() => vm.current().chooseStatus(value.items[0], "blocked"));
+    act(() => vm.current().chooseStatus(value.items[0], "returned_to_dev"));
+    await flush();
+    expect(repo.setVerification).not.toHaveBeenCalled();
   });
 });
 
