@@ -244,6 +244,7 @@ export function MergeAllDialog({ vm, projectName }: Readonly<{ vm: PoDeliveryVie
     <FormDialog
       open={vm.dialogOpen}
       onClose={vm.cancelConfirm}
+      portal
       title={showRepositories ? "Merge every repository into main?" : `Merge ${projectName} into main?`}
       description={showRepositories ? mergeAllConfirmText(projectName, vm.pending) : projectMergeConfirmText(projectName)}
       submitLabel="Merge to main"

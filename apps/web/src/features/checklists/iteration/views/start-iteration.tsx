@@ -84,6 +84,7 @@ export function StartIterationDialog({ vm }: Readonly<{ vm: StartIterationViewMo
     <FormDialog
       open={vm.open}
       onClose={vm.close}
+      portal
       title={vm.label}
       description={vm.description}
       submitLabel={vm.label}
