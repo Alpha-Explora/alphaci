@@ -106,16 +106,14 @@ function PreviewActions({
           </button>
         </>
       ) : null}
-      {preview.inspectorUrl ? (
+      {preview.status === "not_deployed" && preview.inspectorUrl ? (
         <a
           className="ghost-button target-action-btn"
           href={preview.inspectorUrl}
           target="_blank"
           rel="noreferrer noopener"
         >
-          {preview.status === "not_deployed"
-            ? "Provider dashboard"
-            : "Build logs"}
+          Provider dashboard
         </a>
       ) : null}
     </footer>

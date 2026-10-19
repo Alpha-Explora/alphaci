@@ -6,6 +6,7 @@ import "./project-run.css";
 import { useId, type ReactNode } from "react";
 
 import type { AppRole } from "@/shared/api/contracts";
+import { FilterMenu } from "@/shared/ui/filter-menu";
 
 import {
   IterationNextStepView,
@@ -232,28 +233,19 @@ function signedSubject(run: ProjectQaRun, showRepositories: boolean): string {
 }
 
 /**
- * What the list shows: All, or the items in one Verification, each with its
- * count. "To verify" is the tester's inbox: items leave it as they are
- * recorded, until it is empty.
+ * What the list shows, as one Filter pill: All, or the items in one
+ * Verification, each with its count. "To verify" is the tester's inbox: items
+ * leave it as they are recorded, until it is empty.
  */
 function RunFilters({ list }: Readonly<{ list: ProjectRunListViewModel }>) {
   if (list.counts.all === 0) return null;
   return (
-    <div className="pqa-filters" role="group" aria-label="Show items">
-      {list.filters.map((filter) => (
-        <button
-          key={filter}
-          type="button"
-          className="pqa-filter"
-          data-filter={filter}
-          aria-pressed={list.filter === filter}
-          onClick={() => list.setFilter(filter)}
-        >
-          {runFilterLabel(filter)}
-          <span className="pqa-filter__count">{list.counts[filter]}</span>
-        </button>
-      ))}
-    </div>
+    <FilterMenu
+      ariaLabel="Show items"
+      value={list.filter}
+      onChange={list.setFilter}
+      options={list.filters.map((filter) => ({ id: filter, label: runFilterLabel(filter), count: list.counts[filter] }))}
+    />
   );
 }
 
@@ -357,12 +349,17 @@ function RunBody({
   return (
     <div className="qa-run pqa-run__body">
       <IterationNextStepView vm={next} />
-      <RunHead run={run} showRepositories={shown} />
+      {summaryShown ? null : <RunHead run={run} showRepositories={shown} />}
       <StaleNotice vm={vm} run={run} appRole={appRole} />
       <RequirementsChangedNotice run={run} changed={vm.requirementsChanged} />
       <SignoffBanner run={run} subject={signedSubject(run, shown)} reopen={reopen} />
       <HeadsList heads={vm.heads.length > 0 ? vm.heads : run.repositories} withRun shown={shown} />
-      {summaryShown ? <RunSummary run={run} /> : null}
+      {/* Who started the run sits in its progress box, under the count. */}
+      {summaryShown ? (
+        <RunSummary run={run}>
+          <RunHead run={run} showRepositories={shown} />
+        </RunSummary>
+      ) : null}
       <RunFilters list={list} />
       {list.status === "empty" ? <p className="pqa-note">{runFilterEmptyText(list.filter)}</p> : null}
       {list.groups.map((group) => (

@@ -625,10 +625,19 @@ describe("ProjectRunPanel", () => {
     const criteria = [...container.querySelectorAll<HTMLDetailsElement>("details.pqa-criteria")];
     expect(criteria.map((node) => node.open)).toEqual([false, true]);
 
-    const filters = [...container.querySelectorAll<HTMLButtonElement>(".pqa-filter")];
+    // The filters are one pill, "Filter All 2", opening the choices.
+    const menu = container.querySelector<HTMLDetailsElement>("details.filter-menu")!;
+    expect(menu.querySelector("summary")?.textContent).toBe("FilterAll2");
+    const filters = [...menu.querySelectorAll<HTMLButtonElement>(".filter-menu__option")];
     expect(filters.map((button) => button.textContent)).toEqual(["All2", "To verify1", "Passed1"]);
+    menu.open = true;
     await act(async () => filters[1].click());
     expect(filters[1].getAttribute("aria-pressed")).toBe("true");
+    expect(menu.open).toBe(false);
+    expect(menu.querySelector("summary")?.textContent).toBe("FilterTo verify1");
+    // Who started the run sits inside the progress box, and no role line sits over the run.
+    expect(container.querySelector(".qa-summary .qa-run-card__started")?.textContent).toContain("2 items");
+    expect(container.querySelectorAll(".qa-run-card__started")).toHaveLength(1);
     expect([...container.querySelectorAll(".qa-run-item__title")].map((node) => node.textContent)).toEqual(["Checkout works"]);
     // Under a filter the headings are plain: nothing hides what was asked for.
     expect(container.querySelector(".pqa-group__toggle")).toBeNull();
@@ -795,7 +804,9 @@ describe("ProjectQaWorkspace", () => {
 
     loadAll("qa");
     const qa = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="qa" />);
-    expect(qa.textContent).toContain("then sign the Project off");
+    // No instruction line over the QA Team's run.
+    expect(qa.textContent).not.toContain("then sign the Project off");
+    expect(qa.querySelector(".rq-panel__role")).toBeNull();
     expect(qa.querySelector("section.rq-section")).toBeNull();
   });
 

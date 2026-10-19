@@ -5,6 +5,7 @@ import "./audit-tab.css";
 import { useId, useState } from "react";
 
 import type { ProvisionedProject } from "@/features/projects";
+import { FilterMenu } from "@/shared/ui/filter-menu";
 import {
   AUDIT_FILTERS,
   auditAbsoluteTime,
@@ -38,16 +39,30 @@ export function AuditTab({
       <h2 className="audit-trail__title" id="audit-trail-title">
         Audit trail
       </h2>
-      {vm.audit.status === "ready" ? <SyncLine audit={vm.audit} /> : null}
+      {vm.audit.status === "ready" ? <AuditToolbar audit={vm.audit} /> : null}
       <AuditBody audit={vm.audit} />
     </section>
   );
 }
 
-/** When GitHub activity was last read, and a way to read it now. Absent on an older backend. */
-function SyncLine({ audit }: Readonly<{ audit: ProjectAuditViewModel }>) {
+/** One row over the trail: the source filter pill, then when GitHub was last read and Sync now. */
+function AuditToolbar({ audit }: Readonly<{ audit: ProjectAuditViewModel }>) {
+  const filters = audit.rows.length > 0 && audit.showFilters;
   const line = auditSyncLine(audit.githubSync, audit.readAt);
-  if (!line) return null;
+  if (!filters && !line) return null;
+  return (
+    <div className="audit-trail__toolbar">
+      {filters ? <SourceFilters audit={audit} /> : null}
+      {line ? <SyncLine audit={audit} line={line} /> : null}
+    </div>
+  );
+}
+
+/** When GitHub activity was last read, and a way to read it now. Absent on an older backend. */
+function SyncLine({
+  audit,
+  line,
+}: Readonly<{ audit: ProjectAuditViewModel; line: NonNullable<ReturnType<typeof auditSyncLine>> }>) {
   return (
     <div className="audit-trail__sync" data-tone={line.tone}>
       <span className="audit-trail__sync-dot" aria-hidden="true" />
@@ -103,7 +118,6 @@ function AuditBody({ audit }: Readonly<{ audit: ProjectAuditViewModel }>) {
   }
   return (
     <>
-      {audit.showFilters ? <SourceFilters audit={audit} /> : null}
       {audit.filteredRows.length === 0 ? (
         <p className="audit-trail__empty">{auditFilterEmptyMessage(audit.filter)}</p>
       ) : (
@@ -118,22 +132,17 @@ function AuditBody({ audit }: Readonly<{ audit: ProjectAuditViewModel }>) {
   );
 }
 
-/** All / ALPHACI / GitHub, over the rows loaded so far. */
+/** All / ALPHACI / GitHub, as one Filter pill, over the rows loaded so far. */
 function SourceFilters({ audit }: Readonly<{ audit: ProjectAuditViewModel }>) {
   return (
-    <div className="audit-trail__filters" role="group" aria-label="Show events from">
-      {AUDIT_FILTERS.map((option) => (
-        <button
-          key={option.id}
-          type="button"
-          className="audit-trail__filter"
-          aria-pressed={audit.filter === option.id}
-          onClick={() => audit.setFilter(option.id)}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
+    <FilterMenu
+      className="audit-trail__filters"
+      label="Show"
+      ariaLabel="Show events from"
+      value={audit.filter}
+      onChange={audit.setFilter}
+      options={AUDIT_FILTERS}
+    />
   );
 }
 

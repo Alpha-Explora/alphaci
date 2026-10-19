@@ -9,35 +9,16 @@ import type { AppRole } from "@/shared/api/contracts";
 import { ProjectRunPanel, useProjectRunViewModel } from "../../studio";
 import { verdictsBySourceItem } from "../../model/checklist-filter-rules";
 import { CHECKLIST_VIEW_LABELS, checklistViewFor } from "../../model/checklist-view-rules";
-import { lockedIterationNumber } from "../../model/iteration-rules";
-import { canSetVerification } from "../../model/requirement-rules";
-import { showsRepositories } from "../../model/studio-role-rules";
 import { ProjectRequirementsPanel } from "./project-requirements-panel";
 
-/** The QA run's one line for this viewer, in Project words for those who never see repositories. */
-function runRoleLine(appRole: AppRole | null | undefined): string {
-  if (canSetVerification(appRole)) {
-    return showsRepositories(appRole)
-      ? "Verify every item against the uat head of each repository, then sign the Project off."
-      : "Verify every item on the Project's uat build, then sign the Project off.";
-  }
-  return "What the QA Team verified, on which uat heads. Merging to main follows its sign-off.";
-}
-
+/** The QA run, with no line above it: the run's own box says who started it and where it stands. */
 function RunView({
   deliveryProjectId,
   appRole,
   onOpenHistory,
 }: Readonly<{ deliveryProjectId: string; appRole: AppRole | null | undefined; onOpenHistory?: () => void }>) {
   const vm = useProjectRunViewModel({ deliveryProjectId, enabled: true });
-  // A delivered iteration's run has left this view; the role line goes with it.
-  const delivered = vm.run !== null && lockedIterationNumber(vm.run.iteration) !== null;
-  return (
-    <>
-      {delivered ? null : <p className="rq-panel__role">{runRoleLine(appRole)}</p>}
-      <ProjectRunPanel deliveryProjectId={deliveryProjectId} vm={vm} appRole={appRole} onOpenHistory={onOpenHistory} />
-    </>
-  );
+  return <ProjectRunPanel deliveryProjectId={deliveryProjectId} vm={vm} appRole={appRole} onOpenHistory={onOpenHistory} />;
 }
 
 /**

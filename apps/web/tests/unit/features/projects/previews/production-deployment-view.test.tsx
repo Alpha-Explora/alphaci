@@ -98,16 +98,16 @@ describe("ProductionDeploymentView", () => {
     expect(text).toContain("Merge pull request #44");
   });
 
-  it("links the build logs and the live site, and sends nothing to GitHub", () => {
+  it("links the live site only, and sends nothing to GitHub", () => {
     render([production()]);
 
     // The commit is text: ALPHACI is the only UI.
     expect(link("View commit on GitHub")).toBeUndefined();
     expect(link("4b84b6b")).toBeUndefined();
     expect(container.querySelector('a[href*="github.com"]')).toBeNull();
-    expect(link("Build logs")?.getAttribute("href")).toBe(
-      "https://vercel.com/tone/web-app/dpl_1",
-    );
+    // The Overview has no Build logs button: Visit is the card's one action.
+    expect(link("Build logs")).toBeUndefined();
+    expect(container.querySelector('a[href="https://vercel.com/tone/web-app/dpl_1"]')).toBeNull();
     expect(link("Visit")?.getAttribute("href")).toBe(
       "https://web-app.vercel.app",
     );
