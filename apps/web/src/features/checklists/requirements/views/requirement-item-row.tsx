@@ -1,5 +1,7 @@
 "use client";
 
+import "./story-test-cases.css";
+
 import type { FormEvent } from "react";
 
 import { SeverityBadge, StatusPill, VerificationBadge } from "../../items";
@@ -243,6 +245,40 @@ function Verdict({ verdict }: Readonly<{ verdict: ProjectQaRunItem | undefined }
 }
 
 /**
+ * What QA will check on this story: its test case categories and test
+ * cases, read-only and folded. The QA Team writes them from the QA checklist.
+ * Nothing when QA has written none.
+ */
+function StoryTestCases({ item }: Readonly<{ item: RequirementItem }>) {
+  const total = item.testCategories.reduce((sum, category) => sum + category.testCases.length, 0);
+  if (total === 0) return null;
+  return (
+    <details className="rq-tests">
+      <summary className="rq-tests__summary">
+        QA test cases ({String(total)})
+      </summary>
+      {item.testCategories
+        .filter((category) => category.testCases.length > 0)
+        .map((category) => (
+          <div key={category.id} className="rq-tests__category">
+            <p className="rq-tests__category-name">{category.name}</p>
+            <ul className="rq-tests__list">
+              {category.testCases.map((testCase) => (
+                <li key={testCase.id}>
+                  {testCase.title}
+                  {testCase.expectedResult ? (
+                    <span className="rq-tests__expected"> Expected: {testCase.expectedResult}</span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+    </details>
+  );
+}
+
+/**
  * One story or item: what it is, how QA knows it is done, and its Progress.
  * Developers get the Progress control and nothing else; Product owners and
  * admins also edit, reorder and delete it. Given QA's `verdict` (the
@@ -291,6 +327,7 @@ export function RequirementItemRow({
           {canManage ? <ManageActions item={item} index={index} count={count} vm={items} /> : null}
         </div>
         {item.acceptanceCriteria ? <p className="rq-item__criteria">{item.acceptanceCriteria}</p> : null}
+        <StoryTestCases item={item} />
         <QaFindings runItem={verdict} />
         <ItemFoot item={item} editable={progressEditable} progress={progress} onReload={onReload} />
         <RowError vm={items} itemId={item.id} onReload={onReload} />

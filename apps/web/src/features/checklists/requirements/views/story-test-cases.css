@@ -1,0 +1,36 @@
+/* What QA will check on a story: read-only here, written from the QA checklist. */
+.rq-tests {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.rq-tests__summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rq-tests__summary:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.rq-tests__category {
+  margin-top: 0.35rem;
+}
+
+.rq-tests__category-name {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.rq-tests__list {
+  margin: 0.15rem 0 0;
+  padding-left: 1.1rem;
+  line-height: 1.5;
+}
+
+.rq-tests__expected {
+  color: var(--text-muted);
+}

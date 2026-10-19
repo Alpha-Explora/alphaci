@@ -1,0 +1,194 @@
+/* ── Test cases under a story (the QA Team writes them; a run records each result) ── */
+
+/* A <details>, like the acceptance criteria: open while a test case is unresolved. */
+.pqa-tests {
+  padding: 0.45rem 0.65rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
+}
+
+.pqa-tests__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.pqa-tests__summary:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.pqa-tests__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pqa-tests__count {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.pqa-tests__attention {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.pqa-tests__body {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.pqa-tests__category {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.pqa-tests__category-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.pqa-tests__category-name {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pqa-tests__category-actions,
+.pqa-test__actions,
+.pqa-tests__confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.74rem;
+}
+
+.pqa-tests__danger {
+  color: var(--danger);
+}
+
+.pqa-tests__list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pqa-tests__empty {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.pqa-tests__add {
+  justify-self: start;
+}
+
+.pqa-test {
+  --pqa-test-accent: var(--border-strong);
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--pqa-test-accent);
+  border-radius: 0.45rem;
+  background: var(--bg-surface);
+}
+
+.pqa-test[data-status="passed"] {
+  --pqa-test-accent: var(--success);
+}
+
+.pqa-test[data-status="failed"] {
+  --pqa-test-accent: var(--danger);
+}
+
+.pqa-test[data-status="blocked"] {
+  --pqa-test-accent: var(--warning);
+}
+
+.pqa-test__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pqa-test__title {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.pqa-test__select {
+  flex: none;
+  min-width: 6.5rem;
+  min-height: 1.85rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.pqa-test__status {
+  flex: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.pqa-test__status[data-tone="success"] {
+  color: var(--success);
+}
+
+.pqa-test__status[data-tone="danger"] {
+  color: var(--danger);
+}
+
+.pqa-test__status[data-tone="warning"] {
+  color: var(--warning);
+}
+
+.pqa-test__expected,
+.pqa-test__note {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  white-space: pre-line;
+}
+
+.pqa-test__expected-label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.pqa-test__note {
+  padding-left: 0.5rem;
+  border-left: 2px solid var(--border-strong);
+}
+
+.pqa-tests__form {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.pqa-tests__form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

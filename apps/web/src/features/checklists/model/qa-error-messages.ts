@@ -55,6 +55,14 @@ export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
     "Requirement items were added after this run started, so QA has not verified them. They are now in the run as Pending: reload the run, verify them, then sign off.",
   ITERATION_CARRY_INVALID:
     "Items are no longer carried over: a new iteration starts with an empty checklist. Close this dialog, reload the page and start it again.",
+  /* Test cases under a User story (written by the QA Team). */
+  QA_TEST_CASES_OPEN: "Pass every test case of this story (or mark it N/A) before passing the story.",
+  TEST_CASE_MANAGE_FORBIDDEN: "Only the QA Team and admins write test cases.",
+  TEST_CASES_STORY_ONLY: "Test cases belong to User stories of a Feature, not to System requirement items.",
+  TEST_CATEGORY_NAME_TAKEN: "This story already has a category with that name. Pick another name.",
+  TEST_CASES_LIMIT: "This story holds as many test cases as it can. Remove one to add another.",
+  TEST_CASE_STALE:
+    "Someone else changed this test case since you loaded the run. Reload the run to see their change, then try again.",
 };
 
 /**
@@ -94,6 +102,7 @@ const STALE_CODES: ReadonlySet<string> = new Set([
   "QA_ITEM_STALE",
   "QA_RUN_CHANGED",
   "QA_RUN_MISSING_ITEMS",
+  "TEST_CASE_STALE",
 ]);
 
 /** True when the failure carries a code a reload fixes. */
