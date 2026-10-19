@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Added live workspace member alerts with Open workspace links. The Inbox, unread badge, and workspace picker update without reloading, share one notification feed per account, and recover through periodic reads if streaming is unavailable.
+
 - Added workspace Hosts enrollment and connection status, explicit environment machine assignment/replacement/unassignment, editable ports/health/ingress, and optional setup host selection. Assignment failures retain the created project and direct retries to Hosting.
 
 ### Added

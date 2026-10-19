@@ -55,6 +55,7 @@ function useSelectPageWorkspace(pageWorkspaceId: string | null | undefined) {
 /** Route state and shell data for the navigation view. */
 export function useAppNavViewModel(options: {
   guest: boolean;
+  userId?: string | null;
   /** The same signal that shows Admin: adds the other teams to the picker. */
   isPlatformAdmin?: boolean;
   /** The session's global role and platform role: who may open /activity. */
@@ -75,7 +76,24 @@ export function useAppNavViewModel(options: {
   useSelectPageWorkspace(options.pageWorkspaceId);
   const notifications = useNotificationsSummaryViewModel({
     guest: options.guest,
+    userId: options.userId,
   });
+  const { refreshWorkspaces } = useWorkspaceSelection();
+  useEffect(() => {
+    if (notifications.workspaceRevision > 0) refreshWorkspaces();
+  }, [notifications.workspaceRevision, refreshWorkspaces]);
+  useEffect(() => {
+    const refresh = () => {
+      if (!options.guest && document.visibilityState !== "hidden")
+        refreshWorkspaces();
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [options.guest, refreshWorkspaces]);
   const { qaChecklistsEnabled, envProvisioningEnabled } = useCapabilities();
   const hostAvailability = useHostAvailability(
     !options.guest && envProvisioningEnabled,
