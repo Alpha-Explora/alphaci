@@ -66,6 +66,7 @@ function NotificationsInboxContent() {
    * the only place that knows an API exists — see model/use-inbox.ts. */
   const notificationsVm = useNotificationsInboxViewModel(
     status === "signed-in" && !guest,
+    session?.user.id ?? null,
   );
 
   useEffect(() => {

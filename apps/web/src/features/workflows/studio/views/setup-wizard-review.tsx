@@ -51,6 +51,8 @@ function ReviewHostingRow({
     choice: hosting.choice,
     environments: form.environments,
     hostedTargets: envProvisioningEnabled ? deploymentProvisioning.hostedPayload.targets : [],
+    layout: hosting.layout,
+    repoName: form.repoName,
   });
   return (
     <div className="repo-wizard-review__wide">

@@ -26,7 +26,19 @@ function CommitText({ sha }: Readonly<{ sha: string }>) {
 
 function SecondaryRepoSection({
   fullName,
-}: Readonly<{ fullName: string | undefined }>) {
+  error,
+}: Readonly<{ fullName: string | undefined; error: string | undefined }>) {
+  if (error) {
+    return (
+      <div role="alert">
+        <p>
+          The frontend repository wasn’t created. The backend repository was
+          kept.
+        </p>
+        <p>{error}</p>
+      </div>
+    );
+  }
   if (!fullName) return null;
   return (
     <p className="helper-text" style={{ margin: 0 }}>
@@ -549,7 +561,10 @@ function CreatedProjectResultView({
           <CommitText sha={setupResult.githubCommitSha} />
         </div>
       </div>
-      <SecondaryRepoSection fullName={setupResult.secondaryRepoFullName} />
+      <SecondaryRepoSection
+        fullName={setupResult.secondaryRepoFullName}
+        error={setupResult.secondaryRepoError}
+      />
       <div className="result-actions">
         <ProjectLinks projectId={setupResult.id} />
         {envProvisioningEnabled ? (
@@ -597,11 +612,44 @@ function HostAssignmentResults({ result }: { result: CreateProjectResult }) {
           <li key={item.environmentId}>{item.message}</li>
         ))}
       </ul>
-      <Link href={`/projects/${result.id}`}>
-        Open the project’s Hosting panel to retry the assignment.
-      </Link>
+      {retryTargets(result, failures).map((target) => (
+        <p key={target.projectId}>
+          <Link href={`/projects/${encodeURIComponent(target.projectId)}`}>
+            {target.slot
+              ? `Open the ${target.slot} repository’s Hosting panel to retry the assignment.`
+              : "Open the project’s Hosting panel to retry the assignment."}
+          </Link>
+        </p>
+      ))}
     </div>
   );
+}
+
+type HostAssignmentResult = NonNullable<
+  CreateProjectResult["hostAssignments"]
+>[number];
+
+/**
+ * One retry link per project row with a failure. A two-repository pair
+ * reports each environment against its own row, so a frontend failure is
+ * retried on the frontend project, not on `result.id`.
+ */
+function retryTargets(
+  result: CreateProjectResult,
+  failures: readonly HostAssignmentResult[],
+): Array<{ projectId: string; slot?: "backend" | "frontend" }> {
+  const targets = new Map<
+    string,
+    { projectId: string; slot?: "backend" | "frontend" }
+  >();
+  for (const item of failures) {
+    const projectId = item.projectId ?? result.id;
+    if (!targets.has(projectId)) {
+      targets.set(projectId, { projectId, slot: item.slot });
+    }
+  }
+  if (!targets.size) targets.set(result.id, { projectId: result.id });
+  return [...targets.values()];
 }
 
 export function SetupResultPanel({

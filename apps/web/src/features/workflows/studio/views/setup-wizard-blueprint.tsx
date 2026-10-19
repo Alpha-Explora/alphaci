@@ -2,6 +2,7 @@
 
 import { HelpTip } from "@/shared/ui/help-tip";
 import type { ProjectTypeOption, RepoShapeOption } from "@/shared/api/contracts";
+import { multiRepoRepositoryNames, normalizeRepoName } from "../model/create-project-payload";
 import { isOfferedRepoShape, repoPrefixedPlaceholder } from "../model/setup-tab-rules";
 import type { CreateProjectFormState } from "../view-models/use-create-project-form";
 import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
@@ -323,6 +324,12 @@ function FrontendServiceFields({
   );
 }
 
+/** The two repositories, named as the backend creates them. */
+function multiRepoNoticeText(repoName: string): string {
+  const names = multiRepoRepositoryNames(repoName);
+  return `2 separate repos will be created: ${names.backend} and ${names.frontend}`;
+}
+
 function MultiRepoNotice({
   isMultiRepoShape,
   repoName,
@@ -330,12 +337,12 @@ function MultiRepoNotice({
   if (!isMultiRepoShape) {
     return null;
   }
-  if (!repoName) {
+  if (!normalizeRepoName(repoName)) {
     return null;
   }
   return (
     <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: "0.5rem 0 0.75rem", lineHeight: 1.5 }}>
-      {`2 separate repos will be created: ${repoName}-be and ${repoName}-fe`}
+      {multiRepoNoticeText(repoName)}
     </p>
   );
 }

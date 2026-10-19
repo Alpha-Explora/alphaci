@@ -2,6 +2,8 @@
 
 ## 2026-10-19
 
+- **Update**: The Inbox and navigation now share recipient-scoped live notification snapshots. Workspace member alerts include Open workspace links and refresh the picker; periodic fetches recover when streams are unavailable.
+
 - **Creation**: Added the self-hosted frontend image runbook (`runbook-selfhost.md`), covering the fixed build arguments, the same-origin reverse-proxy contract and the `/healthz` liveness route. The Dockerfile gained a `HEALTHCHECK`, and the generated architecture counts include the new route.
 
 ## 2026-10-15
