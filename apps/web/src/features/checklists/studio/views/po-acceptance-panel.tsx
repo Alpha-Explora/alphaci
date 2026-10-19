@@ -6,66 +6,83 @@ import type { AppRole } from "@/shared/api/contracts";
 
 import { IterationWaitingNotice, StartIterationAction } from "../../iteration";
 import {
-  PO_READY_TEXT,
-  PO_READY_TITLE,
-  PO_WAITING_TITLE,
   poAcceptanceState,
   poWaitingText,
+  poWaitingTitle,
   type PoAcceptanceState,
 } from "../../model/po-studio-rules";
-import { headLabel, resolveProjectRunPermissions } from "../../model/project-run-rules";
+import { resolveProjectRunPermissions } from "../../model/project-run-rules";
 import type { ProjectQaRun } from "../../model/project-run-types";
 import { UNFILED_REASON } from "../../model/qa-promotion-rules";
 import type { QaScope } from "../../model/qa-scope";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
-import { useProjectReopenViewModel } from "../view-models/use-project-signoff-view-model";
+import { usePoAcceptanceViewModel } from "../view-models/use-po-acceptance-view-model";
 import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
-import { useShowRepositories } from "../view-models/repository-visibility";
-import { PoDeliveredBanner, PoDeliveryState } from "./po-delivery";
+import { useRunTestCasesViewModel } from "../view-models/use-run-test-cases-view-model";
+import { PoDeliveredBanner } from "./po-delivery";
 import { PoRunItems } from "./po-run-items";
-import { RunSummary, SignoffBanner } from "./run-signoff";
-
-function signedSubject(run: ProjectQaRun, showRepositories: boolean): string {
-  if (!showRepositories || run.repositories.length === 0) return run.deliveryProjectName;
-  return run.repositories.map((head) => headLabel(head.repoFullName, head.runSha)).join(", ");
-}
+import { RunSummary } from "./run-signoff";
 
 /**
- * What QA did with the release candidate: how far the run got, and once it
- * is signed off, by whom, with which verdict, on which heads — with Reopen
- * for a Product owner who does not accept it.
+ * The Product owner's check of the release candidate: how far QA got, then
+ * every item with QA's verdict and test cases (read-only), and — once QA
+ * signed the run off — Pass or Fail on each. Failing reopens the run and
+ * returns the story to the Developers. `onChanged` re-reads the readiness
+ * chip and Merge to main, which wait for every item to be passed here.
  */
-function QaRunAcceptance({
+function PoRunCheck({
   deliveryProjectId,
   vm,
   run,
   appRole,
+  delivered,
+  onChanged,
 }: Readonly<{
   deliveryProjectId: string;
   vm: ProjectRunViewModel;
   run: ProjectQaRun;
   appRole: AppRole | null | undefined;
+  delivered: boolean;
+  onChanged: () => void;
 }>) {
   const permissions = resolveProjectRunPermissions(run, appRole);
-  const showRepositories = useShowRepositories();
-  const reopen = useProjectReopenViewModel({ deliveryProjectId, run, permissions, onRun: vm.applyRun });
+  const testCases = useRunTestCasesViewModel({
+    deliveryProjectId,
+    run,
+    permissions,
+    onRun: vm.applyRun,
+    onReload: vm.refresh,
+  });
+  const acceptance = usePoAcceptanceViewModel({
+    deliveryProjectId,
+    run,
+    canAccept: permissions.canAccept && !delivered,
+    onRun: vm.applyRun,
+    onReload: vm.refresh,
+    onChanged,
+  });
   return (
     <>
       <RunSummary run={run} />
-      <SignoffBanner run={run} subject={signedSubject(run, showRepositories)} reopen={reopen} />
+      {delivered ? null : (
+        <PoRunItems run={run} acceptance={acceptance} testCases={testCases} onReload={vm.refresh} />
+      )}
     </>
   );
 }
 
 type ProjectScope = Extract<QaScope, { kind: "project" }>;
 
-/** The acceptance status line: waiting for QA, or ready for main. */
-function AcceptanceStatus({ ready, run }: Readonly<{ ready: boolean; run: ProjectQaRun | null }>) {
+/**
+ * What is still missing before main: QA's sign-off, or the Product owner's
+ * own check. Nothing once ready: the tab bar's chip says so.
+ */
+function AcceptanceStatus({ run }: Readonly<{ run: ProjectQaRun | null }>) {
   return (
     <div className="po-accept__status" role="status">
-      <p className="po-accept__title">{ready ? PO_READY_TITLE : PO_WAITING_TITLE}</p>
-      <p className="po-accept__text">{ready ? PO_READY_TEXT : poWaitingText(run)}</p>
+      <p className="po-accept__title">{poWaitingTitle(run)}</p>
+      <p className="po-accept__text">{poWaitingText(run)}</p>
     </div>
   );
 }
@@ -88,8 +105,8 @@ function DeliveredNext({ delivery }: Readonly<{ delivery: PoDeliveryViewModel }>
 
 /**
  * A Project's acceptance: the delivered banner once its iteration reached
- * main; before that, waiting or ready, each covered repository's stored
- * state, and what QA did with the run.
+ * main; before that, what is still missing (QA's sign-off or the Product
+ * owner's check), how far QA got and the Product owner's checklist.
  */
 function ProjectAcceptance({
   qaScope,
@@ -124,34 +141,30 @@ function ProjectAcceptance({
           next={delivery.start.step.kind === "none" ? null : <DeliveredNext delivery={delivery} />}
         />
       ) : (
-        <>
-          <AcceptanceStatus ready={ready} run={run} />
-          <PoDeliveryState vm={delivery} projectName={qaScope.projectName} />
-        </>
+        ready ? null : <AcceptanceStatus run={run} />
       )}
       {run ? (
-        <QaRunAcceptance
+        <PoRunCheck
           key={run.id}
           deliveryProjectId={qaScope.deliveryProjectId}
           vm={projectRun}
           run={run}
           appRole={appRole}
+          delivered={delivered}
+          onChanged={promotion.reload}
         />
       ) : null}
-      {run && !delivered ? <PoRunItems run={run} /> : null}
     </div>
   );
 }
 
 /**
- * PO Studio's column: whether the Project's release candidate is ready for
- * production, and why not yet; each repository's state on the way to main;
- * and, once every repository reached main, the delivered iteration. The
- * merge itself is the tab bar's readiness chip and Merge to main above it
- * (the same ones QA Studio shows; on a Project of two or more repositories
- * it merges every one not in main yet); this panel is the acceptance around
- * it. QA's results are here too, read-only (PoRunItems); verifying items
- * stays with the QA Team.
+ * PO Studio's column: why the Project's release candidate is not ready yet,
+ * the Product owner's own check of every item once QA signed it off (Pass,
+ * or Fail back to the Developers), and, once every repository reached main,
+ * the delivered iteration. The merge itself is the tab bar's readiness chip
+ * and Merge to main above it, which wait for every item to be passed here.
+ * QA's test cases and results are read-only for the Product owner.
  */
 export function PoAcceptancePanel({
   qaScope,

@@ -7,8 +7,15 @@ import Link from "next/link";
 import {
   notificationAlertHref,
   isMembershipNotification,
+  isQaSignoff,
 } from "../../model/notifications-rules";
 import type { NotificationItem } from "../../model/notifications-types";
+
+function alertLinkLabel(alert: NotificationItem): string {
+  if (isMembershipNotification(alert)) return "Open workspace";
+  if (isQaSignoff(alert)) return "Check it in PO Studio";
+  return "Open item";
+}
 
 function AlertIcon() {
   return (
@@ -77,9 +84,7 @@ export function QaAlertToasts({
                     onDismiss(alert.id);
                   }}
                 >
-                  {isMembershipNotification(alert)
-                    ? "Open workspace"
-                    : "Open item"}
+                  {alertLinkLabel(alert)}
                 </Link>
               ) : null}
             </div>

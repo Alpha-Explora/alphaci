@@ -15,6 +15,7 @@ import type {
   ProjectMyItems,
   ProjectQaRun,
   ProjectRunCurrent,
+  PoAcceptanceInput,
   SetVerificationInput,
 } from "../model/project-run-types";
 import type { QaSignoffInput } from "../model/qa-run-types";
@@ -118,6 +119,24 @@ export const projectQaRunsRepository = {
 
   async reopen(deliveryProjectId: string, runId: string): Promise<ProjectQaRun> {
     return runOrThrow(await request<unknown>(`${runPath(deliveryProjectId, runId)}/reopen`, post()));
+  },
+
+  /**
+   * The Product owner passes or fails one item of a signed-off run. Failing
+   * reopens the run and returns the story to the Developers. The reply is the
+   * run; null when it carried none, so the caller reads the run again.
+   */
+  async acceptItem(
+    deliveryProjectId: string,
+    runId: string,
+    itemId: string,
+    input: PoAcceptanceInput,
+  ): Promise<ProjectQaRun | null> {
+    const raw = await request<unknown>(`${runPath(deliveryProjectId, runId)}/items/${enc(itemId)}/acceptance`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+    return runFromReply(raw);
   },
 
   /**

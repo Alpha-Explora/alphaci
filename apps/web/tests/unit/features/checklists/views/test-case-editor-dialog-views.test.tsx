@@ -28,6 +28,8 @@ const QA: ProjectQaRunPermissions = {
   canReopen: false,
   canDispatch: true,
   canManageTestCases: true,
+  canRecordTestCases: true,
+  canAccept: false,
 };
 
 /** Two Features: Login with two stories (the first with a test case), Checkout with one; plus a System item. */

@@ -44,6 +44,8 @@ export interface ProjectQaRunPermissionsWire {
   canReopen: boolean;
   canDispatch: boolean;
   canManageTestCases?: boolean;
+  canRecordTestCases?: boolean;
+  canAccept?: boolean;
 }
 
 /** GET /delivery-projects/:dpId/qa-runs/current */
@@ -117,6 +119,18 @@ export interface ProjectQaRunItem {
    * report frozen before test cases existed.
    */
   testCategories: RunTestCategory[];
+  /**
+   * The Product owner's check once QA signed the run off: pending until it
+   * passes the item (failing it reopens the run instead). Pending on an
+   * older backend.
+   */
+  poAcceptance: ProjectQaRunItemAcceptance;
+}
+
+export interface ProjectQaRunItemAcceptance {
+  status: "pending" | "passed";
+  acceptedBy: QaActor | null;
+  acceptedAt: string | null;
 }
 
 /** One covered repository's CI results, on the uat head the run captured. */
@@ -132,6 +146,8 @@ export interface ProjectQaRunPermissionFlags {
   canReopen: boolean | null;
   canDispatch: boolean | null;
   canManageTestCases: boolean | null;
+  canRecordTestCases: boolean | null;
+  canAccept: boolean | null;
 }
 
 export interface ProjectQaRunPermissions {
@@ -141,6 +157,10 @@ export interface ProjectQaRunPermissions {
   canDispatch: boolean;
   /** Add, rename, edit and delete test cases (QA Team and admins, open run). */
   canManageTestCases: boolean;
+  /** Record a test case's result (QA Team and admins, open run): read-only for the Product owner. */
+  canRecordTestCases: boolean;
+  /** Pass or fail each item once QA signed the run off (Product owner and admins). */
+  canAccept: boolean;
 }
 
 export interface ProjectQaRun {
@@ -220,6 +240,15 @@ export interface SetVerificationInput {
   notes?: string | null;
   defectSeverity?: QaDefectSeverity | null;
   reproductionSteps?: string | null;
+}
+
+/** PATCH .../items/:itemId/acceptance: the Product owner's decision on one item of a signed-off run. */
+export interface PoAcceptanceInput {
+  decision: "passed" | "failed";
+  expectedRowVersion: number;
+  /** Required to fail: what is wrong, for the Developers. */
+  notes?: string;
+  defectSeverity?: QaDefectSeverity;
 }
 
 /** One requirement's run items, as the run panel groups them. */

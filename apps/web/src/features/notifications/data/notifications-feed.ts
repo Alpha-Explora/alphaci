@@ -1,7 +1,7 @@
 import { ApiError } from "@/shared/api/request";
 import {
   isMembershipNotification,
-  isQaRefusal,
+  isQaLiveAlert,
 } from "../model/notifications-rules";
 import type {
   NotificationItem,
@@ -75,7 +75,7 @@ class NotificationFeed {
         !item.readAt &&
         !this.readIds.has(item.id) &&
         !this.seen.has(item.id) &&
-        (isQaRefusal(item) ||
+        (isQaLiveAlert(item) ||
           (this.initialized &&
             isMembershipNotification(item) &&
             !this.observed.has(item.id))),

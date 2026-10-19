@@ -106,7 +106,8 @@ export function useRunTestCasesViewModel(options: {
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
   const open = run.status === "open";
-  const canRecord = open && permissions.canSetVerification;
+  // The QA Team records results; a Product owner reads them.
+  const canRecord = open && permissions.canRecordTestCases;
   const canManage = (item: ProjectQaRunItem) => open && permissions.canManageTestCases && storyOf(item) !== null;
 
   function closeForm() {
