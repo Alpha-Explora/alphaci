@@ -105,4 +105,25 @@ describe("Commits tab panel", () => {
     expect(repo.commits).toHaveBeenCalledWith("p1", { branch: "uat", limit: 30 });
     expect(container.querySelector<HTMLSelectElement>("select")!.value).toBe("uat");
   });
+
+  it("sends Browse files to the Code tab at that commit, only when the viewer has the Code tab", async () => {
+    repo.commits.mockResolvedValue(commits("dev"));
+    const vm = vmFor({ openCodeAt: jest.fn() });
+    const container = await mount(<CommitsTabPanel project={project} vm={vm} />);
+    await poll(() => container.querySelector(".commits__browse") !== null);
+    await act(async () => container.querySelector<HTMLButtonElement>(".commits__browse")!.click());
+    expect((vm as { openCodeAt: jest.Mock }).openCodeAt).toHaveBeenCalledWith({
+      sha: "a".repeat(40),
+      shortSha: "aaaaaaa",
+      branch: "dev",
+    });
+
+    act(() => root?.unmount());
+    root = null;
+    const noCode = await mount(
+      <CommitsTabPanel project={project} vm={vmFor({ visibleTabs: ["overview", "commits"], openCodeAt: jest.fn() })} />,
+    );
+    await poll(() => noCode.querySelector("li.commits__row:not(.commits__row--skeleton)") !== null);
+    expect(noCode.querySelector(".commits__browse")).toBeNull();
+  });
 });

@@ -39,6 +39,7 @@ import {
   type WorkflowUpdateAccess,
 } from "../model/project-detail-tab-rules";
 import { useLazyProjectQuery } from "./use-lazy-project-query";
+import type { BrowseCommit } from "../model/code-commit-rules";
 import { useProjectAuditViewModel, type ProjectAuditViewModel } from "./use-project-audit-view-model";
 import { useProjectWorkflowSettingsViewModel } from "./use-project-workflow-settings-view-model";
 import type { ProjectWorkflowSettingsViewModel } from "./use-project-workflow-settings-view-model";
@@ -91,6 +92,12 @@ export interface ProjectDetailTabsViewModel {
    */
   commitsBranch: string | null;
   openCommits: (branch?: string | null) => void;
+  /**
+   * The commit the Code tab opens on, set by the Commits tab's "Browse
+   * files"; null means a branch. Cleared by choosing a tab by hand.
+   */
+  codeCommit: BrowseCommit | null;
+  openCodeAt: (commit: BrowseCommit) => void;
   /**
    * The Pipeline tab's view: Runs (the default) or Configuration (the old
    * Workflow tab). `#workflow` opens Configuration; choosing a tab by hand
@@ -166,6 +173,7 @@ export function useProjectDetailTabsViewModel(options: {
     typeof window === "undefined" ? null : hostingFocusFromHash(window.location.hash),
   );
   const [pullFocus, setPullFocus] = useState<number | null>(null);
+  const [codeCommit, setCodeCommit] = useState<BrowseCommit | null>(null);
   const [commitsBranch, setCommitsBranch] = useState<string | null>(() =>
     typeof window === "undefined" ? null : commitsBranchFromUrl(window.location.hash, window.location.search),
   );
@@ -231,6 +239,7 @@ export function useProjectDetailTabsViewModel(options: {
     setLogFocus(null);
     setPullFocus(null);
     setCommitsBranch(null);
+    setCodeCommit(null);
     setPipelineView("runs");
     setTabState(next);
   }
@@ -269,6 +278,14 @@ export function useProjectDetailTabsViewModel(options: {
     setTabState("pulls");
   }
 
+  function openCodeAt(commit: BrowseCommit) {
+    setHostingFocus(null);
+    setLogFocus(null);
+    setPullFocus(null);
+    setCodeCommit(commit);
+    setTabState("code");
+  }
+
   function handleTargetChanged(target: DeploymentTarget) {
     overviewQuery.setData((current) =>
       applyTargetChange(current, projectId, target),
@@ -303,6 +320,8 @@ export function useProjectDetailTabsViewModel(options: {
     openPullRequest,
     commitsBranch,
     openCommits,
+    codeCommit,
+    openCodeAt,
     pipelineView,
     setPipelineView,
     pipelineConfigurationAvailable: configurationAvailable,

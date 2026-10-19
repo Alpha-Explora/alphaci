@@ -13,7 +13,15 @@ import {
 import { relativeTime } from "@/features/runs";
 
 import { browseRefFor } from "../../model/browse-ref";
-import { commitAuthorLabel, commitCountLabel, entryCommit } from "../../model/code-commit-rules";
+import {
+  browseCommitBackLabel,
+  browseCommitBranch,
+  browseCommitRef,
+  commitAuthorLabel,
+  commitCountLabel,
+  entryCommit,
+  type BrowseCommit,
+} from "../../model/code-commit-rules";
 import {
   useFileCommitsViewModel,
   type FileCommitsViewModel,
@@ -23,7 +31,9 @@ import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-st
 import "./code-tab.css";
 
 /**
- * Browse the repository's source at a branch.
+ * Browse the repository's source at a branch, or at one commit when the
+ * Commits tab's "Browse files" opened it (the toolbar then names the commit
+ * and offers the way back to its branch).
  *
  * Read-only, deliberately. Writing files is something the provisioning flow
  * does on your behalf; an editor here would be a different product, and one
@@ -34,8 +44,14 @@ import "./code-tab.css";
  * sharing, and a file's address on GitHub is deliberately not offered: ALPHACI
  * is the only place people are sent to.
  */
-export function CodeTab({ projectId }: { projectId: string }) {
+export function CodeTab({
+  projectId,
+  commit: initialCommit = null,
+}: Readonly<{ projectId: string; commit?: BrowseCommit | null }>) {
   const [branches, setBranches] = useState<RepoBranch[]>([]);
+  // The commit being browsed. Its SHA is the first `chosenRef`, so the branch
+  // list's default below never replaces it.
+  const [commit, setCommit] = useState<BrowseCommit | null>(initialCommit);
   /*
    * TWO refs, deliberately.
    *
@@ -48,8 +64,8 @@ export function CodeTab({ projectId }: { projectId: string }) {
    * open fetched the same listing twice. Separating "what was asked for" from
    * "what came back" is what makes one open cost one request.
    */
-  const [chosenRef, setChosenRef] = useState<string | null>(null);
-  const [resolvedRef, setResolvedRef] = useState<string | null>(null);
+  const [chosenRef, setChosenRef] = useState<string | null>(() => browseCommitRef(initialCommit));
+  const [resolvedRef, setResolvedRef] = useState<string | null>(() => browseCommitRef(initialCommit));
   const [path, setPath] = useState("");
   const [listing, setListing] = useState<RepoContentListing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -153,19 +169,25 @@ export function CodeTab({ projectId }: { projectId: string }) {
 
   const file = listing?.file ?? null;
 
+  /** Opens a branch at its top level: a picked one, or the browsed commit's own. */
+  function showBranch(nextRef: string | null) {
+    setLoading(true);
+    setCommit(null);
+    setChosenRef(nextRef);
+    setResolvedRef(nextRef);
+    setPath("");
+  }
+
   return (
     <div className="ws-panel">
       <CodeToolbar
         branches={branches}
         chosenRef={chosenRef}
         resolvedRef={resolvedRef}
+        commit={commit}
         crumbs={crumbs}
-        onPickBranch={(nextRef) => {
-          setLoading(true);
-          setChosenRef(nextRef);
-          setResolvedRef(nextRef);
-          setPath("");
-        }}
+        onPickBranch={showBranch}
+        onLeaveCommit={() => showBranch(browseCommitBranch(commit))}
         onGoTo={goTo}
       />
       <CodeBrowserBody
@@ -187,15 +209,19 @@ function CodeToolbar({
   branches,
   chosenRef,
   resolvedRef,
+  commit,
   crumbs,
   onPickBranch,
+  onLeaveCommit,
   onGoTo,
 }: Readonly<{
   branches: RepoBranch[];
   chosenRef: string | null;
   resolvedRef: string | null;
+  commit: BrowseCommit | null;
   crumbs: Array<{ label: string; path: string }>;
   onPickBranch: (nextRef: string) => void;
+  onLeaveCommit: () => void;
   onGoTo: (nextPath: string) => void;
 }>) {
   return (
@@ -208,6 +234,11 @@ function CodeToolbar({
             value={chosenRef ?? resolvedRef ?? ""}
             onChange={(event) => onPickBranch(event.target.value)}
           >
+            {commit ? (
+              <option value={commit.sha} disabled>
+                {commit.shortSha}
+              </option>
+            ) : null}
             {branches.map((branch) => (
               <option key={branch.name} value={branch.name}>
                 {branch.name}
@@ -216,6 +247,7 @@ function CodeToolbar({
           </select>
         </label>
       ) : null}
+      {commit ? <CommitMarker commit={commit} onLeave={onLeaveCommit} /> : null}
 
       {/* At the top level there is no path to show; inside a folder, the
           first crumb is an icon back to the top instead of the word "root". */}
@@ -254,6 +286,20 @@ function CodeToolbar({
       </nav>
       ) : null}
     </div>
+  );
+}
+
+/** Names the commit being browsed, read-only, and the way back to its branch. */
+function CommitMarker({ commit, onLeave }: Readonly<{ commit: BrowseCommit; onLeave: () => void }>) {
+  return (
+    <p className="code-commit" role="status">
+      <span className="code-commit__label">
+        Browsing commit <code className="code-commit__sha" title={commit.sha}>{commit.shortSha}</code>
+      </span>
+      <button type="button" className="code-commit__back" onClick={onLeave}>
+        {browseCommitBackLabel(commit.branch)}
+      </button>
+    </p>
   );
 }
 

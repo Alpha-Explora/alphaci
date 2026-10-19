@@ -99,3 +99,43 @@
   }
 }
 
+/* The commit the tab is browsing (from the Commits tab), and the way back. */
+.code-commit {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.code-commit__sha {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.35rem;
+  background: var(--layer-1);
+  color: var(--text-primary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.74rem;
+}
+
+.code-commit__back {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.code-commit__back:hover {
+  text-decoration: underline;
+}
+
+.code-commit__back:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
