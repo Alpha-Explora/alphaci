@@ -155,6 +155,34 @@ describe("useProjectRunViewModel", () => {
     act(() => vm.current().applyRun(run({ id: "other" })));
     expect(vm.current().run?.id).toBe("prun-1");
   });
+
+  it("refreshes in the background: the run stays on screen until the new one arrives", async () => {
+    repo.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
+    const vm = hook("dp-1");
+    await flush();
+    let resolve: (value: ReturnType<typeof normalizeProjectRunCurrent>) => void = () => undefined;
+    repo.current.mockReturnValueOnce(new Promise((done) => (resolve = done)));
+
+    act(() => vm.current().refresh());
+    expect(vm.current().status).toBe("ready");
+    expect(vm.current().run?.id).toBe("prun-1");
+
+    await act(async () => resolve(normalizeProjectRunCurrent({ run: projectRunWire({ status: "signed_off" }) })));
+    await flush();
+    expect(vm.current().status).toBe("ready");
+    expect(vm.current().run?.status).toBe("signed_off");
+  });
+
+  it("falls back to a full reload when a background refresh fails", async () => {
+    repo.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
+    const vm = hook("dp-1");
+    await flush();
+    repo.current.mockRejectedValueOnce(apiErrorWith(500));
+    act(() => vm.current().refresh());
+    await flush();
+    expect(repo.current).toHaveBeenCalledTimes(3);
+    expect(vm.current().status).toBe("ready");
+  });
 });
 
 describe("useProjectVerificationViewModel", () => {
