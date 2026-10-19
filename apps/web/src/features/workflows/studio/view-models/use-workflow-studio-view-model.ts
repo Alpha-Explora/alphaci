@@ -280,6 +280,8 @@ export function useWorkflowStudioViewModel(options: {
         additionalWorkflowPaths: response.additionalWorkflowPaths,
         secondaryRepoFullName: response.secondaryRepoFullName,
         secondaryRepoUrl: response.secondaryRepoUrl,
+        secondaryProjectId: response.secondaryProjectId,
+        secondaryRepoError: response.secondaryRepoError,
         deploymentProvisioning: response.deploymentProvisioning,
       };
 
