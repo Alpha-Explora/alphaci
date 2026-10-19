@@ -13,6 +13,10 @@ function item(overrides: Partial<LinkItem> & Pick<LinkItem, "eventCode">): LinkI
 }
 
 describe("notificationHref", () => {
+  it("opens a workspace membership notification without a repository project", () => {
+    expect(notificationHref(item({ eventCode: "hierarchy.group.member_added", groupId: "team-a" }), "member")).toBe("/groups/team-a");
+    expect(notificationHref(item({ eventCode: "hierarchy.group.member_added" }), "member")).toBeNull();
+  });
   describe("QA refusals: returned, failed, blocked (spec §6)", () => {
     it.each(["qa.item.returned_to_dev", "qa.item.failed", "qa.item.blocked"])(
       "sends the developer to Overview with the My QA items focus flag (%s)",

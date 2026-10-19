@@ -34,7 +34,7 @@ let root: Root | null = null;
 let container: HTMLDivElement;
 
 function Harness() {
-  const vm = useNotificationsSummaryViewModel({ guest: false });
+  const vm = useNotificationsSummaryViewModel({ guest: false, userId: "qa-user" });
   return (
     <>
       <output data-unread={vm.unreadCount} />

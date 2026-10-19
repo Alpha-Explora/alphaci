@@ -385,6 +385,7 @@ export function AppNav({
   const { pathname, workspaces: workspaceVm, notifications, mainItems } =
     useAppNavViewModel({
       guest,
+      userId: !isLoggingOut && session?.authenticated ? session.user.id : null,
       isPlatformAdmin,
       appRole: session?.appRole ?? null,
       platformRole: session?.platformRole ?? null,
@@ -441,7 +442,7 @@ export function AppNav({
         onNavigate={() => setHoverSuppressed(true)}
         onPointerLeave={() => setHoverSuppressed(false)} />
       {/* QA's refusals pop up here for the Developers who fix them. */}
-      <QaAlertToasts alerts={notifications.alerts} onDismiss={notifications.dismissAlert} />
+      <QaAlertToasts alerts={notifications.alerts} onDismiss={notifications.dismissAlert} onOpen={notifications.openAlert} />
     </>
   );
 }

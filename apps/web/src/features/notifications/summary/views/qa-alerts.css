@@ -40,6 +40,10 @@
   --qa-alert-tone: var(--warning);
 }
 
+.qa-alert[data-event="hierarchy.group.member_added"] {
+  --qa-alert-tone: var(--brand);
+}
+
 .qa-alert__icon {
   margin-top: 0.1rem;
   color: var(--qa-alert-tone);

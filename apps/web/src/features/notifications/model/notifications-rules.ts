@@ -10,8 +10,23 @@ const QA_REFUSAL_EVENTS: ReadonlySet<string> = new Set([
 ]);
 
 /** Whether a notification says QA failed, blocked or returned an item. */
-export function isQaRefusal(item: Pick<NotificationItem, "eventCode">): boolean {
+export function isQaRefusal(
+  item: Pick<NotificationItem, "eventCode">,
+): boolean {
   return QA_REFUSAL_EVENTS.has(item.eventCode);
+}
+
+export function isMembershipNotification(
+  item: Pick<NotificationItem, "eventCode">,
+): boolean {
+  return item.eventCode === "hierarchy.group.member_added";
+}
+
+export function notificationAlertHref(item: NotificationItem): string | null {
+  if (isMembershipNotification(item)) {
+    return item.groupId ? `/groups/${encodeURIComponent(item.groupId)}` : null;
+  }
+  return qaRefusalHref(item);
 }
 
 /**
@@ -19,7 +34,9 @@ export function isQaRefusal(item: Pick<NotificationItem, "eventCode">): boolean 
  * QA items" card asked to scroll into view and briefly highlight itself.
  * Null without a project to go to.
  */
-export function qaRefusalHref(item: Pick<NotificationItem, "projectId">): string | null {
+export function qaRefusalHref(
+  item: Pick<NotificationItem, "projectId">,
+): string | null {
   const projectId = item.projectId ?? null;
   if (!projectId) return null;
   return `/projects/${encodeURIComponent(projectId)}?focus=my-qa-items#overview`;

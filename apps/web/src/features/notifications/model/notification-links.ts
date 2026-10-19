@@ -6,7 +6,11 @@
 import type { AppRole } from "@/shared/api/contracts";
 import { studioTabFor } from "@/features/projects/detail";
 
-import { isQaRefusal, qaRefusalHref } from "./notifications-rules";
+import {
+  isQaRefusal,
+  qaRefusalHref,
+  isMembershipNotification,
+} from "./notifications-rules";
 import type { NotificationItem } from "./notifications-types";
 
 /** The event codes covered by §6's "Returned to Dev" loop and §5's promotion
@@ -48,10 +52,17 @@ function qaStudioDeepLinkHref(
  * `projectId` at all — the row stays a plain, non-interactive row).
  */
 export function notificationHref(
-  item: Pick<NotificationItem, "eventCode" | "projectId" | "groupId" | "deliveryProjectId">,
+  item: Pick<
+    NotificationItem,
+    "eventCode" | "projectId" | "groupId" | "deliveryProjectId"
+  >,
   appRole: AppRole | null | undefined,
 ): string | null {
   const projectId = item.projectId ?? null;
+
+  if (isMembershipNotification(item)) {
+    return item.groupId ? `/groups/${encodeURIComponent(item.groupId)}` : null;
+  }
 
   if (isQaRefusal(item)) {
     return qaRefusalHref(item);
