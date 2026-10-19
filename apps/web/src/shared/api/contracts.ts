@@ -695,6 +695,18 @@ export interface ProjectTypeOption {
   defaultRecipe: string;
   allowedRecipes: string[];
   defaultOptions: ProjectOptionSet;
+  /**
+   * The container port and health path of the app AlphaCI scaffolds for this
+   * type. Absent for a type with no scaffold, or from an older backend.
+   */
+  serviceRuntime?: ServiceRuntimeContract;
+}
+
+/** What a scaffolded app's container serves: its slot, port and health path. */
+export interface ServiceRuntimeContract {
+  slot: "frontend" | "backend";
+  containerPort: number;
+  healthPath: string;
 }
 
 export interface WorkflowRecipeOption {

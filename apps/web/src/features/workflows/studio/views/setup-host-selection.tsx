@@ -5,11 +5,13 @@ import { healthyHosts, type MachineSummary } from "@/features/hosts";
 import type { EnvironmentDraft } from "../model/project-environments-rules";
 import {
   defaultHostAssignment,
+  refitHostAssignmentDefaults,
   slotContainerPort,
   slotHealthPath,
   withSlotContainerPort,
   withSlotHealthPath,
   type HostSlot,
+  type SlotRuntimes,
 } from "../model/setup-host-assignment-rules";
 import type { useSetupHostSelection } from "../view-models/use-setup-host-selection";
 
@@ -37,6 +39,7 @@ export function SetupHostSelection({
   hostSelection: vm,
   onChange,
   slots,
+  runtimes,
 }: {
   environments: readonly EnvironmentDraft[];
   /** Each environment's problem, or null; computed once by the wizard. */
@@ -45,8 +48,20 @@ export function SetupHostSelection({
   onChange: (value: EnvironmentDraft[]) => void;
   /** The slots each environment's host runs: one, or backend and frontend for two repositories. */
   slots: readonly HostSlot[];
+  /** Each slot's container port and health path, from the backend's catalog. */
+  runtimes?: SlotRuntimes;
 }) {
   const workspace = useRef(vm.workspaceId);
+  // A different project type behind a slot brings its own port and health
+  // path to the values that were only pre-filled.
+  const pastRuntimes = useRef(runtimes);
+  useEffect(() => {
+    const previous = pastRuntimes.current;
+    if (JSON.stringify(previous) === JSON.stringify(runtimes)) return;
+    pastRuntimes.current = runtimes;
+    const next = refitHostAssignmentDefaults(environments, previous, runtimes);
+    if (next !== environments) onChange([...next]);
+  }, [runtimes, environments, onChange]);
   useEffect(() => {
     if (workspace.current === vm.workspaceId) return;
     workspace.current = vm.workspaceId;
@@ -72,6 +87,7 @@ export function SetupHostSelection({
             environment,
             slots,
             value === AUTOMATIC ? undefined : value,
+            runtimes,
           ),
         };
       }),
@@ -132,6 +148,7 @@ export function SetupHostSelection({
               select={select}
               change={change}
               slots={slots}
+              runtimes={runtimes}
             />
           ))}
         </div>
@@ -156,6 +173,7 @@ function SetupHostRow({
   select,
   change,
   slots,
+  runtimes,
 }: {
   environment: EnvironmentDraft;
   index: number;
@@ -165,6 +183,7 @@ function SetupHostRow({
   select: (index: number, value: string) => void;
   change: ConfigChange;
   slots: readonly HostSlot[];
+  runtimes?: SlotRuntimes;
 }) {
   const messageId = useId();
   const binding = environment.hostAssignment;
@@ -221,6 +240,7 @@ function SetupHostRow({
           problemId={describedBy}
           change={change}
           slots={slots}
+          runtimes={runtimes}
         />
       </div>
     </fieldset>
@@ -233,9 +253,10 @@ function SetupAssignmentFields({
   problemId,
   change,
   slots,
+  runtimes,
 }: Pick<
   Parameters<typeof SetupHostRow>[0],
-  "environment" | "index" | "change" | "slots"
+  "environment" | "index" | "change" | "slots" | "runtimes"
 > & { problemId?: string }) {
   const binding = environment.hostAssignment;
   if (!binding) return null;
@@ -262,7 +283,7 @@ function SetupAssignmentFields({
               max={65535}
               required
               {...invalid}
-              value={slotContainerPort(binding.config, slot)}
+              value={slotContainerPort(binding.config, slot, runtimes)}
               onChange={(event) =>
                 change(index, (config) =>
                   withSlotContainerPort(
@@ -281,7 +302,7 @@ function SetupAssignmentFields({
             <input
               required
               {...invalid}
-              value={slotHealthPath(binding.config, slot)}
+              value={slotHealthPath(binding.config, slot, runtimes)}
               onChange={(event) =>
                 change(index, (config) =>
                   withSlotHealthPath(config, slot, event.target.value),

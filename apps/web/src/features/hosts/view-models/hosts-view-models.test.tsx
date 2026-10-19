@@ -12,6 +12,7 @@ import { downloadBlob } from "@/shared/browser/download-blob";
 import {
   assignHost,
   getAssignment,
+  getAssignmentDefaults,
   getReadiness,
 } from "../data/assignments-api";
 jest.mock("@/shared/browser/download-blob", () => ({
@@ -25,6 +26,7 @@ jest.mock("../data/hosts-api", () => ({
 jest.mock("../data/assignments-api", () => ({
   assignHost: jest.fn(),
   getAssignment: jest.fn(),
+  getAssignmentDefaults: jest.fn(),
   getReadiness: jest.fn(),
   unassignHost: jest.fn(),
 }));
@@ -50,6 +52,9 @@ beforeEach(() => {
   jest.mocked(listHosts).mockResolvedValue([]);
   jest.mocked(getAssignment).mockResolvedValue(null);
   jest.mocked(getReadiness).mockResolvedValue({ checks: [] });
+  jest
+    .mocked(getAssignmentDefaults)
+    .mockRejectedValue(new Error("Not found"));
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -244,6 +249,47 @@ it("assigns the only connected machine without a choice or host ports", async ()
   expect(sent?.config.ports).toEqual([
     { slot: "frontend", containerPort: 3000 },
   ]);
+});
+it("pre-fills the form with the backend's defaults for the project's app", async () => {
+  jest.mocked(getAssignmentDefaults).mockResolvedValue({
+    ports: [{ slot: "backend", containerPort: 8080 }],
+    health: [{ slot: "backend", path: "/health" }],
+  });
+  const seen = probe(() =>
+    useHostAssignmentViewModel({ ...options, slots: ["backend"] }),
+  );
+  // Before the defaults arrive, and if they never do, the fallback stands.
+  expect(seen().config.ports).toEqual([{ slot: "backend", containerPort: 4000 }]);
+  await settle();
+  expect(getAssignmentDefaults).toHaveBeenCalledWith("project", "env");
+  expect(seen().config).toEqual({
+    ports: [{ slot: "backend", containerPort: 8080 }],
+    health: [{ slot: "backend", path: "/health" }],
+    ingress: { mode: "direct", publicUrl: null },
+  });
+});
+it("keeps the stored assignment's ports over the defaults", async () => {
+  jest.mocked(getAssignmentDefaults).mockResolvedValue({
+    ports: [{ slot: "frontend", containerPort: 8080 }],
+    health: [{ slot: "frontend", path: "/" }],
+  });
+  jest.mocked(getAssignment).mockResolvedValue({
+    id: "a",
+    machineId: "m",
+    projectId: "project",
+    environmentId: "env",
+    revision: 1,
+    config: {
+      ports: [{ slot: "frontend", hostPort: 8081, containerPort: 5173 }],
+      health: [{ slot: "frontend", path: "/ready" }],
+      ingress: { mode: "direct", publicUrl: null },
+    },
+    tunnel: null,
+  });
+  const seen = probe(() => useHostAssignmentViewModel(options));
+  await settle();
+  expect(seen().config.ports).toEqual([{ slot: "frontend", containerPort: 5173 }]);
+  expect(seen().config.health).toEqual([{ slot: "frontend", path: "/ready" }]);
 });
 it("requires a choice when several machines are connected", async () => {
   jest.mocked(listHosts).mockResolvedValue([connected("a"), connected("b")]);

@@ -63,27 +63,53 @@ export type HostSlot = "frontend" | "backend";
 type HostAssignment = NonNullable<EnvironmentDraft["hostAssignment"]>;
 type HostAssignmentConfig = HostAssignment["config"];
 
-/** The container port a slot starts with: 3000 for a frontend, 4000 for a backend. */
-export function defaultContainerPort(slot: HostSlot): number {
-  return slot === "frontend" ? 3000 : 4000;
+/** The container port and health path a slot's app serves. */
+export interface SlotRuntime {
+  containerPort: number;
+  healthPath: string;
+}
+
+/**
+ * Each slot's app as the backend's catalog describes it: the scaffold's
+ * `serviceRuntime` for the project type that fills the slot. A slot is absent
+ * when its type has no scaffold contract.
+ */
+export type SlotRuntimes = Partial<Record<HostSlot, SlotRuntime>>;
+
+/**
+ * What a slot starts with when the catalog has no contract for it (an older
+ * backend, or a type with no scaffold). The same fallback the backend uses.
+ */
+function fallbackSlotRuntime(slot: HostSlot): SlotRuntime {
+  return { containerPort: slot === "frontend" ? 3000 : 4000, healthPath: "/" };
+}
+
+/** The slot's defaults: its app's contract, or the fallback. */
+export function slotRuntime(slot: HostSlot, runtimes?: SlotRuntimes): SlotRuntime {
+  return runtimes?.[slot] ?? fallbackSlotRuntime(slot);
 }
 
 /**
  * A new assignment with defaults: one container port and one health path per
  * slot, because the backend wants exactly one of each for every slot the
- * environment deploys. No machine means the only connected one.
+ * environment deploys, taken from each slot's app. No machine means the only
+ * connected one.
  */
 export function defaultHostAssignment(
   environment: EnvironmentDraft,
   slots: readonly HostSlot[],
   machineId?: string,
+  runtimes?: SlotRuntimes,
 ): HostAssignment {
   return {
     ...(machineId ? { machineId } : {}),
     requestId: crypto.randomUUID(),
     config: {
-      ports: slots.map((slot) => ({ slot, containerPort: defaultContainerPort(slot) })),
-      health: slots.map((slot) => ({ slot, path: "/" })),
+      ports: slots.map((slot) => ({
+        slot,
+        containerPort: slotRuntime(slot, runtimes).containerPort,
+      })),
+      health: slots.map((slot) => ({ slot, path: slotRuntime(slot, runtimes).healthPath })),
       ingress: {
         mode: environment.role === "production" ? "configured" : "direct",
         publicUrl: null,
@@ -93,17 +119,25 @@ export function defaultHostAssignment(
 }
 
 /** The slot's container port, or its default when the slot has none yet. */
-export function slotContainerPort(config: HostAssignmentConfig, slot: HostSlot): number {
+export function slotContainerPort(
+  config: HostAssignmentConfig,
+  slot: HostSlot,
+  runtimes?: SlotRuntimes,
+): number {
   return (
     config.ports.find((port) => port.slot === slot)?.containerPort ??
-    defaultContainerPort(slot)
+    slotRuntime(slot, runtimes).containerPort
   );
 }
 
-/** The slot's health path as typed ("" when cleared), or "/" when the slot has none yet. */
-export function slotHealthPath(config: HostAssignmentConfig, slot: HostSlot): string {
+/** The slot's health path as typed ("" when cleared), or its default when the slot has none yet. */
+export function slotHealthPath(
+  config: HostAssignmentConfig,
+  slot: HostSlot,
+  runtimes?: SlotRuntimes,
+): string {
   const health = config.health.find((item) => item.slot === slot);
-  return health ? (health.path ?? "") : "/";
+  return health ? (health.path ?? "") : slotRuntime(slot, runtimes).healthPath;
 }
 
 /** The config with one slot's container port changed; the other slots keep theirs. */
@@ -142,6 +176,7 @@ export function withSlotHealthPath(
 export function fitHostAssignments(
   environments: readonly EnvironmentDraft[],
   slots: readonly HostSlot[],
+  runtimes?: SlotRuntimes,
 ): EnvironmentDraft[] {
   return environments.map((environment) => {
     const binding = environment.hostAssignment;
@@ -153,13 +188,59 @@ export function fitHostAssignments(
         ...binding,
         config: {
           ...config,
-          ports: slots.map((slot) => ({ slot, containerPort: slotContainerPort(config, slot) })),
+          ports: slots.map((slot) => ({
+            slot,
+            containerPort: slotContainerPort(config, slot, runtimes),
+          })),
           health: slots.map((slot) => ({
             slot,
-            path: config.health.find((item) => item.slot === slot)?.path ?? "/",
+            path:
+              config.health.find((item) => item.slot === slot)?.path ??
+              slotRuntime(slot, runtimes).healthPath,
           })),
         },
       },
     };
   });
+}
+
+/**
+ * The environments after the project type behind a slot changed (say NestJS
+ * to .NET): a port or health path still equal to the old type's default was
+ * pre-filled, not chosen, so it takes the new type's default. One a person
+ * changed stays. Returns `environments` itself when nothing changes.
+ */
+export function refitHostAssignmentDefaults(
+  environments: readonly EnvironmentDraft[],
+  previous: SlotRuntimes | undefined,
+  next: SlotRuntimes | undefined,
+): readonly EnvironmentDraft[] {
+  let changed = false;
+  const refitted = environments.map((environment) => {
+    const binding = environment.hostAssignment;
+    if (!binding) return environment;
+    const ports = binding.config.ports.map((port) => {
+      const from = slotRuntime(port.slot, previous).containerPort;
+      const to = slotRuntime(port.slot, next).containerPort;
+      return port.containerPort === from && from !== to
+        ? { ...port, containerPort: to }
+        : port;
+    });
+    const health = binding.config.health.map((item) => {
+      const from = slotRuntime(item.slot, previous).healthPath;
+      const to = slotRuntime(item.slot, next).healthPath;
+      return item.path === from && from !== to ? { ...item, path: to } : item;
+    });
+    if (
+      ports.every((port, index) => port === binding.config.ports[index]) &&
+      health.every((item, index) => item === binding.config.health[index])
+    )
+      return environment;
+    changed = true;
+    return {
+      ...environment,
+      hostAssignment: { ...binding, config: { ...binding.config, ports, health } },
+    };
+  });
+  return changed ? refitted : environments;
 }

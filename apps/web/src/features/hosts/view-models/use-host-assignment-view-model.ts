@@ -4,10 +4,12 @@ import { listHosts } from "../data/hosts-api";
 import {
   assignHost,
   getAssignment,
+  getAssignmentDefaults,
   getReadiness,
   unassignHost,
 } from "../data/assignments-api";
 import {
+  fallbackAssignmentDefaults,
   healthyHosts,
   requestedConfig,
   type AssignmentRequestConfig,
@@ -39,12 +41,9 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
     [confirmation, setConfirmation] = useState<"replace" | "unassign" | null>(
       null,
     );
+  // Replaced on load by the backend's defaults for this environment.
   const [config, setConfig] = useState<AssignmentRequestConfig>(() => ({
-    ports: options.slots.map((slot) => ({
-      slot,
-      containerPort: slot === "frontend" ? 3000 : 4000,
-    })),
-    health: options.slots.map((slot) => ({ slot, path: "/" })),
+    ...fallbackAssignmentDefaults(options.slots),
     ingress: { mode: production ? "configured" : "direct", publicUrl: null },
   }));
   const pending = useRef(false),
@@ -78,8 +77,11 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
       listHosts(workspaceId),
       getAssignment(projectId, environmentId),
       getReadiness(projectId, environmentId),
+      // The port and health path of the project's own app. Without them (an
+      // older backend) the form keeps the fallback.
+      getAssignmentDefaults(projectId, environmentId).catch(() => null),
     ])
-      .then(([machines, assignment, readiness]) => {
+      .then(([machines, assignment, readiness, defaults]) => {
         if (!relevant) return;
         serverRead.current += 1;
         setHosts(
@@ -95,6 +97,12 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
         if (assignment?.config) {
           setSelected(assignment.machineId);
           setConfig(requestedConfig(assignment.config));
+        } else if (defaults) {
+          setConfig((old) => ({
+            ...old,
+            ports: defaults.ports,
+            health: defaults.health,
+          }));
         }
       })
       .catch((cause: unknown) => {

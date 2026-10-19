@@ -15,6 +15,7 @@ import {
   hostingReviewLines,
   renderVariablesBlockingFor,
   onpremSlotsForLayout,
+  onpremSlotRuntimes,
   wizardShape,
   type HostingChoice,
 } from "../../../../../../src/features/workflows/studio/model/hosting-choice-rules";
@@ -400,6 +401,93 @@ describe("the read-only environments and the Review lines", () => {
     expect(hostingReviewLines({ ...args, choice: "none" })).toEqual({
       heading: "None — CI workflow only",
       details: [],
+    });
+  });
+});
+
+describe("onpremSlotRuntimes", () => {
+  const nest = {
+    id: "nestjs",
+    serviceRuntime: { slot: "backend" as const, containerPort: 3000, healthPath: "/health" },
+  };
+  const dotnet = {
+    id: "dotnet",
+    serviceRuntime: { slot: "backend" as const, containerPort: 8080, healthPath: "/health" },
+  };
+  const next = {
+    id: "nextjs",
+    serviceRuntime: { slot: "frontend" as const, containerPort: 3000, healthPath: "/" },
+  };
+  const react = {
+    id: "react",
+    serviceRuntime: { slot: "frontend" as const, containerPort: 8080, healthPath: "/" },
+  };
+  const expo = { id: "expo" };
+  const projectTypes = [nest, dotnet, next, react, expo];
+
+  it("takes a single application's port and health path from its type", () => {
+    expect(
+      onpremSlotRuntimes({
+        layout: "single",
+        selectedProjectType: react,
+        projectTypes,
+        backendProjectTypeId: "nestjs",
+        frontendProjectTypeId: "nextjs",
+      }),
+    ).toEqual({ frontend: { containerPort: 8080, healthPath: "/" } });
+  });
+
+  it("gives each repository of two its own type's contract", () => {
+    expect(
+      onpremSlotRuntimes({
+        layout: "multiRepo",
+        selectedProjectType: nest,
+        projectTypes,
+        backendProjectTypeId: "dotnet",
+        frontendProjectTypeId: "nextjs",
+      }),
+    ).toEqual({
+      backend: { containerPort: 8080, healthPath: "/health" },
+      frontend: { containerPort: 3000, healthPath: "/" },
+    });
+  });
+
+  it("leaves out a type the catalog gives no contract", () => {
+    expect(
+      onpremSlotRuntimes({
+        layout: "single",
+        selectedProjectType: expo,
+        projectTypes,
+        backendProjectTypeId: "",
+        frontendProjectTypeId: "",
+      }),
+    ).toEqual({});
+  });
+
+  it("sends the contract's defaults for a slot the assignment did not cover", () => {
+    const [first] = ENVIRONMENT_TEMPLATE;
+    const fields = hostingCreateFields({
+      choice: "onprem",
+      hostedProvisioning: undefined,
+      environments: [
+        {
+          ...first!,
+          hostAssignment: {
+            requestId: "r",
+            config: {
+              ports: [],
+              health: [],
+              ingress: { mode: "direct", publicUrl: null },
+            },
+          },
+        },
+      ],
+      onpremSlots: ["backend"],
+      onpremRuntimes: { backend: { containerPort: 8080, healthPath: "/health" } },
+    });
+    expect(fields.environments?.[0]?.hostAssignment?.config).toMatchObject({
+      ports: [{ slot: "backend", containerPort: 8080 }],
+      health: [{ slot: "backend", path: "/health" }],
     });
   });
 });

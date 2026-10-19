@@ -12,7 +12,7 @@ import {
   type ServiceLayout,
 } from "../model/hosting-choice-rules";
 import type { OnpremHosting } from "../model/onprem-hosting-rules";
-import type { HostSlot } from "../model/setup-host-assignment-rules";
+import type { HostSlot, SlotRuntimes } from "../model/setup-host-assignment-rules";
 
 export interface HostingChoiceState {
   /** The choice that applies (a pick that is no longer offered falls back to the default). */
@@ -24,6 +24,8 @@ export interface HostingChoiceState {
   layout: ServiceLayout;
   /** The slots each environment's on-prem host runs: one, or backend and frontend. */
   onpremSlots: HostSlot[];
+  /** Each slot's container port and health path, from the catalog's scaffold contracts. */
+  onpremRuntimes: SlotRuntimes;
 }
 
 /**
@@ -35,6 +37,7 @@ export function useHostingChoice(input: {
   onprem: OnpremHosting;
   layout: ServiceLayout;
   selectedProjectKind: "frontend" | "backend";
+  onpremRuntimes: SlotRuntimes;
 }): HostingChoiceState {
   const [picked, setPicked] = useState<HostingChoice>(DEFAULT_HOSTING_CHOICE);
   const options = hostingOptions({ onprem: input.onprem, layout: input.layout });
@@ -44,5 +47,6 @@ export function useHostingChoice(input: {
     select: setPicked,
     layout: input.layout,
     onpremSlots: onpremSlotsForLayout(input.layout, input.selectedProjectKind),
+    onpremRuntimes: input.onpremRuntimes,
   };
 }

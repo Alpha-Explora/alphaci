@@ -1,5 +1,6 @@
 import { request } from "@/shared/api/request";
 import type {
+  AssignmentDefaults,
   AssignmentRequestConfig,
   MachineAssignment,
   HostAssignment,
@@ -10,6 +11,12 @@ const path = (projectId: string, environmentId: string) =>
 export function getAssignment(projectId: string, environmentId: string) {
   return request<HostAssignment | null>(
     `${path(projectId, environmentId)}/host-assignment`,
+  );
+}
+/** The container port and health path per slot an assignment starts from. */
+export function getAssignmentDefaults(projectId: string, environmentId: string) {
+  return request<AssignmentDefaults>(
+    `${path(projectId, environmentId)}/host-assignment/defaults`,
   );
 }
 export function getReadiness(projectId: string, environmentId: string) {

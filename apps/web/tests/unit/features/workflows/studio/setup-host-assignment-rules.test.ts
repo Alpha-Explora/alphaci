@@ -1,9 +1,11 @@
 import {
   defaultHostAssignment,
   fitHostAssignments,
+  refitHostAssignmentDefaults,
   setupHostAssignmentsProblem,
   withSlotContainerPort,
   withSlotHealthPath,
+  type SlotRuntimes,
 } from "@/features/workflows/studio/model/setup-host-assignment-rules";
 import { setupHostIntro } from "@/features/workflows/studio/views/setup-host-selection";
 import type { EnvironmentDraft } from "@/features/workflows/studio/model/project-environments-rules";
@@ -125,4 +127,73 @@ it("fits an assignment picked before the shape changed to the slots now deployed
     { slot: "frontend", containerPort: 5173 },
   ]);
   expect(fitHostAssignments([test], ["backend"])).toEqual([test]);
+});
+
+const dotnetAndReact: SlotRuntimes = {
+  backend: { containerPort: 8080, healthPath: "/health" },
+  frontend: { containerPort: 8080, healthPath: "/" },
+};
+
+it("pre-fills each slot with its app's port and health path from the catalog", () => {
+  const binding = defaultHostAssignment(
+    test,
+    ["backend", "frontend"],
+    undefined,
+    dotnetAndReact,
+  );
+  expect(binding.config.ports).toEqual([
+    { slot: "backend", containerPort: 8080 },
+    { slot: "frontend", containerPort: 8080 },
+  ]);
+  expect(binding.config.health).toEqual([
+    { slot: "backend", path: "/health" },
+    { slot: "frontend", path: "/" },
+  ]);
+  // A slot with no contract keeps the fallback.
+  expect(
+    defaultHostAssignment(test, ["backend", "frontend"], undefined, {
+      backend: { containerPort: 3000, healthPath: "/health" },
+    }).config.ports,
+  ).toEqual([
+    { slot: "backend", containerPort: 3000 },
+    { slot: "frontend", containerPort: 3000 },
+  ]);
+});
+
+it("fits a slot an assignment lacks with its app's defaults, keeping chosen values", () => {
+  const picked = defaultHostAssignment(test, ["frontend"], "m1");
+  picked.config.ports[0]!.containerPort = 5173;
+  const [fitted] = fitHostAssignments(
+    [{ ...test, hostAssignment: picked }],
+    ["backend", "frontend"],
+    dotnetAndReact,
+  );
+  expect(fitted!.hostAssignment!.config.ports).toEqual([
+    { slot: "backend", containerPort: 8080 },
+    { slot: "frontend", containerPort: 5173 },
+  ]);
+  expect(fitted!.hostAssignment!.config.health).toEqual([
+    { slot: "backend", path: "/health" },
+    { slot: "frontend", path: "/" },
+  ]);
+});
+
+it("moves pre-filled values to a new project type's defaults and keeps a person's", () => {
+  const nest: SlotRuntimes = { backend: { containerPort: 3000, healthPath: "/health" } };
+  const dotnet: SlotRuntimes = { backend: { containerPort: 8080, healthPath: "/health" } };
+  const prefilled = { ...test, hostAssignment: defaultHostAssignment(test, ["backend"], undefined, nest) };
+  const chosen = {
+    ...test,
+    slug: "uat",
+    hostAssignment: {
+      ...prefilled.hostAssignment,
+      config: withSlotContainerPort(prefilled.hostAssignment.config, "backend", 9000),
+    },
+  };
+  const [moved, kept] = refitHostAssignmentDefaults([prefilled, chosen], nest, dotnet);
+  expect(moved!.hostAssignment!.config.ports).toEqual([{ slot: "backend", containerPort: 8080 }]);
+  expect(kept!.hostAssignment!.config.ports).toEqual([{ slot: "backend", containerPort: 9000 }]);
+  // Nothing to move: the same list comes back, so no update is made.
+  const unchanged = [prefilled];
+  expect(refitHostAssignmentDefaults(unchanged, nest, nest)).toBe(unchanged);
 });

@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-10-20
+
+- **Update**: On-prem host assignments in the create wizard and in Hosting pre-fill each slot's container port and health path from the backend (catalog `serviceRuntime`, `GET .../host-assignment/defaults`) instead of frontend constants. See CHANGELOG.
+
 ## 2026-10-19
 
 - **Update**: The Inbox and navigation now share recipient-scoped live notification snapshots. Workspace member alerts include Open workspace links and refresh the picker; periodic fetches recover when streams are unavailable.

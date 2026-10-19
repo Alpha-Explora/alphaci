@@ -3,6 +3,7 @@
 import {
   hostedTargetSeeds,
   hostingCreateFields,
+  onpremSlotRuntimes,
   renderVariablesBlockingFor,
   wizardShape,
   type HostingCreateFields,
@@ -37,7 +38,19 @@ export function useWizardHosting(input: {
       selectedProjectKind,
     }),
   });
-  const hosting = useHostingChoice({ onprem: onpremHosting, layout, selectedProjectKind });
+  const hosting = useHostingChoice({
+    onprem: onpremHosting,
+    layout,
+    selectedProjectKind,
+    // Pre-filled from the backend's catalog: each scaffold's port and health path.
+    onpremRuntimes: onpremSlotRuntimes({
+      layout,
+      selectedProjectType: projectCatalog.selectedProjectType,
+      projectTypes: projectCatalog.projectTypesForShape,
+      backendProjectTypeId: createForm.backendProjectTypeId,
+      frontendProjectTypeId: createForm.frontendProjectTypeId,
+    }),
+  });
 
   /** The deployment fields of the create input, for the current choice. */
   function createFields(): HostingCreateFields {
@@ -48,6 +61,7 @@ export function useWizardHosting(input: {
       hostedProvisioning: envProvisioningEnabled ? deploymentProvisioning.hostedPayload : undefined,
       environments: createForm.environments,
       onpremSlots: hosting.onpremSlots,
+      onpremRuntimes: hosting.onpremRuntimes,
     });
   }
 
