@@ -72,16 +72,18 @@ Capability keys are not invented here. They are owned by the backend `@alphaci/c
 
 AlphaCI is one application with six owned backend areas. The frontend presents those areas through feature domains in one Next.js app.
 
+AlphaCI runs on the customer's own server. One frontend image, built for the Enterprise profile with a same-origin API base, serves every self-hosted customer behind the backend's reverse proxy. Customers keep github.com, GitHub-hosted runners, GHCR, and SonarCloud.
+
 | Product area | Everyday UI responsibility |
 |---|---|
 | Identity and access | Sign-in, users, workspaces, roles, hierarchy, administration, and session handling. |
-| Projects and workflows | Project creation, workflow studio, and project detail. |
+| Projects and workflows | Project creation, workflow studio, project detail (code, commits, pull requests, pipeline), QA checklists and test suites, QA Studio, PO Studio acceptance, and iterations. |
 | Pipelines and CI | Run history and build-result presentation. |
-| Runtime and deployments | Environments, hosting targets, previews, drift, and provider-backed setup. |
+| Runtime and deployments | Environments, promotion, rollback, hosting targets, on-prem hosts, previews, drift, and provider-backed setup. |
 | Billing and usage | No payment UI. Contract billing is assumed. Quota flags may be loaded without a dedicated panel. |
 | Platform operations | Notifications, feedback, home, and guide. |
 
-Hosting providers (GCP, Render, Vercel) are options inside Runtime. They are not separate versions of the UI.
+Hosting options (Vercel, Render, and on-prem hosts) are choices inside Runtime. They are not separate versions of the UI.
 
 ### Session and API
 
@@ -245,13 +247,13 @@ The report should remain readable and portable. The detailed records can contain
 | Area | Current position |
 |---|---|
 | Product structure | One Next.js application with feature domains mapped to six backend areas. |
-| Hosting choices | GCP, Render, and Vercel appear when the backend advertises them. |
+| Hosting choices | Vercel, Render, and on-prem hosts appear when the backend advertises them. |
 | Capability records | Shared capability names, status, applicability, and dependency edges come from the versioned package and are mirrored for SaaS, EDU, and Enterprise. |
 | Pack records | All three packs list the shared catalog. Pack-specific gaps use `not-implemented` or `not-applicable` status. |
-| Operating guidance | Verification and session procedures are recorded. |
+| Operating guidance | Verification, session, and self-hosted image procedures are recorded. |
 | Automated proof | Document format, naming, generated maps, feature boundaries, capability surfaces, tests, and builds can be checked. |
 | Live limits | Authenticated session, provider, and recovery checks require an approved backend environment. |
-| Known baseline issue | Ten tests in `tests/unit/project-env-panel.test.tsx` fail on `main` from a jsdom helper; the local verification runbook records that known count. |
+| Test baseline | There is no accepted failure baseline; the local verification runbook defines the full suite as the gate. |
 
 ## Recommended executive actions
 

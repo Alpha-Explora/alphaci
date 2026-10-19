@@ -30,13 +30,13 @@ The application is one Next.js App Router deployable. Routes under `src/app/` co
 - Cross-feature imports go through a domain or action `index.ts`.
 - `src/shared/` sits below every feature and must not import a feature.
 - Views must not fetch. Model files must not import React, Next, or perform I/O.
-- Provider tokens, GitHub access tokens, and hosting credentials do not live in the browser. The frontend talks only to the backend API origin.
+- Provider tokens, GitHub access tokens, and hosting credentials do not live in the browser. The frontend talks only to the backend API base, which is same-origin `/api/v1` in the self-hosted image.
 
 The [feature map](/architecture/feature-map.generated.md) and [route map](/architecture/route-map.generated.md) are generated from the source tree.
 
 ## Product axes
 
-Edition, tenancy, deployment target, and feature flag are independent values. This frontend does not branch on edition. It consumes the backend compatibility response at `/api/v1/capabilities`.
+Edition, tenancy, deployment target, and feature flag are independent values. Feature code does not branch on edition; the build profile and edition are fixed at build time (`src/shared/composition/build-profile.ts`). Runtime enablement consumes the backend compatibility response at `/api/v1/capabilities`.
 
 The narrowing order is:
 

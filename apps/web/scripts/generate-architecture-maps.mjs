@@ -35,7 +35,7 @@ const DOMAIN_OWNERS = [
   {
     id: 'checklists',
     backendContext: 'projects',
-    owns: 'team QA checklists, their items and sharing, the project Checklists tab, QA Studio verification runs and the Overview "Returned by QA" card',
+    owns: 'team QA checklists and test suites, the project Checklists tab, QA Studio verification runs and evidence, PO Studio acceptance, iterations, QA reports, and the Overview "Returned by QA" card',
   },
   {
     id: 'groups',
@@ -48,6 +48,11 @@ const DOMAIN_OWNERS = [
     owns: 'in-product guide',
   },
   {
+    id: 'hosts',
+    backendContext: 'runtime',
+    owns: 'on-prem machine enrollment, inventory, and environment host assignment',
+  },
+  {
     id: 'home',
     backendContext: 'platform-ops',
     owns: 'authenticated home dashboard',
@@ -55,12 +60,17 @@ const DOMAIN_OWNERS = [
   {
     id: 'notifications',
     backendContext: 'platform-ops',
-    owns: 'inbox and notification preferences',
+    owns: 'inbox, live notifications, and notification preferences',
   },
   {
     id: 'projects',
     backendContext: 'projects',
-    owns: 'project detail, environments, hosting, drift, previews, and workflow settings',
+    owns: 'project detail: code, commits, pull requests, pipeline, environments, hosting, promotion, rollback, drift, previews, and settings',
+  },
+  {
+    id: 'public-site',
+    backendContext: 'platform-ops',
+    owns: 'SaaS marketing landing at /',
   },
   {
     id: 'runs',
@@ -75,12 +85,12 @@ const DOMAIN_OWNERS = [
   {
     id: 'teams',
     backendContext: 'identity-access',
-    owns: 'team listing over hierarchy groups',
+    owns: 'team pages over hierarchy groups: members, Projects explorer, checklist templates, activity, and team settings',
   },
   {
     id: 'workflows',
     backendContext: 'projects',
-    owns: 'project creation and workflow studio',
+    owns: 'Create project wizard and workflow studio',
   },
   {
     id: 'workspace',
@@ -280,7 +290,6 @@ function generateFeatureMap() {
     tags: ['architecture', 'features', 'map'],
     sources: [
       { id: 'features', resource: 'src/features', title: 'Feature domain tree' },
-     { id: 'surface-registry', resource: 'docs/capabilities/surface-registry.ts', title: 'Capability surface map' },
       { id: 'surface-registry', resource: 'docs/capabilities/surface-registry.ts', title: 'Generated capability surface view' },
     ],
     body: `# Frontend feature map
