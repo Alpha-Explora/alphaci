@@ -38,4 +38,32 @@ describe("switchRepositories", () => {
       "store-api",
     ]);
   });
+
+  it("keeps every repository and puts each -fe/-be pair side by side, frontend first", () => {
+    const repo = (projectId: string, name: string, role: "frontend" | "backend") => ({
+      projectId,
+      name,
+      repoFullName: `org/${name}`,
+      role,
+      status: "active",
+    });
+    const folder: ProjectFolderSummary = {
+      deliveryProjectId: "delivery-1",
+      groupId: "group-1",
+      name: "Shop",
+      repositories: [
+        repo("p1", "shop-fe", "frontend"),
+        repo("p2", "shopv2-fe", "frontend"),
+        repo("p3", "shop-be", "backend"),
+        repo("p4", "shopv2-be", "backend"),
+      ],
+    };
+
+    expect(switchRepositories(folder).map((r) => r.name)).toEqual([
+      "shop-fe",
+      "shop-be",
+      "shopv2-fe",
+      "shopv2-be",
+    ]);
+  });
 });

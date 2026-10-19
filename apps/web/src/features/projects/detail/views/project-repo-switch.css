@@ -135,6 +135,27 @@
   font-weight: 600;
 }
 
+/* A two-repository pair's name, once, before its FRONTEND and BACKEND halves.
+ * A pair after another item gets a divider so pairs read as groups. */
+.repo-switch__pair {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  max-width: 14rem;
+  padding: 0 0.3rem 0 0.55rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+
+.repo-switch__pair:not(:first-child) {
+  margin-left: 0.3rem;
+  border-left: 1px solid var(--border);
+}
+
 .repo-switch__option:not([aria-disabled="true"]):not(
     [aria-checked="true"]
   ):hover {

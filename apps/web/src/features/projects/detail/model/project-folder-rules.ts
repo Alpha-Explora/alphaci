@@ -116,16 +116,25 @@ export function repoSwitchOptions(
   folder: ProjectFolderSummary,
   currentProjectId: string,
 ): RepoSwitchOption[] {
-  return folder.repositories.map((repo) => ({
-    key: repo.projectId ?? `repo:${repo.repoFullName ?? repo.name}`,
-    projectId: repo.projectId,
-    role: repo.role,
-    roleLabel: roleLabel(repo.role),
-    label: repoShortName(repo),
-    repoFullName: repo.repoFullName,
-    current: repo.projectId !== null && repo.projectId === currentProjectId,
-    disabled: repo.projectId === null,
-  }));
+  return folder.repositories.map((repo, index, all) => {
+    const pair = repoPairName(repo, all);
+    const previous = index > 0 ? all[index - 1] : undefined;
+    return {
+      key: repo.projectId ?? `repo:${repo.repoFullName ?? repo.name}`,
+      projectId: repo.projectId,
+      role: repo.role,
+      roleLabel: roleLabel(repo.role),
+      label: repoShortName(repo),
+      pairName: pair,
+      // The pair's name heads its first half; the halves then show only
+      // their role, since the name is the same for both.
+      startsPair:
+        pair !== null && (!previous || repoPairName(previous, all) !== pair),
+      repoFullName: repo.repoFullName,
+      current: repo.projectId !== null && repo.projectId === currentProjectId,
+      disabled: repo.projectId === null,
+    };
+  });
 }
 
 /**
@@ -167,11 +176,69 @@ export const SINGLE_REPO_PRESENTATION: RepoSwitchPresentation = {
   options: [],
 };
 
-/** Offer every repository linked to the Project, including repeated roles. */
+/** A two-repository project's halves are named `<name>-fe` and `<name>-be`. */
+const PAIR_SUFFIX = /-(fe|be)$/i;
+
+/** `shop-fe` -> `shop`; null for a name that is not one half of a pair. */
+function pairStem(repo: ProjectFolderRepository): string | null {
+  const name = repoShortName(repo);
+  return PAIR_SUFFIX.test(name) ? name.replace(PAIR_SUFFIX, "").toLowerCase() : null;
+}
+
+/**
+ * Every repository linked to the Project, repeated roles included
+ * (`store-web`, `admin-web`, `store-api`). The halves of a two-repository
+ * pair (`shop-fe`, `shop-be`) are moved next to each other, frontend first,
+ * where the pair's first half stood, so a Project holding several pairs reads
+ * pair by pair instead of FRONTEND FRONTEND BACKEND BACKEND.
+ */
 export function switchRepositories(
   folder: ProjectFolderSummary,
 ): ProjectFolderRepository[] {
-  return [...folder.repositories];
+  const pairs = completePairs(folder.repositories);
+  const placed = new Set<ProjectFolderRepository>();
+  const ordered: ProjectFolderRepository[] = [];
+  for (const repo of folder.repositories) {
+    if (placed.has(repo)) continue;
+    const stem = pairStem(repo);
+    const pair = stem ? pairs.get(stem) : undefined;
+    for (const member of pair ?? [repo]) {
+      placed.add(member);
+      ordered.push(member);
+    }
+  }
+  return ordered;
+}
+
+/** Stems with exactly one frontend and one backend half, frontend first. */
+function completePairs(
+  repositories: ReadonlyArray<ProjectFolderRepository>,
+): Map<string, [ProjectFolderRepository, ProjectFolderRepository]> {
+  const byStem = new Map<string, ProjectFolderRepository[]>();
+  for (const repo of repositories) {
+    const stem = pairStem(repo);
+    if (stem) byStem.set(stem, [...(byStem.get(stem) ?? []), repo]);
+  }
+  const pairs = new Map<string, [ProjectFolderRepository, ProjectFolderRepository]>();
+  for (const [stem, members] of byStem) {
+    const frontend = members.find((repo) => repo.role === "frontend");
+    const backend = members.find((repo) => repo.role === "backend");
+    if (members.length === 2 && frontend && backend) pairs.set(stem, [frontend, backend]);
+  }
+  return pairs;
+}
+
+/**
+ * The pair a repository belongs to, by the name both halves share
+ * (`shop-fe` -> `shop`), or null for a repository outside a complete pair.
+ */
+export function repoPairName(
+  repo: ProjectFolderRepository,
+  repositories: ReadonlyArray<ProjectFolderRepository>,
+): string | null {
+  const stem = pairStem(repo);
+  if (!stem || !completePairs(repositories).has(stem)) return null;
+  return repoShortName(repo).replace(PAIR_SUFFIX, "");
 }
 
 /**

@@ -51,6 +51,10 @@ export interface RepoSwitchOption {
   roleLabel: string;
   /** The short repository name, "Org/shop-fe" -> "shop-fe". */
   label: string;
+  /** The two-repository pair this half belongs to ("shop"), else null. */
+  pairName?: string | null;
+  /** The first half of its pair in the switch: the pair's name heads it. */
+  startsPair?: boolean;
   repoFullName: string | null;
   /** The page on screen. */
   current: boolean;
