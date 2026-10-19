@@ -345,19 +345,20 @@ function RecentDeploys({ preview }: CardProps) {
   );
 }
 
+/** Visit once something is live; before that, the provider's dashboard is the only place to look. */
 function DeploymentActions({ preview }: CardProps) {
   const deployed = preview.status !== "not_deployed";
 
   return (
     <div className="deploy-card__actions">
-      {preview.inspectorUrl ? (
+      {!deployed && preview.inspectorUrl ? (
         <a
           className="ghost-button target-action-btn"
           href={preview.inspectorUrl}
           rel="noreferrer noopener"
           target="_blank"
         >
-          {deployed ? "Build logs" : "Provider dashboard"}
+          Provider dashboard
         </a>
       ) : null}
       {deployed && preview.previewUrl ? (

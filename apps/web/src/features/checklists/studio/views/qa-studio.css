@@ -1055,6 +1055,11 @@
   font-weight: 600;
 }
 
+/* A closing line in the box (who started the run) spans the whole width. */
+.qa-summary > .qa-run-card__started {
+  grid-column: 1 / -1;
+}
+
 /* In the column's first row (QA Studio, beside "QA testing"): the count over
    a slim bar at the row's end, no box of its own; the open defects and
    blockers show under it only when there are any. */

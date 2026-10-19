@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 
 import { FormDialog } from "@/features/groups/workspace";
 
@@ -61,7 +61,13 @@ function SummaryFacts({ summary, inline }: Readonly<{ summary: QaRun["summary"];
 export function RunSummary({
   run,
   variant = "card",
-}: Readonly<{ run: Pick<QaRun, "summary">; variant?: "card" | "inline" }>) {
+  children,
+}: Readonly<{
+  run: Pick<QaRun, "summary">;
+  variant?: "card" | "inline";
+  /** A closing line inside the box, such as who started the run. */
+  children?: ReactNode;
+}>) {
   const segments = statusSegments(run);
   const inline = variant === "inline";
   return (
@@ -85,6 +91,7 @@ export function RunSummary({
         ))}
       </div>
       <SummaryFacts summary={run.summary} inline={inline} />
+      {children}
     </div>
   );
 }
