@@ -82,7 +82,13 @@ export function ProjectRepoSwitch({
         aria-label={`Repositories in ${projectName}`}
         aria-busy={pendingId !== null || undefined}
       >
-        {options.map((option, index) => (
+        {options.map((option, index) => [
+          option.startsPair && option.pairName ? (
+            // Names the pair once; read as part of each half's label instead.
+            <span key={`${option.key}:pair`} className="repo-switch__pair" aria-hidden="true">
+              {option.pairName}
+            </span>
+          ) : null,
           <button
             key={option.key}
             ref={(node) => {
@@ -92,6 +98,8 @@ export function ProjectRepoSwitch({
             role="radio"
             className="repo-switch__option"
             data-role={option.role ?? undefined}
+            data-paired={option.pairName ? true : undefined}
+            aria-label={option.pairName ? `${option.pairName} ${option.roleLabel.toLowerCase()}` : undefined}
             data-pending={(!option.current && option.projectId === pendingId && pendingId !== null) || undefined}
             data-tooltip={option.disabled ? UNLINKED_REPO_HINT : undefined}
             // In the tab row the name is hidden to fit beside nine tabs; the
@@ -106,9 +114,9 @@ export function ProjectRepoSwitch({
             onFocus={() => setFocused(index)}
           >
             <span className="repo-switch__role">{option.roleLabel}</span>
-            <span className="repo-switch__name">{option.label}</span>
-          </button>
-        ))}
+            {option.pairName ? null : <span className="repo-switch__name">{option.label}</span>}
+          </button>,
+        ])}
       </div>
       {/* Hidden, yet still read as the disabled options' description. */}
       {anyDisabled ? (

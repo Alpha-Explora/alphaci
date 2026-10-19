@@ -39,7 +39,7 @@ describe("switchRepositories", () => {
     ]);
   });
 
-  it("offers only the open repository's own -fe/-be pair when the Project holds several pairs", () => {
+  it("keeps every repository and puts each -fe/-be pair side by side, frontend first", () => {
     const repo = (projectId: string, name: string, role: "frontend" | "backend") => ({
       projectId,
       name,
@@ -59,10 +59,11 @@ describe("switchRepositories", () => {
       ],
     };
 
-    expect(switchRepositories(folder, "p2").map((r) => r.name)).toEqual([
+    expect(switchRepositories(folder).map((r) => r.name)).toEqual([
+      "shop-fe",
+      "shop-be",
       "shopv2-fe",
       "shopv2-be",
     ]);
-    expect(switchRepositories(folder)).toHaveLength(4);
   });
 });
