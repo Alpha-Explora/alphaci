@@ -6,7 +6,12 @@ import { SeverityBadge, StatusPill } from "../../items";
 import { QaFindings } from "../../returned";
 import { groupRunItems } from "../../model/project-run-rules";
 import type { ProjectQaRun, ProjectQaRunItem } from "../../model/project-run-types";
-import { agoLabel, QA_SEVERITIES, severityLabel } from "../../model/qa-run-rules";
+import {
+  agoLabel,
+  QA_SEVERITIES,
+  severityLabel,
+  statusShowsDefect,
+} from "../../model/qa-run-rules";
 import type { QaDefectSeverity } from "../../model/qa-run-types";
 import { kindCopy } from "../../model/requirement-rules";
 import type { PoAcceptanceViewModel } from "../view-models/use-po-acceptance-view-model";
@@ -154,7 +159,9 @@ function CheckItem({ item, acceptance, testCases, onReload }: ItemProps) {
       <div className="po-check__item-head">
         <span className="po-check__title">{item.title}</span>
         <span className="po-check__qa">
-          {item.defectSeverity ? <SeverityBadge severity={item.defectSeverity} /> : null}
+          {statusShowsDefect(item.status) && item.defectSeverity ? (
+            <SeverityBadge severity={item.defectSeverity} />
+          ) : null}
           <StatusPill status={item.status} />
         </span>
       </div>
