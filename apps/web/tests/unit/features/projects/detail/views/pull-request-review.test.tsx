@@ -149,6 +149,26 @@ describe("PullRequestsTab review panel", () => {
     jest.clearAllMocks();
   });
 
+  it("filters pull requests from a state dropdown", async () => {
+    await render();
+
+    const stateFilter = host.querySelector<HTMLSelectElement>('select[aria-label="Pull request state"]');
+    expect(stateFilter).not.toBeNull();
+    expect(Array.from(stateFilter!.options, (option) => option.textContent)).toEqual([
+      "Open",
+      "Closed",
+      "All",
+    ]);
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set;
+      setter?.call(stateFilter, "closed");
+      stateFilter?.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    expect(mockedList).toHaveBeenLastCalledWith("p1", "closed");
+  });
+
   it("shows the checks in the system instead of linking out for them", async () => {
     await render();
 
