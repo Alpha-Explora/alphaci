@@ -33,6 +33,12 @@ export interface ProjectRunViewModel {
   /** Adopt the run a write returned, so every part of the panel shows the server's state. */
   applyRun: (run: ProjectQaRun) => void;
   reload: () => void;
+  /**
+   * Reads the run again in the background: the loaded run stays on screen
+   * (no loading state), so an open dialog over it stays open. A failed read
+   * falls back to a full reload.
+   */
+  refresh: () => void;
 }
 
 interface LoadResult {
@@ -135,6 +141,21 @@ export function useProjectRunViewModel(options: {
     });
   }
 
+  function refresh() {
+    if (!active || !deliveryProjectId) return;
+    requestRef.current += 1;
+    const requestId = requestRef.current;
+    const at = key;
+    projectQaRunsRepository
+      .current(deliveryProjectId)
+      .then((data) => {
+        if (requestId === requestRef.current) setResult({ key: at, data, error: null, missing: false });
+      })
+      .catch(() => {
+        if (requestId === requestRef.current) setNonce((value) => value + 1);
+      });
+  }
+
   return {
     status: viewStatus(active, current, starting),
     ...loadedView(current),
@@ -143,5 +164,6 @@ export function useProjectRunViewModel(options: {
     start,
     applyRun,
     reload: () => setNonce((value) => value + 1),
+    refresh,
   };
 }

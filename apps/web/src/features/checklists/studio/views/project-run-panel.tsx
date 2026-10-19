@@ -323,7 +323,7 @@ function RunTestCaseEditorSlot({
       vm={testCases}
       open={open}
       onClose={onClose}
-      onReload={vm.reload}
+      onReload={vm.refresh}
     />
   );
 }
@@ -437,7 +437,9 @@ function RunBody({
     run,
     permissions,
     onRun: vm.applyRun,
-    onReload: vm.reload,
+    // A test case or category write re-reads the run in the background, so the
+    // Edit test suite dialog (and the list under it) stays put.
+    onReload: vm.refresh,
   });
   const lockedNumber = lockedIterationNumber(run.iteration);
   const shown = showsRepositories(appRole);
