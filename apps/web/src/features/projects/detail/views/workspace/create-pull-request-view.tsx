@@ -143,6 +143,8 @@ function BranchPickers({
   const baseOptions = selectableBaseBranches(vm.branches, appRole);
   // A Developer only picks a feature branch (into dev) or dev (into uat).
   const headOptions = selectableHeadBranches(vm.branches, appRole, vm.base);
+  // Swapping only does something in Custom: a preset fixes the pair.
+  const canSwap = !presetOn && appRole !== "member";
 
   return (
     <div className="ws-compose__branches">
@@ -162,16 +164,10 @@ function BranchPickers({
         </select>
       </label>
 
-      <button
-        type="button"
-        className="ws-compose__swap"
-        onClick={vm.swapBranches}
-        disabled={busy || !vm.head || presetOn || appRole === "member"}
-        aria-label="Swap the two branches"
-        title="Swap the two branches"
-      >
-        ⇄
-      </button>
+      {/* Reads as the merge does: the From branch flows into the base. */}
+      <span className="ws-compose__direction" aria-hidden="true">
+        ←
+      </span>
 
       <label className="ws-compose__branch">
         <span className="ws-branch__label">From</span>
@@ -191,6 +187,19 @@ function BranchPickers({
           ))}
         </select>
       </label>
+
+      {canSwap && (
+        <button
+          type="button"
+          className="ws-compose__swap"
+          onClick={vm.swapBranches}
+          disabled={busy || !vm.head}
+          aria-label="Swap the two branches"
+          title="Swap the two branches"
+        >
+          ⇄ Swap
+        </button>
+      )}
     </div>
   );
 }
@@ -224,6 +233,9 @@ function ComposeBody({
     return <WorkspaceLoading rows={3} />;
   }
 
+  const canCreate = vm.readiness.canCreate;
+  const fileCount = vm.compare.comparison.files.length;
+
   return (
     <>
       <ReadinessBanner
@@ -231,12 +243,21 @@ function ComposeBody({
         onSwap={vm.swapBranches}
         onViewExisting={onViewExisting}
       />
-      <ComparisonSummary compare={vm.compare} />
-      {vm.readiness.canCreate && <ComposeForm vm={vm} />}
-      <DiffView
-        files={vm.compare.comparison.files}
-        truncated={vm.compare.comparison.filesTruncated}
-      />
+      <div
+        className={`ws-compose__layout${canCreate ? " ws-compose__layout--split" : ""}`}
+      >
+        {canCreate && <ComposeForm vm={vm} />}
+        <ComparisonSummary compare={vm.compare} />
+      </div>
+      <section className="ws-compose__files" aria-labelledby="ws-compose-files">
+        <h4 id="ws-compose-files" className="ws-compose__subtitle">
+          Files changed · {fileCount}
+        </h4>
+        <DiffView
+          files={vm.compare.comparison.files}
+          truncated={vm.compare.comparison.filesTruncated}
+        />
+      </section>
     </>
   );
 }
@@ -285,7 +306,10 @@ function ComparisonSummary({
   const deletions = comparison.files.reduce((sum, f) => sum + f.deletions, 0);
 
   return (
-    <div className="ws-compose__summary">
+    <aside className="ws-compose__summary" aria-labelledby="ws-compose-summary">
+      <h4 id="ws-compose-summary" className="ws-compose__subtitle">
+        This pull request
+      </h4>
       <p className="ws-hint">
         {plural(comparison.totalCommits, "commit")} ·{" "}
         {plural(comparison.files.length, "file")} changed ·{" "}
@@ -304,7 +328,7 @@ function ComparisonSummary({
           ))}
         </ul>
       )}
-    </div>
+    </aside>
   );
 }
 
