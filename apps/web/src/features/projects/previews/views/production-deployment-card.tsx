@@ -345,22 +345,12 @@ function RecentDeploys({ preview }: CardProps) {
   );
 }
 
-/** Visit once something is live; before that, the provider's dashboard is the only place to look. */
+/** Visit once something is live. No provider dashboard: those are ALPHACI's own accounts. */
 function DeploymentActions({ preview }: CardProps) {
   const deployed = preview.status !== "not_deployed";
 
   return (
     <div className="deploy-card__actions">
-      {!deployed && preview.inspectorUrl ? (
-        <a
-          className="ghost-button target-action-btn"
-          href={preview.inspectorUrl}
-          rel="noreferrer noopener"
-          target="_blank"
-        >
-          Provider dashboard
-        </a>
-      ) : null}
       {deployed && preview.previewUrl ? (
         <a
           className="primary-button target-action-btn"

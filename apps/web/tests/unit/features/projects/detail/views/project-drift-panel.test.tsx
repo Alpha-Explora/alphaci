@@ -57,12 +57,12 @@ async function flush() {
   });
 }
 
-async function render(appRole: AppRole | null) {
+async function render(appRole: AppRole | null, onOpenPullRequest?: (pullRequestNumber: number) => void) {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
   await act(async () => {
-    root?.render(<ProjectDriftPanel projectId="p1" appRole={appRole} />);
+    root?.render(<ProjectDriftPanel projectId="p1" appRole={appRole} onOpenPullRequest={onOpenPullRequest} />);
   });
   await flush();
 }
@@ -126,7 +126,7 @@ describe("ProjectDriftPanel", () => {
     expect(text()).not.toContain("into dev ");
   });
 
-  it("asks once before it acts, then reports the pull request the repair opened and checks again", async () => {
+  it("asks once before it acts, then opens the pull request it made in the app and checks again", async () => {
     repo.drift.mockResolvedValue(found([CI_FINDING]));
     repo.repairDrift.mockResolvedValue({
       enabled: true,
@@ -139,7 +139,8 @@ describe("ProjectDriftPanel", () => {
     });
     repo.runDrift.mockResolvedValue(found([]));
 
-    await render("lead");
+    const onOpenPullRequest = jest.fn();
+    await render("lead", onOpenPullRequest);
     const repair = button("Repair");
     expect(repair).toBeDefined();
 
@@ -155,8 +156,12 @@ describe("ProjectDriftPanel", () => {
       "repair_ci_api_url",
     );
     expect(repo.runDrift).toHaveBeenCalledWith("p1");
-    expect(text()).toContain(`Opened a pull request into dev: ${PR_URL}`);
-    expect(links()).toContain(PR_URL);
+    // No GitHub address, as a link or as text: the pull request opens in the Pull requests tab.
+    expect(text()).toContain("Opened a pull request into dev.");
+    expect(text()).not.toContain(PR_URL);
+    expect(links()).toEqual([]);
+    await click(button("Open pull request #42") as HTMLButtonElement);
+    expect(onOpenPullRequest).toHaveBeenCalledWith(42);
     expect(text()).toContain("No active findings.");
   });
 
