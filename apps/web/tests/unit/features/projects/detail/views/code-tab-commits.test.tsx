@@ -180,5 +180,35 @@ describe("CodeTab commit column", () => {
     await act(async () => home.click());
     await poll(() => container.querySelector(".ws-crumbs") === null);
   });
+
+  it("opens on a commit from the Commits tab, says so, and goes back to its branch", async () => {
+    const sha = "a".repeat(40);
+    branches.mockResolvedValue({ branches: [{ name: "main" }, { name: "uat" }], defaultBranch: "main" });
+    files.mockResolvedValue({ ...ROOT, ref: sha });
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(<CodeTab projectId="p1" commit={{ sha, shortSha: "aaaaaaa", branch: "uat" }} />);
+    });
+    await poll(() => row("README.md") !== undefined);
+
+    // The commit is the ref asked for, for the files and their commit column.
+    expect(files).toHaveBeenCalledWith("p1", { path: "", ref: sha });
+    expect(files).toHaveBeenCalledTimes(1);
+    await poll(() => fileCommits.mock.calls.length > 0);
+    expect(fileCommits).toHaveBeenCalledWith("p1", { path: "", ref: sha });
+    const marker = container.querySelector(".code-commit")!;
+    expect(marker.textContent).toContain("Browsing commit aaaaaaa");
+    expect(container.querySelector<HTMLSelectElement>(".ws-select")!.value).toBe(sha);
+
+    files.mockResolvedValue({ ...ROOT, ref: "uat" });
+    const back = container.querySelector<HTMLButtonElement>(".code-commit__back")!;
+    expect(back.textContent).toBe("Back to uat");
+    await act(async () => back.click());
+    await poll(() => container.querySelector(".code-commit") === null);
+    expect(files).toHaveBeenLastCalledWith("p1", { path: "", ref: "uat" });
+    expect(container.querySelector<HTMLSelectElement>(".ws-select")!.value).toBe("uat");
+  });
 });
 
