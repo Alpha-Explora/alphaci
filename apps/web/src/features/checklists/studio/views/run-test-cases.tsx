@@ -232,11 +232,12 @@ function ManageButtons({ item, testCase, vm, canEdit }: RowProps & Readonly<{ ca
   );
 }
 
-function TestCaseActions(props: RowProps & Readonly<{ canEdit: boolean }>) {
+function TestCaseActions(props: RowProps & Readonly<{ canEdit: boolean; managementOnly: boolean }>) {
+  const { managementOnly, ...rest } = props;
   return (
     <div className="pqa-test__actions">
-      <NoteButton {...props} />
-      <ManageButtons {...props} />
+      {managementOnly ? null : <NoteButton {...rest} />}
+      <ManageButtons {...rest} />
     </div>
   );
 }
@@ -288,7 +289,7 @@ function TestCaseRow({
           Saving…
         </span>
       ) : null}
-      {!managementOnly ? <TestCaseActions item={item} testCase={testCase} vm={vm} canEdit={canEdit} /> : null}
+      <TestCaseActions item={item} testCase={testCase} vm={vm} canEdit={canEdit} managementOnly={managementOnly} />
     </li>
   );
 }
@@ -422,37 +423,25 @@ function SectionError({ item, vm, onReload }: Props) {
   );
 }
 
-/**
- * A story's test cases in this run, by category, each with QA's result. The
- * QA Team and admins add categories and test cases here; anyone verifying
- * records a result per test case. Hidden on a System item, and on a story
- * with no test cases for a viewer who cannot add any.
- */
-export function RunTestCases({
+/** A story's categories, each with its test cases and add button, then Add category. */
+function CategoryList({
   item,
   vm,
   onReload,
-  canEditDefinitions = true,
-  managementOnly = false,
-}: Props & Readonly<{ canEditDefinitions?: boolean; managementOnly?: boolean }>) {
-  const headingId = useId();
-  if (item.requirementKind !== "functional") return null;
+  canEdit,
+  managementOnly,
+}: Props & Readonly<{ canEdit: boolean; managementOnly: boolean }>) {
   const categories = item.testCategories;
-  const manage = vm.canManage(item);
-  const canEdit = manage && canEditDefinitions;
-  if (categories.length === 0 && !manage) return null;
-  const counts = countTestCases(categories);
-  const attention = testCasesAttentionLabel(counts);
   return (
-    <details className="pqa-tests" open={managementOnly || counts.open > 0 || counts.total === 0}>
-      <summary className="pqa-tests__summary" id={headingId}>
-        <span className="pqa-tests__label">Test cases</span>
-        <span className="pqa-tests__count">{testCasesProgressLabel(counts)}</span>
-        {attention ? <span className="pqa-tests__attention">{attention}</span> : null}
-      </summary>
-      <div className="pqa-tests__body" role="group" aria-labelledby={headingId}>
-        {categories.map((category) => (
+    <>
+        {categories.length === 0 && managementOnly ? (
+          <p className="pqa-tests__empty pqa-tests__empty--suite">
+            No categories yet. Add a category, such as Happy path or Validation, then add its test cases.
+          </p>
+        ) : null}
+        {categories.map((category, index) => (
           <section key={category.id ?? `name:${category.name}`} className="pqa-tests__category">
+            {managementOnly ? <p className="pqa-tests__category-index">Category {index + 1}</p> : null}
             <CategoryHead item={item} category={category} vm={vm} canEdit={canEdit} />
             {category.testCases.length > 0 ? (
               <ul className="pqa-tests__list">
@@ -475,6 +464,56 @@ export function RunTestCases({
         ))}
         <AddCategory item={item} vm={vm} canEdit={canEdit} />
         <SectionError item={item} vm={vm} onReload={onReload} />
+    </>
+  );
+}
+
+/**
+ * A story's test cases in this run, by category, each with QA's result. The
+ * QA Team and admins add categories and test cases here; anyone verifying
+ * records a result per test case. Hidden on a System item, and on a story
+ * with no test cases for a viewer who cannot add any. `managementOnly` is the
+ * Edit test suite dialog: always open, no results or notes, Edit and Delete
+ * on every test case.
+ */
+export function RunTestCases({
+  item,
+  vm,
+  onReload,
+  canEditDefinitions = true,
+  managementOnly = false,
+}: Props & Readonly<{ canEditDefinitions?: boolean; managementOnly?: boolean }>) {
+  const headingId = useId();
+  if (item.requirementKind !== "functional") return null;
+  const manage = vm.canManage(item);
+  if (item.testCategories.length === 0 && !manage) return null;
+  const body = (
+    <CategoryList
+      item={item}
+      vm={vm}
+      onReload={onReload}
+      canEdit={manage && canEditDefinitions}
+      managementOnly={managementOnly}
+    />
+  );
+  if (managementOnly) {
+    return (
+      <div className="pqa-tests pqa-tests--manage" role="group" aria-label={`Test cases for ${item.title}`}>
+        {body}
+      </div>
+    );
+  }
+  const counts = countTestCases(item.testCategories);
+  const attention = testCasesAttentionLabel(counts);
+  return (
+    <details className="pqa-tests" open={counts.open > 0 || counts.total === 0}>
+      <summary className="pqa-tests__summary" id={headingId}>
+        <span className="pqa-tests__label">Test cases</span>
+        <span className="pqa-tests__count">{testCasesProgressLabel(counts)}</span>
+        {attention ? <span className="pqa-tests__attention">{attention}</span> : null}
+      </summary>
+      <div className="pqa-tests__body" role="group" aria-labelledby={headingId}>
+        {body}
       </div>
     </details>
   );
