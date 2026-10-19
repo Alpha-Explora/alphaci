@@ -83,6 +83,20 @@ export function normalizeRepoName(value: string): string {
 
 export { sanitizeRepoNameInput };
 
+/**
+ * The two repositories a two-repository project creates, as the backend names
+ * them (`deriveMultiRepoNames`): `<name>-be` and `<name>-fe`, without doubling
+ * a `-be` the name already ends with.
+ */
+export function multiRepoRepositoryNames(repoName: string): {
+  backend: string;
+  frontend: string;
+} {
+  const normalized = normalizeRepoName(repoName);
+  const backend = normalized.endsWith("-be") ? normalized : `${normalized}-be`;
+  return { backend, frontend: backend.replace(/-be$/, "-fe") };
+}
+
 function invalidRepoName(repoName: string): CreateProjectPayloadResult | null {
   if (!normalizeRepoName(repoName)) {
     return { ok: false, message: "Repository name is required." };
@@ -228,17 +242,36 @@ function dualSlotConfig(
   };
 }
 
+/**
+ * Two services. Two repositories may carry their own environments (on-prem
+ * hosting, a target per environment for both slots); two services in one
+ * repository never do, so any environments are ignored there, as before.
+ */
 function dualShapePayload(
   input: CreateProjectPayloadInput,
   kind: "microservices" | "multiRepo",
 ): CreateProjectPayloadResult {
+  const withEnvironments =
+    kind === "multiRepo" ? input : { ...input, environments: undefined };
+  const environmentsInvalid = invalidEnvironments(withEnvironments.environments);
+  if (environmentsInvalid) {
+    return environmentsInvalid;
+  }
   const normalizedRepoName = normalizeRepoName(input.repoName);
   const coverage = Number(input.coverageThreshold);
   const outputFileName = input.outputFileName.trim() || "ci.yml";
   const names = dualSlotNames(input, normalizedRepoName);
   const slots = dualSlotConfig(input, names);
   const payload: CreateProjectRequest = {
-    ...sharedFields(input, normalizedRepoName, coverage, outputFileName),
+    ...sharedFields(
+      {
+        ...input,
+        deploymentProvisioning: provisioningWithOnprem(withEnvironments),
+      },
+      normalizedRepoName,
+      coverage,
+      outputFileName,
+    ),
     projectTypeId: input.backendProjectTypeId,
     workflowRecipeId: input.backendWorkflowRecipeId,
     serviceName: names.backend,
@@ -246,12 +279,31 @@ function dualShapePayload(
     ...(kind === "microservices"
       ? { microservicesConfig: slots }
       : { multiRepoConfig: slots }),
+    ...environmentsField(withEnvironments.environments),
   };
   return { ok: true, payload };
 }
 
+function invalidEnvironments(
+  environments: readonly EnvironmentDraft[] | undefined,
+): CreateProjectPayloadResult | null {
+  const problem = environments
+    ? (environmentsProblem(environments) ??
+      setupHostAssignmentsProblem(environments))
+    : null;
+  return problem ? { ok: false, message: problem } : null;
+}
+
+function environmentsField(
+  environments: readonly EnvironmentDraft[] | undefined,
+): Pick<CreateProjectRequest, "environments"> {
+  return environments
+    ? { environments: environments.map(trimmedEnvironment) }
+    : {};
+}
+
 /** Hosted targets, plus on-prem targets for the environments that run on-prem. */
-function standaloneProvisioning(
+function provisioningWithOnprem(
   input: CreateProjectPayloadInput,
 ): CreateProjectRequest["deploymentProvisioning"] {
   if (!input.environments || !input.onpremSlots) {
@@ -273,12 +325,9 @@ function standalonePayload(
   if (!input.workflowRecipeId) {
     return { ok: false, message: "Choose a workflow recipe." };
   }
-  const environmentsInvalid = input.environments
-    ? (environmentsProblem(input.environments) ??
-      setupHostAssignmentsProblem(input.environments))
-    : null;
+  const environmentsInvalid = invalidEnvironments(input.environments);
   if (environmentsInvalid) {
-    return { ok: false, message: environmentsInvalid };
+    return environmentsInvalid;
   }
   const normalizedRepoName = normalizeRepoName(input.repoName);
   const coverage = Number(input.coverageThreshold);
@@ -287,7 +336,7 @@ function standalonePayload(
     ok: true,
     payload: {
       ...sharedFields(
-        { ...input, deploymentProvisioning: standaloneProvisioning(input) },
+        { ...input, deploymentProvisioning: provisioningWithOnprem(input) },
         normalizedRepoName,
         coverage,
         outputFileName,
@@ -299,9 +348,7 @@ function standalonePayload(
       // scaffold never creates.
       serviceName: toSlug(normalizedRepoName),
       servicePath: ".",
-      ...(input.environments
-        ? { environments: input.environments.map(trimmedEnvironment) }
-        : {}),
+      ...environmentsField(input.environments),
     },
   };
 }

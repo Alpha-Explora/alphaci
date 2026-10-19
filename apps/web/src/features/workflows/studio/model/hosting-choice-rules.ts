@@ -5,7 +5,9 @@
  * - "hosted": today's provisioning, `deploymentProvisioning` with the hosted
  *   targets, and no `environments` (the fixed dev, uat, main pipeline).
  * - "onprem": the fixed dev, uat, main `environments`, each with its own
- *   on-prem target per slot. No hosted targets, variable groups or shared env.
+ *   on-prem target per slot (one slot for a single application, backend and
+ *   frontend for two repositories). No hosted targets, variable groups or
+ *   shared env.
  * - "none": `deploymentProvisioning = { enabled: false, targets: [] }`, which
  *   the backend reads as "no hosting" and adds no default target to.
  *
@@ -16,6 +18,7 @@ import type {
   DeploymentProvisioningTargetRequest,
   EnvTargetSlot,
 } from "@/shared/api/contracts";
+import { multiRepoRepositoryNames } from "./create-project-payload";
 import { providerLabel } from "./deployment-provisioning-rules";
 import {
   ALL_ONPREM_DELIVERY_NOTICE,
@@ -23,6 +26,7 @@ import {
   type OnpremHosting,
 } from "./onprem-hosting-rules";
 import type { EnvironmentDraft } from "./project-environments-rules";
+import { fitHostAssignments, type HostSlot } from "./setup-host-assignment-rules";
 import {
   defaultProjectName,
   inferSingleProjectKind,
@@ -48,8 +52,14 @@ export const HOSTING_DESCRIPTIONS: Record<HostingChoice, string> = {
   none: "Only the repository and its CI workflow are created. Nothing is deployed.",
 };
 
-export const ONPREM_SINGLE_APP_ONLY_REASON =
-  "On-prem is available for single-application projects for now.";
+/**
+ * How the project's code is laid out: one application, two services in one
+ * repository (microservices), or two repositories (multi-repo).
+ */
+export type ServiceLayout = "single" | "microservices" | "multiRepo";
+
+export const ONPREM_MICROSERVICES_REASON =
+  "On-prem isn't available yet for two services in one repository. Use two repositories, or Vercel / Render.";
 
 /** "None": an explicit "no hosting", so the backend adds no default target. */
 export const CI_ONLY_PROVISIONING: CreateDeploymentProvisioningRequest = {
@@ -68,15 +78,15 @@ export interface HostingOption {
 /**
  * The options to show. On-prem follows `GET /deployment-providers`: hidden
  * when not listed, disabled with the server's reason when listed but off, and
- * disabled for the two-repository shapes, whose environments the backend
- * refuses.
+ * disabled for two services in one repository, whose environments the
+ * backend refuses. A single application and two repositories can choose it.
  */
 export function hostingOptions(input: {
   onprem: OnpremHosting;
-  isDualShape: boolean;
+  layout: ServiceLayout;
 }): HostingOption[] {
   const options: HostingOption[] = [option("hosted")];
-  const onprem = onpremOption(input.onprem, input.isDualShape);
+  const onprem = onpremOption(input.onprem, input.layout);
   if (onprem) options.push(onprem);
   options.push(option("none"));
   return options;
@@ -86,21 +96,34 @@ function option(value: HostingChoice): HostingOption {
   return { value, label: HOSTING_LABELS[value], disabled: false };
 }
 
-function onpremOption(onprem: OnpremHosting, isDualShape: boolean): HostingOption | null {
+function onpremOption(onprem: OnpremHosting, layout: ServiceLayout): HostingOption | null {
   if (onprem.status === "hidden") return null;
   if (onprem.status === "disabled") {
     return { ...option("onprem"), disabled: true, reason: onprem.reason };
   }
-  if (isDualShape) {
-    return { ...option("onprem"), disabled: true, reason: ONPREM_SINGLE_APP_ONLY_REASON };
+  if (layout === "microservices") {
+    return { ...option("onprem"), disabled: true, reason: ONPREM_MICROSERVICES_REASON };
   }
   return option("onprem");
 }
 
 /**
+ * The slots each environment's on-prem host runs: the one the application
+ * deploys as, or the backend and the frontend for two repositories.
+ * Microservices never reach on-prem; they get both slots for completeness.
+ */
+export function onpremSlotsForLayout(
+  layout: ServiceLayout,
+  selectedProjectKind: "frontend" | "backend",
+): HostSlot[] {
+  return layout === "single" ? [selectedProjectKind] : ["backend", "frontend"];
+}
+
+/**
  * The choice that applies: the person's pick while it is still offered, else
  * the default. A pick of on-prem never survives on-prem turning out to be
- * unavailable (a later provider answer, or a switch to two repositories).
+ * unavailable (a later provider answer, or a switch to two services in one
+ * repository).
  */
 export function effectiveHostingChoice(
   choice: HostingChoice,
@@ -127,12 +150,20 @@ export function hostingCreateFields(input: {
   hostedProvisioning: CreateDeploymentProvisioningRequest | undefined;
   /** The project's environments, in promotion order (dev, uat, main). */
   environments: readonly EnvironmentDraft[];
-  /** The slots the project deploys (one for a single application). */
-  onpremSlots: readonly EnvTargetSlot[];
+  /**
+   * The slots each environment's host runs (one for a single application,
+   * backend and frontend for two repositories).
+   */
+  onpremSlots: readonly HostSlot[];
 }): HostingCreateFields {
   if (input.choice === "onprem") {
     return {
-      environments: runEveryEnvironmentOnprem(input.environments),
+      // Every host assignment covers exactly these slots, even one picked
+      // before the repository shape changed.
+      environments: fitHostAssignments(
+        runEveryEnvironmentOnprem(input.environments),
+        input.onpremSlots,
+      ),
       onpremSlots: input.onpremSlots,
     };
   }
@@ -154,20 +185,38 @@ export function renderVariablesBlockingFor(input: {
   return input.choice === "hosted" && input.provisioningOffered && input.missing;
 }
 
-/** The shape facts hosting depends on: two services or one, and which one. */
+/**
+ * The shape facts hosting depends on: how the code is laid out (on-prem is
+ * offered for one application and for two repositories, not for two services
+ * in one repository), whether there are two services (two hosted targets),
+ * and which one a single application deploys as.
+ */
 export function wizardShape(catalog: {
   isMicroservicesShape: boolean;
   isMultiRepoShape: boolean;
   selectedProjectType: { kind?: "frontend" | "backend" } | null | undefined;
   selectedProjectTypeId: string;
-}): { isDualShape: boolean; selectedProjectKind: "frontend" | "backend" } {
+}): {
+  layout: ServiceLayout;
+  isDualShape: boolean;
+  selectedProjectKind: "frontend" | "backend";
+} {
   return {
+    layout: serviceLayout(catalog),
     isDualShape: catalog.isMicroservicesShape || catalog.isMultiRepoShape,
     selectedProjectKind: inferSingleProjectKind({
       selectedProjectTypeKind: catalog.selectedProjectType?.kind,
       selectedProjectTypeId: catalog.selectedProjectTypeId,
     }),
   };
+}
+
+function serviceLayout(catalog: {
+  isMicroservicesShape: boolean;
+  isMultiRepoShape: boolean;
+}): ServiceLayout {
+  if (catalog.isMicroservicesShape) return "microservices";
+  return catalog.isMultiRepoShape ? "multiRepo" : "single";
 }
 
 /** One default hosted target: its slot and the name it starts with. */
@@ -210,10 +259,19 @@ export function environmentPathLine(environments: readonly EnvironmentDraft[]): 
   return environments.map(({ slug }) => slug).join(" → ");
 }
 
+const ONPREM_PROMOTION_SENTENCE =
+  "Test deploys on every push to dev; UAT and Production receive a release only through promotion.";
+
 /** What the read-only environments line says under each choice. */
-export function environmentsCaption(choice: HostingChoice): string {
+export function environmentsCaption(
+  choice: HostingChoice,
+  layout: ServiceLayout = "single",
+): string {
+  if (choice === "onprem" && layout === "multiRepo") {
+    return "Both repositories deploy to your on-prem host in each environment. " + ONPREM_PROMOTION_SENTENCE;
+  }
   if (choice === "onprem") {
-    return "Each runs on your on-prem host. Test deploys on every push to dev; UAT and Production receive a release only through promotion.";
+    return "Each runs on your on-prem host. " + ONPREM_PROMOTION_SENTENCE;
   }
   if (choice === "none") {
     return "The branches are created and the CI workflow runs on them. Nothing is deployed.";
@@ -223,21 +281,32 @@ export function environmentsCaption(choice: HostingChoice): string {
   return "dev runs the checks on every push; uat and main are deployed when changes are promoted.";
 }
 
+/** "Backend repo · orders-be", "Frontend repo · orders-fe". */
+function onpremRepositoryLines(repoName: string): string[] {
+  const names = multiRepoRepositoryNames(repoName || "repository-name");
+  return [`Backend repo · ${names.backend}`, `Frontend repo · ${names.frontend}`];
+}
+
 function hostedTargetLine(target: DeploymentProvisioningTargetRequest): string {
   const name = target.projectName?.trim() || "unnamed";
   return `${providerLabel(target.provider)} · ${name} (${target.slot})`;
 }
 
-/** The Review step's Hosting value: a heading and one line per target, if any. */
+/**
+ * The Review step's Hosting value: a heading and one line per target, if any.
+ * On-prem for two repositories names both repositories the host runs.
+ */
 export function hostingReviewLines(input: {
   choice: HostingChoice;
   environments: readonly EnvironmentDraft[];
   hostedTargets: readonly DeploymentProvisioningTargetRequest[];
+  layout?: ServiceLayout;
+  repoName?: string;
 }): { heading: string; details: string[] } {
   if (input.choice === "onprem") {
     return {
       heading: "On-prem host — " + input.environments.map(({ slug }) => slug).join(", "),
-      details: [],
+      details: input.layout === "multiRepo" ? onpremRepositoryLines(input.repoName ?? "") : [],
     };
   }
   if (input.choice === "none") {

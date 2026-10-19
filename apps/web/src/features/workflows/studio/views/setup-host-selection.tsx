@@ -1,30 +1,42 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useId, useRef } from "react";
+import { Fragment, useEffect, useId, useRef } from "react";
 import { healthyHosts, type MachineSummary } from "@/features/hosts";
 import type { EnvironmentDraft } from "../model/project-environments-rules";
-import { defaultHostAssignment } from "../model/setup-host-assignment-rules";
+import {
+  defaultHostAssignment,
+  slotContainerPort,
+  slotHealthPath,
+  withSlotContainerPort,
+  withSlotHealthPath,
+  type HostSlot,
+} from "../model/setup-host-assignment-rules";
 import type { useSetupHostSelection } from "../view-models/use-setup-host-selection";
 
 /** Select value for the workspace's only connected machine, chosen by the server. */
 const AUTOMATIC = "automatic";
 
-/** The per-environment fields a change can write. */
-type HostField = "containerPort" | "health" | "ingress" | "ingressMode";
+type AssignmentConfig = NonNullable<EnvironmentDraft["hostAssignment"]>["config"];
+
+/** A change to one environment's assignment config. */
+type ConfigChange = (index: number, update: (config: AssignmentConfig) => AssignmentConfig) => void;
+
+const SLOT_LABELS: Record<HostSlot, string> = { backend: "Backend", frontend: "Frontend" };
 
 export function SetupHostSelection({
   environments,
   hostProblems,
   hostSelection: vm,
   onChange,
-  slot,
+  slots,
 }: {
   environments: readonly EnvironmentDraft[];
   /** Each environment's problem, or null; computed once by the wizard. */
   hostProblems: readonly (string | null)[];
   hostSelection: ReturnType<typeof useSetupHostSelection>;
   onChange: (value: EnvironmentDraft[]) => void;
-  slot: "frontend" | "backend";
+  /** The slots each environment's host runs: one, or backend and frontend for two repositories. */
+  slots: readonly HostSlot[];
 }) {
   const workspace = useRef(vm.workspaceId);
   useEffect(() => {
@@ -50,56 +62,26 @@ export function SetupHostSelection({
           ...rest,
           hostAssignment: defaultHostAssignment(
             environment,
-            slot,
+            slots,
             value === AUTOMATIC ? undefined : value,
           ),
         };
       }),
     );
   }
-  function change(index: number, field: HostField, value: string) {
+  const change: ConfigChange = (index, update) => {
     onChange(
       environments.map((environment, position) => {
         if (index !== position || !environment.hostAssignment)
           return environment;
-        const binding = environment.hostAssignment,
-          config = binding.config;
+        const binding = environment.hostAssignment;
         return {
           ...environment,
-          hostAssignment: {
-            ...binding,
-            config:
-              field === "ingress"
-                ? {
-                    ...config,
-                    ingress: { mode: "configured", publicUrl: value || null },
-                  }
-                : field === "ingressMode"
-                  ? {
-                      ...config,
-                      // A tunnel's address is created by the machine, so the
-                      // mode switch clears any typed URL.
-                      ingress:
-                        value === "tunnel"
-                          ? { mode: "tunnel", publicUrl: null }
-                          : {
-                              mode: "configured",
-                              publicUrl: config.ingress.publicUrl,
-                            },
-                    }
-                  : field === "health"
-                    ? { ...config, health: [{ slot, path: value || null }] }
-                    : {
-                        ...config,
-                        ports: [
-                          { ...config.ports[0]!, containerPort: Number(value) },
-                        ],
-                      },
-          },
+          hostAssignment: { ...binding, config: update(binding.config) },
         };
       }),
     );
-  }
+  };
   return (
     <section aria-label="Choose on-prem machines">
       <h4>Machines</h4>
@@ -124,6 +106,7 @@ export function SetupHostSelection({
               problem={hostProblems[index] ?? null}
               select={select}
               change={change}
+              slots={slots}
             />
           ))
         : null}
@@ -146,6 +129,7 @@ function SetupHostRow({
   problem,
   select,
   change,
+  slots,
 }: {
   environment: EnvironmentDraft;
   index: number;
@@ -153,7 +137,8 @@ function SetupHostRow({
   /** Why this environment's assignment cannot be sent yet, or null. */
   problem: string | null;
   select: (index: number, value: string) => void;
-  change: (index: number, field: HostField, value: string) => void;
+  change: ConfigChange;
+  slots: readonly HostSlot[];
 }) {
   const messageId = useId();
   const binding = environment.hostAssignment;
@@ -203,6 +188,7 @@ function SetupHostRow({
         index={index}
         problemId={describedBy}
         change={change}
+        slots={slots}
       />
     </fieldset>
   );
@@ -213,41 +199,55 @@ function SetupAssignmentFields({
   index,
   problemId,
   change,
+  slots,
 }: Pick<
   Parameters<typeof SetupHostRow>[0],
-  "environment" | "index" | "change"
+  "environment" | "index" | "change" | "slots"
 > & { problemId?: string }) {
   const binding = environment.hostAssignment;
   if (!binding) return null;
   // The fields of an assignment that has a problem are marked invalid and read
   // the problem out with the field.
   const invalid = invalidAttributes(problemId);
+  // One container port and health path per container: with two repositories
+  // the host runs the backend and the frontend, so each field names its own.
+  const prefix = (slot: HostSlot) => (slots.length > 1 ? `${SLOT_LABELS[slot]} ` : "");
   return (
     <>
-      {" "}
-      <label>
-        Container port{" "}
-        <input
-          type="number"
-          min={1}
-          max={65535}
-          required
-          {...invalid}
-          value={binding.config.ports[0]?.containerPort ?? 3000}
-          onChange={(event) =>
-            change(index, "containerPort", event.target.value)
-          }
-        />
-      </label>
-      <label>
-        Health path{" "}
-        <input
-          required
-          {...invalid}
-          value={binding.config.health[0]?.path ?? ""}
-          onChange={(event) => change(index, "health", event.target.value)}
-        />
-      </label>
+      {slots.map((slot) => (
+        <Fragment key={slot}>
+          {" "}
+          <label>
+            {prefix(slot) ? `${prefix(slot)}container port` : "Container port"}{" "}
+            <input
+              type="number"
+              min={1}
+              max={65535}
+              required
+              {...invalid}
+              value={slotContainerPort(binding.config, slot)}
+              onChange={(event) =>
+                change(index, (config) =>
+                  withSlotContainerPort(config, slot, Number(event.target.value)),
+                )
+              }
+            />
+          </label>
+          <label>
+            {prefix(slot) ? `${prefix(slot)}health path` : "Health path"}{" "}
+            <input
+              required
+              {...invalid}
+              value={slotHealthPath(binding.config, slot)}
+              onChange={(event) =>
+                change(index, (config) =>
+                  withSlotHealthPath(config, slot, event.target.value),
+                )
+              }
+            />
+          </label>
+        </Fragment>
+      ))}
       {environment.role === "production" ? (
         <ProductionIngressFields
           binding={binding}
@@ -277,7 +277,7 @@ function ProductionIngressFields({
   binding: NonNullable<EnvironmentDraft["hostAssignment"]>;
   index: number;
   problemId?: string;
-  change: (index: number, field: HostField, value: string) => void;
+  change: ConfigChange;
 }) {
   const tunnel = binding.config.ingress.mode === "tunnel";
   return (
@@ -286,7 +286,17 @@ function ProductionIngressFields({
         How users reach it{" "}
         <select
           value={tunnel ? "tunnel" : "configured"}
-          onChange={(event) => change(index, "ingressMode", event.target.value)}
+          onChange={(event) =>
+            change(index, (config) => ({
+              ...config,
+              // A tunnel's address is created by the machine, so the mode
+              // switch clears any typed URL.
+              ingress:
+                event.target.value === "tunnel"
+                  ? { mode: "tunnel", publicUrl: null }
+                  : { mode: "configured", publicUrl: config.ingress.publicUrl },
+            }))
+          }
         >
           <option value="configured">
             Through an existing proxy or domain
@@ -307,7 +317,12 @@ function ProductionIngressFields({
             required
             {...invalidAttributes(problemId)}
             value={binding.config.ingress.publicUrl ?? ""}
-            onChange={(event) => change(index, "ingress", event.target.value)}
+            onChange={(event) =>
+              change(index, (config) => ({
+                ...config,
+                ingress: { mode: "configured", publicUrl: event.target.value || null },
+              }))
+            }
           />
         </label>
       )}
