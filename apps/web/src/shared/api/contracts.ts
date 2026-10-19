@@ -1057,6 +1057,12 @@ export interface CreateProjectRequest {
   microservicesConfig?: MicroservicesConfig;
   multiRepoConfig?: MicroservicesConfig;
   deploymentProvisioning?: CreateDeploymentProvisioningRequest;
+  /**
+   * The project's ordered environments, sent with on-prem hosting for a
+   * single application or two repositories (never for microservices). Omit it
+   * to create the project on the fixed dev, uat, main branch path.
+   */
+  environments?: SetupProjectRequest["environments"];
   /** Group/workspace to create this project inside (from ?group=<id>). */
   workspaceId?: string;
   /**

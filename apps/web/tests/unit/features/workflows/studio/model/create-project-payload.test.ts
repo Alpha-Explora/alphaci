@@ -166,7 +166,59 @@ describe("buildCreateProjectPayload with on-prem environments", () => {
     expect(payload.environments).toEqual(sentEnvironments);
   });
 
-  it("sends nothing new for shapes without their own environments", () => {
+  it("sends two repositories' environments with an on-prem target per environment for both slots", () => {
+    const payload = payloadOf(
+      buildCreateProjectPayload({
+        ...input,
+        isMultiRepoShape: true,
+        repoShapeId: "multi",
+        deploymentProvisioning: undefined,
+        environments: runEveryEnvironmentOnprem(ENVIRONMENT_TEMPLATE),
+        onpremSlots: ["backend", "frontend"],
+      }),
+    );
+    expect(payload.environments).toEqual(sentEnvironments);
+    expect(payload.deploymentProvisioning?.targets).toHaveLength(6);
+    expect(payload.deploymentProvisioning).toEqual({
+      enabled: true,
+      targets: ["dev", "uat", "main"].flatMap((environmentSlug) =>
+        ["backend", "frontend"].map((slot) => ({
+          slot,
+          provider: "onprem-compose",
+          ownershipMode: "byo",
+          environmentSlug,
+        })),
+      ),
+    });
+    expect(payload.multiRepoConfig).toMatchObject({
+      backend: { serviceName: "ledger-backend" },
+      frontend: { serviceName: "ledger-frontend" },
+    });
+  });
+
+  it("refuses two repositories' environments the backend would refuse", () => {
+    const result = buildCreateProjectPayload({
+      ...input,
+      isMultiRepoShape: true,
+      repoShapeId: "multi",
+      environments: runEveryEnvironmentOnprem(ENVIRONMENT_TEMPLATE).map((environment) => ({
+        ...environment,
+        role: "non_production" as const,
+      })),
+      onpremSlots: ["backend", "frontend"],
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it("keeps two repositories' hosted request unchanged", () => {
+    const payload = payloadOf(
+      buildCreateProjectPayload({ ...input, isMultiRepoShape: true, repoShapeId: "multi" }),
+    );
+    expect(payload.deploymentProvisioning).toBe(hostedBackend);
+    expect("environments" in payload).toBe(false);
+  });
+
+  it("sends nothing new for two services in one repository", () => {
     const payload = payloadOf(
       buildCreateProjectPayload({
         ...input,

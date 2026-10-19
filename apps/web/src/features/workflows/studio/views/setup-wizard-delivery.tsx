@@ -182,8 +182,20 @@ export function SetupWizardDelivery({
   return (
     <div className="wizard-delivery">
       <HostingChoiceField hosting={hosting} />
-      <EnvironmentsPath choice={hosting.choice} environments={form.environments} />
-      {hosting.choice==='onprem'?<SetupHostSelection environments={form.environments} hostProblems={hostProblems} hostSelection={hostSelection} onChange={form.setEnvironments} slot={selectedProjectKind}/>:null}
+      <EnvironmentsPath
+        choice={hosting.choice}
+        environments={form.environments}
+        layout={hosting.layout}
+      />
+      {hosting.choice === "onprem" ? (
+        <SetupHostSelection
+          environments={form.environments}
+          hostProblems={hostProblems}
+          hostSelection={hostSelection}
+          onChange={form.setEnvironments}
+          slots={hosting.onpremSlots}
+        />
+      ) : null}
       <HostProblemNotice problem={hostProblem} />
       {hosting.choice === "hosted" ? (
         <HostedTargets

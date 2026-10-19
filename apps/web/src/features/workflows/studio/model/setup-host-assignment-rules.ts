@@ -57,22 +57,109 @@ function productionIngressProblem(environment: EnvironmentDraft) {
   return "Add an HTTPS URL or choose the automatic HTTPS address for Production, or choose Assign later.";
 }
 
-/** A new assignment with defaults; no machine means the only connected one. */
+/** A slot an on-prem host runs: the backend or the frontend container. */
+export type HostSlot = "frontend" | "backend";
+
+type HostAssignment = NonNullable<EnvironmentDraft["hostAssignment"]>;
+type HostAssignmentConfig = HostAssignment["config"];
+
+/** The container port a slot starts with: 3000 for a frontend, 4000 for a backend. */
+export function defaultContainerPort(slot: HostSlot): number {
+  return slot === "frontend" ? 3000 : 4000;
+}
+
+/**
+ * A new assignment with defaults: one container port and one health path per
+ * slot, because the backend wants exactly one of each for every slot the
+ * environment deploys. No machine means the only connected one.
+ */
 export function defaultHostAssignment(
   environment: EnvironmentDraft,
-  slot: "frontend" | "backend",
+  slots: readonly HostSlot[],
   machineId?: string,
-): NonNullable<EnvironmentDraft["hostAssignment"]> {
+): HostAssignment {
   return {
     ...(machineId ? { machineId } : {}),
     requestId: crypto.randomUUID(),
     config: {
-      ports: [{ slot, containerPort: slot === "frontend" ? 3000 : 4000 }],
-      health: [{ slot, path: "/" }],
+      ports: slots.map((slot) => ({ slot, containerPort: defaultContainerPort(slot) })),
+      health: slots.map((slot) => ({ slot, path: "/" })),
       ingress: {
         mode: environment.role === "production" ? "configured" : "direct",
         publicUrl: null,
       },
     },
   };
+}
+
+/** The slot's container port, or its default when the slot has none yet. */
+export function slotContainerPort(config: HostAssignmentConfig, slot: HostSlot): number {
+  return (
+    config.ports.find((port) => port.slot === slot)?.containerPort ??
+    defaultContainerPort(slot)
+  );
+}
+
+/** The slot's health path as typed ("" when cleared), or "/" when the slot has none yet. */
+export function slotHealthPath(config: HostAssignmentConfig, slot: HostSlot): string {
+  const health = config.health.find((item) => item.slot === slot);
+  return health ? (health.path ?? "") : "/";
+}
+
+/** The config with one slot's container port changed; the other slots keep theirs. */
+export function withSlotContainerPort(
+  config: HostAssignmentConfig,
+  slot: HostSlot,
+  containerPort: number,
+): HostAssignmentConfig {
+  const ports = config.ports.some((port) => port.slot === slot)
+    ? config.ports.map((port) => (port.slot === slot ? { slot, containerPort } : port))
+    : [...config.ports, { slot, containerPort }];
+  return { ...config, ports };
+}
+
+/** The config with one slot's health path changed; an empty path is sent as null. */
+export function withSlotHealthPath(
+  config: HostAssignmentConfig,
+  slot: HostSlot,
+  path: string,
+): HostAssignmentConfig {
+  const next = { slot, path: path || null };
+  const health = config.health.some((item) => item.slot === slot)
+    ? config.health.map((item) => (item.slot === slot ? next : item))
+    : [...config.health, next];
+  return { ...config, health };
+}
+
+/**
+ * The environments with each host assignment covering exactly `slots`, in
+ * that order. A slot the assignment already has keeps its port and health
+ * path, a missing slot gets the defaults, and a slot the project no longer
+ * deploys is dropped. So a machine picked before the repository shape changed
+ * (one application to two repositories, or back) still makes a request the
+ * backend accepts.
+ */
+export function fitHostAssignments(
+  environments: readonly EnvironmentDraft[],
+  slots: readonly HostSlot[],
+): EnvironmentDraft[] {
+  return environments.map((environment) => {
+    const binding = environment.hostAssignment;
+    if (!binding) return environment;
+    const config = binding.config;
+    return {
+      ...environment,
+      hostAssignment: {
+        ...binding,
+        config: {
+          ...config,
+          ports: slots.map((slot) => ({ slot, containerPort: slotContainerPort(config, slot) })),
+          health: slots.map((slot) => ({
+            slot,
+            path: config.health.find((item) => item.slot === slot)?.path ?? "/",
+          })),
+        },
+      },
+    };
+  });
 }

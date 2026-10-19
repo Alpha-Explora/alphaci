@@ -7,7 +7,7 @@ import {
   wizardShape,
   type HostingCreateFields,
 } from "../model/hosting-choice-rules";
-import { deployableSlots, type OnpremHosting } from "../model/onprem-hosting-rules";
+import type { OnpremHosting } from "../model/onprem-hosting-rules";
 import type { CreateProjectFormState } from "./use-create-project-form";
 import { useDeploymentProvisioningForm } from "./use-deployment-provisioning-form";
 import { useHostingChoice } from "./use-hosting-choice";
@@ -25,7 +25,7 @@ export function useWizardHosting(input: {
   projectCatalog: ProjectOptionsCatalogState;
 }) {
   const { createForm, envProvisioningEnabled, onpremHosting, projectCatalog } = input;
-  const { isDualShape, selectedProjectKind } = wizardShape(projectCatalog);
+  const { layout, isDualShape, selectedProjectKind } = wizardShape(projectCatalog);
   // The targets' own on/off stays off: the Hosting choice decides, and the
   // existing-repo path keeps sending no provisioning, as before.
   const deploymentProvisioning = useDeploymentProvisioningForm(projectCatalog.selectedRepoShapeId, {
@@ -37,7 +37,7 @@ export function useWizardHosting(input: {
       selectedProjectKind,
     }),
   });
-  const hosting = useHostingChoice({ onprem: onpremHosting, isDualShape });
+  const hosting = useHostingChoice({ onprem: onpremHosting, layout, selectedProjectKind });
 
   /** The deployment fields of the create input, for the current choice. */
   function createFields(): HostingCreateFields {
@@ -47,7 +47,7 @@ export function useWizardHosting(input: {
       // backend adds its default target, as it always has.
       hostedProvisioning: envProvisioningEnabled ? deploymentProvisioning.hostedPayload : undefined,
       environments: createForm.environments,
-      onpremSlots: deployableSlots(undefined, selectedProjectKind),
+      onpremSlots: hosting.onpremSlots,
     });
   }
 
