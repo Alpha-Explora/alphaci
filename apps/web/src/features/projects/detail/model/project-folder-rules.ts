@@ -167,10 +167,36 @@ export const SINGLE_REPO_PRESENTATION: RepoSwitchPresentation = {
   options: [],
 };
 
-/** Offer every repository linked to the Project, including repeated roles. */
+/** A two-repository project's halves are named `<name>-fe` and `<name>-be`. */
+const PAIR_SUFFIX = /-(fe|be)$/i;
+
+/** `shop-fe` -> `shop`; null for a name that is not one half of a pair. */
+function pairStem(repo: ProjectFolderRepository): string | null {
+  const name = repoShortName(repo);
+  return PAIR_SUFFIX.test(name) ? name.replace(PAIR_SUFFIX, "").toLowerCase() : null;
+}
+
+/**
+ * The repositories the switch offers from the page on screen.
+ *
+ * A repository created as half of a two-repository pair (`shop-fe`,
+ * `shop-be`) offers only its own pair, so a Project holding several pairs
+ * does not show FRONTEND FRONTEND BACKEND BACKEND. Every other repository
+ * offers all of the Project's repositories, repeated roles included
+ * (`store-web`, `admin-web`, `store-api`).
+ */
 export function switchRepositories(
   folder: ProjectFolderSummary,
+  currentProjectId?: string,
 ): ProjectFolderRepository[] {
+  const current = folder.repositories.find(
+    (repo) => repo.projectId !== null && repo.projectId === currentProjectId,
+  );
+  const stem = current ? pairStem(current) : null;
+  if (stem) {
+    const pair = folder.repositories.filter((repo) => pairStem(repo) === stem);
+    if (pair.length === 2 && pair[0]!.role !== pair[1]!.role) return pair;
+  }
   return [...folder.repositories];
 }
 
@@ -185,7 +211,7 @@ export function repoSwitchPresentation(
   currentProjectId: string,
 ): RepoSwitchPresentation {
   if (!hasRepoSwitch(folder) || !folder.name) return SINGLE_REPO_PRESENTATION;
-  const repositories = switchRepositories(folder);
+  const repositories = switchRepositories(folder, currentProjectId);
   return {
     projectName: folder.name,
     options:

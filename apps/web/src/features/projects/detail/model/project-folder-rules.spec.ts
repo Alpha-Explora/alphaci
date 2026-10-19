@@ -38,4 +38,31 @@ describe("switchRepositories", () => {
       "store-api",
     ]);
   });
+
+  it("offers only the open repository's own -fe/-be pair when the Project holds several pairs", () => {
+    const repo = (projectId: string, name: string, role: "frontend" | "backend") => ({
+      projectId,
+      name,
+      repoFullName: `org/${name}`,
+      role,
+      status: "active",
+    });
+    const folder: ProjectFolderSummary = {
+      deliveryProjectId: "delivery-1",
+      groupId: "group-1",
+      name: "Shop",
+      repositories: [
+        repo("p1", "shop-fe", "frontend"),
+        repo("p2", "shopv2-fe", "frontend"),
+        repo("p3", "shop-be", "backend"),
+        repo("p4", "shopv2-be", "backend"),
+      ],
+    };
+
+    expect(switchRepositories(folder, "p2").map((r) => r.name)).toEqual([
+      "shopv2-fe",
+      "shopv2-be",
+    ]);
+    expect(switchRepositories(folder)).toHaveLength(4);
+  });
 });
