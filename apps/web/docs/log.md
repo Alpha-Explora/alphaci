@@ -2,6 +2,10 @@
 
 ## 2026-10-20
 
+- **Update**: Brought the bundle and `CLAUDE.md` in line with the code. The backend origin setting is `ALLOWED_ORIGINS`, not `CORS_ORIGINS`. The self-host install is not egress-only, because runners call `/api/v1/ci/*`. The self-host runbook matches the backend Caddyfile and compose file, and pins the image by digest. Corrected the coverage floors, stylelint ceiling, feature domains, routes and test baseline. `onprem-hosts.md` says AlphaCI allocates host ports. The executive report lists the current hosting options and QA, PO Studio, promotion and rollback.
+- **Deletion**: Removed the completed MVVM alignment plan (`docs/superpowers/plans/2026-08-25-next-feature-mvvm-alignment.md`). Its lasting rules are in ADR-0001.
+- **Update**: The feature map generator lists the `hosts` and `public-site` domains and no longer repeats a source. Regenerated the architecture maps.
+
 - **Update**: On-prem host assignments in the create wizard and in Hosting pre-fill each slot's container port and health path from the backend (catalog `serviceRuntime`, `GET .../host-assignment/defaults`) instead of frontend constants. See CHANGELOG.
 
 ## 2026-10-19

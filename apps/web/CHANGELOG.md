@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Docs: refreshed the current-state docs, operator runbooks and `CLAUDE.md` against the code, and removed the completed MVVM alignment plan. The self-host runbook now names `ALLOWED_ORIGINS` (not `CORS_ORIGINS`) and states that the install needs inbound 443 for runner calls. The feature map generator lists every feature domain. See `docs/log.md`.
+
 - On-prem host assignments pre-fill the container port and health path of the project's own app instead of 3000 for a frontend and 4000 for a backend with health at `/`. The create wizard reads them from each project type's new `serviceRuntime` in the catalog (the backend repository's type and the frontend repository's type for two repositories), and moves a value it only pre-filled when the type changes, keeping one a person typed. Hosting reads them from `GET .../host-assignment/defaults` for an environment with no assignment; a stored assignment still shows its own values. The 3000/4000 and `/` fallback stays only for a type with no contract or a backend that does not answer the defaults yet. Needs the backend that serves `serviceRuntime` and the defaults route; with an older backend the form shows the fallback as before.
 - Added live workspace member alerts with Open workspace links. The Inbox, unread badge, and workspace picker update without reloading, share one notification feed per account, and recover through periodic reads if streaming is unavailable.
 
