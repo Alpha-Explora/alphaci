@@ -451,6 +451,22 @@
   text-decoration: underline;
 }
 
+/* Back to the repository's top level: an icon, not the word "root". */
+.ws-crumb--home {
+  display: inline-grid;
+  place-items: center;
+  color: var(--text-secondary);
+}
+
+.ws-crumb--home:hover {
+  color: var(--accent-primary);
+}
+
+.ws-crumb:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
 .ws-crumb-sep {
   color: var(--text-secondary);
   font-size: 0.85rem;

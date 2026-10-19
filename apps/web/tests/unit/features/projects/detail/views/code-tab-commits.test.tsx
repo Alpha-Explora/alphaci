@@ -156,5 +156,29 @@ describe("CodeTab commit column", () => {
     await poll(() => fileCommits.mock.calls.length === 2);
     expect(fileCommits).toHaveBeenLastCalledWith("p1", { path: ".github", ref: "main" });
   });
+
+  it("shows no path at the top level, and an icon back to it inside a folder", async () => {
+    await mount();
+    await poll(() => row(".github") !== undefined);
+    expect(container.querySelector(".ws-crumbs")).toBeNull();
+    expect(container.textContent).not.toContain("root");
+
+    files.mockResolvedValue({
+      path: ".github",
+      ref: "main",
+      file: null,
+      entries: [{ name: "workflows", path: ".github/workflows", type: "dir", size: 0, sha: "d2" }],
+    });
+    await act(async () => row(".github")!.click());
+    await poll(() => container.querySelector(".ws-crumbs") !== null);
+    const home = container.querySelector<HTMLButtonElement>(".ws-crumb--home")!;
+    expect(home.getAttribute("aria-label")).toBe("Repository root");
+    expect(home.textContent).toBe("");
+    expect(container.querySelector(".ws-crumbs")?.textContent).toContain(".github");
+
+    files.mockResolvedValue(ROOT);
+    await act(async () => home.click());
+    await poll(() => container.querySelector(".ws-crumbs") === null);
+  });
 });
 

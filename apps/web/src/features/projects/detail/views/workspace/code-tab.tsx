@@ -217,9 +217,25 @@ function CodeToolbar({
         </label>
       ) : null}
 
+      {/* At the top level there is no path to show; inside a folder, the
+          first crumb is an icon back to the top instead of the word "root". */}
+      {crumbs.length > 0 ? (
       <nav className="ws-crumbs" aria-label="File path">
-        <button type="button" className="ws-crumb" onClick={() => onGoTo("")}>
-          root
+        <button
+          type="button"
+          className="ws-crumb ws-crumb--home"
+          aria-label="Repository root"
+          title="Repository root"
+          onClick={() => onGoTo("")}
+        >
+          <svg aria-hidden="true" fill="none" height="14" viewBox="0 0 16 16" width="14">
+            <path
+              d="M1.75 4.25c0-.69.56-1.25 1.25-1.25h3.1l1.5 1.5H13c.69 0 1.25.56 1.25 1.25v6.5c0 .69-.56 1.25-1.25 1.25H3c-.69 0-1.25-.56-1.25-1.25v-8Z"
+              stroke="currentColor"
+              strokeLinejoin="round"
+              strokeWidth="1.4"
+            />
+          </svg>
         </button>
         {crumbs.map((crumb) => (
           <span key={crumb.path}>
@@ -236,6 +252,7 @@ function CodeToolbar({
           </span>
         ))}
       </nav>
+      ) : null}
     </div>
   );
 }

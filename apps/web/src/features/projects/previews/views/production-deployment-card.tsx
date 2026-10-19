@@ -242,17 +242,38 @@ function DeploymentFacts({ preview }: CardProps) {
   const tone = previewStatusTone(preview.status);
   const took = deployDurationLabel(preview);
   const trigger = deployTriggerLabel(preview.trigger);
+  const source = (
+    <Fact label="Source">
+      <span className="deploy-card__source-line">
+        <BranchIcon />
+        <span className="deploy-card__branch">{preview.branch}</span>
+      </span>
+      <CommitLine preview={preview} />
+    </Fact>
+  );
 
+  // Source sits beside the first address on the top row, so what is live and
+  // where it came from read together; the addresses that follow take the width.
   return (
     <dl className="deploy-card__facts">
       {preview.deploymentUrl ? (
-        <Fact label="Deployment" wide>
-          <ExternalLink href={preview.deploymentUrl} />
-        </Fact>
-      ) : null}
-      <Fact label="Domains" wide>
-        <DomainValue preview={preview} />
-      </Fact>
+        <>
+          <Fact label="Deployment">
+            <ExternalLink href={preview.deploymentUrl} />
+          </Fact>
+          {source}
+          <Fact label="Domains" wide>
+            <DomainValue preview={preview} />
+          </Fact>
+        </>
+      ) : (
+        <>
+          <Fact label="Domains">
+            <DomainValue preview={preview} />
+          </Fact>
+          {source}
+        </>
+      )}
       <Fact label="Status">
         <span className="deploy-card__status">
           <span
@@ -265,13 +286,6 @@ function DeploymentFacts({ preview }: CardProps) {
       <Fact label="Created">{createdLabel(preview)}</Fact>
       {took ? <Fact label="Took">{took}</Fact> : null}
       {trigger ? <Fact label="Trigger">{trigger}</Fact> : null}
-      <Fact label="Source" wide>
-        <span className="deploy-card__source-line">
-          <BranchIcon />
-          <span className="deploy-card__branch">{preview.branch}</span>
-        </span>
-        <CommitLine preview={preview} />
-      </Fact>
     </dl>
   );
 }
