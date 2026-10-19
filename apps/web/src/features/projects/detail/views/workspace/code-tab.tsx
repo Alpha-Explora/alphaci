@@ -331,40 +331,62 @@ function BranchCreateControl({
     }
   }
 
-  return (
-    <div className="ws-branch-create-wrap">
+  function close() {
+    setCreating(false);
+    setBranchName("");
+    setError(null);
+  }
+
+  if (!creating) {
+    return (
       <button
         type="button"
         className="ws-branch-create__toggle"
-        aria-expanded={creating}
-        onClick={() => {
-          setCreating((open) => !open);
-          setError(null);
-        }}
+        onClick={() => setCreating(true)}
       >
-        {creating ? "Cancel" : "Create branch"}
+        Create branch
       </button>
-      {creating ? (
-        <form className="ws-branch-create" onSubmit={submit}>
-          <label className="ws-branch-create__field">
-            <span>Branch name</span>
-            <input
-              autoFocus
-              maxLength={255}
-              value={branchName}
-              onChange={(event) => setBranchName(event.target.value)}
-              placeholder="feature/your-change"
-              required
-            />
-          </label>
-          <span className="ws-branch-create__source">Based on dev</span>
-          <button type="submit" disabled={saving || !branchName.trim()}>
-            {saving ? "Creating…" : "Create"}
-          </button>
-          {error ? <span className="ws-branch-create__error" role="alert">{error}</span> : null}
-        </form>
-      ) : null}
-    </div>
+    );
+  }
+
+  return (
+    <form
+      className="ws-branch-create"
+      onSubmit={submit}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && !saving) close();
+      }}
+    >
+      <label className="ws-branch-create__field">
+        <span className="sr-only">New branch name</span>
+        <input
+          autoFocus
+          maxLength={255}
+          value={branchName}
+          disabled={saving}
+          onChange={(event) => setBranchName(event.target.value)}
+          placeholder="feature/your-change"
+          required
+        />
+      </label>
+      <span className="ws-branch-create__source">from dev</span>
+      <button
+        type="submit"
+        className="ws-branch-create__submit"
+        disabled={saving || !branchName.trim()}
+      >
+        {saving ? "Creating…" : "Create"}
+      </button>
+      <button
+        type="button"
+        className="ws-branch-create__cancel"
+        disabled={saving}
+        onClick={close}
+      >
+        Cancel
+      </button>
+      {error ? <span className="ws-branch-create__error" role="alert">{error}</span> : null}
+    </form>
   );
 }
 
