@@ -116,12 +116,17 @@ export function repoSwitchOptions(
   folder: ProjectFolderSummary,
   currentProjectId: string,
 ): RepoSwitchOption[] {
+  const perRole = new Map<FolderRepoRole | null, number>();
+  for (const repo of folder.repositories) {
+    perRole.set(repo.role, (perRole.get(repo.role) ?? 0) + 1);
+  }
   return folder.repositories.map((repo) => ({
     key: repo.projectId ?? `repo:${repo.repoFullName ?? repo.name}`,
     projectId: repo.projectId,
     role: repo.role,
     roleLabel: roleLabel(repo.role),
     label: repoShortName(repo),
+    showName: (perRole.get(repo.role) ?? 0) > 1,
     repoFullName: repo.repoFullName,
     current: repo.projectId !== null && repo.projectId === currentProjectId,
     disabled: repo.projectId === null,
