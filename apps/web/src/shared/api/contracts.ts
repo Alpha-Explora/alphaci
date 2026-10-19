@@ -376,6 +376,15 @@ export interface DeploymentTargetActionsResponse {
       enabled: boolean;
       reason?: string;
     };
+    /**
+     * Roll back to an earlier deploy from ALPHACI; `resumable` while a Vercel
+     * rollback holds new production deploys. Absent on an older backend.
+     */
+    rollback?: {
+      enabled: boolean;
+      resumable: boolean;
+      reason?: string;
+    };
     openProviderDashboard: {
       enabled: boolean;
       url: string | null;
@@ -397,6 +406,34 @@ export interface ReinstallDeploymentSecretsResponse {
   reinstalled: true;
   githubSecrets: Record<string, string>;
   githubVariables?: Record<string, string>;
+}
+
+/** A rollback that holds new production deploys (Vercel), kept on the target's providerMetadata.rollback. */
+export interface DeploymentRollbackHold {
+  deployId: string;
+  commitSha: string | null;
+  commitMessage: string | null;
+  reason: string;
+  rolledBackBy: string;
+  rolledBackAt: string;
+  holdsNewDeploys: boolean;
+}
+
+export interface RollbackDeploymentTargetResponse {
+  rolledBack: true;
+  targetId: string;
+  /** The deploy now serving: Render's new rollback deploy, or the chosen Vercel deployment. */
+  deployId: string;
+  status: string;
+  /** Set when the provider now holds new deploys until resumed (Vercel). */
+  rollback: DeploymentRollbackHold | null;
+}
+
+export interface ResumeDeploymentTargetDeploysResponse {
+  resumed: true;
+  targetId: string;
+  /** The deploy that went live again, or null when there was none to promote. */
+  deployId: string | null;
 }
 
 export interface EnvVarMetadata {

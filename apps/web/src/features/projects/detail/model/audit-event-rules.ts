@@ -84,6 +84,8 @@ const EVENT_LABELS: Readonly<Record<string, string>> = {
   deployment_target_synced: "Hosting service synced",
   deployment_target_detached: "Hosting service detached",
   deployment_target_ci_secrets_reinstalled: "Deployment secrets reinstalled",
+  deployment_target_rolled_back: "Deployment rolled back",
+  deployment_target_rollback_resumed: "Deploys resumed after a rollback",
   deployment_provider_resources_deleted: "Hosting resources deleted",
   env_vars_provisioned: "Environment variables set",
   env_var_removed: "Environment variable removed",

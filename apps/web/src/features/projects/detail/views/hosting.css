@@ -585,6 +585,74 @@
   color: var(--text-muted);
 }
 
+/* Roll back: a quiet text action at the row's end, for those who manage hosting. */
+.hosting-row__rollback {
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hosting-row__rollback:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.hosting-row__rollback:focus-visible,
+.hosting-hold__resume:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* A rollback holding production: amber, so a deploy that has not gone live is explained. */
+.hosting-hold {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-amber);
+  border-radius: 0.6rem;
+  background: var(--accent-amber-light);
+}
+
+.hosting-hold__text {
+  flex: 1 1 16rem;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.hosting-hold__text strong {
+  color: var(--warning);
+}
+
+.hosting .hosting-hold__resume,
+.hosting-hold .hosting-hold__resume {
+  min-height: 2rem;
+  padding: 0.25rem 0.85rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.hosting-rollback__deploy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.hosting-rollback__message {
+  color: var(--text-primary);
+}
+
 .hosting-row__how {
   color: var(--text-muted);
   white-space: nowrap;

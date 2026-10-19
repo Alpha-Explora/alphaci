@@ -6,6 +6,9 @@ import { useId } from "react";
 
 import { ProjectDomainsPanel } from "@/features/projects/domains";
 import type { DeploymentTarget, EnvVarMetadata, ProvisionedProject } from "@/features/projects";
+import type { AppRole, ProjectDeploymentHistoryItem } from "@/shared/api/contracts";
+import { shortCommitSha } from "../../model/projects-rules";
+import { canRollBackTo, liveDeployId, rollbackHold } from "../model/deploy-rollback-rules";
 import {
   environmentScopeBranch,
   hostingEmptyBody,
@@ -18,12 +21,16 @@ import {
   HOSTING_LEAD_ONLY_NOTE,
 } from "../model/project-detail-tab-rules";
 import { providerDisplayName } from "../model/provider-urls";
-import { useDeploymentTargetsViewModel } from "../view-models/use-deployment-targets-view-model";
+import {
+  useDeploymentTargetsViewModel,
+  type DeploymentTargetsViewModel,
+} from "../view-models/use-deployment-targets-view-model";
 import { useEnvVariablesEditor } from "../view-models/use-env-variables-editor-view-model";
 import { useHostingTabViewModel } from "../view-models/use-hosting-tab-view-model";
 import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
 import { useProjectEnvProvisioning } from "../view-models/use-project-env-provisioning-view-model";
 import { HostingDeploymentCard } from "./hosting-deployment-card";
+import type { RollbackControls } from "./hosting-rollback";
 import { environmentPanelId, environmentTabId, HostingEnvironmentSwitcher } from "./hosting-environment-switcher";
 import { HostingServiceHeader, HostingServiceSelector } from "./hosting-service-header";
 import { HostingVariablesCard, type ManagedVariables } from "./hosting-variables-card";
@@ -111,6 +118,7 @@ function HostingLayout({
     appRole: vm.appRole,
     onDetached: vm.handleTargetDetached,
     onTargetChanged: vm.handleTargetChanged,
+    onDeploysChanged: vm.reloadDeployments,
   });
   const { target, environment } = hosting;
   const scope = {
@@ -174,6 +182,12 @@ function HostingLayout({
           domains={
             environment.kind === "production" ? <HostingDomains project={project} vm={vm} /> : null
           }
+          rollback={rollbackControlsFor({
+            target,
+            targetsVm,
+            appRole: vm.appRole,
+            deploys: hosting.allDeploys,
+          })}
         />
         {showVariables ? (
           <HostingVariablesCard
@@ -192,6 +206,34 @@ function HostingLayout({
       </div>
     </div>
   );
+}
+
+/**
+ * Roll back and Resume deploys for the selected service. Offered to those who
+ * manage hosting once the backend says the provider can; a held rollback is
+ * shown to everyone, so nobody wonders why a new deploy has not gone live.
+ */
+function rollbackControlsFor(input: {
+  target: DeploymentTarget;
+  targetsVm: DeploymentTargetsViewModel;
+  appRole: AppRole | undefined;
+  deploys: ReadonlyArray<ProjectDeploymentHistoryItem>;
+}): RollbackControls | null {
+  const { target, targetsVm } = input;
+  const actions = targetsVm.targetActions[target.id];
+  const hold = rollbackHold(target);
+  if (!actions?.actions.rollback && !hold) return null;
+  const allowed = canManageHosting(input.appRole);
+  const liveId = liveDeployId(target, input.deploys);
+  return {
+    offers: (deploy) => canRollBackTo({ allowed, actions, target, deploy, liveId }),
+    hold,
+    canResume: allowed && hold !== null,
+    busy: targetsVm.rollingBackTargetId === target.id,
+    rollback: (deploy, reason) =>
+      targetsVm.rollback(target, { id: deploy.id, sha: shortCommitSha(deploy.commitSha) }, reason),
+    resume: () => targetsVm.resumeDeploys(target),
+  };
 }
 
 /** Production's custom domains, as the Hosting tab always offered them. */

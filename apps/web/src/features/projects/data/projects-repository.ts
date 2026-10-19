@@ -19,6 +19,8 @@ import {
   reinstallDeploymentSecrets as requestReinstallDeploymentSecrets,
   removeProjectDomain,
   repairProjectDriftFinding,
+  resumeDeploymentTargetDeploys as requestResumeDeploymentTargetDeploys,
+  rollbackDeploymentTarget as requestRollbackDeploymentTarget,
   runProjectDriftDetection,
   syncDeploymentTarget as requestSyncDeploymentTarget,
   syncProjectAuditEvents,
@@ -43,6 +45,8 @@ import type {
   ProjectDriftResponse,
   ProjectSyncSnapshotResponse,
   ReinstallDeploymentSecretsResponse,
+  ResumeDeploymentTargetDeploysResponse,
+  RollbackDeploymentTargetResponse,
   UpdateDeploymentTargetRequest,
   WorkflowSettings,
   WorkflowSettingsPreviewResponse,
@@ -239,5 +243,22 @@ export const projectsRepository = {
     targetId: string,
   ): Promise<ReinstallDeploymentSecretsResponse> {
     return requestReinstallDeploymentSecrets(projectId, targetId);
+  },
+
+  /** Puts an earlier deploy of a target back live, with the reason recorded in the Audit trail. */
+  rollbackDeploymentTarget(
+    projectId: string,
+    targetId: string,
+    body: { deployId: string; reason: string },
+  ): Promise<RollbackDeploymentTargetResponse> {
+    return requestRollbackDeploymentTarget(projectId, targetId, body);
+  },
+
+  /** Ends a Vercel rollback hold: the newest production deploy goes live again. */
+  resumeDeploymentTargetDeploys(
+    projectId: string,
+    targetId: string,
+  ): Promise<ResumeDeploymentTargetDeploysResponse> {
+    return requestResumeDeploymentTargetDeploys(projectId, targetId);
   },
 };
