@@ -12,7 +12,7 @@ const mockedRequest = request as jest.MockedFunction<typeof request>;
 afterEach(() => jest.clearAllMocks());
 
 describe("iterationsRepository", () => {
-  it("reads the current iteration and normalises it", async () => {
+  it("reads the current version and normalises it", async () => {
     mockedRequest.mockResolvedValue(currentWire());
     const current = await iterationsRepository.current("dp/1");
     expect(mockedRequest).toHaveBeenCalledWith("/delivery-projects/dp%2F1/iterations/current");
@@ -32,7 +32,7 @@ describe("iterationsRepository", () => {
     expect(result).toEqual({ repositories: [], delivered: false, iteration: null });
   });
 
-  it("starts the next iteration with the goal as JSON, and normalises the 201", async () => {
+  it("starts the next version with the goal as JSON, and normalises the 201", async () => {
     mockedRequest.mockResolvedValue({
       iteration: { id: "it-4", number: 4, status: "active", goal: "Loyalty points" },
     });
@@ -44,7 +44,7 @@ describe("iterationsRepository", () => {
     expect(started).toEqual({ iteration: expect.objectContaining({ number: 4 }) });
   });
 
-  it("lets a 404 through for the caller to read as 'no iterations here'", async () => {
+  it("lets a 404 through for the caller to read as 'no versions here'", async () => {
     mockedRequest.mockRejectedValue(Object.assign(new Error("Not found"), { status: 404 }));
     await expect(iterationsRepository.current("dp-1")).rejects.toMatchObject({ status: 404 });
   });

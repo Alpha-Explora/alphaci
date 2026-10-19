@@ -45,16 +45,16 @@ export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   REQUIREMENT_ORDER_MISMATCH:
     "The list changed while you were reordering it. Reload, then move the item again.",
   /* Iterations: a write against a delivered iteration, and a Project with nothing to merge. */
-  ITERATION_DELIVERED: "This iteration was delivered, so its requirements and QA are locked.",
+  ITERATION_DELIVERED: "This version was delivered, so its requirements and QA are locked.",
   PROJECT_HAS_NO_REPOSITORIES:
     "This Project has no repositories yet, so there is nothing to merge to main. Add a repository first.",
   /* Iterations phase 3: starting the next iteration. */
-  ITERATION_ACTIVE: "This Project already has an active iteration. Deliver it before starting the next one.",
+  ITERATION_ACTIVE: "This Project already has an active version. Deliver it before starting the next one.",
   /* Approved needs every item the iteration holds: the server added the missing ones to the run. */
   QA_RUN_MISSING_ITEMS:
     "Requirement items were added after this run started, so QA has not verified them. They are now in the run as Pending: reload the run, verify them, then sign off.",
   ITERATION_CARRY_INVALID:
-    "Items are no longer carried over: a new iteration starts with an empty checklist. Close this dialog, reload the page and start it again.",
+    "Items are no longer carried over: a new version starts with an empty checklist. Close this dialog, reload the page and start it again.",
   /* Test cases under a User story (written by the QA Team). */
   QA_TEST_CASES_OPEN: "Pass every test case of this story before passing the story.",
   TEST_CASE_MANAGE_FORBIDDEN: "Only the QA Team and admins write test cases.",
@@ -140,7 +140,7 @@ function detailsIterationNumber(cause: unknown): number | null {
  */
 function iterationActiveMessage(cause: unknown): string | null {
   const number = detailsIterationNumber(cause);
-  return number === null ? null : `Iteration ${String(number)} is still active. Deliver it before starting the next one.`;
+  return number === null ? null : `Version ${String(number)} is still active. Deliver it before starting the next one.`;
 }
 
 /**
@@ -149,5 +149,5 @@ function iterationActiveMessage(cause: unknown): string | null {
  */
 function iterationDeliveredMessage(cause: unknown): string | null {
   const number = detailsIterationNumber(cause);
-  return number === null ? null : `Iteration ${String(number)} was delivered, so its requirements and QA are locked.`;
+  return number === null ? null : `Version ${String(number)} was delivered, so its requirements and QA are locked.`;
 }

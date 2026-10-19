@@ -45,7 +45,7 @@ jest.mock("../../../../../src/features/checklists/data/checklists-repository", (
 
 const repo = projectQaRunsRepository as jest.Mocked<typeof projectQaRunsRepository>;
 const legacy = qaRunsRepository as jest.Mocked<typeof qaRunsRepository>;
-const iterations = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
+const versions = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
 
 let root: Root | null = null;
 

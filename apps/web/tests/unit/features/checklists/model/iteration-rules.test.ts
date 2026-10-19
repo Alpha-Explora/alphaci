@@ -27,7 +27,7 @@ import { currentWire, DELIVERED_AT } from "../iteration-fixtures";
 import { projectRunWire } from "../requirement-fixtures";
 
 
-describe("reading iterations off the wire", () => {
+describe("reading versions off the wire", () => {
   it("reads a ref only when id, number and status are all there", () => {
     expect(normalizeIterationRef({ id: "it-1", number: 1, status: "active" })).toEqual({ id: "it-1", number: 1, status: "active" });
     expect(normalizeIterationRef({ id: "it-1", number: 0, status: "active" })).toBeNull();
@@ -41,7 +41,7 @@ describe("reading iterations off the wire", () => {
     expect(normalizeIteration({ id: "it-1", number: 1, status: "delivered", deliveredByLogin: "bo" })?.deliveredByLogin).toBe("bo");
   });
 
-  it("reads the current iteration with its covered and delivered repositories", () => {
+  it("reads the current version with its covered and delivered repositories", () => {
     const current = normalizeCurrentIteration(
       currentWire({
         deliveredRepositories: [
@@ -86,12 +86,12 @@ describe("reading iterations off the wire", () => {
     expect(mergeAllSummary(result)).toBe("2 of 3 repositories reached main. Retry merges only the rest.");
   });
 
-  it("says the iteration was delivered when the call delivered it", () => {
+  it("says the version was delivered when the call delivered it", () => {
     const result = normalizeMergeAll({ repositories: [], delivered: true, iteration: { id: "it-3", number: 3, status: "delivered" } });
-    expect(mergeAllSummary(result)).toBe("Iteration 3 delivered.");
+    expect(mergeAllSummary(result)).toBe("Version 3 delivered.");
   });
 
-  it("reads the overview's iteration per Project, null on an older backend", () => {
+  it("reads the overview's version per Project, null on an older backend", () => {
     const overview = normalizeTeamQaOverview({
       groups: [
         { deliveryProject: { id: "dp-1", name: "A" }, iteration: { number: 2, status: "delivered", deliveredAt: DELIVERED_AT } },
@@ -105,19 +105,19 @@ describe("reading iterations off the wire", () => {
 
 describe("names and dates", () => {
   it("labels the header status in the viewer's locale", () => {
-    expect(iterationStatusLabel({ number: 3, status: "active", deliveredAt: null }, "en-GB")).toBe("Iteration 3 · Active");
-    expect(iterationStatusLabel({ number: 3, status: "delivered", deliveredAt: DELIVERED_AT }, "en-GB")).toBe("Iteration 3 · Delivered 14 Oct");
-    expect(iterationStatusLabel({ number: 3, status: "delivered", deliveredAt: DELIVERED_AT }, "en-US")).toBe("Iteration 3 · Delivered Oct 14");
-    expect(iterationStatusLabel({ number: 3, status: "delivered", deliveredAt: "not a date" }, "en-GB")).toBe("Iteration 3 · Delivered");
+    expect(iterationStatusLabel({ number: 3, status: "active", deliveredAt: null }, "en-GB")).toBe("Version 3 · Active");
+    expect(iterationStatusLabel({ number: 3, status: "delivered", deliveredAt: DELIVERED_AT }, "en-GB")).toBe("Version 3 · Delivered 14 Oct");
+    expect(iterationStatusLabel({ number: 3, status: "delivered", deliveredAt: DELIVERED_AT }, "en-US")).toBe("Version 3 · Delivered Oct 14");
+    expect(iterationStatusLabel({ number: 3, status: "delivered", deliveredAt: "not a date" }, "en-GB")).toBe("Version 3 · Delivered");
     expect(iterationDateLabel(null)).toBeNull();
   });
 
   it("names the delivery and who delivered it", () => {
     expect(deliveredBannerTitle({ number: 3, deliveredAt: DELIVERED_AT, deliveredByLogin: "ana" }, "en-GB")).toBe(
-      "Iteration 3 delivered on 14 Oct 2026 by @ana",
+      "Version 3 delivered on 14 Oct 2026 by @ana",
     );
-    expect(deliveredBannerTitle({ number: 3, deliveredAt: null, deliveredByLogin: null })).toBe("Iteration 3 delivered");
-    expect(iterationLockedText(3)).toBe("Iteration 3 was delivered. Changes are locked.");
+    expect(deliveredBannerTitle({ number: 3, deliveredAt: null, deliveredByLogin: null })).toBe("Version 3 delivered");
+    expect(iterationLockedText(3)).toBe("Version 3 was delivered. Changes are locked.");
   });
 
   it("says how each repository reached main", () => {
@@ -137,7 +137,7 @@ describe("names and dates", () => {
 describe("who is offered Merge all repositories", () => {
   const current = normalizeCurrentIteration(currentWire());
 
-  it("needs two or more covered repositories, the server's canMergeAll, an active iteration and a lead or admin", () => {
+  it("needs two or more covered repositories, the server's canMergeAll, an active version and a lead or admin", () => {
     expect(canOfferMergeAll(current, "lead")).toBe(true);
     expect(canOfferMergeAll(current, "admin")).toBe(true);
     expect(canOfferMergeAll(current, "qa")).toBe(false);
@@ -155,9 +155,9 @@ describe("who is offered Merge all repositories", () => {
 
 describe("a Merge all that was refused", () => {
   it("maps ITERATION_DELIVERED, naming the iteration", () => {
-    const error = mergeAllError(apiErrorWith(409, { code: "ITERATION_DELIVERED", message: "Iteration 3 was delivered. Start the next iteration to change this.", iterationNumber: 3 }));
+    const error = mergeAllError(apiErrorWith(409, { code: "ITERATION_DELIVERED", message: "Version 3 was delivered. Start the next version to change this.", iterationNumber: 3 }));
     expect(error.kind).toBe("delivered");
-    expect(error.message).toBe("Iteration 3 was delivered, so its requirements and QA are locked.");
+    expect(error.message).toBe("Version 3 was delivered, so its requirements and QA are locked.");
     expect(mergeAllErrorTitle(error.kind)).toBe("Already delivered");
     expect(mergeAllErrorRefreshes(error)).toBe(true);
   });
@@ -178,10 +178,10 @@ describe("a Merge all that was refused", () => {
 
   it("maps ITERATION_DELIVERED on every other write too, with or without the number", () => {
     expect(qaCodeMessage(apiErrorWith(409, { code: "ITERATION_DELIVERED", iterationNumber: 2 }))).toBe(
-      "Iteration 2 was delivered, so its requirements and QA are locked.",
+      "Version 2 was delivered, so its requirements and QA are locked.",
     );
     expect(qaCodeMessage(apiErrorWith(409, { code: "ITERATION_DELIVERED" }))).toBe(
-      "This iteration was delivered, so its requirements and QA are locked.",
+      "This version was delivered, so its requirements and QA are locked.",
     );
   });
 });
@@ -206,7 +206,7 @@ describe("a delivered iteration's run", () => {
     expect(run.attachments).toEqual({ enabled: true, canAdd: false });
   });
 
-  it("is unchanged on an active iteration and on an older backend", () => {
+  it("is unchanged on an active version and on an older backend", () => {
     const active = normalizeProjectRun(projectRunWire({ iteration: { id: "it-3", number: 3, status: "active" } }))!;
     expect(active.permissions.canSetVerification).toBe(true);
     const older = normalizeProjectRun(projectRunWire())!;

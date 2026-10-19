@@ -31,7 +31,7 @@ export function SonarPanel({ sonar }: Readonly<{ sonar: SonarResult | undefined 
     <section className="tr-sonar" aria-labelledby={headingId}>
       <div className="tr-sonar__head">
         <h6 id={headingId} className="tr-cases__heading">
-          SonarCloud
+          Code analysis
         </h6>
         <span className="tr-case__status" data-tone={gate.tone}>
           <span className="tr-case__dot" aria-hidden="true" />

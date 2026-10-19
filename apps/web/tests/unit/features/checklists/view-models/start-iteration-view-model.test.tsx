@@ -7,8 +7,8 @@ import {
   useStartIterationViewModel,
   type StartIterationViewModel,
 } from "../../../../../src/features/checklists/iteration";
-import { normalizeCurrentIteration } from "../../../../../src/features/checklists/model/iteration-rules";
-import type { StartedIteration } from "../../../../../src/features/checklists/model/iteration-types";
+import { normalizeCurrentVersion } from "../../../../../src/features/checklists/model/iteration-rules";
+import type { StartedVersion } from "../../../../../src/features/checklists/model/iteration-types";
 import type { AppRole } from "../../../../../src/shared/api/contracts";
 import { currentWire, startableWire, waitingWire } from "../iteration-fixtures";
 import { apiErrorWith } from "../qa-promotion-fixtures";
@@ -17,9 +17,9 @@ jest.mock("../../../../../src/features/checklists/data/iterations-repository", (
   iterationsRepository: { current: jest.fn(), mergeAll: jest.fn(), start: jest.fn() },
 }));
 
-const iterations = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
+const versions = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
 
-const STARTED: StartedIteration = {
+const STARTED: StartedVersion = {
   iteration: { id: "it-4", number: 4, status: "active", goal: "Loyalty points", deliveredAt: null, deliveredByLogin: null },
 };
 
@@ -31,7 +31,7 @@ function Harness({
   deliveryProjectId,
   onStarted,
 }: Readonly<{ role: AppRole; deliveryProjectId: string; onStarted?: (started: StartedIteration) => void }>) {
-  const iteration = useCurrentIterationViewModel({ deliveryProjectId, enabled: true });
+  const version = useCurrentIterationViewModel({ deliveryProjectId, enabled: true });
   const vm = useStartIterationViewModel({ deliveryProjectId, current: iteration.current, appRole: role, onStarted });
   useEffect(() => {
     latest.vm = vm;
@@ -90,13 +90,13 @@ async function run(action: (vm: StartIterationViewModel) => unknown) {
 }
 
 describe("useStartIterationViewModel", () => {
-  it("offers Start iteration 4 to a Product owner, saying it starts with an empty checklist", async () => {
+  it("offers Start version 4 to a Product owner, saying it starts with an empty checklist", async () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
     await mount("lead");
     expect(vm().step.kind).toBe("start");
-    expect(vm().label).toBe("Start iteration 4");
+    expect(vm().label).toBe("Start version 4");
     expect(vm().description).toBe(
-      "Name what this iteration is for. Iteration 4 starts with an empty checklist: Iteration 3's requirements and QA results stay with Iteration 3, read-only.",
+      "Name what this version is for. Version 4 starts with an empty checklist: Version 3's requirements and QA results stay with Version 3, read-only.",
     );
     expect(vm().open).toBe(false);
     await run((model) => model.openDialog());
@@ -118,7 +118,7 @@ describe("useStartIterationViewModel", () => {
     expect(onStarted).toHaveBeenCalledWith(STARTED);
     expect(vm().open).toBe(false);
     expect(iterations.current).toHaveBeenCalledTimes(2);
-    // The new iteration is active: nothing about a next one any more.
+    // The new version is active: nothing about a next one any more.
     expect((await until((model) => model.step.kind === "none")).label).toBe("");
   });
 
@@ -140,7 +140,7 @@ describe("useStartIterationViewModel", () => {
     await run((model) => model.submit());
     expect(vm().open).toBe(true);
     expect(vm().submitting).toBe(false);
-    expect(vm().error).toBe("Iteration 4 is still active. Deliver it before starting the next one.");
+    expect(vm().error).toBe("Version 4 is still active. Deliver it before starting the next one.");
 
     // Someone else started it: closing reads the Project again.
     expect(iterations.current).toHaveBeenCalledTimes(1);

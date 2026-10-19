@@ -51,7 +51,7 @@ export const PROJECT_DETAIL_TAB_GROUPS: ReadonlyArray<
     heading: "Records",
     items: [
       { id: "audit", label: "Audit" },
-      { id: "history", label: "History" },
+      { id: "history", label: "Release" },
     ],
   },
   {

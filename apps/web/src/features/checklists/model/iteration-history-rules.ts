@@ -49,9 +49,9 @@ export function historyMetaLabel(iteration: HistoryIteration, locale?: string): 
 /** What a card says instead of a checklist, when it has none to show. */
 export function historyNoReportText(iteration: Pick<HistoryIteration, "status" | "signoffRunId">): string | null {
   if (iteration.status === "active") {
-    return "This iteration is in progress. Its requirements, progress and QA testing are on the Checklists tab.";
+    return "This version is in progress. Its requirements, progress and QA testing are on the Checklists tab.";
   }
-  if (!iteration.signoffRunId) return "No QA sign-off was recorded for this iteration.";
+  if (!iteration.signoffRunId) return "No QA sign-off was recorded for this version.";
   return null;
 }
 
@@ -65,7 +65,7 @@ export function historySignoffLabel(
   return `Signed off${by}${date ? ` on ${date}` : ""}`;
 }
 
-export const HISTORY_EMPTY_TEXT = "No iteration yet. Iteration 1 appears here once the Project has requirements.";
+export const HISTORY_EMPTY_TEXT = "No versions yet. Version 1 appears here once the Project has requirements.";
 
 export const HISTORY_INTRO =
-  "Every iteration of this Project. A delivered one is read-only: its checklist and QA results exactly as QA signed them off.";
+  "Every version of this Project. A delivered one is read-only: its checklist and QA results exactly as QA signed them off.";

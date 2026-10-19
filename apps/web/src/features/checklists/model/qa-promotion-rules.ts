@@ -422,7 +422,7 @@ const ERROR_TITLES: Record<QaPromotionMergeErrorKind, string> = {
   moved: `Not merged — ${QA_BRANCH} moved since sign-off`,
   reauth: "Sign in again to merge",
   project_required: "Not merged — this repository is not in a Project",
-  delivered: "Not merged — this iteration was already delivered",
+  delivered: "Not merged — this version was already delivered",
   no_repositories: "Nothing to merge",
   forbidden: "Not merged",
   not_found: "Not merged",

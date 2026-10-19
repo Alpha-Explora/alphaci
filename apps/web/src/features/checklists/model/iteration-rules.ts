@@ -143,7 +143,7 @@ export function normalizeMergeAll(value: unknown): MergeAllResult {
 /* ── Names and dates ─────────────────────────────────────────────────────── */
 
 export function iterationName(number: number): string {
-  return `Iteration ${String(number)}`;
+  return `Version ${String(number)}`;
 }
 
 /** "Iteration 4 · Loyalty points" with a goal, "Iteration 4" without. */
@@ -195,17 +195,17 @@ export function deliveredIterationTitle(number: number): string {
 }
 
 function historyPlace(historyOnPage: boolean): string {
-  return historyOnPage ? "in History" : "in the History tab of each repository";
+  return historyOnPage ? "in Release" : "in the Release tab of each repository";
 }
 
 /** Where the delivered Features went, naming History when the page has the tab. */
 export function deliveredRequirementsText(historyOnPage: boolean): string {
-  return `Its Features are archived ${historyPlace(historyOnPage)}, read-only, with QA's results. The next iteration starts with an empty list.`;
+  return `Its Features are archived ${historyPlace(historyOnPage)}, read-only, with QA's results. The next version starts with an empty list.`;
 }
 
 /** Where the delivered QA run went. */
 export function deliveredRunText(historyOnPage: boolean): string {
-  return `Its QA testing is archived ${historyPlace(historyOnPage)}, read-only, exactly as QA signed it off. The next iteration is tested afresh.`;
+  return `Its QA testing is archived ${historyPlace(historyOnPage)}, read-only, exactly as QA signed it off. The next version is tested afresh.`;
 }
 
 /** The read-only banner on a delivered iteration's QA run and requirements. */
@@ -272,7 +272,7 @@ export function mergeAllFailures(result: Pick<MergeAllResult, "repositories">): 
 /** The answer's headline. */
 export function mergeAllSummary(result: MergeAllResult): string {
   if (result.delivered) {
-    return result.iteration ? `${iterationName(result.iteration.number)} delivered.` : "Iteration delivered.";
+    return result.iteration ? `${iterationName(result.iteration.number)} delivered.` : "Version delivered.";
   }
   const failed = mergeAllFailures(result).length;
   if (failed === 0) return "Every repository reached main.";
@@ -319,12 +319,12 @@ export function projectDeliveryState(
 
 /** The merge confirmation in Project words: no repository named. */
 export function projectMergeConfirmText(projectName: string): string {
-  return `Merge ${projectName} into main with your GitHub account. The iteration is delivered once all of it is in main.`;
+  return `Merge ${projectName} into main with your GitHub account. The version is delivered once all of it is in main.`;
 }
 
 export function mergeAllConfirmText(projectName: string, pending: ReadonlyArray<Pick<CoveredRepository, "repoFullName">>): string {
   const names = pending.map((repository) => repository.repoFullName).join(", ");
-  return `Merge uat into main in every repository of ${projectName} that is not in main yet (${names}), one after another, with your GitHub account. ALPHACI keeps going if one fails, and the iteration is delivered when the last one lands.`;
+  return `Merge uat into main in every repository of ${projectName} that is not in main yet (${names}), one after another, with your GitHub account. ALPHACI keeps going if one fails, and the version is delivered when the last one lands.`;
 }
 
 /* ── A Merge all that was refused ────────────────────────────────────────── */

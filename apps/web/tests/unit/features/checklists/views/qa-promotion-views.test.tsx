@@ -456,7 +456,7 @@ describe("QA Studio — Merge to main beside the chip", () => {
   });
 });
 
-describe("QA Studio — a delivered iteration (Iterations phase 2)", () => {
+describe("QA Studio — a delivered version (Versions phase 2)", () => {
   const delivered = {
     scope: "project",
     eligible: false,
@@ -470,10 +470,10 @@ describe("QA Studio — a delivered iteration (Iterations phase 2)", () => {
     setup(readyWire(delivered));
     const container = await studio("lead");
     expect(chip(container).getAttribute("data-tone")).toBe("delivered");
-    expect(chip(container).getAttribute("aria-label")).toBe("Iteration 3 delivered");
+    expect(chip(container).getAttribute("aria-label")).toBe("Version 3 delivered");
     expect(mergeButton(container)).toBeNull();
     expect(popover(container).textContent).not.toContain("What blocks the merge");
-    expect(popover(container).querySelector(".qa-promo__delivered")?.textContent).toMatch(/^Iteration 3 delivered on /);
+    expect(popover(container).querySelector(".qa-promo__delivered")?.textContent).toMatch(/^Version 3 delivered on /);
   });
 
   it("reads 'main already contains this commit' as a success, never GitHub refusing", async () => {

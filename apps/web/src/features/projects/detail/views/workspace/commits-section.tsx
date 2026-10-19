@@ -117,20 +117,62 @@ function CommitsBody({
   return (
     <>
       <ol className="commits__list" aria-label={vm.branch ? `Commits on ${vm.branch}` : "Commits"}>
-        {vm.rows.map((row) => (
-          <CommitItem
-            key={row.sha}
-            row={row}
-            branch={vm.branch}
-            readAt={vm.readAt}
-            onOpenPullRequest={onOpenPullRequest}
-            onBrowseCommit={onBrowseCommit}
-          />
+        {groupCommitsByDay(vm.rows, vm.readAt).map((group) => (
+          <li className="commits__day-group" key={group.key}>
+            <h3 className="commits__day-label">{group.label}</h3>
+            <ol className="commits__day-list">
+              {group.rows.map((row) => (
+                <CommitItem
+                  key={row.sha}
+                  row={row}
+                  branch={vm.branch}
+                  readAt={vm.readAt}
+                  onOpenPullRequest={onOpenPullRequest}
+                  onBrowseCommit={onBrowseCommit}
+                />
+              ))}
+            </ol>
+          </li>
         ))}
       </ol>
       <LoadMore vm={vm} />
     </>
   );
+}
+
+function groupCommitsByDay(rows: ReadonlyArray<CommitRow>, now: number) {
+  const groups: Array<{ key: string; label: string; rows: CommitRow[] }> = [];
+  const today = new Date(now);
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const dayKey = (date: Date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  const todayKey = dayKey(today);
+  const yesterdayKey = dayKey(yesterday);
+
+  for (const row of rows) {
+    const date = new Date(row.authoredAt);
+    const valid = row.authoredAt !== "" && !Number.isNaN(date.getTime());
+    const key = valid ? dayKey(date) : "unknown-date";
+    let group = groups[groups.length - 1];
+    if (!group || group.key !== key) {
+      const label = !valid
+        ? "Date unavailable"
+        : dayKey(date) === todayKey
+          ? "Today"
+          : dayKey(date) === yesterdayKey
+            ? "Yesterday"
+            : new Intl.DateTimeFormat(undefined, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              }).format(date);
+      group = { key, label, rows: [] };
+      groups.push(group);
+    }
+    group.rows.push(row);
+  }
+  return groups;
 }
 
 function CommitsSkeleton() {

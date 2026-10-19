@@ -17,7 +17,7 @@ jest.mock("../../../../../src/features/checklists/data/project-qa-runs-repositor
   projectQaRunsRepository: { get: jest.fn() },
 }));
 
-const iterations = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
+const versions = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
 const runs = projectQaRunsRepository as jest.Mocked<typeof projectQaRunsRepository>;
 
 let root: Root | null = null;
@@ -116,14 +116,14 @@ function toggles(container: HTMLElement): HTMLButtonElement[] {
 }
 
 describe("IterationHistoryPanel", () => {
-  it("lists every iteration newest first, each closed, with who delivered it", async () => {
+  it("lists every version newest first, each closed, with who delivered it", async () => {
     iterations.list.mockResolvedValue(HISTORY);
     const container = await render(panel());
     expect(iterations.list).toHaveBeenCalledWith("dp-1");
     expect(container.querySelector(".ihist__title")?.textContent).toBe("Logistics2 history");
     expect(toggles(container).map((toggle) => toggle.textContent)).toEqual([
-      "Iteration 2 · Loyalty points",
-      "Iteration 1",
+      "Version 2 · Loyalty points",
+      "Version 1",
     ]);
     expect(toggles(container).every((toggle) => toggle.getAttribute("aria-expanded") === "false")).toBe(true);
     expect(container.textContent).toMatch(/Delivered .+ by @ana/);
@@ -144,7 +144,7 @@ describe("IterationHistoryPanel", () => {
     expect(classes.filter((name) => name.startsWith("history"))).toEqual([]);
   });
 
-  it("opens a delivered iteration onto its frozen checklist and QA results, read once", async () => {
+  it("opens a delivered version onto its frozen checklist and QA results, read once", async () => {
     iterations.list.mockResolvedValue(HISTORY);
     runs.get.mockResolvedValue(frozenRun());
     const container = await render(panel());
@@ -187,12 +187,12 @@ describe("IterationHistoryPanel", () => {
     }
   });
 
-  it("points the active iteration to the Checklists tab", async () => {
+  it("points the active version to the Checklists tab", async () => {
     iterations.list.mockResolvedValue(HISTORY);
     const container = await render(panel());
     await click(toggles(container)[0]);
     expect(container.textContent).toContain(
-      "This iteration is in progress. Its requirements, progress and QA testing are on the Checklists tab.",
+      "This version is in progress. Its requirements, progress and QA testing are on the Checklists tab.",
     );
     expect(runs.get).not.toHaveBeenCalled();
   });
@@ -203,7 +203,7 @@ describe("IterationHistoryPanel", () => {
     const container = await render(panel());
     await click(toggles(container)[1]);
     expect(container.querySelector('[role="alert"]')?.textContent).toContain(
-      "This iteration's QA results could not be loaded.",
+      "This version's QA results could not be loaded.",
     );
     const retry = [...container.querySelectorAll("button")].find((button) => button.textContent === "Try again");
     await click(retry);
@@ -214,11 +214,11 @@ describe("IterationHistoryPanel", () => {
   it("says so on a backend without iterations, and when there are none yet", async () => {
     iterations.list.mockRejectedValue(apiErrorWith(404));
     const older = await render(panel());
-    expect(older.textContent).toContain("This server does not keep iterations yet.");
+    expect(older.textContent).toContain("This server does not keep versions yet.");
     act(() => root?.unmount());
 
     iterations.list.mockResolvedValue([]);
     const empty = await render(panel());
-    expect(empty.textContent).toContain("No iteration yet.");
+    expect(empty.textContent).toContain("No version yet.");
   });
 });
