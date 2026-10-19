@@ -1150,6 +1150,37 @@
   font-size: 0.7rem;
 }
 
+.qa-summary--compact {
+  grid-template-columns: auto minmax(5rem, 1fr);
+  gap: 0.25rem 0.75rem;
+  min-width: min(100%, 18rem);
+  padding: 0.45rem 0.65rem;
+}
+
+.qa-summary--compact .qa-summary__passed {
+  font-size: 1.2rem;
+}
+
+.qa-summary--compact .qa-summary__total {
+  font-size: 0.74rem;
+}
+
+.qa-summary--compact .qa-summary__bar {
+  height: 0.4rem;
+}
+
+.qa-summary--compact > .qa-run-card__started {
+  font-size: 0.7rem;
+}
+
+.pqa-run__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+
 /* ── Square edges ────────────────────────────────────────────────────────
    Every box in the studio has square corners, the rail's panel included;
    only pills (the chips, filters and status tags) and the buttons keep their

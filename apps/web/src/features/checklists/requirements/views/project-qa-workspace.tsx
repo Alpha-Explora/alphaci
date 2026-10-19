@@ -18,7 +18,15 @@ function RunView({
   onOpenHistory,
 }: Readonly<{ deliveryProjectId: string; appRole: AppRole | null | undefined; onOpenHistory?: () => void }>) {
   const vm = useProjectRunViewModel({ deliveryProjectId, enabled: true });
-  return <ProjectRunPanel deliveryProjectId={deliveryProjectId} vm={vm} appRole={appRole} onOpenHistory={onOpenHistory} />;
+  return (
+    <ProjectRunPanel
+      deliveryProjectId={deliveryProjectId}
+      vm={vm}
+      appRole={appRole}
+      onOpenHistory={onOpenHistory}
+      checklistMode
+    />
+  );
 }
 
 /**

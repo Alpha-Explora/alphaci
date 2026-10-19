@@ -64,14 +64,15 @@ export function RunSummary({
   children,
 }: Readonly<{
   run: Pick<QaRun, "summary">;
-  variant?: "card" | "inline";
+  variant?: "card" | "inline" | "compact";
   /** A closing line inside the box, such as who started the run. */
   children?: ReactNode;
 }>) {
   const segments = statusSegments(run);
   const inline = variant === "inline";
+  const compact = variant === "compact";
   return (
-    <div className={inline ? "qa-summary qa-summary--inline" : "qa-summary"}>
+    <div className={`qa-summary${inline ? " qa-summary--inline" : ""}${compact ? " qa-summary--compact" : ""}`}>
       <p className="qa-summary__score">
         <span className="qa-summary__passed">{run.summary.byStatus.passed ?? 0}</span>
         <span className="qa-summary__total">/{run.summary.total} passed</span>
@@ -90,7 +91,7 @@ export function RunSummary({
           />
         ))}
       </div>
-      <SummaryFacts summary={run.summary} inline={inline} />
+      {!compact ? <SummaryFacts summary={run.summary} inline={inline} /> : null}
       {children}
     </div>
   );

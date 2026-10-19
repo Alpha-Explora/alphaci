@@ -32,6 +32,8 @@ type ItemProps = Readonly<{
   evidence?: RunEvidenceViewModel;
   /** The story's test cases; omitted, the item shows no Test cases section. */
   testCases?: RunTestCasesViewModel;
+  showEvidence?: boolean;
+  showTestCaseEditToggle?: boolean;
 }>;
 
 function VerifiedLine({ item }: Readonly<{ item: ProjectQaRunItem }>) {
@@ -293,7 +295,14 @@ export function ProjectRunItem(props: ItemProps) {
           </span>
         </div>
         <AcceptanceCriteria item={item} />
-        {props.testCases ? <RunTestCases item={item} vm={props.testCases} onReload={props.onReload} /> : null}
+        {props.testCases ? (
+          <RunTestCases
+            item={item}
+            vm={props.testCases}
+            onReload={props.onReload}
+            showEditToggle={props.showTestCaseEditToggle}
+          />
+        ) : null}
         <div className="qa-run-item__tags">
           <ProgressTag item={item} />
           <VerificationBadge type={item.verificationType} />
@@ -307,7 +316,7 @@ export function ProjectRunItem(props: ItemProps) {
         <ItemControls item={item} index={index} editor={editor} />
         <ItemEditor item={item} editor={editor} />
         <ItemError {...props} />
-        {props.evidence ? <ItemEvidence item={item} evidence={props.evidence} /> : null}
+        {props.showEvidence !== false && props.evidence ? <ItemEvidence item={item} evidence={props.evidence} /> : null}
       </div>
     </li>
   );
