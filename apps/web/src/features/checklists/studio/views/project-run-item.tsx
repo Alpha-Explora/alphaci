@@ -33,7 +33,7 @@ type ItemProps = Readonly<{
   /** The story's test cases; omitted, the item shows no Test cases section. */
   testCases?: RunTestCasesViewModel;
   showEvidence?: boolean;
-  showTestCaseEditToggle?: boolean;
+  canEditTestCases?: boolean;
 }>;
 
 function VerifiedLine({ item }: Readonly<{ item: ProjectQaRunItem }>) {
@@ -300,7 +300,7 @@ export function ProjectRunItem(props: ItemProps) {
             item={item}
             vm={props.testCases}
             onReload={props.onReload}
-            showEditToggle={props.showTestCaseEditToggle}
+            canEditDefinitions={props.canEditTestCases}
           />
         ) : null}
         <div className="qa-run-item__tags">
