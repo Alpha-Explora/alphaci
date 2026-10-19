@@ -49,8 +49,8 @@ function assignmentProblem(environment: EnvironmentDraft): string | null {
 function productionIngressProblem(environment: EnvironmentDraft) {
   const binding = environment.hostAssignment;
   if (environment.role !== "production" || !binding) return null;
-  // The machine creates a tunnel's HTTPS address, so the mode itself meets the
-  // requirement; the address shows up once the machine reports it.
+  // AlphaCI provides the automatic HTTPS address, so the mode itself meets the
+  // requirement (a permanent apps-domain address, or the machine's tunnel).
   const { mode, publicUrl } = binding.config.ingress;
   if (mode === "tunnel") return null;
   if (mode === "configured" && publicUrl?.startsWith("https://")) return null;
@@ -112,12 +112,13 @@ export function defaultHostAssignment(
       health: slots.map((slot) => ({ slot, path: slotRuntime(slot, runtimes).healthPath })),
       // A frontend is what people open (QA Studio, reviewers), so it gets the
       // automatic HTTPS address; direct access only answers on the machine's
-      // own network. A backend alone stays direct, or asks Production for a URL.
+      // own network. Production gets it too: on a server with an apps domain
+      // the backend makes it a permanent address. A backend alone elsewhere
+      // stays direct.
       ingress: {
-        mode: slots.includes("frontend")
-          ? "tunnel"
-          : environment.role === "production"
-            ? "configured"
+        mode:
+          slots.includes("frontend") || environment.role === "production"
+            ? "tunnel"
             : "direct",
         publicUrl: null,
       },

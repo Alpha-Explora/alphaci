@@ -55,13 +55,29 @@ it("lets environments share a machine without choosing host ports", () => {
   ).toMatch(/container port/);
 });
 
+it("gives production the automatic HTTPS address by default", () => {
+  const production: EnvironmentDraft = { ...test, role: "production" };
+  const binding = defaultHostAssignment(production, ["backend"]);
+  expect(binding.config.ingress.mode).toBe("tunnel");
+  expect(
+    setupHostAssignmentsProblem([{ ...production, hostAssignment: binding }]),
+  ).toBeNull();
+});
+
 it("still requires production ingress when production is assigned now", () => {
   const production: EnvironmentDraft = { ...test, role: "production" };
+  const binding = defaultHostAssignment(production, ["frontend"]);
   expect(
     setupHostAssignmentsProblem([
       {
         ...production,
-        hostAssignment: defaultHostAssignment(production, ["frontend"]),
+        hostAssignment: {
+          ...binding,
+          config: {
+            ...binding.config,
+            ingress: { mode: "configured", publicUrl: null },
+          },
+        },
       },
     ]),
   ).toMatch(/HTTPS URL/);

@@ -44,7 +44,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
   // Replaced on load by the backend's defaults for this environment.
   const [config, setConfig] = useState<AssignmentRequestConfig>(() => ({
     ...fallbackAssignmentDefaults(options.slots),
-    ingress: { mode: production ? "configured" : "direct", publicUrl: null },
+    ingress: { mode: production ? "tunnel" : "direct", publicUrl: null },
   }));
   const pending = useRef(false),
     active = useRef(true),
