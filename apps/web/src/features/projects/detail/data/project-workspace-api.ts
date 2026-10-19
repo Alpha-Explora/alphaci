@@ -27,6 +27,7 @@ export interface RepoBranch {
 export interface ProjectBranchesResponse {
   defaultBranch: string;
   branches: RepoBranch[];
+  canCreateBranch: boolean;
 }
 
 export type RepoEntryType = "file" | "dir" | "symlink" | "submodule";
@@ -160,6 +161,13 @@ export function getProjectBranches(projectId: string) {
   return request<ProjectBranchesResponse>(`${base(projectId)}/branches`);
 }
 
+export function createProjectBranch(projectId: string, branchName: string) {
+  return request<{ branchName: string; sourceBranch: string }>(
+    `${base(projectId)}/branches`,
+    { method: "POST", body: JSON.stringify({ branchName }) },
+  );
+}
+
 /** Omit `ref` on a cold open — the server resolves the default branch. */
 export function getProjectFiles(
   projectId: string,
@@ -203,7 +211,9 @@ export function getProjectFileCommits(
 ) {
   const query = new URLSearchParams({ ref: params.ref });
   if (params.path) query.set("path", params.path);
-  return request<RepoFileCommits>(`${base(projectId)}/files/commits?${query.toString()}`);
+  return request<RepoFileCommits>(
+    `${base(projectId)}/files/commits?${query.toString()}`,
+  );
 }
 
 /** Safe to poll. */
