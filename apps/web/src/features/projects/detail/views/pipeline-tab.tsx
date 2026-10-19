@@ -26,16 +26,16 @@ export function PipelineTab({
       aria-labelledby="project-detail-tab-pipeline"
       className="pipeline-tab"
     >
-      <div className="pipeline-tab__head">
-        <h2 className="pipeline-tab__name">Workflows</h2>
-      </div>
-      <div>
-        {vm.pipelineView === "configuration" ? (
+      {vm.pipelineView === "configuration" ? (
+        <>
+          <div className="pipeline-tab__head">
+            <h2 className="pipeline-tab__name">Workflows</h2>
+          </div>
           <WorkflowTab project={project} vm={vm} dangerZone={dangerZone} />
-        ) : (
-          <RunsTab project={project} vm={vm} />
-        )}
-      </div>
+        </>
+      ) : (
+        <RunsTab project={project} vm={vm} />
+      )}
     </div>
   );
 }

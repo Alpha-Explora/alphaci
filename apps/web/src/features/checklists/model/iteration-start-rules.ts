@@ -27,7 +27,7 @@ export function roleCanStartIteration(role: AppRole | null | undefined): boolean
 
 /** "Start iteration 4". */
 export function startIterationLabel(nextNumber: number): string {
-  return `Start iteration ${String(nextNumber)}`;
+  return `Start version ${String(nextNumber)}`;
 }
 
 type DeliveredIteration = { number: number; deliveredAt: string | null };
@@ -43,7 +43,7 @@ export function iterationDeliveredOnText(iteration: DeliveredIteration, locale?:
  * 14 Oct 2026. Waiting for the Product owner to start iteration 4."
  */
 export function waitingForNextIterationText(iteration: DeliveredIteration, locale?: string): string {
-  return `${iterationDeliveredOnText(iteration, locale)} Waiting for the Product owner to start iteration ${String(iteration.number + 1)}.`;
+  return `${iterationDeliveredOnText(iteration, locale)} Waiting for the Product owner to start version ${String(iteration.number + 1)}.`;
 }
 
 /**
@@ -93,13 +93,13 @@ export function normalizeStartedIteration(value: unknown): StartedIteration {
 /** The Start dialog's sentence: the new iteration is empty, the delivered one keeps its work. */
 export function startIterationDescription(nextNumber: number): string {
   const previous = iterationName(nextNumber - 1);
-  return `Name what this iteration is for. ${iterationName(nextNumber)} starts with an empty checklist: ${previous}'s requirements and QA results stay with ${previous}, read-only.`;
+  return `Name what this version is for. ${iterationName(nextNumber)} starts with an empty checklist: ${previous}'s requirements and QA results stay with ${previous}, read-only.`;
 }
 
 const STATUS_COPY: Readonly<Record<number, string>> = {
-  401: "Your session has ended. Sign in again to start the next iteration.",
-  403: "Only a Product owner or admin can start the next iteration.",
-  404: "This Project could not be found, or this server cannot start iterations yet.",
+  401: "Your session has ended. Sign in again to start the next version.",
+  403: "Only a Product owner or admin can start the next version.",
+  404: "This Project could not be found, or this server cannot start versions yet.",
 };
 
 /**
@@ -111,7 +111,7 @@ export function startIterationErrorMessage(cause: unknown): string {
   const byCode = qaCodeMessage(cause);
   if (byCode) return byCode;
   const status = errorStatus(cause);
-  return (status !== null && STATUS_COPY[status]) || "The next iteration could not be started. Try again in a moment.";
+  return (status !== null && STATUS_COPY[status]) || "The next version could not be started. Try again in a moment.";
 }
 
 /**

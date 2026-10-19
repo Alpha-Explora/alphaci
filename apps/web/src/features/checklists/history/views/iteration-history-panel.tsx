@@ -188,7 +188,7 @@ function HistoryBody({ vm, showRepositories }: Readonly<{ vm: IterationHistoryVi
     return <div className="hier-skeleton ihist-skeleton" aria-hidden="true" />;
   }
   if (vm.status === "unavailable") {
-    return <p className="ihist-note">This server does not keep iterations yet.</p>;
+    return <p className="ihist-note">This server does not keep versions yet.</p>;
   }
   if (vm.status === "error") {
     return (
@@ -202,7 +202,7 @@ function HistoryBody({ vm, showRepositories }: Readonly<{ vm: IterationHistoryVi
   }
   if (vm.iterations.length === 0) return <p className="ihist-note">{HISTORY_EMPTY_TEXT}</p>;
   return (
-    <ul className="ihist-list" aria-label="Iterations, newest first">
+    <ul className="ihist-list" aria-label="Versions, newest first">
       {vm.iterations.map((iteration) => (
         <HistoryCard key={iteration.id} iteration={iteration} vm={vm} showRepositories={showRepositories} />
       ))}
@@ -233,7 +233,7 @@ export function IterationHistoryPanel({
     <section className="ihist" aria-labelledby="history-title">
       <div className="ihist__head">
         <h3 className="ihist__title" id="history-title">
-          {projectName} history
+          {projectName} release history
         </h3>
         <p className="ihist__intro">{HISTORY_INTRO}</p>
       </div>

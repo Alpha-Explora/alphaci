@@ -509,7 +509,7 @@ function DeliveredRun({
         <p className="pqa-delivered__text">{deliveredRunText(Boolean(onOpenHistory))}</p>
         {onOpenHistory ? (
           <button type="button" className="ghost-button" onClick={onOpenHistory}>
-            View in History
+            View in Release
           </button>
         ) : null}
       </div>

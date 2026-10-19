@@ -65,8 +65,32 @@
   list-style: none;
 }
 
+.commits__day-group {
+  display: grid;
+  min-width: 0;
+}
+
+.commits__day-label {
+  margin: 0.8rem 0 0.25rem 1.65rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.commits__day-list {
+  position: relative;
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 /* The rail: behind the nodes, first commit to last. */
-.commits__list::before {
+.commits__day-list::before {
   content: "";
   position: absolute;
   top: 1rem;

@@ -5,7 +5,7 @@ import { iterationsRepository } from "../../../../../src/features/checklists/dat
 import { projectQaRunsRepository } from "../../../../../src/features/checklists/data/project-qa-runs-repository";
 import { IterationHeader } from "../../../../../src/features/checklists/iteration";
 import { requirementsRepository } from "../../../../../src/features/checklists/data/requirements-repository";
-import { normalizeCurrentIteration } from "../../../../../src/features/checklists/model/iteration-rules";
+import { normalizeCurrentVersion } from "../../../../../src/features/checklists/model/iteration-rules";
 import { EMPTY_PROJECT_MY_ITEMS, normalizeProjectRunCurrent } from "../../../../../src/features/checklists/model/project-run-rules";
 import { normalizePromotionStatus } from "../../../../../src/features/checklists/model/qa-promotion-rules";
 import type { QaPromotionStatus } from "../../../../../src/features/checklists/model/qa-promotion-types";
@@ -36,11 +36,11 @@ jest.mock("../../../../../src/features/checklists/data/requirements-repository",
   requirementsRepository: { listForProject: jest.fn() },
 }));
 
-const iterations = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
+const versions = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
 const runs = projectQaRunsRepository as jest.Mocked<typeof projectQaRunsRepository>;
 
-/** "Iteration 3 was delivered on <date>. Waiting for the Product owner to start iteration 4." in any locale. */
-const WAITING = /^Iteration 3 was delivered on .+\. Waiting for the Product owner to start iteration 4\.$/;
+/** "Version 3 was delivered on <date>. Waiting for the Product owner to start version 4." in any locale. */
+const WAITING = /^Version 3 was delivered on .+\. Waiting for the Product owner to start version 4\.$/;
 
 let root: Root | null = null;
 
@@ -128,7 +128,7 @@ describe("The Project QA run between iterations", () => {
     const container = await render(<RunHarness role="qa" />);
     expect(waitingText(container)).toMatch(WAITING);
     expect(buttonNamed(container, "Start QA testing")).toBeUndefined();
-    expect(buttonNamed(container, "Start iteration 4")).toBeUndefined();
+    expect(buttonNamed(container, "Start version 4")).toBeUndefined();
   });
 
   it("tells a Developer the same", async () => {
@@ -138,13 +138,13 @@ describe("The Project QA run between iterations", () => {
     expect(waitingText(container)).toMatch(WAITING);
   });
 
-  it("shows a Product owner Start iteration 4 instead of the waiting sentence", async () => {
+  it("shows a Product owner Start version 4 instead of the waiting sentence", async () => {
     noRunYet();
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
     const container = await render(<RunHarness role="lead" />);
     expect(waitingText(container)).toBeNull();
-    expect(container.querySelector(".iteration-next__text")?.textContent).toMatch(/^Iteration 3 was delivered on .+\.$/);
-    expect(buttonNamed(container, "+Start iteration 4")).toBeDefined();
+    expect(container.querySelector(".iteration-next__text")?.textContent).toMatch(/^Version 3 was delivered on .+\.$/);
+    expect(buttonNamed(container, "+Start version 4")).toBeDefined();
     expect(buttonNamed(container, "Start QA testing")).toBeUndefined();
   });
 
@@ -155,11 +155,11 @@ describe("The Project QA run between iterations", () => {
     const container = await render(<RunHarness role="qa" />);
     expect(container.querySelector(".pqa-delivered")).not.toBeNull();
     // No History on this screen: the sentence names where it is, without a button.
-    expect(container.querySelector(".pqa-delivered__text")?.textContent).toContain("in the History tab of each repository");
+    expect(container.querySelector(".pqa-delivered__text")?.textContent).toContain("in the Release tab of each repository");
     expect(waitingText(container)).toMatch(WAITING);
   });
 
-  it("is exactly as before while an iteration is active, and on an older backend", async () => {
+  it("is exactly as before while an version is active, and on an older backend", async () => {
     noRunYet();
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
     const active = await render(<RunHarness role="qa" />);
@@ -178,12 +178,12 @@ describe("The Project QA run between iterations", () => {
     // canStartNext alone offers Start: no carry-over list is needed any more.
     iterations.current.mockResolvedValue(normalizeCurrentIteration(deliveredWire({ canStartNext: true })));
     const lead = await render(<RunHarness role="lead" />);
-    expect(buttonNamed(lead, "+Start iteration 4")).toBeDefined();
+    expect(buttonNamed(lead, "+Start version 4")).toBeDefined();
     expect(waitingText(lead)).toBeNull();
   });
 });
 
-/* ── The Checklists tab's one view, between iterations ─────────────────── */
+/* ── The Checklists tab's one view, between versions ─────────────────── */
 
 describe("The Checklists tab between iterations", () => {
   const requirements = requirementsRepository as jest.Mocked<typeof requirementsRepository>;
@@ -193,13 +193,13 @@ describe("The Checklists tab between iterations", () => {
   }
 
   /* The Progress tab a Product owner no longer has also offered Start: the
-   * requirements say the iteration was delivered and offer it once. */
-  it("offers a Product owner Start iteration 4 once, on the requirements it writes", async () => {
+   * requirements say the version was delivered and offer it once. */
+  it("offers a Product owner Start version 4 once, on the requirements it writes", async () => {
     noRunYet();
     requirements.listForProject.mockResolvedValue(normalizeProjectRequirements(projectRequirementsWire()));
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
     const container = await render(workspace("lead"));
-    const starts = [...container.querySelectorAll("button")].filter((b) => b.textContent?.trim() === "+Start iteration 4");
+    const starts = [...container.querySelectorAll("button")].filter((b) => b.textContent?.trim() === "+Start version 4");
     expect(starts).toHaveLength(1);
     expect(container.querySelector(".rq-panel .rq-delivered")).not.toBeNull();
   });
@@ -214,29 +214,29 @@ describe("The Checklists tab between iterations", () => {
     expect(container.querySelectorAll(".iteration-waiting__text")).toHaveLength(1);
   });
 
-  it("adds nothing above the requirements while an iteration is active", async () => {
+  it("adds nothing above the requirements while an version is active", async () => {
     noRunYet();
     requirements.listForProject.mockResolvedValue(normalizeProjectRequirements(projectRequirementsWire()));
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
     const container = await render(workspace("lead"));
-    expect(buttonNamed(container, "+Start iteration 4")).toBeUndefined();
+    expect(buttonNamed(container, "+Start version 4")).toBeUndefined();
     expect(waitingText(container)).toBeNull();
   });
 });
 
 /* ── The Start dialog, through the screen ───────────────────────────────── */
 
-describe("Start iteration 4: the dialog", () => {
-  it("asks only for a goal, says the iteration starts empty, and starts it", async () => {
+describe("Start version 4: the dialog", () => {
+  it("asks only for a goal, says the version starts empty, and starts it", async () => {
     noRunYet();
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
     iterations.start.mockResolvedValue({ iteration: null });
     const container = await render(<RunHarness role="lead" />);
-    await click(buttonNamed(container, "+Start iteration 4"));
+    await click(buttonNamed(container, "+Start version 4"));
     const open = dialog();
-    expect(open?.querySelector("h2")?.textContent).toBe("Start iteration 4");
+    expect(open?.querySelector("h2")?.textContent).toBe("Start version 4");
     expect(open?.textContent).toContain(
-      "Iteration 4 starts with an empty checklist: Iteration 3's requirements and QA results stay with Iteration 3, read-only.",
+      "Version 4 starts with an empty checklist: Version 3's requirements and QA results stay with Version 3, read-only.",
     );
     // No carry-over list: no checkboxes at all.
     expect(open?.querySelectorAll('input[type="checkbox"]')).toHaveLength(0);
@@ -247,13 +247,13 @@ describe("Start iteration 4: the dialog", () => {
       normalizeCurrentIteration(currentWire({ iteration: { id: "it-4", number: 4, status: "active", goal: "Loyalty points" } })),
     );
     runs.current.mockClear();
-    await click(buttonNamed(open!, "Start iteration 4"));
+    await click(buttonNamed(open!, "Start version 4"));
     expect(iterations.start).toHaveBeenCalledWith("dp-1", { goal: "Loyalty points" });
     expect(await dialogGone()).toBe(true);
-    // The QA run reads again: the new iteration lets QA start a fresh run.
+    // The QA run reads again: the new version lets QA start a fresh run.
     expect(runs.current).toHaveBeenCalled();
     expect(buttonNamed(container, "Start QA testing")).toBeDefined();
-    expect(buttonNamed(container, "+Start iteration 4")).toBeUndefined();
+    expect(buttonNamed(container, "+Start version 4")).toBeUndefined();
   });
 
   it("keeps the dialog open and says why when the server refuses", async () => {
@@ -261,11 +261,11 @@ describe("Start iteration 4: the dialog", () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
     iterations.start.mockRejectedValue(apiErrorWith(409, { code: "ITERATION_ACTIVE", iterationNumber: 4 }));
     const container = await render(<RunHarness role="admin" />);
-    await click(buttonNamed(container, "+Start iteration 4"));
-    await click(buttonNamed(dialog()!, "Start iteration 4"));
+    await click(buttonNamed(container, "+Start version 4"));
+    await click(buttonNamed(dialog()!, "Start version 4"));
     expect(dialog()).not.toBeNull();
     expect(dialog()?.querySelector('[role="alert"]')?.textContent).toBe(
-      "Iteration 4 is still active. Deliver it before starting the next one.",
+      "Version 4 is still active. Deliver it before starting the next one.",
     );
   });
 });
@@ -317,16 +317,16 @@ function po(role: AppRole, reload: () => void = jest.fn()) {
 }
 
 describe("PO Studio's delivered banner", () => {
-  it("offers a Product owner Start iteration 4, and a start re-reads the promotion status", async () => {
+  it("offers a Product owner Start version 4, and a start re-reads the promotion status", async () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
     iterations.start.mockResolvedValue({ iteration: null });
     const reload = jest.fn();
     const container = await render(po("lead", reload));
     const banner = container.querySelector(".po-delivered");
-    const start = buttonNamed(banner!, "+Start iteration 4");
+    const start = buttonNamed(banner!, "+Start version 4");
     expect(start).toBeDefined();
     await click(start);
-    await click(buttonNamed(dialog()!, "Start iteration 4"));
+    await click(buttonNamed(dialog()!, "Start version 4"));
     expect(iterations.start).toHaveBeenCalledWith("dp-1", {});
     expect(reload).toHaveBeenCalled();
   });
@@ -335,7 +335,7 @@ describe("PO Studio's delivered banner", () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(waitingWire()));
     const container = await render(po("lead"));
     expect(waitingText(container.querySelector(".po-delivered")!)).toMatch(WAITING);
-    expect(buttonNamed(container, "+Start iteration 4")).toBeUndefined();
+    expect(buttonNamed(container, "+Start version 4")).toBeUndefined();
   });
 
   it("adds nothing on a backend that does not say who may start", async () => {
@@ -351,27 +351,27 @@ describe("PO Studio's delivered banner", () => {
 /* ── The Project page's header ──────────────────────────────────────────── */
 
 describe("IterationHeader (the Project page)", () => {
-  it("shows the pill and, for a Product owner or admin, Start iteration 4", async () => {
+  it("shows the pill and, for a Product owner or admin, Start version 4", async () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
     const lead = await render(<IterationHeader deliveryProjectId="dp-1" enabled appRole="lead" />);
     expect(lead.querySelector(".iteration-status")?.getAttribute("data-status")).toBe("delivered");
-    expect(buttonNamed(lead, "+Start iteration 4")).toBeDefined();
+    expect(buttonNamed(lead, "+Start version 4")).toBeDefined();
     act(() => root?.unmount());
 
     iterations.current.mockResolvedValue(normalizeCurrentIteration(waitingWire()));
     const qa = await render(<IterationHeader deliveryProjectId="dp-1" enabled appRole="qa" />);
     expect(qa.querySelector(".iteration-status")).not.toBeNull();
-    expect(buttonNamed(qa, "+Start iteration 4")).toBeUndefined();
+    expect(buttonNamed(qa, "+Start version 4")).toBeUndefined();
     expect(waitingText(qa)).toBeNull();
   });
 
-  it("names the goal once the next iteration is active", async () => {
+  it("names the goal once the next version is active", async () => {
     iterations.current.mockResolvedValue(
       normalizeCurrentIteration(currentWire({ iteration: { id: "it-4", number: 4, status: "active", goal: "Loyalty points" } })),
     );
     const container = await render(<IterationHeader deliveryProjectId="dp-1" enabled appRole="lead" />);
-    expect(container.querySelector(".iteration-status")?.textContent).toBe("Iteration 4 · Loyalty points · Active");
-    expect(buttonNamed(container, "+Start iteration 4")).toBeUndefined();
+    expect(container.querySelector(".iteration-status")?.textContent).toBe("Version 4 · Loyalty points · Active");
+    expect(buttonNamed(container, "+Start version 4")).toBeUndefined();
   });
 
   it("renders nothing on a backend without iterations", async () => {
@@ -400,7 +400,7 @@ describe("My QA items between iterations", () => {
     iterations.current.mockResolvedValue(normalizeCurrentIteration(startableWire()));
     const container = await render(<ProjectMyItemsCard deliveryProjectId="dp-1" enabled appRole="lead" />);
     expect(waitingText(container)).toBeNull();
-    expect(buttonNamed(container, "+Start iteration 4")).toBeDefined();
+    expect(buttonNamed(container, "+Start version 4")).toBeDefined();
   });
 
   it("the repository Overview's summary: the waiting sentence instead of the counts", async () => {
@@ -413,7 +413,7 @@ describe("My QA items between iterations", () => {
     expect(container.querySelector(".qa-summary__chips")).toBeNull();
   });
 
-  it("the summary stays quiet while an iteration is active and nothing is assigned", async () => {
+  it("the summary stays quiet while an version is active and nothing is assigned", async () => {
     runs.myItems.mockResolvedValue(EMPTY_PROJECT_MY_ITEMS);
     iterations.current.mockResolvedValue(normalizeCurrentIteration(currentWire()));
     const container = await render(

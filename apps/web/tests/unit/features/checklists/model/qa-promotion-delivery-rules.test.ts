@@ -20,7 +20,7 @@ const DELIVERED = {
   repositoryDelivered: true,
   iteration: { id: "it-3", number: 3, status: "delivered", deliveredAt: "2026-10-14T10:00:00.000Z" },
   eligible: false,
-  reasons: ["Iteration 3 was delivered."],
+  reasons: ["Version 3 was delivered."],
 };
 
 describe("promotion status: the stored delivery state", () => {
@@ -35,13 +35,13 @@ describe("promotion status: the stored delivery state", () => {
     expect(older.iteration).toBeNull();
   });
 
-  it("names a delivered iteration instead of 'not ready', and nothing blocks it", () => {
+  it("names a delivered version instead of 'not ready', and nothing blocks it", () => {
     const status = normalizePromotionStatus(readyWire(DELIVERED));
-    expect(promotionTitle(status)).toBe("Iteration 3 delivered");
-    expect(promotionChip("ready", status)).toEqual({ tone: "delivered", label: "Iteration 3 delivered", short: "Delivered" });
+    expect(promotionTitle(status)).toBe("Version 3 delivered");
+    expect(promotionChip("ready", status)).toEqual({ tone: "delivered", label: "Version 3 delivered", short: "Delivered" });
     expect(blockingReasons(status)).toEqual([]);
     expect(deliveredNote(status, "en-GB")).toBe(
-      "Iteration 3 delivered on 14 Oct 2026. Every repository's main holds the signed-off uat head.",
+      "Version 3 delivered on 14 Oct 2026. Every repository's main holds the signed-off uat head.",
     );
     expect(poAcceptanceState({ scope: { kind: "project", deliveryProjectId: "dp", projectName: "P", projectHref: null }, promotionStatus: "ready", promotion: status })).toBe("delivered");
   });
@@ -74,12 +74,12 @@ describe("promotion status: the stored delivery state", () => {
   });
 });
 
-describe("promotion merge: the iteration codes", () => {
+describe("promotion merge: the version codes", () => {
   it("maps ITERATION_DELIVERED and refreshes the status", () => {
     const error = promotionMergeError(apiErrorWith(409, { code: "ITERATION_DELIVERED", iterationNumber: 3 }));
     expect(error.kind).toBe("delivered");
-    expect(error.message).toBe("Iteration 3 was delivered, so its requirements and QA are locked.");
-    expect(mergeErrorTitle(error.kind)).toBe("Not merged — this iteration was already delivered");
+    expect(error.message).toBe("Version 3 was delivered, so its requirements and QA are locked.");
+    expect(mergeErrorTitle(error.kind)).toBe("Not merged — this version was already delivered");
     expect(mergeErrorRefreshesStatus(error)).toBe(true);
   });
 

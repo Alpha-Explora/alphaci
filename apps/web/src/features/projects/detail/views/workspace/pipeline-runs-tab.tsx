@@ -13,6 +13,7 @@ import type { BranchRunSection } from "../../model/runs-by-branch";
 import {
   ALL_BRANCHES,
   usePipelineRunsViewModel,
+  type PipelineRunsViewModel,
   type WorkflowRunSummary,
 } from "../../view-models/use-pipeline-runs-view-model";
 import { useBrowserTestsViewModel } from "../../view-models/use-browser-tests-view-model";
@@ -61,15 +62,71 @@ export function PipelineRunsTab({
   // "Browser tests" setup card lives in QA / PO Studio's Playwright tab, not here.
   const browserTests = useBrowserTestsViewModel({ projectId });
 
+  return (
+    <div className="pipeline-tab__run-view">
+      <div className="pipeline-tab__head">
+        <h2 className="pipeline-tab__name">Workflows</h2>
+        {runsView.status === "ready" && !runsView.isEmpty ? (
+          <BranchPicker runsView={runsView} />
+        ) : null}
+      </div>
+
+      <PipelineRunsBody
+        projectId={projectId}
+        appRole={appRole}
+        viewMode={viewMode}
+        runsView={runsView}
+        visual={browserTests.visual}
+      />
+    </div>
+  );
+}
+
+function BranchPicker({ runsView }: Readonly<{ runsView: PipelineRunsViewModel }>) {
+  return (
+    <label className="ws-branchpick">
+      <span className="ws-branchpick__label">Branch</span>
+      <select
+        className="ws-select"
+        value={runsView.selectedBranch}
+        onChange={(event) => runsView.selectBranch(event.target.value)}
+      >
+        {runsView.sections.map((section) => (
+          <option key={section.branch} value={section.branch}>
+            {section.branch}
+            {section.commits.length > 0
+              ? ` (${String(section.commits.length)})`
+              : " — no runs"}
+          </option>
+        ))}
+        <option value={ALL_BRANCHES}>All branches</option>
+      </select>
+    </label>
+  );
+}
+
+function PipelineRunsBody({
+  projectId,
+  appRole,
+  viewMode,
+  runsView,
+  visual,
+}: {
+  projectId: string;
+  appRole?: AppRole;
+  viewMode: RunsViewMode;
+  runsView: PipelineRunsViewModel;
+  visual: BrowserTestsVisual | null;
+}) {
   if (runsView.status === "loading") return <WorkspaceLoading rows={5} />;
-  if (runsView.status === "error")
+  if (runsView.status === "error") {
     return (
       <WorkspaceError
         message={runsView.error ?? "The run list could not be read."}
         onRetry={runsView.reload}
       />
     );
-
+  }
   if (runsView.isEmpty) {
     return (
       <WorkspaceEmpty
@@ -78,32 +135,8 @@ export function PipelineRunsTab({
       />
     );
   }
-
   return (
     <div className="ws-panel">
-      <div className="ws-toolbar ws-toolbar--between">
-        <label className="ws-branchpick">
-          <span className="ws-branchpick__label">Branch</span>
-          <select
-            className="ws-select"
-            value={runsView.selectedBranch}
-            onChange={(event) => runsView.selectBranch(event.target.value)}
-          >
-            {/* EVERY pipeline branch. visibleSections is the FILTERED list, and
-                using it here collapses the picker to the branch selected. */}
-            {runsView.sections.map((section) => (
-              <option key={section.branch} value={section.branch}>
-                {section.branch}
-                {section.commits.length > 0
-                  ? ` (${String(section.commits.length)})`
-                  : " — no runs"}
-              </option>
-            ))}
-            <option value={ALL_BRANCHES}>All branches</option>
-          </select>
-        </label>
-      </div>
-
       {runsView.reportsUnavailable && (
         <p className="pipe-banner pipe-banner--warning" role="status">
           Showing what GitHub executed. Our own stage grading could not be read,
@@ -119,7 +152,7 @@ export function PipelineRunsTab({
           viewMode={viewMode}
           appRole={appRole}
           repoFullName={runsView.repoFullName}
-          visual={browserTests.visual}
+          visual={visual}
           showBranchHeading={runsView.selectedBranch === ALL_BRANCHES}
         />
       ))}

@@ -15,6 +15,12 @@
   min-width: 0;
 }
 
+.pipeline-tab__run-view {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
 .pipeline-tab__name {
   margin: 0;
   font-size: 0.95rem;

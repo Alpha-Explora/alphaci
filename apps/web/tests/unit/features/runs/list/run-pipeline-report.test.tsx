@@ -84,7 +84,7 @@ describe("/runs run detail", () => {
     );
     const sonar = view.querySelector(".tr-sonar");
     expect(sonar).not.toBeNull();
-    expect(sonar?.textContent).toContain("SonarCloud");
+    expect(sonar?.textContent).toContain("Code analysis");
     expect(sonar?.textContent).toContain("Coverage on new code");
   });
 

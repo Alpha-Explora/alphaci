@@ -33,7 +33,7 @@ export interface IterationHistoryViewModel {
 }
 
 const LOAD_ERROR = "The Project's history could not be loaded. Try again in a moment.";
-const REPORT_ERROR = "This iteration's QA results could not be loaded. Try again in a moment.";
+const REPORT_ERROR = "This version's QA results could not be loaded. Try again in a moment.";
 
 interface Loaded {
   key: string;
