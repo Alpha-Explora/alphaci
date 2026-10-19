@@ -365,13 +365,14 @@ function ProductionIngressFields({
           <option value="configured">
             Through an existing proxy or domain
           </option>
-          <option value="tunnel">Automatic HTTPS address (tunnel)</option>
+          <option value="tunnel">Automatic HTTPS address</option>
         </select>
       </label>
       {tunnel ? (
         <p className="wizard-field__hint wizard-machines__field--full">
-          The machine creates this HTTPS address. It changes whenever the tunnel
-          restarts; a named domain is the production upgrade.
+          AlphaCI gives this environment an HTTPS address. On a server with an apps
+          domain it is permanent (for example https://myapp.apps.example.com);
+          otherwise it is a tunnel address that changes when the tunnel restarts.
         </p>
       ) : (
         <label className="wizard-machines__field wizard-machines__field--full">
