@@ -72,6 +72,26 @@ export function healthyHosts(hosts: readonly MachineSummary[]) {
       host.status === "connected" || host.status === "prerequisites_failed",
   );
 }
+/**
+ * The container port and health path per slot an assignment starts from: the
+ * backend's defaults for the environment, from the app AlphaCI scaffolded.
+ */
+export type AssignmentDefaults = Pick<AssignmentRequestConfig, "ports" | "health">;
+/**
+ * Used only until, or when, the backend's defaults cannot be read (an older
+ * backend). The same fallback the backend gives a project with no scaffold.
+ */
+export function fallbackAssignmentDefaults(
+  slots: ReadonlyArray<"frontend" | "backend">,
+): AssignmentDefaults {
+  return {
+    ports: slots.map((slot) => ({
+      slot,
+      containerPort: slot === "frontend" ? 3000 : 4000,
+    })),
+    health: slots.map((slot) => ({ slot, path: "/" })),
+  };
+}
 /** The request part of a stored config: everything except host ports. */
 export function requestedConfig(
   config: AssignmentConfig | AssignmentRequestConfig,

@@ -194,6 +194,7 @@ export function SetupWizardDelivery({
           hostSelection={hostSelection}
           onChange={form.setEnvironments}
           slots={hosting.onpremSlots}
+          runtimes={hosting.onpremRuntimes}
         />
       ) : null}
       <HostProblemNotice problem={hostProblem} />

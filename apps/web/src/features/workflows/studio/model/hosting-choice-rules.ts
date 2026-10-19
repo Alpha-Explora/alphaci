@@ -17,6 +17,7 @@ import type {
   CreateDeploymentProvisioningRequest,
   DeploymentProvisioningTargetRequest,
   EnvTargetSlot,
+  ServiceRuntimeContract,
 } from "@/shared/api/contracts";
 import { multiRepoRepositoryNames } from "./create-project-payload";
 import { providerLabel } from "./deployment-provisioning-rules";
@@ -26,7 +27,11 @@ import {
   type OnpremHosting,
 } from "./onprem-hosting-rules";
 import type { EnvironmentDraft } from "./project-environments-rules";
-import { fitHostAssignments, type HostSlot } from "./setup-host-assignment-rules";
+import {
+  fitHostAssignments,
+  type HostSlot,
+  type SlotRuntimes,
+} from "./setup-host-assignment-rules";
 import {
   defaultProjectName,
   inferSingleProjectKind,
@@ -119,6 +124,38 @@ export function onpremSlotsForLayout(
   return layout === "single" ? [selectedProjectKind] : ["backend", "frontend"];
 }
 
+type WithServiceRuntime = { id: string; serviceRuntime?: ServiceRuntimeContract };
+
+/**
+ * Each on-prem slot's container port and health path, from the catalog's
+ * scaffold contracts: the selected type for one application, the backend and
+ * frontend types for two repositories. A contract counts only for the slot it
+ * declares; a slot without one is left out, and gets the fallback.
+ */
+export function onpremSlotRuntimes(input: {
+  layout: ServiceLayout;
+  selectedProjectType: WithServiceRuntime | null | undefined;
+  projectTypes: readonly WithServiceRuntime[];
+  backendProjectTypeId: string;
+  frontendProjectTypeId: string;
+}): SlotRuntimes {
+  const byId = (id: string) => input.projectTypes.find((type) => type.id === id);
+  const types =
+    input.layout === "single"
+      ? [input.selectedProjectType]
+      : [byId(input.backendProjectTypeId), byId(input.frontendProjectTypeId)];
+  const runtimes: SlotRuntimes = {};
+  for (const type of types) {
+    const contract = type?.serviceRuntime;
+    if (contract && !runtimes[contract.slot])
+      runtimes[contract.slot] = {
+        containerPort: contract.containerPort,
+        healthPath: contract.healthPath,
+      };
+  }
+  return runtimes;
+}
+
 /**
  * The choice that applies: the person's pick while it is still offered, else
  * the default. A pick of on-prem never survives on-prem turning out to be
@@ -155,6 +192,8 @@ export function hostingCreateFields(input: {
    * backend and frontend for two repositories).
    */
   onpremSlots: readonly HostSlot[];
+  /** Each slot's app, for a slot an assignment does not cover yet. */
+  onpremRuntimes?: SlotRuntimes;
 }): HostingCreateFields {
   if (input.choice === "onprem") {
     return {
@@ -163,6 +202,7 @@ export function hostingCreateFields(input: {
       environments: fitHostAssignments(
         runEveryEnvironmentOnprem(input.environments),
         input.onpremSlots,
+        input.onpremRuntimes,
       ),
       onpremSlots: input.onpremSlots,
     };

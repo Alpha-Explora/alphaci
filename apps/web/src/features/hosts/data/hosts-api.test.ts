@@ -5,7 +5,11 @@ import {
   revokeHost,
   isOnpremHostingAvailable,
 } from "./hosts-api";
-import { assignHost, unassignHost } from "./assignments-api";
+import {
+  assignHost,
+  getAssignmentDefaults,
+  unassignHost,
+} from "./assignments-api";
 jest.mock("@/shared/api/request", () => ({
   request: jest.fn().mockResolvedValue([]),
 }));
@@ -89,5 +93,12 @@ it("passes explicit comparison and request id without another project creation",
   expect(request).toHaveBeenCalledWith(
     "/projects/p/environments/e/host-assignment",
     { method: "DELETE", body: JSON.stringify({ expectedAssignmentId: "old" }) },
+  );
+});
+
+it("reads an environment's assignment defaults from the backend", async () => {
+  await getAssignmentDefaults("p", "e/1");
+  expect(request).toHaveBeenLastCalledWith(
+    "/projects/p/environments/e%2F1/host-assignment/defaults",
   );
 });
