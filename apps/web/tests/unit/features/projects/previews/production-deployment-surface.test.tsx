@@ -190,6 +190,21 @@ describe("Production Deployment card surface", () => {
     expect(rows[1]).toContain("Replaced");
   });
 
+  it("puts Source on the top row, beside the first address", () => {
+    const labels = () =>
+      Array.from(container.querySelectorAll(".deploy-card__facts dt")).map((node) => node.textContent);
+
+    render(production({ ...LOGS, deploymentUrl: "https://alphaci-api-dpl.onrender.com" }));
+    expect(labels().slice(0, 3)).toEqual(["Deployment", "Source", "Domains"]);
+    const source = container.querySelectorAll(".deploy-card__fact")[1];
+    expect(source?.classList.contains("deploy-card__fact--wide")).toBe(false);
+    expect(source?.textContent).toContain("main");
+    expect(source?.textContent).toContain("4b84b6b");
+
+    render(production(LOGS));
+    expect(labels().slice(0, 2)).toEqual(["Domains", "Source"]);
+  });
+
   it("says a live tail that has gone quiet may be a sleeping service", () => {
     render(production(LOGS));
     act(() => FakeEventSource.latest().emit({ kind: "snapshot", ...page([line("a", 1)]) }));
