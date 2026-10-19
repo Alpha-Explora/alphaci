@@ -23,6 +23,7 @@ import type {
   QaSignoff,
 } from "./qa-run-types";
 import type { RequirementItem, RequirementKind, RequirementProgress } from "./requirement-types";
+import type { RunTestCategory } from "./test-case-types";
 
 /** Verification never uses `in_progress` on a Project run. */
 export type VerificationStatus = Exclude<QaRunItemStatus, "in_progress">;
@@ -42,6 +43,7 @@ export interface ProjectQaRunPermissionsWire {
   canSignOff: boolean;
   canReopen: boolean;
   canDispatch: boolean;
+  canManageTestCases?: boolean;
 }
 
 /** GET /delivery-projects/:dpId/qa-runs/current */
@@ -109,6 +111,12 @@ export interface ProjectQaRunItem {
   attachmentCount: number | null;
   /** The report's frozen per-item images (ids and captions, no URLs). Empty on a run payload. */
   attachments: QaAttachmentRef[];
+  /**
+   * QA's test cases for this story in this run, by category, with each
+   * result. Empty for a System requirement item, on an older backend and on a
+   * report frozen before test cases existed.
+   */
+  testCategories: RunTestCategory[];
 }
 
 /** One covered repository's CI results, on the uat head the run captured. */
@@ -123,6 +131,7 @@ export interface ProjectQaRunPermissionFlags {
   canSignOff: boolean | null;
   canReopen: boolean | null;
   canDispatch: boolean | null;
+  canManageTestCases: boolean | null;
 }
 
 export interface ProjectQaRunPermissions {
@@ -130,6 +139,8 @@ export interface ProjectQaRunPermissions {
   canSignOff: boolean;
   canReopen: boolean;
   canDispatch: boolean;
+  /** Add, rename, edit and delete test cases (QA Team and admins, open run). */
+  canManageTestCases: boolean;
 }
 
 export interface ProjectQaRun {

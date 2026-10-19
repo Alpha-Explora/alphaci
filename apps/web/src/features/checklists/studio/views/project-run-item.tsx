@@ -18,7 +18,9 @@ import type { QaDefectSeverity, QaItemDraft } from "../../model/qa-run-types";
 import { progressLabel, progressTone } from "../../model/requirement-rules";
 import type { ProjectVerificationViewModel } from "../view-models/use-project-verification-view-model";
 import type { RunEvidenceViewModel } from "../view-models/use-run-evidence-view-model";
+import type { RunTestCasesViewModel } from "../view-models/use-run-test-cases-view-model";
 import { ItemEvidence } from "./item-evidence";
+import { RunTestCases } from "./run-test-cases";
 import { StatusMarker } from "./status-marker";
 
 type ItemProps = Readonly<{
@@ -28,6 +30,8 @@ type ItemProps = Readonly<{
   onReload: () => void;
   /** The run's screenshots; omitted, the item shows no Evidence section. */
   evidence?: RunEvidenceViewModel;
+  /** The story's test cases; omitted, the item shows no Test cases section. */
+  testCases?: RunTestCasesViewModel;
 }>;
 
 function VerifiedLine({ item }: Readonly<{ item: ProjectQaRunItem }>) {
@@ -286,6 +290,7 @@ export function ProjectRunItem(props: ItemProps) {
           </span>
         </div>
         <AcceptanceCriteria item={item} />
+        {props.testCases ? <RunTestCases item={item} vm={props.testCases} onReload={props.onReload} /> : null}
         <div className="qa-run-item__tags">
           <ProgressTag item={item} />
           <VerificationBadge type={item.verificationType} />

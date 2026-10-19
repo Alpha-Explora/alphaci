@@ -195,7 +195,13 @@ describe("a delivered iteration's run", () => {
       }),
     )!;
     expect(run.iteration).toEqual({ id: "it-3", number: 3, status: "delivered" });
-    expect(run.permissions).toEqual({ canSetVerification: false, canSignOff: false, canReopen: false, canDispatch: false });
+    expect(run.permissions).toEqual({
+      canSetVerification: false,
+      canSignOff: false,
+      canReopen: false,
+      canDispatch: false,
+      canManageTestCases: false,
+    });
     expect(run.items.every((item) => item.canUpdate === false)).toBe(true);
     expect(run.attachments).toEqual({ enabled: true, canAdd: false });
   });

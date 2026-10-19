@@ -34,6 +34,7 @@ import {
   resolveFlag,
 } from "./requirement-rules";
 import type { RequirementItem, RequirementKind } from "./requirement-types";
+import { canManageTestCases, countTestCases, normalizeRunTestCategories } from "./test-case-rules";
 import type {
   HeadStatus,
   MyItemsBucket,
@@ -158,6 +159,7 @@ export function normalizeProjectRunItem(value: unknown, runId: string): ProjectQ
     ...recordedFrom(raw),
     rowVersion: wholeOrNull(raw.rowVersion),
     progress: oneOf(raw.progress, PROGRESS_VALUES),
+    testCategories: normalizeRunTestCategories(raw.testCategories),
   };
 }
 
@@ -207,6 +209,7 @@ function permissionFlagsFrom(value: unknown): ProjectQaRun["permissions"] {
     canSignOff: flag(raw?.canSignOff),
     canReopen: flag(raw?.canReopen),
     canDispatch: flag(raw?.canDispatch),
+    canManageTestCases: flag(raw?.canManageTestCases),
   };
 }
 
@@ -242,7 +245,13 @@ export function lockDeliveredRun(run: ProjectQaRun): ProjectQaRun {
   if (!isRunLocked(run)) return run;
   return {
     ...run,
-    permissions: { canSetVerification: false, canSignOff: false, canReopen: false, canDispatch: false },
+    permissions: {
+      canSetVerification: false,
+      canSignOff: false,
+      canReopen: false,
+      canDispatch: false,
+      canManageTestCases: false,
+    },
     items: run.items.map((item) => ({ ...item, canUpdate: false })),
     attachments: run.attachments ? { ...run.attachments, canAdd: false } : null,
   };
@@ -310,6 +319,7 @@ export function resolveProjectRunPermissions(
     canSignOff: resolveFlag(flags?.canSignOff, verifier),
     canReopen: resolveFlag(flags?.canReopen, canReopenProjectRun(role)),
     canDispatch: resolveFlag(flags?.canDispatch, verifier),
+    canManageTestCases: resolveFlag(flags?.canManageTestCases, canManageTestCases(role)),
   };
 }
 
@@ -328,19 +338,27 @@ export function canVerifyItem(
   return item.canUpdate !== false;
 }
 
-/** Passed needs a Developer's Done first. */
-export function canPass(item: Pick<ProjectQaRunItem, "progress">): boolean {
-  return item.progress === "done";
+/**
+ * Passed needs a Developer's Done first, and every test case of the story
+ * passed or not applicable (the server refuses it otherwise with
+ * QA_PROGRESS_NOT_DONE or QA_TEST_CASES_OPEN).
+ */
+export function canPass(item: Pick<ProjectQaRunItem, "progress"> & Partial<Pick<ProjectQaRunItem, "testCategories">>): boolean {
+  return item.progress === "done" && countTestCases(item.testCategories ?? []).open === 0;
 }
 
 /** Why Passed is not offered on this item, or null when it is. */
-export function passedUnavailableReason(item: Pick<ProjectQaRunItem, "progress">): string | null {
-  return canPass(item) ? null : QA_ERROR_MESSAGES.QA_PROGRESS_NOT_DONE;
+export function passedUnavailableReason(
+  item: Pick<ProjectQaRunItem, "progress"> & Partial<Pick<ProjectQaRunItem, "testCategories">>,
+): string | null {
+  if (item.progress !== "done") return QA_ERROR_MESSAGES.QA_PROGRESS_NOT_DONE;
+  return canPass(item) ? null : QA_ERROR_MESSAGES.QA_TEST_CASES_OPEN;
 }
 
 /** The Verification values this viewer can move the item to. Empty when read-only. */
 export function allowedVerificationStatuses(
-  item: Pick<ProjectQaRunItem, "rowVersion" | "progress"> & Partial<Pick<ProjectQaRunItem, "canUpdate">>,
+  item: Pick<ProjectQaRunItem, "rowVersion" | "progress"> &
+    Partial<Pick<ProjectQaRunItem, "canUpdate" | "testCategories">>,
   run: Pick<ProjectQaRun, "status">,
   permissions: Pick<ProjectQaRunPermissions, "canSetVerification">,
 ): VerificationStatus[] {

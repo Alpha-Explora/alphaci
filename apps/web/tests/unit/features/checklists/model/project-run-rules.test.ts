@@ -141,20 +141,33 @@ describe("who may record Verification", () => {
       canSignOff: true,
       canReopen: false,
       canDispatch: true,
+      canManageTestCases: false,
     });
-    const unflagged = { permissions: { canSetVerification: null, canSignOff: null, canReopen: null, canDispatch: null } };
+    const unflagged = {
+      permissions: {
+        canSetVerification: null,
+        canSignOff: null,
+        canReopen: null,
+        canDispatch: null,
+        canManageTestCases: null,
+      },
+    };
     expect(resolveProjectRunPermissions(unflagged, "member")).toEqual({
       canSetVerification: false,
       canSignOff: false,
       canReopen: false,
       canDispatch: false,
+      canManageTestCases: false,
     });
     expect(resolveProjectRunPermissions(unflagged, "lead")).toEqual({
       canSetVerification: true,
       canSignOff: true,
       canReopen: true,
       canDispatch: true,
+      canManageTestCases: false,
     });
+    // The QA Team writes test cases; a Product owner verifies but does not.
+    expect(resolveProjectRunPermissions(unflagged, "qa").canManageTestCases).toBe(true);
     expect(resolveProjectRunPermissions(null, "qa").canReopen).toBe(false);
   });
 

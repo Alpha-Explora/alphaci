@@ -16,6 +16,7 @@
 
 import type { ChecklistVerificationType } from "./checklist-types";
 import type { QaActor } from "./qa-run-types";
+import type { TestCategoryDefinition } from "./test-case-types";
 
 export type RequirementKind = "functional" | "system";
 
@@ -90,6 +91,8 @@ export interface RequirementItem {
   rowVersion: number | null;
   /** The server's per-item answer, or null when it sent none. */
   canSetProgress: boolean | null;
+  /** QA's test cases for this story, by category. Empty on a System item or an older backend. */
+  testCategories: TestCategoryDefinition[];
 }
 
 export interface Requirement {

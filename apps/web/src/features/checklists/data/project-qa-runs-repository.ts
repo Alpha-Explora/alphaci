@@ -18,6 +18,7 @@ import type {
   SetVerificationInput,
 } from "../model/project-run-types";
 import type { QaSignoffInput } from "../model/qa-run-types";
+import type { SetTestCaseResultInput } from "../model/test-case-types";
 import { record } from "../model/wire-readers";
 
 /* The only place in the checklists domain that talks to the Project QA run
@@ -90,6 +91,24 @@ export const projectQaRunsRepository = {
       method: "PATCH",
       body: JSON.stringify(input),
     });
+    return runFromReply(raw);
+  },
+
+  /**
+   * Record QA's result (or note) on one test case of a story. The reply is
+   * the run; null when it carried none, so the caller reads the run again.
+   */
+  async setTestCaseResult(
+    deliveryProjectId: string,
+    runId: string,
+    itemId: string,
+    testCaseId: string,
+    input: SetTestCaseResultInput,
+  ): Promise<ProjectQaRun | null> {
+    const raw = await request<unknown>(
+      `${runPath(deliveryProjectId, runId)}/items/${enc(itemId)}/test-cases/${enc(testCaseId)}`,
+      { method: "PATCH", body: JSON.stringify(input) },
+    );
     return runFromReply(raw);
   },
 
