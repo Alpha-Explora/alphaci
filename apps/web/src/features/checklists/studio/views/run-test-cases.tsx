@@ -2,7 +2,7 @@
 
 import "./test-cases.css";
 
-import { useId, type FormEvent, type ReactNode } from "react";
+import { useId, useState, type FormEvent, type ReactNode } from "react";
 
 import type { ProjectQaRunItem } from "../../model/project-run-types";
 import {
@@ -197,9 +197,9 @@ function NoteButton({ item, testCase, vm }: RowProps) {
 }
 
 /** Edit and Delete: the QA Team and admins, on a test case whose definition still exists. */
-function ManageButtons({ item, testCase, vm }: RowProps) {
+function ManageButtons({ item, testCase, vm, canEdit }: RowProps & Readonly<{ canEdit: boolean }>) {
   const sourceId = testCase.sourceTestCaseId;
-  if (!vm.canManage(item) || sourceId === null) return null;
+  if (!canEdit || !vm.canManage(item) || sourceId === null) return null;
   const definitionRowVersion = testCase.definitionRowVersion;
   return (
     <>
@@ -232,7 +232,7 @@ function ManageButtons({ item, testCase, vm }: RowProps) {
   );
 }
 
-function TestCaseActions(props: RowProps) {
+function TestCaseActions(props: RowProps & Readonly<{ canEdit: boolean }>) {
   return (
     <div className="pqa-test__actions">
       <NoteButton {...props} />
@@ -262,7 +262,7 @@ function EditTestCase({
   );
 }
 
-function TestCaseRow({ item, testCase, vm }: RowProps) {
+function TestCaseRow({ item, testCase, vm, canEdit }: RowProps & Readonly<{ canEdit: boolean }>) {
   const editing = formOf(vm, item, "edit-case", (open) => open.testCaseId === testCase.sourceTestCaseId);
   if (editing) return <EditTestCase item={item} testCase={testCase} vm={vm} form={editing} />;
   return (
@@ -282,14 +282,14 @@ function TestCaseRow({ item, testCase, vm }: RowProps) {
           Saving…
         </span>
       ) : null}
-      <TestCaseActions item={item} testCase={testCase} vm={vm} />
+      <TestCaseActions item={item} testCase={testCase} vm={vm} canEdit={canEdit} />
     </li>
   );
 }
 
-function CategoryHead({ item, category, vm }: Readonly<{ item: ProjectQaRunItem; category: RunTestCategory; vm: RunTestCasesViewModel }>) {
+function CategoryHead({ item, category, vm, canEdit }: Readonly<{ item: ProjectQaRunItem; category: RunTestCategory; vm: RunTestCasesViewModel; canEdit: boolean }>) {
   const renaming = formOf(vm, item, "rename-category", (open) => open.categoryId === category.id);
-  const manage = vm.canManage(item) && category.id !== null;
+  const manage = canEdit && vm.canManage(item) && category.id !== null;
   if (renaming) {
     return (
       <InlineForm item={item} vm={vm} label={`Rename ${category.name}`} submitLabel="Rename">
@@ -332,9 +332,9 @@ function CategoryHead({ item, category, vm }: Readonly<{ item: ProjectQaRunItem;
   );
 }
 
-function AddTestCase({ item, category, vm }: Readonly<{ item: ProjectQaRunItem; category: RunTestCategory; vm: RunTestCasesViewModel }>) {
+function AddTestCase({ item, category, vm, canEdit }: Readonly<{ item: ProjectQaRunItem; category: RunTestCategory; vm: RunTestCasesViewModel; canEdit: boolean }>) {
   const adding = formOf(vm, item, "add-case", (open) => open.categoryId === category.id);
-  if (!vm.canManage(item) || category.id === null) return null;
+  if (!canEdit || !vm.canManage(item) || category.id === null) return null;
   if (adding) {
     return (
       <InlineForm item={item} vm={vm} label={`New test case in ${category.name}`} submitLabel="Add test case">
@@ -369,9 +369,9 @@ function AddTestCase({ item, category, vm }: Readonly<{ item: ProjectQaRunItem; 
   );
 }
 
-function AddCategory({ item, vm }: Readonly<{ item: ProjectQaRunItem; vm: RunTestCasesViewModel }>) {
+function AddCategory({ item, vm, canEdit }: Readonly<{ item: ProjectQaRunItem; vm: RunTestCasesViewModel; canEdit: boolean }>) {
   const adding = formOf(vm, item, "add-category");
-  if (!vm.canManage(item)) return null;
+  if (!canEdit || !vm.canManage(item)) return null;
   if (adding) {
     return (
       <InlineForm item={item} vm={vm} label="New test case category" submitLabel="Add category">
@@ -422,11 +422,13 @@ function SectionError({ item, vm, onReload }: Props) {
  * records a result per test case. Hidden on a System item, and on a story
  * with no test cases for a viewer who cannot add any.
  */
-export function RunTestCases({ item, vm, onReload }: Props) {
+export function RunTestCases({ item, vm, onReload, showEditToggle = false }: Props & Readonly<{ showEditToggle?: boolean }>) {
+  const [editing, setEditing] = useState(false);
   const headingId = useId();
   if (item.requirementKind !== "functional") return null;
   const categories = item.testCategories;
   const manage = vm.canManage(item);
+  const canEdit = manage && (!showEditToggle || editing);
   if (categories.length === 0 && !manage) return null;
   const counts = countTestCases(categories);
   const attention = testCasesAttentionLabel(counts);
@@ -438,22 +440,27 @@ export function RunTestCases({ item, vm, onReload }: Props) {
         {attention ? <span className="pqa-tests__attention">{attention}</span> : null}
       </summary>
       <div className="pqa-tests__body" role="group" aria-labelledby={headingId}>
+        {showEditToggle && manage ? (
+          <button type="button" className="qa-text-button pqa-tests__edit-toggle" onClick={() => setEditing((value) => !value)}>
+            {editing ? "Done editing" : "Edit test cases"}
+          </button>
+        ) : null}
         {categories.map((category) => (
           <section key={category.id ?? `name:${category.name}`} className="pqa-tests__category">
-            <CategoryHead item={item} category={category} vm={vm} />
+            <CategoryHead item={item} category={category} vm={vm} canEdit={canEdit} />
             {category.testCases.length > 0 ? (
               <ul className="pqa-tests__list">
                 {category.testCases.map((testCase) => (
-                  <TestCaseRow key={testCase.id} item={item} testCase={testCase} vm={vm} />
+                  <TestCaseRow key={testCase.id} item={item} testCase={testCase} vm={vm} canEdit={canEdit} />
                 ))}
               </ul>
             ) : (
               <p className="pqa-tests__empty">No test cases in this category yet.</p>
             )}
-            <AddTestCase item={item} category={category} vm={vm} />
+            <AddTestCase item={item} category={category} vm={vm} canEdit={canEdit} />
           </section>
         ))}
-        <AddCategory item={item} vm={vm} />
+        <AddCategory item={item} vm={vm} canEdit={canEdit} />
         <SectionError item={item} vm={vm} onReload={onReload} />
       </div>
     </details>

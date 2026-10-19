@@ -261,6 +261,7 @@ function RunGroup({
   editor,
   evidence,
   testCases,
+  checklistMode,
   onReload,
 }: Readonly<{
   group: ProjectRunListGroup;
@@ -268,6 +269,7 @@ function RunGroup({
   editor: ProjectVerificationViewModel;
   evidence: RunEvidenceViewModel;
   testCases: RunTestCasesViewModel;
+  checklistMode: boolean;
   onReload: () => void;
 }>) {
   const listId = useId();
@@ -309,6 +311,8 @@ function RunGroup({
               editor={editor}
               evidence={evidence}
               testCases={testCases}
+              showEvidence={!checklistMode}
+              showTestCaseEditToggle={!checklistMode}
               onReload={onReload}
             />
           ))}
@@ -326,6 +330,7 @@ function RunBody({
   appRole,
   next,
   summaryShown,
+  checklistMode,
 }: Readonly<{
   deliveryProjectId: string;
   vm: ProjectRunViewModel;
@@ -334,6 +339,7 @@ function RunBody({
   /** After a delivered iteration: the waiting sentence, or Start iteration N+1. */
   next: StartIterationViewModel;
   summaryShown: boolean;
+  checklistMode: boolean;
 }>) {
   const permissions = resolveProjectRunPermissions(run, appRole);
   const editor = useProjectVerificationViewModel({
@@ -366,12 +372,23 @@ function RunBody({
       <SignoffBanner run={run} subject={signedSubject(run, shown)} reopen={reopen} />
       <HeadsList heads={vm.heads.length > 0 ? vm.heads : run.repositories} withRun shown={shown} />
       {/* Who started the run sits in its progress box, under the count. */}
-      {summaryShown ? (
+      {summaryShown && !checklistMode ? (
         <RunSummary run={run}>
           <RunHead run={run} showRepositories={shown} />
         </RunSummary>
       ) : null}
-      <RunFilters list={list} />
+      {checklistMode ? (
+        <div className="pqa-run__toolbar">
+          {summaryShown ? (
+            <RunSummary run={run} variant="compact">
+              <RunHead run={run} showRepositories={shown} />
+            </RunSummary>
+          ) : null}
+          <RunFilters list={list} />
+        </div>
+      ) : (
+        <RunFilters list={list} />
+      )}
       {list.status === "empty" ? <p className="pqa-note">{runFilterEmptyText(list.filter)}</p> : null}
       {list.groups.map((group) => (
         <RunGroup
@@ -381,6 +398,7 @@ function RunBody({
           editor={editor}
           evidence={evidence}
           testCases={testCases}
+          checklistMode={checklistMode}
           onReload={vm.reload}
         />
       ))}
@@ -454,6 +472,7 @@ export function ProjectRunPanel({
   fallback,
   onOpenHistory,
   summaryShown,
+  checklistMode = false,
 }: Readonly<{
   deliveryProjectId: string;
   vm: ProjectRunViewModel;
@@ -463,6 +482,8 @@ export function ProjectRunPanel({
   onOpenHistory?: () => void;
   /** False where the host shows the run's progress itself (QA Studio's column heading). */
   summaryShown?: boolean;
+  /** Checklist tab: compact summary, no evidence, and direct test-case authoring. */
+  checklistMode?: boolean;
 }>) {
   const next = useNextIterationViewModel({ deliveryProjectId, enabled: true, appRole });
   const deliveredNumber = vm.run ? lockedIterationNumber(vm.run.iteration) : null;
@@ -494,6 +515,7 @@ export function ProjectRunPanel({
         appRole={appRole}
         next={next}
         summaryShown={summaryShown !== false}
+        checklistMode={checklistMode}
       />
     );
   }

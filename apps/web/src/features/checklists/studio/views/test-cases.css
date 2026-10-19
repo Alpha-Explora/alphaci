@@ -49,6 +49,10 @@
   margin-top: 0.5rem;
 }
 
+.pqa-tests__edit-toggle {
+  justify-self: start;
+}
+
 .pqa-tests__category {
   display: grid;
   gap: 0.35rem;
