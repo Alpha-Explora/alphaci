@@ -111,7 +111,7 @@ describe("describeComparison", () => {
   it("allows a diverged pair but warns that the base has moved", () => {
     const readiness = describeComparison(compare(2, 1));
     expect(readiness).toMatchObject({ canCreate: true, tone: "warning" });
-    expect(readiness.message).toContain("main has 1 commit that feature does not");
+    expect(readiness.message).toContain("feature is 1 commit behind main");
   });
 });
 
