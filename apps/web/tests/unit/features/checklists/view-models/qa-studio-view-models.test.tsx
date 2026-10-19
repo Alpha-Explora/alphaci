@@ -191,15 +191,17 @@ describe("useQaItemEditorViewModel", () => {
 describe("useQaSignoffViewModel", () => {
   it("opens on the best verdict available and validates Conditional", async () => {
     const run = runAs("qa", {
-      items: [runItem(0, { status: "failed" }), runItem(1, { status: "passed" })],
+      items: [runItem(0, { status: "passed" }), runItem(1, { status: "passed" })],
     });
     repo.signoff.mockResolvedValue(qaRun({ status: "signed_off" }));
     const onRun = jest.fn();
     const vm = renderHook(() => useQaSignoffViewModel({ projectId: "p1", run, onRun }));
     expect(vm().status).toBe("closed");
+    expect(vm().blockedReason).toBeNull();
     act(() => vm().openDialog());
     expect(vm().status).toBe("editing");
-    expect(vm().verdict).toBe("CONDITIONAL");
+    expect(vm().verdict).toBe("APPROVED");
+    act(() => vm().setVerdict("CONDITIONAL"));
 
     await act(async () => vm().submit());
     expect(repo.signoff).not.toHaveBeenCalled();
@@ -212,6 +214,19 @@ describe("useQaSignoffViewModel", () => {
       conditions: "Fix the copy next release",
     });
     expect(onRun).toHaveBeenCalled();
+    expect(vm().status).toBe("closed");
+  });
+
+  it("keeps Sign off shut while QA has a failure open, and says why", () => {
+    const run = runAs("qa", {
+      items: [runItem(0, { status: "blocked" }), runItem(1, { status: "passed" })],
+    });
+    const vm = renderHook(() => useQaSignoffViewModel({ projectId: "p1", run, onRun: jest.fn() }));
+    expect(vm().canSignOff).toBe(true);
+    expect(vm().blockedReason).toBe(
+      "1 item is failed, blocked or returned to dev. Sign off once QA has verified the fix.",
+    );
+    act(() => vm().openDialog());
     expect(vm().status).toBe("closed");
   });
 

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import type { AuthSession } from "@/features/auth/session";
+import { QaAlertToasts } from "@/features/notifications/summary";
 
 import {
   APP_ROLE_BADGE_LABELS,
@@ -439,6 +440,8 @@ export function AppNav({
         }}
         onNavigate={() => setHoverSuppressed(true)}
         onPointerLeave={() => setHoverSuppressed(false)} />
+      {/* QA's refusals pop up here for the Developers who fix them. */}
+      <QaAlertToasts alerts={notifications.alerts} onDismiss={notifications.dismissAlert} />
     </>
   );
 }

@@ -56,7 +56,8 @@ jest.mock("../../../../../../src/features/capabilities/current", () => ({
   useCapabilities: () => ({ qaChecklistsEnabled: false }),
 }));
 jest.mock("../../../../../../src/features/notifications/summary", () => ({
-  useNotificationsSummaryViewModel: () => ({ unreadCount: 0 }),
+  useNotificationsSummaryViewModel: () => ({ unreadCount: 0, alerts: [], dismissAlert: jest.fn() }),
+  QaAlertToasts: () => null,
 }));
 jest.mock("../../../../../../src/features/workspace/selection/data/workspace-repository", () => ({
   getWorkspaces: jest.fn(),

@@ -168,7 +168,7 @@ describe("QA Studio's run on a delivered iteration", () => {
     runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire({ iteration: { id: "it-3", number: 3, status: "active" } }), heads: [] }));
     const container = await render(<RunHarness role="qa" />);
     expect(container.querySelector(".iteration-locked")).toBeNull();
-    expect([...container.querySelectorAll<HTMLButtonElement>(".pqa-verify button")].some((button) => !button.disabled)).toBe(true);
+    expect([...container.querySelectorAll<HTMLSelectElement>(".pqa-verify select")].some((select) => !select.disabled)).toBe(true);
   });
 });
 

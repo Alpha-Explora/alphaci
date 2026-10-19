@@ -18,6 +18,9 @@
      edges so its crisp offset shadow (a dark step, then an outline step,
      down and to the right) is never cut off by the window. */
   --qa-rail-inset: 0.5rem;
+  /* The rail's gap from the window's right edge: wide enough that the rail
+     and its 4px offset shadow never touch the window side. */
+  --qa-rail-edge: 0.75rem;
   --qa-rail-offset: 3px 3px 0 var(--bg-soft), 4px 4px 0 var(--border-tile);
 
   display: grid;
@@ -315,11 +318,11 @@
   gap: 1rem;
   align-items: start;
   min-height: var(--qa-pane-height);
-  padding-right: calc(var(--qa-rail-closed) + var(--qa-rail-inset) + 0.75rem);
+  padding-right: calc(var(--qa-rail-closed) + var(--qa-rail-edge) + 0.75rem);
 }
 
 .qa-studio[data-rail="pinned"] .qa-studio__panes {
-  padding-right: calc(var(--qa-rail-open) + var(--qa-rail-inset) + 0.75rem);
+  padding-right: calc(var(--qa-rail-open) + var(--qa-rail-edge) + 0.75rem);
 }
 
 /* Both panes share one height and only the item list scrolls: the app shell
@@ -344,7 +347,7 @@
 .qa-rail {
   position: absolute;
   top: 0;
-  right: calc(var(--qa-rail-inset) - 0.25rem);
+  right: var(--qa-rail-edge);
   bottom: var(--qa-rail-inset);
   z-index: 3;
   display: flex;
@@ -1196,11 +1199,11 @@
 }
 
 /* Hover: the row under the pointer, never a section and the row inside it
-   at once. An item being edited keeps the wash. */
+   at once, gets a bolder state line. No fill: a filled row reads as a box.
+   An item being edited keeps the bolder line. */
 .qa-studio__run :is(.qa-run-item, .tr-case, .qa-pw-item, .qa-auto-failure):hover,
 .qa-studio__run :is(.qa-auto-stage, .qa-live, .qa-auto-detail):hover:not(:has(:is(.tr-case, .qa-auto-failure):hover)),
 .qa-studio__run .qa-run-item--open {
-  background: color-mix(in srgb, var(--qa-accent) 8%, transparent);
   box-shadow: inset 3px 0 0 var(--qa-accent);
 }
 
@@ -1220,6 +1223,24 @@
 
 .qa-studio__run .qa-run-item__facts--defect {
   box-shadow: inset 2px 0 0 var(--danger);
+}
+
+/* The notes editor is part of the row, like the notes it edits: its fields
+   hang off a short line, with no frame or fill of their own. */
+.qa-studio__run .qa-item-editor {
+  padding: 0.15rem 0 0.15rem 0.75rem;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: inset 2px 0 0 var(--border-strong);
+}
+
+/* The item's state mark is an icon in its tone, not a framed square. */
+.qa-studio__run .qa-marker {
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 0;
+  background: none;
 }
 
 .qa-studio__run .qa-evidence {
@@ -1904,7 +1925,7 @@
      to move the page aside, so pinned it opens over the page too: the page
      keeps its width and the strip is all it ever gives up. */
   .qa-studio[data-rail="pinned"] .qa-studio__panes {
-    padding-right: calc(var(--qa-rail-closed) + var(--qa-rail-inset) + 0.75rem);
+    padding-right: calc(var(--qa-rail-closed) + var(--qa-rail-edge) + 0.75rem);
   }
 
   .qa-rail[data-pinned="true"] {
@@ -1916,7 +1937,7 @@
   /* A phone: the open rail covers the page but leaves the left edge showing,
      so it still reads as a panel over it. */
   .qa-studio {
-    --qa-rail-open: calc(100% - 1rem);
+    --qa-rail-open: calc(100% - var(--qa-rail-edge) - 0.5rem);
   }
 
   .qa-toolbar .qa-toolbar__env {

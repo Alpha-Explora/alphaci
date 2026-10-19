@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 import { FormDialog } from "@/features/groups/workspace";
 
 import { VerdictPill } from "../../items";
@@ -175,6 +177,7 @@ const VERDICT_HINTS: Record<QaVerdict, string> = {
 };
 
 function readinessText(vm: QaSignoffViewModel): string | null {
+  if (vm.blockedReason) return vm.blockedReason;
   const approved = vm.eligibility.find((entry) => entry.verdict === "APPROVED");
   if (approved?.allowed) return "Every item passed — ready to approve.";
   const reason = approved?.reason ?? "";
@@ -182,12 +185,25 @@ function readinessText(vm: QaSignoffViewModel): string | null {
 }
 
 export function SignoffFooter({ vm }: Readonly<{ vm: QaSignoffViewModel }>) {
+  const reasonId = useId();
   const text = readinessText(vm);
+  // Shown, not hidden, while a failure is open: the reader sees what to do.
+  const blocked = vm.blockedReason !== null;
   return (
     <div className="qa-run-card__foot">
-      {text ? <p className="qa-run-card__foot-text">{text}</p> : null}
+      {text ? (
+        <p className="qa-run-card__foot-text" id={reasonId}>
+          {text}
+        </p>
+      ) : null}
       {vm.canSignOff ? (
-        <button type="button" className="primary-button" onClick={vm.openDialog}>
+        <button
+          type="button"
+          className="primary-button"
+          disabled={blocked}
+          aria-describedby={blocked && text ? reasonId : undefined}
+          onClick={vm.openDialog}
+        >
           Sign off
         </button>
       ) : null}

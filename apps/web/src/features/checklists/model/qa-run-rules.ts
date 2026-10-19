@@ -352,17 +352,34 @@ function conditionalReason(items: ReadonlyArray<Pick<QaRunItem, "status">>): str
 }
 
 /**
- * Which verdicts the run can take now. Approved needs every item passed;
+ * Why the run cannot be signed off at all, or null. While QA has a failure
+ * open (an item failed, blocked or returned to dev) no verdict is offered:
+ * the Developers fix it and QA verifies it first. The server refuses the
+ * same (409 QA_RUN_OPEN_DEFECTS).
+ */
+export function signoffBlockedReason(run: SignoffItems): string | null {
+  const open = countWhere(
+    run.items,
+    (status) => status === "failed" || status === "blocked" || status === "returned_to_dev",
+  );
+  if (open === 0) return null;
+  return `${plural(open, "item is", "items are")} failed, blocked or returned to dev. Sign off once QA has verified the ${open === 1 ? "fix" : "fixes"}.`;
+}
+
+/**
+ * Which verdicts the run can take now. None while a failure is open (see
+ * signoffBlockedReason); otherwise Approved needs every item passed,
  * Conditional needs nothing left pending or in progress (and conditions,
- * checked on submit); Rejected is always open.
+ * checked on submit), and Rejected is open.
  */
 export function signoffEligibility(
   run: SignoffItems,
 ): VerdictEligibility[] {
+  const blocked = signoffBlockedReason(run);
   const reasons: Record<QaVerdict, string | null> = {
-    APPROVED: approvedReason(run.items),
-    CONDITIONAL: conditionalReason(run.items),
-    REJECTED: null,
+    APPROVED: blocked ?? approvedReason(run.items),
+    CONDITIONAL: blocked ?? conditionalReason(run.items),
+    REJECTED: blocked,
   };
   return QA_VERDICTS.map((verdict) => ({
     verdict,
