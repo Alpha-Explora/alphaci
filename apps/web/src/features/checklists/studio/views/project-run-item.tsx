@@ -4,7 +4,7 @@ import type { FormEvent } from "react";
 
 import { SeverityBadge, StatusPill, TonePill, VerificationBadge } from "../../items";
 import { needsTestIdentifier } from "../../model/checklist-rules";
-import { passedUnavailableReason, VERIFICATION_STATUSES } from "../../model/project-run-rules";
+import { FAILED_RETURNS_NOTE, passedUnavailableReason, VERIFICATION_STATUSES } from "../../model/project-run-rules";
 import type { ProjectQaRunItem, VerificationStatus } from "../../model/project-run-types";
 import {
   agoLabel,
@@ -18,7 +18,9 @@ import type { QaDefectSeverity, QaItemDraft } from "../../model/qa-run-types";
 import { progressLabel, progressTone } from "../../model/requirement-rules";
 import type { ProjectVerificationViewModel } from "../view-models/use-project-verification-view-model";
 import type { RunEvidenceViewModel } from "../view-models/use-run-evidence-view-model";
+import type { RunTestCasesViewModel } from "../view-models/use-run-test-cases-view-model";
 import { ItemEvidence } from "./item-evidence";
+import { RunTestCases } from "./run-test-cases";
 import { StatusMarker } from "./status-marker";
 
 type ItemProps = Readonly<{
@@ -28,6 +30,10 @@ type ItemProps = Readonly<{
   onReload: () => void;
   /** The run's screenshots; omitted, the item shows no Evidence section. */
   evidence?: RunEvidenceViewModel;
+  /** The story's test cases; omitted, the item shows no Test cases section. */
+  testCases?: RunTestCasesViewModel;
+  showEvidence?: boolean;
+  canEditTestCases?: boolean;
 }>;
 
 function VerifiedLine({ item }: Readonly<{ item: ProjectQaRunItem }>) {
@@ -110,23 +116,26 @@ function VerificationButtons({ item, index, editor }: Pick<ItemProps, "item" | "
   const allowed = editor.allowedStatuses(item);
   const draft = editor.openItemId === item.id ? editor.draft : null;
   const value = draft?.status ?? item.status;
-  const offered = VERIFICATION_STATUSES.filter((status) => status === value || allowed.includes(status));
+  // Pending, Passed and Failed; an item saved earlier as Blocked or Returned to dev still shows that value.
+  const settable = VERIFICATION_STATUSES.filter((status) => status === value || allowed.includes(status));
+  const offered = settable.includes(value as VerificationStatus) ? settable : [value as VerificationStatus, ...settable];
   return (
-    <div className="pqa-verify" role="group" aria-label={`Verification of item ${String(index + 1)}`}>
-      {offered.map((status: VerificationStatus) => (
-        <button
-          key={status}
-          type="button"
-          className="pqa-verify__option"
-          data-status={status}
-          aria-pressed={status === value}
-          disabled={editor.savingItemId !== null || !allowed.includes(status)}
-          onClick={() => editor.chooseStatus(item, status)}
-        >
-          {itemStatusLabel(status)}
-        </button>
-      ))}
-    </div>
+    <label className="pqa-verify">
+      <span className="sr-only">Verification of item {String(index + 1)}</span>
+      <select
+        className="hier-select pqa-verify__select"
+        aria-label={`Verification of item ${String(index + 1)}`}
+        value={value}
+        disabled={editor.savingItemId !== null}
+        onChange={(event) => editor.chooseStatus(item, event.target.value as VerificationStatus)}
+      >
+        {offered.map((status: VerificationStatus) => (
+          <option key={status} value={status} disabled={!allowed.includes(status)}>
+            {itemStatusLabel(status)}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -175,6 +184,7 @@ function ItemEditor({ item, editor }: Readonly<{ item: ProjectQaRunItem; editor:
 
   return (
     <form className="qa-item-editor" onSubmit={handleSubmit} noValidate>
+      {draft.status === "failed" ? <p className="pqa-pass-hint">{FAILED_RETURNS_NOTE}</p> : null}
       {defect ? <SeverityField draft={draft} onChange={(value) => editor.updateDraft({ defectSeverity: value })} /> : null}
       <label className="hier-field qa-editor-field">
         <span className="hier-field-label">Notes</span>
@@ -275,7 +285,7 @@ export function ProjectRunItem(props: ItemProps) {
   const { item, index, editor } = props;
   const open = editor.openItemId === item.id;
   return (
-    <li className={`qa-run-item${open ? " qa-run-item--open" : ""}`}>
+    <li className={`qa-run-item${open ? " qa-run-item--open" : ""}`} data-status={item.status}>
       <StatusMarker status={item.status} index={index} />
       <div className="qa-run-item__body">
         <div className="qa-run-item__head">
@@ -285,6 +295,14 @@ export function ProjectRunItem(props: ItemProps) {
           </span>
         </div>
         <AcceptanceCriteria item={item} />
+        {props.testCases ? (
+          <RunTestCases
+            item={item}
+            vm={props.testCases}
+            onReload={props.onReload}
+            canEditDefinitions={props.canEditTestCases}
+          />
+        ) : null}
         <div className="qa-run-item__tags">
           <ProgressTag item={item} />
           <VerificationBadge type={item.verificationType} />
@@ -298,7 +316,7 @@ export function ProjectRunItem(props: ItemProps) {
         <ItemControls item={item} index={index} editor={editor} />
         <ItemEditor item={item} editor={editor} />
         <ItemError {...props} />
-        {props.evidence ? <ItemEvidence item={item} evidence={props.evidence} /> : null}
+        {props.showEvidence !== false && props.evidence ? <ItemEvidence item={item} evidence={props.evidence} /> : null}
       </div>
     </li>
   );

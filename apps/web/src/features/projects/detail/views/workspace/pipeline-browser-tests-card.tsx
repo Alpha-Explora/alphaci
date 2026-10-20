@@ -9,9 +9,11 @@ import {
   ADD_BUTTON_LABEL,
   INSTALLED_LINE,
   VISUAL_PROMOTE_LINE,
+  VISUAL_UPDATE_HERE,
   VISUAL_UPDATE_HINT,
   VISUAL_UPDATE_LABEL,
   browserTestsCardState,
+  browserTestsLead,
   missingChecks,
   openedLabel,
   splitNote,
@@ -45,6 +47,7 @@ export function BrowserTestsCard({
   workflowAccess = "unavailable",
   onOpenWorkflow,
   workflowHref,
+  inConfiguration = false,
 }: Readonly<{
   view: BrowserTestsViewModel;
   /** Opens the Pull requests tab on a number; absent when that tab is not offered. */
@@ -55,6 +58,11 @@ export function BrowserTestsCard({
   onOpenWorkflow?: () => void;
   /** Without `onOpenWorkflow`: another repository's page, on its Pipeline configuration. */
   workflowHref?: string;
+  /**
+   * Drawn inside the Pipeline configuration itself: the workflow update pull
+   * request is on the same page, so the fix is said, not linked.
+   */
+  inConfiguration?: boolean;
 }>) {
   const titleId = useId();
   const state = browserTestsCardState(view.status === "ready" ? view.browserTests : null);
@@ -77,7 +85,7 @@ export function BrowserTestsCard({
       ) : (
         <BrowserTestsBody view={view} onOpenPullRequest={onOpenPullRequest} />
       )}
-      <VisualOff notice={notice} way={{ access: workflowAccess, onOpenWorkflow, workflowHref }} />
+      <VisualOff notice={notice} way={{ access: workflowAccess, onOpenWorkflow, workflowHref, inConfiguration }} />
     </section>
   );
 }
@@ -103,6 +111,8 @@ interface WorkflowWay {
   onOpenWorkflow?: () => void;
   /** Another repository's page, opened on its Pipeline configuration. In the product, never GitHub. */
   workflowHref?: string;
+  /** Already on the Pipeline configuration. */
+  inConfiguration?: boolean;
 }
 
 function VisualFix({ fix, way }: Readonly<{ fix: VisualOffNotice["fix"]; way: WorkflowWay }>) {
@@ -110,6 +120,7 @@ function VisualFix({ fix, way }: Readonly<{ fix: VisualOffNotice["fix"]; way: Wo
   if (fix !== "update-workflow") return null;
   if (way.access === "role") return <p className="pipe-tests__reason">{UPDATE_PR_ROLE_NOTE}</p>;
   if (way.access !== "open") return null;
+  if (way.inConfiguration) return <p className="pipe-tests__reason">{VISUAL_UPDATE_HERE}</p>;
   return <UpdateWorkflowAction way={way} />;
 }
 
@@ -157,9 +168,7 @@ function BrowserTestsBody({
   }
   return (
     <>
-      <p className="pipe-tests__lead">
-        The Verify stage runs these against the deployed site. Missing on {branch}:
-      </p>
+      <p className="pipe-tests__lead">{browserTestsLead(view.browserTests, branch)}</p>
       <ul className="pipe-tests__missing">
         {missingChecks(view.browserTests?.missingFiles ?? []).map((label) => (
           <li key={label}>{label}</li>

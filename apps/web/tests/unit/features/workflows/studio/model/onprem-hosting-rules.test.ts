@@ -125,7 +125,7 @@ describe("environmentHosting", () => {
       environments: [],
     });
     expect(hostingOf(all, { isMicroservicesShape: true }).environments).toEqual([]);
-    expect(hostingOf(all, { isMultiRepoShape: true }).mode).toBe("managed");
+    expect(hostingOf(all, { isMultiRepoShape: true }).mode).toBe("onprem");
   });
 
   it("names where each environment runs, in promotion order", () => {

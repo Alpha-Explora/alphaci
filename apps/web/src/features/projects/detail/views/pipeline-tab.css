@@ -1,9 +1,4 @@
-/*
- * The Pipeline tab: one slim row (the view's name, the Runs | Configuration
- * toggle) above the view. The toggle borrows the Hosting environment
- * switcher's language (bordered pills, the selected one on the brand border)
- * at 36px, so it reads as a switch inside the tab rather than a second strip.
- */
+/* The Pipeline tab's Workflows heading and its content. */
 
 .pipeline-tab {
   display: grid;
@@ -20,12 +15,9 @@
   min-width: 0;
 }
 
-.pipeline-tab__title {
-  display: flex;
-  flex: 1 1 16rem;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.15rem 0.6rem;
+.pipeline-tab__run-view {
+  display: grid;
+  gap: 0.85rem;
   min-width: 0;
 }
 
@@ -34,55 +26,4 @@
   font-size: 0.95rem;
   font-weight: 650;
   color: var(--text-primary);
-}
-
-.pipeline-tab__hint {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-.pipeline-toggle {
-  display: inline-flex;
-  flex: none;
-  gap: 0.375rem;
-}
-
-.pipeline-toggle__tab {
-  min-height: 2.25rem;
-  padding: 0 0.85rem;
-  border: 1px solid var(--border);
-  border-radius: 0.6rem;
-  background: transparent;
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.pipeline-toggle__tab:hover {
-  background: var(--layer-1-hover);
-}
-
-/* The current view reads at a glance in both themes: brand tint, brand text. */
-.pipeline-toggle__tab[aria-selected="true"] {
-  border-color: var(--border-brand);
-  background: color-mix(in srgb, var(--brand-strong) 16%, transparent);
-  color: var(--brand);
-}
-
-.pipeline-toggle__tab:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .pipeline-toggle__tab {
-    transition:
-      background-color 0.15s ease-out,
-      border-color 0.15s ease-out,
-      color 0.15s ease-out;
-  }
 }

@@ -263,6 +263,8 @@ export function useWorkflowStudioViewModel(options: {
         response.workflowPath.split("/").at(-1) ?? response.workflowPath;
 
       const result: CreateProjectResult = {
+        hostAssignments: response.hostAssignments,
+        hostAssignmentError: response.hostAssignmentError,
         id: response.id,
         repoFullName: response.repoFullName,
         repoUrl: response.repoUrl,
@@ -278,6 +280,8 @@ export function useWorkflowStudioViewModel(options: {
         additionalWorkflowPaths: response.additionalWorkflowPaths,
         secondaryRepoFullName: response.secondaryRepoFullName,
         secondaryRepoUrl: response.secondaryRepoUrl,
+        secondaryProjectId: response.secondaryProjectId,
+        secondaryRepoError: response.secondaryRepoError,
         deploymentProvisioning: response.deploymentProvisioning,
       };
 

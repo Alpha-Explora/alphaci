@@ -5,11 +5,13 @@ import {
   nextEnabledIndex,
   normaliseProjectFolder,
   repoShortName,
+  repoSwitchOptionDisplay,
   repoSwitchOptions,
   repoSwitchPresentation,
   roleLabel,
   SINGLE_REPO_PRESENTATION,
   switchHref,
+  UNLINKED_REPO_HINT,
 } from "../../../../../../src/features/projects/detail/model/project-folder-rules";
 import type { ProjectDetailTab } from "../../../../../../src/features/projects/detail/model/project-detail-tab-rules";
 import type {
@@ -176,9 +178,9 @@ describe("repoSwitchOptions", () => {
       ],
     });
     expect(repoSwitchOptions(shop, "proj-be")).toEqual([
-      { key: "proj-fe", projectId: "proj-fe", role: "frontend", roleLabel: "FRONTEND", label: "shop-fe", repoFullName: "Org/shop-fe", current: false, disabled: false },
-      { key: "proj-be", projectId: "proj-be", role: "backend", roleLabel: "BACKEND", label: "shop-be", repoFullName: "Org/shop-be", current: true, disabled: false },
-      { key: "repo:shop-worker", projectId: null, role: null, roleLabel: "REPO", label: "shop-worker", repoFullName: null, current: false, disabled: true },
+      { key: "proj-fe", projectId: "proj-fe", role: "frontend", roleLabel: "FRONTEND", label: "shop-fe", pairName: "shop", startsPair: true, repoFullName: "Org/shop-fe", current: false, disabled: false },
+      { key: "proj-be", projectId: "proj-be", role: "backend", roleLabel: "BACKEND", label: "shop-be", pairName: "shop", startsPair: false, repoFullName: "Org/shop-be", current: true, disabled: false },
+      { key: "repo:shop-worker", projectId: null, role: null, roleLabel: "REPO", label: "shop-worker", pairName: null, startsPair: false, repoFullName: null, current: false, disabled: true },
     ]);
   });
 
@@ -231,6 +233,62 @@ describe("repoSwitchPresentation", () => {
     expect(shown.options.map((option) => option.current)).toEqual([true, false]);
   });
 
+  // The Tone-Testing Project: three test pairs and two apps under one Project.
+  const crowded = folder({
+    repositories: [
+      repo({ projectId: "a-fe", repoFullName: "Org/asfasga-fe" }),
+      repo({ projectId: "b-fe", repoFullName: "Org/afghwrwga-fe" }),
+      repo({ projectId: "a-be", repoFullName: "Org/asfasga-be", role: "backend" }),
+      repo({ projectId: "b-be", repoFullName: "Org/afghwrwga-be", role: "backend" }),
+      repo({ projectId: "app-1", repoFullName: "Org/asgh-e", role: "app" }),
+      repo({ projectId: "app-2", repoFullName: "Org/eatta", role: "app" }),
+    ],
+  });
+
+  // Every repository, each pair's halves side by side (frontend first) where
+  // the pair's first half stood; the pair's name heads its first half.
+  const crowdedSwitch = [
+    ["FRONTEND", "asfasga-fe", "asfasga", true],
+    ["BACKEND", "asfasga-be", "asfasga", false],
+    ["FRONTEND", "afghwrwga-fe", "afghwrwga", true],
+    ["BACKEND", "afghwrwga-be", "afghwrwga", false],
+    ["APP", "asgh-e", null, false],
+    ["APP", "eatta", null, false],
+  ];
+  const describeSwitch = (options: ReturnType<typeof repoSwitchPresentation>["options"]) =>
+    options.map((option) => [option.roleLabel, option.label, option.pairName, option.startsPair]);
+
+  it("offers every repository with each pair grouped, from either half", () => {
+    for (const current of ["b-fe", "b-be"]) {
+      const shown = repoSwitchPresentation(crowded, current);
+      expect(shown.projectName).toBe("shop");
+      expect(describeSwitch(shown.options)).toEqual(crowdedSwitch);
+      expect(shown.options.filter((option) => option.current).map((option) => option.projectId)).toEqual([current]);
+    }
+  });
+
+  it("offers every repository from one outside any pair, even when roles repeat", () => {
+    const shown = repoSwitchPresentation(crowded, "app-1");
+    expect(shown.projectName).toBe("shop");
+    expect(describeSwitch(shown.options)).toEqual(crowdedSwitch);
+    expect(shown.options.filter((option) => option.current).map((option) => option.projectId)).toEqual(["app-1"]);
+  });
+
+  it("offers a Project of hand-filed repositories whose roles all differ", () => {
+    const filed = folder({
+      repositories: [
+        repo({ repoFullName: "Org/shop-web" }),
+        repo({ projectId: "proj-be", repoFullName: "Org/shop-api", role: "backend" }),
+        repo({ projectId: "proj-app", repoFullName: "Org/shop-mobile", role: "app" }),
+      ],
+    });
+    expect(repoSwitchPresentation(filed, "proj-be").options.map((option) => option.label)).toEqual([
+      "shop-web",
+      "shop-api",
+      "shop-mobile",
+    ]);
+  });
+
   it("leaves the page as it was for one repository, no folder, or a nameless Project", () => {
     expect(repoSwitchPresentation(folder({ repositories: [repo()] }), "proj-fe")).toBe(SINGLE_REPO_PRESENTATION);
     expect(repoSwitchPresentation(null, "proj-fe")).toBe(SINGLE_REPO_PRESENTATION);
@@ -256,5 +314,53 @@ describe("nextEnabledIndex", () => {
 
   it("stays put when nothing else is enabled", () => {
     expect(nextEnabledIndex([{ disabled: false }, { disabled: true }], 0, 1)).toBe(0);
+  });
+});
+
+describe("repoSwitchOptionDisplay", () => {
+  const shop = folder({
+    repositories: [
+      repo(),
+      repo({ projectId: "proj-be", repoFullName: "Org/shop-be", role: "backend" }),
+      repo({ projectId: null, name: "shop-worker", repoFullName: null, role: null }),
+    ],
+  });
+  const [frontend, backend, worker] = repoSwitchOptions(shop, "proj-fe");
+
+  it("heads a pair with its name once and announces each half by pair and role", () => {
+    expect(repoSwitchOptionDisplay(frontend, null)).toEqual({
+      pairHeading: "shop",
+      ariaLabel: "shop frontend",
+      paired: true,
+      showName: false,
+      pending: undefined,
+      tooltip: undefined,
+      title: "shop-fe",
+    });
+    expect(repoSwitchOptionDisplay(backend, null)).toMatchObject({
+      pairHeading: null,
+      ariaLabel: "shop backend",
+      paired: true,
+      showName: false,
+    });
+  });
+
+  it("names a repository outside a pair and gives a disabled one the unlinked hint, not a title", () => {
+    expect(repoSwitchOptionDisplay(worker, null)).toEqual({
+      pairHeading: null,
+      ariaLabel: undefined,
+      paired: undefined,
+      showName: true,
+      pending: undefined,
+      tooltip: UNLINKED_REPO_HINT,
+      title: undefined,
+    });
+  });
+
+  it("marks only the option whose page is opening, never the page on screen", () => {
+    expect(repoSwitchOptionDisplay(backend, "proj-be").pending).toBe(true);
+    expect(repoSwitchOptionDisplay(backend, null).pending).toBeUndefined();
+    expect(repoSwitchOptionDisplay(frontend, "proj-be").pending).toBeUndefined();
+    expect(repoSwitchOptionDisplay(frontend, "proj-fe").pending).toBeUndefined();
   });
 });

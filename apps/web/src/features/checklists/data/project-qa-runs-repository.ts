@@ -1,6 +1,7 @@
-import { request, requestText } from "@/shared/api/request";
+import { request, requestBlob, requestText } from "@/shared/api/request";
 
 import { normalizeProjectReport } from "../model/project-report-rules";
+import { XLSX_TYPE } from "../model/qa-report-rules";
 import type { QaProjectReport } from "../model/project-report-types";
 import { normalizeProjectDispatch } from "../model/project-run-automation-rules";
 import {
@@ -14,9 +15,11 @@ import type {
   ProjectMyItems,
   ProjectQaRun,
   ProjectRunCurrent,
+  PoAcceptanceInput,
   SetVerificationInput,
 } from "../model/project-run-types";
 import type { QaSignoffInput } from "../model/qa-run-types";
+import type { SetTestCaseResultInput } from "../model/test-case-types";
 import { record } from "../model/wire-readers";
 
 /* The only place in the checklists domain that talks to the Project QA run
@@ -92,12 +95,48 @@ export const projectQaRunsRepository = {
     return runFromReply(raw);
   },
 
+  /**
+   * Record QA's result (or note) on one test case of a story. The reply is
+   * the run; null when it carried none, so the caller reads the run again.
+   */
+  async setTestCaseResult(
+    deliveryProjectId: string,
+    runId: string,
+    itemId: string,
+    testCaseId: string,
+    input: SetTestCaseResultInput,
+  ): Promise<ProjectQaRun | null> {
+    const raw = await request<unknown>(
+      `${runPath(deliveryProjectId, runId)}/items/${enc(itemId)}/test-cases/${enc(testCaseId)}`,
+      { method: "PATCH", body: JSON.stringify(input) },
+    );
+    return runFromReply(raw);
+  },
+
   async signoff(deliveryProjectId: string, runId: string, input: QaSignoffInput): Promise<ProjectQaRun> {
     return runOrThrow(await request<unknown>(`${runPath(deliveryProjectId, runId)}/signoff`, post(input)));
   },
 
   async reopen(deliveryProjectId: string, runId: string): Promise<ProjectQaRun> {
     return runOrThrow(await request<unknown>(`${runPath(deliveryProjectId, runId)}/reopen`, post()));
+  },
+
+  /**
+   * The Product owner passes or fails one item of a signed-off run. Failing
+   * reopens the run and returns the story to the Developers. The reply is the
+   * run; null when it carried none, so the caller reads the run again.
+   */
+  async acceptItem(
+    deliveryProjectId: string,
+    runId: string,
+    itemId: string,
+    input: PoAcceptanceInput,
+  ): Promise<ProjectQaRun | null> {
+    const raw = await request<unknown>(`${runPath(deliveryProjectId, runId)}/items/${enc(itemId)}/acceptance`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+    return runFromReply(raw);
   },
 
   /**
@@ -130,6 +169,13 @@ export const projectQaRunsRepository = {
   reportMarkdown(deliveryProjectId: string, runId: string): Promise<string> {
     return requestText(`${runPath(deliveryProjectId, runId)}/report?format=md`, {
       headers: { Accept: "text/markdown" },
+    });
+  },
+
+  /** The same report as an Excel workbook (.xlsx), one sheet per section. */
+  reportExcel(deliveryProjectId: string, runId: string): Promise<Blob> {
+    return requestBlob(`${runPath(deliveryProjectId, runId)}/report?format=xlsx`, {
+      headers: { Accept: XLSX_TYPE },
     });
   },
 

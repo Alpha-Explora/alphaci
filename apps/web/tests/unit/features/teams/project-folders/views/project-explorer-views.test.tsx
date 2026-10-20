@@ -435,6 +435,26 @@ describe("ProjectExplorer", () => {
     expect(container.querySelectorAll("li.pf-card")).toHaveLength(2);
   });
 
+  it.each([
+    ["lead", true],
+    ["admin", true],
+    ["member", false],
+    ["qa", false],
+  ])("offers %s the Project's Members: %s", async (role, offered) => {
+    mockSession.appRole = role;
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.requirementCounts.mockResolvedValue({});
+    const container = await renderExplorer();
+    await act(async () => manage(container, "testfinals")!.click());
+
+    const members = link(container, "Members");
+    if (offered) {
+      expect(members?.getAttribute("href")).toBe(`/groups/${GROUP_ID}/delivery-projects/dp-1#members`);
+    } else {
+      expect(members).toBeUndefined();
+    }
+  });
+
   it("lets the QA Team and Product owners open only the frontend repository", async () => {
     for (const role of ["lead", "qa"]) {
       mockSession.appRole = role;
@@ -458,6 +478,18 @@ describe("ProjectExplorer", () => {
     await act(async () => manage(container, "testfinals")!.click());
     const hrefs = [...container.querySelectorAll(".pf-repo a.pf-chip")].map((chip) => chip.getAttribute("href"));
     expect(hrefs).toEqual(["/projects/proj-fe", "/projects/proj-be"]);
+    // A Developer works from each repository's Checklists tab: no second copy here.
+    expect(container.querySelector('[data-testid="qa-workspace"]')).toBeNull();
+    expect(container.textContent).not.toContain("Requirements and QA");
+  });
+
+  it("keeps the requirements for a Developer on a Project with no repository yet", async () => {
+    mockSession.appRole = "member";
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.requirementCounts.mockResolvedValue({});
+    const container = await renderExplorer();
+    await act(async () => button(container, "wallet")!.click());
+    expect(container.querySelector('[data-testid="qa-workspace"]')?.getAttribute("data-project")).toBe("dp-2");
   });
 
   it("offers create-in-Project on an empty Project", async () => {

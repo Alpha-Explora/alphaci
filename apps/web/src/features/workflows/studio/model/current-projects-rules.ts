@@ -11,15 +11,15 @@ function safeId(value: string | null | undefined): string | null {
 
 /**
  * The team the Projects view shows: always the header's selection. Falls back
- * to the first team only while the header has not resolved a selection that
- * this list knows, so the page is never blank merely because nothing has been
- * picked yet this session.
+ * to the first team only when there is no selection. A selected team missing
+ * from a cached list must never show another team's projects.
  */
 export function headerTeam<T extends { id: string }>(
   teams: readonly T[],
   headerWorkspaceId: string | null | undefined,
 ): T | null {
-  return teams.find((team) => team.id === headerWorkspaceId) ?? teams[0] ?? null;
+  if (headerWorkspaceId) return teams.find((team) => team.id === headerWorkspaceId) ?? null;
+  return teams[0] ?? null;
 }
 
 /** What a `/workflows?group=…&project=…` link asks the Projects view for. */

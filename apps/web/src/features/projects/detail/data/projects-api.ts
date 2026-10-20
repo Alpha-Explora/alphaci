@@ -27,6 +27,8 @@ import type {
   ProjectSyncSnapshotResponse,
   ProvisionedProjectsResponse,
   ReinstallDeploymentSecretsResponse,
+  ResumeDeploymentTargetDeploysResponse,
+  RollbackDeploymentTargetResponse,
   SetupProjectRequest,
   SetupProjectResponse,
   UpdateDeploymentTargetRequest,
@@ -326,6 +328,29 @@ export async function reinstallDeploymentSecrets(
     {
       method: "POST",
     },
+  );
+}
+
+/** Puts an earlier deploy of this target back live. Offered when `actions.rollback.enabled`. */
+export async function rollbackDeploymentTarget(
+  projectId: string,
+  targetId: string,
+  body: { deployId: string; reason: string },
+): Promise<RollbackDeploymentTargetResponse> {
+  return request<RollbackDeploymentTargetResponse>(
+    `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/rollback`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+/** Ends a rollback that holds new deploys: the newest production deploy goes live again. */
+export async function resumeDeploymentTargetDeploys(
+  projectId: string,
+  targetId: string,
+): Promise<ResumeDeploymentTargetDeploysResponse> {
+  return request<ResumeDeploymentTargetDeploysResponse>(
+    `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/rollback/resume`,
+    { method: "POST" },
   );
 }
 

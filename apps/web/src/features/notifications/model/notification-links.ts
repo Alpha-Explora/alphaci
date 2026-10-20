@@ -6,6 +6,11 @@
 import type { AppRole } from "@/shared/api/contracts";
 import { studioTabFor } from "@/features/projects/detail";
 
+import {
+  isQaRefusal,
+  qaRefusalHref,
+  isMembershipNotification,
+} from "./notifications-rules";
 import type { NotificationItem } from "./notifications-types";
 
 /** The event codes covered by §6's "Returned to Dev" loop and §5's promotion
@@ -13,19 +18,11 @@ import type { NotificationItem } from "./notifications-types";
 const QA_STUDIO_DEEP_LINK_EVENTS: ReadonlySet<string> = new Set([
   "qa.run.signed_off",
   "qa.item.retest_requested",
-  "qa.item.blocked",
   "qa.promotion.merged",
 ]);
 
 function projectPath(projectId: string): string {
   return `/projects/${encodeURIComponent(projectId)}`;
-}
-
-/** §6: the developer goes to Overview, with the "My QA items" card asked to
- * scroll into view and briefly highlight itself. */
-function returnedToDevHref(projectId: string | null): string | null {
-  if (!projectId) return null;
-  return `${projectPath(projectId)}?focus=my-qa-items#overview`;
 }
 
 /** §7: straight into the project folder when both ids are known, else the
@@ -55,13 +52,20 @@ function qaStudioDeepLinkHref(
  * `projectId` at all — the row stays a plain, non-interactive row).
  */
 export function notificationHref(
-  item: Pick<NotificationItem, "eventCode" | "projectId" | "groupId" | "deliveryProjectId">,
+  item: Pick<
+    NotificationItem,
+    "eventCode" | "projectId" | "groupId" | "deliveryProjectId"
+  >,
   appRole: AppRole | null | undefined,
 ): string | null {
   const projectId = item.projectId ?? null;
 
-  if (item.eventCode === "qa.item.returned_to_dev") {
-    return returnedToDevHref(projectId);
+  if (isMembershipNotification(item)) {
+    return item.groupId ? `/groups/${encodeURIComponent(item.groupId)}` : null;
+  }
+
+  if (isQaRefusal(item)) {
+    return qaRefusalHref(item);
   }
   if (item.eventCode === "project_created") {
     return projectCreatedHref({

@@ -7,7 +7,7 @@ import { Suspense, useState } from "react";
 import { AppNav } from "@/features/workspace/selection";
 import { FlowBackground } from "@/shared/layout/flow-background";
 import { PipelineLoader } from "@/shared/layout/pipeline-loader";
-import { WorkspaceProvider } from "@/features/workspace/selection";
+import { WorkspaceProvider, useWorkspaceSelection } from "@/features/workspace/selection";
 import { WorkflowBuilder } from "./workflow-builder";
 import { isGuest, useAuthSession, useSignOutAndRedirect } from "@/features/auth/session";
 import { studioSessionFields } from "../model/workflow-studio-rules";
@@ -38,6 +38,11 @@ function WorkflowStudioRoute() {
   const searchParams = useSearchParams();
   // Read once on arrival: later ?group= changes belong to the wizard.
   const [linkedTeamId] = useState(() => readProjectsDeepLink(searchParams).groupId);
+  // Creation is a new page scope even when Next keeps /workflows mounted.
+  // Reset the provider and wizard together; ordinary wizard links keep state.
+  const createdWorkspaceId = searchParams.get("created") === "workspace"
+    ? readProjectsDeepLink(searchParams).groupId
+    : null;
   const { status, session, error, refresh } = useAuthSession();
   const { signOutAndRedirect, isSigningOut } = useSignOutAndRedirect();
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
@@ -63,7 +68,7 @@ function WorkflowStudioRoute() {
   const fields = studioSessionFields(session);
 
   return (
-    <WorkspaceProvider initialWorkspaceId={linkedTeamId}>
+    <WorkspaceProvider key={createdWorkspaceId} initialWorkspaceId={createdWorkspaceId ?? linkedTeamId}>
       <main className="dash-shell" suppressHydrationWarning>
         <a href="#main-content" className="skip-link">
           Skip to main content
@@ -82,6 +87,7 @@ function WorkflowStudioRoute() {
         {logoutMessage ? <p className="error-text">{logoutMessage}</p> : null}
 
         <div id="main-content" style={{ padding: 0 }}>
+          <WorkspaceCreatedNotice workspaceId={createdWorkspaceId} />
           <WorkflowBuilder
             login={fields.login}
             plan={fields.plan}
@@ -92,6 +98,22 @@ function WorkflowStudioRoute() {
         </div>
       </main>
     </WorkspaceProvider>
+  );
+}
+
+function WorkspaceCreatedNotice({ workspaceId }: Readonly<{ workspaceId: string | null }>) {
+  const { selectedWorkspace } = useWorkspaceSelection();
+  const [dismissed, setDismissed] = useState(false);
+  if (!workspaceId || selectedWorkspace?.id !== workspaceId || dismissed) return null;
+  return (
+    <div style={{ padding: "0.75rem var(--layout-gutter) 0" }}>
+      <div className="status-banner success" role="status">
+        <span>Workspace created</span>
+        <button className="inline-link" type="button" onClick={() => setDismissed(true)}>
+          Dismiss
+        </button>
+      </div>
+    </div>
   );
 }
 

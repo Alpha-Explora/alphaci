@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { getGroups, type GroupSummary } from "@/features/groups";
@@ -17,13 +17,18 @@ export type CurrentProjectsStatus = "loading" | "ready" | "error";
 
 export const GROUPS_LOAD_ERROR = "Could not load teams.";
 
+interface GroupsResult {
+  workspaceId: string | null;
+  groups: GroupSummary[];
+  failed: boolean;
+}
+
 function statusOf(
   loadingProjects: boolean,
-  groups: GroupSummary[] | null,
-  loadFailed: boolean,
+  result: GroupsResult | null,
 ): CurrentProjectsStatus {
-  if (loadingProjects || groups === null) return "loading";
-  return loadFailed ? "error" : "ready";
+  if (loadingProjects || result === null) return "loading";
+  return result.failed ? "error" : "ready";
 }
 
 /**
@@ -39,9 +44,9 @@ function statusOf(
  */
 export function useCurrentProjectsViewModel(options: { loadingProjects: boolean }) {
   const { loadingProjects } = options;
-  const [groups, setGroups] = useState<GroupSummary[] | null>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
+  const [result, setResult] = useState<GroupsResult | null>(null);
   const [loadKey, setLoadKey] = useState(0);
+  const requestId = useRef(0);
 
   const searchParams = useSearchParams();
   const { selectedWorkspaceId } = useWorkspaceSelection();
@@ -49,22 +54,24 @@ export function useCurrentProjectsViewModel(options: { loadingProjects: boolean 
   const [link] = useState(() => readProjectsDeepLink(searchParams));
 
   useEffect(() => {
-    let active = true;
+    const requests = requestId;
+    const id = ++requests.current;
     getGroups()
       .then((items) => {
-        if (!active) return;
-        setGroups(items);
-        setLoadFailed(false);
+        if (id !== requests.current) return;
+        setResult({ workspaceId: selectedWorkspaceId, groups: items, failed: false });
       })
       .catch(() => {
-        if (!active) return;
-        setGroups([]);
-        setLoadFailed(true);
+        if (id !== requests.current) return;
+        setResult({ workspaceId: selectedWorkspaceId, groups: [], failed: true });
       });
     return () => {
-      active = false;
+      requests.current++;
     };
-  }, [loadKey]);
+  }, [loadKey, selectedWorkspaceId]);
+
+  const currentResult = result?.workspaceId === selectedWorkspaceId ? result : null;
+  const groups = currentResult?.groups ?? null;
 
   const team = useMemo(
     () => headerTeam(groups ?? [], selectedWorkspaceId),
@@ -80,13 +87,12 @@ export function useCurrentProjectsViewModel(options: { loadingProjects: boolean 
   if (nextTeam !== newProjectTeam) setNewProjectTeam(nextTeam);
 
   function retry() {
-    setGroups(null);
-    setLoadFailed(false);
+    setResult(null);
     setLoadKey((key) => key + 1);
   }
 
   return {
-    status: statusOf(loadingProjects, groups, loadFailed),
+    status: statusOf(loadingProjects, currentResult),
     /** The header's team, or null when the caller is in none. */
     team,
     /** The Project a `?project=` link opens on this team, or null. */

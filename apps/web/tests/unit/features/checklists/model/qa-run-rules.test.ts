@@ -17,6 +17,7 @@ import {
   roleCanRequestRetest,
   roleCanStartRun,
   severityLabel,
+  signoffBlockedReason,
   signoffEligibility,
   signoffError,
   signoffPayload,
@@ -208,7 +209,7 @@ describe("signoff eligibility", () => {
     expect(signoffEligibility(allPassed).map((entry) => entry.allowed)).toEqual([true, true, true]);
     expect(defaultVerdict(allPassed)).toBe("APPROVED");
 
-    const twoOpen = qaRun({ items: [runItem(0, { status: "failed" }), runItem(1)] });
+    const twoOpen = qaRun({ items: [runItem(0, { status: "in_progress" }), runItem(1)] });
     const approved = signoffEligibility(twoOpen)[0];
     expect(approved).toEqual({ verdict: "APPROVED", allowed: false, reason: "2 items are not passed yet." });
   });
@@ -220,12 +221,29 @@ describe("signoff eligibility", () => {
       allowed: false,
       reason: "1 item is still pending or in progress.",
     });
-    const settled = qaRun({ items: [runItem(0, { status: "failed" }), runItem(1, { status: "passed" })] });
-    expect(defaultVerdict(settled)).toBe("CONDITIONAL");
+    const settled = qaRun({ items: [runItem(0, { status: "passed" }), runItem(1, { status: "passed" })] });
+    expect(signoffEligibility(settled)[1]?.allowed).toBe(true);
     expect(signoffError(settled, "CONDITIONAL", "  ")).toBe(
       "Write the conditions this approval depends on.",
     );
     expect(signoffError(settled, "CONDITIONAL", "Fix copy next release")).toBeNull();
+  });
+
+  it("offers no verdict while QA has a failure open, and says why", () => {
+    const open = qaRun({
+      items: [runItem(0, { status: "passed" }), runItem(1, { status: "blocked" }), runItem(2, { status: "failed" })],
+    });
+    const reason = "2 items are failed, blocked or returned to dev. Sign off once QA has verified the fixes.";
+    expect(signoffBlockedReason(open)).toBe(reason);
+    expect(signoffEligibility(open)).toEqual([
+      { verdict: "APPROVED", allowed: false, reason },
+      { verdict: "CONDITIONAL", allowed: false, reason },
+      { verdict: "REJECTED", allowed: false, reason },
+    ]);
+    expect(signoffBlockedReason(qaRun({ items: [runItem(0, { status: "returned_to_dev" })] }))).toBe(
+      "1 item is failed, blocked or returned to dev. Sign off once QA has verified the fix.",
+    );
+    expect(signoffBlockedReason(qaRun({ items: [runItem(0), runItem(1, { status: "passed" })] }))).toBeNull();
   });
 
   it("always allows Rejected, and refuses approving an empty run", () => {

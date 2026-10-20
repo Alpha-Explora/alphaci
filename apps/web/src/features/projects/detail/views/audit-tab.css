@@ -195,21 +195,27 @@
   color: var(--brand);
 }
 
-/* The sync line: one quiet row above the trail, a status dot leading it. */
-.audit-trail__sync {
+/* One row over the trail, no box: the Filter pill, then the sync status and Sync now. */
+.audit-trail__toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.45rem 0.7rem;
-  padding: 0.5rem 0.6rem 0.5rem 0.75rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 0.7rem;
-  background: var(--bg-soft);
+  gap: 0.5rem 1rem;
 }
 
-.audit-trail__sync[data-tone="warning"] {
-  border-color: var(--border-amber);
-  background: var(--accent-amber-light);
+/* The sync line: a status dot leading quiet text, pushed to the row's end. */
+.audit-trail__sync {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem 0.7rem;
+  margin-left: auto;
+}
+
+.audit-trail__sync[data-tone="warning"] .audit-trail__sync-text {
+  color: var(--warning);
 }
 
 .audit-trail__sync-dot {
@@ -232,7 +238,7 @@
 }
 
 .audit-trail__sync-text {
-  flex: 1 1 14rem;
+  flex: 0 1 auto;
   min-width: 0;
   margin: 0;
   font-size: 0.8rem;
@@ -252,6 +258,7 @@
   flex-basis: 100%;
   margin: 0;
   font-size: 0.78rem;
+  text-align: right;
 }
 
 @keyframes audit-trail-breathe {
@@ -265,41 +272,6 @@
   }
 }
 
-/* The source filter: three chips, the chosen one filled. */
-.audit-trail__filters {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.audit-trail__filter {
-  min-height: 2rem;
-  padding: 0.2rem 0.8rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  background: none;
-  color: var(--text-secondary);
-  font-size: 0.76rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background-color 160ms ease-out,
-    border-color 160ms ease-out,
-    color 160ms ease-out;
-}
-
-.audit-trail__filter:hover {
-  border-color: var(--border-strong);
-  color: var(--text-primary);
-}
-
-.audit-trail__filter[aria-pressed="true"] {
-  border-color: var(--border-brand);
-  background: var(--brand-light);
-  color: var(--text-primary);
-}
-
-.audit-trail__filter:focus-visible,
 .audit-trail__push-toggle:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
@@ -384,7 +356,6 @@
   .audit-trail__row,
   .audit-trail__row--skeleton,
   .audit-trail__sync-dot,
-  .audit-trail__filter,
   .audit-trail__push-caret {
     transition: none;
     animation: none;

@@ -1,5 +1,23 @@
 # Directory Update Log
 
+## 2026-10-20
+
+- **Update**: Brought the bundle and `CLAUDE.md` in line with the code. The backend origin setting is `ALLOWED_ORIGINS`, not `CORS_ORIGINS`. The self-host install is not egress-only, because runners call `/api/v1/ci/*`. The self-host runbook matches the backend Caddyfile and compose file, and pins the image by digest. Corrected the coverage floors, stylelint ceiling, feature domains, routes and test baseline. `onprem-hosts.md` says AlphaCI allocates host ports. The executive report lists the current hosting options and QA, PO Studio, promotion and rollback.
+- **Deletion**: Removed the completed MVVM alignment plan (`docs/superpowers/plans/2026-08-25-next-feature-mvvm-alignment.md`). Its lasting rules are in ADR-0001.
+- **Update**: The feature map generator lists the `hosts` and `public-site` domains and no longer repeats a source. Regenerated the architecture maps.
+
+- **Update**: On-prem host assignments in the create wizard and in Hosting pre-fill each slot's container port and health path from the backend (catalog `serviceRuntime`, `GET .../host-assignment/defaults`) instead of frontend constants. See CHANGELOG.
+
+## 2026-10-19
+
+- **Update**: The Inbox and navigation now share recipient-scoped live notification snapshots. Workspace member alerts include Open workspace links and refresh the picker; periodic fetches recover when streams are unavailable.
+
+- **Creation**: Added the self-hosted frontend image runbook (`runbook-selfhost.md`), covering the fixed build arguments, the same-origin reverse-proxy contract and the `/healthz` liveness route. The Dockerfile gained a `HEALTHCHECK`, and the generated architecture counts include the new route.
+
+## 2026-10-15
+
+- **Creation**: Added the workspace Hosts route and lean MVVM feature, checksum-verifying installer instructions, explicit Hosting assignments, readiness reasons, and optional project setup selections. Added the on-prem Hosts contract and preserved existing normal sign-in and promotion rules.
+
 ## 2026-09-15
 
 * **Creation**: Added the real Enterprise client-composition settings surface. It is gated by the backend-owned `runtime.client-composition` capability and `clientComposition.enabled` projection, while hosted/EDU profile stubs and artifact scans fail closed on the exported `EnterpriseClientCompositionSettingsView` symbol.

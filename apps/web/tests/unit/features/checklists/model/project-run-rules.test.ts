@@ -25,6 +25,7 @@ import {
   repoShortName,
   repositoriesLabel,
   requirementsChangedLabel,
+  requirementsChangedNote,
   resolveProjectRunPermissions,
   runFilterCounts,
   runFilterEmptyText,
@@ -140,21 +141,67 @@ describe("who may record Verification", () => {
       canSignOff: true,
       canReopen: false,
       canDispatch: true,
+      canManageTestCases: false,
+      canRecordTestCases: false,
+      canAccept: false,
     });
-    const unflagged = { permissions: { canSetVerification: null, canSignOff: null, canReopen: null, canDispatch: null } };
+    const unflagged = {
+      permissions: {
+        canSetVerification: null,
+        canSignOff: null,
+        canReopen: null,
+        canDispatch: null,
+        canManageTestCases: null,
+        canRecordTestCases: null,
+        canAccept: null,
+      },
+    };
     expect(resolveProjectRunPermissions(unflagged, "member")).toEqual({
       canSetVerification: false,
       canSignOff: false,
       canReopen: false,
       canDispatch: false,
+      canManageTestCases: false,
+      canRecordTestCases: false,
+      canAccept: false,
     });
     expect(resolveProjectRunPermissions(unflagged, "lead")).toEqual({
       canSetVerification: true,
       canSignOff: true,
       canReopen: true,
       canDispatch: true,
+      canManageTestCases: false,
+      // A Product owner reads test case results, and accepts only where the server says so.
+      canRecordTestCases: false,
+      canAccept: false,
     });
+    // The QA Team writes test cases; a Product owner verifies but does not.
+    expect(resolveProjectRunPermissions(unflagged, "qa").canManageTestCases).toBe(true);
+    expect(resolveProjectRunPermissions(unflagged, "qa").canRecordTestCases).toBe(true);
     expect(resolveProjectRunPermissions(null, "qa").canReopen).toBe(false);
+  });
+
+  it("reads each item's Product owner acceptance, pending unless the server says passed", () => {
+    const accepted = normalizeProjectRun(
+      projectRunWire({
+        items: [
+          runItemWire({
+            poAcceptance: {
+              status: "passed",
+              acceptedBy: { id: "po-1", login: "pia-po" },
+              acceptedAt: "2026-10-02T09:00:00Z",
+            },
+          }),
+          runItemWire({ id: "run-item-2", position: 1 }),
+        ],
+        permissions: { canSetVerification: false, canSignOff: false, canReopen: true, canDispatch: false, canAccept: true },
+      }),
+    )!;
+    expect(accepted.items.map((item) => item.poAcceptance)).toEqual([
+      { status: "passed", acceptedBy: { id: "po-1", login: "pia-po" }, acceptedAt: "2026-10-02T09:00:00Z" },
+      { status: "pending", acceptedBy: null, acceptedAt: null },
+    ]);
+    expect(resolveProjectRunPermissions(accepted, "lead").canAccept).toBe(true);
   });
 
   it("starts runs for QA Team, Product owners and admins only", () => {
@@ -163,11 +210,11 @@ describe("who may record Verification", () => {
     expect(canStartProjectRun(undefined)).toBe(false);
   });
 
-  it("offers Passed only once a Developer marked the item Done, and never In progress", () => {
+  it("offers Pending, Passed and Failed (Passed once a Developer marked the item Done), never Blocked or Returned to dev", () => {
     const done = run().items[0];
     const todo = run().items[1];
-    expect(allowedVerificationStatuses(done, OPEN, CAN)).toEqual(["pending", "passed", "failed", "blocked", "returned_to_dev"]);
-    expect(allowedVerificationStatuses(todo, OPEN, CAN)).toEqual(["pending", "failed", "blocked", "returned_to_dev"]);
+    expect(allowedVerificationStatuses(done, OPEN, CAN)).toEqual(["pending", "passed", "failed"]);
+    expect(allowedVerificationStatuses(todo, OPEN, CAN)).toEqual(["pending", "failed"]);
     expect(allowedVerificationStatuses({ ...done, progress: null }, OPEN, CAN)).not.toContain("passed");
     expect(canPass(done)).toBe(true);
     expect(passedUnavailableReason(done)).toBeNull();
@@ -235,6 +282,13 @@ describe("what the run panel says", () => {
   it("words requirement changes by run state", () => {
     expect(requirementsChangedLabel({ status: "signed_off" })).toBe("Requirements changed since sign-off");
     expect(requirementsChangedLabel({ status: "open" })).toBe("Requirements changed since this run started");
+    // Blocking now: a signed-off run must be reopened; an open run takes the new items.
+    expect(requirementsChangedNote({ status: "signed_off" })).toBe(
+      "Merge to main stays blocked until QA verifies the change. A Product owner reopens the run: new items join it as Pending, and QA signs off again.",
+    );
+    expect(requirementsChangedNote({ status: "open" })).toBe(
+      "New items join this run as Pending. Merge to main needs every item passed.",
+    );
   });
 
   it("groups items by requirement, Features first, in run order", () => {

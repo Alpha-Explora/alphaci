@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import { useCapabilities } from "@/features/capabilities/current";
+import { useHostAvailability } from "@/features/hosts/availability";
 import { useNotificationsSummaryViewModel } from "@/features/notifications/summary";
 
 import {
@@ -34,7 +35,8 @@ export interface AppNavViewModel {
  * loads. Applied once per team, so the viewer's own pick afterwards stands.
  */
 function useSelectPageWorkspace(pageWorkspaceId: string | null | undefined) {
-  const { workspaces, otherWorkspaces, setSelectedWorkspaceId } = useWorkspaceSelection();
+  const { workspaces, otherWorkspaces, setSelectedWorkspaceId } =
+    useWorkspaceSelection();
   const appliedFor = useRef<string | null>(null);
 
   useEffect(() => {
@@ -53,6 +55,7 @@ function useSelectPageWorkspace(pageWorkspaceId: string | null | undefined) {
 /** Route state and shell data for the navigation view. */
 export function useAppNavViewModel(options: {
   guest: boolean;
+  userId?: string | null;
   /** The same signal that shows Admin: adds the other teams to the picker. */
   isPlatformAdmin?: boolean;
   /** The session's global role and platform role: who may open /activity. */
@@ -71,8 +74,30 @@ export function useAppNavViewModel(options: {
     includeOtherTeams: Boolean(options.isPlatformAdmin),
   });
   useSelectPageWorkspace(options.pageWorkspaceId);
-  const notifications = useNotificationsSummaryViewModel({ guest: options.guest });
-  const { qaChecklistsEnabled } = useCapabilities();
+  const notifications = useNotificationsSummaryViewModel({
+    guest: options.guest,
+    userId: options.userId,
+  });
+  const { refreshWorkspaces } = useWorkspaceSelection();
+  useEffect(() => {
+    if (notifications.workspaceRevision > 0) refreshWorkspaces();
+  }, [notifications.workspaceRevision, refreshWorkspaces]);
+  useEffect(() => {
+    const refresh = () => {
+      if (!options.guest && document.visibilityState !== "hidden")
+        refreshWorkspaces();
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [options.guest, refreshWorkspaces]);
+  const { qaChecklistsEnabled, envProvisioningEnabled } = useCapabilities();
+  const hostAvailability = useHostAvailability(
+    !options.guest && envProvisioningEnabled,
+  );
   // The header team's role decides Activity: the feed is per team, and the
   // backend opens it to that team's Lead and Delegated leads only.
   const { selectedWorkspace } = useWorkspaceSelection();
@@ -89,6 +114,11 @@ export function useAppNavViewModel(options: {
     error: workspaces.error,
     workspaces,
     notifications,
-    mainItems: sidebarMainItems({ guest: options.guest, qaChecklistsEnabled, canOpenActivity }),
+    mainItems: sidebarMainItems({
+      guest: options.guest,
+      qaChecklistsEnabled,
+      canOpenActivity,
+      hostsEnabled: hostAvailability === "enabled",
+    }),
   };
 }

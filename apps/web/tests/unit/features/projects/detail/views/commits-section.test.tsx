@@ -191,6 +191,8 @@ describe("Commits tab", () => {
 
     const sha = container.querySelector<HTMLButtonElement>(".commits__sha")!;
     expect(sha.getAttribute("aria-label")).toBe("Copy commit SHA aaaaaaa");
+    // A visible copy icon says the chip copies.
+    expect(sha.querySelector(".commits__sha-icon svg")).not.toBeNull();
     await act(async () => sha.click());
     expect(writeText).toHaveBeenCalledWith("a".repeat(40));
     expect(sha.textContent).toBe("Copied");
@@ -219,5 +221,28 @@ describe("Commits tab", () => {
     await poll(() => container.textContent?.includes("Commits could not be read from GitHub.") ?? false);
     await act(async () => button(container, "Retry")!.click());
     await poll(() => rows(container).length === 1);
+  });
+
+  it("browses the files at a commit, with the branch it was listed on, only where the Code tab is offered", async () => {
+    repo.commits.mockResolvedValue(page("uat", [commit("a", null)]));
+    const onBrowseCommit = jest.fn();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(<CommitsSection projectId="p1" onBrowseCommit={onBrowseCommit} />);
+    });
+    await poll(() => rows(container).length === 1);
+
+    const browse = rows(container)[0].querySelector<HTMLButtonElement>(".commits__browse")!;
+    expect(browse.getAttribute("aria-label")).toBe("Browse files at aaaaaaa");
+    await act(async () => browse.click());
+    expect(onBrowseCommit).toHaveBeenCalledWith({ sha: "a".repeat(40), shortSha: "aaaaaaa", branch: "uat" });
+
+    act(() => root?.unmount());
+    root = null;
+    const plain = await render();
+    await poll(() => rows(plain).length === 1);
+    expect(plain.querySelector(".commits__browse")).toBeNull();
   });
 });

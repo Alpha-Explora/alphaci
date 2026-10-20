@@ -30,6 +30,7 @@ import type {
   UpdateRequirementInput,
   UpdateRequirementItemInput,
 } from "./requirement-types";
+import { normalizeTestCategories } from "./test-case-rules";
 import { errorStatus, oneOf, record, records, text, type Loose } from "./wire-readers";
 
 type Role = AppRole | null | undefined;
@@ -248,6 +249,7 @@ export function normalizeRequirementItem(value: unknown, requirementId: string):
     progressAt: text(raw.progressAt),
     rowVersion: wholeOrNull(raw.rowVersion),
     canSetProgress: typeof raw.canSetProgress === "boolean" ? raw.canSetProgress : null,
+    testCategories: normalizeTestCategories(raw.testCategories),
   };
 }
 

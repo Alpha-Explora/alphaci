@@ -4,6 +4,7 @@ import {
   environmentPathLine,
   environmentsCaption,
   type HostingChoice,
+  type ServiceLayout,
 } from "../model/hosting-choice-rules";
 import type { EnvironmentDraft } from "../model/project-environments-rules";
 
@@ -16,7 +17,13 @@ import type { EnvironmentDraft } from "../model/project-environments-rules";
 export function EnvironmentsPath({
   choice,
   environments,
-}: Readonly<{ choice: HostingChoice; environments: readonly EnvironmentDraft[] }>) {
+  layout = "single",
+}: Readonly<{
+  choice: HostingChoice;
+  environments: readonly EnvironmentDraft[];
+  /** Two repositories on-prem: the caption says both deploy to the host. */
+  layout?: ServiceLayout;
+}>) {
   return (
     <section
       className="wizard-environments"
@@ -41,7 +48,7 @@ export function EnvironmentsPath({
           </li>
         ))}
       </ol>
-      <p className="wizard-field__hint">{environmentsCaption(choice)}</p>
+      <p className="wizard-field__hint">{environmentsCaption(choice, layout)}</p>
     </section>
   );
 }

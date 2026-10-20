@@ -22,6 +22,8 @@ export interface NotificationItem {
 }
 
 export interface NotificationsResponse {
+  /** Reject responses from a session whose identity changed in another tab. */
+  userId?: string;
   enabled: boolean;
   items: NotificationItem[];
   unreadCount: number;

@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 import { reviewProjectLabel } from "../model/project-name-rules";
 import { environmentPathLine, hostingReviewLines } from "../model/hosting-choice-rules";
 import { githubOrgLogin, selectedShapeLabel, stackRuntimeLabel } from "../model/setup-tab-rules";
@@ -49,6 +51,8 @@ function ReviewHostingRow({
     choice: hosting.choice,
     environments: form.environments,
     hostedTargets: envProvisioningEnabled ? deploymentProvisioning.hostedPayload.targets : [],
+    layout: hosting.layout,
+    repoName: form.repoName,
   });
   return (
     <div className="repo-wizard-review__wide">
@@ -70,10 +74,13 @@ function GithubCreateIcon() {
 }
 
 function ReviewCreateButton({
+  describedBy,
   disabled,
   isCreatingProject,
   onCreateProject,
 }: Readonly<{
+  /** The id of the blocker above the button, when there is one. */
+  describedBy?: string;
   disabled: boolean;
   isCreatingProject: boolean;
   onCreateProject: () => void;
@@ -89,6 +96,7 @@ function ReviewCreateButton({
       type="button"
       className="primary-button create-repo-btn-premium"
       data-testid="setup-project-button"
+      aria-describedby={describedBy}
       disabled={disabled}
       onClick={() => void onCreateProject()}
       style={{ marginTop: "2rem" }}
@@ -100,6 +108,7 @@ function ReviewCreateButton({
 }
 
 export function SetupWizardReview({
+  createBlocker,
   deploymentProvisioning,
   envProvisioningEnabled,
   finalCreateDisabled,
@@ -112,6 +121,7 @@ export function SetupWizardReview({
   projectCatalog,
 }: Readonly<WizardStepProps>) {
   const owner = githubOrgLogin(github.allRepositoriesAccount?.accountLogin);
+  const blockerId = useId();
 
   return (
     <>
@@ -138,7 +148,13 @@ export function SetupWizardReview({
         </dl>
       </section>
 
+      {createBlocker ? (
+        <p className="wizard-notice wizard-notice--alert" id={blockerId} role="alert">
+          {createBlocker}
+        </p>
+      ) : null}
       <ReviewCreateButton
+        describedBy={createBlocker ? blockerId : undefined}
         disabled={finalCreateDisabled}
         isCreatingProject={isCreatingProject}
         onCreateProject={onCreateProject}

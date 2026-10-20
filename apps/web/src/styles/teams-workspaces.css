@@ -451,6 +451,22 @@
   text-decoration: underline;
 }
 
+/* Back to the repository's top level: an icon, not the word "root". */
+.ws-crumb--home {
+  display: inline-grid;
+  place-items: center;
+  color: var(--text-secondary);
+}
+
+.ws-crumb--home:hover {
+  color: var(--accent-primary);
+}
+
+.ws-crumb:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
 .ws-crumb-sep {
   color: var(--text-secondary);
   font-size: 0.85rem;
@@ -603,25 +619,16 @@
   gap: 0.75rem;
 }
 
-.ws-filters {
-  display: inline-flex;
-  gap: 0.3rem;
+.ws-pr-toolbar {
+  align-items: end;
 }
 
-.ws-filter {
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-  background: none;
+.ws-pr-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   color: var(--text-secondary);
   font-size: 0.78rem;
-  cursor: pointer;
-}
-
-.ws-filter[aria-pressed="true"] {
-  background: var(--accent-primary);
-  border-color: var(--accent-primary);
-  color: #fff;
 }
 
 .ws-files {

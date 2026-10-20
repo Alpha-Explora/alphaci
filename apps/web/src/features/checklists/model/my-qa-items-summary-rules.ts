@@ -85,7 +85,7 @@ export function summaryChipLabel(bucket: MyItemsBucket): string {
 
 /* ── Where the full list lives ───────────────────────────────────────────── */
 
-/** `#my-qa-items` on a Project page opens its QA workspace on "My QA items". */
+/** `#my-qa-items` links to a Project page's QA workspace (it opens on the viewer's own view). */
 export const PROJECT_MY_QA_ITEMS_HASH = "my-qa-items";
 
 export type MyQaItemsDestination =
@@ -112,9 +112,4 @@ export function myQaItemsDestination(scope: QaScope): MyQaItemsDestination {
 /** Whether the repository's Checklists tab should carry the full list itself. */
 export function checklistsTabShowsMyItems(scope: QaScope): boolean {
   return scope.kind !== "pending" && myQaItemsDestination(scope).kind === "checklists-tab";
-}
-
-/** Whether a deep link asks the Project QA workspace to open on "My QA items". */
-export function projectWorkspaceOpensMyItems(hash: string | null | undefined): boolean {
-  return (hash ?? "").replace(/^#/, "") === PROJECT_MY_QA_ITEMS_HASH;
 }

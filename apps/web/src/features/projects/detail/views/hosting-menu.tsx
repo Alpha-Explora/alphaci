@@ -9,8 +9,6 @@ export interface HostingMenuItem {
   label: string;
   /** A second, quieter line under the label. */
   hint?: string;
-  /** A link item (opens in a new tab): provider dashboards. */
-  href?: string;
   onSelect?: () => void;
   disabled?: boolean;
   /** Drawn in the danger colour: Detach, Remove. */
@@ -34,21 +32,6 @@ function MenuEntry({
   item,
   onClose,
 }: Readonly<{ item: HostingMenuItem; onClose: (returnFocus: boolean) => void }>) {
-  if (item.href) {
-    return (
-      <a
-        role="menuitem"
-        tabIndex={-1}
-        className={itemClassName(item)}
-        href={item.href}
-        target="_blank"
-        rel="noreferrer noopener"
-        onClick={() => onClose(false)}
-      >
-        <MenuItemBody item={item} />
-      </a>
-    );
-  }
   return (
     <button
       role="menuitem"

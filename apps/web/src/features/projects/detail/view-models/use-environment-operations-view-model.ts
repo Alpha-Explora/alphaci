@@ -119,6 +119,24 @@ export function useEnvironmentOperationsViewModel(options: {
       });
   }, [projectId, reloads]);
 
+  // Deployments finish on their own time (a push's first environment takes
+  // minutes), so a page loaded before they did kept "Nothing to promote yet"
+  // and never offered the Promote button. Re-read while the page is visible,
+  // and as soon as the viewer comes back to it.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "visible") setReloads((n) => n + 1);
+    };
+    const timer = window.setInterval(refresh, 15_000);
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, []);
+
   const rows = loaded
     ? buildEnvironmentRows({
         environments: loaded.environments,

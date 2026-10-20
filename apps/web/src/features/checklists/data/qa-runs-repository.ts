@@ -1,4 +1,4 @@
-import { request, requestText } from "@/shared/api/request";
+import { request, requestBlob, requestText } from "@/shared/api/request";
 
 import type {
   CreateQaRunInput,
@@ -10,6 +10,7 @@ import type {
   UpdateQaRunItemInput,
 } from "../model/qa-run-types";
 import type { QaReport } from "../model/qa-report-types";
+import { XLSX_TYPE } from "../model/qa-report-rules";
 import type { QaAutomationDispatchWire } from "../model/qa-automation-types";
 import type { QaPromotionMergeWire, QaPromotionStatusWire } from "../model/qa-promotion-types";
 
@@ -116,6 +117,13 @@ export const qaRunsRepository = {
   reportMarkdown(projectId: string, runId: string): Promise<string> {
     return requestText(`${runPath(projectId, runId)}/report${query({ format: "md" })}`, {
       headers: { Accept: "text/markdown" },
+    });
+  },
+
+  /** The same report as an Excel workbook (.xlsx), one sheet per section. */
+  reportExcel(projectId: string, runId: string): Promise<Blob> {
+    return requestBlob(`${runPath(projectId, runId)}/report${query({ format: "xlsx" })}`, {
+      headers: { Accept: XLSX_TYPE },
     });
   },
 

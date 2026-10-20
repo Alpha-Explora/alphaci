@@ -6,6 +6,7 @@ import type { StageReport } from "@/shared/api/contracts";
 import {
   failureForJob,
   failurePreview,
+  jobLogReady,
   logUnavailableMessage,
   type FailureEntry,
 } from "../../model/failure-log-rules";
@@ -188,7 +189,7 @@ function JobRow({
   job,
   failure,
 }: Readonly<{ projectId: string; job: RunJob; failure: FailureEntry | null }>) {
-  const view = useJobLogViewModel({ projectId, jobId: job.id });
+  const view = useJobLogViewModel({ projectId, jobId: job.id, ready: jobLogReady(job.status) });
   const logId = `job-log-${String(job.id)}`;
 
   return (
@@ -228,7 +229,7 @@ function JobRow({
 
       {view.open && (
         <div id={logId} className="pipe-job__log">
-          <JobLogPanel view={view} />
+          <JobLogPanel view={view} jobStatus={job.status} />
         </div>
       )}
     </li>

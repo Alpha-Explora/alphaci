@@ -12,13 +12,11 @@ This bundle describes the current AlphaCI frontend as one Next.js deployable. It
 * [Architecture](architecture/) - feature ownership, routes, checks, and decisions.
 * [Capabilities](capabilities/) - package consumption contract, documentation snapshot, and generated matrix.
 * [Packs](packs/) - comparable SaaS, EDU, and Enterprise composition references.
-* [Runbooks](runbooks/) - verification and session procedures.
+* [Runbooks](runbooks/) - verification, session, and self-hosted image procedures.
 
 ## Maintenance
 
 * [Bundle update log](log.md) - documentation-bundle history.
 * Repository change history is recorded in the root `CHANGELOG.md`.
-
-Dated notes under `docs/superpowers/` are outside this current-state bundle.
 
 The bundle uses OKF v0.2 Markdown and YAML frontmatter. `index.md` files are directory listings and `log.md` is update history; all other Markdown files are typed concepts.

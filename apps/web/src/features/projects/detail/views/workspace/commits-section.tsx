@@ -5,6 +5,7 @@ import "./commits-section.css";
 import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
 
 import { auditAbsoluteTime, auditRelativeTime } from "../../model/audit-event-rules";
+import type { BrowseCommit } from "../../model/code-commit-rules";
 import {
   commitPullRequestLabel,
   commitsEmptyMessage,
@@ -17,6 +18,7 @@ import {
   useProjectCommitsViewModel,
   type ProjectCommitsViewModel,
 } from "../../view-models/use-project-commits-view-model";
+import { CheckIcon, CopyIcon } from "../clone-card";
 import { WorkspaceEmpty, WorkspaceError } from "./workspace-states";
 
 /**
@@ -31,23 +33,28 @@ export function CommitsSection({
   projectId,
   initialBranch,
   onOpenPullRequest,
+  onBrowseCommit,
 }: Readonly<{
   projectId: string;
   /** The branch to open on (a deep link); without one, the server's default. */
   initialBranch?: string | null;
   /** Opens the Pull requests tab on this pull request. Without it, titles are plain text. */
   onOpenPullRequest?: (pullRequestNumber: number) => void;
+  /** Opens the Code tab at this commit. Without it, there is no "Browse files". */
+  onBrowseCommit?: (commit: BrowseCommit) => void;
 }>) {
   const vm = useProjectCommitsViewModel({ projectId, initialBranch });
-  return <CommitsList vm={vm} onOpenPullRequest={onOpenPullRequest} />;
+  return <CommitsList vm={vm} onOpenPullRequest={onOpenPullRequest} onBrowseCommit={onBrowseCommit} />;
 }
 
 export function CommitsList({
   vm,
   onOpenPullRequest,
+  onBrowseCommit,
 }: Readonly<{
   vm: ProjectCommitsViewModel;
   onOpenPullRequest?: (pullRequestNumber: number) => void;
+  onBrowseCommit?: (commit: BrowseCommit) => void;
 }>) {
   const titleId = useId();
   return (
@@ -58,7 +65,7 @@ export function CommitsList({
         </h2>
         <BranchSelect vm={vm} />
       </div>
-      <CommitsBody vm={vm} onOpenPullRequest={onOpenPullRequest} />
+      <CommitsBody vm={vm} onOpenPullRequest={onOpenPullRequest} onBrowseCommit={onBrowseCommit} />
     </section>
   );
 }
@@ -96,9 +103,11 @@ function BranchSelect({ vm }: Readonly<{ vm: ProjectCommitsViewModel }>) {
 function CommitsBody({
   vm,
   onOpenPullRequest,
+  onBrowseCommit,
 }: Readonly<{
   vm: ProjectCommitsViewModel;
   onOpenPullRequest?: (pullRequestNumber: number) => void;
+  onBrowseCommit?: (commit: BrowseCommit) => void;
 }>) {
   if (vm.status === "loading") return <CommitsSkeleton />;
   if (vm.status === "error") return <CommitsError vm={vm} />;
@@ -108,19 +117,62 @@ function CommitsBody({
   return (
     <>
       <ol className="commits__list" aria-label={vm.branch ? `Commits on ${vm.branch}` : "Commits"}>
-        {vm.rows.map((row) => (
-          <CommitItem
-            key={row.sha}
-            row={row}
-            branch={vm.branch}
-            readAt={vm.readAt}
-            onOpenPullRequest={onOpenPullRequest}
-          />
+        {groupCommitsByDay(vm.rows, vm.readAt).map((group) => (
+          <li className="commits__day-group" key={group.key}>
+            <h3 className="commits__day-label">{group.label}</h3>
+            <ol className="commits__day-list">
+              {group.rows.map((row) => (
+                <CommitItem
+                  key={row.sha}
+                  row={row}
+                  branch={vm.branch}
+                  readAt={vm.readAt}
+                  onOpenPullRequest={onOpenPullRequest}
+                  onBrowseCommit={onBrowseCommit}
+                />
+              ))}
+            </ol>
+          </li>
         ))}
       </ol>
       <LoadMore vm={vm} />
     </>
   );
+}
+
+function groupCommitsByDay(rows: ReadonlyArray<CommitRow>, now: number) {
+  const groups: Array<{ key: string; label: string; rows: CommitRow[] }> = [];
+  const today = new Date(now);
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const dayKey = (date: Date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  const todayKey = dayKey(today);
+  const yesterdayKey = dayKey(yesterday);
+
+  for (const row of rows) {
+    const date = new Date(row.authoredAt);
+    const valid = row.authoredAt !== "" && !Number.isNaN(date.getTime());
+    const key = valid ? dayKey(date) : "unknown-date";
+    let group = groups[groups.length - 1];
+    if (!group || group.key !== key) {
+      const label = !valid
+        ? "Date unavailable"
+        : dayKey(date) === todayKey
+          ? "Today"
+          : dayKey(date) === yesterdayKey
+            ? "Yesterday"
+            : new Intl.DateTimeFormat(undefined, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              }).format(date);
+      group = { key, label, rows: [] };
+      groups.push(group);
+    }
+    group.rows.push(row);
+  }
+  return groups;
 }
 
 function CommitsSkeleton() {
@@ -151,11 +203,13 @@ function CommitItem({
   branch,
   readAt,
   onOpenPullRequest,
+  onBrowseCommit,
 }: Readonly<{
   row: CommitRow;
   branch: string | null;
   readAt: number;
   onOpenPullRequest?: (pullRequestNumber: number) => void;
+  onBrowseCommit?: (commit: BrowseCommit) => void;
 }>) {
   return (
     <li
@@ -190,8 +244,31 @@ function CommitItem({
           ) : null}
         </p>
       </div>
-      <CopySha sha={row.sha} shortSha={row.shortSha} />
+      <div className="commits__actions">
+        <CopySha sha={row.sha} shortSha={row.shortSha} />
+        {onBrowseCommit ? (
+          <button
+            type="button"
+            className="commits__browse"
+            aria-label={`Browse files at ${row.shortSha}`}
+            title="Browse the repository at this commit"
+            onClick={() => onBrowseCommit({ sha: row.sha, shortSha: row.shortSha, branch })}
+          >
+            <BrowseIcon />
+          </button>
+        ) : null}
+      </div>
     </li>
+  );
+}
+
+/** The "<>" code glyph GitHub uses for browsing a commit's files. */
+function BrowseIcon() {
+  return (
+    <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 16 16" fill="none"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5" />
+    </svg>
   );
 }
 
@@ -218,7 +295,11 @@ function CommitTitle({
   );
 }
 
-/** The short SHA; a click copies the full one. Clipboard refusal is quiet: the SHA is on screen. */
+/**
+ * The short SHA behind a copy icon, as GitHub shows it; a click copies the
+ * full SHA and the icon turns to a check. Clipboard refusal is quiet: the SHA
+ * is on screen.
+ */
 function CopySha({ sha, shortSha }: Readonly<{ sha: string; shortSha: string }>) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<number | null>(null);
@@ -250,7 +331,8 @@ function CopySha({ sha, shortSha }: Readonly<{ sha: string; shortSha: string }>)
       title={sha}
       onClick={() => void copy()}
     >
-      {shaCopyLabel(shortSha, copied)}
+      <span className="commits__sha-icon">{copied ? <CheckIcon /> : <CopyIcon />}</span>
+      <span className="commits__sha-text">{shaCopyLabel(shortSha, copied)}</span>
     </button>
   );
 }

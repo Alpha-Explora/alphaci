@@ -182,7 +182,7 @@ describe("Product owner Home", () => {
 
   it("shows only each run's state from an older backend", () => {
     const container = render("lead", { overview: olderOverview() });
-    expect(container.textContent).toContain("QA run signed off");
+    expect(container.textContent).toContain("QA testing signed off");
     expect(container.textContent).not.toContain("Still in verification");
   });
 

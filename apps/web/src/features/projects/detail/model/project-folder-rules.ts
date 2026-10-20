@@ -10,6 +10,7 @@ import type {
   ProjectFolderRepository,
   ProjectFolderSummary,
   RepoSwitchOption,
+  RepoSwitchOptionDisplay,
   RepoSwitchPresentation,
 } from "./project-folder-types";
 import { tabFromHash, type ProjectDetailTab } from "./project-detail-tab-rules";
@@ -116,16 +117,25 @@ export function repoSwitchOptions(
   folder: ProjectFolderSummary,
   currentProjectId: string,
 ): RepoSwitchOption[] {
-  return folder.repositories.map((repo) => ({
-    key: repo.projectId ?? `repo:${repo.repoFullName ?? repo.name}`,
-    projectId: repo.projectId,
-    role: repo.role,
-    roleLabel: roleLabel(repo.role),
-    label: repoShortName(repo),
-    repoFullName: repo.repoFullName,
-    current: repo.projectId !== null && repo.projectId === currentProjectId,
-    disabled: repo.projectId === null,
-  }));
+  return folder.repositories.map((repo, index, all) => {
+    const pair = repoPairName(repo, all);
+    const previous = index > 0 ? all[index - 1] : undefined;
+    return {
+      key: repo.projectId ?? `repo:${repo.repoFullName ?? repo.name}`,
+      projectId: repo.projectId,
+      role: repo.role,
+      roleLabel: roleLabel(repo.role),
+      label: repoShortName(repo),
+      pairName: pair,
+      // The pair's name heads its first half; the halves then show only
+      // their role, since the name is the same for both.
+      startsPair:
+        pair !== null && (!previous || repoPairName(previous, all) !== pair),
+      repoFullName: repo.repoFullName,
+      current: repo.projectId !== null && repo.projectId === currentProjectId,
+      disabled: repo.projectId === null,
+    };
+  });
 }
 
 /**
@@ -167,19 +177,130 @@ export const SINGLE_REPO_PRESENTATION: RepoSwitchPresentation = {
   options: [],
 };
 
+/** A two-repository project's halves are named `<name>-fe` and `<name>-be`. */
+const PAIR_SUFFIX = /-(fe|be)$/i;
+
+/** `shop-fe` -> `shop`; null for a name that is not one half of a pair. */
+function pairStem(repo: ProjectFolderRepository): string | null {
+  const name = repoShortName(repo);
+  return PAIR_SUFFIX.test(name) ? name.replace(PAIR_SUFFIX, "").toLowerCase() : null;
+}
+
 /**
- * What the header draws for this folder. A Project with two or more
- * repositories titles the page and brings the switch; anything else — no
- * folder, one repository, a nameless Project — leaves the page as it was.
+ * Every repository linked to the Project, repeated roles included
+ * (`store-web`, `admin-web`, `store-api`). The halves of a two-repository
+ * pair (`shop-fe`, `shop-be`) are moved next to each other, frontend first,
+ * where the pair's first half stood, so a Project holding several pairs reads
+ * pair by pair instead of FRONTEND FRONTEND BACKEND BACKEND.
+ */
+export function switchRepositories(
+  folder: ProjectFolderSummary,
+): ProjectFolderRepository[] {
+  const pairs = completePairs(folder.repositories);
+  const placed = new Set<ProjectFolderRepository>();
+  const ordered: ProjectFolderRepository[] = [];
+  for (const repo of folder.repositories) {
+    if (placed.has(repo)) continue;
+    const stem = pairStem(repo);
+    const pair = stem ? pairs.get(stem) : undefined;
+    for (const member of pair ?? [repo]) {
+      placed.add(member);
+      ordered.push(member);
+    }
+  }
+  return ordered;
+}
+
+/** Stems with exactly one frontend and one backend half, frontend first. */
+function completePairs(
+  repositories: ReadonlyArray<ProjectFolderRepository>,
+): Map<string, [ProjectFolderRepository, ProjectFolderRepository]> {
+  const byStem = new Map<string, ProjectFolderRepository[]>();
+  for (const repo of repositories) {
+    const stem = pairStem(repo);
+    if (stem) byStem.set(stem, [...(byStem.get(stem) ?? []), repo]);
+  }
+  const pairs = new Map<string, [ProjectFolderRepository, ProjectFolderRepository]>();
+  for (const [stem, members] of byStem) {
+    const frontend = members.find((repo) => repo.role === "frontend");
+    const backend = members.find((repo) => repo.role === "backend");
+    if (members.length === 2 && frontend && backend) pairs.set(stem, [frontend, backend]);
+  }
+  return pairs;
+}
+
+/**
+ * The pair a repository belongs to, by the name both halves share
+ * (`shop-fe` -> `shop`), or null for a repository outside a complete pair.
+ */
+export function repoPairName(
+  repo: ProjectFolderRepository,
+  repositories: ReadonlyArray<ProjectFolderRepository>,
+): string | null {
+  const stem = pairStem(repo);
+  if (!stem || !completePairs(repositories).has(stem)) return null;
+  return repoShortName(repo).replace(PAIR_SUFFIX, "");
+}
+
+/**
+ * What the header draws for this folder. A named Project with two or more
+ * repositories titles the page; the switch offers `switchRepositories`, and is
+ * left out when that is fewer than two. No folder, one repository or a
+ * nameless Project leaves the page as it was.
  */
 export function repoSwitchPresentation(
   folder: ProjectFolderSummary | null | undefined,
   currentProjectId: string,
 ): RepoSwitchPresentation {
   if (!hasRepoSwitch(folder) || !folder.name) return SINGLE_REPO_PRESENTATION;
+  const repositories = switchRepositories(folder);
   return {
     projectName: folder.name,
-    options: repoSwitchOptions(folder, currentProjectId),
+    options:
+      repositories.length >= 2
+        ? repoSwitchOptions({ ...folder, repositories }, currentProjectId)
+        : [],
+  };
+}
+
+/**
+ * How a switch option draws. A pair's name heads its first half once; the
+ * halves then show only their role and are announced as "shop frontend".
+ * `pendingId` is the project whose page is being opened, else null.
+ */
+export function repoSwitchOptionDisplay(
+  option: RepoSwitchOption,
+  pendingId: string | null,
+): RepoSwitchOptionDisplay {
+  return { ...pairDisplay(option), ...availabilityDisplay(option, pendingId) };
+}
+
+function pairDisplay(
+  option: RepoSwitchOption,
+): Pick<RepoSwitchOptionDisplay, "pairHeading" | "ariaLabel" | "paired" | "showName"> {
+  const { pairName } = option;
+  if (!pairName) {
+    return { pairHeading: null, ariaLabel: undefined, paired: undefined, showName: true };
+  }
+  return {
+    pairHeading: option.startsPair ? pairName : null,
+    ariaLabel: `${pairName} ${option.roleLabel.toLowerCase()}`,
+    paired: true,
+    showName: false,
+  };
+}
+
+function availabilityDisplay(
+  option: RepoSwitchOption,
+  pendingId: string | null,
+): Pick<RepoSwitchOptionDisplay, "pending" | "tooltip" | "title"> {
+  const pending = !option.current && pendingId !== null && option.projectId === pendingId;
+  return {
+    pending: pending || undefined,
+    tooltip: option.disabled ? UNLINKED_REPO_HINT : undefined,
+    // In the tab row the name is hidden to fit beside nine tabs; the native
+    // tooltip still names the repository on hover.
+    title: option.disabled ? undefined : option.label,
   };
 }
 

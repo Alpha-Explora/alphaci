@@ -2,27 +2,39 @@
 
 import "./qa-studio.css";
 
-import { useId, useRef, type ReactNode, type Ref } from "react";
+import { useId, type ReactNode, type Ref } from "react";
 import { createPortal } from "react-dom";
 
 import type { AppRole } from "@/shared/api/contracts";
 
 import { itemCountLabel } from "../../model/checklist-rules";
+import { lockedIterationNumber } from "../../model/iteration-rules";
 import {
   playwrightTabStatus,
   projectPlaywrightResults,
   repositoryPlaywrightResults,
   type PlaywrightResults,
+  type StudioColumnTab,
 } from "../../model/playwright-tab-rules";
 import { QA_ERROR_MESSAGES } from "../../model/qa-error-messages";
 import { UNFILED_REASON } from "../../model/qa-promotion-rules";
 import { passedLabel } from "../../model/qa-run-rules";
 import type { QaRun, QaRunSummaryCounts } from "../../model/qa-run-types";
 import { REPOSITORY_SCOPE, type QaScope, type RepositoryRoles } from "../../model/qa-scope";
-import { scopePlaywrightResults, studioColumnRules, type StudioColumnRules } from "../../model/studio-role-rules";
+import {
+  scopePlaywrightResults,
+  showsRepositories,
+  studioColumnRules,
+  type StudioColumnRules,
+} from "../../model/studio-role-rules";
 import { automationSignal, launcherLabel, NO_QA_ENVIRONMENT } from "../../model/qa-studio-rules";
 import { PreviewCaptureContext, type PreviewCaptureTarget } from "../view-models/preview-capture-target";
+import { ShowRepositoriesContext } from "../view-models/repository-visibility";
 import { useFloatingChecklistFocus } from "../view-models/use-floating-checklist-focus";
+import { useRailWidth, type RailWidthViewModel } from "../view-models/use-rail-width";
+import { useStudioCaptureTarget } from "../view-models/use-studio-capture-target";
+import { useStudioFitHeight } from "../view-models/use-studio-fit-height";
+import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
 import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
 import { useStudioColumnTab, type StudioColumnTabViewModel } from "../view-models/use-studio-column-tab";
@@ -33,7 +45,7 @@ import {
   useStudioViewportViewModel,
   type StudioViewportViewModel,
 } from "../view-models/use-studio-viewport-view-model";
-import { ColumnBar, ColumnTabPanel, ColumnTabs } from "./column-tabs";
+import { ColumnBar, ColumnTabPanel, ColumnTabs, type ColumnTabBadges } from "./column-tabs";
 import {
   PlaywrightPanel,
   type PlaywrightSource,
@@ -41,11 +53,14 @@ import {
   type RenderRepositoryChecks,
 } from "./playwright-panel";
 import { PoAcceptancePanel } from "./po-acceptance-panel";
+import { MergeAllDialog, MergeAllOutcome } from "./po-delivery";
 import { PreviewPane } from "./preview-pane";
 import { ProjectRunPanel } from "./project-run-panel";
-import { MergeToMain, PromotionBarFoot, PromotionStatusChip } from "./promotion-bar";
+import { PromotionBarFoot, PromotionStatusChip, StudioMergeAction } from "./promotion-bar";
+import { RailResizeHandle } from "./rail-resize-handle";
 import { RunPanel } from "./run-panel";
-import { ChecklistIcon, DockIcon, MinimizeIcon, SwapIcon } from "./studio-icons";
+import { RunSummary } from "./run-signoff";
+import { ChecklistIcon, FlaskIcon, RailPinIcon } from "./studio-icons";
 import { StudioToolbar, type StudioToolbarPlacement } from "./studio-toolbar";
 
 function StudioNotice({
@@ -72,16 +87,48 @@ export type StudioKind = "qa" | "po";
 
 const DRAWER_TITLES: Record<StudioKind, string> = { qa: "QA checklist", po: "Acceptance" };
 
-function ChecklistPicker({ vm }: Readonly<{ vm: StudioChecklistsViewModel }>) {
-  const selected = vm.selected;
-  if (!selected) return null;
+/**
+ * The column's first row: what is being verified on the left, and on the
+ * right how far it is — the run's progress bar once a run exists, else the
+ * checklist's item count.
+ */
+function ColumnHeading({
+  label,
+  title,
+  progress,
+}: Readonly<{ label: ReactNode; title: ReactNode; progress: ReactNode }>) {
   return (
     <div className="qa-run-card__head">
-      {vm.checklists.length > 1 ? (
-        <label className="qa-run-card__picker">
-          <span className="qa-toolbar__label">Checklist</span>
+      <div className="qa-run-card__picker">
+        {label}
+        {title}
+      </div>
+      {progress}
+    </div>
+  );
+}
+
+function ChecklistPicker({ vm, run }: Readonly<{ vm: StudioChecklistsViewModel; run: QaRun | null }>) {
+  const selected = vm.selected;
+  if (!selected) return null;
+  const progress = run ? (
+    <RunSummary run={run} variant="inline" />
+  ) : (
+    <span className="qa-run-card__count">{itemCountLabel(selected.items.length)}</span>
+  );
+  if (vm.checklists.length > 1) {
+    const labelId = `qa-checklist-picker-${selected.id}`;
+    return (
+      <ColumnHeading
+        label={
+          <span className="qa-toolbar__label" id={labelId}>
+            Checklist
+          </span>
+        }
+        title={
           <select
             className="hier-select"
+            aria-labelledby={labelId}
             value={selected.id}
             onChange={(event) => vm.select(event.target.value)}
           >
@@ -91,16 +138,30 @@ function ChecklistPicker({ vm }: Readonly<{ vm: StudioChecklistsViewModel }>) {
               </option>
             ))}
           </select>
-        </label>
-      ) : (
-        <div className="qa-run-card__picker">
-          <span className="qa-toolbar__label">Checklist</span>
-          <h3 className="qa-run-card__title">{selected.name}</h3>
-        </div>
-      )}
-      <span className="qa-run-card__count">{itemCountLabel(selected.items.length)}</span>
-    </div>
+        }
+        progress={progress}
+      />
+    );
+  }
+  return (
+    <ColumnHeading
+      label={<span className="qa-toolbar__label">Checklist</span>}
+      title={<h3 className="qa-run-card__title">{selected.name}</h3>}
+      progress={progress}
+    />
   );
+}
+
+/** The repository run to show progress for, once the lookup has answered with one. */
+function repositoryProgressRun(run: QaRunViewModel): QaRun | null {
+  if (run.status === "idle" || run.status === "loading" || run.status === "error") return null;
+  return run.run;
+}
+
+/** The Project run to show progress for: none before it loads, none once its iteration is delivered. */
+function projectProgressRun(run: ProjectRunViewModel): DrawerRun | null {
+  if (run.status !== "ready" || !run.run) return null;
+  return lockedIterationNumber(run.run.iteration) === null ? run.run : null;
 }
 
 /**
@@ -156,7 +217,7 @@ function RunColumn({
   return (
     <div className="qa-run-card">
       {startBlockedReason ? <p className="qa-run-card__history">{startBlockedReason}</p> : null}
-      <ChecklistPicker vm={checklists} />
+      <ChecklistPicker vm={checklists} run={viewport.environment ? repositoryProgressRun(run) : null} />
       {viewport.environment ? (
         <RunPanel
           projectId={projectId}
@@ -164,6 +225,7 @@ function RunColumn({
           branch={viewport.environment.branch}
           appRole={appRole}
           startBlockedReason={startBlockedReason}
+          summaryShown={false}
         />
       ) : (
         <p className="qa-run-card__wait">{NO_QA_ENVIRONMENT.runText}</p>
@@ -195,109 +257,98 @@ function PreviewColumn({ vm, frameRef }: Readonly<{ vm: StudioViewportViewModel;
   return <PreviewPane vm={vm} frameRef={frameRef} />;
 }
 
-/** What the drawer and its launcher read of a run: a repository run, or a Project run. */
+/** What the rail reads of a run: a repository run, or a Project run. */
 type DrawerRun = { summary: QaRunSummaryCounts; automation?: unknown };
 
-/** The floating drawer's header: what it is, how far the run is, and where it goes. */
-function DrawerHeader({
-  vm,
-  run,
+/**
+ * The open panel's header, one row: what it shows (the rail tab chosen) on
+ * the left, the readiness chip and Merge to main (`bar`) on the right.
+ * Progress is not repeated here: the rail tab and the column's first row
+ * carry it.
+ */
+function PanelHeader({
   title,
-  drawerId,
   headingId,
-  headingRef,
-}: Readonly<{
-  vm: StudioViewportViewModel;
-  run: DrawerRun | null;
-  title: string;
-  drawerId: string;
-  headingId: string;
-  headingRef: Ref<HTMLHeadingElement>;
-}>) {
-  const other = vm.floatingSide === "right" ? "left" : "right";
+  bar,
+  playwright,
+}: Readonly<{ title: string; headingId: string; bar: ReactNode; playwright: boolean }>) {
   return (
     <div className="qa-drawer__head">
       <div className="qa-drawer__heading">
-        <ChecklistIcon />
-        <h2 className="qa-drawer__title" id={headingId} ref={headingRef} tabIndex={-1}>
+        {playwright ? <FlaskIcon /> : <ChecklistIcon />}
+        <h2 className="qa-drawer__title" id={headingId}>
           {title}
         </h2>
-        {run ? <span className="qa-drawer__progress">{passedLabel(run)}</span> : null}
       </div>
-      <div className="qa-drawer__actions">
-        <button
-          type="button"
-          className="qa-drawer__button"
-          onClick={vm.snapChecklist}
-          aria-label={`Move to the ${other} side`}
-          title={`Move to the ${other} side`}
-        >
-          <SwapIcon />
-        </button>
-        <button
-          type="button"
-          className="qa-drawer__button"
-          onClick={vm.exitFullScreen}
-          aria-label="Dock beside the page"
-          title="Dock beside the page (exit full screen)"
-        >
-          <DockIcon />
-        </button>
-        <button
-          type="button"
-          className="qa-drawer__button"
-          onClick={vm.minimizeChecklist}
-          aria-label="Minimize checklist"
-          aria-expanded="true"
-          aria-controls={drawerId}
-          title="Minimize checklist"
-        >
-          <MinimizeIcon />
-        </button>
-      </div>
+      {bar}
     </div>
   );
 }
 
-/** The pill that brings a minimized drawer back, with the run's progress and CI state. */
-function ChecklistLauncher({
+/** "3/5" for the closed strip, where "passed" does not fit. */
+function compactProgress(run: DrawerRun): string {
+  return `${String(run.summary.byStatus.passed ?? 0)}/${String(run.summary.total)}`;
+}
+
+/**
+ * The rail's own column, at the studio's right edge in every state: the pin
+ * first (as the app's left rail has its toggle first), then the panel's
+ * views — Checklist and Playwright, each with its progress, readable while
+ * the rail is closed. A viewer without the tabs (a Team lead in PO Studio)
+ * gets the panel's icon, progress and CI dot instead.
+ */
+function RailStrip({
   vm,
   run,
-  drawerId,
-  launcherRef,
+  title,
+  panelId,
+  tabs,
+  hasTabs,
 }: Readonly<{
   vm: StudioViewportViewModel;
   run: DrawerRun | null;
-  drawerId: string;
-  launcherRef: Ref<HTMLButtonElement>;
+  title: string;
+  panelId: string;
+  tabs: ReactNode;
+  /** This viewer has the Checklist and Playwright tabs; without, the strip shows the summary. */
+  hasTabs: boolean;
 }>) {
-  const signal = automationSignal(run ? { automation: run.automation } : null);
   return (
-    <button
-      ref={launcherRef}
-      type="button"
-      className="qa-launcher"
-      onClick={vm.toggleChecklist}
-      aria-expanded={vm.isChecklistOpen}
-      aria-controls={drawerId}
-    >
-      <ChecklistIcon />
-      <span className="qa-launcher__text">{launcherLabel(run)}</span>
-      <span className="qa-launcher__dot" data-tone={signal.tone} title={signal.label} aria-hidden="true" />
-      <span className="sr-only">{signal.label}</span>
-    </button>
+    <div className="qa-rail__strip">
+      <button
+        type="button"
+        className="qa-rail__pin"
+        aria-label={`Keep ${title} open`}
+        aria-pressed={vm.isRailPinned}
+        aria-controls={panelId}
+        title={vm.isRailPinned ? `Collapse ${title}` : `Keep ${title} open`}
+        onClick={vm.toggleRailPinned}
+      >
+        <RailPinIcon pinned={vm.isRailPinned} />
+      </button>
+      <span className="qa-rail__divider" aria-hidden="true" />
+      {hasTabs ? tabs : <RailSummary run={run} title={title} />}
+    </div>
   );
 }
 
-/** "docked" beside the page, or the full-screen drawer "open" / "minimized". */
-function checklistMode(vm: StudioViewportViewModel): "docked" | "open" | "minimized" {
-  if (!vm.isFullScreen) return "docked";
-  return vm.isChecklistOpen ? "open" : "minimized";
+/** The closed strip's summary for a viewer without tabs: the icon, "3/5" and the CI dot. */
+function RailSummary({ run, title }: Readonly<{ run: DrawerRun | null; title: string }>) {
+  const signal = automationSignal(run ? { automation: run.automation } : null);
+  const summary = launcherLabel(run, title);
+  return (
+    <div className="qa-rail__summary" title={summary}>
+      <ChecklistIcon />
+      {run ? <span className="qa-rail__count" aria-hidden="true">{compactProgress(run)}</span> : null}
+      <span className="qa-rail__dot" data-tone={signal.tone} aria-hidden="true" />
+      <span className="sr-only">{`${summary}. ${signal.label}`}</span>
+    </div>
+  );
 }
 
 type CommitChip = { commitSha: string | null; commitSource: QaRunViewModel["commitSource"] } | null;
 
-/** What the toolbar's commit chip and the drawer/launcher show, once the run lookup has answered. */
+/** What the toolbar's commit chip and the rail show, once the run lookup has answered. */
 function runSnapshot(run: QaRunViewModel): { commit: CommitChip; current: QaRun | null } {
   if (run.status !== "ready") return { commit: null, current: null };
   return { commit: { commitSha: run.commitSha, commitSource: run.commitSource }, current: run.run };
@@ -320,45 +371,59 @@ function projectSnapshot(run: ProjectRunViewModel, projectId: string): { commit:
 type DockScroll = "items" | "column";
 
 /**
- * The run column's one container: the tab bar (Checklist | Playwright, the
- * "Ready for production" chip and Merge to main), then the panels
- * (`children`). Docked it sits beside the preview; in full screen CSS floats
- * it as a drawer and it gains a region role and a header above the tab bar.
- * The bar and the panels keep their places either way, so nothing in them
- * ever remounts.
+ * The run rail, like the app's left rail but on the right: the strip at the
+ * edge (the pin, then the Checklist and Playwright tabs), and beside it the
+ * panel — its header (the view's name, the "Ready for production" chip and
+ * Merge to main), then the panels (`children`). Closed, only the strip
+ * shows; hover or keyboard focus opens it over the page (CSS), the pin keeps
+ * it open and moves the page aside. The panel is the one `.qa-studio__run`,
+ * mounted once in every state.
  */
-function RunDock({
+function RunRail({
   vm,
   run,
   title,
+  panelTitle,
   scroll,
-  drawerId,
+  panelId,
   headingId,
-  headingRef,
+  tabs,
+  hasTabs,
+  bar,
+  playwright,
+  resize,
   children,
 }: Readonly<{
   vm: StudioViewportViewModel;
   run: DrawerRun | null;
   title: string;
+  /** The header's name for what the panel shows: the studio's title, or "Playwright". */
+  panelTitle: string;
   scroll: DockScroll;
-  drawerId: string;
+  panelId: string;
   headingId: string;
-  headingRef: Ref<HTMLHeadingElement>;
+  tabs: ReactNode;
+  hasTabs: boolean;
+  bar: ReactNode;
+  /** The Playwright view is on show. */
+  playwright: boolean;
+  /** The open panel's width, dragged from its left edge. */
+  resize: RailWidthViewModel;
   children: ReactNode;
 }>) {
-  const floating = vm.isFullScreen;
   return (
     <div
-      className="qa-studio__run"
-      data-scroll={scroll}
-      id={drawerId}
-      role={floating ? "region" : undefined}
-      aria-labelledby={floating ? headingId : undefined}
+      className="qa-rail"
+      data-pinned={String(vm.isRailPinned)}
+      data-hover-suppressed={String(vm.railHoverSuppressed)}
+      onPointerLeave={vm.releaseRailHover}
     >
-      {floating ? (
-        <DrawerHeader vm={vm} run={run} title={title} drawerId={drawerId} headingId={headingId} headingRef={headingRef} />
-      ) : null}
-      {children}
+      <RailStrip vm={vm} run={run} title={title} panelId={panelId} tabs={tabs} hasTabs={hasTabs} />
+      <div className="qa-studio__run" data-scroll={scroll} id={panelId} role="region" aria-labelledby={headingId}>
+        <RailResizeHandle vm={resize} label={title} />
+        <PanelHeader title={panelTitle} headingId={headingId} bar={bar} playwright={playwright} />
+        {children}
+      </div>
     </div>
   );
 }
@@ -371,7 +436,6 @@ function RunDock({
  */
 function StudioColumn({
   studio,
-  onOpenQaRun,
   qaScope,
   projectMode,
   projectRun,
@@ -381,9 +445,9 @@ function StudioColumn({
   viewport,
   run,
   promotion,
+  delivery,
 }: Readonly<{
   studio: StudioKind;
-  onOpenQaRun?: () => void;
   qaScope: QaScope;
   projectMode: boolean;
   projectRun: ProjectRunViewModel;
@@ -393,6 +457,7 @@ function StudioColumn({
   viewport: StudioViewportViewModel;
   run: QaRunViewModel;
   promotion: QaPromotionViewModel;
+  delivery: PoDeliveryViewModel;
 }>) {
   if (qaScope.kind === "pending") return <RunSkeletonCard />;
   if (studio === "po" && projectMode) {
@@ -401,21 +466,26 @@ function StudioColumn({
         qaScope={qaScope}
         projectRun={projectRun}
         promotion={promotion}
+        delivery={delivery}
         appRole={appRole}
-        onOpenQaRun={onOpenQaRun}
       />
     );
   }
   if (projectMode && qaScope.kind === "project") {
+    const progressRun = projectProgressRun(projectRun);
     return (
       <div className="qa-run-card">
-        <div className="qa-run-card__head">
-          <div className="qa-run-card__picker">
-            <span className="qa-toolbar__label">Project QA run</span>
-            <h3 className="qa-run-card__title">{qaScope.projectName}</h3>
-          </div>
-        </div>
-        <ProjectRunPanel deliveryProjectId={qaScope.deliveryProjectId} vm={projectRun} appRole={appRole} />
+        <ColumnHeading
+          label={<span className="qa-toolbar__label">QA testing</span>}
+          title={<h3 className="qa-run-card__title">{qaScope.projectName}</h3>}
+          progress={progressRun ? <RunSummary run={progressRun} variant="inline" /> : null}
+        />
+        <ProjectRunPanel
+          deliveryProjectId={qaScope.deliveryProjectId}
+          vm={projectRun}
+          appRole={appRole}
+          summaryShown={false}
+        />
       </div>
     );
   }
@@ -570,30 +640,82 @@ function ColumnPanels({
 }
 
 /**
- * The bar atop the column: Checklist | Playwright (when this viewer has
- * them), the readiness chip and Merge to main.
+ * The rail's Checklist and Playwright tabs, when this viewer has them, each
+ * with its progress: the run's "passed/total", the latest verify verdict
+ * and the CI dot.
  */
-function ColumnHead({
-  rules,
-  promotion,
+function RailTabs({
+  viewport,
   columnTab,
   tabsId,
+  run,
   results,
+  title,
   label,
 }: Readonly<{
-  rules: StudioColumnRules;
-  promotion: QaPromotionViewModel;
+  viewport: StudioViewportViewModel;
   columnTab: StudioColumnTabViewModel;
   tabsId: string;
+  run: DrawerRun | null;
   results: PlaywrightResults | null;
+  title: string;
   label: string;
 }>) {
+  const badges: ColumnTabBadges = {
+    checklist: {
+      text: run ? compactProgress(run) : null,
+      spoken: run ? passedLabel(run) : null,
+      title: launcherLabel(run, title),
+    },
+    playwright: {
+      status: playwrightTabStatus(results),
+      signal: automationSignal(run ? { automation: run.automation } : null),
+    },
+  };
   return (
-    <ColumnBar status={<PromotionStatusChip vm={promotion} />} action={<MergeToMain vm={promotion} />} tabs={rules.tabs}>
-      {rules.tabs ? (
-        <ColumnTabs vm={columnTab} baseId={tabsId} status={playwrightTabStatus(results)} label={label} />
-      ) : null}
-    </ColumnBar>
+    <ColumnTabs
+      vm={columnTab}
+      baseId={tabsId}
+      badges={badges}
+      label={label}
+      onChoose={viewport.releaseRailHover}
+    />
+  );
+}
+
+/** The Playwright view is on show (only a viewer with the tabs has one). */
+function showsPlaywright(rules: StudioColumnRules, tab: StudioColumnTab): boolean {
+  return rules.tabs && tab === "playwright";
+}
+
+/** The panel header's name for the view on show. */
+function panelTitleFor(rules: StudioColumnRules, tab: StudioColumnTab, studio: StudioKind): string {
+  return showsPlaywright(rules, tab) ? "Playwright" : DRAWER_TITLES[studio];
+}
+
+/**
+ * Under the bar: how the last merge ended — of this repository, or of every
+ * repository — in one live region, then the confirmations, named by the
+ * repository or, for every repository, by the Project.
+ */
+function ColumnFoot({
+  promotion,
+  delivery,
+  qaScope,
+  repositoryName,
+}: Readonly<{
+  promotion: QaPromotionViewModel;
+  delivery: PoDeliveryViewModel;
+  qaScope: QaScope;
+  repositoryName: string;
+}>) {
+  return (
+    <>
+      <PromotionBarFoot vm={promotion} projectName={repositoryName}>
+        <MergeAllOutcome vm={delivery} />
+      </PromotionBarFoot>
+      <MergeAllDialog vm={delivery} projectName={qaScope.kind === "project" ? qaScope.projectName : repositoryName} />
+    </>
   );
 }
 
@@ -603,23 +725,24 @@ function previewFramed(vm: StudioViewportViewModel): "true" | "false" {
 }
 
 /**
- * QA Studio: the deployed page on the left, the checklist being verified on
- * the right, side by side so a tester never leaves the page to record what
- * they saw. Every right comes from the server; this view only arranges it.
+ * QA Studio: the deployed page, and the checklist being verified in a rail
+ * on its right edge, so a tester never leaves the page to record what they
+ * saw. Every right comes from the server; this view only arranges it.
  *
  * The same shell is PO Studio (`studio="po"`): the same uat preview, frames
  * and layouts, with the Product owner's acceptance and the merge to main in
  * the column instead of the items QA verifies.
  *
- * Docked, `data-layout` says how the two share the width (wide preview or
- * split); CSS alone applies it, so switching never touches the tree.
- * Full screen re-lays out the SAME tree with CSS (`data-full-screen`): the
- * studio covers the viewport and the run column becomes a floating drawer.
- * The run column is mounted exactly once — never a second copy for the
- * drawer — because it owns item drafts, the sign-off dialog, the export timer
- * and automation polling. Minimizing only hides it. Nothing is portalled: the
- * theme tokens are scoped to the dashboard shell, and the sign-off dialog
- * needs the viewport, not a drawer, as its containing block.
+ * The rail works like the app's left rail: a strip that opens over the page
+ * on hover or keyboard focus, or pinned open with the page moved aside
+ * (`data-rail`, kept per viewer and studio). CSS alone applies it, so nothing
+ * in the tree changes. Full screen re-lays out the SAME tree with CSS
+ * (`data-full-screen`): the studio covers the viewport, the rail on its edge.
+ * The run column is mounted exactly once — never a second copy — because it
+ * owns item drafts, the sign-off dialog, the export timer and automation
+ * polling. A closed rail only hides it. Nothing is portalled: the theme
+ * tokens are scoped to the dashboard shell, and the sign-off dialog needs the
+ * viewport, not the rail, as its containing block.
  *
  * The one exception is the toolbar, and only into `toolbarSlot`: an element
  * the project page renders in its own tab row, inside the same dashboard shell
@@ -635,7 +758,6 @@ export function QaStudioPanel({
   projectName,
   qaScope = REPOSITORY_SCOPE,
   studio = "qa",
-  onOpenQaRun,
   toolbarSlot,
   renderRepositoryChecks,
 }: Readonly<{
@@ -651,8 +773,6 @@ export function QaStudioPanel({
   qaScope?: QaScope;
   /** QA Studio (the default) or PO Studio. Decides the tabpanel id and the column. */
   studio?: StudioKind;
-  /** PO Studio's way to the Project's QA run, while the release candidate is locked. */
-  onOpenQaRun?: () => void;
   /**
    * Where the docked toolbar goes: an element in the project page's tab row.
    * Omitted, the toolbar stays atop the studio; null, the slot is not mounted yet.
@@ -666,23 +786,22 @@ export function QaStudioPanel({
    */
   renderRepositoryChecks?: RenderRepositoryChecks;
 }>) {
-  const viewport = useStudioViewportViewModel({ projectId, enabled: Boolean(projectId) });
+  const viewport = useStudioViewportViewModel({ projectId, enabled: Boolean(projectId), studio });
+  const railWidth = useRailWidth(studio);
   const runs = useStudioRunsViewModel({ projectId, appRole, qaScope, branch: viewport.environment?.branch ?? null });
-  const { projectMode, projectRun, checklists, run, promotion } = runs;
-  const focus = useFloatingChecklistFocus({
-    isFullScreen: viewport.isFullScreen,
-    isChecklistOpen: viewport.isChecklistOpen,
-  });
-  const drawerId = useId();
+  const { projectMode, projectRun, checklists, run, promotion, delivery } = runs;
+  const focus = useFloatingChecklistFocus({ isFullScreen: viewport.isFullScreen });
+  const panelId = useId();
   const headingId = useId();
   const snapshot = projectMode ? projectSnapshot(projectRun, projectId) : runSnapshot(run);
-  const mode = checklistMode(viewport);
   const columnTab = useStudioColumnTab(studio);
   const tabsId = useId();
   const rules = studioColumnRules(appRole);
   const roles = repositoryRoles(qaScope);
-  // The preview iframe, for an item's "Capture" (cropped to it). Offered to the run column below.
-  const previewFrameRef = useRef<HTMLIFrameElement | null>(null);
+  // The preview iframe, for an item's "Capture" (cropped to it, the panel made transparent meanwhile).
+  const capture = useStudioCaptureTarget();
+  // Docked, the panes run to the window's bottom edge (full screen sizes them by CSS alone).
+  const { attach: attachPanes, style: panesStyle } = useStudioFitHeight<HTMLDivElement>();
   const source = playwrightSource(runs, qaScope);
   const results = scopePlaywrightResults(
     playwrightResults(source, { projectId, repoFullName: projectName ?? null }),
@@ -691,78 +810,94 @@ export function QaStudioPanel({
   );
 
   return (
-    <div
-      role="tabpanel"
-      id={`project-detail-panel-${studio}`}
-      aria-labelledby={`project-detail-tab-${studio}`}
-      className="qa-studio"
-      data-studio={studio}
-      data-full-screen={String(viewport.isFullScreen)}
-      data-layout={viewport.layout}
-      data-checklist={mode}
-      data-side={viewport.floatingSide}
-    >
-      <StudioControls vm={viewport} commit={snapshot.commit} fullScreenRef={focus.toggleRef} slot={toolbarSlot} />
-      <div className="qa-studio__panes">
-        <div className="qa-studio__preview" data-framed={previewFramed(viewport)}>
-          <PreviewColumn vm={viewport} frameRef={previewFrameRef} />
-        </div>
-        <RunDock
-          vm={viewport}
-          run={snapshot.current}
-          title={DRAWER_TITLES[studio]}
-          scroll={projectMode ? "column" : "items"}
-          drawerId={drawerId}
-          headingId={headingId}
-          headingRef={focus.drawerRef}
+    <ShowRepositoriesContext.Provider value={showsRepositories(appRole)}>
+      <div
+        role="tabpanel"
+        id={`project-detail-panel-${studio}`}
+        aria-labelledby={`project-detail-tab-${studio}`}
+        className="qa-studio"
+        data-studio={studio}
+        data-full-screen={String(viewport.isFullScreen)}
+        data-rail={viewport.isRailPinned ? "pinned" : "collapsed"}
+        data-capturing={String(capture.capturing)}
+        data-resizing={String(railWidth.resizing)}
+        style={railWidth.style}
+      >
+        <StudioControls vm={viewport} commit={snapshot.commit} fullScreenRef={focus.toggleRef} slot={toolbarSlot} />
+        <div
+          className="qa-studio__panes"
+          ref={attachPanes}
+          style={panesStyle}
         >
-          <ColumnHead
-            rules={rules}
-            promotion={promotion}
-            columnTab={columnTab}
-            tabsId={tabsId}
-            results={results}
-            label={`${DRAWER_TITLES[studio]} and Playwright`}
-          />
-          <PromotionBarFoot vm={promotion} projectName={projectName ?? projectId} />
-          <ColumnPanels
-            rules={rules}
-            tabsId={tabsId}
-            tab={columnTab.tab}
-            checklist={
-              <PreviewCaptureContext.Provider value={previewFrameRef}>
-                <StudioColumn
-                  studio={studio}
-                  onOpenQaRun={onOpenQaRun}
-                  qaScope={qaScope}
-                  projectMode={projectMode}
-                  projectRun={projectRun}
-                  projectId={projectId}
-                  appRole={appRole}
-                  checklists={checklists}
-                  viewport={viewport}
-                  run={run}
-                  promotion={promotion}
-                />
-              </PreviewCaptureContext.Provider>
-            }
-            playwright={
-              <PlaywrightColumn
-                source={source}
+          <div className="qa-studio__preview" data-framed={previewFramed(viewport)}>
+            <PreviewColumn vm={viewport} frameRef={capture.target} />
+          </div>
+          <RunRail
+            vm={viewport}
+            run={snapshot.current}
+            title={DRAWER_TITLES[studio]}
+            panelTitle={panelTitleFor(rules, columnTab.tab, studio)}
+            playwright={showsPlaywright(rules, columnTab.tab)}
+            scroll={projectMode ? "column" : "items"}
+            panelId={panelId}
+            headingId={headingId}
+            resize={railWidth}
+            tabs={
+              <RailTabs
+                viewport={viewport}
+                columnTab={columnTab}
+                tabsId={tabsId}
+                run={snapshot.current}
                 results={results}
-                appRole={appRole}
-                projectId={projectId}
-                opened={columnTab.playwrightOpened}
-                viewer={{ rules, roles, active: columnTab.tab === "playwright" }}
-                renderRepositoryChecks={renderRepositoryChecks}
+                title={DRAWER_TITLES[studio]}
+                label={`${DRAWER_TITLES[studio]} and Playwright`}
               />
             }
-          />
-        </RunDock>
+            hasTabs={rules.tabs}
+            bar={
+              <ColumnBar
+                status={<PromotionStatusChip vm={promotion} />}
+                action={<StudioMergeAction promotion={promotion} delivery={delivery} />}
+              />
+            }
+          >
+            <ColumnFoot promotion={promotion} delivery={delivery} qaScope={qaScope} repositoryName={projectName ?? projectId} />
+            <ColumnPanels
+              rules={rules}
+              tabsId={tabsId}
+              tab={columnTab.tab}
+              checklist={
+                <PreviewCaptureContext.Provider value={capture.target}>
+                  <StudioColumn
+                    studio={studio}
+                    qaScope={qaScope}
+                    projectMode={projectMode}
+                    projectRun={projectRun}
+                    projectId={projectId}
+                    appRole={appRole}
+                    checklists={checklists}
+                    viewport={viewport}
+                    run={run}
+                    promotion={promotion}
+                    delivery={delivery}
+                  />
+                </PreviewCaptureContext.Provider>
+              }
+              playwright={
+                <PlaywrightColumn
+                  source={source}
+                  results={results}
+                  appRole={appRole}
+                  projectId={projectId}
+                  opened={columnTab.playwrightOpened}
+                  viewer={{ rules, roles, active: columnTab.tab === "playwright" }}
+                  renderRepositoryChecks={renderRepositoryChecks}
+                />
+              }
+            />
+          </RunRail>
+        </div>
       </div>
-      {mode === "minimized" ? (
-        <ChecklistLauncher vm={viewport} run={snapshot.current} drawerId={drawerId} launcherRef={focus.launcherRef} />
-      ) : null}
-    </div>
+    </ShowRepositoriesContext.Provider>
   );
 }

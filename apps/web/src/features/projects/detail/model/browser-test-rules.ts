@@ -40,7 +40,30 @@ export interface BrowserTestsStatus {
    * reads as unknown (today's behaviour) — never as off.
    */
   visual?: BrowserTestsVisual;
+  /**
+   * The repository's own Playwright test files on the branch (any name), which
+   * the Verify stage already runs. Absent from an older backend; null without
+   * a dev branch.
+   */
+  ownTests?: { count: number; paths: string[] } | null;
 }
+
+/**
+ * The card's first line. A repository with its own browser tests is told they
+ * already run, and that what is missing is ALPHACI's standard checks — not
+ * that it has no browser tests.
+ */
+export function browserTestsLead(status: Pick<BrowserTestsStatus, "ownTests"> | null, branch: string): string {
+  const own = status?.ownTests?.count ?? 0;
+  if (own > 0) {
+    const files = own === 1 ? "1 browser test file" : `${String(own)} browser test files`;
+    return `Your ${files} on ${branch} run in the Verify stage. ALPHACI's standard checks are not added yet:`;
+  }
+  return `The Verify stage runs these against the deployed site. Missing on ${branch}:`;
+}
+
+/** In the Pipeline configuration: the update pull request is right here, not a page away. */
+export const VISUAL_UPDATE_HERE = "Open the workflow update pull request in the settings above: it turns visual testing on in dev.";
 
 /** Per branch: whether the verify workflow takes screenshots; null when unknown. */
 export interface BrowserTestsVisual {
@@ -235,7 +258,7 @@ const MESSAGES: Readonly<Record<Exclude<BrowserTestsErrorKind, "pr-open" | "pr-r
   reauth: "GitHub needs you to sign in again before ALPHACI can open this pull request.",
   forbidden: "Only Developers, Product owners and admins can add browser tests.",
   "write-forbidden":
-    "GitHub did not let your account write to this repository, so no pull request was opened. Ask a repository admin for write access.",
+    "GitHub did not let your account write to this repository, so no pull request was opened. A Developer gets write access when the Product owner adds them to this Project; anyone else needs a repository admin to grant it.",
   "no-dev-branch": "This repository has no dev branch yet, and browser tests are added there. Create dev, then try again.",
   "nothing-to-add": "The browser tests are already in this repository, so there was nothing to add.",
   "branch-taken":

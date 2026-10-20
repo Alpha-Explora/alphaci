@@ -8,6 +8,7 @@ import {
   isSignedOff,
   qaActionError,
   signoffEligibility,
+  signoffBlockedReason,
   signoffError,
   signoffPayload,
   type SignoffItems,
@@ -22,6 +23,11 @@ export interface QaSignoffViewModel {
   status: QaSignoffStatus;
   /** Server-decided, and never for a run already signed off. */
   canSignOff: boolean;
+  /**
+   * Why Sign off is greyed out for a viewer who may sign off: a failure is
+   * still open. Null when the run can be signed off.
+   */
+  blockedReason: string | null;
   eligibility: VerdictEligibility[];
   verdict: QaVerdict;
   setVerdict: (verdict: QaVerdict) => void;
@@ -60,9 +66,10 @@ export function useSignoffViewModel(options: {
   const [conditions, setConditions] = useState("");
   const [attempted, setAttempted] = useState(false);
   const [error, setError] = useState<QaActionError | null>(null);
+  const blockedReason = signoffBlockedReason(run);
 
   function openDialog() {
-    if (!canSignOff) return;
+    if (!canSignOff || blockedReason) return;
     setVerdict(defaultVerdict(run));
     setSummary("");
     setConditions("");
@@ -100,6 +107,7 @@ export function useSignoffViewModel(options: {
   return {
     status: dialogStatus(),
     canSignOff,
+    blockedReason,
     eligibility: signoffEligibility(run),
     verdict,
     setVerdict: chooseVerdict,

@@ -46,6 +46,12 @@ export interface HostingEnvironment {
 
 export interface HostingEnvironmentInput {
   target: Pick<DeploymentTarget, "id" | "branchName">;
+  /**
+   * The project's other services in the same slot. A branch one of them
+   * tracks is that service's environment, not this one's: a uat service is
+   * not shown an empty "Production" because main has a service of its own.
+   */
+  siblings?: ReadonlyArray<Pick<DeploymentTarget, "id" | "branchName">>;
   /** The branch previews read; null while it is unknown (off, loading or failed). */
   previews: ReadonlyArray<ProjectBranchPreview> | null;
   metadata: ReadonlyArray<EnvVarMetadata>;
@@ -58,6 +64,7 @@ const STATUS_WORDS: Record<ProjectBranchPreview["status"], string> = {
   ready: "live",
   failed: "failed",
   canceled: "canceled",
+  superseded: "replaced",
   unknown: "unknown",
   not_deployed: "not deployed",
 };
@@ -159,20 +166,29 @@ function previewsEnvironment(branches: string[], input: HostingEnvironmentInput)
 }
 
 /**
- * The environment switcher's tabs for one target: Production always, UAT only
- * when the repository has a `uat` lane or branch, Previews only when there is
- * at least one other branch.
+ * The environment switcher's tabs for one target: Production, UAT only when
+ * the repository has a `uat` lane or branch, Previews only when there is at
+ * least one other branch. A branch another service of the slot tracks is left
+ * to that service, so a service per branch shows its own environment only;
+ * a target is never left with no tab at all.
  */
 export function deriveHostingEnvironments(input: HostingEnvironmentInput): HostingEnvironment[] {
   const branches = targetBranchSet(input);
-  const environments = [branchEnvironment("production", PRODUCTION_BRANCH, input)];
-  if (branches.has(UAT_BRANCH)) environments.push(branchEnvironment("uat", UAT_BRANCH, input));
+  const claimed = new Set(
+    (input.siblings ?? [])
+      .filter((sibling) => sibling.id !== input.target.id && sibling.branchName)
+      .map((sibling) => sibling.branchName as string),
+  );
+  const environments: HostingEnvironment[] = [];
+  if (!claimed.has(PRODUCTION_BRANCH)) environments.push(branchEnvironment("production", PRODUCTION_BRANCH, input));
+  if (branches.has(UAT_BRANCH) && !claimed.has(UAT_BRANCH)) environments.push(branchEnvironment("uat", UAT_BRANCH, input));
   const previewBranches = [...branches].filter((branch) => !isNamedEnvironmentBranch(branch)).sort();
   if (previewBranches.length) environments.push(previewsEnvironment(previewBranches, input));
+  if (!environments.length) environments.push(branchEnvironment("production", PRODUCTION_BRANCH, input));
   return environments;
 }
 
-/** The environment a kind names, or the first one (Production) when it is not offered. */
+/** The environment a kind names, or the first one the service offers when it is not. */
 export function selectEnvironment(
   environments: ReadonlyArray<HostingEnvironment>,
   kind: HostingEnvironmentKind,
@@ -188,22 +204,8 @@ export function resolvePreviewBranch(branches: ReadonlyArray<string>, asked: str
 
 /* ── Roving tab focus (WAI-ARIA tabs) ─────────────────────────────────────── */
 
-const TAB_STEPS: Readonly<Record<string, number>> = {
-  ArrowRight: 1,
-  ArrowDown: 1,
-  ArrowLeft: -1,
-  ArrowUp: -1,
-};
-
-/** The tab a key moves to from `index`, wrapping; null for any other key. */
-export function nextTabIndex(key: string, index: number, count: number): number | null {
-  if (count <= 0) return null;
-  if (key === "Home") return 0;
-  if (key === "End") return count - 1;
-  const step = TAB_STEPS[key];
-  if (step === undefined) return null;
-  return (index + step + count) % count;
-}
+/** Shared with the Overview's environment switcher. */
+export { nextTabIndex } from "../../model/projects-rules";
 
 /* ── Deploys ──────────────────────────────────────────────────────────────── */
 
@@ -292,19 +294,31 @@ function slotLabel(slot: string): string {
 }
 
 export interface ServiceMeta {
-  /** "Vercel · Frontend · deploys from Git" */
+  /** "Vercel · Frontend · deploys from Git", "Render · Backend · deploys the pipeline's image" */
   summary: string;
+  /** False for a service that runs a pushed image: no build or directory of its own. */
+  builds: boolean;
   buildCommand: string | null;
   rootDirectory: string;
 }
 
+/** A service the pipeline builds an image for and the host only runs. */
+function runsPushedImage(target: Pick<DeploymentTarget, "imageUrl" | "deploymentStrategy">): boolean {
+  return Boolean(target.imageUrl) || target.deploymentStrategy === "render_image_pushed";
+}
+
 /** The header's one quiet meta line, in parts so the commands can be set in mono. */
 export function serviceMeta(
-  target: Pick<DeploymentTarget, "provider" | "slot" | "buildCommand" | "rootDirectory" | "imageUrl">,
+  target: Pick<
+    DeploymentTarget,
+    "provider" | "slot" | "buildCommand" | "rootDirectory" | "imageUrl" | "deploymentStrategy"
+  >,
 ): ServiceMeta {
-  const source = target.imageUrl ? "deploys an image" : "deploys from Git";
+  const image = runsPushedImage(target);
+  const source = image ? "deploys the pipeline's image" : "deploys from Git";
   return {
     summary: [providerDisplayName(target.provider), slotLabel(target.slot), source].join(" · "),
+    builds: !image,
     buildCommand: target.buildCommand?.trim() || null,
     rootDirectory: target.rootDirectory?.trim() || ".",
   };
@@ -318,14 +332,6 @@ const TARGET_STATUS: Readonly<Record<DeploymentTarget["status"], { label: string
 
 export function targetStatusPill(status: DeploymentTarget["status"]): { label: string; tone: HostingTone } {
   return TARGET_STATUS[status] ?? { label: status, tone: "idle" };
-}
-
-/** Where "Open in Vercel" goes: the server's dashboard URL, else the provider's convention. */
-export function providerDashboardHref(
-  target: Pick<DeploymentTarget, "dashboardUrl">,
-  fallback: string | null,
-): string | null {
-  return target.dashboardUrl?.trim() || fallback;
 }
 
 /* ── Variables ────────────────────────────────────────────────────────────── */

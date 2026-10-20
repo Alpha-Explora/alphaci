@@ -130,11 +130,10 @@ export function WorkspaceProvider({
 
   const selectedWorkspace = useMemo(() => {
     const selectable = [...(workspaces?.items ?? []), ...otherWorkspaces];
-    return (
-      selectable.find((workspace) => workspace.id === selectedWorkspaceId) ??
-      selectable[0] ??
-      null
-    );
+    if (selectedWorkspaceId) {
+      return selectable.find((workspace) => workspace.id === selectedWorkspaceId) ?? null;
+    }
+    return selectable[0] ?? null;
   }, [otherWorkspaces, selectedWorkspaceId, workspaces]);
 
   const value = useMemo(

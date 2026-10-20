@@ -1,8 +1,6 @@
 import {
-  addressLabel,
   automationSignal,
   chromeSize,
-  DEFAULT_STUDIO_LAYOUT,
   defaultEnvironmentKey,
   customResolutionChoice,
   DEVICE_PRESETS,
@@ -11,7 +9,6 @@ import {
   dimensionsLabel,
   fitDeviceScale,
   frameChrome,
-  isStudioLayout,
   launcherLabel,
   MIN_DEVICE_SCALE,
   NO_QA_ENVIRONMENT,
@@ -23,9 +20,9 @@ import {
   resolveDeviceDimensions,
   resolveEnvironment,
   resolveResolution,
-  resolveStudioLayout,
   scaleLabel,
-  STUDIO_LAYOUTS,
+  scalePercent,
+  studioRailPinnedKey,
   studioEnvironments,
   validateCustomResolution,
 } from "../../../../../src/features/checklists/model/qa-studio-rules";
@@ -123,8 +120,9 @@ describe("devices", () => {
     expect(orientationLabel("landscape")).toBe("Landscape");
   });
 
-  it("draws the chrome outside the screen: a browser bar on top, a symmetric tablet bezel, a phone chassis that turns", () => {
-    expect(frameChrome("browser", "landscape")).toMatchObject({ top: 40, right: 0, bottom: 0, left: 0 });
+  it("draws no chrome for Desktop, a symmetric tablet bezel and a phone chassis that turns", () => {
+    // Desktop is the page itself, edge to edge: no mock browser bar takes its height.
+    expect(chromeSize(frameChrome("browser", "landscape"))).toEqual({ width: 0, height: 0 });
     expect(frameChrome("tablet", "portrait")).toEqual(frameChrome("tablet", "landscape"));
     const portrait = frameChrome("phone", "portrait");
     const landscape = frameChrome("phone", "landscape");
@@ -169,29 +167,15 @@ describe("fitDeviceScale (both axes, never above 1)", () => {
   it("labels a scaled-down device and says nothing at 100%", () => {
     expect(scaleLabel(0.509)).toBe("Scaled to 51%");
     expect(scaleLabel(1)).toBeNull();
+    expect(scalePercent(0.509)).toBe("51%");
+    expect(scalePercent(1)).toBeNull();
   });
 });
 
-describe("studio layout", () => {
-  it("offers wide preview (the default) and split, in that order", () => {
-    expect(STUDIO_LAYOUTS.map((option) => option.id)).toEqual(["wide", "split"]);
-    expect(STUDIO_LAYOUTS.map((option) => option.label)).toEqual(["Wide preview", "Split"]);
-    expect(DEFAULT_STUDIO_LAYOUT).toBe("wide");
-  });
-
-  it("reads back a stored layout, and falls back to wide for anything else", () => {
-    expect(resolveStudioLayout("split")).toBe("split");
-    expect(resolveStudioLayout("wide")).toBe("wide");
-    expect(resolveStudioLayout(null)).toBe("wide");
-    expect(resolveStudioLayout("")).toBe("wide");
-    expect(resolveStudioLayout("full-screen")).toBe("wide");
-    expect(resolveStudioLayout("SPLIT")).toBe("wide");
-  });
-
-  it("recognises only the layouts this build knows", () => {
-    expect(isStudioLayout("split")).toBe(true);
-    expect(isStudioLayout("stacked")).toBe(false);
-    expect(isStudioLayout(undefined)).toBe(false);
+describe("studio run rail", () => {
+  it("remembers the pin per studio", () => {
+    expect(studioRailPinnedKey("qa")).toBe("alphaci.qa-studio.rail-pinned");
+    expect(studioRailPinnedKey("po")).toBe("alphaci.po-studio.rail-pinned");
   });
 });
 
@@ -200,6 +184,12 @@ describe("floating checklist launcher", () => {
     const run = qaRun({ items: [runItem(0, { status: "passed" }), runItem(1), runItem(2, { status: "passed" })] });
     expect(launcherLabel(run)).toBe("QA checklist · 2/3 passed");
     expect(launcherLabel(null)).toBe("QA checklist");
+  });
+
+  it("names PO Studio's panel by its own title", () => {
+    const run = qaRun({ items: [runItem(0, { status: "passed" }), runItem(1)] });
+    expect(launcherLabel(run, "Acceptance")).toBe("Acceptance · 1/2 passed");
+    expect(launcherLabel(null, "Acceptance")).toBe("Acceptance");
   });
 
   it("gives one automation dot: running wins, then a failure, then a pass", () => {
@@ -217,11 +207,6 @@ describe("floating checklist launcher", () => {
     ).toBe("none");
   });
 
-  it("puts the host and path in the browser frame's address pill", () => {
-    expect(addressLabel("https://shop.example.com/")).toBe("shop.example.com");
-    expect(addressLabel("https://shop.example.com/checkout?step=2")).toBe("shop.example.com/checkout?step=2");
-    expect(addressLabel("not a url")).toBe("not a url");
-  });
 });
 
 describe("previewPageUrl", () => {

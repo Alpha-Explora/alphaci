@@ -14,6 +14,12 @@ export type EnvironmentDraftRole = "production" | "non_production";
 export type EnvironmentRunsOn = "managed" | "onprem";
 
 export interface EnvironmentDraft {
+  hostAssignment?: {
+    /** Omitted: the workspace's only connected machine. */
+    machineId?: string;
+    requestId: string;
+    config: import("@/shared/api/contracts").OnpremAssignmentRequestConfig;
+  };
   slug: string;
   displayName: string;
   sourceBranch: string;
@@ -27,9 +33,24 @@ export interface EnvironmentDraft {
 
 /** The editable starting point: test and UAT, then production. */
 export const ENVIRONMENT_TEMPLATE: readonly EnvironmentDraft[] = [
-  { slug: "dev", displayName: "Test", sourceBranch: "dev", role: "non_production" },
-  { slug: "uat", displayName: "UAT", sourceBranch: "uat", role: "non_production" },
-  { slug: "main", displayName: "Production", sourceBranch: "main", role: "production" },
+  {
+    slug: "dev",
+    displayName: "Test",
+    sourceBranch: "dev",
+    role: "non_production",
+  },
+  {
+    slug: "uat",
+    displayName: "UAT",
+    sourceBranch: "uat",
+    role: "non_production",
+  },
+  {
+    slug: "main",
+    displayName: "Production",
+    sourceBranch: "main",
+    role: "production",
+  },
 ];
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -77,7 +98,9 @@ export function environmentBranches(
 ): string[] {
   return [
     ...new Set(
-      environments.map(({ sourceBranch }) => sourceBranch.trim()).filter(Boolean),
+      environments
+        .map(({ sourceBranch }) => sourceBranch.trim())
+        .filter(Boolean),
     ),
   ];
 }

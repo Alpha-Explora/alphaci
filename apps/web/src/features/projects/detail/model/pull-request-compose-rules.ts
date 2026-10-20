@@ -88,7 +88,7 @@ export function describeComparison(
     return {
       canCreate: true,
       tone: "warning",
-      message: `${base} has ${commits(comparison.behindBy)} that ${head} does not. This can still be opened, but it may conflict, and its checks will run against an older ${base}. Consider updating ${head} first.`,
+      message: `${head} is ${commits(comparison.behindBy)} behind ${base}. It may conflict, and its checks will run against an older ${base}. Consider updating it first.`,
     };
   }
 

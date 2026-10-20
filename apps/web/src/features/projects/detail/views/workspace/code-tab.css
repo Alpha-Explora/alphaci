@@ -1,0 +1,203 @@
+/* The Code tab's commit column and latest-commit bar. Tokens only. */
+
+.code-browser {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.ws-branch-create__toggle,
+.ws-branch-create button {
+  min-height: 2rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--brand);
+  border-radius: 0.5rem;
+  background: var(--brand-strong);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.ws-branch-create button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ws-branch-create {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.55rem;
+  width: min(100%, 32rem);
+  padding: 0.7rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.65rem;
+  background: var(--surface-hover);
+}
+
+.ws-branch-create__field {
+  display: grid;
+  flex: 1 1 14rem;
+  gap: 0.3rem;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.ws-branch-create__field input {
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.45rem;
+  background: var(--layer-1);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.ws-branch-create__source {
+  padding-bottom: 0.45rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.ws-branch-create__error {
+  flex-basis: 100%;
+  color: var(--danger);
+  font-size: 0.78rem;
+}
+
+.code-commit-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-subtle);
+  border-bottom: 0;
+  border-radius: 0.75rem 0.75rem 0 0;
+  background: var(--surface-hover);
+  font-size: 0.85rem;
+}
+
+.code-commit-bar--loading {
+  color: var(--text-secondary);
+}
+
+.code-commit-bar__author {
+  flex-shrink: 0;
+  color: var(--text-primary);
+}
+
+.code-commit-bar__message {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.code-commit-bar__meta {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.code-commit-bar__count {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* The bar and the list read as one table, as on GitHub. */
+.code-commit-bar + .code-tree,
+.code-commit-bar + .ws-file {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.code-tree__row {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr) minmax(0, 1.4fr) 6.5rem;
+  gap: 0.75rem;
+}
+
+.code-tree__row .ws-tree__icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.code-tree__message {
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.code-tree__time {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (width <= 40rem) {
+  .code-tree__row {
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  }
+
+  .code-tree__message,
+  .code-commit-bar__message {
+    display: none;
+  }
+}
+
+/* The commit the tab is browsing (from the Commits tab), and the way back. */
+.code-commit {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.code-commit__sha {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.35rem;
+  background: var(--layer-1);
+  color: var(--text-primary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.74rem;
+}
+
+.code-commit__back {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.code-commit__back:hover {
+  text-decoration: underline;
+}
+
+.code-commit__back:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}

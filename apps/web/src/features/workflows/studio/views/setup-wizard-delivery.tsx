@@ -9,8 +9,10 @@ import {
   type HostingOption,
 } from "../model/hosting-choice-rules";
 import type { HostingChoiceState } from "../view-models/use-hosting-choice";
+import { firstHostProblem } from "../model/setup-delivery-rules";
 import { DeploymentProvisioningSetup } from "./deployment-provisioning-setup";
 import { EnvironmentsPath } from "./setup-wizard-environments";
+import {SetupHostSelection} from './setup-host-selection';
 import type { WizardStepProps } from "./setup-wizard-props";
 
 function QuotaNotice({
@@ -33,6 +35,18 @@ function RenderVariablesNotice({ missing }: Readonly<{ missing: boolean }>) {
   return (
     <p className="wizard-notice wizard-notice--alert" role="alert">
       Add at least one Render environment variable before creating the repository.
+    </p>
+  );
+}
+
+/** Says why Continue is off; the problem itself sits by its environment's machine. */
+function HostProblemNotice({ problem }: Readonly<{ problem: string | null }>) {
+  if (!problem) {
+    return null;
+  }
+  return (
+    <p className="wizard-notice wizard-notice--alert" role="status">
+      Continue is off until the host problem above is fixed.
     </p>
   );
 }
@@ -153,6 +167,8 @@ export function SetupWizardDelivery({
   envProvisioningEnabled,
   form,
   hosting,
+  hostProblems,
+  hostSelection,
   projectCatalog,
   projectQuota,
   selectedProjectKind,
@@ -162,10 +178,26 @@ export function SetupWizardDelivery({
     provisioningOffered: envProvisioningEnabled,
     missing: deploymentProvisioning.hostedRenderVariablesMissing,
   });
+  const hostProblem = firstHostProblem(hostProblems);
   return (
     <div className="wizard-delivery">
       <HostingChoiceField hosting={hosting} />
-      <EnvironmentsPath choice={hosting.choice} environments={form.environments} />
+      <EnvironmentsPath
+        choice={hosting.choice}
+        environments={form.environments}
+        layout={hosting.layout}
+      />
+      {hosting.choice === "onprem" ? (
+        <SetupHostSelection
+          environments={form.environments}
+          hostProblems={hostProblems}
+          hostSelection={hostSelection}
+          onChange={form.setEnvironments}
+          slots={hosting.onpremSlots}
+          runtimes={hosting.onpremRuntimes}
+        />
+      ) : null}
+      <HostProblemNotice problem={hostProblem} />
       {hosting.choice === "hosted" ? (
         <HostedTargets
           deploymentOwnershipMode={deploymentOwnershipMode}

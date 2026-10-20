@@ -9,7 +9,7 @@ import {
   type ToolResult,
 } from "@/features/runs";
 
-import { logUnavailableMessage } from "../../model/failure-log-rules";
+import { jobLogPendingMessage, jobLogReady, logUnavailableMessage } from "../../model/failure-log-rules";
 import type { JobLogViewModel } from "../../view-models/use-run-jobs-view-model";
 import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-states";
 
@@ -18,8 +18,17 @@ import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-st
  * not there, or the log itself. Shared by the job rows, a failed stage's
  * "View full log" and a failed pull request check, so the three cannot say
  * three different things about the same unreadable log.
+ *
+ * `jobStatus` comes from the job rows, the only caller that shows unfinished
+ * jobs: while the job is queued or running there is no log to read yet.
  */
-export function JobLogPanel({ view }: Readonly<{ view: JobLogViewModel }>) {
+export function JobLogPanel({
+  view,
+  jobStatus,
+}: Readonly<{ view: JobLogViewModel; jobStatus?: string }>) {
+  if (jobStatus !== undefined && !jobLogReady(jobStatus)) {
+    return <WorkspaceEmpty title="Log not ready yet" message={jobLogPendingMessage(jobStatus)} />;
+  }
   if (view.status === "loading") return <WorkspaceLoading rows={4} />;
   if (view.status === "error") {
     return (
@@ -29,7 +38,20 @@ export function JobLogPanel({ view }: Readonly<{ view: JobLogViewModel }>) {
       />
     );
   }
-  if (!view.log) return null;
+  if (!view.log) {
+    // Opened while the job was running; it has finished since.
+    return (
+      <WorkspaceEmpty
+        title="The job has finished"
+        message="Its log is ready to read."
+        action={
+          <button type="button" className="pipe-text-button" onClick={view.retry}>
+            Show log
+          </button>
+        }
+      />
+    );
+  }
   if (!view.log.available) {
     return <WorkspaceEmpty title="No log available" message={logUnavailableMessage(view.log.reason)} />;
   }

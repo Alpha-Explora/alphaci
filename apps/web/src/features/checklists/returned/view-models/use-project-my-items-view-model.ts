@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { projectQaRunsRepository } from "../../data/project-qa-runs-repository";
+import { useIterationEpoch } from "../../iteration";
 import { applyItemToMyItems, EMPTY_PROJECT_MY_ITEMS } from "../../model/project-run-rules";
 import type { ProjectMyItems } from "../../model/project-run-types";
 import type { RequirementItem } from "../../model/requirement-types";
@@ -28,7 +29,7 @@ interface LoadResult {
   missing: boolean;
 }
 
-const LOAD_ERROR = "The Project's QA items could not be loaded. Try again in a moment.";
+const LOAD_ERROR = "The Project's progress could not be loaded. Try again in a moment.";
 
 function loadStatus(active: boolean, result: LoadResult | null): ProjectMyItemsStatus {
   if (!active) return "idle";
@@ -53,6 +54,8 @@ export function useProjectMyItemsViewModel(options: {
   const active = enabled && Boolean(deliveryProjectId);
   // Keyed by Project only: a reload keeps the lists on screen until the new ones arrive.
   const key = deliveryProjectId ?? "";
+  // A started iteration (Iterations phase 3) reads the buckets again.
+  const epoch = useIterationEpoch(deliveryProjectId);
 
   useEffect(() => {
     if (!active || !deliveryProjectId) return;
@@ -68,7 +71,7 @@ export function useProjectMyItemsViewModel(options: {
         const missing = errorStatus(cause) === 404;
         setResult({ key, data: null, error: missing ? null : LOAD_ERROR, missing });
       });
-  }, [active, deliveryProjectId, key, nonce]);
+  }, [active, deliveryProjectId, key, nonce, epoch]);
 
   const current = result?.key === key ? result : null;
 

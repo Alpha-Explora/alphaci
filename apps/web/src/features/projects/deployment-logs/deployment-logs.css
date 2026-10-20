@@ -263,7 +263,7 @@
 /* About the height the page thumbnail had, so a backend card is no taller. */
 .deploy-logs-tail {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 0.45rem;
   height: 15rem;
   min-width: 0;
@@ -299,6 +299,23 @@
   border-radius: 0.25rem;
   outline: 2px solid var(--brand);
   outline-offset: 2px;
+}
+
+.deploy-logs-tail__quiet {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+/* The Overview card's tail still scrolls (wheel, touch, keyboard) but draws
+   no bar: the browser's default one is a light strip on the dark card. */
+.deploy-logs-tail .deploy-logs__scroller {
+  scrollbar-width: none;
+}
+
+.deploy-logs-tail .deploy-logs__scroller::-webkit-scrollbar {
+  display: none;
 }
 
 

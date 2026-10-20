@@ -302,7 +302,7 @@ describe("Studio roles", () => {
       "Verify — browser & API tests",
     ]);
     expect(panel.querySelector(".qa-auto-stage--missing")).toBeNull();
-    expect(playwrightTab(container).querySelector(".qa-coltab__status")?.textContent).toBe("·18/20");
+    expect(playwrightTab(container).querySelector(".qa-coltab__status")?.textContent).toBe("18/20");
     expect([...panel.querySelectorAll(".qa-pw-item__title")].map((title) => title.textContent)).toEqual(["Pays with a saved card"]);
     expect(buttonNamed(panel, "Run Playwright")).toBeDefined();
     // Live progress is read for the frontend only.
@@ -316,7 +316,7 @@ describe("Studio roles", () => {
     const panel = playwrightPanel(container);
     expect(panel.querySelectorAll(".qa-pw-repo")).toHaveLength(2);
     expect(panel.querySelectorAll(".qa-auto-stage")).toHaveLength(4);
-    expect(playwrightTab(container).querySelector(".qa-coltab__status")?.textContent).toBe("·27/29");
+    expect(playwrightTab(container).querySelector(".qa-coltab__status")?.textContent).toBe("27/29");
     expect(container.querySelectorAll('[role="tab"]')).toHaveLength(2);
   });
 

@@ -91,6 +91,26 @@ describe("TestCaseList on a real run", () => {
     const view = render(<TestCaseList cases={CASES} total={6} />);
     expect(view.textContent).not.toMatch(/[A-Z]:\\Users|\/home\/runner/);
   });
+
+  it("folds behind its heading when foldable, open at first only when a test failed", () => {
+    const passing = CASES.filter((test) => test.status !== "failed");
+    const view = render(<TestCaseList cases={passing} label="Verify tests" foldable />);
+    const toggle = view.querySelector<HTMLButtonElement>("h6 button")!;
+    const list = view.querySelector<HTMLElement>(".tr-cases__list")!;
+    expect(toggle.textContent).toBe("Verify tests · 5 tests");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.getAttribute("aria-controls")).toBe(list.id);
+    expect(list.hidden).toBe(true);
+    act(() => toggle.click());
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(list.hidden).toBe(false);
+
+    act(() => root?.unmount());
+    root = null;
+    const failing = render(<TestCaseList cases={CASES} total={6} foldable />);
+    expect(failing.querySelector("h6 button")?.getAttribute("aria-expanded")).toBe("true");
+    expect(failing.querySelector<HTMLElement>(".tr-cases__list")?.hidden).toBe(false);
+  });
 });
 
 describe("SonarPanel", () => {

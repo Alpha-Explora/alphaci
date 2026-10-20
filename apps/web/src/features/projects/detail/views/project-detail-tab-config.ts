@@ -47,7 +47,13 @@ export const PROJECT_DETAIL_TAB_GROUPS: ReadonlyArray<
       { id: "po", label: "PO Studio" },
     ],
   },
-  { heading: "Records", items: [{ id: "audit", label: "Audit" }] },
+  {
+    heading: "Records",
+    items: [
+      { id: "audit", label: "Audit" },
+      { id: "history", label: "Release" },
+    ],
+  },
   {
     heading: "Configuration",
     items: [{ id: "settings", label: "Settings" }],

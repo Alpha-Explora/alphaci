@@ -24,6 +24,7 @@ export type ProjectDetailTab =
   | "qa"
   | "po"
   | "audit"
+  | "history"
   | "settings";
 
 /** Every tab, in strip order. */
@@ -38,6 +39,7 @@ export const PROJECT_DETAIL_TABS: ReadonlyArray<ProjectDetailTab> = [
   "qa",
   "po",
   "audit",
+  "history",
   "settings",
 ];
 
@@ -183,11 +185,11 @@ function allTabsExcept(
  *
  *   - Product owner (`lead`): what they own — the Overview, the Project's
  *     requirements (Checklists), PO Studio (accepting the system on uat and
- *     merging it to main), the Audit trail and Settings. No code, pipeline or
- *     hosting surfaces.
+ *     merging it to main), the Audit trail, the Project's History and
+ *     Settings. No code, pipeline or hosting surfaces.
  *   - Developer (`member`): everything except the studios, Hosting included
  *     (they change hosting services and their variables).
- *   - QA Team (`qa`): the same five with QA Studio in place of PO Studio. QA
+ *   - QA Team (`qa`): the same tabs with QA Studio in place of PO Studio. QA
  *     checks the uat build and its UI there; code, pipeline and hosting
  *     surfaces are not theirs.
  *   - Admin: everything, both studios included.
@@ -197,6 +199,7 @@ const OWNER_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTab>([
   "checklists",
   "po",
   "audit",
+  "history",
   "settings",
 ]);
 
@@ -205,6 +208,7 @@ const QA_TEAM_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTab>([
   "checklists",
   "qa",
   "audit",
+  "history",
   "settings",
 ]);
 
@@ -225,6 +229,7 @@ const UNKNOWN_ROLE_TABS: ReadonlySet<ProjectDetailTab> = allTabsExcept(
   "checklists",
   "qa",
   "po",
+  "history",
 );
 
 /** The role's allow-list. */
@@ -235,11 +240,12 @@ export function projectDetailTabsForRole(
   return ROLE_TABS[appRole] ?? UNKNOWN_ROLE_TABS;
 }
 
-/** Checklists and the studios exist only with the QA checklists capability. */
+/** Checklists, the studios and the iteration History exist only with the QA checklists capability. */
 const QA_CAPABILITY_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTab>([
   "checklists",
   "qa",
   "po",
+  "history",
 ]);
 
 /**
@@ -609,8 +615,7 @@ function detachProviderErrorMessage(
   providerDeleteError: string,
   target: DeploymentTarget,
 ): string {
-  const dashboard = target.dashboardUrl ? ` (${target.dashboardUrl})` : "";
-  return `Target detached from ALPHACI, but the ${target.provider} resource could not be deleted automatically (${providerDeleteError}). Delete it manually from the provider dashboard${dashboard}.`;
+  return `Target detached from ALPHACI, but the ${target.provider} resource could not be deleted automatically (${providerDeleteError}). Ask an ALPHACI admin to remove it.`;
 }
 
 export function replaceDeploymentTarget(

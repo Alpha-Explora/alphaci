@@ -129,16 +129,16 @@ function dialogButton(name: string): HTMLButtonElement | undefined {
   return [...(dialog()?.querySelectorAll("button") ?? [])].find((button) => button.textContent === name);
 }
 
-describe("QA Studio — the readiness chip in the tab bar", () => {
-  it("draws no promotion strip above the tabs: the chip sits in the tab bar, beside the tablist", async () => {
+describe("QA Studio — the readiness chip in the panel header", () => {
+  it("draws no promotion strip: the chip sits in the panel header, apart from the rail's tablist", async () => {
     setup(promotionWire());
     const container = await studio("admin");
     expect(container.querySelector(".qa-promo")).toBeNull();
     expect(container.querySelector('section[aria-label="Production readiness"]')).toBeNull();
-    const bar = container.querySelector(".qa-coltabs-bar")!;
+    const bar = container.querySelector(".qa-drawer__head > .qa-coltabs-bar")!;
     expect(bar.contains(chip(container))).toBe(true);
-    // The tablist holds only the tabs; the chip and the button sit beside it.
-    const tablist = bar.querySelector('[role="tablist"]')!;
+    // The tablist (on the rail strip) holds only the tabs; the chip and the button are in the header.
+    const tablist = container.querySelector('.qa-rail__strip [role="tablist"]')!;
     expect(tablist.contains(chip(container))).toBe(false);
     expect([...tablist.children].every((child) => child.getAttribute("role") === "tab")).toBe(true);
   });
@@ -202,7 +202,7 @@ describe("QA Studio — the readiness chip in the tab bar", () => {
 describe("QA Studio — the readiness popover", () => {
   it("opens under the chip with everything the strip showed: route, rows, reasons, PR, who merges", async () => {
     setup(promotionWire());
-    const container = await studio("qa");
+    const container = await studio("admin");
     const button = chip(container);
     const panel = popover(container);
     expect(button.getAttribute("aria-expanded")).toBe("false");
@@ -223,9 +223,38 @@ describe("QA Studio — the readiness popover", () => {
     // The promotion PR is named, never linked: ALPHACI is the only UI.
     expect(panel.querySelector(".qa-promo__pr")?.textContent).toBe("Promotion PR #42");
     expect(panel.querySelector("a")).toBeNull();
-    expect(panel.textContent).toContain("Product owners merge uat into main once every checklist is approved.");
     // Focus stays on the chip: a disclosure, not a menu.
     expect(document.activeElement).not.toBe(panel);
+  });
+
+  it("shows the QA Team the Project only: no commit route and no pull request", async () => {
+    setup(promotionWire());
+    const container = await studio("qa");
+    await click(chip(container));
+    const panel = popover(container);
+    expect(panel.textContent).toContain("1 of 2 checklists approved");
+    expect(panel.querySelector(".qa-promo__route code")).toBeNull();
+    expect(panel.querySelector(".qa-promo__pr")).toBeNull();
+    expect(panel.textContent).toContain("Product owners merge uat into main once every checklist is approved.");
+  });
+
+  it("merges for a Product owner without naming a commit or pull request", async () => {
+    setup(readyWire());
+    runs.mergePromotion.mockResolvedValue({
+      merged: true,
+      sha: "5555555abcdef",
+      message: "Pull Request successfully merged",
+      pullRequest: { number: 42, url: "https://github.com/tone/storefront-web/pull/42" },
+    });
+    const container = await studio("lead");
+    await click(mergeButton(container));
+    expect(dialog()?.textContent).not.toContain("9f8e7d6");
+    expect(dialog()?.textContent).not.toContain("#42");
+    await click(dialogButton("Merge to main"));
+    const outcome = container.querySelector(".qa-promo-outcome")!;
+    expect(outcome.textContent).toContain("Merged into main");
+    expect(outcome.textContent).not.toContain("5555555");
+    expect(outcome.querySelector(".qa-promo__pr")).toBeNull();
   });
 
   it("closes on Escape and gives focus back to the chip", async () => {
@@ -243,7 +272,6 @@ describe("QA Studio — the readiness popover", () => {
     setup(promotionWire());
     const container = await studio("qa");
     await click(container.querySelector('button[aria-label="Full screen"]'));
-    await click(container.querySelector("button.qa-launcher"));
     await click(chip(container));
     await key(chip(container), "Escape");
     expect(popover(container).hidden).toBe(true);
@@ -317,7 +345,8 @@ describe("QA Studio — Merge to main beside the chip", () => {
       message: "Pull Request successfully merged",
       pullRequest: { number: 42, url: "https://github.com/tone/storefront-web/pull/42" },
     });
-    const container = await studio("lead");
+    // An admin sees the commit and pull request; a Product owner does not (below).
+    const container = await studio("admin");
     const button = mergeButton(container)!;
     expect(button.disabled).toBe(false);
     await click(button);
@@ -325,7 +354,7 @@ describe("QA Studio — Merge to main beside the chip", () => {
     expect(dialog()?.textContent).toContain(
       "Merge tone/storefront-web uat @ 9f8e7d6 into main through pull request #42, with your GitHub account.",
     );
-    // The confirmation is not inside the tab bar (a size container is a containing block).
+    // The confirmation is not inside the header's bar: it is fixed to the viewport.
     expect(container.querySelector(".qa-coltabs-bar")?.contains(dialog())).toBe(false);
     expect(runs.mergePromotion).not.toHaveBeenCalled();
     await click(dialogButton("Merge to main"));
@@ -335,12 +364,12 @@ describe("QA Studio — Merge to main beside the chip", () => {
     expect(outcome.getAttribute("data-tone")).toBe("success");
     expect(outcome.textContent).toContain("Merged into main");
     expect(outcome.textContent).toContain("main updated · merge commit 5555555");
-    // In view: in the run column's live region under the bar, not in the closed popover.
+    // In view: in the run column's live region under the header, not in the closed popover.
     expect(popover(container).hidden).toBe(true);
     expect(popover(container).contains(outcome)).toBe(false);
     const live = outcome.closest('[role="status"]')!;
     expect(live.parentElement?.classList.contains("qa-studio__run")).toBe(true);
-    expect(live.previousElementSibling?.classList.contains("qa-coltabs-bar")).toBe(true);
+    expect(live.previousElementSibling?.classList.contains("qa-drawer__head")).toBe(true);
     expect(runs.promotion).toHaveBeenCalledTimes(2);
     expect(mergeButton(container)!.disabled).toBe(true);
     await click([...outcome.querySelectorAll("button")].find((b) => b.textContent === "Dismiss"));
@@ -351,7 +380,7 @@ describe("QA Studio — Merge to main beside the chip", () => {
     setup(readyWire());
     const refusal = "At least 1 approving review is required by reviewers with write access.";
     runs.mergePromotion.mockResolvedValue({ merged: false, sha: null, message: refusal, pullRequest: { number: 42, url: "https://github.com/tone/storefront-web/pull/42" } });
-    const container = await studio("lead");
+    const container = await studio("admin");
     await click(mergeButton(container));
     await click(dialogButton("Merge to main"));
     const outcome = container.querySelector(".qa-promo-outcome")!;
@@ -395,20 +424,19 @@ describe("QA Studio — Merge to main beside the chip", () => {
     expect(window.localStorage.getItem("alphaci.qa-studio.promotion-card.collapsed")).toBeNull();
   });
 
-  it("is mounted once and moves with the run column into the full-screen drawer, under its header", async () => {
+  it("is mounted once, under the panel's header, and stays there in full screen", async () => {
     setup(readyWire(), runAs("lead", { branch: "uat", items: [runItem(0)] }));
     const container = await studio("lead");
     const before = chip(container);
     const runCard = container.querySelector(".qa-run-card");
     await click(container.querySelector('button[aria-label="Full screen"]'));
-    await click(container.querySelector("button.qa-launcher"));
     const drawer = container.querySelector('[role="region"]')!;
     expect(drawer.contains(before)).toBe(true);
     expect(container.querySelectorAll(".qa-coltabs-bar")).toHaveLength(1);
     expect(container.querySelectorAll(".qa-promo-chip")).toHaveLength(1);
     expect(container.querySelectorAll("button.qa-promo__merge")).toHaveLength(1);
     expect(chip(container)).toBe(before);
-    expect(drawer.querySelector(".qa-drawer__head")?.nextElementSibling?.classList.contains("qa-coltabs-bar")).toBe(true);
+    expect(drawer.querySelector(".qa-drawer__head")?.lastElementChild?.classList.contains("qa-coltabs-bar")).toBe(true);
     expect(container.querySelector(".qa-run-card")).toBe(runCard);
   });
 
@@ -425,5 +453,39 @@ describe("QA Studio — Merge to main beside the chip", () => {
     expect(runs.signoff).toHaveBeenCalled();
     expect(runs.promotion).toHaveBeenCalledTimes(2);
     expect(chip(container).getAttribute("aria-label")).toBe("Ready for production");
+  });
+});
+
+describe("QA Studio — a delivered version (Versions phase 2)", () => {
+  const delivered = {
+    scope: "project",
+    eligible: false,
+    canMerge: true,
+    iterationDelivered: true,
+    repositoryDelivered: true,
+    iteration: { id: "it-3", number: 3, status: "delivered", deliveredAt: "2026-10-14T10:00:00.000Z" },
+  };
+
+  it("turns the chip violet and names the iteration; Merge to main is gone", async () => {
+    setup(readyWire(delivered));
+    const container = await studio("lead");
+    expect(chip(container).getAttribute("data-tone")).toBe("delivered");
+    expect(chip(container).getAttribute("aria-label")).toBe("Version 3 delivered");
+    expect(mergeButton(container)).toBeNull();
+    expect(popover(container).textContent).not.toContain("What blocks the merge");
+    expect(popover(container).querySelector(".qa-promo__delivered")?.textContent).toMatch(/^Version 3 delivered on /);
+  });
+
+  it("reads 'main already contains this commit' as a success, never GitHub refusing", async () => {
+    setup(readyWire({ repositoryDelivered: false }));
+    runs.mergePromotion.mockResolvedValue({ merged: false, how: "already_in_main", message: "main already contains this commit" } as never);
+    const container = await studio("lead");
+    await click(mergeButton(container));
+    await click(dialogButton("Merge to main"));
+    const outcome = container.querySelector(".qa-promo-outcome")!;
+    expect(outcome.getAttribute("data-tone")).toBe("success");
+    expect(outcome.textContent).toContain("Already in main");
+    expect(outcome.textContent).toContain("main already contains this commit");
+    expect(outcome.textContent).not.toContain("GitHub refused the merge");
   });
 });

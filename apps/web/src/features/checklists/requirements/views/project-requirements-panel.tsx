@@ -8,7 +8,19 @@ import { useEffect, useState } from "react";
 import { LoadingRows } from "@/features/groups/workspace";
 import type { AppRole } from "@/shared/api/contracts";
 
+import { IterationNextStep } from "../../iteration";
 import { useItemProgressViewModel, type ItemProgressViewModel } from "../../returned";
+import {
+  CHECKLIST_FILTERS,
+  checklistFilterCounts,
+  emptyFilterText,
+  initialChecklistFilter,
+  itemMatches,
+  NO_VERDICTS,
+  type ChecklistFilter,
+  type ItemVerdicts,
+} from "../../model/checklist-filter-rules";
+import { deliveredIterationTitle, deliveredRequirementsText } from "../../model/iteration-rules";
 import {
   canSetVerification,
   kindCopy,
@@ -33,13 +45,13 @@ const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 /** One line, for the viewer's role: what they do here. */
 function roleLine(permissions: RequirementPermissions, appRole: AppRole | null | undefined): string {
   if (permissions.canManage) {
-    return "You write the requirements. Developers move each item's Progress; the QA Team verifies them on the Project QA run.";
+    return "You write the requirements. Developers move each item's Progress; the QA Team verifies them in QA testing.";
   }
   if (permissions.canSetProgress) {
     return "Move each item's Progress as you build it. Mark it Done when it is ready for QA.";
   }
   if (canSetVerification(appRole)) {
-    return "Developers mark items Done; you verify them on the Project QA run.";
+    return "Developers mark items Done; you verify them in QA testing.";
   }
   return "Requirements for every repository in this Project.";
 }
@@ -54,44 +66,142 @@ function emptyCopy(kind: RequirementKind, canManage: boolean): string {
   return `${copy.empty} Your Product owner writes them.`;
 }
 
+/**
+ * The checklist chips: everything, or only what QA sent back, what is left
+ * to do, in progress or Done, each with how many items it holds.
+ */
+function FilterChips({
+  filter,
+  counts,
+  onChange,
+}: Readonly<{ filter: ChecklistFilter; counts: Record<ChecklistFilter, number>; onChange: (next: ChecklistFilter) => void }>) {
+  // Nothing to narrow yet: the sections say why.
+  if (counts.all === 0) return null;
+  const active = CHECKLIST_FILTERS.find((entry) => entry.id === filter)!;
+  return (
+    <details className="rq-filter-menu">
+      <summary className="rq-filter-menu__trigger">
+        <span>Filter</span>
+        <strong>{active.label}</strong>
+        <span className="rq-filter__count">{counts[active.id]}</span>
+      </summary>
+      <div className="rq-filter-menu__options" role="group" aria-label="Filter items by progress">
+        {CHECKLIST_FILTERS.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            className="rq-filter"
+            data-filter={entry.id}
+            aria-pressed={filter === entry.id}
+            data-has={String(counts[entry.id] > 0)}
+            onClick={(event) => {
+              onChange(entry.id);
+              const menu = event.currentTarget.closest("details");
+              if (menu) menu.open = false;
+            }}
+          >
+            {entry.label}
+            <span className="rq-filter__count">{counts[entry.id]}</span>
+          </button>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+/** The requirements with at least one item a filter keeps; all of them with no filter. */
+function filteredRequirements(requirements: Requirement[], verdicts: ItemVerdicts, filter: ChecklistFilter): Requirement[] {
+  if (filter === "all") return requirements;
+  return requirements.filter((requirement) => requirement.items.some((item) => itemMatches(item, verdicts, filter)));
+}
+
+function SectionHeading({
+  kind,
+  copy,
+  titleId,
+  count,
+  filterable,
+  canManage,
+  onCreate,
+}: Readonly<{
+  kind: RequirementKind;
+  copy: ReturnType<typeof kindCopy>;
+  titleId: string;
+  count: number;
+  filterable: boolean;
+  canManage: boolean;
+  onCreate: () => void;
+}>) {
+  return (
+    <div className="rq-section__head">
+      {!filterable ? (
+        <>
+          <span className="rq-section__icon" aria-hidden="true">
+            {kind === "functional" ? <FeatureIcon /> : <SystemIcon />}
+          </span>
+          <div className="rq-section__titles">
+            <h3 className="rq-section__title" id={titleId}>
+              {copy.section}
+              <span className="rq-count">{count}</span>
+            </h3>
+            <p className="rq-section__lede">{copy.lede}</p>
+          </div>
+        </>
+      ) : null}
+      {canManage && count > 0 ? (
+        <button type="button" className="primary-button rq-section__create" onClick={onCreate}>
+          <PlusIcon />
+          {copy.create}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function KindSection({
   kind,
-  requirements,
+  requirements: allRequirements,
   vm,
   dialog,
   progress,
+  verdicts,
+  filter,
+  filterable,
 }: Readonly<{
   kind: RequirementKind;
   requirements: Requirement[];
   vm: ProjectRequirementsViewModel;
   dialog: RequirementDialogViewModel;
   progress: ItemProgressViewModel;
+  verdicts: ItemVerdicts;
+  filter: ChecklistFilter;
+  filterable: boolean;
 }>) {
   const reduced = useReducedMotion();
   const copy = kindCopy(kind);
   const canManage = vm.permissions.canManage;
   const titleId = `rq-section-${kind}`;
+  const requirements = filteredRequirements(allRequirements, verdicts, filter);
   return (
-    <section className="rq-section" data-kind={kind} aria-labelledby={titleId}>
-      <div className="rq-section__head">
-        <span className="rq-section__icon" aria-hidden="true">
-          {kind === "functional" ? <FeatureIcon /> : <SystemIcon />}
-        </span>
-        <div className="rq-section__titles">
-          <h3 className="rq-section__title" id={titleId}>
-            {copy.section}
-            <span className="rq-count">{requirements.length}</span>
-          </h3>
-          <p className="rq-section__lede">{copy.lede}</p>
-        </div>
-        {canManage && requirements.length > 0 ? (
-          <button type="button" className="primary-button rq-section__create" onClick={() => dialog.openCreate(kind)}>
-            <PlusIcon />
-            {copy.create}
-          </button>
-        ) : null}
-      </div>
-      {requirements.length === 0 ? (
+    <section
+      className="rq-section"
+      data-kind={kind}
+      aria-label={filterable ? copy.section : undefined}
+      aria-labelledby={filterable ? undefined : titleId}
+    >
+      <SectionHeading
+        kind={kind}
+        copy={copy}
+        titleId={titleId}
+        count={allRequirements.length}
+        filterable={filterable}
+        canManage={canManage}
+        onCreate={() => dialog.openCreate(kind)}
+      />
+      {allRequirements.length > 0 && requirements.length === 0 ? (
+        <p className="rq-empty rq-empty--filtered">{emptyFilterText(filter)}</p>
+      ) : null}
+      {allRequirements.length === 0 ? (
         <div className="rq-empty">
           <p>{emptyCopy(kind, canManage)}</p>
           {canManage ? (
@@ -101,7 +211,8 @@ function KindSection({
             </button>
           ) : null}
         </div>
-      ) : (
+      ) : null}
+      {requirements.length > 0 ? (
         <div className="rq-cards">
           {requirements.map((requirement, index) => (
             <motion.div
@@ -120,13 +231,61 @@ function KindSection({
                 onRemoved={vm.removeItem}
                 onRequirement={vm.applyRequirement}
                 onReload={vm.reload}
+                verdicts={verdicts}
+                filter={filter}
               />
             </motion.div>
           ))}
         </div>
-      )}
+      ) : null}
     </section>
   );
+}
+
+/**
+ * A delivered iteration's Features are archived: they leave this list and
+ * are kept, read-only with QA's results, in the History tab. What is left is
+ * the next step — Start iteration N+1 for a Product owner or admin, the
+ * waiting sentence for everyone else — and the way to History where the page
+ * has one (`onOpenHistory`).
+ */
+function DeliveredRequirements({
+  number,
+  deliveryProjectId,
+  appRole,
+  onOpenHistory,
+}: Readonly<{
+  number: number;
+  deliveryProjectId: string;
+  appRole: AppRole | null | undefined;
+  onOpenHistory?: () => void;
+}>) {
+  return (
+    <div className="rq-panel">
+      <div className="rq-delivered" role="status">
+        <p className="rq-delivered__title">{deliveredIterationTitle(number)}</p>
+        <p className="rq-delivered__text">{deliveredRequirementsText(Boolean(onOpenHistory))}</p>
+        {onOpenHistory ? (
+          <button type="button" className="ghost-button" onClick={onOpenHistory}>
+            View in Release
+          </button>
+        ) : null}
+      </div>
+      <IterationNextStep deliveryProjectId={deliveryProjectId} enabled appRole={appRole} />
+    </div>
+  );
+}
+
+/**
+ * The chips' state. Only a filterable panel (the Project checklist, Product owner and Developer) has
+ * one; it opens on "Returned by QA" for Home's #my-qa-items link. Read once
+ * at mount: the panel renders client-side, after its Project has loaded.
+ */
+function useChecklistFilter(filterable = false) {
+  const [filter, setFilter] = useState<ChecklistFilter>(() =>
+    filterable && typeof window !== "undefined" ? initialChecklistFilter(window.location.hash) : "all",
+  );
+  return { filter: filterable ? filter : "all", setFilter };
 }
 
 function shouldOpenRequested(request: number, handled: number, vm: ProjectRequirementsViewModel): boolean {
@@ -161,6 +320,9 @@ function useFeatureRequest(
  * requirements when SHOWN_REQUIREMENT_KINDS includes them (hidden for now).
  * Product owners and admins write them; Developers move Progress; the QA
  * Team reads them here and verifies them on the Project QA run.
+ *
+ * The Project checklist (Product owner and Developer) also passes `verdicts` (QA's word on each item,
+ * from the current run) and `filterable` (the chips above the Features).
  */
 export function ProjectRequirementsPanel({
   deliveryProjectId,
@@ -169,6 +331,9 @@ export function ProjectRequirementsPanel({
   kinds = SHOWN_REQUIREMENT_KINDS,
   newFeatureRequest = 0,
   onFeatureCount,
+  onOpenHistory,
+  verdicts,
+  filterable,
 }: Readonly<{
   deliveryProjectId: string;
   appRole: AppRole | null | undefined;
@@ -179,11 +344,18 @@ export function ProjectRequirementsPanel({
   newFeatureRequest?: number;
   /** Told the live Feature count whenever it is known. */
   onFeatureCount?: (count: number) => void;
+  /** Opens the page's History tab, where a delivered iteration's Features are kept. */
+  onOpenHistory?: () => void;
+  /** QA's verdict on each item, by item id (the Project checklist, Product owner and Developer). */
+  verdicts?: ItemVerdicts;
+  /** Show the filter chips (the Project checklist, Product owner and Developer). */
+  filterable?: boolean;
 }>) {
   const vm = useProjectRequirementsViewModel({ deliveryProjectId, enabled, appRole });
   const dialog = useRequirementDialogViewModel({ deliveryProjectId, onSaved: vm.applyRequirement });
   const progress = useItemProgressViewModel({ onSaved: vm.applyItem });
   useFeatureRequest(vm, dialog, newFeatureRequest, onFeatureCount);
+  const { filter, setFilter } = useChecklistFilter(filterable);
 
   if (vm.status === "loading") return <LoadingRows rows={3} />;
   if (vm.status === "error" || vm.status === "unavailable") {
@@ -197,17 +369,79 @@ export function ProjectRequirementsPanel({
       </div>
     );
   }
+  if (vm.lockedIteration !== null) {
+    return (
+      <DeliveredRequirements
+        number={vm.lockedIteration}
+        deliveryProjectId={deliveryProjectId}
+        appRole={appRole}
+        onOpenHistory={onOpenHistory}
+      />
+    );
+  }
+  return (
+    <ReadyRequirements
+      vm={vm}
+      dialog={dialog}
+      progress={progress}
+      kinds={kinds}
+      appRole={appRole}
+      verdicts={verdicts}
+      filterable={filterable}
+      filter={filter}
+      onFilter={setFilter}
+    />
+  );
+}
+
+function kindRequirements(vm: ProjectRequirementsViewModel, kind: RequirementKind): Requirement[] {
+  return kind === "functional" ? vm.functional : vm.system;
+}
+
+/** The loaded list: the role line, the chips, each shown kind, and the author's dialogs. */
+function ReadyRequirements({
+  vm,
+  dialog,
+  progress,
+  kinds,
+  appRole,
+  verdicts = NO_VERDICTS,
+  filterable = false,
+  filter,
+  onFilter,
+}: Readonly<{
+  vm: ProjectRequirementsViewModel;
+  dialog: RequirementDialogViewModel;
+  progress: ItemProgressViewModel;
+  kinds: ReadonlyArray<RequirementKind>;
+  appRole: AppRole | null | undefined;
+  verdicts?: ItemVerdicts;
+  filterable?: boolean;
+  /** Always "all" unless `filterable` (useChecklistFilter). */
+  filter: ChecklistFilter;
+  onFilter: (next: ChecklistFilter) => void;
+}>) {
   return (
     <div className="rq-panel">
-      <p className="rq-panel__role">{roleLine(vm.permissions, appRole)}</p>
+      {!filterable ? <p className="rq-panel__role">{roleLine(vm.permissions, appRole)}</p> : null}
+      {filterable ? (
+        <FilterChips
+          filter={filter}
+          counts={checklistFilterCounts(kinds.flatMap((kind) => kindRequirements(vm, kind)), verdicts)}
+          onChange={onFilter}
+        />
+      ) : null}
       {kinds.map((kind) => (
         <KindSection
           key={kind}
           kind={kind}
-          requirements={kind === "functional" ? vm.functional : vm.system}
+          requirements={kindRequirements(vm, kind)}
           vm={vm}
           dialog={dialog}
           progress={progress}
+          verdicts={verdicts}
+          filter={filter}
+          filterable={Boolean(filterable)}
         />
       ))}
       {vm.permissions.canManage ? (

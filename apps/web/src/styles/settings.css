@@ -67,6 +67,88 @@
   padding: 1.25rem;
 }
 
+.settings-account-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.settings-account-fields__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.settings-workspaces {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.settings-workspace {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.8rem;
+  background: var(--layer-1);
+}
+
+.settings-workspace__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.settings-workspace__header strong {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.settings-workspace__header span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  text-transform: capitalize;
+}
+
+.settings-workspace .workspace-members {
+  width: 100%;
+}
+
+.settings-workspace .workspace-members-list {
+  display: grid;
+  gap: 0.4rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settings-workspace .workspace-member-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.65rem;
+  background: var(--bg-frost);
+}
+
+.settings-workspace .workspace-member-identity {
+  min-width: 0;
+}
+
+.settings-workspace .workspace-member-row:hover {
+  border-color: var(--border-layer);
+  background: var(--layer-2);
+}
+
 .settings-nav-btn {
   display: flex;
   align-items: center;
@@ -334,6 +416,10 @@
 }
 
 @media (max-width: 520px) {
+
+  .settings-account-fields__row {
+    grid-template-columns: 1fr;
+  }
 
   .settings-appearance-preview-body {
     grid-template-columns: 1fr;

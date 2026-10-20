@@ -8,10 +8,9 @@ import {
   DEVICE_PRESETS,
   RESOLUTION_PRESETS,
   resolutionLabel,
-  STUDIO_LAYOUTS,
   validateCustomResolution,
+  viewportLabel,
   type DevicePresetId,
-  type StudioLayout,
 } from "../../model/qa-studio-rules";
 import { commitSourceLabel } from "../../model/qa-run-rules";
 import type { QaCommitSource } from "../../model/qa-run-types";
@@ -23,8 +22,6 @@ import {
   DesktopIcon,
   ExpandIcon,
   ExternalIcon,
-  LayoutSplitIcon,
-  LayoutWideIcon,
   LinkIcon,
   MobileIcon,
   ReloadIcon,
@@ -37,11 +34,6 @@ const DEVICE_ICONS: Record<DevicePresetId, () => ReactNode> = {
   desktop: DesktopIcon,
   tablet: TabletIcon,
   mobile: MobileIcon,
-};
-
-const LAYOUT_ICONS: Record<StudioLayout, () => ReactNode> = {
-  wide: LayoutWideIcon,
-  split: LayoutSplitIcon,
 };
 
 /** Copy link's three states: the icon and tooltip say it, the live region announces it. */
@@ -207,8 +199,8 @@ function ResolutionPicker({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
 
 /**
  * Portrait ⇄ landscape, only for the devices that turn (Desktop has nothing to
- * rotate, so it gets no button rather than a disabled one). An icon: the
- * preview's caption says which orientation it is now, the name says where it goes.
+ * rotate, so it gets no button rather than a disabled one). An icon: its
+ * name says where it goes, and so which way the device is now.
  */
 function RotateButton({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   if (!vm.canRotate) return null;
@@ -227,6 +219,22 @@ function RotateButton({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
 }
 
 /**
+ * How far the page is shrunk to fit, so a tester knows 48% is not how it
+ * ships. Nothing at life size. The viewport is in its name and tooltip too,
+ * since the preview shows no caption.
+ */
+function ScaleBadge({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
+  if (!vm.scalePercent || !vm.scaleLabel) return null;
+  const name = `${vm.scaleLabel} · ${viewportLabel(vm.device, vm.dimensions)}`;
+  return (
+    <span className="qa-scale" title={name}>
+      <span aria-hidden="true">{vm.scalePercent}</span>
+      <span className="sr-only">{name}</span>
+    </span>
+  );
+}
+
+/**
  * The one thing the commit tells a tester that the page does not: that the
  * commit under test is the branch head, NOT what is deployed, so what they see
  * may not be what they are signing off. A deployed commit says nothing here.
@@ -238,39 +246,6 @@ function CommitSourceWarning({ commitSource }: Readonly<{ commitSource: QaCommit
       <WarningIcon />
       {commitSourceLabel(commitSource)}
     </span>
-  );
-}
-
-/**
- * Wide preview ⇄ Split, beside Full screen. Toggle buttons (aria-pressed) in a
- * fieldset named "Layout", so each is a plain Tab stop that Enter or Space switches — no hotkey,
- * which would fire inside notes and never inside the cross-origin frame.
- * Rendered only while docked: full screen has no columns to share, and below
- * 1100px, where the panes stack, CSS hides it too.
- */
-function LayoutSwitch({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
-  if (vm.isFullScreen) return null;
-  return (
-    <fieldset className="qa-layout-switch">
-      <legend className="sr-only">Layout</legend>
-      {STUDIO_LAYOUTS.map((option) => {
-        const Icon = LAYOUT_ICONS[option.id];
-        const selected = vm.layout === option.id;
-        return (
-          <button
-            key={option.id}
-            type="button"
-            className="qa-layout-switch__option"
-            aria-pressed={selected}
-            aria-label={option.label}
-            title={option.hint}
-            onClick={() => vm.setLayout(option.id)}
-          >
-            <Icon />
-          </button>
-        );
-      })}
-    </fieldset>
   );
 }
 
@@ -331,7 +306,6 @@ function FrameActions({
           <ExternalIcon />
         </a>
       ) : null}
-      <LayoutSwitch vm={vm} />
       <button
         ref={fullScreenRef}
         type="button"
@@ -380,6 +354,7 @@ export function StudioToolbar({
         <DeviceSwitch vm={vm} />
         <ResolutionPicker vm={vm} />
         <RotateButton vm={vm} />
+        <ScaleBadge vm={vm} />
         <CommitSourceWarning commitSource={commit?.commitSource ?? null} />
         <FrameActions vm={vm} fullScreenRef={fullScreenRef} />
       </div>

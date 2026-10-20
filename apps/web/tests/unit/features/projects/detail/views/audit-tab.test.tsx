@@ -234,7 +234,11 @@ describe("Audit tab: GitHub activity", () => {
     const container = await render();
     await poll(() => rowEls(container).length === 2);
 
-    const chips = [...container.querySelectorAll<HTMLButtonElement>(".audit-trail__filter")];
+    // One pill opens the sources, on the same row as the sync line, with no box around it.
+    const toolbar = container.querySelector(".audit-trail__toolbar")!;
+    expect(toolbar.querySelector("details.audit-trail__filters summary")?.textContent).toBe("ShowAll");
+    expect(toolbar.querySelector(".audit-trail__sync")).not.toBeNull();
+    const chips = [...container.querySelectorAll<HTMLButtonElement>(".filter-menu__option")];
     expect(chips.map((chip) => chip.textContent)).toEqual(["All", "ALPHACI", "GitHub"]);
     expect(chips[0].getAttribute("aria-pressed")).toBe("true");
 

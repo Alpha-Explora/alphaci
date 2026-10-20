@@ -32,6 +32,8 @@ export function settingsContentStyle(isCompactLayout: boolean): CSSProperties {
   return {
     flex: 1,
     minWidth: 0,
-    width: isCompactLayout ? "100%" : undefined,
+    width: "100%",
+    maxWidth: isCompactLayout ? undefined : "80rem",
+    marginRight: "auto",
   };
 }

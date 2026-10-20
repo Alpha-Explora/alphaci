@@ -1,6 +1,8 @@
 /* A role's Projects as lists: a Developer's "My work" and the Product owner's
  * "Projects needing attention". Pure: no React, no fetch. */
 
+import { waitingForNextIterationText } from "@/features/checklists";
+
 import {
   deliveryProjectHref,
   projectPageHref,
@@ -45,19 +47,39 @@ function hasFailure(project: MyWorkProject): boolean {
 }
 
 /**
- * The Projects in scope, each with its repositories and their newest run.
+ * Each Project's waiting sentence, from the team overview's iteration: only a
+ * delivered one (none active) waits for the Product owner (Iterations phase
+ * 3, P15). A Project the overview does not report, or reports without an
+ * iteration (an older backend), has none.
+ */
+function waitingByProject(overview: TeamQaOverview | null): Map<string, string> {
+  const waiting = new Map<string, string>();
+  for (const project of overview?.projects ?? []) {
+    const iteration = project.iteration;
+    if (iteration?.status !== "delivered") continue;
+    waiting.set(project.deliveryProject.id, waitingForNextIterationText(iteration));
+  }
+  return waiting;
+}
+
+/**
+ * The Projects in scope, each with its repositories and their newest run, and
+ * — between a delivered iteration and the next — who the team is waiting for.
  * Projects and repositories with a failing run come first.
  */
 export function myWorkProjects(
   folders: ReadonlyArray<ProjectFolder>,
   latest: ReadonlyMap<string, RunGroup>,
   links: HomeLinkContext,
+  overview: TeamQaOverview | null = null,
 ): MyWorkProject[] {
+  const waiting = waitingByProject(overview);
   const projects = folders.map((folder) => ({
     deliveryProjectId: folder.deliveryProjectId,
     name: folder.name,
     href: deliveryProjectHref(links.groupId, folder.deliveryProjectId),
     repositories: failingFirst(folder.repositories.map((repository) => myWorkRepository(repository, latest))),
+    waiting: waiting.get(folder.deliveryProjectId) ?? null,
   }));
   return [...projects.filter(hasFailure), ...projects.filter((project) => !hasFailure(project))];
 }

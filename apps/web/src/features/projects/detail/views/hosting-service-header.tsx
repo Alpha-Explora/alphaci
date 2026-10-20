@@ -12,7 +12,6 @@ import type {
 } from "@/features/projects";
 import type { AppRole } from "@/shared/api/contracts";
 import {
-  providerDashboardHref,
   serviceMeta,
   targetStatusPill,
 } from "../model/hosting-environment-rules";
@@ -25,7 +24,7 @@ import {
   reinstallSecretsLabel,
   targetSyncLabel,
 } from "../model/project-detail-tab-rules";
-import { providerDashboardUrl, providerDisplayName } from "../model/provider-urls";
+import { providerDisplayName } from "../model/provider-urls";
 import type { DeploymentTargetsViewModel } from "../view-models/use-deployment-targets-view-model";
 import { DeploymentTargetEditor } from "./deployment-target-editor";
 import { HostingMenu, type HostingMenuItem } from "./hosting-menu";
@@ -232,12 +231,6 @@ function reinstallItem(input: MenuInput): HostingMenuItem[] {
   ];
 }
 
-function providerItem(target: DeploymentTarget): HostingMenuItem[] {
-  const href = providerDashboardHref(target, providerDashboardUrl(target));
-  if (!href) return [];
-  return [{ label: `Open in ${providerDisplayName(target.provider)}`, href }];
-}
-
 function detachItem(input: MenuInput): HostingMenuItem[] {
   if (!canManageHosting(input.appRole)) return [];
   const detaching = input.vm.detachingTargetId === input.target.id;
@@ -253,7 +246,9 @@ function detachItem(input: MenuInput): HostingMenuItem[] {
 }
 
 function serviceMenuItems(input: MenuInput): HostingMenuItem[] {
-  return [...editItem(input), ...reinstallItem(input), ...providerItem(input.target), ...detachItem(input)];
+  // No "Open in Vercel/Render": the provider dashboards are ALPHACI's own
+  // accounts, and people work in ALPHACI and on their deployed sites only.
+  return [...editItem(input), ...reinstallItem(input), ...detachItem(input)];
 }
 
 function ServiceIdentity({ target }: Readonly<{ target: DeploymentTarget }>) {
@@ -269,6 +264,8 @@ function ServiceIdentity({ target }: Readonly<{ target: DeploymentTarget }>) {
 
 function ServiceMetaLine({ target }: Readonly<{ target: DeploymentTarget }>) {
   const meta = serviceMeta(target);
+  // A pushed image has no build or directory on the host; saying one would be wrong.
+  if (!meta.builds) return <p className="hosting-service__meta">{meta.summary}</p>;
   return (
     <p className="hosting-service__meta">
       {meta.summary} ·{" "}

@@ -8,6 +8,7 @@ import { useReducedMotion } from "framer-motion";
 
 import type { AppRole } from "@/shared/api/contracts";
 
+import { IterationNextStepView, useNextIterationViewModel, type StartIterationViewModel } from "../../iteration";
 import { SeverityBadge, StatusPill } from "../../items";
 import {
   bucketCopy,
@@ -16,8 +17,6 @@ import {
   projectMyItemsCount,
 } from "../../model/project-run-rules";
 import type { MyItemsBucket, ProjectFeedItem } from "../../model/project-run-types";
-import { showsFixProof } from "../../model/qa-attachment-rules";
-import { agoLabel } from "../../model/qa-run-rules";
 import { canSetProgress, itemProgressEditable, kindCopy } from "../../model/requirement-rules";
 import { useItemProgressViewModel, type ItemProgressViewModel } from "../view-models/use-item-progress-view-model";
 import {
@@ -26,6 +25,7 @@ import {
 } from "../view-models/use-project-my-items-view-model";
 import { FixProof } from "./fix-proof";
 import { ProgressControl } from "./progress-control";
+import { QaFindings } from "./qa-findings";
 
 function Detail({ label, text }: Readonly<{ label: string; text: string | null }>) {
   if (!text) return null;
@@ -35,43 +35,6 @@ function Detail({ label, text }: Readonly<{ label: string; text: string | null }
       <p>{text}</p>
     </div>
   );
-}
-
-/** What QA recorded, on a returned item: who, how bad, and how to reproduce it. */
-function QaFindings({ entry }: Readonly<{ entry: ProjectFeedItem }>) {
-  const runItem = entry.runItem;
-  if (!runItem) return null;
-  const by = runItem.verifiedBy;
-  const ago = agoLabel(runItem.verifiedAt);
-  return (
-    <>
-      {by ? (
-        <p className="qa-returned__meta">
-          <span>
-            Returned by <strong>@{by.login}</strong>
-            {ago ? ` · ${ago}` : ""}
-          </span>
-        </p>
-      ) : null}
-      <Detail label="QA notes" text={runItem.notes} />
-      <Detail label="Reproduction steps" text={runItem.reproductionSteps} />
-    </>
-  );
-}
-
-/**
- * "Proof of the fix", where the server says the Developer may attach it (QA
- * returned the item, or it is Done and awaits re-test) or the item already
- * holds some. Nothing on an older backend, which sends neither.
- */
-function FixProofSlot({
-  entry,
-  deliveryProjectId,
-  onReload,
-}: Readonly<{ entry: ProjectFeedItem; deliveryProjectId: string; onReload: () => void }>) {
-  const { runId, runItem } = entry;
-  if (!runId || !runItem || !showsFixProof(runItem)) return null;
-  return <FixProof deliveryProjectId={deliveryProjectId} runId={runId} runItem={runItem} onStale={onReload} />;
 }
 
 function FeedRow({
@@ -104,8 +67,7 @@ function FeedRow({
         <span>{requirement.name}</span>
       </p>
       <Detail label="Acceptance criteria" text={item.acceptanceCriteria} />
-      {bucket === "returned" ? <QaFindings entry={entry} /> : null}
-      <FixProofSlot entry={entry} deliveryProjectId={deliveryProjectId} onReload={onReload} />
+      {bucket === "returned" ? <QaFindings runItem={runItem} /> : null}
       <ProgressControl
         item={item}
         editable={itemProgressEditable(item, canSet)}
@@ -228,6 +190,24 @@ function Buckets({
   );
 }
 
+/** Between a delivered iteration and the next, who the team waits for; otherwise the buckets. */
+function CardContent({
+  list,
+  next,
+  ready,
+  canSet,
+  progress,
+}: Readonly<{
+  list: ProjectMyItemsViewModel;
+  next: StartIterationViewModel;
+  ready: boolean;
+  canSet: boolean;
+  progress: ItemProgressViewModel;
+}>) {
+  if (next.step.kind !== "none") return <IterationNextStepView vm={next} />;
+  return <Buckets list={list} ready={ready} canSet={canSet} progress={progress} />;
+}
+
 type CardState = "hidden" | "fallback" | "loading" | "error" | "list";
 
 /** Which face the card shows: nothing, the older card, a skeleton, an error, or the list. */
@@ -253,7 +233,9 @@ function cardState(
  *
  * `hideWhenEmpty` keeps the repository Overview quiet when there is nothing
  * to do; the Project page shows an empty state instead. `fallback` renders
- * when the server has no project-wide list (an older backend).
+ * when the server has no project-wide list (an older backend). Between a
+ * delivered iteration and the next, the buckets give way to who the team is
+ * waiting for (or, for a Product owner or admin, Start iteration N+1).
  */
 export function ProjectMyItemsCard({
   deliveryProjectId,
@@ -272,12 +254,14 @@ export function ProjectMyItemsCard({
 }>) {
   const list = useProjectMyItemsViewModel({ deliveryProjectId, enabled });
   const progress = useItemProgressViewModel({ onSaved: list.applyItem });
+  const next = useNextIterationViewModel({ deliveryProjectId, enabled, appRole });
+  const waiting = next.step.kind !== "none";
   const total = projectMyItemsCount(list.data);
   const ready = list.status === "ready" && total > 0;
   const canSet = canSetProgress(appRole);
   const headingRef = useFocusWhenReady(highlightRequested, ready);
 
-  const state = cardState(enabled, list.status, ready, hideWhenEmpty);
+  const state = cardState(enabled, list.status, ready || waiting, hideWhenEmpty);
   if (state !== "list") return <CardPlaceholder state={state} list={list} fallback={fallback} />;
   return (
     <section
@@ -287,12 +271,12 @@ export function ProjectMyItemsCard({
     >
       <header className="qa-returned__header">
         <h2 ref={headingRef} tabIndex={-1} className="qa-returned__heading" id="pmi-title">
-          My QA items
-          <span className="qa-mine__count">{total}</span>
+          Progress
+          {waiting ? null : <span className="qa-mine__count">{total}</span>}
         </h2>
-        <p className="qa-mine__lede">Everything the Developers in this Project are building, and what QA is waiting on.</p>
+        <p className="qa-mine__lede">Where every story stands: to do, in progress, sent back by QA, and ready for QA testing.</p>
       </header>
-      <Buckets list={list} ready={ready} canSet={canSet} progress={progress} deliveryProjectId={deliveryProjectId} />
+      <CardContent list={list} next={next} ready={ready} canSet={canSet} progress={progress} />
     </section>
   );
 }

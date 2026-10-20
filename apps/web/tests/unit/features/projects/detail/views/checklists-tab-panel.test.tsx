@@ -10,15 +10,13 @@ jest.mock("../../../../../../src/features/checklists/project", () => ({
   ProjectChecklistsPanel: ({ myItems }: { myItems?: React.ReactNode }) => <div data-testid="panel">{myItems}</div>,
 }));
 jest.mock("../../../../../../src/features/checklists/requirements", () => ({
-  ProjectQaWorkspace: (props: { deliveryProjectId: string; appRole: string; enabled?: boolean; opensOn?: string; itemsFallback?: React.ReactNode }) => (
+  ProjectQaWorkspace: (props: { deliveryProjectId: string; appRole: string; enabled?: boolean }) => (
     <div
       data-testid="qa-workspace"
       data-project={props.deliveryProjectId}
       data-role={props.appRole}
       data-enabled={String(props.enabled)}
-      data-opens={props.opensOn ?? ""}
     >
-      {props.itemsFallback}
     </div>
   ),
 }));
@@ -35,7 +33,12 @@ jest.mock("../../../../../../src/features/checklists/returned", () => ({
 }));
 
 const PROJECT = { id: "p1", workspaceId: "ws-1" } as ProvisionedProject;
-const VM = { appRole: "member", qaChecklistsEnabled: true } as unknown as ProjectDetailTabsViewModel;
+const VM = {
+  appRole: "member",
+  qaChecklistsEnabled: true,
+  visibleTabs: ["overview", "checklists", "history"],
+  setTab: jest.fn(),
+} as unknown as ProjectDetailTabsViewModel;
 
 let root: Root | null = null;
 
@@ -75,11 +78,13 @@ describe("Checklists tab My QA items", () => {
     expect(container.querySelector("[data-testid='panel']")).toBeNull();
   });
 
-  it("hands the workspace the per-repository card as its older-backend fallback", () => {
-    const vm = { appRole: "member", qaChecklistsEnabled: true } as unknown as ProjectDetailTabsViewModel;
-    const item = render(PROJECT_SCOPE, vm).querySelector("[data-testid='qa-workspace'] [data-testid='my-items']");
-    expect(item?.textContent).toBe("p1");
-    expect(item?.getAttribute("data-elsewhere")).toBe("false");
+  /* A Project's checklist carries QA's word on each item itself, so the
+   * per-repository list has no place inside it. */
+  it("gives the Project workspace no per-repository list", () => {
+    const vm = { ...VM, appRole: "member", qaChecklistsEnabled: true } as unknown as ProjectDetailTabsViewModel;
+    const container = render(PROJECT_SCOPE, vm);
+    expect(container.querySelector("[data-testid='qa-workspace']")).not.toBeNull();
+    expect(container.querySelector("[data-testid='my-items']")).toBeNull();
   });
 
   it("keeps the per-repository panel while the Project is still being read", () => {
@@ -94,7 +99,7 @@ describe("Checklists tab My QA items", () => {
 describe("Checklists tab, Project workspace", () => {
   it("embeds the Project's QA workspace inside the strip's tabpanel, for every role", () => {
     for (const appRole of ["lead", "qa", "member", "admin"]) {
-      const vm = { appRole, qaChecklistsEnabled: true, checklistsOpensMyItems: false } as unknown as ProjectDetailTabsViewModel;
+      const vm = { ...VM, appRole, qaChecklistsEnabled: true } as unknown as ProjectDetailTabsViewModel;
       const container = render(PROJECT_SCOPE, vm);
       const panel = container.querySelector("#project-detail-panel-checklists");
       expect(panel?.getAttribute("role")).toBe("tabpanel");
@@ -102,27 +107,21 @@ describe("Checklists tab, Project workspace", () => {
       const workspace = panel?.querySelector("[data-testid='qa-workspace']");
       expect(workspace?.getAttribute("data-project")).toBe("dp-1");
       expect(workspace?.getAttribute("data-role")).toBe(appRole);
-      expect(workspace?.getAttribute("data-opens")).toBe("");
       expect(container.querySelector("[data-testid='panel']")).toBeNull();
       act(() => root?.unmount());
       root = null;
     }
   });
 
-  it("opens on My QA items when the Overview asked for them", () => {
-    const vm = { appRole: "qa", qaChecklistsEnabled: true, checklistsOpensMyItems: true } as unknown as ProjectDetailTabsViewModel;
-    const workspace = render(PROJECT_SCOPE, vm).querySelector("[data-testid='qa-workspace']");
-    expect(workspace?.getAttribute("data-opens")).toBe("items");
-  });
-
-  it("opens a Developer's tab on My QA items when asked", () => {
-    const vm = { appRole: "member", qaChecklistsEnabled: true, checklistsOpensMyItems: true } as unknown as ProjectDetailTabsViewModel;
-    expect(render(PROJECT_SCOPE, vm).querySelector("[data-testid='qa-workspace']")?.getAttribute("data-opens")).toBe("items");
+  // Not shown here: which view the workspace opens on is its own rule (checklistViewFor).
+  it("hands the workspace the viewer's role, so it opens on that role's one view", () => {
+    const vm = { ...VM, appRole: "member", qaChecklistsEnabled: true } as unknown as ProjectDetailTabsViewModel;
+    expect(render(PROJECT_SCOPE, vm).querySelector("[data-testid='qa-workspace']")?.getAttribute("data-role")).toBe("member");
   });
 
   it("keeps the repository's own screens with no Project, for every role", () => {
     for (const appRole of ["lead", "qa", "member", "admin"]) {
-      const vm = { appRole, qaChecklistsEnabled: true } as unknown as ProjectDetailTabsViewModel;
+      const vm = { ...VM, appRole, qaChecklistsEnabled: true } as unknown as ProjectDetailTabsViewModel;
       const container = render({ kind: "repository" }, vm);
       expect(container.querySelector("[data-testid='qa-workspace']")).toBeNull();
       expect(container.querySelector("[data-testid='panel']")).not.toBeNull();

@@ -26,6 +26,10 @@ export {
 } from "./model/checklist-rules";
 
 export { qaStudioHref } from "./model/qa-report-rules";
+/* Between a delivered iteration and the next (Iterations phase 3, P15): the
+ * sentence a Developer or the QA Team reads, for features that show a
+ * Project's iteration from the team overview (Home). */
+export { waitingForNextIterationText } from "./model/iteration-start-rules";
 /* Where a repository's QA happens (its Project, or the repository itself). */
 export { qaScopeFromFolder, REPOSITORY_SCOPE, withProjectOnPage, type QaScope } from "./model/qa-scope";
 /* Whether a repository's Checklists tab carries the full "My QA items" list
@@ -40,6 +44,7 @@ export { requirementsRepository } from "./data/requirements-repository";
  * (Home's role dashboards). */
 export type {
   TeamQaDefectCounts,
+  TeamQaIteration,
   TeamQaLatestRun,
   TeamQaMembership,
   TeamQaOverview,

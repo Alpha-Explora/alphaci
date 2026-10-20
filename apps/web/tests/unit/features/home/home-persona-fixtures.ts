@@ -74,6 +74,7 @@ export function qaProject(
     counts: NO_COUNTS,
     promotion: null,
     viewerMembership: null,
+    iteration: null,
     ...overrides,
   };
 }
@@ -146,6 +147,7 @@ export function olderOverview(): TeamQaOverview {
     counts: NO_COUNTS,
     promotion: null,
     viewerMembership: null,
+    iteration: null,
   });
   return {
     projects: [SHOP, PAY, LOYALTY].map(strip),

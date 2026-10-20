@@ -65,8 +65,32 @@
   list-style: none;
 }
 
+.commits__day-group {
+  display: grid;
+  min-width: 0;
+}
+
+.commits__day-label {
+  margin: 0.8rem 0 0.25rem 1.65rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.commits__day-list {
+  position: relative;
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 /* The rail: behind the nodes, first commit to last. */
-.commits__list::before {
+.commits__day-list::before {
   content: "";
   position: absolute;
   top: 1rem;
@@ -195,6 +219,10 @@
 
 /* The SHA chip: monospace, quiet until hovered; a click copies the full SHA. */
 .commits__sha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   min-width: 5.2rem;
   min-height: 1.9rem;
   padding: 0.15rem 0.55rem;
@@ -216,6 +244,39 @@
   color: var(--text-primary);
 }
 
+/* The row's end: copy the SHA, then browse the files at it. */
+.commits__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.commits__browse {
+  display: inline-grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.45rem;
+  background: var(--layer-1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.commits__browse:hover {
+  border-color: var(--border-brand);
+  color: var(--text-primary);
+}
+
+.commits__browse:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
 .commits__sha:active {
   transform: scale(0.97);
 }
@@ -223,6 +284,22 @@
 .commits__sha[data-copied="true"] {
   border-color: var(--success);
   color: var(--success);
+}
+
+/* The copy glyph: muted until the chip is hovered, so the SHA stays the thing read. */
+.commits__sha-icon {
+  display: inline-flex;
+  color: var(--text-muted);
+}
+
+.commits__sha-icon svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.commits__sha:hover .commits__sha-icon,
+.commits__sha[data-copied="true"] .commits__sha-icon {
+  color: inherit;
 }
 
 .commits__more {
@@ -264,7 +341,7 @@
     grid-template-columns: 0.8rem minmax(0, 1fr);
   }
 
-  .commits__sha {
+  .commits__actions {
     grid-column: 2;
     justify-self: start;
   }
@@ -274,6 +351,7 @@
   .commits__row,
   .commits__row--skeleton,
   .commits__sha,
+  .commits__browse,
   .commits__text--link {
     transition: none;
     animation: none;

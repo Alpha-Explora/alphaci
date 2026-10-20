@@ -26,7 +26,19 @@ function CommitText({ sha }: Readonly<{ sha: string }>) {
 
 function SecondaryRepoSection({
   fullName,
-}: Readonly<{ fullName: string | undefined }>) {
+  error,
+}: Readonly<{ fullName: string | undefined; error: string | undefined }>) {
+  if (error) {
+    return (
+      <div role="alert">
+        <p>
+          The frontend repository wasn’t created. The backend repository was
+          kept.
+        </p>
+        <p>{error}</p>
+      </div>
+    );
+  }
   if (!fullName) return null;
   return (
     <p className="helper-text" style={{ margin: 0 }}>
@@ -273,9 +285,12 @@ function ServiceUrlLine({ url }: Readonly<{ url: string }>) {
   );
 }
 
-function provisioningStatusCopy(status: DeploymentProvisioningResult["status"]): string {
+function provisioningStatusCopy(
+  status: DeploymentProvisioningResult["status"],
+): string {
   if (status === "completed") return "Provider targets were created.";
-  if (status === "partial") return "Some provider provisioning steps need attention.";
+  if (status === "partial")
+    return "Some provider provisioning steps need attention.";
   return "Provider provisioning failed.";
 }
 
@@ -467,11 +482,7 @@ function ExistingRepoResultView({
       </div>
       <div className="result-actions">
         <ProjectLinks projectId={existingRepoResult.id} />
-        <button
-          className="ghost-button"
-          type="button"
-          onClick={onViewProject}
-        >
+        <button className="ghost-button" type="button" onClick={onViewProject}>
           View projects
         </button>
       </div>
@@ -483,9 +494,9 @@ function ExistingRepoResultView({
           margin: 0,
         }}
       >
-        Workflow committed to <code>{existingRepoResult.workflowPath}</code>{" "}
-        on the repository&apos;s default branch. Push to <code>test</code>{" "}
-        to trigger your first CI run.
+        Workflow committed to <code>{existingRepoResult.workflowPath}</code> on
+        the repository&apos;s default branch. Push to <code>test</code> to
+        trigger your first CI run.
       </p>
     </motion.div>
   );
@@ -534,6 +545,7 @@ function CreatedProjectResultView({
       <DeploymentProvisioningSummary
         result={setupResult.deploymentProvisioning}
       />
+      <HostAssignmentResults result={setupResult} />
       <div>
         <p
           className="helper-text"
@@ -549,7 +561,10 @@ function CreatedProjectResultView({
           <CommitText sha={setupResult.githubCommitSha} />
         </div>
       </div>
-      <SecondaryRepoSection fullName={setupResult.secondaryRepoFullName} />
+      <SecondaryRepoSection
+        fullName={setupResult.secondaryRepoFullName}
+        error={setupResult.secondaryRepoError}
+      />
       <div className="result-actions">
         <ProjectLinks projectId={setupResult.id} />
         {envProvisioningEnabled ? (
@@ -561,11 +576,7 @@ function CreatedProjectResultView({
             Configure env vars
           </button>
         ) : null}
-        <button
-          className="ghost-button"
-          type="button"
-          onClick={onViewProject}
-        >
+        <button className="ghost-button" type="button" onClick={onViewProject}>
           View projects
         </button>
       </div>
@@ -578,11 +589,67 @@ function CreatedProjectResultView({
         }}
       >
         Workflow committed to <code>{setupResult.workflowPath}</code> on{" "}
-        <code>main</code>. Push to <code>test</code> to trigger your first
-        CI run.
+        <code>main</code>. Push to <code>test</code> to trigger your first CI
+        run.
       </p>
     </motion.div>
   );
+}
+
+function HostAssignmentResults({ result }: { result: CreateProjectResult }) {
+  const failures =
+    result.hostAssignments?.filter((item) => item.status === "failed") ?? [];
+  if (!failures.length && !result.hostAssignmentError) return null;
+  return (
+    <div role="status">
+      <p>
+        The project was created. These environments still need a host
+        assignment:
+      </p>
+      {result.hostAssignmentError ? <p>{result.hostAssignmentError}</p> : null}
+      <ul>
+        {failures.map((item) => (
+          <li key={item.environmentId}>{item.message}</li>
+        ))}
+      </ul>
+      {retryTargets(result, failures).map((target) => (
+        <p key={target.projectId}>
+          <Link href={`/projects/${encodeURIComponent(target.projectId)}`}>
+            {target.slot
+              ? `Open the ${target.slot} repository’s Hosting panel to retry the assignment.`
+              : "Open the project’s Hosting panel to retry the assignment."}
+          </Link>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+type HostAssignmentResult = NonNullable<
+  CreateProjectResult["hostAssignments"]
+>[number];
+
+/**
+ * One retry link per project row with a failure. A two-repository pair
+ * reports each environment against its own row, so a frontend failure is
+ * retried on the frontend project, not on `result.id`.
+ */
+function retryTargets(
+  result: CreateProjectResult,
+  failures: readonly HostAssignmentResult[],
+): Array<{ projectId: string; slot?: "backend" | "frontend" }> {
+  const targets = new Map<
+    string,
+    { projectId: string; slot?: "backend" | "frontend" }
+  >();
+  for (const item of failures) {
+    const projectId = item.projectId ?? result.id;
+    if (!targets.has(projectId)) {
+      targets.set(projectId, { projectId, slot: item.slot });
+    }
+  }
+  if (!targets.size) targets.set(result.id, { projectId: result.id });
+  return [...targets.values()];
 }
 
 export function SetupResultPanel({

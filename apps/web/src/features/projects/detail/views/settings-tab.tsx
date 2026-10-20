@@ -2,16 +2,24 @@
 
 import type { ReactNode } from "react";
 import type { ProvisionedProject } from "@/features/projects";
+import type { AppRole } from "@/shared/api/contracts";
 import { configuredOrNot } from "../model/project-detail-tab-rules";
+import { ProjectDriftPanel } from "./project-drift-panel";
 
 export function SettingsTab({
   project,
+  vm,
   dangerZone,
 }: Readonly<{
   project: ProvisionedProject;
-  vm?: unknown;
+  vm?: {
+    appRole?: AppRole | null;
+    visibleTabs?: ReadonlyArray<string>;
+    openPullRequest?: (pullRequestNumber: number) => void;
+  };
   dangerZone?: ReactNode;
 }>) {
+  const openPullRequest = vm?.visibleTabs?.includes("pulls") ? vm.openPullRequest : undefined;
   return (
     <>
       <dl className="project-detail-grid">
@@ -40,6 +48,9 @@ export function SettingsTab({
           <dd>{configuredOrNot(project.repoShape)}</dd>
         </div>
       </dl>
+      <div style={{ marginTop: "1.25rem" }}>
+        <ProjectDriftPanel projectId={project.id} appRole={vm?.appRole} onOpenPullRequest={openPullRequest} />
+      </div>
       <SettingsDangerZone dangerZone={dangerZone} />
     </>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { CreateGroupDialog } from "@/features/groups/create";
 import {
@@ -72,11 +73,13 @@ function NoTeamNotice({
 
 function createdWorkspaceHandler(
   setSelectedWorkspaceId: (id: string | null) => void,
+  navigate: (href: string) => void,
   onWorkspaceCreated?: (workspaceId: string) => void,
 ) {
   return (group: { id: string }) => {
     setSelectedWorkspaceId(group.id);
     onWorkspaceCreated?.(group.id);
+    navigate(`/workflows?${new URLSearchParams({ group: group.id, created: "workspace" })}`);
   };
 }
 
@@ -207,12 +210,13 @@ export function WorkspaceSwitcher({
   const { selectedWorkspace, selectedWorkspaceId, setSelectedWorkspaceId } =
     useWorkspaceSelection();
   const [createOpen, setCreateOpen] = useState(false);
+  const router = useRouter();
 
   const items = workspaces?.items ?? [];
   const selectable = selectableWorkspaces(workspaces, otherTeams);
   const canCreate = canCreateWorkspace(appRole);
   const current = findCurrentWorkspace(selectable, selectedWorkspaceId, selectedWorkspace);
-  const onCreated = createdWorkspaceHandler(setSelectedWorkspaceId, onWorkspaceCreated);
+  const onCreated = createdWorkspaceHandler(setSelectedWorkspaceId, router.push, onWorkspaceCreated);
   const kind = workspaceSwitcherKind(status, workspaces, selectable.length, canCreate);
 
   if (kind === "error") {

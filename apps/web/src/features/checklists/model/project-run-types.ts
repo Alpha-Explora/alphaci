@@ -10,6 +10,7 @@
  * and 2.5. Views read only the normalised shapes below. */
 
 import type { ChecklistVerificationType } from "./checklist-types";
+import type { IterationRef } from "./iteration-types";
 import type { QaAttachmentRef, QaRunAttachmentSettings } from "./qa-attachment-types";
 import type { QaAutomatedItemResult, QaRunAutomationResult } from "./qa-automation-types";
 import type {
@@ -22,6 +23,7 @@ import type {
   QaSignoff,
 } from "./qa-run-types";
 import type { RequirementItem, RequirementKind, RequirementProgress } from "./requirement-types";
+import type { RunTestCategory } from "./test-case-types";
 
 /** Verification never uses `in_progress` on a Project run. */
 export type VerificationStatus = Exclude<QaRunItemStatus, "in_progress">;
@@ -41,6 +43,9 @@ export interface ProjectQaRunPermissionsWire {
   canSignOff: boolean;
   canReopen: boolean;
   canDispatch: boolean;
+  canManageTestCases?: boolean;
+  canRecordTestCases?: boolean;
+  canAccept?: boolean;
 }
 
 /** GET /delivery-projects/:dpId/qa-runs/current */
@@ -116,6 +121,24 @@ export interface ProjectQaRunItem {
   canAttachFixProof: boolean;
   /** The report's frozen per-item images (ids and captions, no URLs). Empty on a run payload. */
   attachments: QaAttachmentRef[];
+  /**
+   * QA's test cases for this story in this run, by category, with each
+   * result. Empty for a System requirement item, on an older backend and on a
+   * report frozen before test cases existed.
+   */
+  testCategories: RunTestCategory[];
+  /**
+   * The Product owner's check once QA signed the run off: pending until it
+   * passes the item (failing it reopens the run instead). Pending on an
+   * older backend.
+   */
+  poAcceptance: ProjectQaRunItemAcceptance;
+}
+
+export interface ProjectQaRunItemAcceptance {
+  status: "pending" | "passed";
+  acceptedBy: QaActor | null;
+  acceptedAt: string | null;
 }
 
 /** One covered repository's CI results, on the uat head the run captured. */
@@ -130,6 +153,9 @@ export interface ProjectQaRunPermissionFlags {
   canSignOff: boolean | null;
   canReopen: boolean | null;
   canDispatch: boolean | null;
+  canManageTestCases: boolean | null;
+  canRecordTestCases: boolean | null;
+  canAccept: boolean | null;
 }
 
 export interface ProjectQaRunPermissions {
@@ -137,6 +163,12 @@ export interface ProjectQaRunPermissions {
   canSignOff: boolean;
   canReopen: boolean;
   canDispatch: boolean;
+  /** Add, rename, edit and delete test cases (QA Team and admins, open run). */
+  canManageTestCases: boolean;
+  /** Record a test case's result (QA Team and admins, open run): read-only for the Product owner. */
+  canRecordTestCases: boolean;
+  /** Pass or fail each item once QA signed the run off (Product owner and admins). */
+  canAccept: boolean;
 }
 
 export interface ProjectQaRun {
@@ -169,6 +201,11 @@ export interface ProjectQaRun {
    * Null when the server sent no answer: the Evidence section is hidden.
    */
   attachments: QaRunAttachmentSettings | null;
+  /**
+   * The iteration this run belongs to. Null on an older backend. Once it is
+   * `delivered`, the normaliser locks the run: every permission is off.
+   */
+  iteration: IterationRef | null;
 }
 
 /* ── Run Playwright on a Project run ────────────────────────────────────── */
@@ -211,6 +248,15 @@ export interface SetVerificationInput {
   notes?: string | null;
   defectSeverity?: QaDefectSeverity | null;
   reproductionSteps?: string | null;
+}
+
+/** PATCH .../items/:itemId/acceptance: the Product owner's decision on one item of a signed-off run. */
+export interface PoAcceptanceInput {
+  decision: "passed" | "failed";
+  expectedRowVersion: number;
+  /** Required to fail: what is wrong, for the Developers. */
+  notes?: string;
+  defectSeverity?: QaDefectSeverity;
 }
 
 /** One requirement's run items, as the run panel groups them. */

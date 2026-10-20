@@ -19,6 +19,7 @@ import {
   targetSyncMessage,
 } from "../model/project-detail-tab-rules";
 import { workspacePermissionErrorMessage } from "../model/workspace-permission-errors";
+import { resumeDoneMessage, rollbackDoneMessage, withRollbackHold } from "../model/deploy-rollback-rules";
 
 export interface DeploymentTargetsViewModel {
   status: ProjectStatus;
@@ -29,6 +30,8 @@ export interface DeploymentTargetsViewModel {
   syncingTargetId: string | null;
   detachingTargetId: string | null;
   reinstallingTargetId: string | null;
+  /** The target a rollback or a resume is running on. */
+  rollingBackTargetId: string | null;
   /** Per-target action descriptor, fetched only for viewers who could act on it. */
   targetActions: Record<string, DeploymentTargetActionsResponse>;
   save: (
@@ -41,6 +44,17 @@ export interface DeploymentTargetsViewModel {
     deleteProviderResource: boolean,
   ) => Promise<boolean>;
   reinstallSecrets: (target: DeploymentTarget) => Promise<boolean>;
+  /**
+   * Puts an earlier deploy back live. Resolves to null on success, else the
+   * sentence to show in the dialog that asked.
+   */
+  rollback: (
+    target: DeploymentTarget,
+    deploy: { id: string; sha: string | null },
+    reason: string,
+  ) => Promise<string | null>;
+  /** Ends a Vercel rollback hold. Resolves to null on success, else the sentence to show. */
+  resumeDeploys: (target: DeploymentTarget) => Promise<string | null>;
   setMessage: (message: string | null) => void;
   clearMessage: () => void;
 }
@@ -51,8 +65,10 @@ export function useDeploymentTargetsViewModel(options: {
   appRole: AppRole | undefined;
   onTargetChanged: (target: DeploymentTarget) => void;
   onDetached: (targetId: string) => void;
+  /** Reads the deploy history again after a rollback or a resume changed what is live. */
+  onDeploysChanged?: () => void;
 }): DeploymentTargetsViewModel {
-  const { projectId, targets, appRole, onTargetChanged, onDetached } = options;
+  const { projectId, targets, appRole, onTargetChanged, onDetached, onDeploysChanged } = options;
   const [status, setStatus] = useState<ProjectStatus>("ready");
   const [message, setMessage] = useState<string | null>(null);
   const [signInHref, setSignInHref] = useState<string | null>(null);
@@ -64,6 +80,7 @@ export function useDeploymentTargetsViewModel(options: {
   const [reinstallingTargetId, setReinstallingTargetId] = useState<
     string | null
   >(null);
+  const [rollingBackTargetId, setRollingBackTargetId] = useState<string | null>(null);
   const [targetActions, setTargetActions] = useState<
     Record<string, DeploymentTargetActionsResponse>
   >({});
@@ -204,6 +221,45 @@ export function useDeploymentTargetsViewModel(options: {
     }
   }
 
+  async function rollback(
+    target: DeploymentTarget,
+    deploy: { id: string; sha: string | null },
+    reason: string,
+  ): Promise<string | null> {
+    setRollingBackTargetId(target.id);
+    setMessage(null);
+    try {
+      const response = await projectsRepository.rollbackDeploymentTarget(projectId, target.id, {
+        deployId: deploy.id,
+        reason: reason.trim(),
+      });
+      onTargetChanged(withRollbackHold(target, response.rollback));
+      setMessage(rollbackDoneMessage(target, deploy.sha, response));
+      onDeploysChanged?.();
+      return null;
+    } catch (error) {
+      return workspacePermissionErrorMessage(error, "Unable to roll back this deployment.");
+    } finally {
+      setRollingBackTargetId(null);
+    }
+  }
+
+  async function resumeDeploys(target: DeploymentTarget): Promise<string | null> {
+    setRollingBackTargetId(target.id);
+    setMessage(null);
+    try {
+      await projectsRepository.resumeDeploymentTargetDeploys(projectId, target.id);
+      onTargetChanged(withRollbackHold(target, null));
+      setMessage(resumeDoneMessage(target));
+      onDeploysChanged?.();
+      return null;
+    } catch (error) {
+      return workspacePermissionErrorMessage(error, "Unable to resume deploys.");
+    } finally {
+      setRollingBackTargetId(null);
+    }
+  }
+
   return {
     status,
     message,
@@ -212,11 +268,14 @@ export function useDeploymentTargetsViewModel(options: {
     syncingTargetId,
     detachingTargetId,
     reinstallingTargetId,
+    rollingBackTargetId,
     targetActions,
     save,
     sync,
     detach,
     reinstallSecrets,
+    rollback,
+    resumeDeploys,
     setMessage,
     clearMessage: () => {
       setMessage(null);

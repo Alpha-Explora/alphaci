@@ -2226,6 +2226,16 @@ function onlyCall<T>(calls: T[], description: string): T {
 
 /* ── Page helpers ────────────────────────────────────────────────────────── */
 
+/**
+ * Opens QA Studio or PO Studio with its run rail pinned open. Unpinned, the
+ * rail opens only under the pointer, and a journey works in the panel.
+ */
+async function openStudio(page: Page, baseUrl: string, tab: 'QA Studio' | 'PO Studio') {
+  await openProjectTab(page, baseUrl, tab);
+  const title = tab === 'QA Studio' ? 'QA checklist' : 'Acceptance';
+  await page.getByRole('button', { name: `Keep ${title} open` }).click();
+}
+
 async function openProjectTab(page: Page, baseUrl: string, tab: string) {
   await page.goto(`${baseUrl}/projects/${PROJECT_ID}`, { waitUntil: 'domcontentloaded' });
   const tabs = page.getByRole('tablist', { name: 'Project sections' });
@@ -2313,7 +2323,7 @@ async function openProjectDetail(page: Page, baseUrl: string, name: string) {
   await visible(card, `the ${name} Project card`);
   await card.getByRole('button', { name: `Manage ${name}` }).click();
   await expectText(page.locator('.pf-detail__title'), name, `the ${name} detail`);
-  await visible(page.getByRole('tablist', { name: 'Project QA' }), 'the Project QA tabs');
+  await visible(page.locator('section.rq-workspace'), 'the Project QA workspace');
 }
 
 const FEATURE = {
@@ -2354,8 +2364,7 @@ async function leadWritesProjectRequirements({ page, backend, baseUrl }: Journey
   assert.equal(await page.locator('.pf-card__add').count(), 0, 'no Add repository for a Product owner, blocked or not');
   await storefrontCard.getByRole('button', { name: 'Add a Feature to storefront' }).click();
   await expectText(page.locator('.pf-detail__title'), 'storefront', 'the storefront detail');
-  const tablist = page.getByRole('tablist', { name: 'Project QA' });
-  await visible(tablist.getByRole('tab', { name: 'Requirements', selected: true }), 'Requirements first for a Product owner');
+  await visible(page.getByRole('region', { name: 'Requirements' }), "a Product owner's one view, Requirements");
   const features = page.locator('section.rq-section[data-kind="functional"]');
   const dialog = page.getByRole('dialog', { name: 'New Feature' });
   await visible(dialog, 'New Feature, opened by the nudge');
@@ -2423,7 +2432,7 @@ async function leadWritesProjectRequirements({ page, backend, baseUrl }: Journey
   // same Requirements, no pointer out to the Projects page.
   await openProjectTab(page, baseUrl, 'Checklists');
   const panel = page.locator('#project-detail-panel-checklists');
-  await visible(panel.getByRole('tab', { name: 'Requirements', selected: true }), "the Project's QA workspace in the Checklists tab");
+  await visible(panel.getByRole('region', { name: 'Requirements' }), "the Project's QA workspace in the Checklists tab");
   await expectText(
     panel.locator('article.rq-card').filter({ hasText: FEATURE.name }).locator('.rq-meter__label'),
     '0 of 3 done',
@@ -2489,7 +2498,7 @@ async function expectRunColumnContained(page: Page, description: string, options
 
 /** (n) QA Team: a twelve-item Project run stays inside QA Studio's column. */
 async function qaLongProjectRunFits({ page, baseUrl }: JourneyContext) {
-  await openProjectTab(page, baseUrl, 'QA Studio');
+  await openStudio(page, baseUrl, 'QA Studio');
   await expectRoleBadge(page, 'qa');
   await eventually('the four requirement groups', async () => (await page.locator('.qa-studio__run .pqa-group').count()) === 4);
   await expectRunColumnContained(page, 'QA Studio', { long: true });
@@ -2499,10 +2508,8 @@ async function qaLongProjectRunFits({ page, baseUrl }: JourneyContext) {
   assert.ok(kind && count && Math.abs(kind.y - count.y) < 12, 'the kind and the count share the heading row');
   await shot(page, 'n-qa-studio');
 
-  // Floating, the drawer scrolls the same way and keeps its header.
+  // In full screen the same panel floats in the corner, scrolls the same way and keeps its header.
   await page.getByRole('button', { name: 'Full screen' }).click();
-  // Full screen opens on the page, the checklist minimized to its launcher.
-  await page.locator('button.qa-launcher').click();
   const drawer = page.getByRole('region', { name: 'QA checklist' });
   await visible(drawer, 'the floating drawer');
   const drawerBox = await drawer.boundingBox();
@@ -2517,7 +2524,7 @@ async function qaLongProjectRunFits({ page, baseUrl }: JourneyContext) {
 
 /** (o) Team lead: PO Studio holds the readiness chip, Merge to main and a long acceptance in one scrolling column. */
 async function leadAcceptanceFits({ page, baseUrl }: JourneyContext) {
-  await openProjectTab(page, baseUrl, 'PO Studio');
+  await openStudio(page, baseUrl, 'PO Studio');
   await expectRoleBadge(page, 'lead');
   const status = page.locator('.po-accept__status');
   await expectText(status, 'Ready for production', 'the unlocked acceptance');
@@ -2548,10 +2555,9 @@ async function developerMovesProgress({ page, backend, baseUrl }: JourneyContext
   const progress = onlyCall(backend.callsTo('PATCH', /^\/requirements\/[^/]+\/items\/[^/]+\/progress$/), 'Progress write');
   assert.deepEqual(progress.body, { progress: 'done', expectedRowVersion: 1 });
 
-  await page.getByRole('tab', { name: 'My QA items' }).click();
-  const ready = page.locator('section[data-bucket="readyForQa"]');
-  await expectText(ready, FEATURE.stories[0], 'the story in QA’s queue');
-  await expectText(page.locator('section[data-bucket="inProgress"]'), FEATURE.stories[1], 'the story still in progress');
+  // One view, no tabs: the checklist itself shows the story moved on.
+  assert.equal(await page.getByRole('tab').count(), 0, 'no Requirements | Progress | QA testing tabs for a Developer');
+  assert.ok(await group.getByRole('radio', { name: 'Done' }).isChecked(), 'the story reads Done on the checklist');
 }
 
 /**
@@ -2562,8 +2568,8 @@ async function developerMovesProgress({ page, backend, baseUrl }: JourneyContext
 async function qaVerifiesProject({ page, backend, baseUrl }: JourneyContext) {
   await openProjectDetail(page, baseUrl, 'storefront');
   await expectRoleBadge(page, 'qa');
-  await visible(page.getByRole('tab', { name: 'QA run', selected: true }), 'the QA run first for the QA Team');
-  await page.getByRole('button', { name: 'Start Project QA run' }).click();
+  await visible(page.getByRole('region', { name: 'QA testing' }), "the QA Team's one view, its run");
+  await page.getByRole('button', { name: 'Start QA testing' }).click();
   const start = onlyCall(backend.callsTo('POST', new RegExp(`^/delivery-projects/${STOREFRONT_FOLDER}/qa-runs$`)), 'Project run start');
   assert.deepEqual(start.body, {}, 'no body: the server reads every repository head');
   const verify = page.locator('.pqa-run .pqa-verify');
@@ -2617,7 +2623,7 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   const checklist = backend.checklists[0];
   const [first, second, third] = RELEASE_CHECKLIST.items;
 
-  await openProjectTab(page, baseUrl, 'QA Studio');
+  await openStudio(page, baseUrl, 'QA Studio');
   await expectRoleBadge(page, 'qa');
   await expectText(page.locator('.qa-run-card__title'), checklist.name, 'the checklist under test');
   assert.equal(await page.getByLabel('Commit under test').count(), 0, 'no commit chip in the toolbar: the run card names the commit');
@@ -2678,40 +2684,39 @@ async function qaVerifiesAndSignsOff({ page, context, backend, baseUrl }: Journe
   await eventually('the studio to go full screen', async () => (await studio.getAttribute('data-full-screen')) === 'true');
   const studioBox = await studio.boundingBox();
   assert.deepEqual(studioBox, { x: 0, y: 0, width: 1440, height: 900 }, 'full screen covers the whole viewport');
-  const launcher = page.locator('button.qa-launcher');
-  await expectText(launcher, 'QA checklist · 0/3 passed', 'the launcher progress');
-  await absent(page.getByRole('region', { name: 'QA checklist' }), 'the drawer before it is opened');
-
-  await launcher.click();
+  // The rail was pinned docked, so it is pinned here too: one choice for both.
+  const pin = page.getByRole('button', { name: 'Keep QA checklist open' });
   const drawer = page.getByRole('region', { name: 'QA checklist' });
-  await visible(drawer, 'the floating checklist drawer');
+  await visible(drawer, 'the pinned run rail');
   const drawerBox = await drawer.boundingBox();
-  assert.ok(drawerBox && drawerBox.x + drawerBox.width <= 1440 - 15 && drawerBox.y + drawerBox.height <= 900 - 15, 'the drawer floats in the bottom-right corner');
+  assert.ok(drawerBox && drawerBox.x + drawerBox.width <= 1440 && drawerBox.y + drawerBox.height <= 900, 'the rail stays inside the viewport, on its right edge');
   assert.equal(await page.locator('.qa-run-card').count(), 1, 'one run column, moved, never a second copy');
 
-  // 1 → Passed, saved as soon as it is picked — from the floating drawer.
+  // 1 → Passed, saved as soon as it is picked — from the rail.
   await drawer.locator('label.qa-status-select').filter({ hasText: 'Status of item 1' }).locator('select').selectOption('passed');
   await expectText(runItem(page, first.title).locator(STATUS_PILL), 'Passed', 'item 1 passed');
   assert.deepEqual(onlyCall(patchesTo(item1.id), 'item 1 update').body, { expectedRowVersion: 1, status: 'passed' });
   // Automated evidence never rewrites what the tester recorded.
   assert.equal(backend.runs[0].items[0].status, 'passed');
 
-  // 2 → Failed opens a details draft. Minimizing only hides the drawer: the draft survives.
+  // 2 → Failed opens a details draft. Folding the rail only hides the panel: the draft survives.
   await statusSelect(page, 2).selectOption('failed');
   const editor = runItem(page, second.title).locator('form.qa-item-editor');
   await visible(editor, 'the item 2 details editor');
   await editor.getByPlaceholder('What went wrong').fill('Coupon applied twice on a two-line cart.');
-  await drawer.getByRole('button', { name: 'Minimize checklist' }).click();
-  await absent(drawer, 'the minimized drawer');
-  await expectText(launcher, 'QA checklist · 1/3 passed', 'the launcher after item 1 passed');
-  await launcher.click();
+  await pin.click();
+  // Unpinned under the pointer, it folds at once; away from it, it stays folded.
+  await page.mouse.move(200, 450);
+  await absent(drawer, 'the folded rail');
+  assert.equal(await page.locator('.qa-coltab[data-tab="checklist"]').getAttribute('title'), 'QA checklist · 1/3 passed', 'the strip after item 1 passed');
+  await pin.click();
   await visible(editor, 'the item 2 draft after re-opening');
-  assert.equal(await editor.getByPlaceholder('What went wrong').inputValue(), 'Coupon applied twice on a two-line cart.', 'the draft survived minimize');
+  assert.equal(await editor.getByPlaceholder('What went wrong').inputValue(), 'Coupon applied twice on a two-line cart.', 'the draft survived hiding');
   await expectText(runItem(page, first.title).locator(STATUS_PILL), 'Passed', 'item 1 still passed after re-opening');
-  assert.equal(patchesTo(item2.id).length, 0, 'nothing was sent for item 2 by minimizing');
+  assert.equal(patchesTo(item2.id).length, 0, 'nothing was sent for item 2 by hiding');
 
-  // Leave full screen from the drawer: docked beside the page again, same frame.
-  await drawer.getByRole('button', { name: 'Dock beside the page' }).click();
+  // Leave full screen: the rail is on the docked studio's edge again, same frame.
+  await page.getByRole('button', { name: 'Full screen' }).click();
   await eventually('the studio to dock', async () => (await studio.getAttribute('data-full-screen')) === 'false');
   assert.equal(await page.evaluate(() => document.body.style.overflow), '', 'the page scrolls again');
   assert.equal(
@@ -2855,10 +2860,10 @@ async function developerRequestsRetest({ page, backend, baseUrl }: JourneyContex
   await expectText(summary.locator('li[data-bucket="returned"] .qa-summary__chip-count'), '2', 'two returned items in the summary');
   await expectText(summary.locator('li[data-bucket="todo"] .qa-summary__chip-count'), '1', 'the developer item still to do');
   assert.equal(await summary.locator('li.qa-returned__row').count(), 0, 'no per-item rows on the Overview');
-  assert.deepEqual(await summary.getByRole('button').allTextContents(), ['Open checklist'], 'one control on the summary');
+  assert.deepEqual(await summary.getByRole('button').allTextContents(), ['Open progress'], 'one control on the summary');
   // This server has no Project-wide list, so the Project workspace's My QA items
   // tab (the Checklists tab, a Developer's too) shows the per-repository card.
-  await summary.getByRole('button', { name: 'Open checklist' }).click();
+  await summary.getByRole('button', { name: 'Open progress' }).click();
   const tabs = page.getByRole('tablist', { name: 'Project sections' });
   await visible(tabs.getByRole('tab', { name: 'Checklists', selected: true }), 'the Checklists tab, opened from the summary');
   const card = page.locator('section.qa-returned').filter({ has: page.locator('#qa-mine-title') });
@@ -3056,8 +3061,7 @@ async function leadSwitchesRepositories({ page, backend, baseUrl }: JourneyConte
   // The Project's QA lives in the Checklists tab itself.
   await tabs.getByRole('tab', { name: 'Checklists', exact: true }).click();
   const panel = page.locator('#project-detail-panel-checklists');
-  await visible(panel.getByRole('tablist', { name: 'Project QA' }), "the Project's QA workspace in the Checklists tab");
-  await visible(panel.getByRole('tab', { name: 'Requirements', selected: true }), 'its Requirements first for a Team lead');
+  await visible(panel.getByRole('region', { name: 'Requirements' }), "the Project's QA workspace in the Checklists tab, a Product owner's Requirements");
 
   // The explorer's Manage view: the frontend opens, the backend is a label.
   await page.goto(`${baseUrl}/workflows?group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`, { waitUntil: 'domcontentloaded' });
@@ -3138,7 +3142,7 @@ async function leadOrganisesProjects({ page, backend, baseUrl }: JourneyContext)
   assert.equal(await page.getByRole('link', { name: 'Add repository' }).count(), 0, 'no Add repository for a Product owner');
 
   // Requirements and QA belong to the Project now: no per-repository checklist attach.
-  await visible(page.getByRole('tablist', { name: 'Project QA' }), 'the Project QA workspace');
+  await visible(page.locator('section.rq-workspace'), 'the Project QA workspace');
   // System requirements are hidden for now (SHOWN_REQUIREMENT_KINDS): Features only.
   await visible(page.locator('section.rq-section[data-kind="functional"]'), 'the Features section');
   assert.equal(await page.locator('section.rq-section[data-kind="system"]').count(), 0, 'no System requirements section');
@@ -3335,7 +3339,7 @@ async function chipSays(chip: Locator, expected: string, description: string) {
 async function leadMergesToMain({ page, backend, baseUrl }: JourneyContext) {
   const checklist = backend.checklists[0];
   // A Team lead accepts and merges in PO Studio (the repository run, on a server without Project runs).
-  await openProjectTab(page, baseUrl, 'PO Studio');
+  await openStudio(page, baseUrl, 'PO Studio');
   await expectRoleBadge(page, 'lead');
   const { chip, popover, merge } = promotionCard(page);
   await chipSays(chip, 'Not ready for production', 'the not-ready chip');
@@ -3374,9 +3378,8 @@ async function leadMergesToMain({ page, backend, baseUrl }: JourneyContext) {
   await expectText(popover.locator('.qa-promo__pr'), 'Promotion PR #42', 'the promotion PR name');
   await absent(popover.locator('a.qa-promo__pr'), 'a link out to the promotion PR');
 
-  // Full screen: the SAME tab bar rides in the floating drawer, under its header.
+  // Full screen: the SAME header bar (chip, Merge to main) rides in the floating panel.
   await page.getByRole('button', { name: 'Full screen' }).click();
-  await page.locator('button.qa-launcher').click();
   const drawer = page.getByRole('region', { name: 'Acceptance' });
   await visible(drawer, 'the floating drawer');
   await visible(drawer.locator('.qa-coltabs-bar button.qa-promo-chip'), 'the readiness chip inside the drawer');
@@ -3406,7 +3409,7 @@ async function leadMergesToMain({ page, backend, baseUrl }: JourneyContext) {
 
 /** (g) Team lead: GitHub refuses the merge (required review), its words shown verbatim. */
 async function leadMergeRefused({ page, backend, baseUrl }: JourneyContext) {
-  await openProjectTab(page, baseUrl, 'PO Studio');
+  await openStudio(page, baseUrl, 'PO Studio');
   const { chip, merge } = promotionCard(page);
   await chipSays(chip, 'Ready for production', 'the ready chip');
   await merge.click();

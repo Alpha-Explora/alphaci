@@ -194,6 +194,16 @@ export function BracesIcon() {
   );
 }
 
+/** A spreadsheet: the Excel export. */
+export function SheetIcon() {
+  return (
+    <Glyph>
+      <rect x="2.25" y="2.25" width="11.5" height="11.5" rx="1.5" />
+      <path d="M2.25 6.25h11.5M2.25 10h11.5M6.25 6.25v7.5" />
+    </Glyph>
+  );
+}
+
 export function PlayIcon() {
   return (
     <Glyph size={14}>
@@ -247,50 +257,16 @@ export function CollapseIcon() {
   );
 }
 
-/** Wide preview: a window whose page takes most of it, a narrow column docked right. */
-export function LayoutWideIcon() {
+/**
+ * The run rail's pin: a window with its right column, filled while pinned —
+ * the app's left rail toggle, mirrored to the side this rail is on.
+ */
+export function RailPinIcon({ pinned }: Readonly<{ pinned: boolean }>) {
   return (
     <Glyph>
       <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
-      <path d="M10.75 2.5v11" />
-    </Glyph>
-  );
-}
-
-/** Split: a window halved. */
-export function LayoutSplitIcon() {
-  return (
-    <Glyph>
-      <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
-      <path d="M8 2.5v11" />
-    </Glyph>
-  );
-}
-
-/** Move to the other side. */
-export function SwapIcon() {
-  return (
-    <Glyph>
-      <path d="M2.5 5.5h11M11 3l2.5 2.5L11 8" />
-      <path d="M13.5 10.5h-11M5 8l-2.5 2.5L5 13" />
-    </Glyph>
-  );
-}
-
-/** Dock back beside the page: a panel on the right of a window. */
-export function DockIcon() {
-  return (
-    <Glyph>
-      <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
-      <path d="M9.75 2.5v11" />
-    </Glyph>
-  );
-}
-
-export function MinimizeIcon() {
-  return (
-    <Glyph>
-      <path d="M3.5 12.25h9" />
+      <path d="M10.25 2.5v11" />
+      {pinned ? <rect x="10.25" y="2.5" width="4" height="11" rx="1" fill="currentColor" stroke="none" opacity="0.35" /> : null}
     </Glyph>
   );
 }

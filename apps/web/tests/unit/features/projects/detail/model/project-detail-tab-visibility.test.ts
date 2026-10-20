@@ -39,14 +39,23 @@ describe("visibleProjectDetailTabs", () => {
     expect(visibleProjectDetailTabs("lead", { qaChecklistsEnabled: true })).not.toContain("commits");
   });
 
-  it("gives a Product owner only Overview, Checklists, PO Studio, Audit and Settings", () => {
+  it("gives a Product owner only Overview, Checklists, PO Studio, Audit, History and Settings", () => {
     expect(visibleProjectDetailTabs("lead", { qaChecklistsEnabled: true })).toEqual([
       "overview",
       "checklists",
       "po",
       "audit",
+      "history",
       "settings",
     ]);
+  });
+
+  it("gives every role the History tab, but only with the QA capability", () => {
+    for (const role of ["admin", "lead", "qa", "member"] as const) {
+      expect(visibleProjectDetailTabs(role, { qaChecklistsEnabled: true })).toContain("history");
+      expect(visibleProjectDetailTabs(role, { qaChecklistsEnabled: false })).not.toContain("history");
+    }
+    expect(visibleProjectDetailTabs(null, { qaChecklistsEnabled: true })).not.toContain("history");
   });
 
   it("drops a Product owner's Checklists and PO Studio while the capability is off", () => {
@@ -65,9 +74,9 @@ describe("visibleProjectDetailTabs", () => {
   });
 
   /* QA checks the uat build and its UI in QA Studio: the Product owner's set, with QA Studio for PO Studio. */
-  it("gives QA Team the Product owner's five tabs, with QA Studio in place of PO Studio", () => {
+  it("gives QA Team the Product owner's tabs, with QA Studio in place of PO Studio", () => {
     const tabs = visibleProjectDetailTabs("qa", { qaChecklistsEnabled: true });
-    expect(tabs).toEqual(["overview", "checklists", "qa", "audit", "settings"]);
+    expect(tabs).toEqual(["overview", "checklists", "qa", "audit", "history", "settings"]);
     for (const hidden of ["code", "commits", "pulls", "pipeline", "hosting"] as const) {
       expect(tabs).not.toContain(hidden);
     }
@@ -100,7 +109,7 @@ describe("visibleProjectDetailTabs", () => {
     for (const role of [undefined, null]) {
       const tabs = visibleProjectDetailTabs(role, { qaChecklistsEnabled: true });
       expect(tabs).toEqual(
-        PROJECT_DETAIL_TABS.filter((tab) => tab !== "checklists" && tab !== "qa" && tab !== "po"),
+        PROJECT_DETAIL_TABS.filter((tab) => !["checklists", "qa", "po", "history"].includes(tab)),
       );
       expect(tabs).toContain("hosting");
     }

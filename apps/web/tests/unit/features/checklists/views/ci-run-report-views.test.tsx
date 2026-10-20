@@ -154,7 +154,7 @@ describe("CiRunReportDocument details", () => {
       />,
     );
     const details = section(view, "ci-report-details");
-    expect(details.textContent).toContain("SonarCloud · Quality gate failed");
+    expect(details.textContent).toContain("Code analysis · Quality gate failed");
     expect(details.textContent).toContain("Failed: Coverage on new code 61.2% (needs 80%)");
     expect(details.textContent).toContain("Major · src/a.ts:3 · r1");
   });

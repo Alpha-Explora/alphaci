@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { projectQaRunsRepository } from "../../data/project-qa-runs-repository";
+import { useIterationEpoch } from "../../iteration";
 import type { HeadStatus, ProjectQaRun, ProjectRunCurrent } from "../../model/project-run-types";
 import { qaActionError } from "../../model/qa-run-rules";
 import type { QaActionError } from "../../model/qa-run-types";
@@ -32,6 +33,12 @@ export interface ProjectRunViewModel {
   /** Adopt the run a write returned, so every part of the panel shows the server's state. */
   applyRun: (run: ProjectQaRun) => void;
   reload: () => void;
+  /**
+   * Reads the run again in the background: the loaded run stays on screen
+   * (no loading state), so an open dialog over it stays open. A failed read
+   * falls back to a full reload.
+   */
+  refresh: () => void;
 }
 
 interface LoadResult {
@@ -41,8 +48,8 @@ interface LoadResult {
   missing: boolean;
 }
 
-const LOAD_ERROR = "The Project's QA run could not be loaded. Try again in a moment.";
-const START_ERROR = "The Project QA run could not be started. Try again in a moment.";
+const LOAD_ERROR = "QA testing could not be loaded. Try again in a moment.";
+const START_ERROR = "QA testing could not be started. Try again in a moment.";
 
 function viewStatus(active: boolean, current: LoadResult | null, starting: boolean): ProjectRunViewStatus {
   if (!active) return "idle";
@@ -88,7 +95,10 @@ export function useProjectRunViewModel(options: {
   const requestRef = useRef(0);
   const active = enabled && Boolean(deliveryProjectId);
   const projectKey = deliveryProjectId ?? "";
-  const key = `${projectKey}|${String(nonce)}`;
+  // A started iteration (Iterations phase 3) reads the run again: the new
+  // iteration has none yet, so QA can start a fresh one.
+  const epoch = useIterationEpoch(deliveryProjectId);
+  const key = `${projectKey}|${String(nonce)}|${String(epoch)}`;
 
   useEffect(() => {
     if (!active || !deliveryProjectId) return;
@@ -131,6 +141,21 @@ export function useProjectRunViewModel(options: {
     });
   }
 
+  function refresh() {
+    if (!active || !deliveryProjectId) return;
+    requestRef.current += 1;
+    const requestId = requestRef.current;
+    const at = key;
+    projectQaRunsRepository
+      .current(deliveryProjectId)
+      .then((data) => {
+        if (requestId === requestRef.current) setResult({ key: at, data, error: null, missing: false });
+      })
+      .catch(() => {
+        if (requestId === requestRef.current) setNonce((value) => value + 1);
+      });
+  }
+
   return {
     status: viewStatus(active, current, starting),
     ...loadedView(current),
@@ -139,5 +164,6 @@ export function useProjectRunViewModel(options: {
     start,
     applyRun,
     reload: () => setNonce((value) => value + 1),
+    refresh,
   };
 }

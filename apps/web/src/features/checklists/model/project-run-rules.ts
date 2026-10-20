@@ -10,6 +10,7 @@ import type { AppRole } from "@/shared/api/contracts";
 
 import { VERIFICATION_TYPE_OPTIONS } from "./checklist-rules";
 import type { ChecklistVerificationType } from "./checklist-types";
+import { lockedIterationNumber, normalizeIterationRef } from "./iteration-rules";
 import { automationByRepositoryFrom, projectRunAutomationFrom } from "./project-run-automation-rules";
 import { attachmentCountFrom, attachmentRefsFrom, attachmentSettingsFrom } from "./qa-attachment-rules";
 import { normalizeAutomatedResult } from "./qa-automation-rules";
@@ -33,6 +34,7 @@ import {
   resolveFlag,
 } from "./requirement-rules";
 import type { RequirementItem, RequirementKind } from "./requirement-types";
+import { canManageTestCases, countTestCases, normalizeRunTestCategories } from "./test-case-rules";
 import type {
   HeadStatus,
   MyItemsBucket,
@@ -50,14 +52,20 @@ import { oneOf, record, records, text, type Loose } from "./wire-readers";
 
 type Role = AppRole | null | undefined;
 
-/** Every Verification a Project run accepts, in the order a tester weighs them. */
+/**
+ * Every Verification QA can set on a Project run: Pending, Passed or Failed.
+ * Failed always sends the story back to the Developers (the server puts its
+ * Progress back to In progress), so there is no separate Blocked or Returned
+ * to dev. Items saved earlier with those still show them.
+ */
 export const VERIFICATION_STATUSES: ReadonlyArray<VerificationStatus> = [
   "pending",
   "passed",
   "failed",
-  "blocked",
-  "returned_to_dev",
 ];
+
+/** Failed, said where QA chooses it. */
+export const FAILED_RETURNS_NOTE = "Failed sends this story back to the Developers: its Progress returns to In progress.";
 
 const RUN_STATUSES: ReadonlyArray<QaRunStatus> = ["open", "signed_off"];
 const VERIFICATION_TYPES: ReadonlyArray<ChecklistVerificationType> = VERIFICATION_TYPE_OPTIONS.map(
@@ -157,6 +165,18 @@ export function normalizeProjectRunItem(value: unknown, runId: string): ProjectQ
     ...recordedFrom(raw),
     rowVersion: wholeOrNull(raw.rowVersion),
     progress: oneOf(raw.progress, PROGRESS_VALUES),
+    testCategories: normalizeRunTestCategories(raw.testCategories),
+    poAcceptance: poAcceptanceFrom(raw.poAcceptance),
+  };
+}
+
+function poAcceptanceFrom(value: unknown): ProjectQaRunItem["poAcceptance"] {
+  const raw = record(value);
+  const passed = raw?.status === "passed";
+  return {
+    status: passed ? "passed" : "pending",
+    acceptedBy: passed && raw?.acceptedBy ? actorFrom(raw.acceptedBy) : null,
+    acceptedAt: passed ? text(raw?.acceptedAt) : null,
   };
 }
 
@@ -208,6 +228,9 @@ function permissionFlagsFrom(value: unknown): ProjectQaRun["permissions"] {
     canSignOff: flag(raw?.canSignOff),
     canReopen: flag(raw?.canReopen),
     canDispatch: flag(raw?.canDispatch),
+    canManageTestCases: flag(raw?.canManageTestCases),
+    canRecordTestCases: flag(raw?.canRecordTestCases),
+    canAccept: flag(raw?.canAccept),
   };
 }
 
@@ -228,6 +251,35 @@ function runStateFrom(raw: Loose, repositories: HeadStatus[]) {
   };
 }
 
+/** Whether the run's iteration was delivered: nothing on it may change any more. */
+export function isRunLocked(run: Pick<ProjectQaRun, "iteration">): boolean {
+  return lockedIterationNumber(run.iteration) !== null;
+}
+
+/**
+ * A delivered iteration's run, read-only whatever the payload's flags say:
+ * the server refuses every write with ITERATION_DELIVERED, so no control may
+ * look clickable. A run of an active iteration (or an older backend's) is
+ * returned unchanged.
+ */
+export function lockDeliveredRun(run: ProjectQaRun): ProjectQaRun {
+  if (!isRunLocked(run)) return run;
+  return {
+    ...run,
+    permissions: {
+      canSetVerification: false,
+      canSignOff: false,
+      canReopen: false,
+      canDispatch: false,
+      canManageTestCases: false,
+      canRecordTestCases: false,
+      canAccept: false,
+    },
+    items: run.items.map((item) => ({ ...item, canUpdate: false })),
+    attachments: run.attachments ? { ...run.attachments, canAdd: false } : null,
+  };
+}
+
 /** A Project run, or null when the body has no id. */
 export function normalizeProjectRun(value: unknown): ProjectQaRun | null {
   const raw = record(value);
@@ -235,7 +287,7 @@ export function normalizeProjectRun(value: unknown): ProjectQaRun | null {
   if (!raw || !id) return null;
   const items = runItemsFrom(raw.items, id);
   const repositories = normalizeHeads(raw.repositories);
-  return {
+  return lockDeliveredRun({
     id,
     deliveryProjectId: text(raw.deliveryProjectId) ?? "",
     deliveryProjectName: text(raw.deliveryProjectName) ?? text(raw.checklistName) ?? "Project",
@@ -249,7 +301,8 @@ export function normalizeProjectRun(value: unknown): ProjectQaRun | null {
     automation: projectRunAutomationFrom(raw),
     automationByRepository: automationByRepositoryFrom(raw),
     attachments: attachmentSettingsFrom(raw.attachments),
-  };
+    iteration: normalizeIterationRef(raw.iteration),
+  });
 }
 
 /** The current-heads answer. A body that is not one reads as "no run yet, heads unknown". */
@@ -289,6 +342,11 @@ export function resolveProjectRunPermissions(
     canSignOff: resolveFlag(flags?.canSignOff, verifier),
     canReopen: resolveFlag(flags?.canReopen, canReopenProjectRun(role)),
     canDispatch: resolveFlag(flags?.canDispatch, verifier),
+    canManageTestCases: resolveFlag(flags?.canManageTestCases, canManageTestCases(role)),
+    // Recording a test case's result is the QA Team's, like writing them.
+    canRecordTestCases: resolveFlag(flags?.canRecordTestCases, canManageTestCases(role)),
+    // Only a server that offers acceptance says so: no fallback.
+    canAccept: flags?.canAccept === true,
   };
 }
 
@@ -307,19 +365,27 @@ export function canVerifyItem(
   return item.canUpdate !== false;
 }
 
-/** Passed needs a Developer's Done first. */
-export function canPass(item: Pick<ProjectQaRunItem, "progress">): boolean {
-  return item.progress === "done";
+/**
+ * Passed needs a Developer's Done first, and every test case of the story
+ * passed or not applicable (the server refuses it otherwise with
+ * QA_PROGRESS_NOT_DONE or QA_TEST_CASES_OPEN).
+ */
+export function canPass(item: Pick<ProjectQaRunItem, "progress"> & Partial<Pick<ProjectQaRunItem, "testCategories">>): boolean {
+  return item.progress === "done" && countTestCases(item.testCategories ?? []).open === 0;
 }
 
 /** Why Passed is not offered on this item, or null when it is. */
-export function passedUnavailableReason(item: Pick<ProjectQaRunItem, "progress">): string | null {
-  return canPass(item) ? null : QA_ERROR_MESSAGES.QA_PROGRESS_NOT_DONE;
+export function passedUnavailableReason(
+  item: Pick<ProjectQaRunItem, "progress"> & Partial<Pick<ProjectQaRunItem, "testCategories">>,
+): string | null {
+  if (item.progress !== "done") return QA_ERROR_MESSAGES.QA_PROGRESS_NOT_DONE;
+  return canPass(item) ? null : QA_ERROR_MESSAGES.QA_TEST_CASES_OPEN;
 }
 
 /** The Verification values this viewer can move the item to. Empty when read-only. */
 export function allowedVerificationStatuses(
-  item: Pick<ProjectQaRunItem, "rowVersion" | "progress"> & Partial<Pick<ProjectQaRunItem, "canUpdate">>,
+  item: Pick<ProjectQaRunItem, "rowVersion" | "progress"> &
+    Partial<Pick<ProjectQaRunItem, "canUpdate" | "testCategories">>,
   run: Pick<ProjectQaRun, "status">,
   permissions: Pick<ProjectQaRunPermissions, "canSetVerification">,
 ): VerificationStatus[] {
@@ -391,8 +457,20 @@ export function requirementsChangedLabel(run: Pick<ProjectQaRun, "status">): str
     : "Requirements changed since this run started";
 }
 
-export const REQUIREMENTS_CHANGED_NOTE =
-  "This does not change what can merge. A Product owner can reopen the run so QA verifies the change.";
+/**
+ * What a requirement change means for the run. Merge to main needs every
+ * item passed in the signed-off run, and nothing changed after the sign-off;
+ * new items join an open run as Pending, and reopening a signed-off run adds
+ * whatever it lacks.
+ */
+export function requirementsChangedNote(run: Pick<ProjectQaRun, "status">): string {
+  return run.status === "signed_off"
+    ? "Merge to main stays blocked until QA verifies the change. A Product owner reopens the run: new items join it as Pending, and QA signs off again."
+    : "New items join this run as Pending. Merge to main needs every item passed.";
+}
+
+/** The Project-level form of the head changes, for those who never see repositories. */
+export const PROJECT_CHANGED_SINCE_RUN = "The Project's code on uat changed since this run started.";
 
 export const STALE_RUN_NOTE =
   "The run no longer covers what is on uat. Start a new run so QA verifies the current heads; its results carry over as history.";

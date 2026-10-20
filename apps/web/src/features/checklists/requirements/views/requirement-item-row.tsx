@@ -1,15 +1,18 @@
 "use client";
 
+import "./story-test-cases.css";
+
 import type { FormEvent } from "react";
 
-import { VerificationBadge } from "../../items";
-import { ProgressControl, type ItemProgressViewModel } from "../../returned";
+import { SeverityBadge, StatusPill, VerificationBadge } from "../../items";
+import { ProgressControl, QaFindings, type ItemProgressViewModel } from "../../returned";
 import {
   needsTestIdentifier,
   testIdentifierPlaceholder,
   VERIFICATION_TYPE_OPTIONS,
 } from "../../model/checklist-rules";
 import type { ChecklistVerificationType } from "../../model/checklist-types";
+import type { ProjectQaRunItem } from "../../model/project-run-types";
 import { agoLabel } from "../../model/qa-run-rules";
 import { ACCEPTANCE_CRITERIA_MAX, REQUIREMENT_ITEM_TITLE_MAX } from "../../model/requirement-rules";
 import type { RequirementItem, RequirementItemDraft } from "../../model/requirement-types";
@@ -125,7 +128,7 @@ function ManageActions({
   if (vm.confirmDeleteId === item.id) {
     return (
       <span className="rq-item__actions" role="group" aria-label={`Delete ${item.title}?`}>
-        <span className="rq-item__confirm">Delete it? Open QA runs keep their copy.</span>
+        <span className="rq-item__confirm">Delete it? QA testing under way keeps its copy.</span>
         <button type="button" className="hier-btn-danger" disabled={busy} onClick={() => void vm.confirmDelete(item)}>
           {busy && vm.busyItemId === item.id ? "Deleting…" : "Delete"}
         </button>
@@ -219,16 +222,68 @@ function ItemFoot({
         <code className="rq-item__test">{item.testIdentifier}</code>
       ) : null}
       <span className="rq-item__spacer" aria-hidden="true" />
-      <ProgressControl item={item} editable={editable} vm={progress} onReload={onReload} />
-      <ProgressBy item={item} />
+      <span className="rq-item__progress-meta">
+        <ProgressControl item={item} editable={editable} vm={progress} onReload={onReload} />
+        <ProgressBy item={item} />
+      </span>
     </div>
+  );
+}
+
+/**
+ * QA's verdict on the item, beside its title: nothing while it is pending
+ * (QA has not looked), and how bad it is when QA failed it or sent it back.
+ */
+function Verdict({ verdict }: Readonly<{ verdict: ProjectQaRunItem | undefined }>) {
+  if (!verdict || verdict.status === "pending") return null;
+  return (
+    <span className="rq-item__verdict">
+      {verdict.defectSeverity ? <SeverityBadge severity={verdict.defectSeverity} /> : null}
+      <StatusPill status={verdict.status} />
+    </span>
+  );
+}
+
+/**
+ * What QA will check on this story: its test case categories and test
+ * cases, read-only and folded. The QA Team writes them from the QA checklist.
+ * Nothing when QA has written none.
+ */
+function StoryTestCases({ item }: Readonly<{ item: RequirementItem }>) {
+  const total = item.testCategories.reduce((sum, category) => sum + category.testCases.length, 0);
+  if (total === 0) return null;
+  return (
+    <details className="rq-tests">
+      <summary className="rq-tests__summary">
+        QA test cases ({String(total)})
+      </summary>
+      {item.testCategories
+        .filter((category) => category.testCases.length > 0)
+        .map((category) => (
+          <div key={category.id} className="rq-tests__category">
+            <p className="rq-tests__category-name">{category.name}</p>
+            <ul className="rq-tests__list">
+              {category.testCases.map((testCase) => (
+                <li key={testCase.id}>
+                  {testCase.title}
+                  {testCase.expectedResult ? (
+                    <span className="rq-tests__expected"> Expected: {testCase.expectedResult}</span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+    </details>
   );
 }
 
 /**
  * One story or item: what it is, how QA knows it is done, and its Progress.
  * Developers get the Progress control and nothing else; Product owners and
- * admins also edit, reorder and delete it.
+ * admins also edit, reorder and delete it. Given QA's `verdict` (the
+ * Project checklist), it shows that too, with QA's notes when the item
+ * was sent back, failed or blocked.
  */
 export function RequirementItemRow({
   item,
@@ -240,6 +295,7 @@ export function RequirementItemRow({
   items,
   progress,
   onReload,
+  verdict,
 }: Readonly<{
   item: RequirementItem;
   index: number;
@@ -250,6 +306,7 @@ export function RequirementItemRow({
   items: RequirementItemsViewModel;
   progress: ItemProgressViewModel;
   onReload: () => void;
+  verdict?: ProjectQaRunItem;
 }>) {
   if (isEditing(items, item.id)) {
     return (
@@ -259,16 +316,19 @@ export function RequirementItemRow({
     );
   }
   return (
-    <li className="rq-item" data-progress={item.progress}>
+    <li className="rq-item" data-progress={item.progress} data-verdict={verdict?.status}>
       <span className="rq-item__index" aria-hidden="true">
         {String(index + 1).padStart(2, "0")}
       </span>
       <div className="rq-item__body">
         <div className="rq-item__head">
           <span className="rq-item__title">{item.title}</span>
+          <Verdict verdict={verdict} />
           {canManage ? <ManageActions item={item} index={index} count={count} vm={items} /> : null}
         </div>
         {item.acceptanceCriteria ? <p className="rq-item__criteria">{item.acceptanceCriteria}</p> : null}
+        <StoryTestCases item={item} />
+        <QaFindings runItem={verdict} />
         <ItemFoot item={item} editable={progressEditable} progress={progress} onReload={onReload} />
         <RowError vm={items} itemId={item.id} onReload={onReload} />
       </div>

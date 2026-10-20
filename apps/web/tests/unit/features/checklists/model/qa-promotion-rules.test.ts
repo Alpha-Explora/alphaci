@@ -44,6 +44,9 @@ describe("normalizePromotionStatus", () => {
       run: null,
       repositories: [],
       requirementsChanged: false,
+      repositoryDelivered: null,
+      iterationDelivered: false,
+      iteration: null,
     });
   });
 
@@ -62,6 +65,9 @@ describe("normalizePromotionStatus", () => {
       run: null,
       repositories: [],
       requirementsChanged: false,
+      repositoryDelivered: null,
+      iterationDelivered: false,
+      iteration: null,
     });
   });
 
@@ -96,7 +102,7 @@ describe("normalizePromotionMerge", () => {
   it("reads a merge", () => {
     expect(
       normalizePromotionMerge({ merged: true, sha: "abc1234ffff", message: "Pull Request successfully merged", pullRequest: { number: 42, url: "https://github.com/t/s/pull/42" } }),
-    ).toEqual({ merged: true, sha: "abc1234ffff", message: "Pull Request successfully merged", pullRequest: { number: 42, url: "https://github.com/t/s/pull/42" } });
+    ).toEqual({ merged: true, sha: "abc1234ffff", message: "Pull Request successfully merged", pullRequest: { number: 42, url: "https://github.com/t/s/pull/42" }, alreadyInMain: false });
   });
 
   it("keeps GitHub's refusal text verbatim", () => {
@@ -111,6 +117,7 @@ describe("normalizePromotionMerge", () => {
       sha: null,
       message: "GitHub did not merge the pull request and gave no reason.",
       pullRequest: null,
+      alreadyInMain: false,
     });
     expect(normalizePromotionMerge({ merged: "true", sha: "abc" }).merged).toBe(false);
     expect(normalizePromotionMerge({ merged: false, sha: "abc" }).sha).toBeNull();

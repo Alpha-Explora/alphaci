@@ -417,10 +417,10 @@
   z-index: 5;
   display: grid;
   align-content: start;
-  gap: 0.55rem;
-  width: min(25rem, calc(100% - 1rem));
+  gap: 0.7rem;
+  width: min(23rem, calc(100vw - 2rem));
   max-height: min(30rem, 62dvh);
-  padding: 0.75rem 0.85rem 0.85rem;
+  padding: 0.95rem 1rem 1rem;
   border: 1px solid var(--border-tile);
   border-left: 3px solid var(--qa-promo-tone);
   border-radius: 0.8rem;
@@ -679,4 +679,31 @@
   .qa-promo-chip[data-tone="unknown"] .qa-promo-chip__dot {
     animation: none;
   }
+}
+
+/* ── Delivered (Iterations) ───────────────────────────────────────────────
+   The Project's iteration reached main: no longer "ready", not "blocked"
+   either. Violet, the one tone nothing else here uses. */
+.qa-promo-chip[data-tone="delivered"] {
+  --qa-chip-tone: var(--accent-violet);
+  --qa-chip-fill: var(--accent-violet-light);
+  --qa-chip-edge: var(--border-violet);
+}
+
+.qa-promo-pop[data-tone="delivered"],
+.qa-promo[data-ready="delivered"] {
+  --qa-promo-tone: var(--accent-violet);
+}
+
+.qa-promo[data-ready="delivered"] .qa-promo__mark {
+  border-color: var(--border-violet);
+  background: var(--accent-violet-light);
+  color: var(--accent-violet);
+}
+
+.qa-promo__delivered {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
 }

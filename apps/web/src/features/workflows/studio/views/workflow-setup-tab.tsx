@@ -12,12 +12,14 @@ import type {
   SetupProjectResponse,
   WorkspaceSummary,
 } from "@/shared/api/contracts";
+import { healthyHosts } from "@/features/hosts";
 import type { CreateProjectFormState } from "../view-models/use-create-project-form";
 import type { DeploymentProvisioningFormState } from "../view-models/use-deployment-provisioning-form";
 import type { GithubInstallationsState } from "../view-models/use-github-installations";
 import type { HostingChoiceState } from "../view-models/use-hosting-choice";
 import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
 import { useProjectUsage } from "../view-models/use-project-usage";
+import { useSetupHostSelection } from "../view-models/use-setup-host-selection";
 import {
   canSelectWizardStep,
   countWorkspaces,
@@ -42,6 +44,12 @@ import {
 } from "../model/setup-tab-rules";
 import { REPOSITORY_CREATE_ROLE_NOTE } from "../model/role-gate-rules";
 import { renderVariablesBlockingFor } from "../model/hosting-choice-rules";
+import {
+  createBlockerReason,
+  deliveryHostProblems,
+  firstHostProblem,
+  isDeliveryStepReady,
+} from "../model/setup-delivery-rules";
 import type { ProjectChoice } from "./setup-wizard-props";
 import { ExistingRepoSetupPanel } from "./existing-repo-setup-panel";
 import { NewRepoWizard, RepositoryCreationProgress } from "./new-repo-wizard";
@@ -198,6 +206,13 @@ export function WorkflowSetupTab({
   reducedMotion,
 }: Readonly<WorkflowSetupTabProps>) {
   const usageItems = useProjectUsage();
+  // The machines are read only for on-prem hosting: the Delivery step's rows are
+  // their only use, and whether the rows show decides whether an on-prem problem
+  // can hold the wizard. The hosting choice is the effective one, so on-prem
+  // here means the deployment offers it.
+  const hostSelection = useSetupHostSelection({
+    enabled: hosting.choice === "onprem",
+  });
   const [activeWizardStep, setActiveWizardStep] = useState(0);
   const [furthestWizardStep, setFurthestWizardStep] = useState(0);
   const isExistingMode = isExistingSetupMode(setupMode, existingRepoAllowed);
@@ -265,6 +280,22 @@ export function WorkflowSetupTab({
     selectedWorkspaceId,
     projectKnown,
   });
+  // The on-prem host problems hold the Delivery step and Create, so they are
+  // shown on the Delivery step and again above the Review step's button. They
+  // are only checked while the machine rows are on screen to fix them.
+  const hostProblems = deliveryHostProblems({
+    choice: hosting.choice,
+    environments: form.environments,
+    machineRowsShown: healthyHosts(hostSelection.hosts).length > 0,
+  });
+  const hostProblem = firstHostProblem(hostProblems);
+  const createBlocker = createBlockerReason({
+    teamChoiceMissing: team.teamChoiceMissing,
+    hostProblem,
+    renderVariablesMissing,
+    projectBlocker,
+    projectQuota,
+  });
   const wizardStepReady = wizardStepReadyFlags({
     blueprint: isBlueprintReady({
       selectedRepoShapeId: projectCatalog.selectedRepoShapeId,
@@ -283,7 +314,7 @@ export function WorkflowSetupTab({
       isMultiRepoShape: projectCatalog.isMultiRepoShape,
     }),
     automation: isAutomationStepReady(form.nodeVersion),
-    delivery: !renderVariablesMissing,
+    delivery: isDeliveryStepReady({ renderVariablesMissing, hostProblem }),
     createReady: !createDisabled,
   });
   const finalCreateDisabled = isFinalCreateDisabled({
@@ -418,6 +449,9 @@ export function WorkflowSetupTab({
           joinedProjectName={joinedProjectName}
           projectChoice={projectChoice}
           projectBlocker={projectBlocker}
+          createBlocker={createBlocker}
+          hostProblems={hostProblems}
+          hostSelection={hostSelection}
           onBack={goToPreviousWizardStep}
           onCreateProject={onCreateProject}
           onNext={goToNextWizardStep}

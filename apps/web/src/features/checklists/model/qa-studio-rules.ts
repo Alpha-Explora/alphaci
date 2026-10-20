@@ -286,8 +286,9 @@ export function orientationLabel(orientation: DeviceOrientation): string {
 }
 
 /**
- * The chrome around the screen, in on-screen pixels: the browser's top bar,
- * a tablet's bezel, a phone's chassis. The screen sits inside these insets and
+ * The chrome around the screen, in on-screen pixels: a tablet's bezel, a
+ * phone's chassis. Desktop has none: the page under test is drawn edge to edge,
+ * not inside a mock browser window. The screen sits inside these insets and
  * nothing is ever drawn over it, so a site's fixed header is never covered.
  * `outsetX`/`outsetY` are hardware drawn past the frame's edge (a phone's side
  * buttons). The chrome does not scale with the device: it stays legible, and
@@ -302,7 +303,7 @@ export interface FrameChrome {
   outsetY: number;
 }
 
-const BROWSER_CHROME: FrameChrome = { top: 40, right: 0, bottom: 0, left: 0, outsetX: 0, outsetY: 0 };
+const BROWSER_CHROME: FrameChrome = { top: 0, right: 0, bottom: 0, left: 0, outsetX: 0, outsetY: 0 };
 const TABLET_CHROME: FrameChrome = { top: 26, right: 26, bottom: 26, left: 26, outsetX: 0, outsetY: 0 };
 
 /* A phone turned landscape is the same chassis turned a quarter: the top
@@ -362,50 +363,40 @@ export function scaleLabel(scale: number): string | null {
   return `Scaled to ${Math.round(scale * 100)}%`;
 }
 
-/* ── Layout ──────────────────────────────────────────────────────────────── */
+/** "Tablet · 1024 × 768 · Landscape": what the page lays out at (no orientation for Desktop). */
+export function viewportLabel(device: Pick<DevicePreset, "label" | "rotatable">, dimensions: DeviceDimensions): string {
+  const size = `${device.label} · ${dimensionsLabel(dimensions)}`;
+  return device.rotatable ? `${size} · ${orientationLabel(dimensions.orientation)}` : size;
+}
+
+/** "62%", the toolbar's short form of `scaleLabel`; null at life size. */
+export function scalePercent(scale: number): string | null {
+  if (scale >= 1) return null;
+  return `${Math.round(scale * 100)}%`;
+}
+
+/* ── The run rail ────────────────────────────────────────────────────────── */
 
 /**
- * How the docked (not full-screen) studio shares its width. "wide" gives the
- * page most of it, because a desktop page drawn in a 60% pane is scaled to
- * about half size; "split" halves it, for writing detailed notes or reading
- * automation results. Full screen is the third arrangement and has its own
- * toggle. Every layout only restyles the one studio tree: the frame and the
- * run column are never remounted to change it.
+ * The page under test gets the studio's width; the run panel (Checklist |
+ * Playwright) is a rail on the studio's right edge, like the app's left rail:
+ * a narrow strip that opens over the page on hover or keyboard focus, and a
+ * pin that keeps it open and moves the page aside. Pinned or not is a
+ * per-viewer, per-studio preference: pinning it in QA Studio is not a choice
+ * for PO Studio. The rail stays mounted either way.
  */
-export type StudioLayout = "wide" | "split";
-
-export interface StudioLayoutOption {
-  id: StudioLayout;
-  label: string;
-  /** The tooltip: what the layout is for. */
-  hint: string;
+export function studioRailPinnedKey(studio: "qa" | "po"): string {
+  return `alphaci.${studio}-studio.rail-pinned`;
 }
 
-export const STUDIO_LAYOUTS: ReadonlyArray<StudioLayoutOption> = [
-  { id: "wide", label: "Wide preview", hint: "Wide preview: the page gets most of the width" },
-  { id: "split", label: "Split", hint: "Split: page and checklist share the width, for detailed notes" },
-];
-
-export const DEFAULT_STUDIO_LAYOUT: StudioLayout = "wide";
-
-export function isStudioLayout(value: unknown): value is StudioLayout {
-  return STUDIO_LAYOUTS.some((option) => option.id === value);
-}
+/* ── The rail's strip ─────────────────────────────────────────────────────── */
 
 /**
- * A remembered layout, read back from storage. Anything that is not a layout
- * this build knows (nothing stored, an old or hand-edited value) is the
- * default, so a stale preference can never leave the studio unlaid-out.
+ * "QA checklist · 3/5 passed", or just the title before a run exists: what
+ * the closed rail says it holds. PO Studio's panel is its "Acceptance".
  */
-export function resolveStudioLayout(stored: string | null): StudioLayout {
-  return isStudioLayout(stored) ? stored : DEFAULT_STUDIO_LAYOUT;
-}
-
-/* ── Floating checklist launcher ─────────────────────────────────────────── */
-
-/** "QA checklist · 3/5 passed", or just "QA checklist" before a run exists. */
-export function launcherLabel(run: Pick<QaRun, "summary"> | null): string {
-  return run ? `QA checklist · ${passedLabel(run)}` : "QA checklist";
+export function launcherLabel(run: Pick<QaRun, "summary"> | null, title = "QA checklist"): string {
+  return run ? `${title} · ${passedLabel(run)}` : title;
 }
 
 export type AutomationSignalTone = "running" | "failed" | "passed" | "none";
@@ -450,17 +441,42 @@ function originOf(url: string, base?: string): URL | null {
   }
 }
 
-/** "shop.example.com/checkout?step=2" for the browser frame's address pill. */
-export function addressLabel(pageUrl: string): string {
-  const url = originOf(pageUrl);
-  if (!url) return pageUrl;
-  const path = url.pathname === "/" ? "" : url.pathname;
-  return `${url.host}${path}${url.search}`;
-}
-
 /** The preview's origin with the path appended. Null for an unusable address. */
 export function previewPageUrl(previewUrl: string, path: string): string | null {
   const base = originOf(previewUrl);
   if (!base) return null;
   return new URL(path || "/", base.origin).toString();
 }
+
+/* ── The rail's width ─────────────────────────────────────────────────────── */
+
+/** The panel's default open width: 30rem at the root font size. */
+export const RAIL_WIDTH_DEFAULT = 480;
+/** Narrower than this and the tab bar and the test case rows no longer fit. */
+export const RAIL_WIDTH_MIN = 360;
+/** One arrow-key step on the panel's edge. */
+export const RAIL_WIDTH_STEP = 32;
+/** The page keeps at least this much beside the widest panel. */
+const RAIL_PAGE_MIN = 240;
+
+export function studioRailWidthKey(studio: "qa" | "po"): string {
+  return `alphaci.${studio}-studio.rail-width`;
+}
+
+/** The widest the panel may be in panes this wide: the page keeps a strip, never below the minimum. */
+export function railWidthMax(panesWidth: number): number {
+  return Math.max(RAIL_WIDTH_MIN, Math.round(panesWidth - RAIL_PAGE_MIN));
+}
+
+/** A width within [minimum, max], whole pixels. */
+export function clampRailWidth(width: number, max: number): number {
+  return Math.round(Math.min(Math.max(width, RAIL_WIDTH_MIN), Math.max(RAIL_WIDTH_MIN, max)));
+}
+
+/** A remembered width, or null (the default) for nothing, garbage or a value below the minimum. */
+export function parseRailWidth(raw: string | null): number | null {
+  if (!raw) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= RAIL_WIDTH_MIN ? Math.round(value) : null;
+}
+

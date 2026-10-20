@@ -52,6 +52,8 @@ export {
   resolveCanCreateProject,
   resolveCanCreateRepository,
 } from "./model/creation-role-rules";
+/* Who manages a Project's members, and the link to its members panel. */
+export { canManageProjectMembers, projectMembersHref } from "./model/project-members-rules";
 export * from "./data/hierarchy-api";
 export type {
   AssignmentStatus,

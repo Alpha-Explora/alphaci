@@ -1,7 +1,8 @@
 /* ── PO Studio ─────────────────────────────────────────────────────────────
-   QA Studio's shell with the Product owner's acceptance in the column. Only
-   the acceptance status is new; the summary, the sign-off banner and the
-   tab bar's readiness chip are QA Studio's own. Tokens only.
+   QA Studio's shell with the Product owner's acceptance in the column: what
+   is still missing, the run summary (QA Studio's own), and the Product
+   owner's check of every item. The tab bar's readiness chip and Merge to
+   main are QA Studio's own. Tokens only.
    ------------------------------------------------------------------------- */
 
 .po-accept {
@@ -38,6 +39,377 @@
   color: var(--text-secondary);
 }
 
-.po-accept__open {
-  justify-self: start;
+/* ── The Product owner's check ────────────────────────────────────────────
+   Every item QA verified, by Feature, with QA's verdict and test cases
+   (read-only), and — once QA signed the run off — Pass or Fail on each.
+   Passed: an emerald edge and a "Passed" tag. Fail opens a short form;
+   failing sends the story back to the Developers. */
+.po-check {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.po-check__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.3rem 0.75rem;
+  margin: 0;
+}
+
+.po-check__count {
+  font-size: 0.74rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.po-check__group {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.po-check__group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.po-check__name {
+  flex: 1 1 10rem;
+  min-width: 0;
+  font-weight: 650;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.po-check__passed {
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.po-check__items {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.po-check__item {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border-layer);
+  border-left: 3px solid var(--border-layer);
+  border-radius: 0.65rem;
+  background: var(--layer-2);
+}
+
+.po-check__item[data-accepted="passed"] {
+  border-left-color: var(--success);
+}
+
+.po-check__item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.35rem 0.6rem;
+}
+
+.po-check__title {
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-size: 0.86rem;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.po-check__qa {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.po-check__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+}
+
+.po-check__by {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.po-check__accepted {
+  margin-left: auto;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--success) 45%, transparent);
+  border-radius: var(--radius-pill);
+  background: var(--accent-emerald-light);
+  color: var(--success);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.po-check__decide {
+  display: inline-flex;
+  gap: 0.45rem;
+  margin-left: auto;
+}
+
+.po-check__pass,
+.po-check__fail,
+.po-check__fail-submit {
+  min-height: 2rem;
+  padding: 0.3rem 0.95rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease-out,
+    border-color 140ms ease-out;
+}
+
+.po-check__pass {
+  border-color: color-mix(in srgb, var(--success) 45%, transparent);
+  background: var(--accent-emerald-light);
+  color: var(--success);
+}
+
+.po-check__pass:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--success) 24%, transparent);
+}
+
+.po-check__fail,
+.po-check__fail-submit {
+  border-color: var(--border-danger);
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.po-check__fail:hover:not(:disabled),
+.po-check__fail-submit:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+.po-check__pass:focus-visible,
+.po-check__fail:focus-visible,
+.po-check__fail-submit:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.po-check__pass:disabled,
+.po-check__fail:disabled,
+.po-check__fail-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.po-check__fail-form {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-danger);
+  border-radius: 0.6rem;
+  background: var(--bg-soft);
+}
+
+.po-check__severity {
+  max-width: 12rem;
+}
+
+.po-check__fail-note {
+  margin: 0 0 0.4rem;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.po-check__fail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Cancel matches Fail's size wherever the rail renders (two classes beat the global button). */
+.po-check__fail-actions .ghost-button {
+  min-height: 2rem;
+  padding: 0.3rem 0.95rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+}
+
+/* ── Delivery (Iterations) ────────────────────────────────────────────────
+   .po-delivery    the active iteration: each covered repository's stored
+                   state. __outcome: how the tab bar's Merge to main of
+                   every repository ended, per repository.
+   .po-delivered   the banner once the iteration reached main. Violet: the
+                   tone of "Delivered" everywhere (chip, header pill). */
+.po-delivery {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.po-delivery__rows {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.po-delivery__row {
+  --po-row-tone: var(--border-strong);
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.15rem 0.6rem;
+  align-items: baseline;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border-layer);
+  border-left: 3px solid var(--po-row-tone);
+  border-radius: 0.55rem;
+  background: var(--layer-2);
+  font-size: 0.8rem;
+}
+
+.po-delivery__row[data-tone="success"] {
+  --po-row-tone: var(--success);
+}
+
+.po-delivery__row[data-tone="danger"] {
+  --po-row-tone: var(--danger);
+}
+
+.po-delivery__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.po-delivery__state {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* A delivered repository's detail ("Merged into main · PR #12 · merge commit
+   abc1234") is too long to sit beside the name in the narrow studio column:
+   on one line it squeezed the name to a letter a line. It takes its own row. */
+.po-delivery__state--detail {
+  grid-column: 1 / -1;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.po-delivery__message {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.po-delivery__outcome {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-left-color: var(--success);
+  border-radius: 0.7rem;
+  background: var(--layer-1);
+}
+
+.po-delivery__outcome[data-tone="danger"] {
+  border-left-color: var(--danger);
+}
+
+.po-delivery__outcome-title {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.po-delivery__outcome-text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.po-delivery__reasons {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.po-delivery__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.po-delivered {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--border-violet);
+  border-left-width: 3px;
+  border-left-color: var(--accent-violet);
+  border-radius: 0.7rem;
+  background: var(--accent-violet-light);
+}
+
+.po-delivered__title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.po-delivered__mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--accent-violet);
+}
+
+.po-delivered__text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* What follows the delivery: Start iteration N+1, or the waiting sentence. */
+.po-delivered__next {
+  display: grid;
+  justify-items: start;
+  gap: 0.45rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border-violet);
 }

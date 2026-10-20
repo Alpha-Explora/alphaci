@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { qaScopeFromFolder, withProjectOnPage, type QaScope } from "@/features/checklists";
+import { IterationStatus } from "@/features/checklists/iteration";
 
 import { projectStatusVariant } from "../../model/projects-rules";
 import type { ProvisionedProject } from "@/features/projects";
@@ -28,6 +29,7 @@ import { CodeTabPanel } from "./code-tab-panel";
 import { CommitsTabPanel } from "./commits-tab-panel";
 import { PullsTabPanel } from "./pulls-tab-panel";
 import { ChecklistsTabPanel } from "./checklists-tab-panel";
+import { HistoryTabPanel } from "./history-tab-panel";
 import { QaStudioTabPanel } from "./qa-studio-tab-panel";
 import { PoStudioTabPanel } from "./po-studio-tab-panel";
 
@@ -89,6 +91,7 @@ const TAB_PANELS: Record<
   qa: QaStudioTabPanel,
   po: PoStudioTabPanel,
   audit: AuditTab,
+  history: HistoryTabPanel,
   settings: SettingsTab,
 };
 
@@ -131,6 +134,7 @@ export function ProjectDetailTabs({
   const studioControls = studioControlsSlot(vm.tab, setStudioSlot);
   const headerTabs = productView ? <TitleRowTabs controls={studioControls} tabs={tabs} /> : undefined;
   const clone = overviewClone(vm.tab, project);
+  const iteration = iterationStatusFor(folder, vm);
 
   return (
     <section
@@ -144,6 +148,7 @@ export function ProjectDetailTabs({
         vm={vm}
         tabs={headerTabs}
         clone={clone}
+        iteration={iteration}
       />
       <div
         className="project-sections"
@@ -207,14 +212,16 @@ function TitleRowTabs({ controls, tabs }: Readonly<{ controls: ReactNode; tabs: 
 /**
  * The repository switch, which ends the tab row: it changes which page the
  * tabs belong to, so it sits with them rather than in the header above. Only a
- * named multi-repository Project has one, and the product view never does.
+ * named Project with two or more repositories to offer
+ * (see `switchRepositories`) has
+ * one, and the product view never does.
  */
 function repoSwitchFor(
   folder: ProjectFolderViewModel | undefined,
   productView: boolean,
   vm: ProjectDetailTabsViewModel,
 ): ReactNode {
-  if (!folder?.projectName || productView) return undefined;
+  if (!folder?.projectName || productView || folder.options.length < 2) return undefined;
   return (
     <ProjectRepoSwitch
       options={folder.options}
@@ -223,6 +230,18 @@ function repoSwitchFor(
       visibleTabs={vm.visibleTabs}
     />
   );
+}
+
+/**
+ * The Project's "Iteration 3 · Active", beside the repository in the header's
+ * identity, whenever the repository is filed under a Project (of any size)
+ * and the QA capability is on. It reads the iteration itself and renders
+ * nothing on a backend without iterations.
+ */
+function iterationStatusFor(folder: ProjectFolderViewModel | undefined, vm: ProjectDetailTabsViewModel): ReactNode {
+  const deliveryProjectId = folder?.project?.deliveryProjectId ?? null;
+  if (!deliveryProjectId || !vm.qaChecklistsEnabled) return undefined;
+  return <IterationStatus deliveryProjectId={deliveryProjectId} enabled />;
 }
 
 /**
@@ -250,6 +269,7 @@ function ProjectPageHeader({
   vm,
   tabs,
   clone,
+  iteration,
 }: Readonly<{
   project: ProvisionedProject;
   external: boolean;
@@ -257,6 +277,8 @@ function ProjectPageHeader({
   vm: ProjectDetailTabsViewModel;
   tabs: ReactNode;
   clone: ReactNode;
+  /** The Project's iteration status, beside the repository on Overview. */
+  iteration: ReactNode;
 }>) {
   const identityShown = vm.tab === "overview";
   if (!folder?.projectName) {
@@ -267,6 +289,7 @@ function ProjectPageHeader({
         tabs={tabs}
         clone={clone}
         identityShown={identityShown}
+        iteration={iteration}
       />
     );
   }
@@ -278,6 +301,7 @@ function ProjectPageHeader({
       tabs={tabs}
       clone={clone}
       identityShown={identityShown}
+      iteration={iteration}
     />
   );
 }
@@ -320,12 +344,14 @@ function ProjectDetailHeader({
   tabs,
   clone,
   identityShown,
+  iteration,
 }: Readonly<{
   project: ProvisionedProject;
   external: boolean;
   tabs?: ReactNode;
   clone?: ReactNode;
   identityShown: boolean;
+  iteration?: ReactNode;
 }>) {
   const title = project.repoFullName;
   // Nothing to show off Overview: no empty row, just the heading.
@@ -339,6 +365,7 @@ function ProjectDetailHeader({
           <p className="project-folder-header__repo">
             <span>{project.serviceName}</span>
             <ProjectStatusBadges project={project} external={external} />
+            {iteration}
           </p>
         </div>
       ) : (
@@ -384,6 +411,7 @@ function ProjectFolderHeader({
   tabs,
   clone,
   identityShown,
+  iteration,
 }: Readonly<{
   project: ProvisionedProject;
   external: boolean;
@@ -391,6 +419,8 @@ function ProjectFolderHeader({
   tabs?: ReactNode;
   clone?: ReactNode;
   identityShown: boolean;
+  /** The Project's iteration status: the Project's, so it sits after the repository's badges. */
+  iteration?: ReactNode;
 }>) {
   const reduceMotion = useReducedMotion();
   return (
@@ -407,6 +437,7 @@ function ProjectFolderHeader({
           <p className="project-folder-header__repo">
             <span className="project-folder-header__repo-name">{project.repoFullName}</span>
             <ProjectStatusBadges project={project} external={external} />
+            {iteration}
           </p>
         </div>
       ) : (

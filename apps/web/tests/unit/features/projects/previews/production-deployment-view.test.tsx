@@ -98,16 +98,16 @@ describe("ProductionDeploymentView", () => {
     expect(text).toContain("Merge pull request #44");
   });
 
-  it("links the build logs and the live site, and sends nothing to GitHub", () => {
+  it("links the live site only, and sends nothing to GitHub", () => {
     render([production()]);
 
     // The commit is text: ALPHACI is the only UI.
     expect(link("View commit on GitHub")).toBeUndefined();
     expect(link("4b84b6b")).toBeUndefined();
     expect(container.querySelector('a[href*="github.com"]')).toBeNull();
-    expect(link("Build logs")?.getAttribute("href")).toBe(
-      "https://vercel.com/tone/web-app/dpl_1",
-    );
+    // The Overview has no Build logs button: Visit is the card's one action.
+    expect(link("Build logs")).toBeUndefined();
+    expect(container.querySelector('a[href="https://vercel.com/tone/web-app/dpl_1"]')).toBeNull();
     expect(link("Visit")?.getAttribute("href")).toBe(
       "https://web-app.vercel.app",
     );
@@ -161,7 +161,9 @@ describe("ProductionDeploymentView", () => {
       "web-app.vercel.app",
     );
     expect(link("Visit")).toBeUndefined();
-    expect(link("Provider dashboard")).toBeDefined();
+    // No provider dashboard: Vercel and Render are ALPHACI's own accounts.
+    expect(link("Provider dashboard")).toBeUndefined();
+    expect(container.querySelector('a[href*="vercel.com"], a[href*="render.com"]')).toBeNull();
     expect(container.textContent).toContain("Nothing deployed yet");
   });
 
@@ -170,12 +172,12 @@ describe("ProductionDeploymentView", () => {
       production(),
       production({
         isProduction: false,
-        branch: "feat/org-member-directory",
+        branch: "uat",
         deploymentId: "dpl_2",
         commitSha: "3fjeeb0a1",
         commitMessage: "feat(groups): list workspace candidates",
         pullRequestNumber: 47,
-        previewUrl: "https://web-app-git-feat-org.vercel.app",
+        previewUrl: "https://web-app-git-uat.vercel.app",
       }),
     ]);
 
@@ -183,11 +185,11 @@ describe("ProductionDeploymentView", () => {
     const rows = container.querySelectorAll(".active-branch");
     expect(rows).toHaveLength(1);
     const row = rows[0]?.textContent ?? "";
-    expect(row).toContain("feat/org-member-directory");
+    expect(row).toContain("uat");
     expect(row).toContain("Live");
     expect(row).toContain("3fjeeb0");
     expect(row).toContain("#47");
-    expect(link("Visit web-app-git-feat-org.vercel.app")).toBeDefined();
+    expect(link("Visit web-app-git-uat.vercel.app")).toBeDefined();
     expect(container.querySelector('a[href*="github.com"]')).toBeNull();
     // Without the Pull requests tab (a role that lacks it) "#47" is just text.
     expect(link("#47")).toBeUndefined();
@@ -200,7 +202,7 @@ describe("ProductionDeploymentView", () => {
         production(),
         production({
           isProduction: false,
-          branch: "feat/org-member-directory",
+          branch: "uat",
           deploymentId: "dpl_2",
           pullRequestNumber: 47,
         }),
@@ -216,11 +218,54 @@ describe("ProductionDeploymentView", () => {
     expect(onOpenPullRequest).toHaveBeenCalledWith(47);
   });
 
+  /* Once production is live the Overview lists only main and uat; every
+   * other branch stays on the Hosting tab, which lists all previews. */
+  it("lists only main and uat once production is live", () => {
+    render([
+      production(),
+      production({ isProduction: false, branch: "feat/org-member-directory", deploymentId: "dpl_2" }),
+      production({ isProduction: false, branch: "UAT", deploymentId: "dpl_3" }),
+    ]);
+
+    const rows = Array.from(container.querySelectorAll(".active-branch"));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.textContent).toContain("UAT");
+    expect(container.textContent).not.toContain("feat/org-member-directory");
+  });
+
+  it("lists every branch while production is not live yet", () => {
+    render([
+      production({ status: "building" }),
+      production({ isProduction: false, branch: "feat/org-member-directory", deploymentId: "dpl_2" }),
+    ]);
+
+    const rows = container.querySelectorAll(".active-branch");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.textContent).toContain("feat/org-member-directory");
+  });
+
   /* The production screen that prompted this: a failed deployment of a
    * feature branch that Vercel also called production drew a second card. */
   it("never draws a second card for the same target", () => {
     render([
       production(),
+      production({
+        branch: "feat/cicd-system-validation",
+        deploymentId: "dpl_3",
+        status: "failed",
+      }),
+    ]);
+
+    expect(container.querySelectorAll("article")).toHaveLength(1);
+    // Production is live, so the duplicate, a feature branch, is left to Hosting.
+    expect(container.querySelector(".active-branch")).toBeNull();
+    expect(container.textContent).not.toContain("feat/cicd-system-validation");
+    expect(link("Visit web-app.vercel.app")).toBeUndefined();
+  });
+
+  it("draws a second deployment for the same target as a row while production is not live", () => {
+    render([
+      production({ status: "building" }),
       production({
         branch: "feat/cicd-system-validation",
         deploymentId: "dpl_3",
@@ -243,7 +288,8 @@ describe("ProductionDeploymentView", () => {
         deploymentId: `dpl_${index + 10}`,
       }),
     );
-    render([production(), ...others]);
+    // Not live yet, so every branch is a candidate row.
+    render([production({ status: "building" }), ...others]);
 
     expect(container.querySelectorAll(".active-branch")).toHaveLength(5);
     expect(container.textContent).toContain("2 more branches on the Hosting tab.");

@@ -12,12 +12,17 @@ import {
 import { useBranchPreviewsViewModel, useDashboardOrigin } from "@/features/projects/previews";
 
 import {
+  chromeSize,
   devicePreset,
   CUSTOM_RESOLUTION_OPTION,
   customResolutionChoice,
+  fitDeviceScale,
+  frameChrome,
   previewPageUrl,
   resolveDeviceDimensions,
   resolveEnvironment,
+  scaleLabel,
+  scalePercent,
   studioEnvironments,
   type DeviceDimensions,
   type DeviceOrientation,
@@ -27,11 +32,12 @@ import {
   type StudioEnvironment,
 } from "../../model/qa-studio-rules";
 import { useCopyLink, type CopyLinkStatus } from "./use-copy-link";
+import { usePaneSize } from "./use-pane-size";
 import { useStudioFullScreen, type StudioFullScreenState } from "./use-studio-full-screen";
-import { useStudioLayout, type StudioLayoutState } from "./use-studio-layout";
+import { useStudioPanel, type StudioPanelState } from "./use-studio-panel";
 import { useStudioResolution } from "./use-studio-resolution";
 
-export interface StudioViewportViewModel extends StudioFullScreenState, StudioLayoutState {
+export interface StudioViewportViewModel extends StudioFullScreenState, StudioPanelState {
   /** The previews request: loading until the environments are known. */
   status: "loading" | "ready" | "error";
   error: string | null;
@@ -53,6 +59,13 @@ export interface StudioViewportViewModel extends StudioFullScreenState, StudioLa
   setCustomResolution: (width: number, height: number) => void;
   /** The viewport the page lays out at, resolution and orientation applied. */
   dimensions: DeviceDimensions;
+  /** Callback ref for the stage the device is drawn in: its size decides `scale`. */
+  attachStage: (element: HTMLDivElement | null) => void;
+  /** How much the page is shrunk to fit the stage, by both axes; 1 until measured. */
+  scale: number;
+  /** "73%" for the toolbar, and "Scaled to 73%" for its name; null at life size. */
+  scalePercent: string | null;
+  scaleLabel: string | null;
   canRotate: boolean;
   /** Portrait ⇄ landscape. Does nothing on a device that cannot rotate. */
   rotate: () => void;
@@ -76,7 +89,7 @@ export interface StudioViewportViewModel extends StudioFullScreenState, StudioLa
   unavailableReason: string | null;
   /**
    * Changes whenever the frame must re-mount: a reload or a new environment.
-   * Never the device, resolution, orientation, layout or full screen: those only
+   * Never the device, resolution, orientation, the rail or full screen: those only
    * restyle the frame, so the page under test keeps its state.
    */
   frameKey: string;
@@ -121,8 +134,9 @@ function frameKeyOf(environment: StudioEnvironment | null, pageUrl: string | nul
 /**
  * ViewModel for the studio's left pane and toolbar: which environment is
  * under test (only ever the QA branch), on which device, resolution and
- * orientation — and how the studio is laid out: wide preview or split when
- * docked, or full screen with its checklist floating over the page.
+ * orientation — and how the studio is laid out: docked or full screen, with
+ * the run panel as a rail on the right edge (pinned open or opening on hover,
+ * remembered per studio).
  *
  * The previews come from the same ViewModel the Overview's deployment cards
  * use, so the studio sees exactly the environments and embeddability verdicts
@@ -131,6 +145,8 @@ function frameKeyOf(environment: StudioEnvironment | null, pageUrl: string | nul
 export function useStudioViewportViewModel(options: {
   projectId: string;
   enabled: boolean;
+  /** Whose panel preference to read: QA Studio's or PO Studio's. */
+  studio?: "qa" | "po";
 }): StudioViewportViewModel {
   const previews = useBranchPreviewsViewModel(options);
   const origin = useDashboardOrigin();
@@ -138,7 +154,7 @@ export function useStudioViewportViewModel(options: {
   const [deviceId, setDeviceId] = useState<DevicePresetId>("desktop");
   const [orientation, setOrientation] = useState<DeviceOrientation>("portrait");
   const fullScreen = useStudioFullScreen();
-  const layout = useStudioLayout();
+  const panel = useStudioPanel(options.studio ?? "qa");
   const [nonce, setNonce] = useState(0);
 
   const environments = studioEnvironments(previews.previews);
@@ -148,6 +164,11 @@ export function useStudioViewportViewModel(options: {
   const device = devicePreset(deviceId);
   const { resolution, chooseResolution, chooseCustomResolution } = useStudioResolution(deviceId);
   const copy = useCopyLink(frame.pageUrl);
+  // Measured here, not in the preview, so the toolbar (in the tab row) can say how far the page is shrunk.
+  const stage = usePaneSize<HTMLDivElement>();
+  const dimensions = resolveDeviceDimensions(device, orientation, resolution);
+  const chrome = chromeSize(frameChrome(device.frame, dimensions.orientation));
+  const scale = fitDeviceScale(dimensions.width, dimensions.height, stage.width, stage.height, chrome.width, chrome.height);
 
   function setResolution(value: string) {
     // "Custom…" starts from the size in view, so choosing it never jumps the frame.
@@ -167,7 +188,11 @@ export function useStudioViewportViewModel(options: {
     resolution,
     setResolution,
     setCustomResolution: chooseCustomResolution,
-    dimensions: resolveDeviceDimensions(device, orientation, resolution),
+    dimensions,
+    attachStage: stage.ref,
+    scale,
+    scalePercent: scalePercent(scale),
+    scaleLabel: scaleLabel(scale),
     canRotate: device.rotatable,
     rotate: () => {
       if (device.rotatable) setOrientation((value) => (value === "portrait" ? "landscape" : "portrait"));
@@ -179,6 +204,6 @@ export function useStudioViewportViewModel(options: {
     reload: () => setNonce((value) => value + 1),
     retry: previews.reload,
     ...fullScreen,
-    ...layout,
+    ...panel,
   };
 }

@@ -397,6 +397,60 @@
   background: var(--danger);
 }
 
+.deploy-card__dot--idle {
+  background: var(--text-muted);
+}
+
+/* ── Environment tabs: one environment's card shows at a time ─────────── */
+
+.deploy-envs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.deploy-envs__tab {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 9.5rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.deploy-envs__tab:hover {
+  background: var(--layer-1-hover);
+}
+
+.deploy-envs__tab[aria-selected="true"] {
+  border-color: var(--border-brand);
+  background: var(--layer-1);
+  color: var(--text-primary);
+}
+
+.deploy-envs__tab:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.deploy-envs__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.deploy-envs__line {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
 /* Identifiers keep the mono stack the branch cards use. */
 .deploy-card__branch,
 .deploy-card__sha {
@@ -416,6 +470,74 @@ a.deploy-card__sha:hover {
 .deploy-card__commit-message {
   color: var(--text-secondary);
   font-weight: 500;
+}
+
+/* Recent deploys: folded under the card, one line each. */
+.deploy-card__recent {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.deploy-card__recent-toggle {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.deploy-card__recent-toggle:hover {
+  color: var(--text-primary);
+}
+
+.deploy-card__recent-toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.deploy-card__deploys {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deploy-card__deploys[hidden] {
+  display: none;
+}
+
+.deploy-card__deploy {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.deploy-card__deploy-status,
+.deploy-card__deploy-commit {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.deploy-card__deploy-status {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.deploy-card__deploy-meta {
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 /* ── Active branches ──────────────────────────────────────────────────────── */
@@ -550,6 +672,11 @@ a.deploy-card__sha:hover {
 @media (max-width: 620px) {
   .deploy-card__head {
     flex-direction: column;
+  }
+
+  .deploy-card__deploy {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.15rem;
   }
 
   .deploy-card__facts {

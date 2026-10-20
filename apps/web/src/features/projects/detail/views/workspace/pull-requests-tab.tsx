@@ -163,24 +163,26 @@ export function PullRequestsTab({
           {notice}
         </p>
       )}
-      <div className="ws-toolbar ws-toolbar--between">
-        <div className="ws-filters" role="group" aria-label="Pull request state">
-          {FILTERS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className="ws-filter"
-              aria-pressed={filter === option.id}
-              onClick={() => {
-                setLoading(true);
-                setFocusNumber(null);
-                setFilter(option.id);
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+      <div className="ws-toolbar ws-toolbar--between ws-pr-toolbar">
+        <label className="ws-pr-filter">
+          <span>State</span>
+          <select
+            className="ws-select"
+            aria-label="Pull request state"
+            value={filter}
+            onChange={(event) => {
+              setLoading(true);
+              setFocusNumber(null);
+              setFilter(event.target.value as StateFilter);
+            }}
+          >
+            {FILTERS.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="ws-toolbar__end">
           {appRole !== "qa" && (
             <button

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef, type RefObject } from "react";
+
 import {
   Avatar,
   Dialog,
@@ -16,6 +18,8 @@ import {
   DEVELOPER_ACCESS_NOTE,
   MEMBER_KIND_LABELS,
   memberDisplayName,
+  opensOnProjectMembers,
+  PROJECT_MEMBERS_ANCHOR,
   QA_ACCESS_NOTE,
   RESYNC_NOTE,
   STUB_SYNC_NOTE,
@@ -30,9 +34,11 @@ type PanelProps = Readonly<{ vm: ProjectMembersViewModel }>;
  * renders nothing for anyone else.
  */
 export function ProjectMembersPanel({ vm }: PanelProps) {
+  const sectionRef = useRef<HTMLElement | null>(null);
+  useScrollIntoViewWhenLinked(sectionRef, vm.visible && vm.status === "ready");
   if (!vm.visible) return null;
   return (
-    <section className="project-members" aria-label="Project members">
+    <section id={PROJECT_MEMBERS_ANCHOR} ref={sectionRef} className="project-members" aria-label="Project members">
       <SectionHeader
         title="Project members"
         count={vm.status === "ready" ? vm.members.length : undefined}
@@ -45,6 +51,21 @@ export function ProjectMembersPanel({ vm }: PanelProps) {
       <RemoveMemberDialog vm={vm} />
     </section>
   );
+}
+
+/**
+ * Opened through a `#members` link (the Members action on a Project in the
+ * explorer): bring the panel into view once its list has loaded. It renders
+ * after the page's own data, so the browser's jump to the anchor finds
+ * nothing. Once per mount, so a reload after an add does not scroll again.
+ */
+function useScrollIntoViewWhenLinked(ref: RefObject<HTMLElement | null>, ready: boolean) {
+  const done = useRef(false);
+  useEffect(() => {
+    if (!ready || done.current) return;
+    done.current = true;
+    if (opensOnProjectMembers(window.location.hash)) ref.current?.scrollIntoView?.({ block: "start" });
+  }, [ready, ref]);
 }
 
 function PanelActions({ vm }: PanelProps) {

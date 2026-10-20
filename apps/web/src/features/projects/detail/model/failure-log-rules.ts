@@ -91,6 +91,21 @@ export function logUnavailableMessage(reason: LogUnavailableReason | undefined):
   return UNAVAILABLE[reason ?? "log-expired"];
 }
 
+/**
+ * Whether GitHub can serve this job's log. It provides a job's log only once
+ * the job has finished, and answers 404 before that, which used to read as
+ * "ALPHACI has no access to Actions logs" for every running job.
+ */
+export function jobLogReady(jobStatus: string): boolean {
+  return jobStatus === "completed";
+}
+
+/** Why an unfinished job has no log yet, for the job's log panel. */
+export function jobLogPendingMessage(jobStatus: string): string {
+  const state = jobStatus === "in_progress" ? "is still running" : "has not started yet";
+  return `GitHub only provides a job's log once the job finishes, and this job ${state}. It appears here when the job is done.`;
+}
+
 const ERROR_MARKER = "##[error]";
 const EXIT_CODE_ONLY = /^Process completed with exit code \d+\.?$/;
 const PREVIEW_LINES = 3;

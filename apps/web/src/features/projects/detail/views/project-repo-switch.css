@@ -135,7 +135,30 @@
   font-weight: 600;
 }
 
-.repo-switch__option:not([aria-disabled="true"]):not([aria-checked="true"]):hover {
+/* A two-repository pair's name, once, before its FRONTEND and BACKEND halves.
+ * A pair after another item gets a divider so pairs read as groups. */
+.repo-switch__pair {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  max-width: 14rem;
+  padding: 0 0.3rem 0 0.55rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+
+.repo-switch__pair:not(:first-child) {
+  margin-left: 0.3rem;
+  border-left: 1px solid var(--border);
+}
+
+.repo-switch__option:not([aria-disabled="true"]):not(
+    [aria-checked="true"]
+  ):hover {
   background: var(--layer-2-hover);
   color: var(--text-primary);
 }
@@ -227,24 +250,26 @@
   gap: 0.15rem;
   padding: 0.15rem;
   border-radius: var(--radius-pill);
+  max-width: min(52vw, 40rem);
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .project-tabs-row .repo-switch__option {
   min-height: 1.6rem;
   padding: 0.2rem 0.7rem;
   font-size: 0.78rem;
+  max-width: 13rem;
 }
 
-/* Role only beside the tabs: with both repository names the switch is ~375px
- * and pushed the last tab ("Settings") under it at 1440px. The page title
- * already names the open repository; the name stays in the accessible name
- * (visually hidden, not display:none) and in the hover tooltip. */
+/* Keep each repository name visible so projects with repeated roles remain
+ * distinguishable in the switch. Clamp long names and let the switch scroll. */
 .project-tabs-row .repo-switch__name {
-  position: absolute;
-  width: 1px;
-  height: 1px;
+  position: static;
+  width: auto;
+  height: auto;
   overflow: hidden;
-  clip-path: inset(50%);
+  clip-path: none;
   white-space: nowrap;
 }
 
@@ -337,6 +362,25 @@
  * controls take the line under it, closer than the sections' own gap. */
 .project-sections > .project-studio-controls {
   margin-top: -0.55rem;
+}
+
+/* A studio tab is a workspace that fills the window: the tab row sits close
+ * under the app header, and neither the page body nor the shell keeps bottom
+ * padding, so the studio (which sizes itself to the window's bottom edge)
+ * leaves nothing for the page to scroll. Only the studio tabs render the
+ * controls slot, so the other tabs keep the page's usual spacing. */
+.dash-shell:has(.project-studio-controls) {
+  padding-bottom: 0;
+}
+
+.project-page-body:has(.project-studio-controls) {
+  padding-top: 0.4rem;
+  padding-bottom: 0;
+}
+
+.project-page-body:has(.project-studio-controls)
+  .project-detail-header.project-detail-header--tabs {
+  padding-bottom: 0;
 }
 
 @media (max-width: 640px) {
@@ -451,15 +495,19 @@
   align-self: flex-end;
 }
 
-.project-detail-header--tabs.project-detail-header--bare > .project-detail-header__aside,
-.project-detail-header--tabs.project-detail-header--bare > .project-folder-header__aside {
+.project-detail-header--tabs.project-detail-header--bare
+  > .project-detail-header__aside,
+.project-detail-header--tabs.project-detail-header--bare
+  > .project-folder-header__aside {
   align-self: stretch;
 }
 
 /* A Developer's and Admin's aside: the repository switch on one short row
  * above the identity. */
-.project-detail-header--summary:not(.project-detail-header--tabs) > .project-folder-header__aside,
-.project-detail-header--bare:not(.project-detail-header--tabs) > .project-folder-header__aside {
+.project-detail-header--summary:not(.project-detail-header--tabs)
+  > .project-folder-header__aside,
+.project-detail-header--bare:not(.project-detail-header--tabs)
+  > .project-folder-header__aside {
   flex-flow: row wrap;
   align-items: center;
   justify-content: flex-end;
@@ -491,7 +539,8 @@
   }
 
   /* The switch alone: still one short row, at the right. */
-  .project-detail-header--summary:not(.project-detail-header--tabs) > .project-folder-header__aside {
+  .project-detail-header--summary:not(.project-detail-header--tabs)
+    > .project-folder-header__aside {
     align-items: center;
     justify-content: flex-end;
   }

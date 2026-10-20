@@ -6,12 +6,14 @@ export function notificationTone(
   eventCode: string,
 ): "success" | "warning" | "info" {
   const code = eventCode.toLowerCase();
+  if (code === "hierarchy.group.member_added") return "success";
   if (code.includes("failed") || code.includes("drift")) return "warning";
   if (code.includes("created") || code.includes("provisioned")) return "success";
   return "info";
 }
 
 export function notificationLabel(eventCode: string) {
+  if (eventCode === "hierarchy.group.member_added") return "Workspace access";
   return eventCode
     .split("_")
     .filter(Boolean)

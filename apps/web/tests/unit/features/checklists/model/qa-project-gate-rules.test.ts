@@ -43,6 +43,15 @@ describe("error codes (product sentences)", () => {
     expect(isStaleCode(apiErrorWith(409, { code: "QA_NO_REQUIREMENTS" }))).toBe(false);
   });
 
+  it("explains an Approved sign-off refused for items the run lacked, and offers a reload to see them", () => {
+    const refused = apiErrorWith(409, { code: "QA_RUN_MISSING_ITEMS", missingItems: 2, message: "raw" });
+    expect(qaActionError(refused, "x")).toEqual({
+      message:
+        "Requirement items were added after this run started, so QA has not verified them. They are now in the run as Pending: reload the run, verify them, then sign off.",
+      stale: true,
+    });
+  });
+
   it("uses the sentences on the legacy run and checklist screens too", () => {
     expect(qaActionError(apiErrorWith(409, { code: "QA_RUN_LEGACY_READONLY", message: "raw" }), "x")).toEqual({
       message: QA_ERROR_MESSAGES.QA_RUN_LEGACY_READONLY,
@@ -138,7 +147,7 @@ describe("the Project-level merge gate (section 3.2)", () => {
     expect(promotionRunState(projectStatus({ run: { id: "r", verdict: "APPROVED", stale: true } })).tone).toBe("warning");
     expect(promotionRunState(projectStatus({ run: { id: "r", verdict: "REJECTED" } })).label).toBe("Latest sign-off is Rejected");
     expect(promotionRunState(projectStatus({ run: { id: "r", verdict: "CONDITIONAL" } })).label).toMatch(/Conditional/);
-    expect(promotionRunState(projectStatus({ run: null })).label).toBe("No signed-off Project QA run yet");
+    expect(promotionRunState(projectStatus({ run: null })).label).toBe("QA has not signed the Project off yet");
     expect(approvedCountLabel(projectStatus())).toBe("Project run approved for the current heads");
     expect(approvedCountLabel(projectStatus({ scope: "unfiled" }))).toBe("Not filed under a Project");
   });
@@ -147,11 +156,11 @@ describe("the Project-level merge gate (section 3.2)", () => {
     const unfiled = projectStatus({ scope: "unfiled", eligible: false });
     expect(blockingReasons(unfiled)).toEqual([UNFILED_REASON]);
     expect(mergeDisabledReason(unfiled, null)).toBe(UNFILED_REASON);
-    expect(blockingReasons(projectStatus({ eligible: false, reasons: [] }))[0]).toMatch(/latest signed-off QA run/);
+    expect(blockingReasons(projectStatus({ eligible: false, reasons: [] }))[0]).toMatch(/QA must sign the Project off Approved/);
     expect(blockingReasons(projectStatus({ eligible: false, reasons: ['Project run is stale: "api" moved'] }))).toEqual([
       'Project run is stale: "api" moved',
     ]);
-    expect(mergeDisabledReason(projectStatus({ eligible: false }), null)).toMatch(/every repository's current uat head/);
+    expect(mergeDisabledReason(projectStatus({ eligible: false }), null)).toMatch(/QA signs the Project off Approved on its current uat build/);
     expect(mergeDisabledReason(projectStatus({ eligible: true }), HEAD_SHA)).toMatch(/already merged/);
     expect(mergeDisabledReason(projectStatus({ eligible: true }), null)).toBeNull();
     expect(SHA_BE_NEW).toHaveLength(40);

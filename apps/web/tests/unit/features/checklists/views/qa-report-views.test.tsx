@@ -3,14 +3,17 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { qaRunsRepository } from "../../../../../src/features/checklists/data/qa-runs-repository";
 import { QaReportView } from "../../../../../src/features/checklists/report";
-import { useQaExportViewModel } from "../../../../../src/features/checklists/studio/view-models/use-qa-export-view-model";
+import {
+  useExportViewModel,
+  useQaExportViewModel,
+} from "../../../../../src/features/checklists/studio/view-models/use-qa-export-view-model";
 import { ExportMenu, ExportStatus } from "../../../../../src/features/checklists/studio/views/export-menu";
 import { downloadBlob } from "../../../../../src/shared/browser/download-blob";
 import { apiError } from "../checklist-fixtures";
 import { frozenReport, liveReport } from "../qa-report-fixtures";
 
 jest.mock("../../../../../src/features/checklists/data/qa-runs-repository", () => ({
-  qaRunsRepository: { report: jest.fn(), reportMarkdown: jest.fn() },
+  qaRunsRepository: { report: jest.fn(), reportMarkdown: jest.fn(), reportExcel: jest.fn() },
 }));
 jest.mock("../../../../../src/shared/browser/download-blob", () => ({ downloadBlob: jest.fn() }));
 
@@ -75,6 +78,21 @@ function ExportHarness() {
   );
 }
 
+/** A report the server cannot build as Excel (a CI run's): Markdown and JSON instead. */
+function NoExcelHarness() {
+  const vm = useExportViewModel({
+    pdfHref: "/report?print=1",
+    fetchMarkdown: () => repo.reportMarkdown("project-1", "run-1"),
+    fetchJson: async () => ({ filename: "run.json", report: await repo.report("project-1", "run-1") }),
+  });
+  return (
+    <>
+      <ExportMenu vm={vm} />
+      <ExportStatus vm={vm} />
+    </>
+  );
+}
+
 function trigger(container: HTMLElement): HTMLButtonElement {
   return container.querySelector('button[aria-haspopup="menu"]') as HTMLButtonElement;
 }
@@ -105,20 +123,20 @@ describe("ExportMenu", () => {
     const menu = container.querySelector('[role="menu"]') as HTMLElement;
     expect(button.getAttribute("aria-controls")).toBe(menu.id);
     const items = [...menu.querySelectorAll('[role="menuitem"]')].map((node) => node.textContent);
+    expect(items).toHaveLength(2);
     expect(items[0]).toContain("Download PDF");
-    expect(items[1]).toContain("Copy PR Markdown");
-    expect(items[2]).toContain("Download JSON");
+    expect(items[1]).toContain("Download Excel");
     expect(document.activeElement).toBe(menuItem(container, "Download PDF"));
 
     act(() => {
       menu.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
     });
-    expect(document.activeElement).toBe(menuItem(container, "Copy PR Markdown"));
+    expect(document.activeElement).toBe(menuItem(container, "Download Excel"));
     act(() => {
       menu.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }));
       menu.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }));
     });
-    expect(document.activeElement).toBe(menuItem(container, "Download JSON"));
+    expect(document.activeElement).toBe(menuItem(container, "Download Excel"));
 
     act(() => {
       menu.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
@@ -147,9 +165,43 @@ describe("ExportMenu", () => {
     expect(repo.report).not.toHaveBeenCalled();
   });
 
+  it("Download Excel saves the server's workbook under the report's name", async () => {
+    const workbook = new Blob(["xlsx"]);
+    repo.report.mockResolvedValue(frozenReport());
+    repo.reportExcel.mockResolvedValue(workbook);
+    const container = await render(<ExportHarness />);
+    click(trigger(container));
+    click(menuItem(container, "Download Excel"));
+    await settle();
+    expect(repo.reportExcel).toHaveBeenCalledWith("project-1", "run-1");
+    expect(download).toHaveBeenCalledWith("QA-Report-orders-api-feat-checkout-a1b2c3d.xlsx", workbook);
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it("says so when the Excel report cannot be downloaded", async () => {
+    repo.report.mockResolvedValue(frozenReport());
+    repo.reportExcel.mockRejectedValue(new Error("network"));
+    const container = await render(<ExportHarness />);
+    click(trigger(container));
+    click(menuItem(container, "Download Excel"));
+    await settle();
+    expect(download).not.toHaveBeenCalled();
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("The Excel report could not be downloaded");
+  });
+
+  it("offers Copy PR Markdown and Download JSON only where there is no Excel export", async () => {
+    const container = await render(<NoExcelHarness />);
+    click(trigger(container));
+    const items = [...container.querySelectorAll('[role="menuitem"]')].map((node) => node.textContent);
+    expect(items).toHaveLength(3);
+    expect(items[1]).toContain("Copy PR Markdown");
+    expect(items[2]).toContain("Download JSON");
+    expect(menuItem(container, "Download Excel")).toBeUndefined();
+  });
+
   it("Copy PR Markdown fetches the Markdown, copies it and shows Copied", async () => {
     repo.reportMarkdown.mockResolvedValue("# QA Report — orders-api");
-    const container = await render(<ExportHarness />);
+    const container = await render(<NoExcelHarness />);
     click(trigger(container));
     click(menuItem(container, "Copy PR Markdown"));
     await settle();
@@ -164,7 +216,7 @@ describe("ExportMenu", () => {
   it("shows a clear message when the clipboard refuses", async () => {
     repo.reportMarkdown.mockResolvedValue("# QA Report");
     writeText.mockRejectedValue(new Error("NotAllowedError"));
-    const container = await render(<ExportHarness />);
+    const container = await render(<NoExcelHarness />);
     click(trigger(container));
     click(menuItem(container, "Copy PR Markdown"));
     await settle();
@@ -177,13 +229,13 @@ describe("ExportMenu", () => {
 
   it("Download JSON saves the report via downloadBlob", async () => {
     repo.report.mockResolvedValue(frozenReport());
-    const container = await render(<ExportHarness />);
+    const container = await render(<NoExcelHarness />);
     click(trigger(container));
     click(menuItem(container, "Download JSON"));
     await settle();
     expect(repo.report).toHaveBeenCalledWith("project-1", "run-1");
     expect(repo.reportMarkdown).not.toHaveBeenCalled();
-    expect(download).toHaveBeenCalledWith("QA-Report-orders-api-feat-checkout-a1b2c3d.json", expect.any(Blob));
+    expect(download).toHaveBeenCalledWith("run.json", expect.any(Blob));
   });
 });
 

@@ -182,7 +182,7 @@ function StageCard({ result }: Readonly<{ result: QaStageResult }>) {
       </div>
       <StageMeta result={result} disclosure={cases ? null : { id: failuresId, open, onToggle: toggle }} />
       {cases ? (
-        <TestCaseList cases={cases} total={result.tests?.total} label={`${stageName(result.stage)} tests`} />
+        <TestCaseList cases={cases} total={result.tests?.total} label={`${stageName(result.stage)} tests`} foldable />
       ) : (
         <FailureList id={failuresId} stage={result.stage} tests={result.tests} hidden={!open} />
       )}

@@ -74,7 +74,7 @@ function LegacyRunLink({ row }: Readonly<{ row: LegacyRunRow }>) {
       <StatusDot tone={badge.tone} />
       <span className="team-project-copy">
         <strong>{row.name}</strong>
-        <small>QA run {badge.label.toLowerCase()}</small>
+        <small>QA testing {badge.label.toLowerCase()}</small>
       </span>
       <span className={`team-status-badge team-status-badge--${badge.tone}`}>{badge.label}</span>
     </Link>
@@ -111,9 +111,9 @@ function StillVerifying({ production }: Readonly<{ production: ProductionView }>
 }
 
 function LegacyList({ production, reduced }: Readonly<{ production: ProductionView; reduced: boolean | null }>) {
-  if (!production.legacy.length) return <EmptyLine>No Project has a QA run yet.</EmptyLine>;
+  if (!production.legacy.length) return <EmptyLine>No Project is in QA testing yet.</EmptyLine>;
   return (
-    <HomeRowList label="Projects with a QA run" reduced={reduced}>
+    <HomeRowList label="Projects in QA testing" reduced={reduced}>
       {production.legacy.map((row) => (
         <HomeRow key={row.deliveryProjectId} reduced={reduced}>
           <LegacyRunLink row={row} />

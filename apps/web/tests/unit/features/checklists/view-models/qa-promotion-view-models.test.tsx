@@ -163,7 +163,7 @@ describe("useQaPromotionViewModel — merge", () => {
     expect(vm.current().outcome).toEqual({
       kind: "merged",
       headSha: HEAD_SHA,
-      result: { merged: true, sha: "5555555abcdef", message: "Pull Request successfully merged", pullRequest: { number: 42, url: "https://github.com/t/s/pull/42" } },
+      result: { merged: true, sha: "5555555abcdef", message: "Pull Request successfully merged", pullRequest: { number: 42, url: "https://github.com/t/s/pull/42" }, alreadyInMain: false },
     });
     expect(repo.promotion).toHaveBeenCalledTimes(2);
     expect(vm.current().disabledReason).toBe("uat @ 9f8e7d6 is already merged into main.");

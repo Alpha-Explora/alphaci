@@ -105,7 +105,7 @@ export function PrintSonar({ sonar }: Readonly<{ sonar: SonarResult | undefined 
   const issues = sonar.issues ?? [];
   return (
     <div className="qa-report-auto__failures">
-      <h4 className="qa-report-auto__failures-title">SonarCloud · {gate.label}</h4>
+      <h4 className="qa-report-auto__failures-title">Code analysis · {gate.label}</h4>
       {gate.blockedReason ? <p className="qa-report-auto__message">{gate.blockedReason}</p> : null}
       {(sonar.failedConditions ?? []).length > 0 ? (
         <ul className="qa-report-prose">

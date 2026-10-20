@@ -1309,6 +1309,18 @@ html:not([data-theme="light"]) .dash-shell {
   font-size: 0.7rem;
 }
 
+/* Between a delivered iteration and the next: who the team waits for. */
+.home-work-waiting {
+  margin: 0.3rem 0 0;
+  padding: 0.3rem 0.5rem;
+  border-left: 2px solid var(--accent-violet);
+  border-radius: 0 0.4rem 0.4rem 0;
+  background: var(--accent-violet-light);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
 /* An empty team, for a role that cannot create its first Project. */
 .home-waiting {
   display: flex;

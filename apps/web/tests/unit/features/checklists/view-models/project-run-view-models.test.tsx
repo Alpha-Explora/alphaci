@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
+import { iterationsRepository } from "../../../../../src/features/checklists/data/iterations-repository";
 import { projectQaRunsRepository } from "../../../../../src/features/checklists/data/project-qa-runs-repository";
 import { qaRunsRepository } from "../../../../../src/features/checklists/data/qa-runs-repository";
 import { normalizeProjectMyItems, normalizeProjectRun, normalizeProjectRunCurrent } from "../../../../../src/features/checklists/model/project-run-rules";
@@ -30,6 +31,10 @@ jest.mock("../../../../../src/features/checklists/data/project-qa-runs-repositor
   },
 }));
 
+jest.mock("../../../../../src/features/checklists/data/iterations-repository", () => ({
+  iterationsRepository: { current: jest.fn().mockResolvedValue(null), mergeAll: jest.fn() },
+}));
+
 jest.mock("../../../../../src/features/checklists/data/qa-runs-repository", () => ({
   qaRunsRepository: { current: jest.fn(), promotion: jest.fn() },
 }));
@@ -40,6 +45,7 @@ jest.mock("../../../../../src/features/checklists/data/checklists-repository", (
 
 const repo = projectQaRunsRepository as jest.Mocked<typeof projectQaRunsRepository>;
 const legacy = qaRunsRepository as jest.Mocked<typeof qaRunsRepository>;
+const iterations = iterationsRepository as jest.Mocked<typeof iterationsRepository>;
 
 let root: Root | null = null;
 
@@ -149,6 +155,34 @@ describe("useProjectRunViewModel", () => {
     act(() => vm.current().applyRun(run({ id: "other" })));
     expect(vm.current().run?.id).toBe("prun-1");
   });
+
+  it("refreshes in the background: the run stays on screen until the new one arrives", async () => {
+    repo.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
+    const vm = hook("dp-1");
+    await flush();
+    let resolve: (value: ReturnType<typeof normalizeProjectRunCurrent>) => void = () => undefined;
+    repo.current.mockReturnValueOnce(new Promise((done) => (resolve = done)));
+
+    act(() => vm.current().refresh());
+    expect(vm.current().status).toBe("ready");
+    expect(vm.current().run?.id).toBe("prun-1");
+
+    await act(async () => resolve(normalizeProjectRunCurrent({ run: projectRunWire({ status: "signed_off" }) })));
+    await flush();
+    expect(vm.current().status).toBe("ready");
+    expect(vm.current().run?.status).toBe("signed_off");
+  });
+
+  it("falls back to a full reload when a background refresh fails", async () => {
+    repo.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
+    const vm = hook("dp-1");
+    await flush();
+    repo.current.mockRejectedValueOnce(apiErrorWith(500));
+    act(() => vm.current().refresh());
+    await flush();
+    expect(repo.current).toHaveBeenCalledTimes(3);
+    expect(vm.current().status).toBe("ready");
+  });
 });
 
 describe("useProjectVerificationViewModel", () => {
@@ -181,11 +215,11 @@ describe("useProjectVerificationViewModel", () => {
     expect(repo.setVerification).not.toHaveBeenCalled();
   });
 
-  it("asks for a severity before Returned to dev, then sends it", async () => {
+  it("asks for a severity before Failed (which sends it back to the Developers), then sends it", async () => {
     const value = run();
     repo.setVerification.mockResolvedValue(null);
     const { vm, onReload } = hook(value);
-    act(() => vm.current().chooseStatus(value.items[0], "returned_to_dev"));
+    act(() => vm.current().chooseStatus(value.items[0], "failed"));
     expect(vm.current().openItemId).toBe("run-item-1");
     expect(repo.setVerification).not.toHaveBeenCalled();
     await act(async () => vm.current().saveDraft(value.items[0]));
@@ -193,7 +227,7 @@ describe("useProjectVerificationViewModel", () => {
     act(() => vm.current().updateDraft({ defectSeverity: "major", notes: "Card declined" }));
     await act(async () => vm.current().saveDraft(value.items[0]));
     expect(repo.setVerification).toHaveBeenCalledWith("dp-1", "prun-1", "run-item-1", {
-      status: "returned_to_dev",
+      status: "failed",
       expectedRowVersion: 1,
       notes: "Card declined",
       defectSeverity: "major",
@@ -212,7 +246,7 @@ describe("useProjectVerificationViewModel", () => {
 
     repo.setVerification.mockRejectedValue(apiErrorWith(409, { code: "QA_ITEM_STALE", message: "changed" }));
     const { vm } = hook(value);
-    act(() => vm.current().chooseStatus(value.items[0], "blocked"));
+    act(() => vm.current().chooseStatus(value.items[0], "passed"));
     await flush();
     expect(vm.current().error).toMatchObject({ itemId: "run-item-1", stale: true });
     act(() => vm.current().dismissError());
@@ -220,6 +254,16 @@ describe("useProjectVerificationViewModel", () => {
     act(() => vm.current().openDetails(value.items[0]));
     act(() => vm.current().closeDetails());
     expect(vm.current().openItemId).toBeNull();
+  });
+
+  it("never sends Blocked or Returned to dev: QA picks Pending, Passed or Failed", async () => {
+    const value = run();
+    const { vm } = hook(value);
+    expect(vm.current().allowedStatuses(value.items[0])).toEqual(["pending", "passed", "failed"]);
+    act(() => vm.current().chooseStatus(value.items[0], "blocked"));
+    act(() => vm.current().chooseStatus(value.items[0], "returned_to_dev"));
+    await flush();
+    expect(repo.setVerification).not.toHaveBeenCalled();
   });
 });
 
@@ -328,6 +372,8 @@ describe("useStudioRunsViewModel", () => {
     expect(vm.current().projectMode).toBe(true);
     expect(vm.current().status).toBe("ready");
     expect(legacy.current).not.toHaveBeenCalled();
+    // The tab bar's Merge to main needs the Project's delivery.
+    expect(iterations.current).toHaveBeenCalledWith("dp-1");
   });
 
   it("falls back to the repository run when the server has no Project runs", async () => {
@@ -337,6 +383,7 @@ describe("useStudioRunsViewModel", () => {
     await flush();
     expect(vm.current().projectMode).toBe(false);
     expect(vm.current().status).toBe("unavailable");
+    expect(vm.current().delivery.canMergeAll).toBe(false);
   });
 
   it("waits while the repository's Project is read, then keeps repository runs when it has none", async () => {
@@ -349,5 +396,6 @@ describe("useStudioRunsViewModel", () => {
     await flush();
     expect(repo.current).not.toHaveBeenCalled();
     expect(vm.current().status).toBe("idle");
+    expect(iterations.current).not.toHaveBeenCalled();
   });
 });

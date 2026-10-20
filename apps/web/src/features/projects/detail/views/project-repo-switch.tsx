@@ -4,7 +4,12 @@ import { useRouter } from "next/navigation";
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 
 import type { ProjectDetailTab } from "../model/project-detail-tab-rules";
-import { nextEnabledIndex, switchHref, UNLINKED_REPO_HINT } from "../model/project-folder-rules";
+import {
+  nextEnabledIndex,
+  repoSwitchOptionDisplay,
+  switchHref,
+  UNLINKED_REPO_HINT,
+} from "../model/project-folder-rules";
 import type { RepoSwitchOption } from "../model/project-folder-types";
 
 const KEY_STEPS: Readonly<Record<string, 1 | -1>> = {
@@ -82,33 +87,42 @@ export function ProjectRepoSwitch({
         aria-label={`Repositories in ${projectName}`}
         aria-busy={pendingId !== null || undefined}
       >
-        {options.map((option, index) => (
-          <button
-            key={option.key}
-            ref={(node) => {
-              buttons.current[index] = node;
-            }}
-            type="button"
-            role="radio"
-            className="repo-switch__option"
-            data-role={option.role ?? undefined}
-            data-pending={(!option.current && option.projectId === pendingId && pendingId !== null) || undefined}
-            data-tooltip={option.disabled ? UNLINKED_REPO_HINT : undefined}
-            // In the tab row the name is hidden to fit beside nine tabs; the
-            // native tooltip still names the repository on hover.
-            title={option.disabled ? undefined : option.label}
-            aria-checked={option.current}
-            aria-disabled={option.disabled || undefined}
-            aria-describedby={option.disabled ? hintId : undefined}
-            tabIndex={index === stop ? 0 : -1}
-            onClick={() => open(option)}
-            onKeyDown={(event) => onKeyDown(event, index)}
-            onFocus={() => setFocused(index)}
-          >
-            <span className="repo-switch__role">{option.roleLabel}</span>
-            <span className="repo-switch__name">{option.label}</span>
-          </button>
-        ))}
+        {options.map((option, index) => {
+          const display = repoSwitchOptionDisplay(option, pendingId);
+          return [
+            display.pairHeading === null ? null : (
+              // Names the pair once; read as part of each half's label instead.
+              <span key={`${option.key}:pair`} className="repo-switch__pair" aria-hidden="true">
+                {display.pairHeading}
+              </span>
+            ),
+            <button
+              key={option.key}
+              ref={(node) => {
+                buttons.current[index] = node;
+              }}
+              type="button"
+              role="radio"
+              className="repo-switch__option"
+              data-role={option.role ?? undefined}
+              data-paired={display.paired}
+              aria-label={display.ariaLabel}
+              data-pending={display.pending}
+              data-tooltip={display.tooltip}
+              title={display.title}
+              aria-checked={option.current}
+              aria-disabled={option.disabled || undefined}
+              aria-describedby={option.disabled ? hintId : undefined}
+              tabIndex={index === stop ? 0 : -1}
+              onClick={() => open(option)}
+              onKeyDown={(event) => onKeyDown(event, index)}
+              onFocus={() => setFocused(index)}
+            >
+              <span className="repo-switch__role">{option.roleLabel}</span>
+              {display.showName ? <span className="repo-switch__name">{option.label}</span> : null}
+            </button>,
+          ];
+        })}
       </div>
       {/* Hidden, yet still read as the disabled options' description. */}
       {anyDisabled ? (

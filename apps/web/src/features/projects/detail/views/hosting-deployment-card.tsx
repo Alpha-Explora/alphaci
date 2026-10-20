@@ -9,6 +9,7 @@ import type {
   ProjectDeploymentsResponse,
 } from "@/shared/api/contracts";
 import { deployedAgo, shortCommitSha } from "../../model/projects-rules";
+import { deployDurationLabel, deployStatusWord, deployTriggerLabel } from "../../model/deploy-facts-rules";
 import {
   deployTone,
   environmentAddress,
@@ -23,9 +24,12 @@ import {
   type HostingEnvironment,
 } from "../model/hosting-environment-rules";
 import { providerPublicUrl } from "../model/provider-urls";
+import { RollbackButton, RollbackDialog, RollbackHoldBanner, type RollbackControls } from "./hosting-rollback";
 import { HostingDot, HostingPill } from "./hosting-status";
 
 type OpenPullRequest = ((pullRequestNumber: number) => void) | undefined;
+/** Something to show at the end of a deploy row: Roll back, for those who may. */
+type RowAction = ((deploy: ProjectDeploymentHistoryItem) => ReactNode) | undefined;
 
 export interface DeploymentHistoryState {
   /** The deployment history capability is on for this deployment and project. */
@@ -47,6 +51,7 @@ export function HostingDeploymentCard({
   history,
   onOpenPullRequest,
   domains,
+  rollback = null,
 }: Readonly<{
   target: DeploymentTarget;
   environment: HostingEnvironment;
@@ -57,8 +62,14 @@ export function HostingDeploymentCard({
   onOpenPullRequest: OpenPullRequest;
   /** Production's custom domains; null elsewhere. */
   domains: ReactNode;
+  /** Roll back and Resume deploys; null for viewers who may not, or a backend without them. */
+  rollback?: RollbackControls | null;
 }>) {
   const previewsKnown = previews !== null;
+  const [rollingBackTo, setRollingBackTo] = useState<ProjectDeploymentHistoryItem | null>(null);
+  const rowAction: RowAction = rollback
+    ? (deploy) => (rollback.offers(deploy) ? <RollbackButton deploy={deploy} onSelect={setRollingBackTo} /> : null)
+    : undefined;
   return (
     <section className="hosting-card hosting-deploy" aria-labelledby="hosting-deploy-heading">
       <div className="hosting-card__head">
@@ -67,6 +78,7 @@ export function HostingDeploymentCard({
         </h4>
         <HostingPill tone={environment.tone} label={environmentPillLabel(environment, previewsKnown)} />
       </div>
+      {rollback ? <RollbackHoldBanner controls={rollback} /> : null}
       {environment.kind === "previews" ? (
         <PreviewBranchList
           branches={environment.previewBranches}
@@ -83,8 +95,18 @@ export function HostingDeploymentCard({
         allDeploys={allDeploys}
         history={history}
         onOpenPullRequest={onOpenPullRequest}
+        rowAction={rowAction}
       />
       {domains}
+      {rollback ? (
+        <RollbackDialog
+          key={rollingBackTo?.id ?? "closed"}
+          target={target}
+          deploy={rollingBackTo}
+          controls={rollback}
+          onClose={() => setRollingBackTo(null)}
+        />
+      ) : null}
     </section>
   );
 }
@@ -199,12 +221,14 @@ function RecentDeploys({
   allDeploys,
   history,
   onOpenPullRequest,
+  rowAction,
 }: Readonly<{
   environment: HostingEnvironment;
   deploys: EnvironmentDeploys;
   allDeploys: ReadonlyArray<ProjectDeploymentHistoryItem>;
   history: DeploymentHistoryState;
   onOpenPullRequest: OpenPullRequest;
+  rowAction: RowAction;
 }>) {
   const [showAll, setShowAll] = useState(false);
   const recent = deploys.items.slice(0, RECENT_DEPLOY_LIMIT);
@@ -217,7 +241,13 @@ function RecentDeploys({
     <div className="hosting-section">
       {recent.length ? <h5 className="hosting-section__title">Recent deploys</h5> : null}
       {notes}
-      <DeployList items={recent} showBranch={showBranch} onOpenPullRequest={onOpenPullRequest} label="Recent deploys" />
+      <DeployList
+        items={recent}
+        showBranch={showBranch}
+        onOpenPullRequest={onOpenPullRequest}
+        label="Recent deploys"
+        rowAction={rowAction}
+      />
       {allDeploys.length > recent.length ? (
         <>
           <button
@@ -229,7 +259,13 @@ function RecentDeploys({
             {showAll ? "Hide all deploys" : `All deploys (${allDeploys.length})`}
           </button>
           {showAll ? (
-            <DeployList items={allDeploys} showBranch onOpenPullRequest={onOpenPullRequest} label="All deploys" />
+            <DeployList
+              items={allDeploys}
+              showBranch
+              onOpenPullRequest={onOpenPullRequest}
+              label="All deploys"
+              rowAction={rowAction}
+            />
           ) : null}
         </>
       ) : null}
@@ -259,17 +295,25 @@ function DeployList({
   showBranch,
   onOpenPullRequest,
   label,
+  rowAction,
 }: Readonly<{
   items: ReadonlyArray<ProjectDeploymentHistoryItem>;
   showBranch: boolean;
   onOpenPullRequest: OpenPullRequest;
   label: string;
+  rowAction: RowAction;
 }>) {
   if (!items.length) return null;
   return (
     <ul className="hosting-rows" aria-label={label}>
       {items.map((deploy) => (
-        <DeployRow key={deploy.id} deploy={deploy} showBranch={showBranch} onOpenPullRequest={onOpenPullRequest} />
+        <DeployRow
+          key={deploy.id}
+          deploy={deploy}
+          showBranch={showBranch}
+          onOpenPullRequest={onOpenPullRequest}
+          action={rowAction?.(deploy) ?? null}
+        />
       ))}
     </ul>
   );
@@ -279,13 +323,20 @@ function DeployRow({
   deploy,
   showBranch,
   onOpenPullRequest,
-}: Readonly<{ deploy: ProjectDeploymentHistoryItem; showBranch: boolean; onOpenPullRequest: OpenPullRequest }>) {
+  action,
+}: Readonly<{
+  deploy: ProjectDeploymentHistoryItem;
+  showBranch: boolean;
+  onOpenPullRequest: OpenPullRequest;
+  action: ReactNode;
+}>) {
   const sha = shortCommitSha(deploy.commitSha);
+  const how = [deployTriggerLabel(deploy.trigger), deployDurationLabel(deploy)].filter(Boolean).join(" · ");
   return (
     <li className="hosting-row">
       <span className="hosting-row__status">
         <HostingDot tone={deployTone(deploy.status)} />
-        {deploy.status}
+        {deployStatusWord(deploy.status)}
       </span>
       <span className="hosting-row__main">
         {sha ? <code className="hosting-mono">{sha}</code> : null}
@@ -293,7 +344,9 @@ function DeployRow({
       </span>
       {showBranch && deploy.branch ? <code className="hosting-mono hosting-chip">{deploy.branch}</code> : null}
       <PullRequestChip number={deploy.pullRequestNumber} onOpenPullRequest={onOpenPullRequest} />
+      {how ? <span className="hosting-row__how">{how}</span> : null}
       <span className="hosting-row__time">{deployedAgo(deploy.createdAt)}</span>
+      {action}
     </li>
   );
 }

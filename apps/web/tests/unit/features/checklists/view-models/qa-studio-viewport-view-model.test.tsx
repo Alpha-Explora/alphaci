@@ -3,10 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { projectsRepository } from "../../../../../src/features/projects/data/projects-repository";
 import { useStudioFullScreen } from "../../../../../src/features/checklists/studio/view-models/use-studio-full-screen";
-import {
-  STUDIO_LAYOUT_KEY,
-  useStudioLayout,
-} from "../../../../../src/features/checklists/studio/view-models/use-studio-layout";
+import { useStudioPanel } from "../../../../../src/features/checklists/studio/view-models/use-studio-panel";
 import { STUDIO_RESOLUTION_KEYS } from "../../../../../src/features/checklists/studio/view-models/use-studio-resolution";
 import { useStudioViewportViewModel } from "../../../../../src/features/checklists/studio/view-models/use-studio-viewport-view-model";
 import type { ProjectBranchPreview } from "../../../../../src/shared/api/contracts";
@@ -129,29 +126,57 @@ describe("useStudioFullScreen", () => {
     pressEscape();
   });
 
-  it("opens, minimizes and toggles the floating checklist, and snaps it between corners", () => {
-    const vm = renderHook(() => useStudioFullScreen());
-    expect(vm().isChecklistOpen).toBe(false);
-    expect(vm().floatingSide).toBe("right");
-    act(() => vm().openChecklist());
-    expect(vm().isChecklistOpen).toBe(true);
-    act(() => vm().minimizeChecklist());
-    expect(vm().isChecklistOpen).toBe(false);
-    act(() => vm().toggleChecklist());
-    expect(vm().isChecklistOpen).toBe(true);
-    act(() => vm().snapChecklist());
-    expect(vm().floatingSide).toBe("left");
-    act(() => vm().snapChecklist());
-    expect(vm().floatingSide).toBe("right");
+});
+
+describe("useStudioPanel", () => {
+  it("starts unpinned, like the app's left rail, and pins and unpins", () => {
+    const vm = renderHook(() => useStudioPanel("qa"));
+    expect(vm().isRailPinned).toBe(false);
+    expect(vm().railHoverSuppressed).toBe(false);
+    act(() => vm().toggleRailPinned());
+    expect(vm().isRailPinned).toBe(true);
+    // Pinning never suppresses the hover: the rail is open anyway.
+    expect(vm().railHoverSuppressed).toBe(false);
+    act(() => vm().toggleRailPinned());
+    expect(vm().isRailPinned).toBe(false);
   });
 
-  it("remembers whether the drawer was open across leaving and re-entering full screen", () => {
-    const vm = renderHook(() => useStudioFullScreen());
-    act(() => vm().enterFullScreen());
-    act(() => vm().openChecklist());
-    act(() => vm().exitFullScreen());
-    act(() => vm().enterFullScreen());
-    expect(vm().isChecklistOpen).toBe(true);
+  it("folds on unpin even under the pointer, until the pointer leaves", () => {
+    const vm = renderHook(() => useStudioPanel("qa"));
+    act(() => vm().toggleRailPinned());
+    act(() => vm().toggleRailPinned());
+    expect(vm().railHoverSuppressed).toBe(true);
+    act(() => vm().releaseRailHover());
+    expect(vm().railHoverSuppressed).toBe(false);
+  });
+
+  it("remembers the pin in this browser, per studio", () => {
+    const vm = renderHook(() => useStudioPanel("qa"));
+    act(() => vm().toggleRailPinned());
+    expect(window.localStorage.getItem("alphaci.qa-studio.rail-pinned")).toBe("1");
+    unmount();
+    expect(renderHook(() => useStudioPanel("qa"))().isRailPinned).toBe(true);
+    unmount();
+    // PO Studio's rail is its own choice.
+    expect(renderHook(() => useStudioPanel("po"))().isRailPinned).toBe(false);
+  });
+
+  it("still pins when storage throws, and starts unpinned", () => {
+    const get = jest.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    const set = jest.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    try {
+      const vm = renderHook(() => useStudioPanel("po"));
+      expect(vm().isRailPinned).toBe(false);
+      act(() => vm().toggleRailPinned());
+      expect(vm().isRailPinned).toBe(true);
+    } finally {
+      get.mockRestore();
+      set.mockRestore();
+    }
   });
 });
 
@@ -224,15 +249,15 @@ describe("useStudioViewportViewModel", () => {
     expect(vm().dimensions).toEqual({ width: 375, height: 812, orientation: "portrait" });
   });
 
-  it("never changes the frame key for device, orientation, layout or full screen — only for a new page", async () => {
+  it("never changes the frame key for device, orientation, the rail or full screen — only for a new page", async () => {
     const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
     await flush();
     const key = vm().frameKey;
     act(() => vm().setDevice("mobile"));
     act(() => vm().rotate());
-    act(() => vm().setLayout("split"));
+    act(() => vm().toggleRailPinned());
     act(() => vm().enterFullScreen());
-    act(() => vm().openChecklist());
+    act(() => vm().toggleRailPinned());
     act(() => vm().exitFullScreen());
     expect(vm().frameKey).toBe(key);
     act(() => vm().reload());
@@ -408,44 +433,19 @@ describe("useStudioViewportViewModel copy link", () => {
   });
 });
 
-describe("useStudioLayout", () => {
-  it("starts on wide preview, switches, and remembers the choice in this browser", () => {
-    const vm = renderHook(() => useStudioLayout());
-    expect(vm().layout).toBe("wide");
-    act(() => vm().setLayout("split"));
-    expect(vm().layout).toBe("split");
-    expect(window.localStorage.getItem(STUDIO_LAYOUT_KEY)).toBe("split");
-    unmount();
-    expect(renderHook(() => useStudioLayout())().layout).toBe("split");
-  });
-
-  it("falls back to wide preview for a stored value it does not know", () => {
-    window.localStorage.setItem(STUDIO_LAYOUT_KEY, "stacked");
-    expect(renderHook(() => useStudioLayout())().layout).toBe("wide");
-  });
-
-  it("still switches when storage throws, and starts on wide preview", () => {
-    const get = jest.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-      throw new Error("blocked");
-    });
-    const set = jest.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-      throw new Error("blocked");
-    });
-    const vm = renderHook(() => useStudioLayout());
-    expect(vm().layout).toBe("wide");
-    act(() => vm().setLayout("split"));
-    expect(vm().layout).toBe("split");
-    get.mockRestore();
-    set.mockRestore();
-  });
-
-  it("rides on the viewport ViewModel, so every studio on the shell has it", async () => {
+describe("the run rail on the viewport ViewModel", () => {
+  it("rides on it, so every studio on the shell has it, read for its own studio", async () => {
     projects.previews.mockResolvedValue({ enabled: true, liveProvidersEnabled: true, providerError: null, branches: [] });
-    window.localStorage.setItem(STUDIO_LAYOUT_KEY, "split");
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    window.localStorage.setItem("alphaci.po-studio.rail-pinned", "1");
+    const po = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true, studio: "po" }));
     await flush();
-    expect(vm().layout).toBe("split");
-    act(() => vm().setLayout("wide"));
-    expect(vm().layout).toBe("wide");
+    expect(po().isRailPinned).toBe(true);
+    act(() => po().toggleRailPinned());
+    expect(po().isRailPinned).toBe(false);
+    unmount();
+    // QA Studio (the default) was never pinned.
+    const qa = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    await flush();
+    expect(qa().isRailPinned).toBe(false);
   });
 });

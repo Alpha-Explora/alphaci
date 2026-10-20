@@ -2,61 +2,73 @@
 
 import "./requirements.css";
 
-import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useState } from "react";
 
 import type { AppRole } from "@/shared/api/contracts";
 
-import { ProjectMyItemsCard } from "../../returned";
 import { ProjectRunPanel, useProjectRunViewModel } from "../../studio";
-import { projectWorkspaceOpensMyItems } from "../../model/my-qa-items-summary-rules";
-import { canSetVerification } from "../../model/requirement-rules";
+import { verdictsBySourceItem } from "../../model/checklist-filter-rules";
+import { CHECKLIST_VIEW_LABELS, checklistViewFor } from "../../model/checklist-view-rules";
 import { ProjectRequirementsPanel } from "./project-requirements-panel";
 
-export type ProjectQaWorkspaceTab = "requirements" | "run" | "items";
-type WorkspaceTab = ProjectQaWorkspaceTab;
-
-const TABS: ReadonlyArray<{ id: WorkspaceTab; label: string }> = [
-  { id: "requirements", label: "Requirements" },
-  { id: "run", label: "QA run" },
-  { id: "items", label: "My QA items" },
-];
-
-const ARROW_STEPS: Readonly<Record<string, number>> = { ArrowRight: 1, ArrowLeft: -1 };
-
-/**
- * A repository Overview's "Open checklist" links here with `#my-qa-items`
- * (or, where the workspace is embedded in that repository's page, asks for
- * `opensOn: "items"`); otherwise the QA Team lands on the run they verify and
- * everyone else on the requirements. Read once at mount: the workspace only
- * renders client-side, after its Project has loaded.
- */
-function firstTab(appRole: AppRole | null | undefined, opensOn: WorkspaceTab | undefined): WorkspaceTab {
-  if (opensOn) return opensOn;
-  const hash = typeof window === "undefined" ? null : window.location.hash;
-  if (projectWorkspaceOpensMyItems(hash)) return "items";
-  return appRole === "qa" ? "run" : "requirements";
-}
-
-function RunTab({
+/** The QA run, with no line above it: the run's own box says who started it and where it stands. */
+function RunView({
   deliveryProjectId,
   appRole,
-}: Readonly<{ deliveryProjectId: string; appRole: AppRole | null | undefined }>) {
+  onOpenHistory,
+}: Readonly<{ deliveryProjectId: string; appRole: AppRole | null | undefined; onOpenHistory?: () => void }>) {
   const vm = useProjectRunViewModel({ deliveryProjectId, enabled: true });
   return (
-    <>
-      <p className="rq-panel__role">
-        {canSetVerification(appRole)
-          ? "Verify every item against the uat head of each repository, then sign the Project off."
-          : "What the QA Team verified, on which uat heads. Merging to main follows its sign-off."}
-      </p>
-      <ProjectRunPanel deliveryProjectId={deliveryProjectId} vm={vm} appRole={appRole} />
-    </>
+    <ProjectRunPanel
+      deliveryProjectId={deliveryProjectId}
+      vm={vm}
+      appRole={appRole}
+      onOpenHistory={onOpenHistory}
+      checklistMode
+    />
   );
 }
 
 /**
- * Everything QA about one Project, in three tabs: its Requirements (Features
- * and System requirements), its QA run, and the project-wide "My QA items".
+ * The checklist a Product owner and a Developer share: the Features with each
+ * item's Progress and QA's verdict on it from the current run (its notes when
+ * it was sent back, failed or blocked), and the chips, whose counts are where
+ * the Project stands. What each can change is the requirements panel's (the
+ * server's) to decide: the Product owner writes, the Developer moves Progress.
+ * No run yet, or an older backend without Project runs, means no verdicts.
+ */
+function ChecklistWithVerdicts({
+  deliveryProjectId,
+  appRole,
+  onOpenHistory,
+  newFeatureRequest,
+  onFeatureCount,
+}: Readonly<{
+  deliveryProjectId: string;
+  appRole: AppRole | null | undefined;
+  onOpenHistory?: () => void;
+  newFeatureRequest?: number;
+  onFeatureCount?: (count: number) => void;
+}>) {
+  const run = useProjectRunViewModel({ deliveryProjectId, enabled: true });
+  return (
+    <ProjectRequirementsPanel
+      deliveryProjectId={deliveryProjectId}
+      appRole={appRole}
+      newFeatureRequest={newFeatureRequest}
+      onFeatureCount={onFeatureCount}
+      onOpenHistory={onOpenHistory}
+      verdicts={verdictsBySourceItem(run.run)}
+      filterable
+    />
+  );
+}
+
+/**
+ * Everything QA about one Project, as the ONE view this viewer's role works
+ * (`checklistViewFor`): a Product owner's Requirements (written by them, with
+ * every item's progress), a Developer's Checklist (the same Features, each
+ * item's Progress to move, with QA's verdict on it), or the QA Team's run.
  * Mounted by the Project detail screens; it owns its view-models.
  */
 export function ProjectQaWorkspace({
@@ -66,100 +78,48 @@ export function ProjectQaWorkspace({
   enabled = true,
   newFeatureRequest = 0,
   onFeatureCount,
-  opensOn,
-  itemsFallback,
+  onOpenHistory,
 }: Readonly<{
   deliveryProjectId: string;
   projectName: string;
   appRole: AppRole | null | undefined;
   enabled?: boolean;
-  /**
-   * Grows each time someone asks to add a Feature here (the "Add a Feature"
-   * nudge): the Requirements tab comes forward and opens New Feature.
-   */
+  /** Grows each time someone asks to add a Feature here (the "Add a Feature" nudge): New Feature opens. */
   newFeatureRequest?: number;
-  /** The Project's live Feature count, each time the Requirements tab reads it. */
+  /** The Project's live Feature count, each time the Requirements view reads it. */
   onFeatureCount?: (count: number) => void;
-  /** The tab to open on, overriding the role default and the URL hash. Read at mount. */
-  opensOn?: WorkspaceTab;
-  /** Stands in on "My QA items" when the server has no Project-wide list (an older backend). */
-  itemsFallback?: ReactNode;
+  /** Opens the page's History tab (the repository page); omitted where there is none. */
+  onOpenHistory?: () => void;
 }>) {
-  const [tab, setTab] = useState<WorkspaceTab>(() => firstTab(appRole, opensOn));
   const [seenRequest, setSeenRequest] = useState(newFeatureRequest);
-  // The request the Requirements tab still has to act on; leaving the tab
-  // drops it, so coming back never reopens the dialog.
+  // The request the Requirements view still has to act on, so a revisit never reopens the dialog.
   const [pendingRequest, setPendingRequest] = useState(newFeatureRequest);
-  const baseId = useId();
-  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  // A new request brings the Requirements tab forward (state derived from a
-  // changing prop, applied while rendering).
+  // State derived from a changing prop, applied while rendering.
   if (newFeatureRequest !== seenRequest) {
     setSeenRequest(newFeatureRequest);
     setPendingRequest(newFeatureRequest);
-    if (newFeatureRequest > 0) setTab("requirements");
   }
   if (!enabled || !deliveryProjectId) return null;
-
-  function selectTab(next: WorkspaceTab) {
-    setTab(next);
-    setPendingRequest(0);
-  }
-
-  function onKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
-    const step = ARROW_STEPS[event.key];
-    if (!step) return;
-    event.preventDefault();
-    const next = (index + step + TABS.length) % TABS.length;
-    selectTab(TABS[next].id);
-    tabRefs.current[next]?.focus();
-  }
+  const view = checklistViewFor(appRole);
 
   return (
-    <section className="rq-workspace" aria-label={`QA for ${projectName}`}>
-      <div className="rq-tabs" role="tablist" aria-label="Project QA">
-        {TABS.map((entry, index) => (
-          <button
-            key={entry.id}
-            ref={(node) => {
-              tabRefs.current[index] = node;
-            }}
-            type="button"
-            role="tab"
-            id={`${baseId}-tab-${entry.id}`}
-            aria-selected={tab === entry.id}
-            aria-controls={`${baseId}-panel-${entry.id}`}
-            tabIndex={tab === entry.id ? 0 : -1}
-            className="rq-tab"
-            onClick={() => selectTab(entry.id)}
-            onKeyDown={(event) => onKeyDown(event, index)}
-          >
-            {entry.label}
-          </button>
-        ))}
-      </div>
-      <div
-        className="rq-tabpanel"
-        role="tabpanel"
-        id={`${baseId}-panel-${tab}`}
-        aria-labelledby={`${baseId}-tab-${tab}`}
-      >
-        {tab === "requirements" ? (
-          <ProjectRequirementsPanel
+    <section className="rq-workspace" aria-label={`QA for ${projectName}`} data-view={view}>
+      <div className="rq-tabpanel" role="region" aria-label={CHECKLIST_VIEW_LABELS[view]}>
+        {/* Between iterations the requirements say so themselves, with Start iteration N+1 for an author. */}
+        {view === "author" ? (
+          <ChecklistWithVerdicts
             deliveryProjectId={deliveryProjectId}
             appRole={appRole}
             newFeatureRequest={pendingRequest}
             onFeatureCount={onFeatureCount}
+            onOpenHistory={onOpenHistory}
           />
         ) : null}
-        {tab === "run" ? <RunTab deliveryProjectId={deliveryProjectId} appRole={appRole} /> : null}
-        {tab === "items" ? (
-          <ProjectMyItemsCard
-            deliveryProjectId={deliveryProjectId}
-            enabled
-            appRole={appRole}
-            fallback={itemsFallback}
-          />
+        {view === "qa" ? (
+          <RunView deliveryProjectId={deliveryProjectId} appRole={appRole} onOpenHistory={onOpenHistory} />
+        ) : null}
+        {view === "developer" ? (
+          <ChecklistWithVerdicts deliveryProjectId={deliveryProjectId} appRole={appRole} onOpenHistory={onOpenHistory} />
         ) : null}
       </div>
     </section>

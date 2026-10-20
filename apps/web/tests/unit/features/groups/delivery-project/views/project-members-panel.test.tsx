@@ -133,4 +133,35 @@ describe("ProjectMembersPanel", () => {
     await poll(() => text().includes("Dana Dev"));
     expect(container.querySelector('a[href*="github.com"]')).toBeNull();
   });
+
+  describe("opened through a #members link", () => {
+    const scrollIntoView = jest.fn();
+    const original = Element.prototype.scrollIntoView;
+
+    beforeEach(() => {
+      scrollIntoView.mockClear();
+      Element.prototype.scrollIntoView = scrollIntoView;
+    });
+
+    afterEach(() => {
+      Element.prototype.scrollIntoView = original;
+      window.location.hash = "";
+    });
+
+    it("carries the members anchor and scrolls to it once the list has loaded", async () => {
+      window.location.hash = "#members";
+      act(() => root.render(<Section appRole="lead" />));
+      await poll(() => text().includes("Dana Dev"));
+      const section = container.querySelector("section#members");
+      expect(section).not.toBeNull();
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView.mock.contexts[0]).toBe(section);
+    });
+
+    it("does not scroll without the anchor", async () => {
+      act(() => root.render(<Section appRole="lead" />));
+      await poll(() => text().includes("Dana Dev"));
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+  });
 });

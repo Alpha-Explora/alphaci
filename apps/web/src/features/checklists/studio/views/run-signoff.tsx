@@ -1,5 +1,7 @@
 "use client";
 
+import { useId, type ReactNode } from "react";
+
 import { FormDialog } from "@/features/groups/workspace";
 
 import { VerdictPill } from "../../items";
@@ -28,11 +30,49 @@ function segmentsLabel(run: Pick<QaRun, "summary">): string {
 }
 
 /** Passed out of total, the run's mix as one bar, and what is still open. */
-export function RunSummary({ run }: Readonly<{ run: Pick<QaRun, "summary"> }>) {
-  const segments = statusSegments(run);
-  const { openDefects, blockers } = run.summary;
+/**
+ * The open defects and blockers under the bar. Inline, only those there are
+ * (none at all when both are zero); in a card, both always.
+ */
+function SummaryFacts({ summary, inline }: Readonly<{ summary: QaRun["summary"]; inline: boolean }>) {
+  const { openDefects, blockers } = summary;
+  const facts = [
+    { shown: !inline || openDefects > 0, tone: openDefects > 0 ? "qa-summary__fact--warn" : undefined, label: openDefectsLabel(openDefects) },
+    { shown: !inline || blockers > 0, tone: blockers > 0 ? "qa-summary__fact--danger" : undefined, label: blockersLabel(blockers) },
+  ].filter((fact) => fact.shown);
+  if (facts.length === 0) return null;
   return (
-    <div className="qa-summary">
+    <ul className="qa-summary__facts">
+      {facts.map((fact) => (
+        <li key={fact.label} className={fact.tone}>
+          {fact.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * The run's progress: passed of total, a bar of every status, and the open
+ * defects and blockers. `card` is its own box in the run; `inline` sits at
+ * the end of the column's first row (QA Studio), so its facts appear only
+ * once there is something to flag.
+ */
+export function RunSummary({
+  run,
+  variant = "card",
+  children,
+}: Readonly<{
+  run: Pick<QaRun, "summary">;
+  variant?: "card" | "inline" | "compact";
+  /** A closing line inside the box, such as who started the run. */
+  children?: ReactNode;
+}>) {
+  const segments = statusSegments(run);
+  const inline = variant === "inline";
+  const compact = variant === "compact";
+  return (
+    <div className={`qa-summary${inline ? " qa-summary--inline" : ""}${compact ? " qa-summary--compact" : ""}`}>
       <p className="qa-summary__score">
         <span className="qa-summary__passed">{run.summary.byStatus.passed ?? 0}</span>
         <span className="qa-summary__total">/{run.summary.total} passed</span>
@@ -51,14 +91,8 @@ export function RunSummary({ run }: Readonly<{ run: Pick<QaRun, "summary"> }>) {
           />
         ))}
       </div>
-      <ul className="qa-summary__facts">
-        <li className={openDefects > 0 ? "qa-summary__fact--warn" : undefined}>
-          {openDefectsLabel(openDefects)}
-        </li>
-        <li className={blockers > 0 ? "qa-summary__fact--danger" : undefined}>
-          {blockersLabel(blockers)}
-        </li>
-      </ul>
+      {!compact ? <SummaryFacts summary={run.summary} inline={inline} /> : null}
+      {children}
     </div>
   );
 }
@@ -130,6 +164,7 @@ export function ReopenDialog({ reopen }: Readonly<{ reopen: QaReopenViewModel }>
     <FormDialog
       open={reopen.confirming}
       onClose={reopen.cancel}
+      portal
       title={REOPEN_CONFIRM.title}
       description={REOPEN_CONFIRM.text}
       submitLabel="Reopen run"
@@ -150,18 +185,34 @@ const VERDICT_HINTS: Record<QaVerdict, string> = {
   REJECTED: "Not ready. Send it back.",
 };
 
-function readinessText(vm: QaSignoffViewModel): string {
+function readinessText(vm: QaSignoffViewModel): string | null {
+  if (vm.blockedReason) return vm.blockedReason;
   const approved = vm.eligibility.find((entry) => entry.verdict === "APPROVED");
   if (approved?.allowed) return "Every item passed — ready to approve.";
-  return approved?.reason ?? "";
+  const reason = approved?.reason ?? "";
+  return /^\d+ items? (?:is|are) not passed yet\.$/.test(reason) ? null : reason || null;
 }
 
 export function SignoffFooter({ vm }: Readonly<{ vm: QaSignoffViewModel }>) {
+  const reasonId = useId();
+  const text = readinessText(vm);
+  // Shown, not hidden, while a failure is open: the reader sees what to do.
+  const blocked = vm.blockedReason !== null;
   return (
     <div className="qa-run-card__foot">
-      <p className="qa-run-card__foot-text">{readinessText(vm)}</p>
+      {text ? (
+        <p className="qa-run-card__foot-text" id={reasonId}>
+          {text}
+        </p>
+      ) : null}
       {vm.canSignOff ? (
-        <button type="button" className="primary-button" onClick={vm.openDialog}>
+        <button
+          type="button"
+          className="primary-button"
+          disabled={blocked}
+          aria-describedby={blocked && text ? reasonId : undefined}
+          onClick={vm.openDialog}
+        >
           Sign off
         </button>
       ) : null}
@@ -210,6 +261,8 @@ export function SignoffDialog({
     <FormDialog
       open={vm.status !== "closed"}
       onClose={vm.closeDialog}
+      // In <body>: inside the QA checklist panel the card was cut to the panel's width.
+      portal
       title="Sign off this run"
       description={`${description}. Signing off locks the run.`}
       submitLabel="Sign off"

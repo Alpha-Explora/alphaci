@@ -6,7 +6,7 @@ import {
   myWorkProjects,
   needsAttentionRows,
 } from "../../../../../src/features/home/model/home-work-rules";
-import { FOLDERS, RUNS, folder, olderOverview, overview } from "../home-persona-fixtures";
+import { FOLDERS, LOYALTY, PAY, RUNS, SHOP, folder, olderOverview, overview } from "../home-persona-fixtures";
 
 const links = homeLinkContext("ws-1", FOLDERS);
 
@@ -37,6 +37,27 @@ describe("myWorkProjects (Developer)", () => {
     });
     const [project] = myWorkProjects([unlinked], new Map(), links);
     expect(project.repositories).toEqual([{ repositoryId: "r", name: "draft", href: null, tone: "none", branch: null }]);
+  });
+
+  it("says who a delivered Project waits for, and nothing while an iteration is active (Iterations phase 3)", () => {
+    const delivered = overview([
+      { ...SHOP, iteration: { number: 3, status: "delivered", deliveredAt: "2026-10-14T10:00:00.000Z" } },
+      { ...PAY, iteration: { number: 2, status: "active", deliveredAt: null } },
+      LOYALTY,
+    ]);
+    const projects = myWorkProjects(FOLDERS, latestRunByRepo(RUNS), links, delivered);
+    const byName = new Map(projects.map((project) => [project.name, project.waiting]));
+    expect(byName.get("Storefront")).toMatch(
+      /^Version 3 was delivered on .+\. Waiting for the Product owner to start version 4\.$/,
+    );
+    expect(byName.get("Payments")).toBeNull();
+    expect(byName.get("Loyalty")).toBeNull();
+  });
+
+  it("has no waiting line without the team overview or from an older backend", () => {
+    expect(myWorkProjects(FOLDERS, latestRunByRepo(RUNS), links).every((project) => project.waiting === null)).toBe(true);
+    const older = myWorkProjects(FOLDERS, latestRunByRepo(RUNS), links, olderOverview());
+    expect(older.every((project) => project.waiting === null)).toBe(true);
   });
 });
 

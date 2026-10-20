@@ -28,9 +28,9 @@ export function WorkspaceMembersSection({
         </p>
       ) : null}
       {vm.status === "ready" ? (
-        <ul className="workspace-members-list" aria-label={`Members of ${workspace.name}`} style={{ margin: 0, padding: 0, listStyle: "none" }}>
+        <ul className="workspace-members-list" aria-label={`Members of ${workspace.name}`}>
           {vm.members.map((member) => (
-            <li key={member.id} className="hover-field workspace-member-row">
+            <li key={member.id} className="workspace-member-row">
               <div className="workspace-member-identity">
                 <strong>{member.name || member.login}</strong>
                 <span>

@@ -2,7 +2,7 @@
 
 import "./promotion.css";
 
-import { useId, useRef } from "react";
+import { useId, useRef, type ReactNode } from "react";
 
 import {
   approvedCountLabel,
@@ -12,8 +12,11 @@ import {
   promotionTitle,
 } from "../../model/qa-promotion-rules";
 import type { QaPromotionStatus } from "../../model/qa-promotion-types";
+import { useShowRepositories } from "../view-models/repository-visibility";
 import { useDisclosurePopover } from "../view-models/use-disclosure-popover";
+import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
 import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
+import { MergeAllToMain } from "./po-delivery";
 import { PromotionOutcome } from "./promotion-outcome";
 import { MergeButton, MergeDialog, PromotionDetails } from "./promotion-parts";
 import { ChevronDownIcon } from "./studio-icons";
@@ -27,13 +30,14 @@ type BarProps = Readonly<{ vm: QaPromotionViewModel }>;
 
 /** The popover's head: the verdict, the route and the gate in a line. */
 function PopoverHead({ data, headingId }: Readonly<{ data: QaPromotionStatus; headingId: string }>) {
+  const showRepositories = useShowRepositories();
   return (
     <div className="qa-promo-pop__head">
       <p className="qa-promo-pop__title" id={headingId}>
         {promotionTitle(data)}
       </p>
       <p className="qa-promo__route">
-        <code>{promotionRoute(data)}</code>
+        {showRepositories ? <code>{promotionRoute(data)}</code> : null}
         <span>{approvedCountLabel(data)}</span>
       </p>
     </div>
@@ -139,16 +143,36 @@ export function MergeToMain({ vm }: BarProps) {
 }
 
 /**
+ * The tab bar's one merge button. On a Project of two or more repositories
+ * the server lets this viewer merge (`delivery.canMergeAll`), Merge to main
+ * merges every repository not in main yet — so it stays useful after this
+ * repository already reached main. Otherwise it merges this repository's uat.
+ */
+export function StudioMergeAction({
+  promotion,
+  delivery,
+}: Readonly<{ promotion: QaPromotionViewModel; delivery: PoDeliveryViewModel }>) {
+  return delivery.canMergeAll ? <MergeAllToMain vm={delivery} /> : <MergeToMain vm={promotion} />;
+}
+
+/**
  * Under the tab bar: how the last merge ended, shown in place until
  * dismissed (a live region, so it is announced) — the viewer just pressed
- * Merge, and the answer belongs in view, not behind the chip. Then the merge
+ * Merge, and the answer belongs in view, not behind the chip. `children` (how
+ * a merge of every repository ended) shares that live region. Then the merge
  * confirmation, which is kept out of the bar so nothing there can become its
  * containing block.
  */
-export function PromotionBarFoot({ vm, projectName }: Readonly<{ vm: QaPromotionViewModel; projectName: string }>) {
+export function PromotionBarFoot({
+  vm,
+  projectName,
+  children,
+}: Readonly<{ vm: QaPromotionViewModel; projectName: string; children?: ReactNode }>) {
   return (
     <>
-      <PromotionOutcome vm={vm} targetBranch={vm.data?.targetBranch ?? PROMOTION_TARGET_BRANCH} />
+      <PromotionOutcome vm={vm} targetBranch={vm.data?.targetBranch ?? PROMOTION_TARGET_BRANCH}>
+        {children}
+      </PromotionOutcome>
       {vm.data ? <MergeDialog vm={vm} data={vm.data} projectName={projectName} /> : null}
     </>
   );

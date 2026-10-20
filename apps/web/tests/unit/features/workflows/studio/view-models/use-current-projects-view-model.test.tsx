@@ -36,6 +36,7 @@ const GROUPS = [
 
 type Vm = ReturnType<typeof useCurrentProjectsViewModel>;
 let root: Root | null = null;
+let rerender: () => Promise<void>;
 
 afterEach(() => {
   if (root) act(() => root?.unmount());
@@ -54,6 +55,9 @@ async function renderVm(loadingProjects = false): Promise<() => Vm> {
     return null;
   }
   root = createRoot(document.createElement("div"));
+  rerender = async () => {
+    await act(async () => root!.render(<Probe />));
+  };
   await act(async () => {
     root!.render(<Probe />);
   });
@@ -87,6 +91,39 @@ describe("useCurrentProjectsViewModel", () => {
     mockHeader.selectedWorkspaceId = "g-old";
     const get = await renderVm();
     expect(get().team?.id).toBe("g-old");
+  });
+
+  it("loads a newly selected workspace without showing the previous team's projects", async () => {
+    mockedGetGroups.mockResolvedValueOnce(GROUPS);
+    mockHeader.selectedWorkspaceId = "g-old";
+    const get = await renderVm();
+    expect(get().team?.id).toBe("g-old");
+
+    let finish: (value: unknown) => void = () => undefined;
+    mockedGetGroups.mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+    mockHeader.selectedWorkspaceId = "g-created";
+    await rerender();
+    expect(get().status).toBe("loading");
+    expect(get().team).toBeNull();
+
+    await act(async () => finish([...GROUPS, { id: "g-created", name: "Empty team" }]));
+    expect(get().status).toBe("ready");
+    expect(get().team?.id).toBe("g-created");
+  });
+
+  it("ignores a previous workspace request completing after the new one", async () => {
+    let finishOld: (value: unknown) => void = () => undefined;
+    mockedGetGroups.mockReturnValueOnce(new Promise((resolve) => { finishOld = resolve; }));
+    mockHeader.selectedWorkspaceId = "g-old";
+    const get = await renderVm();
+    mockedGetGroups.mockResolvedValueOnce([{ id: "g-created", name: "Empty team" }]);
+    mockHeader.selectedWorkspaceId = "g-created";
+    await rerender();
+    expect(get().team?.id).toBe("g-created");
+
+    await act(async () => finishOld(GROUPS));
+    expect(get().status).toBe("ready");
+    expect(get().team?.id).toBe("g-created");
   });
 
   it("falls back to the first team while the header has no selection it knows", async () => {

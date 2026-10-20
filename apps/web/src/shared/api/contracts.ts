@@ -43,11 +43,23 @@ export type DeploymentStrategy =
   | "render_image_pushed"
   | "render_existing_service";
 export type RenderServiceType =
-  "web_service" | "private_service" | "background_worker" | "cron_job";
+  | "web_service"
+  | "private_service"
+  | "background_worker"
+  | "cron_job";
 export type RenderRuntime =
-  "node" | "python" | "ruby" | "go" | "rust" | "elixir" | "docker";
+  | "node"
+  | "python"
+  | "ruby"
+  | "go"
+  | "rust"
+  | "elixir"
+  | "docker";
 export type RenderDeployMethod =
-  "managed_image" | "byo_image" | "native_git" | "existing_service";
+  | "managed_image"
+  | "byo_image"
+  | "native_git"
+  | "existing_service";
 
 export interface SessionUser {
   id: string;
@@ -364,6 +376,15 @@ export interface DeploymentTargetActionsResponse {
       enabled: boolean;
       reason?: string;
     };
+    /**
+     * Roll back to an earlier deploy from ALPHACI; `resumable` while a Vercel
+     * rollback holds new production deploys. Absent on an older backend.
+     */
+    rollback?: {
+      enabled: boolean;
+      resumable: boolean;
+      reason?: string;
+    };
     openProviderDashboard: {
       enabled: boolean;
       url: string | null;
@@ -385,6 +406,34 @@ export interface ReinstallDeploymentSecretsResponse {
   reinstalled: true;
   githubSecrets: Record<string, string>;
   githubVariables?: Record<string, string>;
+}
+
+/** A rollback that holds new production deploys (Vercel), kept on the target's providerMetadata.rollback. */
+export interface DeploymentRollbackHold {
+  deployId: string;
+  commitSha: string | null;
+  commitMessage: string | null;
+  reason: string;
+  rolledBackBy: string;
+  rolledBackAt: string;
+  holdsNewDeploys: boolean;
+}
+
+export interface RollbackDeploymentTargetResponse {
+  rolledBack: true;
+  targetId: string;
+  /** The deploy now serving: Render's new rollback deploy, or the chosen Vercel deployment. */
+  deployId: string;
+  status: string;
+  /** Set when the provider now holds new deploys until resumed (Vercel). */
+  rollback: DeploymentRollbackHold | null;
+}
+
+export interface ResumeDeploymentTargetDeploysResponse {
+  resumed: true;
+  targetId: string;
+  /** The deploy that went live again, or null when there was none to promote. */
+  deployId: string | null;
 }
 
 export interface EnvVarMetadata {
@@ -547,9 +596,13 @@ export interface OnpremProvisioningTargetRequest {
 }
 
 /** What project creation accepts: the hosted targets plus on-prem ones. */
-export interface CreateDeploymentProvisioningRequest
-  extends Omit<DeploymentProvisioningRequest, "targets"> {
-  targets: Array<DeploymentProvisioningTargetRequest | OnpremProvisioningTargetRequest>;
+export interface CreateDeploymentProvisioningRequest extends Omit<
+  DeploymentProvisioningRequest,
+  "targets"
+> {
+  targets: Array<
+    DeploymentProvisioningTargetRequest | OnpremProvisioningTargetRequest
+  >;
 }
 
 export interface DeploymentProvisioningResult {
@@ -610,7 +663,13 @@ export interface CatalogCategoriesResponse {
 }
 
 export type ProjectOptionKey =
-  "lint" | "unit" | "build" | "coverage" | "security" | "docker" | "e2e";
+  | "lint"
+  | "unit"
+  | "build"
+  | "coverage"
+  | "security"
+  | "docker"
+  | "e2e";
 
 export type MvpProjectOptionKey = Exclude<ProjectOptionKey, "e2e">;
 
@@ -636,6 +695,18 @@ export interface ProjectTypeOption {
   defaultRecipe: string;
   allowedRecipes: string[];
   defaultOptions: ProjectOptionSet;
+  /**
+   * The container port and health path of the app AlphaCI scaffolds for this
+   * type. Absent for a type with no scaffold, or from an older backend.
+   */
+  serviceRuntime?: ServiceRuntimeContract;
+}
+
+/** What a scaffolded app's container serves: its slot, port and health path. */
+export interface ServiceRuntimeContract {
+  slot: "frontend" | "backend";
+  containerPort: number;
+  healthPath: string;
 }
 
 export interface WorkflowRecipeOption {
@@ -845,6 +916,12 @@ export interface SetupProjectRequest extends GenerateWorkflowRequest {
    * Omit it to create the project on the fixed dev, uat, main branch path.
    */
   environments?: Array<{
+    hostAssignment?: {
+      /** Omitted: the workspace's only connected machine. */
+      machineId?: string;
+      requestId: string;
+      config: OnpremAssignmentRequestConfig;
+    };
     slug: string;
     displayName: string;
     sourceBranch: string;
@@ -976,6 +1053,42 @@ export interface MicroservicesConfig {
   frontend: MicroserviceSlotConfig;
 }
 
+/**
+ * The machine's report on its automatic HTTPS tunnel. Present on an assignment
+ * whose ingress mode is "tunnel"; null for every other mode.
+ */
+export interface TunnelReport {
+  status: "waiting" | "starting" | "running" | "unavailable" | "failed";
+  /** https URL the machine reported; present only while it is fresh. */
+  publicUrl: string | null;
+  /** One plain sentence for the user. */
+  message: string;
+  reportedAt: string | null;
+}
+
+/**
+ * A stored assignment: AlphaCI allocated every host port on the machine.
+ * "tunnel" has the machine run a quick tunnel and report its address; the
+ * client sends publicUrl as null in that mode.
+ */
+export interface OnpremAssignmentConfig {
+  ports: Array<{
+    slot: "frontend" | "backend";
+    hostPort: number;
+    containerPort: number;
+  }>;
+  health: Array<{ slot: "frontend" | "backend"; path: string | null }>;
+  ingress: {
+    mode: "direct" | "configured" | "tunnel";
+    publicUrl: string | null;
+  };
+}
+/** What a client asks for: host ports are chosen by the server. */
+export interface OnpremAssignmentRequestConfig {
+  ports: Array<{ slot: "frontend" | "backend"; containerPort: number }>;
+  health: OnpremAssignmentConfig["health"];
+  ingress: OnpremAssignmentConfig["ingress"];
+}
 export interface CreateProjectRequest {
   repoName: string;
   visibility: "private" | "public";
@@ -993,6 +1106,12 @@ export interface CreateProjectRequest {
   microservicesConfig?: MicroservicesConfig;
   multiRepoConfig?: MicroservicesConfig;
   deploymentProvisioning?: CreateDeploymentProvisioningRequest;
+  /**
+   * The project's ordered environments, sent with on-prem hosting for a
+   * single application or two repositories (never for microservices). Omit it
+   * to create the project on the fixed dev, uat, main branch path.
+   */
+  environments?: SetupProjectRequest["environments"];
   /** Group/workspace to create this project inside (from ?group=<id>). */
   workspaceId?: string;
   /**
@@ -1010,6 +1129,19 @@ export interface CreateProjectRequest {
 }
 
 export interface CreateProjectResponse {
+  hostAssignmentError?: string;
+  hostAssignments?: Array<{
+    environmentId: string;
+    status: "assigned" | "failed";
+    assignmentId?: string;
+    message?: string;
+    /**
+     * Two-repository projects only: the row the environment belongs to (`id`
+     * or `secondaryProjectId`) and the slot that repository deploys.
+     */
+    projectId?: string;
+    slot?: "backend" | "frontend";
+  }>;
   id: string;
   repoFullName: string;
   repoUrl: string;
@@ -1029,6 +1161,10 @@ export interface CreateProjectResponse {
   additionalWorkflowPaths?: string[];
   secondaryRepoFullName?: string;
   secondaryRepoUrl?: string;
+  /** Two-repository projects: the frontend repository's project id. */
+  secondaryProjectId?: string;
+  /** Two-repository projects: why the frontend repository is missing. */
+  secondaryRepoError?: string;
   deploymentProvisioning?: DeploymentProvisioningResult;
 }
 
@@ -1187,7 +1323,14 @@ export interface ProjectCiRunRerunResponse {
 }
 
 export type DeploymentHistoryStatus =
-  "queued" | "building" | "ready" | "failed" | "canceled" | "unknown";
+  | "queued"
+  | "building"
+  | "ready"
+  | "failed"
+  | "canceled"
+  /** Went live, then a newer deploy replaced it (Render's "deactivated"). */
+  | "superseded"
+  | "unknown";
 
 export interface ProjectDeploymentHistoryItem {
   id: string;
@@ -1201,7 +1344,11 @@ export interface ProjectDeploymentHistoryItem {
   commitMessage: string | null;
   status: DeploymentHistoryStatus;
   createdAt: string;
+  /** When the host began the deploy, where it reports that apart from createdAt. Absent on older backends. */
+  startedAt?: string | null;
   readyAt: string | null;
+  /** What started it, in the host's word (Render: api, new_commit, manual, deploy_hook…). */
+  trigger?: string | null;
   /** The deployed site itself — per-deployment on Vercel, per-service on Render. */
   deploymentUrl: string | null;
   /** Set when the deployment was built for a pull request. */
@@ -1242,6 +1389,18 @@ export type ProjectBranchPreviewStatus =
   | DeploymentHistoryStatus
   | "not_deployed";
 
+/** One of an environment's recent deploys, as its Overview card lists them. */
+export interface ProjectPreviewDeploy {
+  id: string;
+  status: DeploymentHistoryStatus;
+  commitSha: string | null;
+  commitMessage: string | null;
+  trigger: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  readyAt: string | null;
+}
+
 export interface ProjectBranchPreview {
   branch: string;
   isProduction: boolean;
@@ -1273,6 +1432,16 @@ export interface ProjectBranchPreview {
   /** Null for an environment with no deployment to date. */
   createdAt: string | null;
   readyAt: string | null;
+  /*
+   * The three fields below are absent on a backend older than them; the card
+   * then shows no trigger, no duration and no recent deploys.
+   */
+  /** What started the current deploy, in the host's word. */
+  trigger?: string | null;
+  /** When the host began the current deploy. */
+  startedAt?: string | null;
+  /** The environment's newest deploys, newest first, the current one included. */
+  recentDeploys?: ProjectPreviewDeploy[];
   /**
    * null means undetermined. The UI must not frame it in that case — a browser
    * fires no error event for an X-Frame-Options refusal, so an unverified
@@ -1339,6 +1508,7 @@ export type ProjectDriftRepairAction =
   | "rotate_ci_token"
   | "detach_target"
   | "repair_branch_protection"
+  | "repair_ci_api_url"
   | "mark_ignored";
 
 export interface ProjectDriftRepairResponse {
@@ -1498,7 +1668,11 @@ export interface PendingAccountResponse {
 /* ── CI Runs ─────────────────────────────────────────────────────────────── */
 
 export type RunOverallStatus =
-  "success" | "failure" | "running" | "cancelled" | "partial";
+  | "success"
+  | "failure"
+  | "running"
+  | "cancelled"
+  | "partial";
 /**
  * Mirrors STAGE_ORDER in the backend's pipelines/ci/application/stages.ts, and
  * the CHECK constraint on workflow.ci_run_reports.stage. All three widen
@@ -1634,12 +1808,22 @@ export interface StageResults {
   lint?: {
     errors: number;
     warnings: number;
-    issues?: { rule?: string; file?: string; line?: number; message?: string }[];
+    issues?: {
+      rule?: string;
+      file?: string;
+      line?: number;
+      message?: string;
+    }[];
   };
   security?: {
     high: number;
     critical: number;
-    items?: { package?: string; id?: string; title?: string; severity?: string }[];
+    items?: {
+      package?: string;
+      id?: string;
+      title?: string;
+      severity?: string;
+    }[];
   };
   findings?: {
     secrets?: number;
@@ -1654,7 +1838,12 @@ export interface StageResults {
     gate?: string;
     /** A setting stopped the analysis, rather than the code failing it. */
     blockedBy?: string;
-    failedConditions?: { metric: string; status?: string; actual?: string; threshold?: string }[];
+    failedConditions?: {
+      metric: string;
+      status?: string;
+      actual?: string;
+      threshold?: string;
+    }[];
     measures?: Record<string, string>;
     /** The most severe issues on new code, at most 20. */
     issues?: SonarIssue[];
@@ -1688,6 +1877,8 @@ export interface RunsResponse {
  * Derived from CreateProjectResponse plus helpers computed on the client side.
  */
 export interface CreateProjectResult {
+  hostAssignments?: CreateProjectResponse['hostAssignments'];
+  hostAssignmentError?: string;
   /** Database ID of the provisioned project record. */
   id: string;
   repoFullName: string;
@@ -1708,5 +1899,7 @@ export interface CreateProjectResult {
   additionalWorkflowPaths?: string[];
   secondaryRepoFullName?: string;
   secondaryRepoUrl?: string;
+  secondaryProjectId?: string;
+  secondaryRepoError?: string;
   deploymentProvisioning?: DeploymentProvisioningResult;
 }

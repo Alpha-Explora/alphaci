@@ -82,9 +82,12 @@ function RunHarness({ role }: Readonly<{ role: AppRole }>) {
 }
 
 /** QA Studio: the run column with the preview iframe on offer for Capture. */
-function StudioHarness({ frame }: Readonly<{ frame: HTMLIFrameElement }>) {
+function StudioHarness({
+  frame,
+  whileCapturing,
+}: Readonly<{ frame: HTMLIFrameElement; whileCapturing?: <T>(capture: () => Promise<T>) => Promise<T> }>) {
   return (
-    <PreviewCaptureContext.Provider value={{ current: frame }}>
+    <PreviewCaptureContext.Provider value={{ current: frame, whileCapturing }}>
       <RunHarness role="qa" />
     </PreviewCaptureContext.Provider>
   );
@@ -422,6 +425,30 @@ describe("Evidence on a Project run item", () => {
     expect(first.querySelector(".qa-evidence__draft")).not.toBeNull();
     // The hint is remembered as seen.
     expect(first.querySelector(".qa-evidence__hint")).toBeNull();
+  });
+
+  it("captures with the studio's floating panel out of the way", async () => {
+    loadRun({}, [runItemWire({ attachmentCount: 0 })]);
+    const order: string[] = [];
+    mockedCapture.mockImplementation(async () => {
+      order.push("grab");
+      return image();
+    });
+    const whileCapturing = jest.fn(async <T,>(capture: () => Promise<T>) => {
+      order.push("hide");
+      try {
+        return await capture();
+      } finally {
+        order.push("show");
+      }
+    });
+    const frame = document.createElement("iframe");
+    const container = await render(<StudioHarness frame={frame} whileCapturing={whileCapturing} />);
+    await click(button(sections(container)[0], "Capture"));
+    expect(whileCapturing).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(["hide", "grab", "show"]);
+    expect(mockedCapture).toHaveBeenCalledWith(frame);
+    expect(container.querySelector(".qa-evidence__draft")).not.toBeNull();
   });
 
   it("says nothing when the tester cancels the browser's share prompt", async () => {

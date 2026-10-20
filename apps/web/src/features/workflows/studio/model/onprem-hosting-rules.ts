@@ -89,9 +89,10 @@ export interface EnvironmentHosting {
 }
 
 /**
- * Where the project's environments run. Only a single-repository project with
- * its environments defined, on a deployment that offers on-prem, can choose;
- * everything else is managed hosting exactly as before.
+ * Where the project's environments run. A single application or a
+ * two-repository project with its environments defined, on a deployment that
+ * offers on-prem, can choose; everything else is managed hosting exactly as
+ * before.
  */
 export interface EnvironmentHostingInput {
   environments: readonly EnvironmentDraft[];
@@ -101,10 +102,13 @@ export interface EnvironmentHostingInput {
   onpremStatus: OnpremHosting["status"];
 }
 
-/** Only a single-repository project creates its own environments. */
+/**
+ * Two services in one repository create no environments of their own; a
+ * single application and a two-repository project do.
+ */
 function definedEnvironments(input: EnvironmentHostingInput): readonly EnvironmentDraft[] {
   if (!input.environmentsEnabled) return [];
-  return input.isMicroservicesShape || input.isMultiRepoShape ? [] : input.environments;
+  return input.isMicroservicesShape ? [] : input.environments;
 }
 
 export function environmentHosting(input: EnvironmentHostingInput): EnvironmentHosting {

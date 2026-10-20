@@ -1,0 +1,129 @@
+/* QA refusal pop-ups: a stack in the bottom-right corner, over the page and
+   under dialogs. Tokens only; the light theme re-tints through tokens.css. */
+.qa-alerts {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 60;
+  display: grid;
+  gap: 0.6rem;
+  width: min(24rem, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.qa-alerts:empty {
+  display: none;
+}
+
+.qa-alert {
+  --qa-alert-tone: var(--danger);
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.75rem 0.8rem;
+  border: 1px solid var(--border-tile);
+  border-left: 3px solid var(--qa-alert-tone);
+  border-radius: 0.6rem;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-hard);
+  pointer-events: auto;
+  animation: qa-alert-in 180ms ease-out;
+}
+
+.qa-alert[data-event="qa.item.blocked"] {
+  --qa-alert-tone: var(--accent-rose);
+}
+
+.qa-alert[data-event="qa.item.returned_to_dev"] {
+  --qa-alert-tone: var(--warning);
+}
+
+.qa-alert[data-event="hierarchy.group.member_added"] {
+  --qa-alert-tone: var(--brand);
+}
+
+.qa-alert__icon {
+  margin-top: 0.1rem;
+  color: var(--qa-alert-tone);
+}
+
+.qa-alert__body {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.qa-alert__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.qa-alert__text {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.qa-alert__open {
+  justify-self: start;
+  margin-top: 0.15rem;
+  color: var(--brand);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.qa-alert__open:hover {
+  text-decoration: underline;
+}
+
+.qa-alert__dismiss {
+  display: inline-grid;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.4rem;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  place-items: center;
+}
+
+.qa-alert__dismiss:hover {
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+}
+
+:is(.qa-alert__open, .qa-alert__dismiss):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@keyframes qa-alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-alert {
+    animation: none;
+  }
+}

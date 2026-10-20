@@ -26,7 +26,7 @@ export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
     "This repository is not filed under a Project, and QA requirements belong to Projects. A Product owner moves it into a Project first.",
   QA_PROGRESS_NOT_DONE: "A Developer marks this Done before QA can pass it.",
   QA_VERIFICATION_STATUS_INVALID:
-    "That verification status is not available. Choose Pending, Passed, Failed, Blocked or Returned to dev.",
+    "That verification status is not available. Choose Pending, Passed or Failed (Failed sends it back to the Developers).",
   VERIFICATION_FORBIDDEN: "Only the QA Team, Product owners and admins set Verification.",
   PROGRESS_FORBIDDEN:
     "Developers, Product owners and admins update Progress. The QA Team records Verification instead.",
@@ -44,6 +44,25 @@ export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   REQUIREMENT_KIND_INVALID: "A requirement is either a Feature or a System requirement.",
   REQUIREMENT_ORDER_MISMATCH:
     "The list changed while you were reordering it. Reload, then move the item again.",
+  /* Iterations: a write against a delivered iteration, and a Project with nothing to merge. */
+  ITERATION_DELIVERED: "This version was delivered, so its requirements and QA are locked.",
+  PROJECT_HAS_NO_REPOSITORIES:
+    "This Project has no repositories yet, so there is nothing to merge to main. Add a repository first.",
+  /* Iterations phase 3: starting the next iteration. */
+  ITERATION_ACTIVE: "This Project already has an active version. Deliver it before starting the next one.",
+  /* Approved needs every item the iteration holds: the server added the missing ones to the run. */
+  QA_RUN_MISSING_ITEMS:
+    "Requirement items were added after this run started, so QA has not verified them. They are now in the run as Pending: reload the run, verify them, then sign off.",
+  ITERATION_CARRY_INVALID:
+    "Items are no longer carried over: a new version starts with an empty checklist. Close this dialog, reload the page and start it again.",
+  /* Test cases under a User story (written by the QA Team). */
+  QA_TEST_CASES_OPEN: "Pass every test case of this story before passing the story.",
+  TEST_CASE_MANAGE_FORBIDDEN: "Only the QA Team and admins write test cases.",
+  TEST_CASES_STORY_ONLY: "Test cases belong to User stories of a Feature, not to System requirement items.",
+  TEST_CATEGORY_NAME_TAKEN: "This story already has a category with that name. Pick another name.",
+  TEST_CASES_LIMIT: "This story holds as many test cases as it can. Remove one to add another.",
+  TEST_CASE_STALE:
+    "Someone else changed this test case since you loaded the run. Reload the run to see their change, then try again.",
 };
 
 /**
@@ -96,6 +115,8 @@ const STALE_CODES: ReadonlySet<string> = new Set([
   "REQUIREMENT_ORDER_MISMATCH",
   "QA_ITEM_STALE",
   "QA_RUN_CHANGED",
+  "QA_RUN_MISSING_ITEMS",
+  "TEST_CASE_STALE",
 ]);
 
 /** True when the failure carries a code a reload fixes. */
@@ -116,5 +137,31 @@ export function qaCodeMessage(cause: unknown): string | null {
     const reasons = texts(errorDetails(cause)?.reasons);
     if (reasons.length > 0) return `${message} ${reasons.join(" ")}`;
   }
+  if (code === "ITERATION_DELIVERED") return iterationDeliveredMessage(cause) ?? message;
+  if (code === "ITERATION_ACTIVE") return iterationActiveMessage(cause) ?? message;
   return message;
+}
+
+/** The iteration a code names in its details (`iterationNumber`), when it is a real number. */
+function detailsIterationNumber(cause: unknown): number | null {
+  const number = errorDetails(cause)?.iterationNumber;
+  return typeof number === "number" && Number.isInteger(number) && number >= 1 ? number : null;
+}
+
+/**
+ * ITERATION_ACTIVE names the active iteration when the server says which one:
+ * "Iteration 4 is still active. Deliver it before starting the next one."
+ */
+function iterationActiveMessage(cause: unknown): string | null {
+  const number = detailsIterationNumber(cause);
+  return number === null ? null : `Version ${String(number)} is still active. Deliver it before starting the next one.`;
+}
+
+/**
+ * ITERATION_DELIVERED names the iteration when the server says which one
+ * (`iterationNumber`): "Iteration 3 was delivered, so …".
+ */
+function iterationDeliveredMessage(cause: unknown): string | null {
+  const number = detailsIterationNumber(cause);
+  return number === null ? null : `Version ${String(number)} was delivered, so its requirements and QA are locked.`;
 }

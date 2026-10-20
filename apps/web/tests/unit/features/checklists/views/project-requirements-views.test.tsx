@@ -105,6 +105,31 @@ describe("ProjectRequirementsPanel", () => {
     expect(buttonNamed(container, "New Feature")).toBeDefined();
   });
 
+  it("shows each Feature like a closed dropdown: title, description and progress, its user stories hidden", async () => {
+    loadRequirements("lead");
+    const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="lead" />);
+    const card = container.querySelector<HTMLElement>(".rq-card")!;
+    const toggle = card.querySelector<HTMLButtonElement>(".rq-card__toggle")!;
+    const body = card.querySelector<HTMLElement>(".rq-card__body")!;
+    expect(card.querySelector(".rq-card__title")?.contains(toggle)).toBe(true);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.getAttribute("aria-controls")).toBe(body.id);
+    expect(body.hidden).toBe(true);
+    expect(card.querySelector(".rq-meter")).not.toBeNull();
+    // Edit and Archive stay in the header, outside the hidden list.
+    expect(body.contains(buttonNamed(card, "Edit")!)).toBe(false);
+
+    await act(async () => toggle.click());
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(body.hidden).toBe(false);
+    expect(body.querySelector(".rq-items")).not.toBeNull();
+    expect(buttonNamed(body, "Add user story")).toBeDefined();
+
+    await act(async () => toggle.click());
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(body.hidden).toBe(true);
+  });
+
   it("gives a Product owner the Features first, with create, edit, reorder and Progress", async () => {
     loadRequirements("lead");
     const container = await render(
@@ -147,7 +172,7 @@ describe("ProjectRequirementsPanel", () => {
     const container = await render(<ProjectRequirementsPanel deliveryProjectId="dp-1" appRole="qa" />);
     expect(container.querySelector('input[type="radio"]')).toBeNull();
     expect(container.textContent).toContain("Progress: To do");
-    expect(container.textContent).toContain("you verify them on the Project QA run");
+    expect(container.textContent).toContain("you verify them in QA testing");
     expect(buttonNamed(container, "New Feature")).toBeUndefined();
   });
 
@@ -543,11 +568,11 @@ describe("ProjectRunPanel", () => {
     const controls = [...container.querySelectorAll<HTMLElement>(".pqa-verify")];
     expect(controls).toHaveLength(2);
     const offered = (group: HTMLElement) =>
-      [...group.querySelectorAll<HTMLButtonElement>("button")].filter((button) => !button.disabled).map((button) => button.dataset.status);
+      [...group.querySelectorAll<HTMLOptionElement>("option")].filter((option) => !option.disabled).map((option) => option.value);
     expect(offered(controls[0])).toContain("passed");
     expect(offered(controls[1])).not.toContain("passed");
     expect(offered(controls[1])).not.toContain("in_progress");
-    expect(controls[0].querySelector('[aria-pressed="true"]')?.getAttribute("data-status")).toBe("pending");
+    expect(controls[0].querySelector("select")?.value).toBe("pending");
     expect(container.textContent).toContain("A Developer marks this Done before QA can pass it.");
     expect(container.textContent).toContain("Progress: Done");
     // Features first, then System requirements.
@@ -559,16 +584,23 @@ describe("ProjectRunPanel", () => {
     runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire(), heads: [] }));
     runs.setVerification.mockResolvedValue(null);
     const container = await render(<RunHarness role="qa" />);
+    const choose = async (control: HTMLElement, status: string) => {
+      const select = control.querySelector<HTMLSelectElement>("select")!;
+      await act(async () => {
+        select.value = status;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    };
     const first = container.querySelector<HTMLElement>(".pqa-verify")!;
-    await act(async () => first.querySelector<HTMLButtonElement>('[data-status="passed"]')!.click());
+    await choose(first, "passed");
     expect(runs.setVerification).toHaveBeenCalledWith("dp-1", "prun-1", "run-item-1", expect.objectContaining({ status: "passed" }));
 
     runs.setVerification.mockClear();
     const second = container.querySelectorAll<HTMLElement>(".pqa-verify")[1];
-    await act(async () => second.querySelector<HTMLButtonElement>('[data-status="failed"]')!.click());
+    await choose(second, "failed");
     expect(runs.setVerification).not.toHaveBeenCalled();
     expect(container.querySelector("form.qa-item-editor")?.textContent).toContain("Severity");
-    expect(second.querySelector('[aria-pressed="true"]')?.getAttribute("data-status")).toBe("failed");
+    expect(container.querySelectorAll<HTMLElement>(".pqa-verify")[1]?.querySelector("select")?.value).toBe("failed");
   });
 
   it("folds a fully passed requirement and filters to what is left to verify", async () => {
@@ -593,10 +625,19 @@ describe("ProjectRunPanel", () => {
     const criteria = [...container.querySelectorAll<HTMLDetailsElement>("details.pqa-criteria")];
     expect(criteria.map((node) => node.open)).toEqual([false, true]);
 
-    const filters = [...container.querySelectorAll<HTMLButtonElement>(".pqa-filter")];
+    // The filters are one pill, "Filter All 2", opening the choices.
+    const menu = container.querySelector<HTMLDetailsElement>("details.filter-menu")!;
+    expect(menu.querySelector("summary")?.textContent).toBe("FilterAll2");
+    const filters = [...menu.querySelectorAll<HTMLButtonElement>(".filter-menu__option")];
     expect(filters.map((button) => button.textContent)).toEqual(["All2", "To verify1", "Passed1"]);
+    menu.open = true;
     await act(async () => filters[1].click());
     expect(filters[1].getAttribute("aria-pressed")).toBe("true");
+    expect(menu.open).toBe(false);
+    expect(menu.querySelector("summary")?.textContent).toBe("FilterTo verify1");
+    // Who started the run sits inside the progress box, and no role line sits over the run.
+    expect(container.querySelector(".qa-summary .qa-run-card__started")?.textContent).toContain("2 items");
+    expect(container.querySelectorAll(".qa-run-card__started")).toHaveLength(1);
     expect([...container.querySelectorAll(".qa-run-item__title")].map((node) => node.textContent)).toEqual(["Checkout works"]);
     // Under a filter the headings are plain: nothing hides what was asked for.
     expect(container.querySelector(".pqa-group__toggle")).toBeNull();
@@ -620,10 +661,22 @@ describe("ProjectRunPanel", () => {
         }),
       }),
     );
-    const container = await render(<RunHarness role="qa" />);
-    expect(container.textContent).toContain("This run is stale");
-    expect(container.textContent).toContain("orders-api moved since this run (e4f5a6b → ffffeee)");
-    expect(buttonNamed(container, "Start a run on the current heads")).toBeDefined();
+    // An admin works in the repositories: each one that moved is named.
+    const admin = await render(<RunHarness role="admin" />);
+    expect(admin.textContent).toContain("This run is stale");
+    expect(admin.textContent).toContain("orders-api moved since this run (e4f5a6b → ffffeee)");
+    expect(buttonNamed(admin, "Start a run on the current heads")).toBeDefined();
+    act(() => root?.unmount());
+    root = null;
+
+    // The QA Team sees the Project only: one sentence, no repository, no commit.
+    const qa = await render(<RunHarness role="qa" />);
+    expect(qa.textContent).toContain("This run is stale");
+    expect(qa.textContent).toContain("The Project's code on uat changed since this run started.");
+    expect(qa.textContent).not.toContain("orders-api");
+    expect(qa.textContent).not.toContain("storefront-web");
+    expect(qa.querySelector(".pqa-heads")).toBeNull();
+    expect(buttonNamed(qa, "Start a run on the current heads")).toBeDefined();
   });
 
   it("says when requirements changed since sign-off", async () => {
@@ -646,15 +699,18 @@ describe("ProjectRunPanel", () => {
     runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: null, heads: [headWire({ runSha: null })] }));
     runs.start.mockResolvedValue({ created: true, run: normalizeProjectRunCurrent({ run: projectRunWire() }).run! });
     const qa = await render(<RunHarness role="qa" />);
-    expect(qa.textContent).toContain("storefront-web");
-    await act(async () => buttonNamed(qa, "Start Project QA run")!.click());
+    // The QA Team sees the Project, not its repositories.
+    expect(qa.textContent).not.toContain("storefront-web");
+    expect(qa.textContent).toContain("snapshots every requirement of this Project on its current uat build");
+    await act(async () => buttonNamed(qa, "Start QA testing")!.click());
     expect(runs.start).toHaveBeenCalledWith("dp-1");
     act(() => root?.unmount());
     root = null;
 
     const dev = await render(<RunHarness role="member" />);
-    expect(buttonNamed(dev, "Start Project QA run")).toBeUndefined();
-    expect(dev.textContent).toContain("QA Team members, Product owners and admins start the Project's QA run.");
+    expect(dev.textContent).toContain("storefront-web");
+    expect(buttonNamed(dev, "Start QA testing")).toBeUndefined();
+    expect(dev.textContent).toContain("QA Team members, Product owners and admins start QA testing.");
   });
 });
 
@@ -707,65 +763,73 @@ describe("ProjectMyItemsCard", () => {
 });
 
 describe("ProjectQaWorkspace", () => {
-  it("opens on the requirements for a Product owner and on the run for the QA Team, with arrow keys between tabs", async () => {
-    loadRequirements("lead");
+  function loadAll(role: AppRole) {
+    loadRequirements(role);
     runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
     runs.myItems.mockResolvedValue(normalizeProjectMyItems({}));
+  }
+
+  /* One view per persona, never tabs: the Product owner writes the
+   * requirements, a Developer works the items, the QA Team verifies them. */
+  it.each([
+    ["lead", "Requirements"],
+    ["admin", "Requirements"],
+    ["member", "Checklist"],
+    ["qa", "QA testing"],
+  ] as const)("gives a %s one view, %s, and no tabs", async (role, view) => {
+    loadAll(role);
+    const container = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole={role} />);
+    expect(container.querySelector('[role="tablist"], [role="tab"]')).toBeNull();
+    expect(container.querySelector('[role="region"]')?.getAttribute("aria-label")).toBe(view);
+  });
+
+  it("shows the Product owner and a Developer the checklist, and the QA Team its run", async () => {
+    loadAll("lead");
     const lead = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="lead" />);
-    const selected = () => lead.querySelector('[role="tab"][aria-selected="true"]')?.textContent;
-    expect(selected()).toBe("Requirements");
     expect(lead.querySelector("section.rq-section")).not.toBeNull();
-    const tab = lead.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')!;
-    await act(async () => tab.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })));
-    expect(selected()).toBe("QA run");
-    await act(async () => buttonNamed(lead, "My QA items")!.click());
-    expect(selected()).toBe("My QA items");
+    expect(runs.myItems).not.toHaveBeenCalled();
     act(() => root?.unmount());
     root = null;
 
+    loadAll("member");
+    const member = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="member" />);
+    // The same Features, with Progress to move and no authoring; QA's verdicts come from the run.
+    expect(member.querySelector("section.rq-section")).not.toBeNull();
+    expect(member.querySelector("fieldset.rq-progress")).not.toBeNull();
+    expect(buttonNamed(member, "New Feature")).toBeUndefined();
+    expect(runs.current).toHaveBeenCalled();
+    expect(runs.myItems).not.toHaveBeenCalled();
+    act(() => root?.unmount());
+    root = null;
+
+    loadAll("qa");
     const qa = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="qa" />);
-    expect(qa.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("QA run");
-    expect(qa.textContent).toContain("then sign the Project off");
+    // No instruction line over the QA Team's run.
+    expect(qa.textContent).not.toContain("then sign the Project off");
+    expect(qa.querySelector(".rq-panel__role")).toBeNull();
+    expect(qa.querySelector("section.rq-section")).toBeNull();
   });
 
-  /* A repository Overview's "Open checklist" links to the Project with
-   * #my-qa-items: the workspace opens on that tab, whatever the role. */
-  it("opens on My QA items for a #my-qa-items deep link", async () => {
-    loadRequirements("member");
-    runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
-    runs.myItems.mockResolvedValue(normalizeProjectMyItems({}));
+  /* Home's "Returned by QA" links here with #my-qa-items: a Developer's
+   * checklist opens on that chip, and nobody is moved off their view. */
+  it("keeps every persona on its own view for a #my-qa-items deep link", async () => {
+    loadAll("lead");
     window.history.replaceState(null, "", "#my-qa-items");
     try {
-      const view = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="qa" />);
-      expect(view.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("My QA items");
+      const view = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="lead" />);
+      expect(view.querySelector('[role="region"]')?.getAttribute("aria-label")).toBe("Requirements");
     } finally {
       window.history.replaceState(null, "", window.location.pathname);
     }
   });
 
-  /* Embedded in a repository's Checklists tab, the Overview's "Open checklist"
-   * asks for My QA items directly (the page's hash names the outer tab). */
-  it("opens on the tab it is asked to open on", async () => {
-    loadRequirements("lead");
-    runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
-    runs.myItems.mockResolvedValue(normalizeProjectMyItems({}));
-    const view = await render(
-      <ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="lead" opensOn="items" />,
-    );
-    expect(view.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("My QA items");
-  });
-
-  it("brings the Requirements tab forward and opens New Feature on a new request, never on a revisit", async () => {
-    loadRequirements("lead");
-    runs.current.mockResolvedValue(normalizeProjectRunCurrent({ run: projectRunWire() }));
-    runs.myItems.mockResolvedValue(normalizeProjectMyItems({}));
+  it("opens New Feature on a new request, once, never on a re-render", async () => {
+    loadAll("lead");
     const view = (request: number) => (
       <ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="lead" newFeatureRequest={request} />
     );
-    const container = await render(view(0));
-    const selected = () => container.querySelector('[role="tab"][aria-selected="true"]')?.textContent;
-    await act(async () => buttonNamed(container, "QA run")!.click());
-    expect(selected()).toBe("QA run");
+    await render(view(0));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
 
     await act(async () => root!.render(view(1)));
     for (let i = 0; i < 4; i += 1) {
@@ -773,13 +837,11 @@ describe("ProjectQaWorkspace", () => {
         await Promise.resolve();
       });
     }
-    expect(selected()).toBe("Requirements");
     expect(document.querySelector('[role="dialog"]')?.textContent).toContain("New Feature");
     await act(async () => buttonNamed(document.body, "Cancel")!.click());
 
-    // Leaving and coming back to the tab does not reopen it.
-    await act(async () => buttonNamed(container, "QA run")!.click());
-    await act(async () => buttonNamed(container, "Requirements")!.click());
+    // The same request again (a re-render) does not reopen it.
+    await act(async () => root!.render(view(1)));
     for (let i = 0; i < 4; i += 1) {
       await act(async () => {
         await Promise.resolve();
@@ -792,5 +854,125 @@ describe("ProjectQaWorkspace", () => {
     const container = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="lead" enabled={false} />);
     expect(container.textContent).toBe("");
     expect(requirements.listForProject).not.toHaveBeenCalled();
+  });
+});
+
+describe("The Project checklist (Developer and Product owner)", () => {
+  /** item-1 sent back by QA with its findings, item-2 still pending QA. */
+  function loadReturnedRun() {
+    loadRequirements("member");
+    runs.current.mockResolvedValue(
+      normalizeProjectRunCurrent({
+        run: projectRunWire({
+          items: [
+            runItemWire({
+              sourceItemId: "item-1",
+              status: "returned_to_dev",
+              defectSeverity: "major",
+              notes: "Card declined",
+              reproductionSteps: "Pay with the saved Visa",
+              verifiedBy: { id: "u", login: "ana-qa" },
+            }),
+            runItemWire({ id: "run-item-2", position: 1, sourceItemId: "item-2", status: "pending" }),
+          ],
+        }),
+      }),
+    );
+  }
+
+  function developer() {
+    return render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="member" />);
+  }
+
+  function chip(container: HTMLElement, label: string): HTMLButtonElement {
+    const found = [...container.querySelectorAll<HTMLButtonElement>(".rq-filter")].find((button) =>
+      button.textContent?.startsWith(label),
+    );
+    if (!found) throw new Error(`no ${label} chip`);
+    return found;
+  }
+
+  function rows(container: HTMLElement): HTMLElement[] {
+    return [...container.querySelectorAll<HTMLElement>("li.rq-item")];
+  }
+
+  it("puts QA's verdict and notes on the item it sent back, and nothing on one still pending", async () => {
+    loadReturnedRun();
+    const container = await developer();
+    const [returned, pending] = rows(container);
+    expect(returned?.getAttribute("data-verdict")).toBe("returned_to_dev");
+    expect(returned?.querySelector(".rq-item__verdict .qa-pill")).not.toBeNull();
+    expect(returned?.querySelector(".rq-item__verdict .qa-severity")).not.toBeNull();
+    expect(returned?.textContent).toContain("Returned by @ana-qa");
+    expect(returned?.textContent).toContain("Card declined");
+    expect(returned?.textContent).toContain("Pay with the saved Visa");
+    expect(pending?.querySelector(".rq-item__verdict")).toBeNull();
+    expect(pending?.querySelector(".qa-returned__detail")).toBeNull();
+  });
+
+  it("counts each chip, QA's word winning over Progress, and shows only the matches, opened", async () => {
+    loadReturnedRun();
+    const container = await developer();
+    const counts = Object.fromEntries(
+      [...container.querySelectorAll(".rq-filter")].map((button) => [
+        button.getAttribute("data-filter"),
+        button.querySelector(".rq-filter__count")?.textContent,
+      ]),
+    );
+    // item-1 is To do, but QA sent it back: it counts as Returned by QA only.
+    expect(counts).toEqual({ all: "2", returned: "1", todo: "0", in_progress: "0", done: "1" });
+    expect(chip(container, "All").getAttribute("aria-pressed")).toBe("true");
+    expect(container.querySelector(".rq-card__body")?.hasAttribute("hidden")).toBe(true);
+
+    await act(async () => chip(container, "Returned by QA").click());
+    expect(container.querySelector(".rq-card__body")?.hasAttribute("hidden")).toBe(false);
+    expect(rows(container).map((row) => row.querySelector(".rq-item__index")?.textContent)).toEqual(["01"]);
+
+    // A filter hides rows, never renumbers them.
+    await act(async () => chip(container, "Done").click());
+    expect(rows(container).map((row) => row.querySelector(".rq-item__index")?.textContent)).toEqual(["02"]);
+
+    await act(async () => chip(container, "To do").click());
+    expect(container.querySelector(".rq-empty--filtered")?.textContent).toBe("Nothing left to do.");
+    expect(container.querySelector("article.rq-card")).toBeNull();
+  });
+
+  it("opens on Returned by QA for Home's #my-qa-items link", async () => {
+    loadReturnedRun();
+    window.history.replaceState(null, "", "#my-qa-items");
+    try {
+      const container = await developer();
+      expect(chip(container, "Returned by QA").getAttribute("aria-pressed")).toBe("true");
+      expect(rows(container)).toHaveLength(1);
+    } finally {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  });
+
+  it("still lists every item without a run, or on a backend without Project runs", async () => {
+    loadRequirements("member");
+    runs.current.mockRejectedValue(Object.assign(new Error("404"), { status: 404 }));
+    const container = await developer();
+    expect(container.querySelector(".rq-item__verdict")).toBeNull();
+    expect(chip(container, "All").querySelector(".rq-filter__count")?.textContent).toBe("2");
+  });
+
+  /* The Product owner sees the progress of what it wrote: the same chips and
+   * QA's verdicts, with its authoring kept. */
+  it("gives the Product owner the same chips and verdicts, and keeps its authoring", async () => {
+    loadReturnedRun();
+    loadRequirements("lead");
+    const container = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="lead" />);
+    expect(chip(container, "Returned by QA").querySelector(".rq-filter__count")?.textContent).toBe("1");
+    expect(rows(container)[0]?.getAttribute("data-verdict")).toBe("returned_to_dev");
+    expect(buttonNamed(container, "New Feature")).toBeDefined();
+    expect(container.querySelector('button[aria-label^="Move "]')).not.toBeNull();
+  });
+
+  it("gives the QA Team no chips: its view is the run", async () => {
+    loadReturnedRun();
+    loadRequirements("qa");
+    const container = await render(<ProjectQaWorkspace deliveryProjectId="dp-1" projectName="storefront" appRole="qa" />);
+    expect(container.querySelector(".rq-filters")).toBeNull();
   });
 });

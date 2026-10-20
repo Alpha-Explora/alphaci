@@ -24,12 +24,49 @@
   color: var(--text-muted);
 }
 
+.tr-cases__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.tr-cases__toggle:hover {
+  color: var(--text-primary);
+}
+
+.tr-cases__chevron {
+  flex: none;
+  transition: transform 160ms ease-out;
+}
+
+.tr-cases__toggle[aria-expanded="true"] .tr-cases__chevron {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tr-cases__chevron {
+    transition: none;
+  }
+}
+
 .tr-cases__list {
   display: grid;
   gap: 0.4rem;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.tr-cases__list[hidden] {
+  display: none;
 }
 
 .tr-case {

@@ -3,10 +3,8 @@
 import "./pipeline-runs.css";
 
 import { useMemo } from "react";
-import Link from "next/link";
 
 import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-states";
-import { BrowserTestsCard } from "./pipeline-browser-tests-card";
 import { CommitCard } from "./pipeline-commit-card";
 import { distinctCommitTitles } from "../../model/pipeline-run-card-rules";
 import { runsViewModeFor, type RunsViewMode } from "../../model/runs-view-mode";
@@ -14,13 +12,12 @@ import type { AppRole } from "@/shared/api/contracts";
 import type { BranchRunSection } from "../../model/runs-by-branch";
 import {
   ALL_BRANCHES,
-  RUNS_POLL_MS,
   usePipelineRunsViewModel,
+  type PipelineRunsViewModel,
   type WorkflowRunSummary,
 } from "../../view-models/use-pipeline-runs-view-model";
 import { useBrowserTestsViewModel } from "../../view-models/use-browser-tests-view-model";
 import { visualCaptureOn, type BrowserTestsVisual } from "../../model/browser-test-rules";
-import type { WorkflowUpdateAccess } from "../../model/project-detail-tab-rules";
 
 /**
  * Live GitHub Actions runs for this project: branch → run → jobs → steps → log.
@@ -50,9 +47,6 @@ import type { WorkflowUpdateAccess } from "../../model/project-detail-tab-rules"
 export function PipelineRunsTab({
   projectId,
   appRole,
-  onOpenPullRequest,
-  workflowAccess,
-  onOpenWorkflow,
 }: {
   projectId: string;
   /**
@@ -60,27 +54,79 @@ export function PipelineRunsTab({
    * every other role the summary with logs behind a disclosure.
    */
   appRole?: AppRole;
-  /** Opens the Pull requests tab on a number; absent when that tab is not offered. */
-  onOpenPullRequest?: (pullRequestNumber: number) => void;
-  /** Whether "Update the workflow" may send this viewer to the update pull request. */
-  workflowAccess?: WorkflowUpdateAccess;
-  /** Opens the Pipeline tab's Configuration view, for turning visual testing on. */
-  onOpenWorkflow?: () => void;
 }) {
   const viewMode = runsViewModeFor(appRole);
   const runsView = usePipelineRunsViewModel({ projectId });
-  // Read once when the tab opens, beside the run list rather than inside its poll.
+  // Read once when the tab opens, beside the run list rather than inside its poll:
+  // whether the Verify stage takes screenshots, for its visual results. The
+  // "Browser tests" setup card lives in QA / PO Studio's Playwright tab, not here.
   const browserTests = useBrowserTestsViewModel({ projectId });
 
+  return (
+    <div className="pipeline-tab__run-view">
+      <div className="pipeline-tab__head">
+        <h2 className="pipeline-tab__name">Workflows</h2>
+        {runsView.status === "ready" && !runsView.isEmpty ? (
+          <BranchPicker runsView={runsView} />
+        ) : null}
+      </div>
+
+      <PipelineRunsBody
+        projectId={projectId}
+        appRole={appRole}
+        viewMode={viewMode}
+        runsView={runsView}
+        visual={browserTests.visual}
+      />
+    </div>
+  );
+}
+
+function BranchPicker({ runsView }: Readonly<{ runsView: PipelineRunsViewModel }>) {
+  return (
+    <label className="ws-branchpick">
+      <span className="ws-branchpick__label">Branch</span>
+      <select
+        className="ws-select"
+        value={runsView.selectedBranch}
+        onChange={(event) => runsView.selectBranch(event.target.value)}
+      >
+        {runsView.sections.map((section) => (
+          <option key={section.branch} value={section.branch}>
+            {section.branch}
+            {section.commits.length > 0
+              ? ` (${String(section.commits.length)})`
+              : " — no runs"}
+          </option>
+        ))}
+        <option value={ALL_BRANCHES}>All branches</option>
+      </select>
+    </label>
+  );
+}
+
+function PipelineRunsBody({
+  projectId,
+  appRole,
+  viewMode,
+  runsView,
+  visual,
+}: {
+  projectId: string;
+  appRole?: AppRole;
+  viewMode: RunsViewMode;
+  runsView: PipelineRunsViewModel;
+  visual: BrowserTestsVisual | null;
+}) {
   if (runsView.status === "loading") return <WorkspaceLoading rows={5} />;
-  if (runsView.status === "error")
+  if (runsView.status === "error") {
     return (
       <WorkspaceError
         message={runsView.error ?? "The run list could not be read."}
         onRetry={runsView.reload}
       />
     );
-
+  }
   if (runsView.isEmpty) {
     return (
       <WorkspaceEmpty
@@ -89,60 +135,8 @@ export function PipelineRunsTab({
       />
     );
   }
-
   return (
     <div className="ws-panel">
-      <div className="ws-toolbar ws-toolbar--between">
-        <label className="ws-branchpick">
-          <span className="ws-branchpick__label">Branch</span>
-          <select
-            className="ws-select"
-            value={runsView.selectedBranch}
-            onChange={(event) => runsView.selectBranch(event.target.value)}
-          >
-            {/* EVERY pipeline branch. visibleSections is the FILTERED list, and
-                using it here collapses the picker to the branch selected. */}
-            {runsView.sections.map((section) => (
-              <option key={section.branch} value={section.branch}>
-                {section.branch}
-                {section.commits.length > 0
-                  ? ` (${String(section.commits.length)})`
-                  : " — no runs"}
-              </option>
-            ))}
-            <option value={ALL_BRANCHES}>All branches</option>
-          </select>
-        </label>
-        <span className="ws-hint">
-          Refreshes every {RUNS_POLL_MS / 1000} seconds
-        </span>
-        <span className="ws-toolbar__links">
-          {/*
-            The cross-project view. This tab answers "what happened to THIS
-            project"; /runs answers "what is red anywhere", which no per-project
-            tab can. Since Pipeline runs replaced the rail bar that used to lead
-            there, this is the link that keeps it reachable from a project.
-          */}
-          <Link
-            className="ws-link"
-            href={
-              runsView.repoFullName
-                ? `/runs?repoFullName=${encodeURIComponent(runsView.repoFullName)}`
-                : "/runs"
-            }
-          >
-            Runs across all projects →
-          </Link>
-        </span>
-      </div>
-
-      <BrowserTestsCard
-        view={browserTests}
-        onOpenPullRequest={onOpenPullRequest}
-        workflowAccess={workflowAccess}
-        onOpenWorkflow={onOpenWorkflow}
-      />
-
       {runsView.reportsUnavailable && (
         <p className="pipe-banner pipe-banner--warning" role="status">
           Showing what GitHub executed. Our own stage grading could not be read,
@@ -158,7 +152,8 @@ export function PipelineRunsTab({
           viewMode={viewMode}
           appRole={appRole}
           repoFullName={runsView.repoFullName}
-          visual={browserTests.visual}
+          visual={visual}
+          showBranchHeading={runsView.selectedBranch === ALL_BRANCHES}
         />
       ))}
     </div>
@@ -173,6 +168,7 @@ function BranchSection({
   appRole,
   repoFullName,
   visual,
+  showBranchHeading,
 }: {
   projectId: string;
   repoFullName: string | null;
@@ -181,6 +177,7 @@ function BranchSection({
   appRole?: AppRole;
   /** The workflow's visual setting, from the browser-tests status; null when unknown. */
   visual: BrowserTestsVisual | null;
+  showBranchHeading: boolean;
 }) {
   // Computed across the section: a title is only worth showing when it tells
   // this commit apart from the others on the branch.
@@ -188,14 +185,16 @@ function BranchSection({
 
   return (
     <section className="ws-runsection" aria-label={`${section.branch} branch`}>
-      <div className="ws-runsection__head">
-        <h3 className="ws-runsection__branch">{section.branch}</h3>
-        <span className="ws-runsection__count">
-          {section.commits.length === 1
-            ? "1 commit"
-            : `${section.commits.length} commits`}
-        </span>
-      </div>
+      {showBranchHeading ? (
+        <div className="ws-runsection__head">
+          <h3 className="ws-runsection__branch">{section.branch}</h3>
+          <span className="ws-runsection__count">
+            {section.commits.length === 1
+              ? "1 commit"
+              : `${section.commits.length} commits`}
+          </span>
+        </div>
+      ) : null}
 
       {section.commits.length === 0 ? (
         <p className="ws-runsection__empty">

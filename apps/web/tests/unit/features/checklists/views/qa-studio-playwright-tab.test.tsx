@@ -183,18 +183,19 @@ function buttonNamed(scope: ParentNode, name: string): HTMLButtonElement | undef
 }
 
 describe("Studio column — one container", () => {
-  it("stacks the tab bar (tabs, readiness chip), the merge outcome's live region, then the panels", async () => {
+  it("stacks its header (title, readiness chip), the merge outcome's live region, then the panels; the tabs sit on the rail strip", async () => {
     setup();
     const container = await studio("qa");
     const column = container.querySelector<HTMLElement>(".qa-studio__run")!;
     const order = [...column.children].map((child) => child.getAttribute("role") ?? child.className);
-    expect(order).toEqual(["qa-coltabs-bar", "status", "tabpanel", "tabpanel"]);
-    // No promotion strip: the checklist panel starts right under the bar (the live region is empty).
+    // The resize edge comes first: it is drawn against the panel's left side.
+    expect(order).toEqual(["separator", "qa-drawer__head", "status", "tabpanel", "tabpanel"]);
+    // No promotion strip: the checklist panel starts right under the header (the live region is empty).
     expect(column.querySelector(".qa-promo")).toBeNull();
     expect(column.querySelector('[role="status"]')?.childElementCount).toBe(0);
-    const bar = column.querySelector(".qa-coltabs-bar")!;
-    expect(bar.querySelector('[role="tablist"]')).not.toBeNull();
-    expect(bar.querySelector(".qa-promo-chip")).not.toBeNull();
+    expect(column.querySelector(".qa-drawer__head .qa-coltabs-bar .qa-promo-chip")).not.toBeNull();
+    expect(column.querySelector('[role="tablist"]')).toBeNull();
+    expect(container.querySelector('.qa-rail__strip [role="tablist"]')?.getAttribute("aria-orientation")).toBe("vertical");
     expect(panel(container, "checklist").hidden).toBe(false);
     expect(panel(container, "playwright").hidden).toBe(true);
   });
@@ -245,15 +246,18 @@ describe("Studio column — one container", () => {
     setup();
     const container = await studio("qa");
     const label = tab(container, "playwright");
-    expect(label.querySelector(".qa-coltab__status")?.textContent).toBe("·27/29");
+    expect(label.querySelector(".qa-coltab__status")?.textContent).toBe("27/29");
     expect(label.querySelector(".qa-coltab__status")?.getAttribute("data-tone")).toBe("failed");
-    expect(label.querySelector(".sr-only")?.textContent).toBe(", 27 of 29 browser tests passed");
+    const spoken = [...label.querySelectorAll(".sr-only")].map((node) => node.textContent).join("");
+    expect(spoken).toMatch(/^Playwright, 27 of 29 browser tests passed\. /);
+    expect(label.getAttribute("title")).toBe("Playwright · 27 of 29 browser tests passed");
   });
 
   it("says nothing on the label before anything reported", async () => {
     setup(automatedRun({ automation: { verify: null, quality: null }, automationByRepository: [] }));
     const container = await studio("qa");
-    expect(tab(container, "playwright").textContent).toBe("Playwright");
+    expect(tab(container, "playwright").querySelector(".qa-coltab__status")).toBeNull();
+    expect(tab(container, "playwright").textContent).toBe("Playwright. No automated results");
   });
 });
 
@@ -262,7 +266,7 @@ describe("Studio column — the Checklist tab", () => {
     setup();
     const container = await studio("qa");
     const checklistPanel = panel(container, "checklist");
-    expect(checklistPanel.textContent).toContain("Project QA run");
+    expect(checklistPanel.textContent).toContain("QA testing");
     expect(checklistPanel.querySelectorAll(".pqa-group").length).toBeGreaterThan(0);
     expect(checklistPanel.querySelector(".qa-auto-stage")).toBeNull();
     expect(buttonNamed(checklistPanel, "Run Playwright")).toBeUndefined();
@@ -404,8 +408,7 @@ describe("Studio column — the Playwright tab", () => {
     const items = [...playwright.querySelectorAll<HTMLElement>('[role="menuitem"]')];
     expect(items.map((item) => item.querySelector(".qa-export__item-title")?.textContent)).toEqual([
       "Download PDF",
-      "Copy PR Markdown",
-      "Download JSON",
+      "Download Excel",
     ]);
     expect(items[0]?.getAttribute("href")).toBe("/qa/project-report/dp-1/prun-1?print=1");
     expect(panel(container, "checklist").querySelector(".qa-export__trigger")).toBeNull();
@@ -506,7 +509,7 @@ describe("Studio column — the Playwright tab", () => {
     const playwright = panel(container, "playwright");
     expect(playwright.textContent).toContain("This server doesn't report automated results.");
     expect(buttonNamed(playwright, "Run Playwright")).toBeUndefined();
-    expect(tab(container, "playwright").textContent).toBe("Playwright");
+    expect(tab(container, "playwright").querySelector(".qa-coltab__status")).toBeNull();
   });
 
   it("asks for a run first when the Project has none", async () => {
@@ -657,7 +660,7 @@ describe("Studio column — Reopen beside a blocked Run Playwright", () => {
 });
 
 describe("Studio column — full screen", () => {
-  it("floats the same container (tab bar with the chip, panels) as the drawer, mounted once", async () => {
+  it("floats the same container (header with the chip, panels) as the drawer, mounted once, its tabs on the strip", async () => {
     setup();
     const container = await studio("qa");
     await click(tab(container, "playwright"));
@@ -671,9 +674,9 @@ describe("Studio column — full screen", () => {
     expect(panel(container, "playwright")).toBe(playwright);
     const drawer = container.querySelector('.qa-studio__run[role="region"]')!;
     expect(drawer.querySelectorAll(".qa-coltabs-bar")).toHaveLength(1);
-    expect(drawer.querySelector(".qa-coltabs-bar .qa-promo-chip")).not.toBeNull();
-    expect(drawer.querySelector('[role="tablist"]')).not.toBeNull();
-    expect(drawer.querySelector(".qa-drawer__head")?.nextElementSibling?.className).toBe("qa-coltabs-bar");
+    expect(drawer.querySelector(".qa-drawer__head .qa-coltabs-bar .qa-promo-chip")).not.toBeNull();
+    expect(container.querySelector('.qa-rail__strip [role="tablist"]')).not.toBeNull();
+    expect(drawer.querySelector(".qa-drawer__title")?.textContent).toBe("Playwright");
     expect(tab(container, "playwright").getAttribute("aria-selected")).toBe("true");
   });
 });
