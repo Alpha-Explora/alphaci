@@ -81,29 +81,15 @@ export const QA_ATTACHMENT_ERROR_MESSAGES: Readonly<Record<string, string>> = {
     "You cannot change this item's evidence. The QA Team, Product owners and admins add screenshots; the uploader, a Product owner or an admin removes one.",
   QA_ATTACHMENTS_UNAVAILABLE:
     "Screenshots are not available on this server right now. Try again later, or ask an admin to check attachment storage.",
-  QA_FIX_PROOF_NOT_REQUESTED:
-    "Proof of a fix can be attached only while QA has returned this item, or after it is marked Done for re-test.",
-};
-
-/**
- * Where a Developer's proof of a fix needs other words than QA's evidence:
- * who may add it, and that its limit is its own five.
- */
-export const FIX_PROOF_ERROR_MESSAGES: Readonly<Record<string, string>> = {
-  QA_ATTACHMENT_FORBIDDEN:
-    "You cannot change this item's proof of the fix. Developers, Product owners and admins attach it; the uploader, a Product owner or an admin removes it.",
-  QA_ATTACHMENT_LIMIT: "This item already has 5 screenshots of the fix, the most it can hold. Delete one to add another.",
 };
 
 /**
  * The product sentence for an evidence failure, or null when its code is not
  * an evidence code. A bare 413 (a proxy refusing the body before the server
- * saw it) reads as "too large" too. `fixProof` picks the Developer's wording
- * where it differs.
+ * saw it) reads as "too large" too.
  */
-export function attachmentCodeMessage(cause: unknown, fixProof = false): string | null {
-  const code = errorCode(cause);
-  const message = (fixProof ? FIX_PROOF_ERROR_MESSAGES[code] : undefined) ?? QA_ATTACHMENT_ERROR_MESSAGES[code];
+export function attachmentCodeMessage(cause: unknown): string | null {
+  const message = QA_ATTACHMENT_ERROR_MESSAGES[errorCode(cause)];
   if (message) return message;
   return errorStatus(cause) === 413 ? QA_ATTACHMENT_ERROR_MESSAGES.QA_ATTACHMENT_TOO_LARGE : null;
 }

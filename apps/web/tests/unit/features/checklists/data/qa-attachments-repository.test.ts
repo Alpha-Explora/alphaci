@@ -53,24 +53,6 @@ describe("qaAttachmentsRepository", () => {
     expect(form.get("kind")).toBe("evidence");
   });
 
-  it("sends a Developer's proof of a fix as kind fix_proof", async () => {
-    mockedRequest.mockResolvedValue(attachmentWire({ kind: "fix_proof" }));
-    const saved = await qaAttachmentsRepository.upload("dp-1", "prun-1", "run-item-1", {
-      file: image(),
-      fileName: "evidence-20261014-100000.webp",
-      caption: null,
-      source: "paste",
-      kind: "fix_proof",
-    });
-    expect(saved.kind).toBe("fix_proof");
-    const form = mockedRequest.mock.calls[0][1]?.body as FormData;
-    expect(form.get("kind")).toBe("fix_proof");
-    expect(form.get("source")).toBe("paste");
-    expect(evidenceFormData({ file: image(), fileName: "a.webp", caption: null, source: "upload", kind: "evidence" }).get("kind")).toBe(
-      "evidence",
-    );
-  });
-
   it("sends no caption field when there is none", () => {
     const form = evidenceFormData({ file: image(), fileName: "a.webp", caption: null, source: "paste" });
     expect(form.has("caption")).toBe(false);

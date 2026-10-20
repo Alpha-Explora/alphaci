@@ -3,10 +3,10 @@
 import { useEffect, useId, useRef, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 
-import { attachmentKindLabel, evidenceAlt, positionLabel } from "../../model/qa-attachment-rules";
+import { evidenceAlt, positionLabel } from "../../model/qa-attachment-rules";
 import type { QaAttachment } from "../../model/qa-attachment-types";
 import { agoLabel } from "../../model/qa-run-rules";
-import { ChevronLeftIcon, ChevronRightIcon, CloseIcon } from "./evidence-icons";
+import { ChevronLeftIcon, ChevronRightIcon, CrossIcon } from "./studio-icons";
 
 const FOCUSABLE = 'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
 
@@ -60,8 +60,7 @@ function Byline({ attachment }: Readonly<{ attachment: QaAttachment }>) {
 }
 
 /**
- * One screenshot at full size, over the page; the title says which kind it
- * is (QA evidence, Fix proof). A modal dialog drawn on
+ * One screenshot at full size, over the page. A modal dialog drawn on
  * <body> (a full-screen studio's drawer would otherwise be its containing
  * block): focus moves to Close on open, stays inside while open (Tab wraps)
  * and returns to the thumbnail on close. Escape closes; the arrow keys step
@@ -113,11 +112,11 @@ export function EvidenceLightbox({
       >
         <div className="qa-lightbox__head">
           <h2 className="qa-lightbox__title" id={titleId}>
-            {attachmentKindLabel(attachment.kind)} · {itemTitle}
+            Evidence · {itemTitle}
           </h2>
           {many ? <span className="qa-lightbox__position">{positionLabel(index, attachments.length)}</span> : null}
           <button ref={closeRef} type="button" className="qa-lightbox__button" aria-label="Close" onClick={onClose}>
-            <CloseIcon />
+            <CrossIcon />
           </button>
         </div>
         <figure className="qa-lightbox__figure">

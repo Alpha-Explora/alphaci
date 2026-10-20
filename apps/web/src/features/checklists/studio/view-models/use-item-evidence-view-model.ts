@@ -1,47 +1,125 @@
 "use client";
 
-import { useAttachmentGroupViewModel, type AttachmentGroupViewModel, type CaptureOption } from "../../evidence";
+import { useEffect, useRef, useState } from "react";
+
+import { captureElement, imageFromFile, supportsScreenCapture } from "../../data/evidence-capture-repository";
+import { qaAttachmentsRepository } from "../../data/qa-attachments-repository";
+import { evidenceFileName, firstImageIndex } from "../../model/evidence-image-rules";
 import type { ProjectQaRunItem } from "../../model/project-run-types";
-import { evidenceCountFromRun } from "../../model/qa-attachment-rules";
+import {
+  attachmentErrorMessage,
+  canDeleteEvidence,
+  captionError,
+  captionPayload,
+  captureErrorMessage,
+  evidenceAtLimit,
+  evidenceCount,
+  stepIndex,
+} from "../../model/qa-attachment-rules";
+import type { EvidenceImage, EvidenceUploadInput, QaAttachment } from "../../model/qa-attachment-types";
+import { errorCode } from "../../model/wire-readers";
 import type { PreviewCaptureTarget } from "./preview-capture-target";
 import { useRememberedFlag } from "./use-remembered-flag";
 import type { RunEvidenceViewModel } from "./use-run-evidence-view-model";
 
 /**
- * `hidden`: nothing to show and nothing this viewer may add (or the server
- * has no screenshots); `single`: QA evidence only, drawn exactly as before
- * fix proofs existed; `grouped`: the item also holds a Developer's proof of
- * the fix, so the two kinds sit in labelled groups.
+ * `preparing` while an image is captured, decoded and compressed; `draft`
+ * once it waits for its caption and Save; `saving` / `deleting` while the
+ * write is in flight.
  */
-export type ItemEvidenceStatus = "hidden" | "single" | "grouped";
+export type ItemEvidenceStatus = "idle" | "preparing" | "draft" | "saving" | "deleting";
+
+export type EvidenceSource = EvidenceUploadInput["source"];
+
+export interface EvidenceDraft {
+  image: EvidenceImage;
+  /** An object URL for the preview; revoked when the draft goes. */
+  previewUrl: string;
+  source: EvidenceSource;
+}
 
 export interface ItemEvidenceViewModel {
   status: ItemEvidenceStatus;
-  /** QA's evidence: Capture, Paste and Upload add here, and only here. */
-  qa: AttachmentGroupViewModel;
-  /** The Developer's proof of the fix: read-only in QA Studio (delete where the server allows). */
-  fix: AttachmentGroupViewModel;
-  /** Both groups: the section's badge. */
+  /** This item's screenshots, oldest first; undefined while the run's list is read. */
+  attachments: QaAttachment[] | undefined;
+  /** What the badge says before (and after) the list is read. */
   count: number;
+  /** Capture, Paste and Upload are offered (the run is open, the server allows it, the item is not full). */
+  canAdd: boolean;
+  /** This viewer could add, but the item already holds the most it can. */
+  atLimit: boolean;
+  /** Only where the browser can share a tab and QA Studio's preview is on the page. */
+  canCapture: boolean;
+  /** The one line about the browser's prompt, until the first capture. */
+  showCaptureHint: boolean;
+  draft: EvidenceDraft | null;
+  caption: string;
+  /** Safe to render. */
+  error: string | null;
+  /** The attachment whose delete waits for "Delete" / "Keep". */
+  confirmingDeleteId: string | null;
+  /** The image open in the lightbox, or null. */
+  lightboxIndex: number | null;
+  canDelete: (attachment: QaAttachment) => boolean;
+  capture: () => Promise<void>;
+  /** A paste: true when it held an image (the caller then stops the browser's own paste). */
+  paste: (files: ReadonlyArray<File>) => boolean;
+  choose: (file: File | null | undefined) => void;
+  setCaption: (caption: string) => void;
+  save: () => Promise<void>;
+  discard: () => void;
+  askDelete: (attachmentId: string) => void;
+  cancelDelete: () => void;
+  confirmDelete: () => Promise<void>;
+  openLightbox: (index: number) => void;
+  closeLightbox: () => void;
+  step: (delta: number) => void;
+  /** An image did not load: its signed URL may have run out. */
+  imageFailed: () => void;
+  dismissError: () => void;
 }
 
-const HINT_KEY = "alphaci.qa.evidence.capture-hint-seen";
+const PREPARE_ERROR = "The image could not be read. Try another screenshot.";
+const SAVE_ERROR = "The screenshot could not be saved. Try again in a moment.";
+const DELETE_ERROR = "The screenshot could not be deleted. Try again in a moment.";
 
-function itemEvidenceStatus(
-  evidence: Pick<RunEvidenceViewModel, "status">,
-  qa: AttachmentGroupViewModel,
-  fix: AttachmentGroupViewModel,
-): ItemEvidenceStatus {
-  if (evidence.status === "hidden") return "hidden";
-  if (fix.count > 0) return "grouped";
-  const anything = qa.canAdd || qa.atLimit || qa.count > 0 || qa.draft !== null;
-  return anything ? "single" : "hidden";
+/** Codes after which the run's own list is out of date (someone else added, or the run froze). */
+const RELOAD_CODES: ReadonlySet<string> = new Set(["QA_ATTACHMENT_LIMIT", "QA_RUN_SIGNED_OFF"]);
+
+/** The draft's preview URL, revoked whenever the draft is replaced or the item unmounts. */
+function useDraft(): [EvidenceDraft | null, (next: EvidenceDraft | null) => void] {
+  const [draft, setDraftState] = useState<EvidenceDraft | null>(null);
+  const current = useRef<EvidenceDraft | null>(null);
+  useEffect(
+    () => () => {
+      if (current.current) URL.revokeObjectURL(current.current.previewUrl);
+    },
+    [],
+  );
+  function setDraft(next: EvidenceDraft | null) {
+    if (current.current && current.current !== next) URL.revokeObjectURL(current.current.previewUrl);
+    current.current = next;
+    setDraftState(next);
+  }
+  return [draft, setDraft];
+}
+
+function isBusy(status: ItemEvidenceStatus): boolean {
+  return status === "preparing" || status === "saving" || status === "deleting";
+}
+
+/** The lightbox's image, while it still exists (a delete can remove the last one). */
+function shownIndex(index: number | null, length: number): number | null {
+  return index !== null && index < length ? index : null;
 }
 
 /**
- * ViewModel for one QA Studio item's Evidence: QA's own group (Capture the
- * preview, Paste, Upload, all as `evidence`) and, beside it once there is
- * any, the Developer's proof of the fix. Both read the run's one list.
+ * ViewModel for one item's Evidence: the three ways in (Capture the QA Studio
+ * preview, Paste from the clipboard, Upload a file), each compressed in the
+ * browser before an optional caption and Save; inline delete confirmation;
+ * and the lightbox's position. Every right comes from the server: the run's
+ * `attachments.canAdd` and each attachment's `canDelete`, both off once the
+ * run is signed off.
  */
 export function useItemEvidenceViewModel(options: {
   item: ProjectQaRunItem;
@@ -163,14 +241,34 @@ export function useItemEvidenceViewModel(options: {
     lightboxIndex: shownIndex(lightboxIndex, length),
     canDelete: (attachment) => canDeleteEvidence(attachment, { status: evidence.open ? "open" : "signed_off" }),
     capture,
-  });
-  const fix = useAttachmentGroupViewModel({
-    itemId: item.id,
-    group: "fix_proof",
-    source: evidence,
-    countFromRun: item.fixProofCount,
-    mayAdd: false,
-    capture: null,
-  });
-  return { status: itemEvidenceStatus(evidence, qa, fix), qa, fix, count: qa.count + fix.count };
+    paste: (files) => {
+      const index = firstImageIndex(files.map((file) => file.type));
+      if (index < 0 || !canAdd) return false;
+      void prepare(files[index], "paste");
+      return true;
+    },
+    choose: (file) => {
+      if (file) void prepare(file, "upload");
+    },
+    setCaption,
+    save,
+    discard: () => {
+      clearDraft();
+      setError(null);
+    },
+    askDelete: (attachmentId) => {
+      setError(null);
+      setConfirmingDeleteId(attachmentId);
+    },
+    cancelDelete: () => setConfirmingDeleteId(null),
+    confirmDelete,
+    openLightbox: (index) => {
+      evidence.refreshIfExpired();
+      setLightboxIndex(index);
+    },
+    closeLightbox: () => setLightboxIndex(null),
+    step: (delta) => setLightboxIndex((current) => (current === null ? current : stepIndex(current, delta, length))),
+    imageFailed: evidence.refreshIfExpired,
+    dismissError: () => setError(null),
+  };
 }

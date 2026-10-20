@@ -111,14 +111,6 @@ export interface ProjectQaRunItem {
    * server that sends none (then the Evidence section stays hidden).
    */
   attachmentCount: number | null;
-  /** How many of those are a Developer's proof of a fix. Null on a server that sends none. */
-  fixProofCount: number | null;
-  /**
-   * The server's answer: this viewer may attach proof of a fix to this item
-   * now (QA returned it, or it is Done and awaits re-test, with room left).
-   * False when the server did not say.
-   */
-  canAttachFixProof: boolean;
   /** The report's frozen per-item images (ids and captions, no URLs). Empty on a run payload. */
   attachments: QaAttachmentRef[];
   /**

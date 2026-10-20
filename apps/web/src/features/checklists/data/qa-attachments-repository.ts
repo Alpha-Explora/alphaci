@@ -4,7 +4,7 @@ import { normalizeAttachment, normalizeAttachmentList } from "../model/qa-attach
 import type { EvidenceUploadInput, QaAttachment } from "../model/qa-attachment-types";
 
 /* The only place in the checklists domain that talks to the QA evidence
- * endpoints (QA_ATTACHMENTS_PLAN.md §5 A1, A2). Images live in a private bucket;
+ * endpoints (QA_ATTACHMENTS_PLAN.md §5 A1). Images live in a private bucket;
  * every read returns five-minute signed URLs, so a list is read again rather
  * than cached once one expires. Replies are normalised here.
  *
@@ -30,7 +30,7 @@ export function evidenceFormData(input: EvidenceUploadInput): FormData {
   form.append("file", input.file, input.fileName);
   if (input.caption) form.append("caption", input.caption);
   form.append("source", input.source);
-  form.append("kind", input.kind ?? "evidence");
+  form.append("kind", "evidence");
   return form;
 }
 
@@ -45,7 +45,7 @@ export const qaAttachmentsRepository = {
     return normalizeAttachmentList(await request<unknown>(`${runPath(deliveryProjectId, runId)}/attachments`));
   },
 
-  /** Attach one image: QA evidence, or (`kind: "fix_proof"`) a Developer's proof of a fix. 201 replies with the attachment. */
+  /** Attach one image as QA evidence. 201 replies with the attachment. */
   async upload(deliveryProjectId: string, runId: string, itemId: string, input: EvidenceUploadInput): Promise<QaAttachment> {
     const raw = await request<unknown>(itemAttachmentsPath(deliveryProjectId, runId, itemId), {
       method: "POST",
