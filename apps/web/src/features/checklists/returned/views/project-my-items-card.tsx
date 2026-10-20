@@ -23,7 +23,6 @@ import {
   useProjectMyItemsViewModel,
   type ProjectMyItemsViewModel,
 } from "../view-models/use-project-my-items-view-model";
-import { FixProof } from "./fix-proof";
 import { ProgressControl } from "./progress-control";
 import { QaFindings } from "./qa-findings";
 
@@ -43,14 +42,12 @@ function FeedRow({
   canSet,
   progress,
   onReload,
-  deliveryProjectId,
 }: Readonly<{
   entry: ProjectFeedItem;
   bucket: MyItemsBucket;
   canSet: boolean;
   progress: ItemProgressViewModel;
   onReload: () => void;
-  deliveryProjectId: string;
 }>) {
   const { item, requirement, runItem } = entry;
   return (
@@ -84,14 +81,12 @@ function Bucket({
   canSet,
   progress,
   onReload,
-  deliveryProjectId,
 }: Readonly<{
   bucket: MyItemsBucket;
   entries: ProjectFeedItem[];
   canSet: boolean;
   progress: ItemProgressViewModel;
   onReload: () => void;
-  deliveryProjectId: string;
 }>) {
   if (entries.length === 0) return null;
   const copy = bucketCopy(bucket);
@@ -112,7 +107,6 @@ function Bucket({
             canSet={canSet}
             progress={progress}
             onReload={onReload}
-            deliveryProjectId={deliveryProjectId}
           />
         ))}
       </ul>
@@ -162,14 +156,7 @@ function Buckets({
   ready,
   canSet,
   progress,
-  deliveryProjectId,
-}: Readonly<{
-  list: ProjectMyItemsViewModel;
-  ready: boolean;
-  canSet: boolean;
-  progress: ItemProgressViewModel;
-  deliveryProjectId: string;
-}>) {
+}: Readonly<{ list: ProjectMyItemsViewModel; ready: boolean; canSet: boolean; progress: ItemProgressViewModel }>) {
   if (!ready) {
     return <p className="qa-mine__lede">Nothing here yet. Items appear once a Product owner writes requirements.</p>;
   }
@@ -183,7 +170,6 @@ function Buckets({
           canSet={canSet}
           progress={progress}
           onReload={list.reload}
-          deliveryProjectId={deliveryProjectId}
         />
       ))}
     </>
@@ -227,8 +213,7 @@ function cardState(
 /**
  * "My QA items" for a whole Project: every Developer's items, in four
  * buckets (returned by QA, in progress, to do, ready for QA), with the
- * Progress control for Developers, Product owners and admins, and "Proof of
- * the fix" where the server lets a Developer attach screenshots of it. The QA Team
+ * Progress control for Developers, Product owners and admins. The QA Team
  * reads the same list; "Ready for QA" is their queue.
  *
  * `hideWhenEmpty` keeps the repository Overview quiet when there is nothing

@@ -4,11 +4,8 @@ import {
   anyUrlExpired,
   attachmentCountFrom,
   attachmentErrorMessage,
-  attachmentGroup,
-  attachmentKindLabel,
   attachmentRefsFrom,
   attachmentsByItem,
-  attachmentsInGroup,
   attachmentSettingsFrom,
   canAddEvidence,
   canDeleteEvidence,
@@ -19,7 +16,6 @@ import {
   evidenceAlt,
   evidenceAtLimit,
   evidenceCount,
-  evidenceCountFromRun,
   evidenceCountLabel,
   imageUrl,
   MAX_CAPTION_LENGTH,
@@ -29,13 +25,11 @@ import {
   reportEvidence,
   reportHasEvidence,
   showsEvidence,
-  showsFixProof,
   stepIndex,
   urlExpired,
 } from "../../../../../src/features/checklists/model/qa-attachment-rules";
 import {
   attachmentCodeMessage,
-  FIX_PROOF_ERROR_MESSAGES,
   QA_ATTACHMENT_ERROR_MESSAGES,
   qaCodeMessage,
 } from "../../../../../src/features/checklists/model/qa-error-messages";
@@ -106,14 +100,8 @@ describe("reading attachments from the wire", () => {
   });
 
   it("reads the run's answer, and none at all as 'hidden'", () => {
-    expect(attachmentSettingsFrom({ enabled: true, canAdd: true })).toEqual({ enabled: true, canAdd: true, canAddFixProof: false });
-    expect(attachmentSettingsFrom({ enabled: false })).toEqual({ enabled: false, canAdd: false, canAddFixProof: false });
-    expect(attachmentSettingsFrom({ enabled: true, canAdd: false, canAddFixProof: true })).toEqual({
-      enabled: true,
-      canAdd: false,
-      canAddFixProof: true,
-    });
-    expect(attachmentSettingsFrom({ enabled: true, canAddFixProof: "yes" })?.canAddFixProof).toBe(false);
+    expect(attachmentSettingsFrom({ enabled: true, canAdd: true })).toEqual({ enabled: true, canAdd: true });
+    expect(attachmentSettingsFrom({ enabled: false })).toEqual({ enabled: false, canAdd: false });
     expect(attachmentSettingsFrom({ canAdd: true })).toBeNull();
     expect(attachmentSettingsFrom(undefined)).toBeNull();
   });
@@ -144,32 +132,9 @@ describe("the Project run carries the attachment answers", () => {
         items: [runItemWire({ attachmentCount: 2 }), runItemWire({ id: "run-item-2", position: 1 })],
       }),
     )!;
-    expect(run.attachments).toEqual({ enabled: true, canAdd: false, canAddFixProof: false });
+    expect(run.attachments).toEqual({ enabled: true, canAdd: false });
     expect(run.items.map((item) => item.attachmentCount)).toEqual([2, null]);
     expect(run.items[0].attachments).toEqual([]);
-  });
-
-  it("reads each item's fix-proof count and whether proof may be attached now", () => {
-    const run = normalizeProjectRun(
-      projectRunWire({
-        attachments: { enabled: true, canAdd: false, canAddFixProof: true },
-        items: [
-          runItemWire({ status: "returned_to_dev", attachmentCount: 3, fixProofCount: 1, canAttachFixProof: true }),
-          runItemWire({ id: "run-item-2", position: 1, fixProofCount: -2, canAttachFixProof: "true" }),
-        ],
-      }),
-    )!;
-    expect(run.attachments?.canAddFixProof).toBe(true);
-    expect(run.items.map((item) => item.fixProofCount)).toEqual([1, null]);
-    expect(run.items.map((item) => item.canAttachFixProof)).toEqual([true, false]);
-  });
-
-  it("an older backend sends no fix-proof fields: nothing new shows", () => {
-    const run = normalizeProjectRun(projectRunWire({ attachments: { enabled: true, canAdd: true } }))!;
-    expect(run.attachments?.canAddFixProof).toBe(false);
-    expect(run.items[0].fixProofCount).toBeNull();
-    expect(run.items[0].canAttachFixProof).toBe(false);
-    expect(showsFixProof(run.items[0])).toBe(false);
   });
 
   it("an older backend sends neither: the feature is hidden", () => {
@@ -215,42 +180,6 @@ describe("who may do what", () => {
   it("stops at five per item", () => {
     expect(evidenceAtLimit(4)).toBe(false);
     expect(evidenceAtLimit(5)).toBe(true);
-  });
-
-  it("shows a Developer's Proof of the fix when the server allows it, or once the item holds some", () => {
-    expect(showsFixProof({ canAttachFixProof: true, fixProofCount: 0 })).toBe(true);
-    expect(showsFixProof({ canAttachFixProof: false, fixProofCount: 2 })).toBe(true);
-    expect(showsFixProof({ canAttachFixProof: false, fixProofCount: 0 })).toBe(false);
-    expect(showsFixProof({ canAttachFixProof: false, fixProofCount: null })).toBe(false);
-    expect(showsFixProof(null)).toBe(false);
-  });
-});
-
-describe("two kinds on one item", () => {
-  it("puts a fix proof in its own group, and QA's and CI's images in QA evidence", () => {
-    expect(attachmentGroup("fix_proof")).toBe("fix_proof");
-    expect(attachmentGroup("evidence")).toBe("evidence");
-    expect(attachmentGroup("automated")).toBe("evidence");
-    const list = [
-      attachment({ id: "qa", kind: "evidence" }),
-      attachment({ id: "fix", kind: "fix_proof" }),
-      attachment({ id: "ci", kind: "automated" }),
-    ];
-    expect(attachmentsInGroup(list, "evidence").map((entry) => entry.id)).toEqual(["qa", "ci"]);
-    expect(attachmentsInGroup(list, "fix_proof").map((entry) => entry.id)).toEqual(["fix"]);
-  });
-
-  it("labels each kind for the lightbox and the report", () => {
-    expect(attachmentKindLabel("evidence")).toBe("QA evidence");
-    expect(attachmentKindLabel("fix_proof")).toBe("Fix proof");
-    expect(attachmentKindLabel("automated")).toBe("Playwright");
-  });
-
-  it("reads QA's own count from the run: every image less the fix proofs", () => {
-    expect(evidenceCountFromRun({ attachmentCount: 5, fixProofCount: 2 })).toBe(3);
-    expect(evidenceCountFromRun({ attachmentCount: 4, fixProofCount: null })).toBe(4);
-    expect(evidenceCountFromRun({ attachmentCount: 1, fixProofCount: 3 })).toBe(0);
-    expect(evidenceCountFromRun({ attachmentCount: null, fixProofCount: 2 })).toBeNull();
   });
 });
 
@@ -317,28 +246,6 @@ describe("what the Evidence section says", () => {
 describe("evidence errors", () => {
   it.each(Object.entries(QA_ATTACHMENT_ERROR_MESSAGES))("maps %s to its own sentence, not the server's", (code, sentence) => {
     expect(attachmentErrorMessage(coded(409, code), "fallback")).toBe(sentence);
-  });
-
-  it("maps QA_FIX_PROOF_NOT_REQUESTED to a product sentence", () => {
-    expect(attachmentErrorMessage(coded(409, "QA_FIX_PROOF_NOT_REQUESTED"), "fallback", "fix_proof")).toBe(
-      "Proof of a fix can be attached only while QA has returned this item, or after it is marked Done for re-test.",
-    );
-  });
-
-  it("speaks to a Developer about their own proof: who may add it, and its own limit", () => {
-    expect(attachmentErrorMessage(coded(403, "QA_ATTACHMENT_FORBIDDEN"), "fallback", "fix_proof")).toBe(
-      FIX_PROOF_ERROR_MESSAGES.QA_ATTACHMENT_FORBIDDEN,
-    );
-    expect(attachmentErrorMessage(coded(409, "QA_ATTACHMENT_LIMIT"), "fallback", "fix_proof")).toBe(
-      FIX_PROOF_ERROR_MESSAGES.QA_ATTACHMENT_LIMIT,
-    );
-    // Everything else reads as it does for QA's evidence.
-    expect(attachmentErrorMessage(coded(409, "QA_RUN_SIGNED_OFF"), "fallback", "fix_proof")).toBe(
-      QA_ATTACHMENT_ERROR_MESSAGES.QA_RUN_SIGNED_OFF,
-    );
-    expect(attachmentErrorMessage(coded(403, "QA_ATTACHMENT_FORBIDDEN"), "fallback")).toBe(
-      QA_ATTACHMENT_ERROR_MESSAGES.QA_ATTACHMENT_FORBIDDEN,
-    );
   });
 
   it("reads a bare 413 (a proxy refusing the body) as too large", () => {

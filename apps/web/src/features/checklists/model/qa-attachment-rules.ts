@@ -11,7 +11,6 @@ import { qaActionError } from "./qa-run-rules";
 import type { QaRunStatus } from "./qa-run-types";
 import type {
   QaAttachment,
-  QaAttachmentGroup,
   QaAttachmentKind,
   QaAttachmentRef,
   QaAttachmentSource,
@@ -20,10 +19,7 @@ import type {
 } from "./qa-attachment-types";
 import { oneOf, record, records, text } from "./wire-readers";
 
-/**
- * The most human attachments one item holds of each kind (5 QA evidence plus
- * 5 fix proof); the server refuses the sixth.
- */
+/** The most human attachments one item holds; the server refuses the sixth. */
 export const MAX_EVIDENCE_PER_ITEM = 5;
 
 /** The longest caption the server accepts. */
@@ -104,7 +100,7 @@ function byCreatedAt(a: Pick<QaAttachment, "createdAt">, b: Pick<QaAttachment, "
 export function attachmentSettingsFrom(value: unknown): QaRunAttachmentSettings | null {
   const raw = record(value);
   if (!raw || typeof raw.enabled !== "boolean") return null;
-  return { enabled: raw.enabled, canAdd: raw.canAdd === true, canAddFixProof: raw.canAddFixProof === true };
+  return { enabled: raw.enabled, canAdd: raw.canAdd === true };
 }
 
 /** An item's `attachmentCount`; null when the server sent none. */
@@ -147,19 +143,7 @@ export function canDeleteEvidence(attachment: Pick<QaAttachment, "canDelete">, r
   return attachment.canDelete && run.status === "open";
 }
 
-/**
- * The Developer's "Proof of the fix" shows on a My QA items entry: the server
- * says proof may be attached now, or the item already holds some. An older
- * backend sends neither, and nothing shows.
- */
-export function showsFixProof(
-  runItem: { canAttachFixProof: boolean; fixProofCount: number | null } | null,
-): boolean {
-  if (!runItem) return false;
-  return runItem.canAttachFixProof || (runItem.fixProofCount ?? 0) > 0;
-}
-
-/** True once the item holds as many screenshots (of one kind) as it can. */
+/** True once the item holds as many screenshots as it can. */
 export function evidenceAtLimit(count: number): boolean {
   return count >= MAX_EVIDENCE_PER_ITEM;
 }
@@ -175,33 +159,6 @@ export function attachmentsByItem(list: ReadonlyArray<QaAttachment>): Record<str
     byItem[attachment.runItemId] = entries;
   }
   return byItem;
-}
-
-/** The group an image sits in: a Developer's proof of a fix, else QA evidence (CI's images included). */
-export function attachmentGroup(kind: QaAttachmentKind): QaAttachmentGroup {
-  return kind === "fix_proof" ? "fix_proof" : "evidence";
-}
-
-/** One group's images, in the order given. */
-export function attachmentsInGroup(list: ReadonlyArray<QaAttachment>, group: QaAttachmentGroup): QaAttachment[] {
-  return list.filter((attachment) => attachmentGroup(attachment.kind) === group);
-}
-
-const KIND_LABELS: Readonly<Record<QaAttachmentKind, string>> = {
-  evidence: "QA evidence",
-  fix_proof: "Fix proof",
-  automated: "Playwright",
-};
-
-/** "QA evidence", "Fix proof" or "Playwright": which kind an image is, in the lightbox and the report. */
-export function attachmentKindLabel(kind: QaAttachmentKind): string {
-  return KIND_LABELS[kind];
-}
-
-/** The QA evidence count the run payload implies: every image less the fix proofs; null when not said. */
-export function evidenceCountFromRun(item: { attachmentCount: number | null; fixProofCount: number | null }): number | null {
-  if (item.attachmentCount === null) return null;
-  return Math.max(0, item.attachmentCount - (item.fixProofCount ?? 0));
 }
 
 /** What the badge counts: the loaded list once there is one, else the run's own count. */
@@ -256,12 +213,9 @@ export function positionLabel(index: number, length: number): string {
 
 /* ── Errors ─────────────────────────────────────────────────────────────── */
 
-/**
- * Any failed evidence write or read, as a sentence: an evidence code first
- * (in the Developer's words for a fix proof), then the QA run rules.
- */
-export function attachmentErrorMessage(cause: unknown, fallback: string, group: QaAttachmentGroup = "evidence"): string {
-  return attachmentCodeMessage(cause, group === "fix_proof") ?? qaActionError(cause, fallback).message;
+/** Any failed evidence write or read, as a sentence: an evidence code first, then the QA run rules. */
+export function attachmentErrorMessage(cause: unknown, fallback: string): string {
+  return attachmentCodeMessage(cause) ?? qaActionError(cause, fallback).message;
 }
 
 export const CAPTURE_FAILED = "The screen could not be captured. Paste or upload a screenshot instead.";
