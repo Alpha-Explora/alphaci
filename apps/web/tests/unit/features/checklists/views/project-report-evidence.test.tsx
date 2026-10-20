@@ -110,6 +110,22 @@ describe("Project report: each item's own screenshots", () => {
     expect(view.querySelector("section[aria-labelledby='qa-report-visual']")?.textContent).toContain("appendix");
   });
 
+  it("labels each screenshot with its kind: QA evidence or Fix proof", async () => {
+    const report = reportWithEvidence();
+    report.run.items[0].attachments = [
+      { id: "att-1", caption: "Pay button missing", kind: "evidence", contentType: "image/webp" },
+      { id: "fix-1", caption: "Pay button back", kind: "fix_proof", contentType: "image/webp" },
+    ];
+    repo.report.mockResolvedValue(report);
+    attachments.listForRun.mockResolvedValue([
+      attachment({ id: "att-1", url: "https://storage.example.test/a.webp" }),
+      attachment({ id: "fix-1", kind: "fix_proof", url: "https://storage.example.test/fix.webp" }),
+    ]);
+    const view = await render(<ProjectQaReportView />);
+    const kinds = [...view.querySelectorAll(".qa-report-evidence__kind")].map((label) => label.textContent);
+    expect(kinds).toEqual(["QA evidence", "Fix proof"]);
+  });
+
   it("reads nothing for a report without per-item screenshots", async () => {
     repo.report.mockResolvedValue(normalizeProjectReport(projectReportWire())!);
     await render(<ProjectQaReportView />);

@@ -1,7 +1,9 @@
 /* ── QA evidence (screenshots on a Project run item) ───────────────────────
    An item's Evidence: thumbnails, the add controls (Capture, Upload, Paste),
    the image waiting for its caption, and the lightbox. Additive: nothing in
-   the run item's own layout changes. Dark first; tokens only.
+   the run item's own layout changes. Shared by QA Studio (QA evidence, and a
+   Developer's fix proof beside it) and My QA items ("Proof of the fix").
+   Dark first; tokens only.
    ------------------------------------------------------------------------- */
 
 .qa-evidence {
@@ -278,6 +280,64 @@
   font-size: 0.72rem;
   line-height: 1.45;
   color: var(--text-muted);
+}
+
+/* ── Two kinds: QA evidence beside a Developer's fix proof ──
+   Only once an item holds a fix proof; side by side where there is room,
+   stacked on a narrow column. The fix group carries the teal accent the
+   Developer's own "Proof of the fix" uses, so the two read as one thing. */
+
+.qa-evidence__groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0.6rem;
+  align-items: start;
+}
+
+.qa-evidence__group {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid var(--border-tile);
+  border-radius: 0.55rem;
+  background: var(--layer-2);
+}
+
+.qa-evidence__group[data-group="fix_proof"] {
+  border-color: var(--border-teal);
+  background: var(--accent-teal-light);
+}
+
+.qa-evidence__group-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.qa-evidence__group[data-group="fix_proof"] .qa-evidence__group-label {
+  color: var(--accent-teal);
+}
+
+/* The Developer's "Proof of the fix" on a My QA items entry. */
+.qa-evidence.qa-fix-proof {
+  margin-top: 0.1rem;
+  border-color: var(--border-teal);
+  background: var(--accent-teal-light);
+}
+
+.qa-fix-proof .qa-evidence__label {
+  color: var(--accent-teal);
+}
+
+.qa-fix-proof .qa-evidence__count {
+  background: var(--accent-teal-light);
+  color: var(--accent-teal);
 }
 
 /* ── The image waiting for Save ── */

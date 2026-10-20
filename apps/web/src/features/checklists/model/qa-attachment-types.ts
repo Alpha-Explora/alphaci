@@ -8,6 +8,15 @@
 /** Why the image is there: QA's evidence, a Developer's proof of a fix, or CI's screenshot. */
 export type QaAttachmentKind = "evidence" | "fix_proof" | "automated";
 
+/** What a person adds: QA's evidence, or a Developer's proof of a fix. */
+export type QaHumanAttachmentKind = Exclude<QaAttachmentKind, "automated">;
+
+/**
+ * Which of an item's two groups an image sits in. QA's evidence and CI's
+ * screenshots read together as "QA evidence"; a Developer's images as "Fix proof".
+ */
+export type QaAttachmentGroup = QaHumanAttachmentKind;
+
 /** How a person added it (or `playwright` for CI). */
 export type QaAttachmentSource = "capture" | "paste" | "upload" | "playwright";
 
@@ -55,6 +64,11 @@ export interface QaRunAttachmentSettings {
   enabled: boolean;
   /** This viewer may add evidence to this run (role and run state). */
   canAdd: boolean;
+  /**
+   * This viewer may add proof of a fix on this run (a Developer, Product
+   * owner or admin, run open). False when the server did not say.
+   */
+  canAddFixProof: boolean;
 }
 
 /** What one upload sends. `file` is the compressed image. */
@@ -63,6 +77,8 @@ export interface EvidenceUploadInput {
   fileName: string;
   caption: string | null;
   source: Exclude<QaAttachmentSource, "playwright">;
+  /** Sent as the multipart `kind`; QA evidence when not said. */
+  kind?: QaHumanAttachmentKind;
 }
 
 /** An image ready to save: compressed, measured, previewable. */

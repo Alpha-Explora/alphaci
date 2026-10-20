@@ -1,10 +1,8 @@
 "use client";
 
 import type { ProjectQaRunItem } from "../../model/project-run-types";
-import { evidenceAlt } from "../../model/qa-attachment-rules";
+import { attachmentKindLabel, evidenceAlt } from "../../model/qa-attachment-rules";
 import type { ReportEvidenceItem, ReportEvidenceViewModel } from "../view-models/use-report-evidence-view-model";
-
-const KIND_LABELS = { evidence: "QA evidence", fix_proof: "Proof of fix", automated: "Playwright" } as const;
 
 function Figure({
   entry,
@@ -29,7 +27,7 @@ function Figure({
         </span>
       )}
       <figcaption>
-        <span className="qa-report-evidence__kind">{KIND_LABELS[entry.ref.kind]}</span>
+        <span className="qa-report-evidence__kind">{attachmentKindLabel(entry.ref.kind)}</span>
         {entry.ref.caption ?? `Screenshot ${String(index + 1)}`}
       </figcaption>
     </figure>
