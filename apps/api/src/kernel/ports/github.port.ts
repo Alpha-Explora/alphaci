@@ -596,6 +596,42 @@ export interface GithubProjectPort {
     options?: GithubPullRequestProtectionOptions,
   ): Promise<GithubBranchProtectionOutcome>;
   /**
+   * Ensure the organization's pipeline-owners team: create it, add the given
+   * logins that are already organization members, and grant it Write on the
+   * repository (CODEOWNERS ignores a team without explicit Write). Needs the
+   * App's Members: write. Never throws.
+   */
+  ensurePipelineOwnersTeam(
+    accessToken: string,
+    org: string,
+    repo: string,
+    memberLogins: readonly string[],
+  ): Promise<GithubPipelineOwnersTeamOutcome>;
+  /**
+   * Ensure the repository ruleset that requires a code owner's review on
+   * `branches` (zero other approvals), bypassable only by the App with id
+   * `bypassAppId`. Needs Administration: write. Never throws.
+   */
+  ensurePipelineOwnersRuleset(
+    accessToken: string,
+    owner: string,
+    repo: string,
+    options: { branches: readonly string[]; bypassAppId: number | null },
+  ): Promise<GithubRulesetOutcome>;
+  /**
+   * Move `branch` to `sha` only when that is a fast-forward. False when
+   * GitHub refuses (the branch has moved on). Never throws.
+   */
+  fastForwardBranch(
+    accessToken: string,
+    owner: string,
+    repo: string,
+    branch: string,
+    sha: string,
+  ): Promise<boolean>;
+  /** Whether `login` is a GitHub organization; false when GitHub cannot say. */
+  isOrganizationAccount(accessToken: string, login: string): Promise<boolean>;
+  /**
    * One page of a branch's commits, newest first. A 401 from GitHub is a
    * revoked or replaced sign-in and throws UnauthorizedException with the
    * "sign in again" sentence; 404 (unknown branch or repository) returns an
@@ -938,6 +974,46 @@ export type GithubBranchProtectionStatus =
 
 export interface GithubBranchProtectionOutcome {
   status: GithubBranchProtectionStatus;
+  error?: string;
+}
+
+/**
+ * The team CODEOWNERS names for a repository's workflows, one per GitHub
+ * organization, and the repository ruleset that makes its review required.
+ */
+export const PIPELINE_OWNERS_TEAM_SLUG = 'alphaci-pipeline-owners';
+export const PIPELINE_OWNERS_RULESET_NAME = 'ALPHACI pipeline owners';
+
+/**
+ *   applied      the team exists, holds the listed members and has Write
+ *   unavailable  the owner is a personal account, which has no teams
+ *   failed       GitHub refused or could not be reached; `error` says why
+ *
+ * `notOrgMembers` are ALPHACI admins who are not members of the
+ * organization: they are not invited, a person decides that.
+ */
+export type GithubPipelineOwnersTeamOutcome =
+  | {
+      status: 'applied';
+      teamSlug: string;
+      members: string[];
+      notOrgMembers: string[];
+    }
+  | { status: 'unavailable'; error: string }
+  | { status: 'failed'; error: string };
+
+/**
+ *   applied      the ruleset was created or brought back to the ALPHACI rule
+ *   unchanged    it already says exactly that
+ *   unavailable  the plan has no rulesets for this repository (a private
+ *                repository on GitHub Free)
+ *   failed       GitHub refused or could not be reached
+ */
+export type GithubRulesetStatus =
+  'applied' | 'unchanged' | 'unavailable' | 'failed';
+
+export interface GithubRulesetOutcome {
+  status: GithubRulesetStatus;
   error?: string;
 }
 

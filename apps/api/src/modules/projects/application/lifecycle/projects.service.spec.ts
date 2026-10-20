@@ -94,6 +94,17 @@ const makeGithubService = () =>
     deleteActionsSecret: jest.fn().mockResolvedValue(undefined),
     branchExists: jest.fn().mockResolvedValue(false),
     requiresPullRequestToPush: jest.fn().mockResolvedValue(false),
+    // Pipeline owners. The default owner `tone` is a personal account, which
+    // has no teams: no CODEOWNERS file and no ruleset.
+    isOrganizationAccount: jest.fn().mockResolvedValue(false),
+    ensurePipelineOwnersTeam: jest.fn().mockResolvedValue({
+      status: 'unavailable',
+      error: 'tone is a personal account, which has no teams',
+    }),
+    ensurePipelineOwnersRuleset: jest
+      .fn()
+      .mockResolvedValue({ status: 'applied' }),
+    fastForwardBranch: jest.fn().mockResolvedValue(true),
   }) as unknown as GithubService;
 
 const makeProjectsRepository = () =>
@@ -2568,6 +2579,91 @@ jobs:
       build().createWorkflowUpdatePullRequest('project-1', 'user-1', null, {}),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(githubWrites.createBranch).not.toHaveBeenCalled();
+  });
+
+  it('adds the CODEOWNERS file to the workflow update pull request of an organization repository', async () => {
+    const overviewRepos = makeOverviewReadRepositories();
+    const projectsRepository = {
+      listProjectEnvironments: jest.fn().mockResolvedValue([]),
+      create: jest.fn(),
+      findAppRole: jest.fn().mockResolvedValue('admin'),
+      findByIdAndUser: jest.fn().mockResolvedValue({
+        id: 'project-1',
+        user_id: 'user-1',
+        repo_full_name: 'tone/orders-api',
+        template_id: 'be-nestjs',
+        service_name: 'orders-api',
+        workflow_path: '.github/workflows/00-alphaci-access.yml',
+        status: 'provisioned',
+        github_commit_sha: 'abc123456789',
+        github_commit_url: null,
+        failure_reason: null,
+        repo_url: 'https://github.com/tone/orders-api',
+        visibility: 'private',
+        repo_shape: 'mono',
+        project_type_id: 'nestjs-api',
+        workflow_recipe_id: 'backend-api-ci',
+        project_options: {},
+        created_at: '2026-06-12T00:00:00.000Z',
+        updated_at: '2026-06-12T00:00:00.000Z',
+      }),
+    };
+    const githubWrites = makeGithubService() as unknown as GithubService & {
+      putFileContent: jest.Mock;
+      createPullRequest: jest.Mock;
+      branchExists: jest.Mock;
+      isOrganizationAccount: jest.Mock;
+    };
+    githubWrites.isOrganizationAccount.mockResolvedValue(true);
+    githubWrites.branchExists.mockImplementation(
+      (_t: string, _o: string, _r: string, b: string) =>
+        Promise.resolve(b === 'dev'),
+    );
+    const service = makeProjectsService(
+      makeCatalogService(),
+      githubWrites,
+      projectsRepository,
+      makeCiService(),
+      projectDeploymentProvisioningService,
+      overviewRepos.ciTokensRepository,
+      overviewRepos.deploymentTargetsRepository,
+      overviewRepos.envVarsRepository,
+      overviewRepos.workflowHistoryRepository,
+      overviewRepos.dashboardSnapshotsRepository,
+      makeProjectFeatureConfig({
+        workflowSettingsPreview: true,
+        workflowUpdatePr: true,
+      }),
+      overviewRepos.workflowSettingsRepository,
+      overviewRepos.workflowUpdateRequestsRepository,
+    );
+
+    const result = await service.createWorkflowUpdatePullRequest(
+      'project-1',
+      'user-1',
+      null,
+      {},
+    );
+
+    const calls = githubWrites.putFileContent.mock.calls as Array<
+      [string, string, string, string, string, string, string]
+    >;
+    const codeowners = calls.find((call) => call[3] === '.github/CODEOWNERS');
+    expect(codeowners?.[5]).toBe(result.branchName);
+    expect(codeowners?.[4]).toContain(
+      '/.github/workflows/ @tone/alphaci-pipeline-owners',
+    );
+    expect(codeowners?.[4]).toContain(
+      '/.github/CODEOWNERS @tone/alphaci-pipeline-owners',
+    );
+    expect(githubWrites.createPullRequest).toHaveBeenCalledWith(
+      'app-token',
+      'tone',
+      'orders-api',
+      expect.objectContaining({
+        body: expect.stringContaining('.github/CODEOWNERS'),
+      }),
+    );
   });
 
   const roleGateService = (

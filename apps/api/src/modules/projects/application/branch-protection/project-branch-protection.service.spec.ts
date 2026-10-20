@@ -205,4 +205,73 @@ describe('ProjectBranchProtectionService', () => {
       expect(github.ensurePullRequestProtection).not.toHaveBeenCalled();
     });
   });
+
+  describe('pipeline owners', () => {
+    it('ensures the team and the ruleset, writes no CODEOWNERS, and records it', async () => {
+      const owners = {
+        ensurePullRequestProtection: jest
+          .fn()
+          .mockResolvedValue({ status: 'unchanged' }),
+        ensurePipelineOwnersTeam: jest.fn().mockResolvedValue({
+          status: 'applied',
+          teamSlug: 'alphaci-pipeline-owners',
+          members: ['lloydlim1'],
+          notOrgMembers: [],
+        }),
+        ensurePipelineOwnersRuleset: jest
+          .fn()
+          .mockResolvedValue({ status: 'applied' }),
+        putFileContent: jest.fn(),
+        fastForwardBranch: jest.fn(),
+      };
+      const withOwners = new ProjectBranchProtectionService(
+        {
+          ...projectsRepository,
+          listAdminGithubLogins: jest.fn().mockResolvedValue(['lloydlim1']),
+        } as never,
+        owners as never,
+        tokens as never,
+        audit as never,
+        { get: () => ({ github: { appId: '99' } }) } as never,
+      );
+
+      const result = await withOwners.applyToProject(
+        'project-1',
+        'user-1',
+        'oauth',
+      );
+
+      expect(result.pipelineOwners).toEqual({
+        team: {
+          status: 'applied',
+          teamSlug: 'alphaci-pipeline-owners',
+          members: ['lloydlim1'],
+          notOrgMembers: [],
+        },
+        codeowners: [],
+        ruleset: { status: 'applied' },
+      });
+      expect(owners.ensurePipelineOwnersTeam).toHaveBeenCalledWith(
+        'install-tok',
+        'Acme',
+        'Orders',
+        ['lloydlim1'],
+      );
+      expect(owners.ensurePipelineOwnersRuleset).toHaveBeenCalledWith(
+        'install-tok',
+        'Acme',
+        'Orders',
+        { branches: ['dev', 'uat', 'main'], bypassAppId: 99 },
+      );
+      // Protected branches refuse direct pushes: CODEOWNERS arrives with the
+      // workflow update pull request instead.
+      expect(owners.putFileContent).not.toHaveBeenCalled();
+      expect(audit.recordProjectEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventCode: 'project_pipeline_owners_applied',
+          projectId: 'project-1',
+        }),
+      );
+    });
+  });
 });

@@ -10,6 +10,7 @@ import type {
   NotificationEventPublisher,
 } from '#kernel/events/platform-event-publisher.js';
 import { PROTECTED_BRANCHES } from '#kernel/config/pipeline-branches';
+import type { AppConfig } from '#kernel/config/app.config';
 import type { CiProjectPort } from '#kernel/ports/ci-project.port';
 import type { GithubProjectPort } from '#kernel/ports/github.port';
 import { ENV_GUARD_CHECK_CONTEXT } from '#kernel/ports/workflow-generation.port';
@@ -28,6 +29,12 @@ import type {
   CreateProjectDto,
 } from '../../api/dto/create-project.dto';
 import type { ProjectsRepository } from '../../infrastructure/projects.repository';
+import {
+  describePipelineOwners,
+  PipelineOwners,
+  pipelineOwnersBypassAppId,
+  type PipelineOwnersResult,
+} from '../branch-protection/pipeline-owners';
 import type { ProjectEnvironmentInput } from '../../domain/project-environment.policy';
 import {
   filterDeploymentProvisioningRequest,
@@ -871,6 +878,12 @@ export class ProjectProvisioningSupport {
    * rule, so a failure logs a warning and records
    * `project_branch_protection_failed`; success records
    * `project_branch_protection_applied`. Never throws.
+   *
+   * Pipeline owners ride along: before the protection (which refuses direct
+   * pushes) the pipeline-owners team is ensured and CODEOWNERS is written to
+   * each branch; after it, the ruleset that requires a pipeline owner's
+   * review of any workflow change. Recorded as
+   * `project_pipeline_owners_applied` or `project_pipeline_owners_failed`.
    */
   async protectPipelineBranches(input: {
     token: string;
@@ -882,8 +895,27 @@ export class ProjectProvisioningSupport {
     branches?: readonly string[];
   }): Promise<void> {
     const repoFullName = `${input.owner}/${input.repo}`;
+    const protectedBranches = input.branches ?? PROTECTED_BRANCHES;
+    let owners: PipelineOwners | null = null;
+    let preparation: Awaited<ReturnType<PipelineOwners['prepare']>> | null =
+      null;
+    try {
+      owners = this.pipelineOwners();
+      preparation = await owners.prepare({
+        token: input.token,
+        owner: input.owner,
+        repo: input.repo,
+        branches: protectedBranches,
+        writeCodeowners: true,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Pipeline owners could not be prepared on ${repoFullName}: ${String(error)}`,
+      );
+    }
+
     const branches: GithubBranchProtectionResult[] = [];
-    for (const name of input.branches ?? PROTECTED_BRANCHES) {
+    for (const name of protectedBranches) {
       try {
         const outcome = await this.githubService.ensurePullRequestProtection(
           input.token,
@@ -934,6 +966,58 @@ export class ProjectProvisioningSupport {
         `Could not record the branch protection event for ${repoFullName}: ${String(error)}`,
       );
     }
+
+    if (!owners || !preparation) return;
+    try {
+      const ruleset = await owners.ruleset({
+        token: input.token,
+        owner: input.owner,
+        repo: input.repo,
+        branches: protectedBranches,
+        team: preparation.team,
+      });
+      await this.recordPipelineOwners(input, repoFullName, {
+        ...preparation,
+        ruleset,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Pipeline owners could not be completed on ${repoFullName}: ${String(error)}`,
+      );
+    }
+  }
+
+  private pipelineOwners(): PipelineOwners {
+    return new PipelineOwners(
+      this.githubService,
+      () => this.projectsRepository.listAdminGithubLogins(),
+      pipelineOwnersBypassAppId(
+        this.configService?.get<AppConfig>('app')?.github?.appId,
+      ),
+    );
+  }
+
+  private async recordPipelineOwners(
+    input: { userId: string; projectId: string; workspaceId?: string | null },
+    repoFullName: string,
+    result: PipelineOwnersResult,
+  ): Promise<void> {
+    const summary = describePipelineOwners(result);
+    if (summary.failed) {
+      this.logger.warn(`${repoFullName}: ${summary.message}`);
+    }
+    await (
+      this.auditEventPublisher ?? this.auditEventsService
+    )?.recordProjectEvent({
+      actorUserId: input.userId,
+      workspaceId: input.workspaceId ?? null,
+      projectId: input.projectId,
+      eventCode: summary.failed
+        ? 'project_pipeline_owners_failed'
+        : 'project_pipeline_owners_applied',
+      message: summary.message,
+      metadata: { repoFullName, ...result },
+    });
   }
 
   recordProductEvent(input: {

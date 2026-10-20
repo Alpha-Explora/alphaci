@@ -45,6 +45,10 @@ import {
 } from './index';
 import { WorkflowFragmentRegistry } from '#kernel/ports/workflow-fragment.port';
 import {
+  buildPipelineCodeowners,
+  CODEOWNERS_PATH,
+} from '../branch-protection/pipeline-owners';
+import {
   DEPLOYMENT_TARGETS_QUERY,
   type DeploymentTargetsQuery,
 } from '#kernel/ports/deployment-runtime.port';
@@ -293,6 +297,25 @@ export class ProjectWorkflowsService {
         'ci: update ALPHACI workflow configuration',
       );
     }
+    // An existing repository gets its CODEOWNERS file here: its branches
+    // refuse direct pushes, so the file arrives through this reviewed pull
+    // request and then travels to uat and main with the workflows. Only an
+    // organization has the pipeline-owners team it names.
+    const withCodeowners = await this.githubService.isOrganizationAccount(
+      token,
+      owner,
+    );
+    if (withCodeowners) {
+      await this.githubService.putFileContent(
+        token,
+        owner,
+        repo,
+        CODEOWNERS_PATH,
+        buildPipelineCodeowners(owner),
+        branchName,
+        'ci: add ALPHACI CODEOWNERS',
+      );
+    }
 
     let pullRequest: { number: number; htmlUrl: string };
     try {
@@ -304,7 +327,10 @@ export class ProjectWorkflowsService {
           title: 'Update ALPHACI workflow configuration',
           head: branchName,
           base: baseBranch,
-          body: this.buildWorkflowUpdatePullRequestBody(preview),
+          body: this.buildWorkflowUpdatePullRequestBody(
+            preview,
+            withCodeowners,
+          ),
         },
       );
     } catch (error) {
@@ -552,10 +578,16 @@ export class ProjectWorkflowsService {
 
   private buildWorkflowUpdatePullRequestBody(
     preview: WorkflowSettingsPreviewResponse,
+    withCodeowners = false,
   ): string {
-    const fileList = preview.workflowFiles
-      .map((file) => `- ${file.path}`)
-      .join('\n');
+    const fileList = [
+      ...preview.workflowFiles.map((file) => `- ${file.path}`),
+      ...(withCodeowners
+        ? [
+            `- ${CODEOWNERS_PATH} (workflow changes need a pipeline owner's review)`,
+          ]
+        : []),
+    ].join('\n');
     const changedSettings = [
       `Node version: ${preview.settings.nodeVersion}`,
       `Coverage threshold: ${String(preview.settings.coverageThreshold)}`,

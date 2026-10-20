@@ -451,6 +451,26 @@ export class ProjectsRepository
    * session-backed app_users row — but a query with no match must still
    * return a value, not throw).
    */
+  /**
+   * GitHub logins of the ALPHACI admins (app role `admin` or a platform
+   * admin): the pipeline owners who review workflow changes. Archived users
+   * and accounts without a GitHub identity are left out.
+   */
+  async listAdminGithubLogins(): Promise<string[]> {
+    const result = await this.databaseService.query<{ login: string }>(
+      `
+        SELECT DISTINCT u.login
+          FROM identity.app_users u
+          LEFT JOIN identity.platform_admins pa ON pa.user_id = u.id
+         WHERE (u.app_role = 'admin' OR pa.user_id IS NOT NULL)
+           AND u.archived_at IS NULL
+           AND u.github_user_id IS NOT NULL
+         ORDER BY u.login;
+      `,
+    );
+    return result.rows.map((row) => row.login);
+  }
+
   async findAppRole(userId: string): Promise<PlatformAppRole> {
     const result = await this.databaseService.query<{
       app_role: PlatformAppRole;
