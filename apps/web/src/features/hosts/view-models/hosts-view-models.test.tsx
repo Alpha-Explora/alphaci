@@ -9,6 +9,7 @@ import {
 } from "../views/host-assignment-form";
 import { createHostEnrollment, listHosts } from "../data/hosts-api";
 import { downloadBlob } from "@/shared/browser/download-blob";
+import { ApiError } from "@/shared/api/request";
 import {
   assignHost,
   getAssignment,
@@ -102,6 +103,17 @@ it("does not let a viewer enroll", async () => {
   await settle();
   await act(() => seen().enroll());
   expect(createHostEnrollment).not.toHaveBeenCalled();
+});
+it("explains how to resolve the public HTTPS enrollment prerequisite", async () => {
+  jest.mocked(createHostEnrollment).mockRejectedValue(new ApiError(
+    "Configure the public HTTPS API address first.", 503,
+  ));
+  const seen = probe(() => useHostsViewModel("workspace", true));
+  await settle();
+  await act(() => seen().enroll());
+  expect(seen().error).toBe("Host setup isn’t ready. Ask your administrator to configure AlphaCI’s public HTTPS address, then try again.");
+  expect(seen().receipt).toBeNull();
+  expect(seen().busy).toBe(false);
 });
 it("does not publish an enrollment response after leaving the workspace", async () => {
   let resolve!: (value: typeof receipt) => void;

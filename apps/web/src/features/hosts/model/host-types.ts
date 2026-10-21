@@ -179,32 +179,40 @@ export interface PlatformGuide {
   runIn: string;
   /** Where and how to run the downloaded install file. */
   fileRunIn: string;
+  /** How to move the install file to the machine without exposing its code. */
+  fileCopyNote?: string;
+  /** What the installer does when a prerequisite it can't install is missing. */
+  missingPrerequisite?: string;
 }
 export const PLATFORM_GUIDES: Record<HostPlatform, PlatformGuide> = {
   windows: {
     label: "Windows",
     summary: "Windows 10/11 or Server with Ubuntu on WSL2",
     prerequisites: [
-      "Ubuntu installed in WSL2 with systemd enabled",
-      "Docker Engine and Docker Compose running inside Ubuntu",
-      "Administrator access on the machine",
+      "Ubuntu in WSL2 with systemd",
+      "Docker running inside Ubuntu",
+      "Administrator access",
     ],
     runIn:
-      "Paste it into Windows PowerShell opened as Administrator (the prompt starts with PS C:\\>), signed in as the account that owns Ubuntu. Ubuntu must already be installed in WSL2; the installer does not install it and stops with a message if it is missing.",
+      "Paste it into PowerShell opened as Administrator, signed in as the account that owns Ubuntu.",
     fileRunIn:
-      "Double-click the file on the Windows machine, signed in as the account that owns Ubuntu. It asks for administrator permission itself. Ubuntu must already be installed in WSL2; the installer does not install it and stops with a message if it is missing.",
+      "Double-click it on the machine, signed in as the account that owns Ubuntu. It asks for administrator permission itself.",
+    missingPrerequisite:
+      "The installer doesn't install Ubuntu or WSL2. If either is missing it stops and says so.",
   },
   ubuntu: {
     label: "Ubuntu",
     summary: "Ubuntu server, VM, or desktop",
     prerequisites: [
       "Ubuntu 22.04 or newer with systemd",
-      "Docker Engine and Docker Compose running",
+      "Docker Engine and Docker Compose",
       "A user that can run sudo",
     ],
-    runIn: "Open a terminal on the machine and paste the command.",
+    runIn: "Open a terminal on the machine and paste it.",
     fileRunIn:
-      "Copy the file to the machine (for example with scp), then run it there with bash as your normal user. It asks for sudo itself.",
+      "Run it on the machine with bash as your normal user. It asks for sudo itself.",
+    fileCopyNote:
+      "Copying it from another computer? Keep the code private: chmod 600 the file, then copy it with scp -p.",
   },
 };
 export function lastSeenLabel(lastSeenAt: string | null, now = Date.now()) {

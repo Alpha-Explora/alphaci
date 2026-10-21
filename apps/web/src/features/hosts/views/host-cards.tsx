@@ -131,8 +131,68 @@ export function AddHostForm({ vm }: { vm: HostsVm }) {
   );
 }
 
-/** Step 2: the install file, when this installer version has one, and the copy-paste command. */
-function InstallStep({
+/** The recommended path: one file that carries the code and cleans up after itself. */
+function DownloadOption({ vm, guide }: { vm: HostsVm; guide: PlatformGuide }) {
+  return (
+    <div className="hosts-option">
+      <div className="hosts-option__text">
+        <p className="hosts-option__title">
+          Download the installer{" "}
+          <span className="hosts-option__badge">Recommended</span>
+        </p>
+        <p className="hosts-muted">{guide.fileRunIn}</p>
+        <p className="hosts-option__note">
+          The one-time code is inside the file, and the file deletes itself
+          after a successful install.
+          {guide.fileCopyNote ? ` ${guide.fileCopyNote}` : ""}
+        </p>
+      </div>
+      <button
+        className="primary-button"
+        type="button"
+        onClick={vm.downloadInstallFile}
+      >
+        Download install file
+      </button>
+    </div>
+  );
+}
+
+/** The manual path: paste a command, then paste the code when it asks. */
+function CommandSteps({
+  receipt,
+  guide,
+  command,
+}: {
+  receipt: EnrollmentReceipt;
+  guide: PlatformGuide;
+  command: string;
+}) {
+  return (
+    <ol className="hosts-substeps">
+      <li>
+        <p className="hosts-substeps__title">Run this command</p>
+        <p className="hosts-muted">{guide.runIn}</p>
+        <div className="hosts-code hosts-code--command">
+          <pre>{command}</pre>
+          <CopyButton value={command} label="install command" />
+        </div>
+      </li>
+      <li>
+        <p className="hosts-substeps__title">
+          Paste this code when the installer asks for it
+        </p>
+        <div className="hosts-code hosts-code--secret">
+          <pre>{receipt.code}</pre>
+          <CopyButton value={receipt.code} label="enrollment code" />
+        </div>
+      </li>
+    </ol>
+  );
+}
+
+/** The file first when this installer version has one; otherwise the command. */
+function InstallOptions({
   vm,
   receipt,
   guide,
@@ -144,49 +204,25 @@ function InstallStep({
   command: string;
 }) {
   return (
-    <div className="hosts-task">
-      <span className="hosts-task__num">2</span>
-      <div className="hosts-task__body">
-        <p className="hosts-task__title">Run the installer on this machine</p>
-        {vm.canDownloadInstallFile ? (
-          <p className="hosts-muted">{guide.fileRunIn}</p>
-        ) : null}
-        {receipt.replacesMachineId ? (
-          <p className="hosts-muted">
-            This code replaces the machine&apos;s credential. Run the{" "}
-            {vm.canDownloadInstallFile ? "file or command" : "command"} on that
-            machine; its current credential stops working once the code is used.
-          </p>
-        ) : null}
-        {vm.canDownloadInstallFile ? (
-          <div className="hosts-install">
-            <button
-              className="primary-button"
-              type="button"
-              onClick={vm.downloadInstallFile}
-            >
-              Download install file
-            </button>
-            <p className="hosts-muted">
-              The file contains this machine&apos;s one-time code. Keep it
-              private: run <code>chmod 600</code> on the file, then copy it with{" "}
-              <code>scp -p</code>. It deletes itself after a successful install.
-              Delete any other copy once you have used it.
-            </p>
-          </div>
-        ) : null}
-        <p className="hosts-muted">
-          {vm.canDownloadInstallFile
-            ? "Or copy the command instead; the installer then asks for the code in step 3."
-            : "Copy the command and run it on the machine; the installer asks for the code in step 3."}{" "}
-          {guide.runIn}
+    <>
+      {receipt.replacesMachineId ? (
+        <p className="hosts-notice">
+          This replaces the machine&apos;s credential. Run the installer on that
+          machine; its current credential stops working once the code is used.
         </p>
-        <div className="hosts-code">
-          <pre>{command}</pre>
-          <CopyButton value={command} label="install command" />
-        </div>
-      </div>
-    </div>
+      ) : null}
+      {vm.canDownloadInstallFile ? (
+        <>
+          <DownloadOption vm={vm} guide={guide} />
+          <details className="hosts-alt">
+            <summary>Use a command instead</summary>
+            <CommandSteps receipt={receipt} guide={guide} command={command} />
+          </details>
+        </>
+      ) : (
+        <CommandSteps receipt={receipt} guide={guide} command={command} />
+      )}
+    </>
   );
 }
 
@@ -246,45 +282,31 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
   return (
     <section className="hosts-panel" aria-label={`Install ${enrolled.name}`}>
       <Steps current={2} />
-      <h3 className="hosts-panel__title">Install AlphaCI on {enrolled.name}</h3>
+      <header className="hosts-install__head">
+        <h3 className="hosts-panel__title">
+          Install AlphaCI on {enrolled.name}
+        </h3>
+        <span className="hosts-expiry">
+          Code expires in{" "}
+          <strong>{countdownLabel(receipt.expiresAt, vm.now)}</strong>
+        </span>
+      </header>
 
-      <div className="hosts-task">
-        <span className="hosts-task__num">1</span>
-        <div className="hosts-task__body">
-          <p className="hosts-task__title">Check the machine is ready</p>
-          <ul className="hosts-checklist">
-            {guide.prerequisites.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
+      <div className="hosts-requirements">
+        <span className="hosts-requirements__label">Before you start</span>
+        <ul className="hosts-checklist">
+          {guide.prerequisites.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
       </div>
 
-      <InstallStep
+      <InstallOptions
         vm={vm}
         receipt={receipt}
         guide={guide}
         command={command}
       />
-
-      <div className="hosts-task">
-        <span className="hosts-task__num">3</span>
-        <div className="hosts-task__body">
-          <p className="hosts-task__title">
-            If you copied the command, paste this code when the installer asks
-            for it
-          </p>
-          <p className="hosts-muted">
-            It works once and expires in{" "}
-            <strong>{countdownLabel(receipt.expiresAt, vm.now)}</strong>. It
-            won’t be shown again after you leave this page.
-          </p>
-          <div className="hosts-code hosts-code--secret">
-            <pre>{receipt.code}</pre>
-            <CopyButton value={receipt.code} label="enrollment code" />
-          </div>
-        </div>
-      </div>
 
       <div className="hosts-waiting" role="status">
         <span className="hosts-spinner" aria-hidden="true" />
@@ -294,6 +316,13 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
       <details className="hosts-details">
         <summary>Troubleshooting and manual verification</summary>
         <ul>
+          <li>
+            The code works once and isn&apos;t shown again after you leave this
+            page.
+          </li>
+          {guide.missingPrerequisite ? (
+            <li>{guide.missingPrerequisite}</li>
+          ) : null}
           <li>
             {vm.canDownloadInstallFile
               ? "The install file and the command check"
