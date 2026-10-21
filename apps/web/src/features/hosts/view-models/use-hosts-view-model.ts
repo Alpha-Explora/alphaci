@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { ApiError } from "@/shared/api/request";
 import { downloadBlob } from "@/shared/browser/download-blob";
 import { createHostEnrollment, listHosts, revokeHost } from "../data/hosts-api";
 import {
@@ -156,7 +157,10 @@ export function useHostsViewModel(
     } catch (cause) {
       if (scope.current === workspaceId)
         setError(
-          cause instanceof Error ? cause.message : "Host operation failed.",
+          cause instanceof ApiError && cause.status === 503 &&
+          cause.message === "Configure the public HTTPS API address first."
+            ? "Host setup isn’t ready. Ask your administrator to configure AlphaCI’s public HTTPS address, then try again."
+            : cause instanceof Error ? cause.message : "Host operation failed. Try again in a moment.",
         );
     } finally {
       pending.current = false;

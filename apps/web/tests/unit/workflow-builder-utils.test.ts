@@ -34,7 +34,7 @@ describe("workflow-builder-utils error formatting", () => {
 
   it("maps generic server failures to an actionable retry message", () => {
     expect(cleanUserMessage("Internal Server Error")).toBe(
-      "Something went wrong while processing the request. Please retry, then check the backend logs if it happens again.",
+      "Something went wrong while processing the request. Try again in a moment. If it keeps happening, contact your administrator.",
     );
   });
 

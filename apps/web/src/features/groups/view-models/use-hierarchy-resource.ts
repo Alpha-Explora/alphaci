@@ -77,7 +77,7 @@ export function useApiResource<T>(
             setState("forbidden");
             return;
           }
-          setError(`Request failed with status ${cause.status}.`);
+          setError(cause.message);
         } else {
           setError("Something went wrong loading this view.");
         }

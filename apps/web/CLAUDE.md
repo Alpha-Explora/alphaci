@@ -421,7 +421,9 @@ and the `next.config.ts` closure (`next start` loads it again), and starts
 `node node_modules/next/dist/bin/next start -p 3000`. Exposes 3000. A
 `HEALTHCHECK` calls `GET /healthz` with Node's `fetch` every 30 s.
 `.dockerignore` excludes `node_modules`, `.next`, `.capability-stubs`,
-`coverage`, `.git`, `.github`, `npm-debug.log*`.
+`coverage`, `.git`, `.github`, `npm-debug.log*`, and local settings and
+credentials: `.env*` (except `.env.example`), `*.pem`, `.claude`,
+`.worktrees`, `.temp`, `.tmp`, `.cache`, `.pnpm-store`.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

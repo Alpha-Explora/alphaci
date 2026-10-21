@@ -49,14 +49,18 @@ afterEach(() => {
   container.remove();
 });
 
-it("offers the install file beside the copy-paste command, and keeps the command and code", () => {
+it("leads with the install file, and keeps the command and code behind 'Use a command instead'", () => {
   const vm = vmWith();
   act(() => root.render(<EnrollmentCard vm={vm} />));
 
   act(() => buttonNamed("Download install file")!.click());
   expect(vm.downloadInstallFile).toHaveBeenCalledTimes(1);
 
-  expect(container.querySelector(".hosts-code pre")?.textContent).toContain(
+  const alt = container.querySelector("details.hosts-alt");
+  expect(alt?.querySelector("summary")?.textContent).toBe(
+    "Use a command instead",
+  );
+  expect(alt?.querySelector(".hosts-code pre")?.textContent).toContain(
     "install.sh",
   );
   expect(

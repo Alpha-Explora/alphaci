@@ -95,13 +95,13 @@ describe("use-hierarchy", () => {
 
   it("maps other ApiError statuses to the error state with a message", async () => {
     const snapshots = renderResource(async () => {
-      throw new ApiError("boom", 500);
+      throw new ApiError("AlphaCI is temporarily unavailable. Try again in a moment.", 500);
     });
 
     await flushEffects();
 
     expect(latest(snapshots).state).toBe("error");
-    expect(latest(snapshots).error).toContain("500");
+    expect(latest(snapshots).error).toBe("AlphaCI is temporarily unavailable. Try again in a moment.");
   });
 
   it("maps a non-ApiError to the generic error state", async () => {

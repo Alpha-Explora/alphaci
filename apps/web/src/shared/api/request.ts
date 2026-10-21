@@ -1,3 +1,5 @@
+import { apiErrorMessage } from "./error-message";
+
 function normalizeApiBaseUrl(value: string): string {
   const trimmed = value.replace(/\/+$/, "");
   return trimmed.endsWith("/api/v1") ? trimmed : `${trimmed}/api/v1`;
@@ -51,12 +53,14 @@ const API_BASE_URL = resolveApiBaseUrl();
 export class ApiError extends Error {
   status: number;
   details: unknown;
+  correlationId?: string;
 
-  constructor(message: string, status: number, details?: unknown) {
+  constructor(message: string, status: number, details?: unknown, correlationId?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.details = details;
+    this.correlationId = correlationId;
   }
 }
 
@@ -72,34 +76,56 @@ function isMultipart(body: RequestInit["body"]): boolean {
   return typeof FormData !== "undefined" && body instanceof FormData;
 }
 
-/** Fetch with the session cookie, throwing ApiError on any non-2xx reply. */
-async function send(path: string, init?: RequestInit): Promise<Response> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    credentials: "include",
-    headers: {
-      ...(isMultipart(init?.body) ? {} : { "Content-Type": "application/json" }),
-      ...init?.headers,
-    },
-    cache: "no-store",
-  });
+async function fetchWithSession(path: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      credentials: "include",
+      headers: {
+        ...(isMultipart(init?.body) ? {} : { "Content-Type": "application/json" }),
+        ...init?.headers,
+      },
+      cache: "no-store",
+    });
+  } catch (cause) {
+    // Cancellation is intentional and must remain recognizable to callers.
+    if (init?.signal?.aborted || (cause instanceof Error && cause.name === "AbortError")) throw cause;
+    throw new ApiError(apiErrorMessage(0), 0);
+  }
+}
 
-  if (!response.ok) {
-    let details: unknown;
+async function readErrorDetails(response: Response): Promise<unknown> {
+  try {
     if (typeof response.text === "function") {
       const responseText = await response.text();
       try {
-        details = responseText ? JSON.parse(responseText) : undefined;
+        return responseText ? JSON.parse(responseText) : undefined;
       } catch {
-        details = responseText;
+        return responseText;
       }
     } else if (typeof response.json === "function") {
-      details = await response.json();
+      return await response.json();
     }
-
-    throw new ApiError(`Request failed with status ${response.status}`, response.status, details);
+  } catch {
+    // A broken error body must not replace the useful HTTP failure.
   }
+}
 
+function errorReference(response: Response, details: unknown): string | undefined {
+  const bodyReference = details && typeof details === "object" && "correlationId" in details
+    ? details.correlationId : undefined;
+  const reference = response.headers?.get("x-correlation-id") ?? bodyReference;
+  return typeof reference === "string" && /^[\w-]{1,128}$/.test(reference)
+    ? reference : undefined;
+}
+
+/** Fetch with the session cookie, throwing ApiError on any non-2xx reply. */
+async function send(path: string, init?: RequestInit): Promise<Response> {
+  const response = await fetchWithSession(path, init);
+  if (!response.ok) {
+    const details = await readErrorDetails(response);
+    throw new ApiError(apiErrorMessage(response.status, details), response.status, details, errorReference(response, details));
+  }
   return response;
 }
 

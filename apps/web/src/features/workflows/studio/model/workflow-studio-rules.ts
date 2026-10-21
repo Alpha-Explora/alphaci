@@ -4,6 +4,7 @@ import type {
   SetupProjectRequest,
 } from "@/shared/api/contracts";
 import type { ApiError } from "@/shared/api/request";
+import { apiErrorMessage, serverErrorMessage } from "@/shared/api/error-message";
 
 /** The /workflows page shows one of two views: the projects (default) or the create form. */
 export type WorkflowView = "setup" | "current";
@@ -161,32 +162,32 @@ export function formatQuotaStatus(input: {
 }
 
 export function formatApiError(error: unknown, fallback: string): string {
+  if (!error || typeof error !== "object") return fallback;
+  const status = (error as Partial<ApiError>).status;
+  if (requiresGenericError(status)) {
+    return apiErrorMessage(status);
+  }
   if (isQuotaError(error)) {
     return "Quota reached. Upgrade your plan or remove unused resources.";
   }
 
   const details = (error as ApiError)?.details;
 
-  if (!details) {
-    return fallback;
-  }
+  const message = studioErrorMessage(details);
+  if (message) return `${fallback}: ${message}`;
 
-  if (typeof details === "string") {
-    return `${fallback}: ${cleanUserMessage(details)}`;
-  }
+  return typeof status === "number" ? apiErrorMessage(status) : fallback;
+}
 
-  if (typeof details === "object" && details !== null && "message" in details) {
-    const message = (details as { message?: unknown }).message;
-    if (Array.isArray(message)) {
-      return `${fallback}: ${message.map(cleanUserMessage).join(", ")}`;
-    }
+function requiresGenericError(status: unknown): status is number {
+  return typeof status === "number" && (status === 0 || status === 401 || status === 429 || (status >= 500 && status !== 503));
+}
 
-    if (typeof message === "string") {
-      return `${fallback}: ${cleanUserMessage(message)}`;
-    }
-  }
-
-  return `${fallback}: ${cleanUserMessage(JSON.stringify(details))}`;
+function studioErrorMessage(details: unknown): string | undefined {
+  if (typeof details !== "object" || details === null || !("message" in details)) return;
+  const message = details.message;
+  if (Array.isArray(message)) return message.map(cleanUserMessage).join(", ");
+  if (typeof message === "string" && message.trim()) return cleanUserMessage(message);
 }
 
 export function cleanUserMessage(value: unknown): string {
@@ -198,7 +199,7 @@ export function cleanUserMessage(value: unknown): string {
     parseGenericServerMessage(message);
   if (knownMessage) return knownMessage;
 
-  return stripNoisyApiPayload(message);
+  return serverErrorMessage(400, { message: stripNoisyApiPayload(message) }) ?? apiErrorMessage(500);
 }
 
 function parseRenderProvisioningMessage(message: string): string | null {
@@ -281,7 +282,7 @@ function parseGenericServerMessage(message: string): string | null {
     message === "Internal Server Error" ||
     message.includes("Request failed with status 500")
   ) {
-    return "Something went wrong while processing the request. Please retry, then check the backend logs if it happens again.";
+    return "Something went wrong while processing the request. Try again in a moment. If it keeps happening, contact your administrator.";
   }
 
   if (message.includes("Request failed with status 401")) {
