@@ -5,3 +5,14 @@ coverage
 .git
 .github
 npm-debug.log*
+# Local settings and credentials must stay outside production build contexts.
+.env
+.env.*
+!.env.example
+.temp
+.tmp
+.claude
+.worktrees
+.pnpm-store
+.cache
+*.pem
