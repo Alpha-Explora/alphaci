@@ -226,8 +226,12 @@ describe("approval errors", () => {
   });
 
   it("falls back to the server's sentence, then a generic one", () => {
-    expect(visualApproveError(new ApiError("500", 500, { message: "Storage is down." })).message).toBe(
+    expect(visualApproveError(new ApiError("409", 409, { message: "Storage is down." })).message).toBe(
       "Storage is down.",
+    );
+    // A server error's own text never reaches the user.
+    expect(visualApproveError(new ApiError("500", 500, { message: "Storage is down." })).message).toBe(
+      "The approval could not be saved. Try again in a moment.",
     );
     expect(visualApproveError(new Error("offline"))).toMatchObject({
       kind: "failed",

@@ -13,36 +13,16 @@
  */
 
 import { ApiError } from "@/shared/api/request";
+import { serverErrorMessage } from "@/shared/api/error-message";
 
 /**
  * Read the server's message out of an error, falling back when there isn't one.
  *
- * The reason comes from `details`, NOT from `error.message`. `request.ts` sets
- * the message to "Request failed with status 400" and puts the parsed response
- * body in `details`, so reading `message` would trade one useless sentence for
- * another. Nest replies `{statusCode, message, error}`, and `message` is an
- * array of strings when class-validator rejected the body.
+ * Use the same safety checks as the shared request client while preserving the
+ * caller's contextual fallback. Validation arrays become one display message.
  */
 export function apiErrorReason(error: unknown, fallback: string): string {
   if (!(error instanceof ApiError)) return fallback;
 
-  const body = error.details;
-  if (typeof body !== "object" || body === null || !("message" in body)) {
-    return fallback;
-  }
-
-  const { message } = body as { message: unknown };
-
-  if (Array.isArray(message)) {
-    // Validation errors arrive as one string per broken rule. Joined rather
-    // than truncated to the first: a caller that got three wrong wants three.
-    const joined = message
-      .filter((part): part is string => typeof part === "string")
-      .join(" ");
-    return joined.trim() === "" ? fallback : joined;
-  }
-
-  if (typeof message === "string" && message.trim() !== "") return message;
-
-  return fallback;
+  return serverErrorMessage(error.status, error.details) ?? fallback;
 }
