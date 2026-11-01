@@ -1,0 +1,11 @@
+# Root of the monorepo. Each app keeps its own .gitignore for app-specific paths.
+node_modules/
+.turbo/
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
+!**/deploy/**/*.env
+!**/deploy/**/.env.example

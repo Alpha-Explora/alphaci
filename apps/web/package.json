@@ -1,7 +1,7 @@
 {
-  "name": "cicd-fe-single",
-  "version": "0.1.0",
+  "name": "@alphaci/web",
   "private": true,
+  "version": "0.1.0",
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:saas": "node scripts/run-edition.mjs saas next dev --turbopack",
@@ -32,6 +32,7 @@
     "check:documentation": "node scripts/check-documentation.cjs"
   },
   "dependencies": {
+    "@alphaci/capability-catalog": "*",
     "driver.js": "^1.4.0",
     "framer-motion": "^12.38.0",
     "next": "^16.3.3",

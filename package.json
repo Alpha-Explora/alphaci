@@ -1,0 +1,34 @@
+{
+  "name": "alphaci",
+  "private": true,
+  "description": "AlphaCI platform monorepo: NestJS API (apps/api) and Next.js web (apps/web).",
+  "packageManager": "npm@11.17.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev start:dev",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "boundaries": "turbo run boundaries",
+    "check:documentation": "turbo run check:documentation",
+    "check:capabilities": "turbo run check:capabilities",
+    "check:capability-package": "turbo run check:capability-package"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.10"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "@parcel/watcher": true,
+    "unrs-resolver": true,
+    "@scarf/scarf": false,
+    "@nestjs/core": false
+  }
+}

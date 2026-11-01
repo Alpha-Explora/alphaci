@@ -1,9 +1,9 @@
 {
-  "name": "template-repo-be-single",
+  "name": "@alphaci/api",
+  "private": true,
   "version": "0.0.1",
   "description": "",
   "author": "",
-  "private": true,
   "license": "UNLICENSED",
   "imports": {
     "#kernel/*.js": {

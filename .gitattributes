@@ -10,6 +10,6 @@
 *.yaml text eol=lf
 *.txt text eol=lf
 *.sh text eol=lf
-deploy/onprem/agent/* text eol=lf
-deploy/onprem/deb/* text eol=lf
-deploy/onprem/images/** text eol=lf
+apps/api/deploy/onprem/agent/* text eol=lf
+apps/api/deploy/onprem/deb/* text eol=lf
+apps/api/deploy/onprem/images/** text eol=lf
