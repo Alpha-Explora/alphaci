@@ -36,8 +36,8 @@ describe('build profile conformance configuration', () => {
         expect.arrayContaining(exclusions.sourceRoots),
       );
       expect(config.compilerOptions.paths).toEqual({
-        '#kernel/*': ['src/kernel/*'],
-        '#modules/*': ['src/modules/*'],
+        '#kernel/*': ['./src/kernel/*'],
+        '#modules/*': ['./src/modules/*'],
       });
     },
   );

@@ -59,6 +59,7 @@ describe('module boundary policy', () => {
           : '';
       throw new Error(
         `dependency-cruiser found violations:\n${output || String(error)}`,
+        { cause: error },
       );
     }
   });

@@ -22,7 +22,9 @@
     "check:capability-package": "turbo run check:capability-package"
   },
   "devDependencies": {
-    "turbo": "^2.11.10"
+    "eslint": "^10.14.0",
+    "turbo": "^2.11.10",
+    "typescript": "^6.0.3"
   },
   "allowScripts": {
     "esbuild": true,

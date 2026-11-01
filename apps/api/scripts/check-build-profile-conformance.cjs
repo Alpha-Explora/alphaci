@@ -23,6 +23,7 @@ const BASE_PROFILE_EXCLUDES = [
   'dist',
   '**/*.spec.ts',
   '**/*.e2e-spec.ts',
+  '**/__fixtures__/**',
 ];
 
 function createProfileTsConfig(outputDirectory, excludedSourceRoots = []) {
@@ -35,8 +36,8 @@ function createProfileTsConfig(outputDirectory, excludedSourceRoots = []) {
       // isolated artifact compiler also needs type-only aliases because its
       // emitted files live outside the repository's normal dist directory.
       paths: {
-        '#kernel/*': ['src/kernel/*'],
-        '#modules/*': ['src/modules/*'],
+        '#kernel/*': ['./src/kernel/*'],
+        '#modules/*': ['./src/modules/*'],
       },
     },
     include: ['src'],

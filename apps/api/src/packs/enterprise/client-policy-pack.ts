@@ -96,7 +96,9 @@ function readPolicyDocument(
   try {
     contents = readFile(path);
   } catch (cause) {
-    throw new Error(`[composition] Cannot read ${origin}: ${describe(cause)}`);
+    throw new Error(`[composition] Cannot read ${origin}: ${describe(cause)}`, {
+      cause,
+    });
   }
 
   try {
@@ -104,6 +106,7 @@ function readPolicyDocument(
   } catch (cause) {
     throw new Error(
       `[composition] ${origin} is not valid JSON: ${describe(cause)}`,
+      { cause },
     );
   }
 }
