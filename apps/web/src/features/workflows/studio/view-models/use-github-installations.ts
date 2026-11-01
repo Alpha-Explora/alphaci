@@ -13,23 +13,40 @@ import { formatApiError } from "../model/workflow-studio-rules";
 import { roleGateErrorMessage } from "../model/role-gate-rules";
 import { navigateToExternalUrl } from "./navigation";
 
+/** The `installation_id` GitHub's install redirect left in the URL, if any. */
+function callbackInstallationId(): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("installation_id");
+}
+
+function isInstallationId(value: string | null): boolean {
+  const parsed = Number(value);
+  return value !== null && Number.isInteger(parsed) && parsed >= 1;
+}
+
 export function useGithubInstallations(
   setStatusMessage: (message: string) => void,
   applyRepoSelection: (repoFullName: string) => void,
 ) {
   const [linkedRepos, setLinkedRepos] = useState<LinkedGitHubRepo[]>([]);
   const [selectedRepoFullName, setSelectedRepoFullName] = useState("");
-  const [loadingLinkedRepos, setLoadingLinkedRepos] = useState(false);
+  // The mount effect starts both reads, so both are loading from the first render.
+  const [loadingLinkedRepos, setLoadingLinkedRepos] = useState(true);
   const [linkedReposLoaded, setLinkedReposLoaded] = useState(false);
   const [installationAccounts, setInstallationAccounts] = useState<GithubInstallationAccount[]>([]);
-  const [loadingInstallationAccounts, setLoadingInstallationAccounts] = useState(false);
+  const [loadingInstallationAccounts, setLoadingInstallationAccounts] = useState(true);
   const [installationAccountsLoaded, setInstallationAccountsLoaded] = useState(false);
   const [installUrl, setInstallUrl] = useState<string | null>(null);
   const [appSlug, setAppSlug] = useState<string | null>(null);
   const [loadingInstallUrl, setLoadingInstallUrl] = useState(false);
-  const [installationId, setInstallationId] = useState("");
+  // A GitHub install redirect carries the installation to link: the callback
+  // effect below links it, so it starts as the typed id and as linking.
+  // Neither value is rendered, so the server render's defaults cannot mismatch.
+  const [installationId, setInstallationId] = useState(() => callbackInstallationId() ?? "");
   const [selectedOwner, setSelectedOwner] = useState("personal");
-  const [linkingInstallation, setLinkingInstallation] = useState(false);
+  const [linkingInstallation, setLinkingInstallation] = useState(() =>
+    isInstallationId(callbackInstallationId()),
+  );
   const autoLinkFiredRef = useRef(false);
 
   const applyInstallConfig = useCallback((response: { installUrl: string; appSlug?: string }) => {
@@ -53,50 +70,76 @@ export function useGithubInstallations(
     return url.toString();
   }, []);
 
+  /**
+   * Reads linked repos; a loud read also ends the loading state it was started
+   * under. State is only written from the answer, never before the request.
+   */
+  const readLinkedRepos = useCallback(
+    (silent: boolean): Promise<void> =>
+      getLinkedGithubRepos()
+        .then(
+          (response) => {
+            setLinkedRepos(response.repos);
+            setLinkedReposLoaded(true);
+          },
+          () => {
+            if (!silent) {
+              setStatusMessage("Could not load linked GitHub App repos.");
+            }
+          },
+        )
+        .finally(() => {
+          if (!silent) {
+            setLoadingLinkedRepos(false);
+          }
+        }),
+    [setStatusMessage],
+  );
+
+  /**
+   * Reads installation accounts; a loud read also ends the loading state it
+   * was started under. State is only written from the answer.
+   */
+  const readInstallationAccounts = useCallback(
+    (silent: boolean): Promise<void> =>
+      getGithubInstallationAccounts()
+        .then(
+          (response) => {
+            setInstallationAccounts(response.accounts);
+            setInstallationAccountsLoaded(true);
+          },
+          () => {
+            if (!silent) {
+              setStatusMessage("Could not load GitHub App installation accounts.");
+            }
+          },
+        )
+        .finally(() => {
+          if (!silent) {
+            setLoadingInstallationAccounts(false);
+          }
+        }),
+    [setStatusMessage],
+  );
+
+  useEffect(() => {
+    void readLinkedRepos(false);
+    void readInstallationAccounts(false);
+  }, [readInstallationAccounts, readLinkedRepos]);
+
   const loadLinkedRepos = useCallback(async (silent = false) => {
     if (!silent) {
       setLoadingLinkedRepos(true);
     }
-
-    try {
-      const response = await getLinkedGithubRepos();
-      setLinkedRepos(response.repos);
-      setLinkedReposLoaded(true);
-    } catch {
-      if (!silent) {
-        setStatusMessage("Could not load linked GitHub App repos.");
-      }
-    } finally {
-      if (!silent) {
-        setLoadingLinkedRepos(false);
-      }
-    }
-  }, [setStatusMessage]);
+    await readLinkedRepos(silent);
+  }, [readLinkedRepos]);
 
   const loadInstallationAccounts = useCallback(async (silent = false) => {
     if (!silent) {
       setLoadingInstallationAccounts(true);
     }
-
-    try {
-      const response = await getGithubInstallationAccounts();
-      setInstallationAccounts(response.accounts);
-      setInstallationAccountsLoaded(true);
-    } catch {
-      if (!silent) {
-        setStatusMessage("Could not load GitHub App installation accounts.");
-      }
-    } finally {
-      if (!silent) {
-        setLoadingInstallationAccounts(false);
-      }
-    }
-  }, [setStatusMessage]);
-
-  useEffect(() => {
-    void loadLinkedRepos();
-    void loadInstallationAccounts();
-  }, [loadInstallationAccounts, loadLinkedRepos]);
+    await readInstallationAccounts(silent);
+  }, [readInstallationAccounts]);
 
   useEffect(() => {
     let active = true;
@@ -151,8 +194,8 @@ export function useGithubInstallations(
     const urlInstallationId = params.get("installation_id");
     if (!urlInstallationId) return;
 
+    // installationId and linkingInstallation already start from this param.
     autoLinkFiredRef.current = true;
-    setInstallationId(urlInstallationId);
 
     params.delete("installation_id");
     params.delete("setup_action");
@@ -161,16 +204,14 @@ export function useGithubInstallations(
     const cleanUrl = remaining ? `${window.location.pathname}?${remaining}` : window.location.pathname;
     window.history.replaceState(null, "", cleanUrl);
 
-    const parsedId = Number(urlInstallationId);
-    if (!Number.isInteger(parsedId) || parsedId < 1) {
+    if (!isInstallationId(urlInstallationId)) {
       setStatusMessage("GitHub App callback contained an invalid installation ID.");
       return;
     }
 
-    setLinkingInstallation(true);
     setStatusMessage("Linking GitHub App installation from callback...");
 
-    linkGithubInstallation(parsedId)
+    linkGithubInstallation(Number(urlInstallationId))
       .then(async (response) => {
         await Promise.all([loadLinkedRepos(true), loadInstallationAccounts(true)]);
         const access = response.repositorySelection === "all" ? "all repositories" : "selected repositories";

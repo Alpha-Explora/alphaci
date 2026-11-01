@@ -89,8 +89,7 @@ export function withDefaultCreateDeploymentProvisioning(input: {
   repoName: string;
   servicePath?: string | undefined;
   deploymentProvisioningDefaults?:
-    | DeploymentProvisioningDefaultsPort
-    | undefined;
+    DeploymentProvisioningDefaultsPort | undefined;
 }): DeploymentProvisioningRequestDto | undefined {
   // An explicit "no hosting" (enabled: false) is a choice, not an omission:
   // never add a default target on top of it. Only an absent request gets one.
@@ -160,8 +159,7 @@ export function withDefaultFrontendDeploymentProvisioning(input: {
   repoName: string;
   servicePath?: string | undefined;
   deploymentProvisioningDefaults?:
-    | DeploymentProvisioningDefaultsPort
-    | undefined;
+    DeploymentProvisioningDefaultsPort | undefined;
 }): DeploymentProvisioningRequestDto | undefined {
   if (input.request?.enabled === false) {
     return input.request;

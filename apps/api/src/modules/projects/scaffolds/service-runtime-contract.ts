@@ -8,11 +8,7 @@ import type { ServiceRuntimeContract } from '#kernel/ports/deployment-runtime.po
  * which would be a cycle. The builder re-exports it.
  */
 export type CanonicalStack =
-  | 'nestjs'
-  | 'nodejs'
-  | 'nextjs'
-  | 'react'
-  | 'dotnet';
+  'nestjs' | 'nodejs' | 'nextjs' | 'react' | 'dotnet';
 
 /**
  * What each generated app serves in its container: the port and the health

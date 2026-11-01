@@ -6,7 +6,6 @@ import {
   iterationRow,
 } from '../../__fixtures__/project-iterations';
 import type { ProjectIterationRow } from '../../infrastructure/project-iterations.repository';
-import type { QaProjectContextService } from '../qa-checklists/qa-project-context.service';
 import {
   ProjectIterationStartService,
   QA_ITERATION_STARTED_EVENT,
@@ -56,7 +55,7 @@ function build(options: Fixture = {}) {
   const notifications = { record: jest.fn().mockResolvedValue(undefined) };
   const service = new ProjectIterationStartService(
     access,
-    projectContext as unknown as QaProjectContextService,
+    projectContext,
     iterations,
     options.withPublishers === false ? undefined : (audit as never),
     options.withPublishers === false ? undefined : (notifications as never),

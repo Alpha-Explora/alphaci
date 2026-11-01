@@ -1,6 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
 
-import type { ProjectRequirementsReadinessPort } from '#kernel/ports/project-requirements-readiness.port';
 import type {
   ProjectLookupPort,
   WorkspaceProjectSummary,
@@ -105,7 +104,7 @@ function setup({
     repository as unknown as ProjectFoldersRepository,
     access as unknown as HierarchyAccessService,
     lookup as unknown as ProjectLookupPort,
-    readiness as unknown as ProjectRequirementsReadinessPort,
+    readiness,
   );
   return { service, repository, access, lookup, readiness };
 }

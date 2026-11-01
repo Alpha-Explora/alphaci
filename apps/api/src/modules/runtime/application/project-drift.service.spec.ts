@@ -355,8 +355,7 @@ describe('ProjectDriftService', () => {
     const uncheckedOnLastWrite = (): unknown =>
       (
         findingsRepository.replaceActiveFindings.mock.calls.at(-1) as
-          | unknown[]
-          | undefined
+          unknown[] | undefined
       )?.[2];
 
     it('raises one finding when a pipeline branch names an old base', async () => {

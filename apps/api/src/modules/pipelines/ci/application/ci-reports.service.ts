@@ -146,7 +146,7 @@ function readResults(results: unknown): StageResults | undefined {
     }
   }
 
-  return Object.keys(picked).length > 0 ? (picked as StageResults) : undefined;
+  return Object.keys(picked).length > 0 ? picked : undefined;
 }
 
 /**
@@ -479,7 +479,7 @@ export class CiReportsService {
     return translateResults(
       row.stage,
       'failure',
-      (row.results ?? {}) as Parameters<typeof translateResults>[2],
+      row.results ?? {},
       row.raw_logs ?? undefined,
     );
   }

@@ -44,7 +44,7 @@ function setup({
   role = 'lead',
   filed = true,
   heads = { 'acme/api': SHA_API, 'acme/web': SHA_WEB },
-  installationToken = 'app-token' as string | null,
+  installationToken = 'app-token',
   requirementCount = 2,
   verdict = 'APPROVED',
   covered = [
@@ -587,7 +587,7 @@ describe('QaPromotionService.merge', () => {
       merged: false,
       sha: null,
       message: 'Required status check missing',
-    } as never);
+    });
 
     const result = await service.merge('p-api', actor);
 
@@ -961,12 +961,12 @@ describe('QaPromotionService.mergeAll', () => {
         merged: true,
         sha: 'merge-api',
         message: 'Merged',
-      } as never)
+      })
       .mockResolvedValueOnce({
         merged: false,
         sha: null,
         message: 'Required status check missing',
-      } as never);
+      });
 
     const first = await service.mergeAll(MERGE_ALL, actor);
 
@@ -994,7 +994,7 @@ describe('QaPromotionService.mergeAll', () => {
       merged: true,
       sha: 'merge-web',
       message: 'Merged',
-    } as never);
+    });
     const retry = await service.mergeAll(MERGE_ALL, actor);
 
     expect(retry.delivered).toBe(true);

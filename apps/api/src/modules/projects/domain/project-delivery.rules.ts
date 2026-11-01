@@ -1,7 +1,6 @@
 import type {
   CoveredRepository,
   DeliveredRepository,
-  DeliveryHow,
   ProjectIterationStatus,
 } from '../application/qa-checklists/project-iterations.contracts';
 
@@ -63,9 +62,7 @@ export function parseDeliveryEntries(json: unknown): DeliveredRepository[] {
       uatHeadSha: str(entry.uatHeadSha),
       mergeSha: typeof entry.mergeSha === 'string' ? entry.mergeSha : null,
       prNumber: typeof entry.prNumber === 'number' ? entry.prNumber : null,
-      how: (entry.how === 'already_in_main'
-        ? 'already_in_main'
-        : 'merged') as DeliveryHow,
+      how: entry.how === 'already_in_main' ? 'already_in_main' : 'merged',
       at: typeof entry.at === 'string' ? entry.at : '',
     }));
 }

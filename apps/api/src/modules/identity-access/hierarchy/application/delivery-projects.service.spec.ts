@@ -6,8 +6,6 @@ import {
 } from '@nestjs/common';
 
 import type { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
-import type { DeliveryProjectDataCleanupPort } from '#kernel/ports/delivery-project-data-cleanup.port';
-import type { ProjectLifecyclePort } from '#kernel/ports/project-lifecycle.port';
 import type { DeleteDeliveryProjectDto } from '../api/dto/delete-delivery-project.dto';
 import type {
   DeliveryProjectRecord,
@@ -117,8 +115,8 @@ function setup({
     systemsRepository as unknown as SystemsRepository,
     accessService as unknown as HierarchyAccessService,
     auditEventsService as unknown as AuditEventPublisher,
-    projectLifecyclePort as unknown as ProjectLifecyclePort,
-    deliveryProjectDataCleanup as unknown as DeliveryProjectDataCleanupPort,
+    projectLifecyclePort,
+    deliveryProjectDataCleanup,
   );
 
   return {

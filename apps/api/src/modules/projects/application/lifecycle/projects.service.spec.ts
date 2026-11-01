@@ -368,9 +368,11 @@ const makeProjectsService = (...args: unknown[]): ProjectsService => {
       );
     }),
   };
-  return new (ProjectsService as unknown as new (
-    ...constructorArgs: unknown[]
-  ) => ProjectsService)(...padded);
+  return new (
+    ProjectsService as unknown as new (
+      ...constructorArgs: unknown[]
+    ) => ProjectsService
+  )(...padded);
 };
 
 describe('ProjectsService', () => {
@@ -3665,8 +3667,7 @@ jobs:
 
     it('hard-deletes matching projects and records a per-owner event when the repo is deleted', async () => {
       let capturedHandler:
-        | ((event: { repoFullName: string }) => void)
-        | undefined;
+        ((event: { repoFullName: string }) => void) | undefined;
       const webhookGithubService = {
         ...makeGithubService(),
         on: jest.fn((eventName: string, handler: typeof capturedHandler) => {
@@ -3742,8 +3743,7 @@ jobs:
 
     it('does nothing when no project matches the deleted repo', async () => {
       let capturedHandler:
-        | ((event: { repoFullName: string }) => void)
-        | undefined;
+        ((event: { repoFullName: string }) => void) | undefined;
       const webhookGithubService = {
         ...makeGithubService(),
         on: jest.fn((eventName: string, handler: typeof capturedHandler) => {

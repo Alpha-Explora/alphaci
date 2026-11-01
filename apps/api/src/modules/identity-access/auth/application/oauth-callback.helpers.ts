@@ -5,9 +5,7 @@
  */
 
 export type UnauthorizedAuthReason =
-  | 'not_member'
-  | 'invitation_pending'
-  | 'verification_failed';
+  'not_member' | 'invitation_pending' | 'verification_failed';
 
 /** Result of checking GitHub org membership for the internal gate. */
 export type OrgMembershipCheck = 'member' | UnauthorizedAuthReason;

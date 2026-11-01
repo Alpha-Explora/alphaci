@@ -22,8 +22,7 @@ import type { PreviewSurface } from '../../domain/preview-surface.rule';
  * project provisioned an hour ago is made entirely of them.
  */
 export type ProjectBranchPreviewStatus =
-  | DeploymentHistoryStatus
-  | 'not_deployed';
+  DeploymentHistoryStatus | 'not_deployed';
 
 /** One of an environment's recent deploys, as its Overview card lists them. */
 export interface ProjectPreviewDeploy {

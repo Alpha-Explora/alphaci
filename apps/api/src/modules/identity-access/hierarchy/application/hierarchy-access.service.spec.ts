@@ -345,7 +345,7 @@ describe('HierarchyAccessService', () => {
 
     it('lets a platform admin create under any Project without membership', async () => {
       arrange('member', false);
-      platformAdminsRepository.findRole.mockResolvedValue('admin' as never);
+      platformAdminsRepository.findRole.mockResolvedValue('admin');
       await expect(
         service.assertCanCreateUnderDeliveryProject('dp-1', 'user-1'),
       ).resolves.toEqual({ groupId: 'group-1' });

@@ -968,7 +968,7 @@ describe('ProjectDeploymentProvisioningService — declined secret installs', ()
     const service = new ProjectDeploymentProvisioningService(
       deploymentTargetsServiceRef as never,
       envVarsServiceRef as never,
-      installers as never,
+      installers,
       providerPolicyRegistryRef,
     );
 
@@ -1087,7 +1087,7 @@ describe('ProjectDeploymentProvisioningService, a target that cannot be created'
     const service = new ProjectDeploymentProvisioningService(
       targetsService as never,
       { provisionEnvVars: jest.fn() } as never,
-      { get: jest.fn(() => undefined) } as never,
+      { get: jest.fn(() => undefined) },
       new DeploymentProviderPolicyRegistry([
         new RenderDeploymentPolicy({} as never),
         new VercelDeploymentPolicy(),

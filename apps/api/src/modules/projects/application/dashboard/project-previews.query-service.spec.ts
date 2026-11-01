@@ -100,7 +100,7 @@ describe('ProjectPreviewsService', () => {
       deploymentsService,
       embeddabilityProbe as never,
       capabilityResolver as never,
-      providerCatalog as never,
+      providerCatalog,
     );
   }
 
@@ -277,7 +277,7 @@ describe('ProjectPreviewsService', () => {
       deploymentsService,
       embeddabilityProbe as never,
       capabilityResolver as never,
-      providerCatalog as never,
+      providerCatalog,
       commitMessages as never,
     );
 
@@ -534,7 +534,7 @@ describe('ProjectPreviewsService', () => {
    */
   it('falls back to history alone when the port cannot list environments', async () => {
     const service = new ProjectPreviewsService(
-      { listDeployments: deploymentsService.listDeployments } as never,
+      { listDeployments: deploymentsService.listDeployments },
       embeddabilityProbe as never,
       capabilityResolver as never,
     );

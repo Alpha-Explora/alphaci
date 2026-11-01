@@ -100,7 +100,7 @@ describe('ProviderConnectionsService', () => {
       repository as never,
       encryptionService as never,
       clientRegistry,
-      appRoleLookup as never,
+      appRoleLookup,
       providerRegistry as never,
     );
   });

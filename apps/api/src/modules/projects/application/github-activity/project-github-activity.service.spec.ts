@@ -71,7 +71,7 @@ describe('ProjectGithubActivityService', () => {
       projectsRepository as never,
       github as never,
       tokens as never,
-      ingest as never,
+      ingest,
     );
   });
 

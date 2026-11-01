@@ -452,8 +452,8 @@ describe('BrowserTestsService.addBrowserTests', () => {
         committed: false,
         reason: 'branch_exists',
         message: 'x',
-      } as never)
-      .mockResolvedValueOnce({ committed: true, commitSha: 'c2' } as never);
+      })
+      .mockResolvedValueOnce({ committed: true, commitSha: 'c2' });
     const result = await service.addBrowserTests('p', 'u', 'gho');
     expect(result.branch).toBe('alphaci/browser-tests-2');
   });

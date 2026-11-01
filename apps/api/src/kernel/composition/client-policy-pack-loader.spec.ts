@@ -1,16 +1,12 @@
-import type { ClientPolicySource } from './client-policy.port.js';
 import type { ClientPolicyPack } from './client-policy-pack.port.js';
 import { loadClientPolicyPack } from './client-policy-pack-loader.js';
 
 const enterprisePack: ClientPolicyPack = {
   edition: 'enterprise',
-  createSource: jest.fn(
-    () =>
-      ({
-        deployment: () => null,
-        for: () => null,
-      }) as ClientPolicySource,
-  ),
+  createSource: jest.fn(() => ({
+    deployment: () => null,
+    for: () => null,
+  })),
 };
 
 describe('loadClientPolicyPack', () => {

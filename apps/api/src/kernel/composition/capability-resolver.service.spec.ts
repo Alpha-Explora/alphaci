@@ -116,13 +116,18 @@ describe('CapabilityResolverService', () => {
   });
 
   it('fails clearly when the manifest source provider is not wired', async () => {
-    await expect(
-      Test.createTestingModule({
+    // The resolver is request-scoped. Since @nestjs/core 11.2 its dependencies
+    // are resolved on first resolve() rather than at compile(), so the
+    // failure is asserted across both steps.
+    const resolveUnwired = async () => {
+      const module = await Test.createTestingModule({
         providers: [
           CapabilityResolverService,
           { provide: ConfigService, useValue: { getOrThrow: () => config } },
         ],
-      }).compile(),
-    ).rejects.toThrow('CapabilityManifestSource');
+      }).compile();
+      await module.resolve(CapabilityResolverService);
+    };
+    await expect(resolveUnwired()).rejects.toThrow('CapabilityManifestSource');
   });
 });

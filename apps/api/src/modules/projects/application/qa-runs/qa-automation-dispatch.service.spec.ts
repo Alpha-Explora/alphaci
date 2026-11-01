@@ -58,10 +58,8 @@ function setup({
   role = 'qa',
   run = runRow(),
   branchHeads = { 'acme/api': SHA_API, 'acme/web': SHA_WEB },
-  dispatchResult = { dispatched: true } as
-    | { dispatched: true }
-    | { dispatched: false; reason: string; message: string },
-  installationToken = 'app-token' as string | null,
+  dispatchResult = { dispatched: true },
+  installationToken = 'app-token',
   iteration,
 }: {
   role?: PlatformAppRole;

@@ -62,6 +62,20 @@ function readFailure(cause: unknown, projectId: string): GithubReadFailure {
 
 const LOAD_MORE_ERROR = "Unable to load older commits. Try again in a moment.";
 
+/** The page of commits before `before`, stamped with when it was read. */
+async function readOlderCommits(
+  projectId: string,
+  branch: string | null,
+  before: string,
+): Promise<{ page: CommitsPage; readAt: number }> {
+  const response = await projectsRepository.commits(projectId, {
+    branch,
+    limit: COMMITS_PAGE_SIZE,
+    before,
+  });
+  return { page: normalizeCommitsPage(response), readAt: Date.now() };
+}
+
 function queryKey(projectId: string, branch: string | null, attempt: number): string {
   return JSON.stringify([projectId, branch, attempt]);
 }
@@ -170,13 +184,7 @@ export function useProjectCommitsViewModel(options: {
     setLoadingMore(true);
     setLoadMoreError(null);
     try {
-      const response = await projectsRepository.commits(projectId, {
-        branch,
-        limit: COMMITS_PAGE_SIZE,
-        before: page.next,
-      });
-      const more = normalizeCommitsPage(response);
-      const readAt = Date.now();
+      const { page: more, readAt } = await readOlderCommits(projectId, branch, page.next);
       setLoaded((current) =>
         current?.key === askedKey ? { ...current, page: appendCommitsPage(current.page, more), readAt } : current,
       );

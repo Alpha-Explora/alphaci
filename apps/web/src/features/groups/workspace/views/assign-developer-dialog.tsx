@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { createRepositoryAssignment, getGroupMembers } from "@/features/groups";
 import { ApiError } from "@/shared/api/request";
@@ -26,30 +26,43 @@ export function AssignDeveloperDialog({
 }) {
   const [userId, setUserId] = useState("");
   const [members, setMembers] = useState<GroupMember[]>([]);
-  const [loadingMembers, setLoadingMembers] = useState(false);
+  // Each opening reads the members again: closing starts a new opening, and
+  // the list counts as loading until the read for this opening settles.
+  const [opening, setOpening] = useState(0);
+  const [settledKey, setSettledKey] = useState<string | null>(null);
+  const requestRef = useRef(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const membersKey = `${groupId}#${opening}`;
+  const loadingMembers = open && settledKey !== membersKey;
 
   function reset() {
     setUserId("");
     setError(null);
+    setOpening((value) => value + 1);
   }
 
   useEffect(() => {
     if (!open) return;
-    setLoadingMembers(true);
+    requestRef.current += 1;
+    const requestId = requestRef.current;
     void getGroupMembers(groupId)
-      .then((items) =>
+      .then((items) => {
+        if (requestId !== requestRef.current) return;
         setMembers(
           items.filter(
             (member) =>
               member.role === "member" && member.memberStatus === "active",
           ),
-        ),
-      )
-      .catch(() => setError("Group members could not be loaded."))
-      .finally(() => setLoadingMembers(false));
-  }, [groupId, open]);
+        );
+      })
+      .catch(() => {
+        if (requestId === requestRef.current) setError("Group members could not be loaded.");
+      })
+      .finally(() => {
+        if (requestId === requestRef.current) setSettledKey(membersKey);
+      });
+  }, [groupId, open, membersKey]);
 
   async function handleSubmit() {
     const trimmed = userId.trim();

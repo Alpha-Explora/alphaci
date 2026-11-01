@@ -42,7 +42,7 @@ describe('AssignmentsService.createAssignment role allow-list', () => {
     await expect(
       service.createAssignment('repo-1', 'manager', {
         userId: 'dev-1',
-      } as never),
+      }),
     ).resolves.toEqual({ id: 'assignment-1' });
     // Checked on the TARGET, not the caller.
     expect(appRoleLookup.findAppRole).toHaveBeenCalledWith('dev-1');
@@ -56,7 +56,7 @@ describe('AssignmentsService.createAssignment role allow-list', () => {
     async (role) => {
       const { service, githubSyncService } = build(role, 'member');
       const error = await service
-        .createAssignment('repo-1', 'manager', { userId: 'x' } as never)
+        .createAssignment('repo-1', 'manager', { userId: 'x' })
         .catch((e: unknown) => e);
       expect(error).toBeInstanceOf(BadRequestException);
       expect((error as BadRequestException).getResponse()).toMatchObject({
