@@ -1,4 +1,4 @@
-# CLAUDE.md — alphaci-golden-copy-fe
+# CLAUDE.md — AlphaCI web (apps/web)
 
 Next.js 16 (App Router, React 19, Tailwind 4) frontend for the AlphaCI CI/CD
 platform. Canonical current-state documentation is the OKF bundle under
@@ -6,10 +6,10 @@ platform. Canonical current-state documentation is the OKF bundle under
 [Golden Copy executive report](docs/executive/golden-copy-executive-report.md).
 Product context and the self-hosted direction are in the workspace `AGENTS.md`
 at the Alpha Explora workspace root (outside this repository). API details are
-in the backend repository `Alpha-Explora/alphaci-golden-copy-be` (its `README.md`
-and `docs/` bundle).
+in the backend workspace `apps/api` of this monorepo (its `README.md` and
+`docs/` bundle).
 
-npm package name is `cicd-fe-single`; the repo is `Alpha-Explora/alphaci-golden-copy-fe`.
+npm workspace name is `@alphaci/web` (`apps/web`); the repo is the `Alpha-Explora/alphaci` monorepo.
 
 ---
 
@@ -278,8 +278,8 @@ asked for; only guests are redirected, to `/login`. On the backend,
 `ALPHACI_EDITION` (`saas` | `edu` | `enterprise`) are read by `next.config.ts`
 at build time and inlined as `NEXT_PUBLIC_ALPHACI_*`. The profile decides which
 feature barrels compile; excluded barrels are aliased to `notFound()` stubs
-written to `.capability-stubs/` from the vendored
-`vendor/@alphaci/capability-catalog`. Only the `saas` edition serves the
+written to `.capability-stubs/` from the workspace package
+`@alphaci/capability-catalog` (`packages/capability-catalog` at the monorepo root). Only the `saas` edition serves the
 landing page at `/`. Runtime capability flags come from
 `GET /api/v1/capabilities`; source code never branches on edition.
 
@@ -288,8 +288,8 @@ landing page at `/`. Runtime capability flags come from
 ## Conventions
 
 - TypeScript strict; `allowJs: false`. Path aliases: `@/` → `src/`,
-  `@shared/` → `src/shared/`, `@features/` → `src/features/`,
-  `@alphaci/capability-catalog` → `vendor/@alphaci/capability-catalog`.
+  `@shared/` → `src/shared/`, `@features/` → `src/features/`.
+  `@alphaci/capability-catalog` resolves through the npm workspace.
   Existing code uses `@/` almost everywhere; prefer it.
 - `"use client"` only where a browser API, state or an event handler needs it.
 - Tailwind 4 — no `tailwind.config.js`; configured via CSS.
@@ -304,11 +304,11 @@ landing page at `/`. Runtime capability flags come from
 
 **`next.config.ts`**:
 - `env` injects `NEXT_PUBLIC_ALPHACI_BUILD_PROFILE` / `NEXT_PUBLIC_ALPHACI_EDITION`.
-- Resolves the build profile from the vendored catalog and aliases excluded
+- Resolves the build profile from the catalog package and aliases excluded
   feature barrels (webpack `resolve.alias`, `turbopack.resolveAlias`).
 - `rewrites()` adds the `/api/v1/*` proxy when `API_PROXY_TARGET` is set at build.
 - `images.remotePatterns` allows GitHub and Google avatar hosts.
-- `turbopack.root` pins the project root.
+- `turbopack.root` pins the monorepo root, where dependencies are hoisted.
 - A `headers()` rule sets `Cache-Control: no-store, must-revalidate` on
   documents, with a negative lookahead excluding `/_next/*` (those are
   content-hashed and must stay immutably cached).
@@ -370,11 +370,11 @@ npm run typecheck && npx eslint src --max-warnings=0 && npm run lint:css \
   && npm run check:documentation
 ```
 
-CI (`.github/workflows/boundaries.yml`, Node 24) also runs the capability
+CI (`.github/workflows/web-ci.yml` at the monorepo root, Node 24) also runs the capability
 package, capability surface and build-profile checks, both profile builds, and
 `npm run complexity`.
 
-Lockfile is `package-lock.json` — use npm. Port 3000 must match `FRONTEND_URL`
+Lockfile is the monorepo root `package-lock.json` — use npm, and run `npm install` from the root. Port 3000 must match `FRONTEND_URL`
 in the backend `.env`.
 
 ### Key versions
