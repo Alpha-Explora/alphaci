@@ -29,13 +29,16 @@ describe('module boundary policy', () => {
     // works on machines where npm is not on PATH.
     const nodeCmd = process.execPath;
     // npm workspaces may hoist the package to the monorepo root, and its
-    // exports hide package.json, so search Node's lookup path for the bin.
-    const depcruiseJs = (require.resolve.paths('dependency-cruiser') ?? [])
-      .map((dir) =>
-        resolve(dir, 'dependency-cruiser/bin/dependency-cruise.mjs'),
-      )
-      .find((candidate) => existsSync(candidate));
-    if (!depcruiseJs) throw new Error('dependency-cruiser is not installed');
+    // exports hide package.json from require, so find the package directory
+    // on Node's lookup path and read its declared `depcruise` bin.
+    const packageDir = (require.resolve.paths('dependency-cruiser') ?? [])
+      .map((dir) => resolve(dir, 'dependency-cruiser'))
+      .find((candidate) => existsSync(resolve(candidate, 'package.json')));
+    if (!packageDir) throw new Error('dependency-cruiser is not installed');
+    const { bin } = JSON.parse(
+      readFileSync(resolve(packageDir, 'package.json'), 'utf8'),
+    ) as { bin: Record<string, string> };
+    const depcruiseJs = resolve(packageDir, bin['depcruise']!);
     try {
       const quote = process.platform === 'win32' ? '"' : "'";
       const q = (value: string) => `${quote}${value}${quote}`;
