@@ -479,7 +479,7 @@ export async function provisionMultiRepoBackend(input: {
   const repoFullName = `${repo.ownerLogin}/${repo.repoName}`;
 
   let backendRow: ProvisionedProjectRow | undefined;
-  let backendDeliveryProjectId: string | null = null;
+  let backendDeliveryProjectId: string | null;
   let pipeline: MultiRepoPipeline | undefined;
   let backendProvisioningComplete = false;
   try {

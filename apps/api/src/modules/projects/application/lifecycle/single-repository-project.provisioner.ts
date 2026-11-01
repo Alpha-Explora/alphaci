@@ -479,8 +479,8 @@ export class SingleRepositoryProjectProvisioner {
       newChainLinkOptions(dto),
     );
 
-    let commitSha = '';
-    let commitUrl: string | null = null;
+    let commitSha: string;
+    let commitUrl: string | null;
     try {
       const ciToken = await this.support.ciService.issueProjectToken(row.id);
       await this.support.githubService.setActionsSecretStrict(

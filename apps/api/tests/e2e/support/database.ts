@@ -132,6 +132,7 @@ export async function applySqlFiles(
         await client.query('ROLLBACK');
         throw new Error(
           'Applying ' + basename(file) + ' failed: ' + String(error),
+          { cause: error },
         );
       }
     }

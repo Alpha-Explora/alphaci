@@ -1400,7 +1400,7 @@ export class DeploymentTargetsService
     try {
       client = this.clientRegistry.getClient(target.provider);
     } catch {
-      client = null;
+      // A provider without a registered client offers no rollback.
     }
     // Presence checks only (`in`), so no method is pulled off its client.
     const supported =
