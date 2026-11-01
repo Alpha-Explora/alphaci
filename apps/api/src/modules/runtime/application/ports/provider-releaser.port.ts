@@ -14,10 +14,7 @@ import type { DeploymentTargetSummary } from '../../core/deployments.types';
  * release job for it.
  */
 export type ProviderReleaseStatus =
-  | 'pending'
-  | 'in_progress'
-  | 'live'
-  | 'failed';
+  'pending' | 'in_progress' | 'live' | 'failed';
 
 export interface ProviderReleaseRequest {
   target: DeploymentTargetSummary;

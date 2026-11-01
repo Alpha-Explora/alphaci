@@ -11,7 +11,7 @@ function parse(raw: string): PackageJsonShape | null {
   try {
     const value: unknown = JSON.parse(raw);
     return value !== null && typeof value === 'object' && !Array.isArray(value)
-      ? (value as PackageJsonShape)
+      ? value
       : null;
   } catch {
     return null;

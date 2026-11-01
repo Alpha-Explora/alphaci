@@ -31,7 +31,7 @@ export function useHostsViewModel(
       name: string;
       platform: HostPlatform;
     } | null>(null);
-  const [now, setNow] = useState(Date.now()),
+  const [now, setNow] = useState(() => Date.now()),
     [reload, setReload] = useState(0);
   const progress =
     receipt && enrolled

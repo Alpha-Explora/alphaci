@@ -62,10 +62,7 @@ export interface QaRunItemPrevious {
 export type QaAutomationStage = 'quality' | 'verify';
 
 export type QaAutomationRunStatus =
-  | 'success'
-  | 'failure'
-  | 'running'
-  | 'cancelled';
+  'success' | 'failure' | 'running' | 'cancelled';
 
 export interface QaAutomationFailure {
   name: string;
@@ -117,11 +114,7 @@ export type QaAutomationSource = 'playwright' | 'unit_test' | 'bruno';
  * sign-off.
  */
 export type QaAutomationItemStatus =
-  | 'passed'
-  | 'failed'
-  | 'unknown'
-  | 'not_run'
-  | 'unlinked';
+  'passed' | 'failed' | 'unknown' | 'not_run' | 'unlinked';
 
 export type QaAutomationScope = 'spec' | 'suite' | 'stage';
 
@@ -286,11 +279,7 @@ export const QA_RUNS_LIST_MAX_LIMIT = 100;
 
 /** The Verification track. New writes never use 'in_progress'. */
 export type QaProjectVerificationStatus =
-  | 'pending'
-  | 'passed'
-  | 'failed'
-  | 'blocked'
-  | 'returned_to_dev';
+  'pending' | 'passed' | 'failed' | 'blocked' | 'returned_to_dev';
 
 /**
  * Settable through PATCH on a Project run item: Pending, Passed or Failed
@@ -350,11 +339,7 @@ export interface ProjectQaRunItemAcceptance {
 
 /** A test case's result in one run. 'not_applicable' counts as resolved, like 'passed'. */
 export type QaTestCaseStatus =
-  | 'pending'
-  | 'passed'
-  | 'failed'
-  | 'blocked'
-  | 'not_applicable';
+  'pending' | 'passed' | 'failed' | 'blocked' | 'not_applicable';
 
 export const QA_TEST_CASE_STATUSES: readonly QaTestCaseStatus[] = [
   'pending',
@@ -416,9 +401,7 @@ export type QaAttachmentKind = 'evidence' | 'fix_proof' | 'automated';
 export type QaAttachmentSource = 'capture' | 'paste' | 'upload' | 'playwright';
 
 export type QaAttachmentContentTypeName =
-  | 'image/png'
-  | 'image/jpeg'
-  | 'image/webp';
+  'image/png' | 'image/jpeg' | 'image/webp';
 
 /** An attachment as the QA report carries it: stable identity, no URL (signed URLs expire). */
 export interface QaRunItemAttachmentRef {

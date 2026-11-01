@@ -8,10 +8,8 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import type { WorkspaceAccessPort } from '#kernel/ports/workspaces.port';
-import type { AppRoleLookup } from '#kernel/ports/app-role.port';
 import type { OnpremMachinesRepository } from '../../infrastructure/repositories/onprem-machines.repository';
 import { machineSummary } from '../../infrastructure/repositories/onprem-machines.repository';
-import type { OnpremInstallerReleasePort } from '../ports/onprem-installer-release.port';
 import { labSigningKeyId } from '#kernel/config/release-signing-key';
 import { ONPREM_AGENT_VERSION } from '../../domain/onprem-agent-version';
 import { createReleaseSigner } from '../../infrastructure/release-signing/release-signer';
@@ -51,14 +49,14 @@ function fixture(installer: Record<string, string> = explicitInstaller) {
   const service = new OnpremHostsService(
     repository as unknown as OnpremMachinesRepository,
     access as unknown as WorkspaceAccessPort,
-    roles as unknown as AppRoleLookup,
+    roles,
     new ConfigService({
       ONPREM_RELEASES_ENABLED: 'true',
       ALPHACI_RELEASE_TRUST_KEYS_JSON: JSON.stringify({ test: publicKey }),
       PLATFORM_PUBLIC_URL: 'https://api.example.com',
       ...installer,
     }),
-    installerReleases as unknown as OnpremInstallerReleasePort,
+    installerReleases,
   );
   return { service, repository, access, roles, installerReleases };
 }

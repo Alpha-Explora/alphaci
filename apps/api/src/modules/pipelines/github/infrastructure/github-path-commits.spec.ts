@@ -36,7 +36,7 @@ describe('path commits for the Code tab', () => {
 
   beforeEach(() => {
     fetchMock = jest.fn();
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    globalThis.fetch = fetchMock;
     http = new GithubHttp(new Logger('test'));
   });
 

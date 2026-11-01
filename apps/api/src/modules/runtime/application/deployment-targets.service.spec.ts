@@ -233,8 +233,8 @@ describe('DeploymentTargetsService', () => {
       notificationEventsService as never,
       providerRegistry as never,
       capabilityResolver as never,
-      ciSecretsInstallers as never,
-      appRoleLookup as never,
+      ciSecretsInstallers,
+      appRoleLookup,
     );
   });
 
@@ -263,7 +263,7 @@ describe('DeploymentTargetsService', () => {
       providerRegistry as never,
       undefined,
       undefined,
-      appRoleLookup as never,
+      appRoleLookup,
     );
 
     const attempt = unwired.createDeploymentTarget('project-1', 'user-1', {
@@ -706,11 +706,11 @@ describe('DeploymentTargetsService', () => {
 
     it('fails closed when the app-role port is absent (no membership row is not allowed)', async () => {
       const unwired = new DeploymentTargetsService(
-        projectReferenceLookup as never,
+        projectReferenceLookup,
         deploymentTargetsRepository as never,
         providerConnectionsRepository as never,
         encryptionService as never,
-        clientRegistry as never,
+        clientRegistry,
         configService as never,
         new DeploymentStrategyResolver(providerRegistry as never),
         undefined,

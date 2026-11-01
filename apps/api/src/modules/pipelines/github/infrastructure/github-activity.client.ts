@@ -127,15 +127,13 @@ export class GithubActivityClient {
     return {
       status: 'modified',
       etag: first.headers?.get('etag') ?? null,
-      events: events.map(
-        (row): GitHubRepositoryEvent => ({
-          id: String(row.id),
-          type: row.type,
-          actor: row.actor?.login ? { login: row.actor.login } : null,
-          createdAt: row.created_at ?? new Date().toISOString(),
-          payload: row.payload ?? {},
-        }),
-      ),
+      events: events.map((row): GitHubRepositoryEvent => ({
+        id: String(row.id),
+        type: row.type,
+        actor: row.actor?.login ? { login: row.actor.login } : null,
+        createdAt: row.created_at ?? new Date().toISOString(),
+        payload: row.payload ?? {},
+      })),
     };
   }
 

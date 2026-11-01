@@ -1,8 +1,5 @@
 "use client";
 
-/* These refs deliberately track the latest fetcher/options without changing
- * the dependency identity that controls a request. */
-
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ApiError } from "@/shared/api/request";
@@ -28,9 +25,38 @@ export interface UseApiResourceResult<T> {
   setData: (updater: (current: T | null) => T | null) => void;
 }
 
+/** How the newest request ended, kept with the request it answered. */
+interface Outcome {
+  key: string;
+  state: Exclude<ResourceState, "loading">;
+  error: string | null;
+}
+
+function failureOutcome(key: string, cause: unknown): Outcome {
+  if (cause instanceof ApiError) {
+    if (cause.status === 404) return { key, state: "notfound", error: null };
+    if (cause.status === 403) return { key, state: "forbidden", error: null };
+    return { key, state: "error", error: cause.message };
+  }
+  return { key, state: "error", error: "Something went wrong loading this view." };
+}
+
+/**
+ * The outcome to show. While disabled nothing is asked for, so the last
+ * outcome stays; otherwise an outcome for another request reads as loading.
+ */
+function shownOutcome(enabled: boolean, outcome: Outcome | null, key: string): Outcome | null {
+  if (!enabled) return outcome;
+  return outcome?.key === key ? outcome : null;
+}
+
 /**
  * Generic loader for a single hierarchy GET. `emptyWhen` lets a list resource
  * resolve to the dedicated "empty" state so callers don't re-implement it.
+ *
+ * Each request is keyed by `deps` and a reload counter: an outcome for an
+ * older key reads as "loading", and a request counter stops a slow request
+ * overwriting a newer one. `deps` must be primitives (they form the key).
  */
 export function useApiResource<T>(
   fetcher: () => Promise<T>,
@@ -38,57 +64,41 @@ export function useApiResource<T>(
   options?: { emptyWhen?: (data: T) => boolean; enabled?: boolean },
 ): UseApiResourceResult<T> {
   const [data, setDataState] = useState<T | null>(null);
-  const [state, setState] = useState<ResourceState>("loading");
-  const [error, setError] = useState<string | null>(null);
-  const versionRef = useRef(0);
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [nonce, setNonce] = useState(0);
+  const requestRef = useRef(0);
   const enabled = options?.enabled ?? true;
+  const key = JSON.stringify([...deps, nonce]);
 
   // `emptyWhen` and `fetcher` are almost always passed inline (new identity every
-  // render). Keep the latest via refs so they never enter `run`'s dependency
-  // list — otherwise `run` would change every render and re-trigger the effect in
-  // an infinite fetch loop. Re-fetching is driven exclusively by `deps`.
-  const emptyWhenRef = useRef(options?.emptyWhen);
-  emptyWhenRef.current = options?.emptyWhen;
-  const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
-
-  const run = useCallback(() => {
-    if (!enabled) return;
-    const version = versionRef.current + 1;
-    versionRef.current = version;
-    setState("loading");
-    setError(null);
-
-    void fetcherRef
-      .current()
-      .then((result) => {
-        if (version !== versionRef.current) return;
-        setDataState(result);
-        setState(emptyWhenRef.current?.(result) ? "empty" : "ready");
-      })
-      .catch((cause: unknown) => {
-        if (version !== versionRef.current) return;
-        if (cause instanceof ApiError) {
-          if (cause.status === 404) {
-            setState("notfound");
-            return;
-          }
-          if (cause.status === 403) {
-            setState("forbidden");
-            return;
-          }
-          setError(cause.message);
-        } else {
-          setError("Something went wrong loading this view.");
-        }
-        setState("error");
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, ...deps]);
+  // render). Keep the latest in a ref so they never enter the effect's
+  // dependency list — otherwise every render would re-trigger the effect in an
+  // infinite fetch loop. Re-fetching is driven exclusively by `deps` (the key).
+  const latest = useRef({ fetcher, emptyWhen: options?.emptyWhen });
+  useEffect(() => {
+    latest.current = { fetcher, emptyWhen: options?.emptyWhen };
+  });
 
   useEffect(() => {
-    run();
-  }, [run]);
+    if (!enabled) return;
+    requestRef.current += 1;
+    const requestId = requestRef.current;
+    void latest.current
+      .fetcher()
+      .then((result) => {
+        if (requestId !== requestRef.current) return;
+        setDataState(result);
+        const empty = latest.current.emptyWhen?.(result) ?? false;
+        setOutcome({ key, state: empty ? "empty" : "ready", error: null });
+      })
+      .catch((cause: unknown) => {
+        if (requestId === requestRef.current) setOutcome(failureOutcome(key, cause));
+      });
+  }, [enabled, key]);
+
+  const reload = useCallback(() => {
+    if (enabled) setNonce((value) => value + 1);
+  }, [enabled]);
 
   const setData = useCallback(
     (updater: (current: T | null) => T | null) => {
@@ -97,7 +107,14 @@ export function useApiResource<T>(
     [],
   );
 
-  return { data, state, error, reload: run, setData };
+  const shown = shownOutcome(enabled, outcome, key);
+  return {
+    data,
+    state: shown ? shown.state : "loading",
+    error: shown ? shown.error : null,
+    reload,
+    setData,
+  };
 }
 
 /** Human-friendly relative time (mirrors the home dashboard's timeAgo). */

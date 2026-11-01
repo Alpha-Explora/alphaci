@@ -29,51 +29,61 @@ export interface ProjectDriftViewModel {
   ) => Promise<ProjectDriftRepairResponse>;
 }
 
+/** What one project's findings read as, kept with the project they are for. */
+interface DriftState {
+  projectId: string;
+  response: ProjectDriftResponse | null;
+  error: string | null;
+  status: Exclude<ProjectDriftStatus, "loading">;
+}
+
 /**
  * The active health findings of one project, and the two things a person does
  * with them. Only the newest request may write state, so a slow load that
- * started before a check cannot overwrite the check's result.
+ * started before a check cannot overwrite the check's result. State is kept
+ * with its project, so another project reads as loading on the same render.
  */
 export function useProjectDriftViewModel(
   projectId: string,
 ): ProjectDriftViewModel {
-  const [response, setResponse] = useState<ProjectDriftResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<ProjectDriftStatus>("loading");
+  const [state, setState] = useState<DriftState | null>(null);
   const latest = useRef(0);
+  const current = state?.projectId === projectId ? state : null;
 
   useEffect(() => {
     const request = ++latest.current;
-    setResponse(null);
-    setError(null);
-    setStatus("loading");
     projectsRepository.drift(projectId).then(
       (next) => {
         if (request !== latest.current) return;
-        setResponse(next);
-        setStatus("idle");
+        setState({ projectId, response: next, error: null, status: "idle" });
       },
       (caught: unknown) => {
         if (request !== latest.current) return;
-        setError(apiErrorReason(caught, "Unable to load health findings."));
-        setStatus("idle");
+        const error = apiErrorReason(caught, "Unable to load health findings.");
+        setState({ projectId, response: null, error, status: "idle" });
       },
     );
   }, [projectId]);
 
   const check = useCallback(async () => {
     const request = ++latest.current;
-    setStatus("checking");
-    setError(null);
+    /** The findings on screen for this project; none while it still loads. */
+    const shown = (previous: DriftState | null) =>
+      previous?.projectId === projectId ? previous.response : null;
+    setState((previous) => ({
+      projectId,
+      response: shown(previous),
+      error: null,
+      status: "checking",
+    }));
     try {
       const next = await projectsRepository.runDrift(projectId);
-      if (request === latest.current) setResponse(next);
+      if (request !== latest.current) return;
+      setState({ projectId, response: next, error: null, status: "idle" });
     } catch (caught) {
-      if (request === latest.current) {
-        setError(apiErrorReason(caught, "Unable to run the health checks."));
-      }
-    } finally {
-      if (request === latest.current) setStatus("idle");
+      if (request !== latest.current) return;
+      const error = apiErrorReason(caught, "Unable to run the health checks.");
+      setState((previous) => ({ projectId, response: shown(previous), error, status: "idle" }));
     }
   }, [projectId]);
 
@@ -90,5 +100,11 @@ export function useProjectDriftViewModel(
     [projectId, check],
   );
 
-  return { response, error, status, check, repair };
+  return {
+    response: current?.response ?? null,
+    error: current?.error ?? null,
+    status: current?.status ?? "loading",
+    check,
+    repair,
+  };
 }

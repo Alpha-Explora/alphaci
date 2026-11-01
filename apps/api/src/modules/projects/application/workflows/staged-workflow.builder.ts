@@ -32,12 +32,7 @@ import { defaultToolchainRegistry } from './toolchains';
 import type { GenerateWorkflowDto } from './dto/generate-workflow.dto';
 
 export type WorkflowStage =
-  | 'access'
-  | 'quality'
-  | 'package'
-  | 'verify'
-  | 'guard'
-  | 'promote';
+  'access' | 'quality' | 'package' | 'verify' | 'guard' | 'promote';
 
 export interface StagedWorkflowFile {
   stage: WorkflowStage;

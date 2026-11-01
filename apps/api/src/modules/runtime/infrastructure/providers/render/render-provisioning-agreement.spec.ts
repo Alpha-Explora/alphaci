@@ -2,7 +2,6 @@ import { RenderDeploymentPolicy } from './render-deployment.policy';
 import { renderWorkflowFragment } from './render-workflow.fragment';
 import type { RenderCostPolicyService } from './render-cost-policy.service';
 import type { DeploymentProvisioningTarget } from '../../../core/deployment-provisioning.contract';
-import type { WorkflowTargetExpansionInput } from '../../../core/workflow-fragment.contract';
 import { RenderCiSecretsService } from './render-ci-secrets.service';
 import {
   renderBranchFor,
@@ -51,7 +50,7 @@ describe('Render provisioning and the generated pipeline agree on the image', ()
       {
         ...requested,
         providerData: { ...requested },
-      } as unknown as WorkflowTargetExpansionInput,
+      },
       {},
     );
 
@@ -126,7 +125,7 @@ describe('neither half puts a hosting credential in the repository', () => {
       {
         ...requested,
         providerData: { ...requested },
-      } as unknown as WorkflowTargetExpansionInput,
+      },
       {},
     );
 

@@ -4,7 +4,4 @@
  * deployment DTOs and provider interfaces do not form a dependency cycle.
  */
 export type RenderServiceType =
-  | 'web_service'
-  | 'private_service'
-  | 'background_worker'
-  | 'cron_job';
+  'web_service' | 'private_service' | 'background_worker' | 'cron_job';

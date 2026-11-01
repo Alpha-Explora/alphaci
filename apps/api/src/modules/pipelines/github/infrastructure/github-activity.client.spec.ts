@@ -21,7 +21,7 @@ describe('GithubActivityClient', () => {
 
   beforeEach(() => {
     fetchMock = jest.fn();
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    globalThis.fetch = fetchMock;
     client = new GithubActivityClient(new GithubHttp(new Logger('test')));
   });
 

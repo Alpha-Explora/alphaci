@@ -72,6 +72,15 @@ async function loadFirstPage(projectId: string): Promise<AuditState> {
   return { page: normalizeAuditPage(response), readAt: Date.now() };
 }
 
+/** The page of events before `before`, stamped with when it was read. */
+async function loadOlderPage(projectId: string, before: string): Promise<AuditState> {
+  const response = await projectsRepository.audit(projectId, {
+    limit: AUDIT_PAGE_SIZE,
+    before,
+  });
+  return { page: normalizeAuditPage(response), readAt: Date.now() };
+}
+
 /** The shown page's parts; empty while loading. */
 function pageParts(state: AuditState | null): {
   next: string | null;
@@ -190,12 +199,7 @@ export function useProjectAuditViewModel(options: {
     setLoadingMore(true);
     setLoadMoreError(null);
     try {
-      const response = await projectsRepository.audit(projectId, {
-        limit: AUDIT_PAGE_SIZE,
-        before: next,
-      });
-      const page = normalizeAuditPage(response);
-      const readAt = Date.now();
+      const { page, readAt } = await loadOlderPage(projectId, next);
       olderLoaded.current = true;
       query.setData((current) =>
         current ? { page: appendAuditPage(current.page, page), readAt } : current,

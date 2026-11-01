@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`post-consolidation public contract snapshots records the provider discovery contract independently of implementation classes 1`] = `
 {

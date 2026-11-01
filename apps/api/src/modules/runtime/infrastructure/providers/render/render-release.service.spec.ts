@@ -28,7 +28,7 @@ function target(
     },
     status: 'active',
     ...overrides,
-  } as DeploymentTargetSummary;
+  };
 }
 
 function service(registryCredentialId?: string): RenderReleaseService {
@@ -75,7 +75,7 @@ function stubFetch(
     json: async () => response.body ?? { id: 'dep-1', status: 'created' },
     text: async () => response.text ?? '',
   });
-  global.fetch = fetchMock as unknown as typeof fetch;
+  global.fetch = fetchMock;
   return fetchMock;
 }
 

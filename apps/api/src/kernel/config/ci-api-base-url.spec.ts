@@ -1,5 +1,3 @@
-import type { GithubProjectPort } from '#kernel/ports/github.port';
-
 import {
   findStaleCiWorkflowFiles,
   isReachableFromGithubRunners,
@@ -176,10 +174,7 @@ describe('findStaleCiWorkflowFiles', () => {
   };
   const read = () =>
     findStaleCiWorkflowFiles(
-      github as unknown as Pick<
-        GithubProjectPort,
-        'listRepoContents' | 'getFileContent'
-      >,
+      github,
       'token',
       'tone/orders-api',
       'dev',

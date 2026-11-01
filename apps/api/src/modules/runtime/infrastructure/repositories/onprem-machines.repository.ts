@@ -79,18 +79,16 @@ export class OnpremMachinesRepository {
     );
     return [
       ...machines.rows.map(machineSummary),
-      ...pending.rows.map(
-        (row): MachineSummary => ({
-          id: row.id,
-          workspaceId,
-          name: row.name,
-          platform: row.platform,
-          agentVersion: null,
-          lastSeenAt: null,
-          status: 'enrollment_pending',
-          checks: [],
-        }),
-      ),
+      ...pending.rows.map((row): MachineSummary => ({
+        id: row.id,
+        workspaceId,
+        name: row.name,
+        platform: row.platform,
+        agentVersion: null,
+        lastSeenAt: null,
+        status: 'enrollment_pending',
+        checks: [],
+      })),
     ];
   }
 

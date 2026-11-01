@@ -12,8 +12,7 @@ export type ReleaseSignatureFailure =
   | 'invalid_signature';
 
 export type ReleaseSignatureResult =
-  | { valid: true }
-  | { valid: false; reason: ReleaseSignatureFailure };
+  { valid: true } | { valid: false; reason: ReleaseSignatureFailure };
 
 /**
  * The trust set with the backend's own signing key added under its key ID, so a

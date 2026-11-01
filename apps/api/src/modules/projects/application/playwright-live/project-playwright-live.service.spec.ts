@@ -5,10 +5,7 @@ import type {
   GitHubWorkflowRunSummary,
   GithubProjectPort,
 } from '#kernel/ports/github.port';
-import type {
-  PlaywrightLivePort,
-  PlaywrightLiveRunFacts,
-} from '#kernel/ports/playwright-live.port';
+import type { PlaywrightLiveRunFacts } from '#kernel/ports/playwright-live.port';
 import type { ProjectsRepository } from '../../infrastructure/projects.repository';
 import type { ProjectGithubTokenResolver } from '../github-activity/project-github-token.resolver';
 import {
@@ -107,7 +104,7 @@ describe('ProjectPlaywrightLiveService', () => {
     tokens = { installationFirst: jest.fn().mockResolvedValue('app-token') };
     service = new ProjectPlaywrightLiveService(
       projects as unknown as ProjectsRepository,
-      live as unknown as PlaywrightLivePort,
+      live,
       github as unknown as GithubProjectPort,
       tokens as unknown as ProjectGithubTokenResolver,
     );

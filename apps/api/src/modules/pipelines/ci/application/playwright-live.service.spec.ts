@@ -57,15 +57,14 @@ class FakeRepository {
     },
   );
   countTests = jest.fn(() => Promise.resolve(this.tests.size));
-  listTestKeys = jest.fn(
-    (): Promise<PlaywrightLiveTestKey[]> =>
-      Promise.resolve(
-        [...this.tests.values()].map((row) => ({
-          testKey: row.testKey,
-          project: row.project,
-          retry: row.retry,
-        })),
-      ),
+  listTestKeys = jest.fn((): Promise<PlaywrightLiveTestKey[]> =>
+    Promise.resolve(
+      [...this.tests.values()].map((row) => ({
+        testKey: row.testKey,
+        project: row.project,
+        retry: row.retry,
+      })),
+    ),
   );
   upsertTestStarts = jest.fn(
     (_pk: string, rows: PlaywrightLiveTestStartRow[]) => {

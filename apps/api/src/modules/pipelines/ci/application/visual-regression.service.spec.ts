@@ -122,16 +122,15 @@ describe('VisualRegressionService', () => {
   describe('summary ingestion', () => {
     const body = (
       snapshots: VisualSummaryBodyDto['snapshots'],
-    ): VisualSummaryBodyDto =>
-      ({
-        repoFullName: 'o/r',
-        branch: 'uat',
-        commitSha: 'abcdef1',
-        runId: 7,
-        runAttempt: 2,
-        browser: 'chromium',
-        snapshots,
-      }) as VisualSummaryBodyDto;
+    ): VisualSummaryBodyDto => ({
+      repoFullName: 'o/r',
+      branch: 'uat',
+      commitSha: 'abcdef1',
+      runId: 7,
+      runAttempt: 2,
+      browser: 'chromium',
+      snapshots,
+    });
 
     it('stores the snapshots and prunes to the retention window', async () => {
       await expect(

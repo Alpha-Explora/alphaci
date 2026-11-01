@@ -286,7 +286,7 @@ describe('QaCommitResolutionService.resolveCommitAuthorUserId', () => {
   ) => {
     const github = makeGithub({
       getCommitAuthor,
-    } as never);
+    });
     const admin = makeAdmin(mappedUserId);
     const service = new QaCommitResolutionService(
       makeDeploymentHistory(),

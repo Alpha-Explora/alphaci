@@ -35,7 +35,7 @@ function target(
     providerMetadata: { renderServiceUrl: 'https://demo-uat.onrender.com' },
     status: 'active',
     ...overrides,
-  } as DeploymentTargetSummary;
+  };
 }
 
 function build(options: {

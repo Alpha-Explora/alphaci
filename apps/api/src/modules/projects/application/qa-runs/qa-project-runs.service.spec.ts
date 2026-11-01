@@ -656,21 +656,20 @@ describe('QaProjectRunsService.updateItem (Verification track)', () => {
 });
 
 describe('QaProjectRunsService sign-off, reopen, current', () => {
-  const signoffRow = (): QaRunSignoffRow =>
-    ({
-      id: 's-1',
-      run_id: 'run-1',
-      verdict: 'APPROVED',
-      summary: null,
-      conditions: null,
-      signed_by: 'qa-1',
-      signed_by_login: 'qa',
-      signed_at: '2026-10-01T01:00:00.000Z',
-      report_json: {},
-      superseded_at: null,
-      superseded_by: null,
-      superseded_by_login: null,
-    }) as QaRunSignoffRow;
+  const signoffRow = (): QaRunSignoffRow => ({
+    id: 's-1',
+    run_id: 'run-1',
+    verdict: 'APPROVED',
+    summary: null,
+    conditions: null,
+    signed_by: 'qa-1',
+    signed_by_login: 'qa',
+    signed_at: '2026-10-01T01:00:00.000Z',
+    report_json: {},
+    superseded_at: null,
+    superseded_by: null,
+    superseded_by_login: null,
+  });
 
   it('APPROVED needs every item passed', async () => {
     const { service, runs } = setup();

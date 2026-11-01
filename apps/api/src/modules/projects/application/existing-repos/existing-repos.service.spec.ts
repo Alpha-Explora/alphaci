@@ -78,7 +78,7 @@ describe('ExistingReposService', () => {
     service = new ExistingReposService(
       githubService,
       makeCatalogService(),
-      appRoleLookup as never,
+      appRoleLookup,
     );
     mockedReadFile.mockResolvedValue(`
 name: Service CI
@@ -407,7 +407,7 @@ jobs:
     service = new ExistingReposService(
       githubService,
       catalogService,
-      appRoleLookup as never,
+      appRoleLookup,
     );
 
     await expect(
