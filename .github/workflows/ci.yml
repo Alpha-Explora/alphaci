@@ -48,13 +48,13 @@ jobs:
     steps:
       # Full history, no file contents until needed: the affected check diffs
       # against the base branch.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           filter: blob:none
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -62,7 +62,7 @@ jobs:
       # runs this job, so a pull request starts from a warm install unless it
       # changes the lockfile.
       - id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             node_modules
@@ -90,15 +90,15 @@ jobs:
     needs: plan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           filter: blob:none
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         with:
           path: |
             node_modules
@@ -132,13 +132,13 @@ jobs:
               check:composition-profiles check:migration-order check:documentation
               test:documentation
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         with:
           path: |
             node_modules
@@ -164,7 +164,7 @@ jobs:
       # from this path, checked out next to the repository below.
       TEMPLATE_REPO_PATH: ${{ github.workspace }}/alphaci-workflow
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -172,17 +172,17 @@ jobs:
       # refuses paths outside it. Pinned to the commit the suite was last run
       # against. To bump it, run the suite against the new commit, then change
       # `ref` here in the same pull request.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: Alpha-Explora/alphaci-workflow
           ref: 0e584eb948951c855fe46a3493a2b395b8a5d208
           path: alphaci-workflow
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         with:
           path: |
             node_modules
@@ -196,7 +196,7 @@ jobs:
 
       - name: Upload e2e report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-report
           path: apps/api/artifacts/e2e/
@@ -228,13 +228,13 @@ jobs:
           - name: enterprise profile build
             tasks: check:profile-build:enterprise
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         with:
           path: |
             node_modules
