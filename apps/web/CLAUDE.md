@@ -352,7 +352,7 @@ npm run dev:enterprise  # also dev:saas, dev:edu — sets profile + edition
 npm run build           # next build --webpack
 npm run build:profile -- --profile enterprise   # build + profile exclusion check
 npm run typecheck       # tsc --noEmit -p tsconfig.typecheck.json
-npm run lint            # eslint
+npm run lint            # eslint src --max-warnings=0 (the CI gate)
 npm run lint:css        # stylelint, tiered, with the warning ceiling
 npm run boundaries      # dependency-cruiser
 npm run arch:check      # MVVM layer checks
@@ -370,7 +370,7 @@ npm run typecheck && npx eslint src --max-warnings=0 && npm run lint:css \
   && npm run check:documentation
 ```
 
-CI (`.github/workflows/web-ci.yml` at the monorepo root, Node 24) also runs the capability
+CI (the `Web …` jobs of `.github/workflows/ci.yml` at the monorepo root, Node 24) also runs the capability
 package, capability surface and build-profile checks, both profile builds, and
 `npm run complexity`.
 

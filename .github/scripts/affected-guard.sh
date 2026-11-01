@@ -6,6 +6,13 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# The cases reset the checkout hard between probes; never do that to work in
+# progress.
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "affected-guard: the working tree has uncommitted changes; commit or stash them first." >&2
+  exit 2
+fi
 start="$(git rev-parse HEAD)"
 failures=0
 

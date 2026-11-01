@@ -325,7 +325,7 @@ function generateArchitectureChecks() {
       { id: 'features', resource: 'src/features', title: 'Feature domain tree' },
       { id: 'boundary-source', resource: '.dependency-cruiser.cjs', title: 'Authoritative dependency graph configuration' },
       { id: 'layer-source', resource: 'scripts/check-boundaries.mjs', title: 'Feature MVVM layer checker' },
-      { id: 'ci-source', resource: '.github/workflows/boundaries.yml', title: 'Continuous integration gate' },
+      { id: 'ci-source', resource: '../../.github/workflows/ci.yml', title: 'Continuous integration gate' },
     ],
     body: `# Architecture check map
 
