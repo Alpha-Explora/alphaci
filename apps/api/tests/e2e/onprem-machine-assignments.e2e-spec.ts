@@ -12,6 +12,7 @@ import {
 } from '../../src/modules/runtime/infrastructure/repositories/onprem-assignments.repository';
 import { OnpremMachinesRepository } from '../../src/modules/runtime/infrastructure/repositories/onprem-machines.repository';
 import { ReleaseRegistryRepository } from '../../src/modules/runtime/infrastructure/repositories/release-registry.repository';
+import { QaProjectRunsRepository } from '../../src/modules/projects/infrastructure/qa-project-runs.repository';
 import { hashMachineSecret } from '../../src/modules/runtime/application/onprem/onprem-hosts.service';
 
 describe('Reusable machine assignment authorization', () => {
@@ -354,6 +355,65 @@ describe('Reusable machine assignment authorization', () => {
       publicUrl: null,
     });
     await assignments.unassign(projectId, environmentId, bound.id);
+  });
+  it('gives the QA verify stage the address of the environment a branch names', async () => {
+    // Projects resolves the branch on its own table; Runtime reads the host.
+    const qaRuns = new QaProjectRunsRepository(db);
+    expect(await qaRuns.environmentIdsForBranch(projectId, 'dev')).toEqual([
+      environmentId,
+    ]);
+    expect(await qaRuns.environmentIdsForBranch(projectId, 'nope')).toEqual([]);
+    expect(await assignments.environmentAddress(projectId, [])).toBeNull();
+
+    const address = 'https://calm-river-gold-leaf.trycloudflare.com';
+    const bound = await assignments.assign({
+      ...input(),
+      config: {
+        ports: [{ slot: 'frontend', hostPort: 18220, containerPort: 3000 }],
+        health: [{ slot: 'frontend', path: '/' }],
+        ingress: { mode: 'tunnel', publicUrl: null },
+      },
+    });
+    // No address until the machine reports a running tunnel.
+    expect(
+      await assignments.environmentAddress(projectId, [environmentId]),
+    ).toBeNull();
+    await machines.heartbeat(hash, {
+      agentVersion: 'test',
+      checks: [],
+      tunnels: [
+        {
+          assignmentId: bound.id,
+          status: 'running',
+          message: 'Ready.',
+          publicUrl: address,
+        },
+      ],
+    });
+    expect(
+      await assignments.environmentAddress(projectId, [environmentId]),
+    ).toBe(address);
+    // Another environment's ids never see this host.
+    expect(
+      await assignments.environmentAddress(projectId, [secondEnv]),
+    ).toBeNull();
+    await assignments.unassign(projectId, environmentId, bound.id);
+
+    // A configured public URL is the address, with no tunnel at all.
+    const configured = await assignments.assign({
+      ...input(),
+      config: {
+        ...config,
+        ingress: { mode: 'configured', publicUrl: 'https://dev.example.com' },
+      },
+    });
+    expect(
+      await assignments.environmentAddress(projectId, [
+        secondEnv,
+        environmentId,
+      ]),
+    ).toBe('https://dev.example.com');
+    await assignments.unassign(projectId, environmentId, configured.id);
   });
   it('holds credential authority through a status transaction, then denies revoked credentials', async () => {
     await assignments.assign(input());

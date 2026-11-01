@@ -461,6 +461,12 @@ export class OnpremAssignmentsService implements OnpremAssignmentPort {
       return null;
     return effectivePublicAddress(current.config.ingress, current.tunnel);
   }
+  environmentAddress(
+    projectId: string,
+    environmentIds: readonly string[],
+  ): Promise<string | null> {
+    return this.repository.environmentAddress(projectId, environmentIds);
+  }
   async unassign(
     projectId: string,
     environmentId: string,

@@ -105,6 +105,7 @@ describe('Host assignment after project creation', () => {
         assignProvisionedEnvironment,
         ensureAutomaticAssignment,
         publicAddress,
+        environmentAddress: jest.fn(),
       },
     );
   }
