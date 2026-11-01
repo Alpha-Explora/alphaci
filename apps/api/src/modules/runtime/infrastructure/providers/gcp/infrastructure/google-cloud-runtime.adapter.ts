@@ -140,13 +140,13 @@ export class GoogleCloudRuntimeAdapter implements GcpRuntimeAdapter {
     body?: Record<string, unknown>,
   ): Promise<T> {
     const client = await this.auth.getClient();
-    const authHeaders = await client.getRequestHeaders(url);
+    // getRequestHeaders returns a fetch Headers object. Spreading it into an
+    // object literal yields {}, which sent every call without Authorization.
+    const headers = new Headers(await client.getRequestHeaders(url));
+    if (body) headers.set('content-type', 'application/json');
     const response = await this.fetchFn(url, {
       method,
-      headers: {
-        ...authHeaders,
-        ...(body ? { 'content-type': 'application/json' } : {}),
-      },
+      headers,
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
 

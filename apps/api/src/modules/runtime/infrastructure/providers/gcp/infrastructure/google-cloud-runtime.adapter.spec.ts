@@ -26,9 +26,10 @@ describe('GoogleCloudRuntimeAdapter', () => {
     const adapter = new GoogleCloudRuntimeAdapter(
       {
         getClient: jest.fn().mockResolvedValue({
+          // The real client returns a fetch Headers object, not a plain one.
           getRequestHeaders: jest
             .fn()
-            .mockResolvedValue({ Authorization: 'Bearer test' }),
+            .mockResolvedValue(new Headers({ Authorization: 'Bearer test' })),
         }),
       },
       fetchFn,
@@ -47,10 +48,11 @@ describe('GoogleCloudRuntimeAdapter', () => {
     expect(fetchFn.mock.calls[1]?.[0]).toContain(
       'repositories?repositoryId=alphaci',
     );
-    expect(fetchFn.mock.calls[1]?.[1]).toMatchObject({
-      method: 'POST',
-      headers: expect.objectContaining({ Authorization: 'Bearer test' }),
-    });
+    const init = fetchFn.mock.calls[1]?.[1] as RequestInit;
+    expect(init.method).toBe('POST');
+    const sent = new Headers(init.headers);
+    expect(sent.get('authorization')).toBe('Bearer test');
+    expect(sent.get('content-type')).toBe('application/json');
   });
 
   it('returns an existing Cloud Run service without making a mutation', async () => {
@@ -66,7 +68,7 @@ describe('GoogleCloudRuntimeAdapter', () => {
     const adapter = new GoogleCloudRuntimeAdapter(
       {
         getClient: jest.fn().mockResolvedValue({
-          getRequestHeaders: jest.fn().mockResolvedValue({}),
+          getRequestHeaders: jest.fn().mockResolvedValue(new Headers()),
         }),
       },
       fetchFn,
@@ -105,7 +107,7 @@ describe('GoogleCloudRuntimeAdapter', () => {
     const adapter = new GoogleCloudRuntimeAdapter(
       {
         getClient: jest.fn().mockResolvedValue({
-          getRequestHeaders: jest.fn().mockResolvedValue({}),
+          getRequestHeaders: jest.fn().mockResolvedValue(new Headers()),
         }),
       },
       fetchFn,
