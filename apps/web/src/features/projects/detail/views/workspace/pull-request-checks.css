@@ -1,0 +1,407 @@
+/* ── Pull request → Checks panel ─────────────────────────────────────────────
+   The expanded pull request's checks, read top to bottom:
+
+   .ws-checks__head     one count line over a bar split the same way.
+   .ws-checks__stages   ALPHACI's four stages as pills (Access → Verify).
+   .ws-checkgroup       GitHub's checks under the workflow they belong to,
+                        failures first; a failed check opens on its error.
+
+   Tokens only, so the light theme re-tints through tokens.css. Every tone
+   class sets --ws-tone (ink) and --ws-fill (wash); nothing below picks a
+   colour of its own.
+   ------------------------------------------------------------------------- */
+
+.ws-stagepill,
+.ws-check,
+.ws-annotation {
+  --ws-tone: var(--text-muted);
+  --ws-fill: var(--bg-frost);
+}
+
+.ws-stagepill--success,
+.ws-check--success {
+  --ws-tone: var(--success);
+  --ws-fill: var(--accent-emerald-light);
+}
+
+.ws-stagepill--failure,
+.ws-check--failure,
+.ws-annotation--failure {
+  --ws-tone: var(--danger);
+  --ws-fill: var(--accent-rose-light);
+}
+
+.ws-annotation--warning {
+  --ws-tone: var(--warning);
+  --ws-fill: var(--accent-amber-light);
+}
+
+.ws-stagepill--running,
+.ws-check--running {
+  --ws-tone: var(--brand);
+  --ws-fill: var(--brand-light);
+}
+
+.ws-checks {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+/* ── The count line ──────────────────────────────────────────────────────── */
+
+.ws-checks__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.85rem;
+}
+
+.ws-checks__summary {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.ws-checks__bar {
+  display: inline-flex;
+  width: 7rem;
+  height: 0.32rem;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+  overflow: hidden;
+}
+
+.ws-checks__seg {
+  display: block;
+  height: 100%;
+  transform-origin: left center;
+  animation: ws-checks-fill 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ws-checks__seg--success {
+  background: var(--success);
+}
+
+.ws-checks__seg--failure {
+  background: var(--danger);
+}
+
+.ws-checks__seg--running {
+  background: var(--brand);
+}
+
+.ws-checks__toggle {
+  justify-self: start;
+  padding: 0.1rem 0.2rem;
+  border: 0;
+  border-radius: 0.3rem;
+  background: none;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--brand);
+  cursor: pointer;
+}
+
+.ws-checks__toggle:hover {
+  text-decoration: underline;
+}
+
+.ws-checks__toggle:focus-visible,
+.ws-check__line--toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ── ALPHACI's stages ────────────────────────────────────────────────────── */
+
+.ws-checks__stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ws-stagepill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.18rem 0.65rem 0.18rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--ws-fill);
+  font-size: 0.76rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.ws-stagepill__mark {
+  font-weight: 700;
+  color: var(--ws-tone);
+}
+
+/* ── Groups and rows ─────────────────────────────────────────────────────── */
+
+.ws-checks__groups {
+  display: grid;
+  gap: 0.75rem;
+  animation: ws-checks-reveal 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ws-checkgroup {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.ws-checkgroup__title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.ws-checkgroup__count {
+  padding: 0 0.4rem;
+  border-radius: var(--radius-pill);
+  background: var(--bg-frost);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.ws-checkgroup__rows {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ws-check {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--ws-tone);
+  border-radius: 0.45rem;
+  background: var(--bg-soft);
+}
+
+.ws-check__line {
+  display: grid;
+  grid-template-columns: auto minmax(0, max-content) minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.2rem 0.55rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  list-style: none;
+}
+
+.ws-check__line--toggle {
+  cursor: pointer;
+}
+
+.ws-check__line--toggle::-webkit-details-marker {
+  display: none;
+}
+
+.ws-check__line--toggle:hover {
+  background: var(--bg-frost);
+}
+
+.ws-check__mark {
+  font-weight: 700;
+  color: var(--ws-tone);
+}
+
+.ws-check__name {
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* Which of two same-named checks this is: "Quality · pull_request". */
+.ws-check__qualifier {
+  min-width: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.ws-check__outcome {
+  grid-column: 4;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--ws-tone);
+  white-space: nowrap;
+}
+
+/* ── A check, opened ─────────────────────────────────────────────────────── */
+
+.ws-check__detail {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.2rem 0.75rem 0.65rem 1.6rem;
+}
+
+.ws-check__title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+/* Plain text with its own line breaks: a check's summary is often markdown,
+   and it is never parsed into HTML. */
+.ws-check__text {
+  max-width: 80ch;
+  max-height: 14rem;
+  margin: 0;
+  overflow-y: auto;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+}
+
+.ws-annotations {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ws-annotation {
+  padding: 0.3rem 0.55rem;
+  border-left: 2px solid var(--ws-tone);
+  border-radius: 0.35rem;
+  background: var(--ws-fill);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.ws-annotation__where {
+  padding: 0;
+  background: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ws-annotation__message {
+  color: var(--text-secondary);
+}
+
+.ws-check__log {
+  min-width: 0;
+}
+
+/* minmax(0, 1fr) columns all the way down, so a long log line scrolls inside
+   its console instead of widening the pull request card past the pane. */
+.ws-checks,
+.ws-checks__groups,
+.ws-checkgroup,
+.ws-checkgroup__rows,
+.ws-check__detail {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ── Merge ───────────────────────────────────────────────────────────────── */
+
+/* The banner, the route or PO Studio notice, the method and the button, as one
+   block under the checks: the decision reads as a single step, not four
+   loose lines. */
+.ws-merge {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--bg-soft);
+}
+
+.ws-merge__title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.ws-merge__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+}
+
+.ws-merge__actions:empty {
+  display: none;
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────── */
+
+@keyframes ws-checks-fill {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes ws-checks-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .ws-check__line {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .ws-check__qualifier {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .ws-check__outcome {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .ws-check__detail {
+    padding-left: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-checks__seg,
+  .ws-checks__groups {
+    animation: none;
+  }
+}

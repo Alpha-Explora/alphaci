@@ -1,0 +1,242 @@
+/* ── Header workspace picker ──────────────────────────────────────────────
+   A button and a popover listbox, drawn like the Projects page's "⋯" create
+   menu (create-project-menu.css) so the two popovers read as one family.
+   Every colour is a token defined for both themes. */
+
+.team-switcher--picker {
+  position: relative;
+}
+
+/* The closed state keeps the old <select>'s footprint and weight, so the
+   header does not shift. */
+.team-switcher-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 11rem;
+  max-width: 16rem;
+  padding: 0.4rem 0.6rem 0.4rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    background-color 0.14s ease;
+}
+
+.team-switcher-trigger:hover,
+.team-switcher-trigger[aria-expanded="true"] {
+  border-color: var(--border-brand);
+}
+
+.team-switcher-trigger:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* No team yet: the trigger's size and shape, dashed and brand-tinted, so the
+   one action reads as "add" rather than as an empty picker. */
+.team-switcher-create {
+  min-width: 0;
+  border-style: dashed;
+  border-color: var(--border-brand);
+  background: transparent;
+  color: var(--brand);
+}
+
+.team-switcher-create:hover {
+  background: var(--bg-elevated);
+}
+
+.team-switcher-trigger-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-switcher-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.team-switcher-trigger[aria-expanded="true"] .team-switcher-chevron {
+  color: var(--text-primary);
+  transform: rotate(180deg);
+}
+
+/* Anchored under the trigger's left edge, at least as wide as it. The view
+   slides it left (--team-switcher-shift) when it would leave the viewport.
+   `translate`, not `transform`, so the entry animation cannot undo it. */
+.team-switcher-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  z-index: 120;
+  width: max-content;
+  min-width: 100%;
+  max-width: min(20rem, calc(100vw - 1rem));
+  padding: 0.35rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 10px;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-card);
+  translate: var(--team-switcher-shift, 0) 0;
+  transform-origin: top left;
+  animation: team-switcher-in 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes team-switcher-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* About eight teams, then it scrolls; the heading row stays in view above it. */
+/* minmax(0, 1fr): an `auto` track would size to the longest name's
+   max-content, pushing every row (and its check mark) past the panel edge
+   instead of letting the name truncate. */
+.team-switcher-listbox {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.1rem;
+  max-height: 18.5rem;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+}
+
+/* "Your teams" and, at its right end, the compact Create team button. */
+.team-switcher-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-right: 0.15rem;
+}
+
+.team-switcher-group-label {
+  padding: 0.4rem 0.6rem 0.2rem;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.team-switcher-add {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+
+.team-switcher-add:hover {
+  border-color: var(--border-tile);
+  background: var(--layer-2);
+  color: var(--brand);
+}
+
+.team-switcher-add:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.team-switcher-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 2.1rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+
+.team-switcher-option.is-active,
+.team-switcher-option:hover {
+  border-color: var(--border-tile);
+  background: var(--layer-2);
+  color: var(--text-primary);
+}
+
+.team-switcher-option:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.team-switcher-option.is-selected {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.team-switcher-option-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The slot is reserved on every row, so names line up whether or not the
+   check is drawn. */
+.team-switcher-option-check {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  color: var(--brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .team-switcher-panel {
+    animation: none;
+  }
+
+  .team-switcher-trigger,
+  .team-switcher-chevron,
+  .team-switcher-option,
+  .team-switcher-add {
+    transition: none;
+  }
+}

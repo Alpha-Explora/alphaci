@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "packageName": "@alphaci/capability-catalog",
+  "packageVersion": "0.2.0",
+  "sourceRepository": "github.com/Alpha-Explora/alphaci-golden-copy-be",
+  "authoritativeSource": "src/kernel/composition/catalog.source.json",
+  "catalogSourceDigest": "sha256:31485eaa8b9047f3902c4c2c6eabed7f65cc36e32da80a63bd8f3eb828a609a7",
+  "canonicalFiles": [
+    "package.json",
+    "catalog.json",
+    "index.d.ts",
+    "index.js",
+    "manifests.json"
+  ],
+  "artifactDigest": "sha256:d920ad5ef63ee2f7716a5dc42f2626fe5360b2e682c397ebc6d4f32d42640203"
+}

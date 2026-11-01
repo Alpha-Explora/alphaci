@@ -1,0 +1,20 @@
+/* ── Settings → Team ──────────────────────────────────────────────────────
+   The global buttons are hero-scale and win over .group-section-action on
+   source order. Two classes size them for the settings card. Colours are
+   tokens for both themes. */
+
+.team-settings .primary-button,
+.team-settings .ghost-button {
+  font-size: 0.82rem;
+  font-weight: 600;
+  min-height: 2.2rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 0.55rem;
+  gap: 0.35rem;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.team-settings .ghost-button {
+  border-color: var(--border-control);
+}

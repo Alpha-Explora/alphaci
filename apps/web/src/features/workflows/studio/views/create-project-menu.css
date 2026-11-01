@@ -1,0 +1,166 @@
+/* ── /workflows create actions ─────────────────────────────────────────────
+   One primary "Create project" and a square "⋯" beside it that opens the other
+   two ways in. Every colour is a token defined for both themes. */
+
+/* The popover anchors to the pair, not to the "⋯" alone, so on a phone it can
+   open rightwards from the pair's left edge instead of under the sidebar. */
+.create-project-actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.create-menu {
+  display: flex;
+  align-self: stretch;
+}
+
+/* Square, the primary button's height, so the pair reads as one control.
+   Three classes: the compact button rule scoped to .project-detail-panel
+   (two classes, in globals.css) would otherwise win and pad the icon away. */
+.create-project-actions .ghost-button.create-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: 2.4rem;
+  min-width: 2.4rem;
+  padding: 0;
+  border: 1px solid var(--border-tile);
+  color: var(--text-secondary);
+}
+
+.create-project-actions .ghost-button.create-menu-trigger:hover,
+.create-project-actions .ghost-button.create-menu-trigger[aria-expanded="true"] {
+  border-color: var(--border-layer);
+  background: var(--layer-2);
+  color: var(--text-primary);
+}
+
+.create-menu-trigger:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Anchored under the pair's right edge: on a wide screen the pair ends the
+   heading row, so a left-anchored panel would run past it. */
+.create-menu-popover {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 40;
+  display: grid;
+  gap: 0.15rem;
+  width: max-content;
+  min-width: 15rem;
+  max-width: min(20rem, calc(100vw - 2rem));
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  border: 1px solid var(--border-layer);
+  border-radius: 10px;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-card);
+  transform-origin: top right;
+  animation: create-menu-in 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes create-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.create-menu-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+
+.create-menu-item.is-active,
+.create-menu-item:hover {
+  border-color: var(--border-tile);
+  background: var(--layer-2);
+  color: var(--text-primary);
+}
+
+.create-menu-item:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.create-menu-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--border-tile);
+  border-radius: 6px;
+  background: var(--layer-1-hover);
+  color: var(--text-muted);
+  transition: color 0.14s ease;
+}
+
+.create-menu-item.is-active .create-menu-icon,
+.create-menu-item:hover .create-menu-icon {
+  color: var(--brand);
+}
+
+.create-menu-text {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.create-menu-label {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.create-menu-hint {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+/* On a phone the pair wraps to the start of its row: open rightwards. */
+@media (max-width: 640px) {
+  .create-menu-popover {
+    right: auto;
+    left: 0;
+    transform-origin: top left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .create-menu-popover {
+    animation: none;
+  }
+
+  .create-menu-item,
+  .create-menu-icon {
+    transition: none;
+  }
+}

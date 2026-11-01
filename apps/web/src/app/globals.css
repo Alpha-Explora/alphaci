@@ -1,0 +1,1611 @@
+@import "tailwindcss";
+@import "../shared/styles/tokens.css";
+@import "../shared/styles/reset.css";
+@import "../shared/styles/typography.css";
+@import "../styles/base.css";
+@import "../styles/keyframes.css";
+@import "../styles/theme.css";
+@import "../styles/auth.css";
+@import "../styles/public-site.css";
+@import "../styles/runs.css";
+@import "../styles/guide.css";
+@import "../styles/teams-workspaces.css";
+@import "../styles/inbox.css";
+@import "../styles/settings.css";
+@import "../styles/product-workflows.css";
+@import "../styles/dashboard-projects.css";
+@import "../styles/dashboard-home.css";
+@import "../styles/app-shell.css";
+@import "../styles/hierarchy.css";
+@import "../styles/admin.css";
+/* Feature-owned CSS. Sits before components.css, which must stay last so
+   .glass-panel keeps beating .section-card on source order. */
+@import "../features/projects/previews/branch-previews.css";
+@import "../features/projects/deployment-logs/deployment-logs.css";
+@import "../features/projects/domains/project-domains.css";
+@import "../features/projects/detail/views/workspace/pull-request-authoring.css";
+@import "../styles/components.css";
+
+/* ── Light mode component overrides ────────────────────────────── */
+html[data-theme="light"] {
+  background: var(--bg-base);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE — comprehensive section polish (landing + dashboard + auth)
+   Added to make light mode a coherent, distinct surface — not dark-with-patches.
+   Every rule below is light-only and uses !important where it competes with an
+   inline style or an existing !important dark rule.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+
+/* Inner accent surfaces inside the hero main card (branch chip, badges, rows)
+   read fine on dark but vanish on white — give them subtle tinted fills */
+
+
+/* ── Feature value cards (Source-backed generation, etc.) ── */
+
+
+@media (max-width: 700px) {
+  [data-theme="light"] .feature-strip-item {
+    border-right: 1px solid rgba(17, 17, 22, 0.09) !important;
+  }
+}
+
+/* ── Pricing trust-row chips ─────────────────────────────────────────────────
+   "Free account included • Pro monthly • Team custom" pills ── */
+
+/* ── Supported stacks marquee ────────────────────────────────────────────────
+   Badges use rgba(255,255,255,0.75) text + near-transparent dark fills —
+   completely invisible on a light page background. ── */
+
+
+@theme inline {
+  --color-background: var(--bg-base);
+  --color-foreground: var(--text-primary);
+  --font-sans: var(--font-body);
+}
+
+/* ── Shell layouts ─────────────────────────────────────────────────────── */
+.flow-shell,
+
+.marketing-shell,
+.page-shell {
+  width: 100%;
+}
+
+.flow-shell.page-shell {
+  padding: 0;
+  gap: 0;
+}
+
+.state-card h1 {
+  font-size: clamp(1.2rem, 2.2vw, 1.5rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.state-card p {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  margin: 0;
+  line-height: 1.6;
+  max-width: 34ch;
+}
+
+.page-shell .glass-panel {
+  background: rgba(10, 10, 10, 0.6);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px) saturate(140%);
+  border-radius: var(--radius-card);
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.page-shell .glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow:
+    var(--shadow-soft),
+    0 0 20px rgba(121, 192, 255, 0.05);
+}
+
+.page-shell > .section-card,
+.page-shell > .workflow-surface,
+.page-shell > .error-text {
+  width: min(var(--layout-max), calc(100% - (var(--layout-gutter) * 2)));
+  margin-inline: auto;
+}
+
+@media (max-width: 640px) {
+
+  .hero-proof-strip {
+    margin-bottom: 1.6rem;
+  }
+
+  .hero-massive-text {
+    display: none !important;
+  }
+
+  .scroll-hint {
+    display: none !important;
+  }
+
+  .landing-page-shell .scroll-hint,
+  .landing-page-shell .scroll-hint-label,
+  .landing-page-shell .scroll-hint-arrow {
+    display: none !important;
+  }
+}
+
+.page-shell .glass-panel {
+  background: rgba(17, 17, 22, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(20px) saturate(140%);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s ease;
+}
+
+.page-shell .glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    var(--shadow-elevated),
+    0 0 40px rgba(31, 111, 235, 0.1);
+}
+
+/* ── Ambient / background layers ──────────────────────────────────────── */
+.flow-ambient,
+
+.flow-ribbon,
+.flow-blob,
+
+
+/* ── z-index stack ──────────────────────────────────────────────────────── */
+.marketing-nav,
+.hero-block,
+.section-card,
+.product-topbar,
+.intro-panel,
+.controls-panel,
+.templates-panel,
+.result-panel,
+.tab-content-panel {
+  position: relative;
+  z-index: 1;
+}
+
+
+.hero-block,
+.section-card,
+.tab-content-panel {
+  padding: var(--panel-pad);
+  display: grid;
+  gap: 0.88rem;
+}
+
+.hero-block h1,
+.section-card h1 {
+  font-size: clamp(2rem, 3.8vw, 3.45rem);
+  line-height: 1.06;
+}
+
+.hero-block h2,
+.section-card h2 {
+  font-size: clamp(1.36rem, 2.4vw, 2rem);
+}
+
+.hero-block p,
+.section-card p,
+.tab-content-panel p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+
+.landing-hero .hero-actions {
+  justify-content: center;
+}
+
+/* ── Value / KPI / Action grids ─────────────────────────────────────────── */
+.value-grid,
+.kpi-grid,
+
+/* ── Value cards (feature cards) ────────────────────────────────────────── */
+.value-card,
+.kpi-card,
+
+
+.callback-card,
+.auth-card {
+  margin: 0 auto;
+}
+
+
+.subscription-plan-card .hero-kicker {
+  color: var(--text-muted);
+}
+
+.subscription-plan-card.selected.plan-pro {
+  border-color: var(--brand);
+  box-shadow:
+    0 0 0 3px rgba(31, 111, 235, 0.15),
+    var(--shadow-card);
+}
+
+.subscription-plan-card.selected.plan-enterprise {
+  border-color: var(--warning);
+  box-shadow:
+    0 0 0 3px rgba(240, 165, 0, 0.15),
+    var(--shadow-card);
+}
+
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+.primary-button,
+.ghost-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 1.05rem;
+  min-height: 3rem;
+  padding: 1rem 2.5rem;
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s,
+    transform 0.1s,
+    border-color 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+/* The shared `border: 1px solid transparent` above loads after
+   components.css, so the secondary button's edge has to be restated here or
+   it is wiped out, and in dark mode the button reads as plain text. */
+.ghost-button {
+  border-color: var(--border-control);
+}
+
+.primary-button:disabled,
+.ghost-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+
+.github-status-dot.disconnected {
+  color: var(--warning);
+  background: rgba(240, 165, 0, 0.1);
+  border: 1px solid rgba(240, 165, 0, 0.3);
+  border-radius: var(--radius-pill);
+  padding: 0.2rem 0.55rem 0.2rem 0.4rem;
+  font-weight: 600;
+}
+
+.github-status-dot.disconnected::before {
+  background: var(--warning);
+  box-shadow: none;
+  animation: none;
+}
+
+.github-status-dot.disconnected::after {
+  content: " →";
+  font-size: 0.72rem;
+  opacity: 0.65;
+}
+
+
+/* ── Panels ─────────────────────────────────────────────────────────────── */
+.intro-panel,
+.controls-panel,
+.templates-panel,
+.result-panel,
+.tab-content-panel {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+
+.controls-panel,
+.templates-panel,
+.result-panel,
+.tab-content-panel {
+  padding: 1.5rem var(--panel-pad);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.controls-panel h2,
+.templates-panel h2,
+.result-panel h2,
+.tab-content-panel h2 {
+  margin: 0 0 0.65rem;
+  font-size: 1.12rem;
+  color: var(--text-primary);
+}
+
+
+.category-chip.active {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--brand-light);
+}
+
+/* ── Template grids ──────────────────────────────────────────────────────── */
+.template-grid,
+.all-template-grid,
+
+.template-grid,
+
+
+/* ── Template / history cards ───────────────────────────────────────────── */
+.template-card,
+.all-template-card,
+
+
+.template-card:hover,
+
+
+.template-card-headline h3,
+.all-template-head h3,
+
+
+.enhancement-option {
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--bg-panel);
+  padding: 0.55rem 0.68rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+  cursor: pointer;
+}
+
+.enhancement-option.disabled-option {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Terminal dark code block */
+.result-panel pre,
+
+.history-head,
+
+.history-head > *,
+
+
+/* ── Helper / error text ─────────────────────────────────────────────────── */
+.helper-text {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.templates-header p,
+.template-card-description,
+.template-tag,
+.history-head h3,
+.all-template-head h3,
+.history-card p,
+.all-template-card p,
+
+.history-head p,
+.history-head h3,
+
+.error-text {
+  margin: 0;
+  padding: 0.55rem 0.74rem;
+  border-radius: 0.84rem;
+  border: 1px solid rgba(255, 79, 79, 0.4);
+  color: #ff8b8b;
+  background: rgba(255, 79, 79, 0.08);
+}
+
+.pipeline-dot.active {
+  background: var(--brand-accent);
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+
+/* Status colour comes from the semantic tokens so a node's state is
+   unmistakable at a glance. Clean drop shadows, no neon halos. */
+
+.pipeline-node.running {
+  background: rgba(31, 111, 235, 0.16); /* --brand-strong */
+  border: 1.5px solid var(--brand-strong);
+  box-shadow: 0 2px 10px rgba(31, 111, 235, 0.28);
+  animation: glow-pulse 1.5s ease-in-out infinite;
+}
+
+.pipeline-node.warning,
+
+.pipeline-node.failed,
+.pipeline-node.danger {
+  background: rgba(239, 68, 68, 0.16); /* --danger */
+  border: 1.5px solid var(--danger);
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.25);
+}
+
+.pipeline-node.pending {
+  background: rgba(54, 54, 66, 0.28); /* neutral slate — not yet run */
+  border: 1.5px solid #74747f;
+}
+
+.status-banner.success {
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
+}
+
+.status-banner.info {
+  border: 1px solid rgba(31, 111, 235, 0.3);
+  background: rgba(31, 111, 235, 0.08);
+  color: var(--brand);
+}
+
+.status-banner.error {
+  border: 1px solid rgba(255, 79, 79, 0.3);
+  background: rgba(255, 79, 79, 0.08);
+  color: #ff8b8b;
+}
+
+
+/* ── Status banner prefix icons ──────────────────────────────────────────── */
+.status-banner.success::before {
+  content: "✓ ";
+  font-weight: 800;
+}
+.status-banner.info::before {
+  content: "ℹ ";
+  font-weight: 700;
+}
+.status-banner.error::before {
+  content: "✕ ";
+  font-weight: 800;
+}
+
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 1440px) {
+  .studio-grid {
+    grid-template-columns: minmax(210px, 265px) minmax(0, 1fr) minmax(
+        255px,
+        330px
+      );
+  }
+}
+
+@media (max-width: 1180px) {
+  .value-grid,
+  .kpi-grid,
+  .action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pricing-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .studio-grid {
+    grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
+  }
+  .landing-stage {
+    min-height: auto;
+    padding-block: clamp(0.85rem, 3vh, 1.3rem);
+  }
+  .landing-hero h1 {
+    font-size: clamp(2.1rem, 6vw, 3.6rem);
+  }
+}
+
+@media (max-width: 900px) {
+  .flow-shell,
+  .product-shell {
+    width: 100%;
+    padding-top: 0.65rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .landing-hero .hero-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .landing-hero .hero-actions .primary-button,
+  .landing-hero .hero-actions .ghost-button {
+    width: 100%;
+  }
+}
+
+.auth-shell-split .public-site-nav {
+  position: fixed;
+  inset: 0 0 auto;
+  transform: none;
+  width: 100%;
+  z-index: 20;
+}
+
+.auth-shell-split .public-site-brand-image {
+  height: clamp(3.75rem, 5.4vw, 5.4rem) !important;
+  width: auto !important;
+}
+
+
+@media (max-width: 640px) {
+  .pricing-table {
+    grid-template-columns: 1fr;
+  }
+  .pricing-table-cell,
+  .pricing-table-header {
+    border-right: none !important;
+  }
+}
+
+
+.pricing-table-cell.check {
+  color: var(--success);
+}
+
+@media (max-width: 760px) {
+  .welcome-banner-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.welcome-banner-split > *:first-child {
+  border-left: 3px solid var(--brand);
+  padding-left: 1.5rem;
+}
+
+.file-path-label::before {
+  content: "./";
+  color: var(--brand);
+}
+
+.file-path-label .path-sep {
+  color: var(--brand);
+}
+
+.page-shell .glass-panel .file-path-label {
+  background: var(--brand-light);
+  border: 1px solid rgba(31, 111, 235, 0.15);
+  border-radius: var(--radius-pill);
+  padding: 0.18rem 0.6rem;
+  color: var(--brand);
+}
+
+
+@media (max-width: 700px) {
+  .features-strip {
+    grid-template-columns: 1fr;
+  }
+  .feature-strip-item {
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-bottom: none;
+  }
+}
+
+.guest-banner-text::before {
+  content: "↳";
+  font-size: 0.9em;
+}
+
+
+/* ── Error inline width when used as page-level sibling ──── */
+.page-shell > .error-inline {
+  width: min(var(--layout-max), calc(100% - (var(--layout-gutter) * 2)));
+  margin-inline: auto;
+}
+
+
+.pricing-comparison-check.active {
+  color: var(--brand);
+}
+
+.generate-workflow-row .ghost-button {
+  flex-shrink: 0;
+}
+
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .flow-ribbon,
+  .flow-blob,
+  .flow-particle,
+  .auth-depth-orb {
+    animation: none !important;
+  }
+  .auth-card-shell,
+  .auth-provider-button {
+    transform: none !important;
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease,
+      box-shadow 120ms ease !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+@media (max-width: 640px) {
+  .deploy-providers-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+@media (max-width: 768px) {
+  .deploy-steps-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .deploy-steps-row::before {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .deploy-steps-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+@media (max-width: 860px) {
+  .pricing-split {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  .pricing-hero-price {
+    font-size: clamp(4rem, 18vw, 7rem);
+  }
+}
+
+
+.dash-tab-btn.active {
+  color: var(--text-primary);
+}
+
+.dash-tab-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0.6rem;
+  right: 0.6rem;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: var(--brand);
+}
+
+
+.repo-visibility-badge.public {
+  color: var(--brand-accent);
+  border-color: rgba(16, 185, 129, 0.25);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.project-status-badge.provisioned {
+  color: var(--success);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.project-status-badge.provisioning {
+  color: var(--warning);
+  background: rgba(240, 165, 0, 0.1);
+  border: 1px solid rgba(240, 165, 0, 0.25);
+}
+
+.project-status-badge.failed {
+  color: var(--danger);
+  background: rgba(255, 79, 79, 0.1);
+  border: 1px solid rgba(255, 79, 79, 0.25);
+}
+
+/* Repo attached outside the enforced org — informational, not a status. */
+.project-status-badge.external {
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-muted) 25%, transparent);
+}
+
+.inline-link:hover,
+.inline-link:focus-visible {
+  color: var(--text-primary);
+  text-decoration-color: var(--brand);
+}
+
+
+.subtab-btn.active {
+  background: var(--brand-light);
+  border-color: var(--border-brand);
+  color: var(--brand);
+}
+
+.enhancement-chip-label input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.enhancement-chip-label:has(input:checked) .enhancement-chip-dot {
+  background: var(--brand);
+}
+
+.dash-shell .dash-tab-btn.active {
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--brand);
+}
+
+.dash-shell .kpi-grid-editorial {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.dash-shell .kpi-cell {
+  padding: 0.75rem 1rem;
+  background: var(--bg-surface);
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dash-shell .kpi-cell h3 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.dash-shell .kpi-cell p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.dash-shell .command-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.dash-shell .command-item {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 0.8rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.dash-shell .command-item:hover {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+}
+
+/* Right-size buttons inside the dense management surfaces. The global
+ * .primary-button/.ghost-button are hero-scale (min-height 3rem, 1.05rem text,
+ * 1rem×2.5rem padding) — correct on landing CTAs, oversized in a data panel.
+ * Scope a compact size here without touching the global button used elsewhere. */
+.project-detail-panel .primary-button,
+.project-detail-panel .ghost-button,
+.invitations-inbox .primary-button,
+.invitations-inbox .ghost-button {
+  font-size: 0.82rem;
+  font-weight: 600;
+  min-height: 2.2rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 0.5rem;
+  gap: 0.3rem;
+  letter-spacing: 0;
+}
+
+/* Calmer hover in a dense list — the global glow/lift is distracting at this
+ * density and scale. */
+.project-detail-panel .primary-button:hover,
+.invitations-inbox .primary-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
+}
+
+.project-detail-panel .ghost-button:hover,
+.invitations-inbox .ghost-button:hover {
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+
+
+/* The inner list panel is now the only container in the overview, so drop its
+ * floating shadow — it should read as a grouped list, not a raised card. */
+.group-overview-section .hier-panel {
+  box-shadow: none;
+}
+
+.project-inner-tab.active {
+  color: var(--brand);
+  border-bottom-color: var(--brand);
+}
+
+.latest-result-banner__eyebrow {
+  color: var(--success);
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.latest-result-banner__chips {
+  margin: 0;
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.deployment-flow-branch--button.active {
+  border-color: rgba(45, 212, 191, 0.35);
+  background: rgba(45, 212, 191, 0.1);
+  color: var(--success);
+}
+
+.deployment-target-heading .helper-text {
+  margin: 0.18rem 0 0;
+}
+
+.deployment-provisioning-setup .primary-button,
+.deployment-provisioning-setup .ghost-button {
+  min-height: 1.85rem;
+  padding: 0.32rem 0.58rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+  white-space: normal;
+  box-shadow: none;
+}
+
+.deployment-provisioning-setup .primary-button:hover,
+.deployment-provisioning-setup .ghost-button:hover {
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+
+
+.field-info:hover,
+
+
+.field-info:hover .field-info-bubble,
+
+/* Var rows inside the setup form: key + value + remove button */
+.deployment-provisioning-setup .env-var-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.env-target-grid .ghost-button,
+.env-var-row .ghost-button,
+.env-form-actions .ghost-button,
+.env-form-actions .primary-button,
+.env-environment-tabs .ghost-button,
+.env-environment-tabs .primary-button {
+  min-height: 2.45rem;
+  border-radius: 6px;
+}
+
+.env-provisioning-section .primary-button,
+.env-provisioning-section .ghost-button {
+  min-height: 2.25rem;
+  padding: 0.48rem 0.78rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+
+.env-provisioning-section .primary-button:hover,
+.env-provisioning-section .ghost-button:hover {
+  transform: translateY(-1px);
+  box-shadow: none;
+}
+
+.env-segmented-actions .primary-button,
+.env-segmented-actions .ghost-button {
+  flex: 0 1 auto;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.deployment-provisioning-setup .env-target-grid .ghost-button,
+.deployment-provisioning-setup .env-var-row .ghost-button {
+  min-height: 1.85rem;
+}
+
+.env-bulk-validation .ghost-button {
+  justify-self: start;
+}
+
+.env-provisioned-variables .env-metadata-actions .ghost-button {
+  min-height: 2rem;
+  padding: 0.38rem 0.65rem;
+  font-size: 0.74rem;
+}
+
+.deployment-provisioning-summary__status.completed {
+  border-color: rgba(52, 211, 153, 0.32);
+  color: var(--success);
+}
+
+.deployment-provisioning-summary__status.partial,
+.deployment-provisioning-summary__status.failed {
+  border-color: rgba(248, 113, 113, 0.32);
+  color: var(--danger, #f87171);
+}
+
+.deployment-provisioning-summary__env code.failed {
+  border-color: rgba(248, 113, 113, 0.28);
+  color: var(--danger, #f87171);
+  background: rgba(248, 113, 113, 0.06);
+}
+
+.env-metadata-row.failed > span:last-child {
+  color: var(--danger);
+}
+
+
+.provider-connection-fields .primary-button {
+  min-height: 2.5rem;
+  border-radius: 6px;
+}
+
+
+.provider-connections-table th,
+
+
+.provider-connections-table .ghost-button {
+  min-height: 2rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+}
+
+
+@media (max-width: 920px) {
+
+  .group-overview-section {
+    padding: 0.85rem;
+  }
+
+  .current-subtab-bar {
+    width: 100%;
+  }
+
+  .provider-connection-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .project-detail-grid,
+  .provider-connection-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .provider-connections-table {
+    min-width: 0;
+    table-layout: auto;
+  }
+
+  .provider-connections-table thead {
+    display: none;
+  }
+
+  .provider-connections-table tbody,
+  .provider-connections-table tr,
+  .provider-connections-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .provider-connections-table tr {
+    padding: 0.65rem 0;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .provider-connections-table td {
+    display: grid;
+    grid-template-columns: 5.25rem minmax(0, 1fr);
+    gap: 0.75rem;
+    border-top: none;
+  }
+
+  .provider-connections-table td::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+
+  .provider-connections-table td {
+    padding: 0.5rem 0.45rem;
+    font-size: 0.72rem;
+    overflow-wrap: anywhere;
+  }
+
+  .provider-connections-table td:last-child {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .state-body {
+    padding: 1rem;
+  }
+
+  .state-card {
+    max-width: 100%;
+    width: min(100%, calc(100vw - 5rem));
+    padding: 2rem 1.25rem 1.75rem;
+  }
+
+  .dash-shell,
+  .flow-shell {
+    overflow-x: hidden;
+  }
+
+  .repo-grid,
+  .all-template-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .result-actions,
+  .hero-actions,
+  .guest-banner-actions {
+    align-items: stretch;
+  }
+
+  .result-actions > *,
+  .hero-actions > *,
+  .guest-banner-actions > * {
+    min-width: 0;
+    white-space: normal;
+  }
+}
+
+/* ── Gradient shift animation (for top border accent) ────────────────────── */
+
+
+/* ── Shimmer sweep ───────────────────────────────────────────────────────── */
+
+
+@media (min-width: 768px) {
+  .hero-br-desktop {
+    display: inline;
+  }
+}
+
+
+@media (max-width: 768px) {
+  .subscribe-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Sign out hover (danger color on hover via JS — no CSS override needed) */
+
+/* ── Responsive overflow fixes ───────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .stats-row-enhanced {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  .stat-block-enhanced {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-soft);
+    padding-left: 0 !important;
+  }
+
+  .stat-block-enhanced:last-child {
+    border-bottom: none !important;
+  }
+}
+
+.pipeline-dot.active {
+  animation: hud-pulse 1.6s ease-in-out infinite;
+  background: var(--brand-accent);
+  border-color: var(--brand);
+  box-shadow: none; /* replaced by drop-shadow filter */
+}
+
+/* ── Badge hover micro-interaction ─────────────── */
+.branch-chip,
+.template-tag,
+.project-card-tag,
+.branch-chip:hover,
+.template-tag:hover,
+.project-card-tag:hover,
+
+
+/* ── Terminal hash/path containers ──────────────── */
+.terminal-hash {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  padding: 0.32rem 0.65rem;
+  background: #0d1117;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-left: 3px solid #22c55e;
+  border-radius: 0 5px 5px 0;
+  box-shadow: -4px 0 14px rgba(34, 197, 94, 0.18);
+  font-size: 0.8rem;
+  color: #86efac;
+  word-break: break-all;
+}
+
+/* ── KINETIC EDITORIAL HERO ────────────────────────────────────────── */
+
+/* Grid/flex items default to min-width:auto, so the right-column dashboard
+   refuses to shrink and blows the 2-column hero past the viewport width.
+   Allow the tracks to shrink to fit. */
+
+
+@media (max-width: 768px) {
+  .editorial-glass-panel {
+    padding: 2.5rem 1.5rem;
+    margin-top: 10vh;
+  }
+  .hero-massive-text {
+    font-size: clamp(6rem, 15vw, 12rem);
+    letter-spacing: -0.02em;
+  }
+}
+
+
+@media (max-width: 768px) {
+  .hero-massive-text {
+    font-size: clamp(6rem, 15vw, 12rem);
+    letter-spacing: -0.02em;
+  }
+}
+.enhancement-chip-label-premium input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.enhancement-chip-label-premium:has(input:checked),
+.enhancement-chip-label-premium.enhancement-chip-label--active {
+  background: var(--brand-light);
+  border-color: rgba(88, 166, 255, 0.6);
+  color: var(--brand);
+  box-shadow:
+    0 0 10px rgba(88, 166, 255, 0.28),
+    inset 0 0 6px rgba(88, 166, 255, 0.06);
+}
+.enhancement-chip-label-premium:has(input:checked) .enhancement-chip-dot,
+.enhancement-chip-label-premium.enhancement-chip-label--active
+  .enhancement-chip-dot {
+  background: var(--brand);
+}
+.enhancement-chip-label-premium.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.cp-section-heading::after {
+  content: "";
+  display: block;
+  flex: 1;
+  height: 1px;
+  background: var(--border-soft);
+}
+.cp-inline-result .result-panel {
+  max-height: none !important;
+  overflow: visible !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+.cp-inline-result .result-panel--success {
+  border-left: none !important;
+  box-shadow: none !important;
+}
+
+
+/* Trailing action cluster on a provisioned-project row (browse + disconnect) */
+
+
+@media (max-width: 640px) {
+  .dash-repo-row-desc {
+    display: none;
+  }
+  .dash-repo-row-name {
+    max-width: none;
+    flex: 1;
+  }
+  /* Keep the disconnect affordance reachable without hover on touch devices */
+  .dash-repo-row .dash-disconnect-link {
+    opacity: 1;
+  }
+  .dash-repo-row-confirm-label {
+    display: none;
+  }
+}
+
+/* ── Repository entries — GitHub-trending-style rich rows ─────────────────
+   Title line (icon · name · chips) → description → metadata (stack dot ·
+   workflow path · commit). One bordered list container, hairline-divided. */
+
+
+@media (max-width: 640px) {
+  /* On narrow screens let the search take the full row under the filters. */
+  .repositories-toolbar .repo-search {
+    flex: 1 1 100%;
+  }
+}
+
+
+.repo-filters button:hover,
+.repo-filters button.is-active {
+  border-color: rgba(59, 130, 246, 0.55);
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--brand);
+}
+
+
+/* Active page — solid brand fill so the current position reads at a glance. */
+.repo-pagination .repo-pagination-page.is-active {
+  border-color: rgba(88, 166, 255, 0.55);
+  background: rgba(88, 166, 255, 0.14);
+  color: var(--brand);
+  font-weight: 700;
+}
+
+
+@media (max-width: 640px) {
+  /* Touch devices have no hover — keep destructive action reachable */
+  .repo-entry .dash-disconnect-link {
+    opacity: 1;
+  }
+}
+.confirm-btn-danger:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.18);
+}
+
+.settings-preference-kicker,
+.notification-preferences-kicker {
+  display: block;
+  margin-bottom: 0.22rem;
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.settings-preference-copy strong,
+.notification-preferences-copy strong {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+.settings-preference-copy span:last-child,
+.notification-preferences-copy span:last-child {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+/* ── Tab panel stagger animation ────────────────────────────────────────── */
+
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-panel-enter {
+    animation: none;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   APP NAV — floating pill dock redesign
+   ════════════════════════════════════════════════════════════════════════════ */
+
+
+@media (prefers-reduced-motion: reduce) {
+  .app-nav-dock {
+    transition:
+      background 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+}
+
+
+.nav-link:hover .nav-roll-top .nav-roll-char,
+.nav-link:focus-visible .nav-roll-top .nav-roll-char {
+  transform: translateY(-110%);
+}
+
+.nav-link:hover .nav-roll-bottom .nav-roll-char,
+.nav-link:focus-visible .nav-roll-bottom .nav-roll-char {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-link:hover .nav-roll-top .nav-roll-char,
+  .nav-link:focus-visible .nav-roll-top .nav-roll-char {
+    transform: none;
+  }
+}
+
+
+@media (max-width: 520px) {
+  
+  
+  .settings-preference-card,
+  .notification-preferences-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+/* ════════════════════════════════════════════════════════════════════════════
+   BENTO GRID REDESIGN — data texture, multi-color accents, command rows
+   ════════════════════════════════════════════════════════════════════════════ */
+
+
+@media (prefers-reduced-motion: reduce) {
+  .bento-pulse-dot {
+    animation: none;
+  }
+}
+
+
+/* Dashboard counters use the dash display font — the global 'Sora' stack
+   falls back to the dot-matrix Doto display font and looks broken here. */
+.dash-shell .bento-card-value {
+  font-family: var(--font-dash-display), "Outfit", sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+/* Mini sparkbar chart in the dominant card — ambient backdrop, right-anchored
+   so it never collides with the value/description on the left. */
+
+
+/* Empty/loading state: a quiet, uniform baseline instead of a rising trend.
+   Muted grey, no emphasized final bar — signals "no data yet", not growth. */
+
+
+@media (prefers-reduced-motion: reduce) {
+  .bento-sparkbar-bar {
+    animation: none;
+  }
+}
+
+/* The full project page owns its spacing through .project-page-body, so the
+   shared page-content padding and gap are switched off here. */
+.dash-page-content.project-page-shell {
+  gap: 0;
+  padding: 0;
+}
+
+/* ── driver.js onboarding tour — dark glass theme overrides ────────────── */
+
+
+/* Highlighted element — crisp brand outline */
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .driver-popover {
+    max-width: calc(100vw - 2rem);
+  }
+
+  .driver-popover-title {
+    font-size: 0.92rem;
+  }
+
+  .driver-popover-description {
+    font-size: 0.8rem;
+  }
+
+  .driver-popover-btn-base,
+  .driver-popover-next-btn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.78rem;
+  }
+}
+
+/* Reduced motion — disable the entry animation and all button transitions */
+@media (prefers-reduced-motion: reduce) {
+  .driver-popover {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .driver-popover-btn-base,
+  .driver-popover-next-btn,
+  .driver-popover-close-btn {
+    transition: none !important;
+  }
+}
+
+.help-tip__trigger:hover,
+.help-tip__trigger:focus-visible {
+  color: var(--brand);
+  border-color: var(--brand);
+  background: var(--brand-light);
+}
+
+@media (max-width: 480px) {
+  .help-tip__bubble {
+    max-width: 12rem;
+  }
+}
+
+/* Hover is a pointer affordance and a touch device has none, so below the
+   breakpoint the rail simply stays closed — icons only, tap to navigate. This
+   is what it already did before (it auto-collapsed at 768px); the difference is
+   that the width no longer has to be kept in sync from JS. Widening here would
+   desync it from --sidebar-width, which reserves the closed width, and the rail
+   would sit on top of the content. */
+@media (max-width: 768px) {
+
+  .app-sidebar:hover .sidebar-nav-item-label,
+  .app-sidebar:hover .sidebar-user-info,
+  .app-sidebar:hover .sidebar-signout-label,
+  .app-sidebar:hover .sidebar-nav-count {
+    opacity: 0;
+  }
+}
+
+.auth-shell-minimal .flow-bg__calm-surface {
+  background:
+    radial-gradient(
+      circle at 78% -10%,
+      rgba(31, 111, 235, 0.13),
+      transparent 30rem
+    ),
+    linear-gradient(180deg, #14141a 0%, #0f0f14 52%, #0d0d12 100%);
+}
+
+.auth-shell-minimal .auth-switch-text,
+.auth-shell-minimal .helper-text {
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+/* The calm surface stays opaque — it's the z-index:-1 graphite substrate the
+   dither canvas (z-index:1) is drawn on top of. The panels (z-index:2) must
+   stay TRANSPARENT so that interactive dither shows through them; giving them an
+   opaque background here would paint over the canvas and hide it entirely. */
+.auth-shell-minimal .flow-bg--calm,
+.auth-shell-minimal .flow-bg__calm-surface {
+  background: var(--auth-page-bg) !important;
+}
+.auth-shell-minimal .auth-internal-eyebrow,
+.auth-shell-minimal .public-site-nav {
+  background: var(--auth-surface) !important;
+  border-color: var(--auth-border) !important;
+  box-shadow: none !important;
+}
+/* ReactBits-inspired interactive dither field. The logo remains unboxed. */
+.auth-shell-minimal .public-site-nav,
+.auth-shell-minimal .public-site-nav--fixed,
+.auth-shell-minimal .public-site-nav--fixed.public-site-nav--scrolled {
+  background: transparent !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.env-provisioned-variables__actions .ghost-button {
+  min-height: 2rem;
+  padding: 0.38rem 0.68rem;
+  font-size: 0.76rem;
+}
+
+.service-pair-panel__header .helper-text {
+  margin: 0.3rem 0 0;
+}
+
+.repo-wizard-actions .primary-button {
+  min-width: 9rem;
+}
+
+.dashboard-run-row .pipeline-dot { width: 0.45rem; height: 0.45rem; margin: 0; }
+.runs-empty:hover .dashboard-row-arrow { opacity: 1; transform: translateX(0); }
+.runs-empty .dashboard-row-arrow { color: var(--brand); }
+
+@media (prefers-reduced-motion: reduce) {
+  .run-card,
+  .run-card-cta,
+  .run-card-cta svg,
+  .runs-empty,
+  .getstarted-step,
+  .getstarted-cta,
+  .getstarted-cta span,
+  .getstarted-resource-links a { transition: none; }
+}
+
+/* Reduced motion: kill the runs-hero ambient loops and hover transforms. */
+@media (prefers-reduced-motion: reduce) {
+  .runs-live-dot,
+  .run-status-live,
+  .run-track-seg--flowing::after { animation: none; }
+  .run-card,
+  .run-card-cta,
+  .run-card-cta svg,
+  .runs-empty,
+  .metric-cell--link,
+  .runs-hero-chip,
+  .ops-spark-bar { transition: none; }
+}
+
+.group-danger-zone strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+.group-danger-zone p {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  max-width: 34rem;
+}
+
+/* Below the breakpoint the rail becomes a horizontal scroller: a 13.5rem column
+   beside content does not fit, and stacking it vertically would push the
+   content a full screen down. */
+@media (max-width: 860px) {
+  .group-workspace {
+    flex-direction: column;
+  }
+
+  .side-tabs {
+    position: static;
+    width: 100%;
+  }
+
+  .side-tab {
+    width: auto;
+    white-space: nowrap;
+  }
+}
+
+.group-section-head .group-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+}

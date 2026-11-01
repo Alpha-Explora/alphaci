@@ -1,0 +1,441 @@
+/* ── QA Studio / PO Studio → the run column's tabs and the Playwright tab ─────
+   .qa-coltabs   Checklist and Playwright, stacked on the run rail's strip:
+                 an icon each, the run's progress under the checklist's and
+                 the latest verify verdict ("22/24") and CI dot under
+                 Playwright's. The panel header carries the readiness chip
+                 and Merge to main (.qa-coltabs-bar).
+   .qa-pw        the Playwright tab: Run Playwright, one section per
+                 repository (stage cards from automation.css, then the host
+                 page's checks), then the requirements with automated tests.
+
+   CI is a second opinion, never the verdict: tones stay in thin rules and
+   small text, never filled pills. Tokens only; the light theme re-tints
+   through tokens.css.
+   ------------------------------------------------------------------------- */
+
+/* The panel's header never scrolls with a panel. */
+.qa-studio__run > .qa-drawer__head {
+  flex-shrink: 0;
+}
+
+/* ── The header's end: the readiness chip, Merge to main ──────────────────
+   At the right of the panel header's row, beside the title. Too narrow for
+   both, Merge to main wraps under the chip, still at the end. Nothing fixed
+   (the merge confirmation) lives in it. It sits above the panel for the
+   chip's popover. */
+.qa-coltabs-bar {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem 0.5rem;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.qa-coltabs-bar__main {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.qa-coltabs-bar__action {
+  display: flex;
+  align-items: center;
+}
+
+.qa-coltabs-bar__action:empty,
+.qa-coltabs-bar__main:empty {
+  display: none;
+}
+
+.qa-coltabs-bar .qa-promo-status {
+  margin: 0;
+}
+
+/* ── Tabs, on the rail strip ─────────────────────────────────────────────
+   Full strip width, icon over its count. The selected tab is marked on its
+   inner edge, the side the panel opens from. */
+.qa-coltabs {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  gap: 0.2rem;
+}
+
+.qa-coltab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  min-height: 2.6rem;
+  padding: 0.55rem 0 0.5rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    color 160ms ease-out,
+    background-color 160ms ease-out;
+}
+
+/* The indicator: a rule that grows in along the selected tab's inner edge. */
+.qa-coltab::after {
+  content: "";
+  position: absolute;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  left: 0;
+  width: 2px;
+  background: var(--brand);
+  transform: scaleY(0);
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.qa-coltab:hover {
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+}
+
+.qa-coltab:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.qa-coltab[aria-selected="true"] {
+  background: var(--layer-2);
+  color: var(--brand);
+}
+
+.qa-coltab[aria-selected="true"]::after {
+  transform: scaleY(1);
+}
+
+/* The icon, with Playwright's CI dot on its corner. */
+.qa-coltab__icon {
+  position: relative;
+  display: inline-flex;
+}
+
+.qa-coltab__icon > .qa-rail__dot {
+  position: absolute;
+  top: -0.2rem;
+  right: -0.35rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  box-shadow: 0 0 0 2px var(--layer-1);
+}
+
+.qa-coltab__status {
+  max-width: 100%;
+  font-size: 0.66rem;
+  font-weight: 650;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.qa-coltab__status[data-tone="failed"] {
+  color: var(--danger);
+}
+
+.qa-coltab__status[data-tone="passed"] {
+  color: var(--success);
+}
+
+.qa-coltab__status[data-tone="running"] {
+  color: var(--brand);
+}
+
+/* A panel arriving: a short settle, so switching reads as a change of view. */
+.qa-colpanel:not([hidden]) {
+  animation: qa-colpanel-in 140ms ease-out;
+}
+
+@keyframes qa-colpanel-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── The Playwright tab ──────────────────────────────────────────────────── */
+.qa-pw {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 0.8rem 0.9rem 1rem;
+}
+
+.qa-pw__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem 0.75rem;
+}
+
+/* Run Playwright, and "Reopen run" beside it on a signed-off run. */
+.qa-pw__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* The way back to a run Playwright can start on: a quiet secondary button
+   next to the disabled Run Playwright, at the same compact size. */
+.qa-pw__reopen {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  background: var(--layer-1);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease-out,
+    background-color 140ms ease-out,
+    transform 140ms ease-out;
+}
+
+.qa-pw__reopen:hover:not(:disabled) {
+  border-color: var(--brand);
+  background: var(--bg-soft);
+}
+
+.qa-pw__reopen:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.qa-pw__reopen:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.qa-pw__reopen:disabled {
+  color: var(--text-muted);
+  cursor: progress;
+}
+
+.qa-pw__lede {
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.qa-pw-repo {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.qa-pw-repo + .qa-pw-repo {
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.qa-pw-repo__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.6rem;
+  min-width: 0;
+}
+
+.qa-studio .qa-pw-repo__name {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-pw-repo__sha {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.qa-pw-repo__note {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+/* The host page's own checks under a repository: visual changes, browser tests. */
+.qa-pw-checks {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.qa-pw-checks:empty {
+  display: none;
+}
+
+.qa-pw-checks__repo {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.qa-pw-checks__repo:empty {
+  display: none;
+}
+
+.qa-pw-checks__name {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--text-secondary);
+}
+
+/* ── Requirements ↔ tests ────────────────────────────────────────────────── */
+.qa-pw-items {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.qa-studio .qa-pw-section-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.qa-pw-items__list {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qa-pw-item {
+  --qa-tone: var(--border-strong);
+
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.5rem 0.65rem 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--qa-tone);
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
+}
+
+.qa-pw-item[data-tone="success"] {
+  --qa-tone: var(--success);
+}
+
+.qa-pw-item[data-tone="danger"] {
+  --qa-tone: var(--danger);
+}
+
+.qa-pw-item__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.3rem 0.6rem;
+  min-width: 0;
+}
+
+.qa-pw-item__title {
+  flex: 1 1 10rem;
+  min-width: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-pw-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.6rem;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.qa-pw-item__meta:empty {
+  display: none;
+}
+
+.qa-pw-item__meta code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+.qa-pw-item__hint,
+.qa-pw-item__failure {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.qa-pw-item__hint {
+  color: var(--text-muted);
+}
+
+.qa-pw-item__failure {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--danger);
+}
+
+@media (max-width: 560px) {
+  .qa-pw {
+    padding: 0.7rem 0.7rem 0.9rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-coltab,
+  .qa-coltab::after,
+  .qa-pw__reopen {
+    transition: none;
+  }
+
+  .qa-colpanel:not([hidden]) {
+    animation: none;
+  }
+}

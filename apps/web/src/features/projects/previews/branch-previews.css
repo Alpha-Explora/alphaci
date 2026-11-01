@@ -1,0 +1,718 @@
+/**
+ * Branch previews.
+ *
+ * First stylesheet under features/, which is the error tier: tokens only, no
+ * hex literals and no raw rgba(). Imported from app/globals.css before
+ * components.css, which has to stay last.
+ */
+
+.branch-previews {
+  display: grid;
+  gap: 1rem;
+}
+
+.branch-previews__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+
+.branch-previews__more {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.branch-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  background: var(--bg-panel);
+}
+
+.branch-preview__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.branch-preview__branch {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+/* A branch name is the identifier here, so it must not be re-wrapped or
+   silently shortened mid-token — it scrolls instead. */
+.branch-preview__branch-name {
+  overflow-x: auto;
+  /* No mono token exists yet; the stack is inline rather than inventing one. */
+  font-family: ui-monospace, sfmono-regular, menlo, monospace;
+  white-space: nowrap;
+}
+
+.branch-preview__badge {
+  flex: none;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.branch-preview__meta,
+.branch-preview__commit {
+  margin: 0.2rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.branch-preview__commit {
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.branch-preview__status {
+  flex: none;
+  padding: 0.18rem 0.5rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.branch-preview__status--ok {
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  color: var(--success);
+}
+
+.branch-preview__status--pending {
+  background: color-mix(in srgb, var(--accent-amber) 14%, transparent);
+  color: var(--accent-amber);
+}
+
+.branch-preview__status--danger {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+
+/* ── The framed site ──────────────────────────────────────────────────────── */
+
+/**
+ * A fixed 16:10 window rather than a full-height frame: the point is to
+ * recognise the page at a glance, and an unbounded iframe would push every
+ * other branch off the screen.
+ */
+.branch-preview__viewport {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--layer-1);
+}
+
+.branch-preview__viewport-status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  place-items: center;
+}
+
+.branch-preview__frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.branch-preview__placeholder {
+  display: grid;
+  margin: 0;
+  padding: 1.1rem 0.9rem;
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-card);
+  background: var(--layer-1);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  text-align: center;
+  place-items: center;
+}
+
+.branch-preview__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/*
+ * The address of an environment with nothing deployed to it.
+ *
+ * Sits where "Open site" would, and deliberately does not look like a button:
+ * it resolves to nothing until the first release, so it reads as an address
+ * rather than as something to click.
+ */
+.branch-preview__pending-url {
+  overflow: hidden;
+  max-width: 100%;
+  padding: 0.35rem 0.55rem;
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-input, 6px);
+  background: var(--layer-1);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  .branch-preview__header {
+    flex-direction: column;
+  }
+
+  .branch-preview__actions > * {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+}
+
+/* ── Production Deployment card ──────────────────────────────────────────── */
+
+.deploy-cards {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.deploy-card {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  background: var(--bg-panel);
+}
+
+.deploy-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Two classes, to outrank `.section-card h2` and `.tab-content-panel h2`,
+   which otherwise set the card's title in the page-heading size. */
+.deploy-card .deploy-card__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.deploy-card__subtitle {
+  margin: 0.2rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.deploy-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.deploy-card__icon-button {
+  padding-inline: 0.6rem;
+}
+
+.deploy-card__icon {
+  flex: none;
+}
+
+/* A fixed-width thumbnail beside the facts, as on the provider's own
+   deployment page, so the card stays short on a wide screen; one column once
+   the card is too narrow for both. */
+.deploy-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  gap: 1rem 1.5rem;
+  align-items: start;
+}
+
+.deploy-card__thumb {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  margin: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--layer-1);
+}
+
+.deploy-card__thumb--empty {
+  display: grid;
+  padding: 1.25rem;
+  border-style: dashed;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+  place-items: center;
+}
+
+.deploy-card__thumb-status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  place-items: center;
+}
+
+/*
+ * Laid out at desktop width, then scaled into the column, so the thumbnail
+ * shows the page as a visitor sees it rather than its narrow layout. The
+ * scale comes from the component, which measures the column.
+ */
+.deploy-card__frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1280px;
+  height: 800px;
+  border: 0;
+  transform: scale(var(--thumb-scale, 0.4));
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.deploy-card__thumb-link {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.deploy-card__thumb-link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.deploy-card__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1.25rem;
+  margin: 0;
+}
+
+.deploy-card__fact {
+  min-width: 0;
+}
+
+.deploy-card__fact--wide {
+  grid-column: 1 / -1;
+}
+
+.deploy-card__fact dt {
+  margin: 0 0 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+/* A single shrinkable column: an implicit grid track grows to its content,
+   which pushed a long deployment hostname out of the card on phones. */
+.deploy-card__fact dd {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.3rem;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.deploy-card__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.deploy-card__link:hover {
+  color: var(--brand);
+}
+
+.deploy-card__link-text,
+.deploy-card__commit-message {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deploy-card__status,
+.deploy-card__source-line {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.deploy-card__dot {
+  flex: none;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+}
+
+.deploy-card__dot--ok {
+  background: var(--success);
+}
+
+.deploy-card__dot--pending {
+  background: var(--accent-amber);
+}
+
+.deploy-card__dot--danger {
+  background: var(--danger);
+}
+
+.deploy-card__dot--idle {
+  background: var(--text-muted);
+}
+
+/* ── Environment tabs: one environment's card shows at a time ─────────── */
+
+.deploy-envs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.deploy-envs__tab {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 9.5rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.deploy-envs__tab:hover {
+  background: var(--layer-1-hover);
+}
+
+.deploy-envs__tab[aria-selected="true"] {
+  border-color: var(--border-brand);
+  background: var(--layer-1);
+  color: var(--text-primary);
+}
+
+.deploy-envs__tab:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.deploy-envs__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.deploy-envs__line {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+/* Identifiers keep the mono stack the branch cards use. */
+.deploy-card__branch,
+.deploy-card__sha {
+  font-family: ui-monospace, sfmono-regular, menlo, monospace;
+}
+
+.deploy-card__sha {
+  flex: none;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+a.deploy-card__sha:hover {
+  color: var(--brand);
+}
+
+.deploy-card__commit-message {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Recent deploys: folded under the card, one line each. */
+.deploy-card__recent {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.deploy-card__recent-toggle {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.deploy-card__recent-toggle:hover {
+  color: var(--text-primary);
+}
+
+.deploy-card__recent-toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.deploy-card__deploys {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deploy-card__deploys[hidden] {
+  display: none;
+}
+
+.deploy-card__deploy {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.deploy-card__deploy-status,
+.deploy-card__deploy-commit {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.deploy-card__deploy-status {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.deploy-card__deploy-meta {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Active branches ──────────────────────────────────────────────────────── */
+
+.active-branches {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.active-branches .active-branches__title {
+  margin: 0.35rem 0 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+/* The list owns the columns and every row takes them through subgrid, so a
+   long branch name or a missing pull request in one row cannot push the
+   status and commit of that row out of line with the others. */
+.active-branches__list {
+  display: grid;
+  overflow: hidden;
+  grid-template-columns:
+    fit-content(18rem) max-content minmax(0, 1fr) max-content max-content
+    1.75rem;
+  column-gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  background: var(--bg-panel);
+  list-style: none;
+}
+
+.active-branch {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+/* Pinned, so a row without a pull request or a live address keeps its
+   other cells under their neighbours'. */
+.active-branch__branch { grid-column: 1; }
+.active-branch__status {
+  grid-column: 2;
+  white-space: nowrap;
+}
+.active-branch__commit { grid-column: 3; }
+
+.active-branch + .active-branch {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.active-branch__branch,
+.active-branch__status,
+.active-branch__commit {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.active-branch__branch .deploy-card__branch {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.active-branch__muted {
+  color: var(--text-muted);
+}
+
+.active-branch__created {
+  grid-column: 5;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.active-branch__chip {
+  display: inline-flex;
+  grid-column: 4;
+  justify-self: start;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  text-decoration: none;
+}
+
+.active-branch__chip:hover,
+.active-branch__visit:hover {
+  color: var(--brand);
+}
+
+.active-branch__visit {
+  display: inline-grid;
+  grid-column: 6;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.4rem;
+  color: var(--text-secondary);
+  place-items: center;
+}
+
+.active-branch__visit:focus-visible,
+.active-branch__chip:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* A backend card's logs want the width a thumbnail did not: the log column
+   leads and the facts take the rest. */
+.deploy-card__body--logs {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+}
+
+@media (max-width: 900px) {
+  .deploy-card__body,
+  .deploy-card__body--logs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .deploy-card__head {
+    flex-direction: column;
+  }
+
+  .deploy-card__deploy {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.15rem;
+  }
+
+  .deploy-card__facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Branch and status on the first line, the commit under them. */
+  .active-branches__list {
+    grid-template-columns: minmax(0, 1fr) max-content 1.75rem;
+    column-gap: 0.75rem;
+  }
+
+  .active-branch {
+    row-gap: 0.35rem;
+  }
+
+  .active-branch__branch {
+    grid-row: 1;
+  }
+
+  .active-branch__status {
+    grid-row: 1;
+  }
+
+  .active-branch__commit {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .active-branch__chip,
+  .active-branch__created {
+    display: none;
+  }
+
+  .active-branch__visit {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}

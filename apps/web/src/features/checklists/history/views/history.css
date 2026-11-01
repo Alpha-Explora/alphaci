@@ -1,0 +1,272 @@
+/* ── History ────────────────────────────────────────────────────────────────
+   .ihist          the Project's History tab: every iteration, newest first.
+   .ihist-card     one iteration; its title is a dropdown toggle. Delivered
+                     is violet (the tone of "Delivered" everywhere), active the
+                     brand tone. Tokens only.
+   .ihist-report   a delivered iteration's frozen checklist and QA results.
+   ------------------------------------------------------------------------- */
+
+.ihist {
+  display: grid;
+  gap: 1rem;
+}
+
+.ihist__head {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.ihist .ihist__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ihist__intro {
+  margin: 0;
+  max-width: 72ch;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.ihist-list,
+.ihist-groups,
+.ihist-items,
+.ihist-heads {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ihist-list {
+  gap: 0.75rem;
+}
+
+.ihist-card {
+  --ihist-tone: var(--brand);
+
+  display: grid;
+  gap: 0.35rem;
+  padding: clamp(0.85rem, 1.6vw, 1.1rem);
+  border: 1px solid var(--border-layer);
+  border-left: 3px solid var(--ihist-tone);
+  border-radius: 0.9rem;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-soft);
+}
+
+.ihist-card[data-status="delivered"] {
+  --ihist-tone: var(--accent-violet);
+}
+
+.ihist-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+}
+
+.ihist-card .ihist-card__title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.ihist-card__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ihist-card__toggle:hover span {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.ihist-card__toggle:focus-visible {
+  outline: 2px solid var(--ihist-tone);
+  outline-offset: 3px;
+  border-radius: 0.3rem;
+}
+
+.ihist-card__chevron {
+  flex: none;
+  color: var(--text-secondary);
+  transition: transform 160ms ease;
+}
+
+.ihist-card[data-open="true"] .ihist-card__chevron {
+  transform: rotate(180deg);
+}
+
+.ihist-card__meta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.ihist-card__body {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.ihist-card__body[hidden] {
+  display: none;
+}
+
+.ihist-note {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.ihist-note p {
+  margin: 0;
+}
+
+.ihist-skeleton {
+  min-height: 6rem;
+  border-radius: 0.75rem;
+}
+
+.ihist-report {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ihist-signoff {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+}
+
+.ihist-signoff__by {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.ihist-signoff__summary {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.ihist-score {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ihist-heads {
+  gap: 0.25rem;
+}
+
+.ihist-heads__item code {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.ihist-groups {
+  gap: 0.75rem;
+}
+
+.ihist-group__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.55rem;
+  margin: 0 0 0.35rem;
+}
+
+.ihist-group__kind {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.ihist-group__name {
+  font-size: 0.86rem;
+  font-weight: 650;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.ihist-group__count {
+  margin-left: auto;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ihist-items {
+  border: 1px solid var(--border-layer);
+  border-radius: 0.65rem;
+  overflow: hidden;
+}
+
+.ihist-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--layer-2);
+}
+
+.ihist-item + .ihist-item {
+  border-top: 1px solid var(--border-layer);
+}
+
+.ihist-item__title {
+  flex: 1 1 18rem;
+  min-width: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.ihist-item__facts {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ihist-item__progress {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ihist-card__chevron {
+    transition: none;
+  }
+}

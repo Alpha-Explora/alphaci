@@ -1,0 +1,93 @@
+"use client";
+
+import type { QaScope } from "@/features/checklists";
+import { MyQaItemsSummary } from "@/features/checklists/returned";
+import { ProductionReadinessCard } from "@/features/checklists/studio";
+import { ProductionDeploymentPanel } from "@/features/projects/previews";
+import type { ProvisionedProject } from "@/features/projects";
+import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
+import { showOverviewProductionReadiness } from "../model/project-detail-tab-rules";
+
+/**
+ * The repository Overview, the same for every role: what is live (production
+ * first, then branch previews), how many QA items wait on whom (a summary;
+ * the full list is one click away), the read-only production readiness card
+ * for Developers, and why provisioning failed when it did. How to clone it
+ * sits in the page header beside the title on this tab (ProjectDetailTabs),
+ * not in a card here. Configuration facts, health checks and drift used to
+ * live here; they were noise on the first screen.
+ */
+export function OverviewTab({
+  project,
+  vm,
+  qaScope,
+}: Readonly<{
+  project: ProvisionedProject;
+  vm: ProjectDetailTabsViewModel;
+  dangerZone?: React.ReactNode;
+  qaScope?: QaScope;
+}>) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "1rem",
+      }}
+    >
+      <OverviewPreviews
+        enabled={vm.previewDeploymentsEnabled}
+        // "Full logs" opens the Hosting tab; a role without it (a Product
+        // owner) keeps the card's own log surface only.
+        onOpenFullLogs={vm.visibleTabs.includes("hosting") ? vm.openTargetLogs : undefined}
+        // A branch's "#N" opens that pull request in the Pull requests tab; a
+        // role without the tab sees the number as text.
+        onOpenPullRequest={vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined}
+        project={project}
+      />
+      <MyQaItemsSummary
+        enabled={vm.qaChecklistsEnabled && Boolean(vm.appRole)}
+        projectId={project.id}
+        highlightRequested={vm.highlightMyQaItems}
+        qaScope={qaScope}
+        onOpenChecklists={vm.openMyQaItems}
+      />
+      {showOverviewProductionReadiness(vm.appRole, vm.qaChecklistsEnabled) ? (
+        <ProductionReadinessCard enabled projectId={project.id} />
+      ) : null}
+      <ErrorText message={project.failureReason} />
+    </div>
+  );
+}
+
+/** The first row: what is live — production and every active branch. */
+function OverviewPreviews({
+  enabled,
+  onOpenFullLogs,
+  onOpenPullRequest,
+  project,
+}: Readonly<{
+  enabled: boolean;
+  onOpenFullLogs: ProjectDetailTabsViewModel["openTargetLogs"] | undefined;
+  onOpenPullRequest: ProjectDetailTabsViewModel["openPullRequest"] | undefined;
+  project: ProvisionedProject;
+}>) {
+  if (!enabled) return null;
+  return (
+    <ProductionDeploymentPanel
+      enabled
+      onOpenFullLogs={onOpenFullLogs}
+      onOpenPullRequest={onOpenPullRequest}
+      projectId={project.id}
+    />
+  );
+}
+
+function ErrorText({ message }: Readonly<{ message: string | null }>) {
+  if (!message) return null;
+  return (
+    <p className="error-text" style={{ margin: 0 }}>
+      {message}
+    </p>
+  );
+}

@@ -1,0 +1,2123 @@
+/* ── Project → QA Studio ─────────────────────────────────────────────────────
+   Toolbar across the top, then the deployed page, with the run panel
+   (Checklist | Playwright) as a rail on its right edge, like the app's left
+   rail. Surfaces follow
+   the project page's graphite ladder (layer-1 cards, border-layer edges) so
+   the tab reads as part of the same product; colour is reserved for state —
+   success / danger / warning / brand — and nothing else. Tokens only; the
+   light theme re-tints through tokens.css.
+   ------------------------------------------------------------------------- */
+
+.qa-studio {
+  /* The run rail: closed at the app rail's collapsed width, open at 30rem
+     (where the tab bar and the automation rows sit on one line), never wider
+     than the studio. */
+  --qa-rail-closed: var(--sidebar-collapsed, 52px);
+  /* --qa-rail-width is the width dragged from the panel's left edge (set
+     inline on this element); unset, the panel opens at 30rem. */
+  --qa-rail-open: min(var(--qa-rail-width, 30rem), calc(100% - 1.5rem));
+  /* "Hard offset": the rail floats this far in from the right and bottom
+     edges so its crisp offset shadow (a dark step, then an outline step,
+     down and to the right) is never cut off by the window. */
+  --qa-rail-inset: 0.5rem;
+  /* The rail's gap from the window's right edge: wide enough that the rail
+     and its 4px offset shadow never touch the window side. */
+  --qa-rail-edge: 0.75rem;
+  --qa-rail-offset: 3px 3px 0 var(--bg-soft), 4px 4px 0 var(--border-tile);
+
+  display: grid;
+  /* One column that may shrink below its content: with the implicit auto
+     track the panes' min-content (the toolbar, the device) set the studio's
+     width and pushed it past a phone's screen. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* Docked, the studio takes the page body's right gutter, so the rail sits on
+   the window's right edge (as the app rail sits on the left). The project
+   page drops its bottom padding on a studio tab, so both panes run to the
+   bottom edge and the page itself never scrolls. */
+.qa-studio:not([data-full-screen="true"]) {
+  margin-right: calc(-1 * var(--layout-gutter));
+}
+
+/* The global ghost button draws a transparent border; give it an edge here. */
+.qa-studio .ghost-button {
+  border-color: var(--border-control);
+}
+
+.qa-glyph {
+  flex-shrink: 0;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+.qa-toolbar {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0;
+  background: var(--layer-1);
+}
+
+.qa-toolbar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.qa-toolbar__label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.qa-toolbar .qa-toolbar__select {
+  width: auto;
+  min-width: 0;
+  max-width: 18rem;
+  padding-block: 0.4rem;
+  font-size: 0.82rem;
+}
+
+/* The frame's actions close the row on the right; a row too narrow for them wraps
+   them onto their own line, still right-aligned. */
+.qa-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+/* Full screen (and a studio with no tab row to host it): a slim bar atop the
+   studio, so Exit full screen and the rest stay in reach. */
+.qa-toolbar[data-placement="studio"] {
+  padding: 0.4rem 0.6rem;
+}
+
+/* Docked, the controls sit in the project page's tab row: no box of their
+   own, sized to the tabs (about 1.9rem), and the actions straight after the
+   size controls — the tabs, not the row's end, are on their right. */
+.qa-toolbar[data-placement="tab-row"] {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-toolbar__row {
+  gap: 0.4rem;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-toolbar__actions {
+  gap: 0.3rem;
+  margin-left: 0;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-toolbar__select {
+  padding-block: 0.28rem;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-device-switch__option {
+  min-height: 1.65rem;
+}
+
+.qa-toolbar[data-placement="tab-row"] .qa-icon-button {
+  width: 2rem;
+  height: 2rem;
+}
+
+.qa-toolbar__error {
+  margin: 0;
+}
+
+/* Segmented device switch. */
+.qa-device-switch {
+  display: inline-flex;
+  padding: 0.18rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  background: var(--bg-soft);
+}
+
+/* Icon-only: the class name is the accessible name and the tooltip. */
+.qa-device-switch__option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  padding: 0.3rem 0.5rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.qa-device-switch__option:hover {
+  color: var(--text-primary);
+}
+
+.qa-device-switch__option--on {
+  background: var(--layer-2);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Resolution: a compact select for the class's sizes, and "Custom…"'s two number fields. */
+.qa-resolution {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.qa-toolbar .qa-resolution__select {
+  max-width: 15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-resolution__custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--text-muted);
+}
+
+.qa-resolution .qa-resolution__input {
+  width: 4.6rem;
+  min-width: 0;
+  padding: 0.4rem 0.45rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.qa-resolution .qa-resolution__input:focus {
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 0 3px var(--accent-indigo-light);
+  outline: none;
+}
+
+.qa-resolution .qa-resolution__input--invalid,
+.qa-resolution .qa-resolution__input--invalid:focus {
+  border-color: var(--danger);
+}
+
+.qa-resolution__error {
+  flex-basis: 100%;
+}
+
+.qa-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+
+.qa-icon-button:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--border-brand);
+}
+
+.qa-icon-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.qa-icon-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Shown only when the commit under test is the branch head, not what is deployed. */
+.qa-commit-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.55rem;
+  border: 1px solid var(--border-amber);
+  border-radius: var(--radius-pill);
+  background: var(--accent-amber-light);
+  color: var(--warning);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+/* Copy link: the icon swap is the sighted confirmation, and it is coloured too. */
+.qa-icon-button[data-status="copied"] {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.qa-icon-button[data-status="failed"] {
+  border-color: var(--border-amber);
+  color: var(--warning);
+}
+
+.qa-icon-button[aria-pressed="true"] {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+/* How far the page is shrunk: the preview has no caption, so the toolbar says it. */
+.qa-scale {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--radius-pill);
+  background: var(--brand-light);
+  color: var(--brand);
+  font-size: 0.74rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Panes ───────────────────────────────────────────────────────────────────
+   The page takes the studio's width less the run rail on its right edge. The
+   rail works like the app's left rail: closed it is a strip (the pin, the
+   panel's icon, progress and CI dot); hover or keyboard focus opens it over
+   the page; pinned (`data-rail="pinned"`) it stays open and the page moves
+   aside. The panes reserve the strip, or the open rail when pinned, and are
+   the rail's positioning box, so it starts right under the tab row and runs
+   the pane's height: from where the panes start (`--qa-pane-top`, measured)
+   to the window's bottom edge. Below 1100px the rail stays on the right and
+   opens over the page, pinned or not: there is no width to move it aside. */
+.qa-studio__panes {
+  --qa-pane-height: max(24rem, calc(100dvh - var(--qa-pane-top, 9rem)));
+
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  min-height: var(--qa-pane-height);
+  padding-right: calc(var(--qa-rail-closed) + var(--qa-rail-edge) + 0.75rem);
+}
+
+.qa-studio[data-rail="pinned"] .qa-studio__panes {
+  padding-right: calc(var(--qa-rail-open) + var(--qa-rail-edge) + 0.75rem);
+}
+
+/* Both panes share one height and only the item list scrolls: the app shell
+   is a scroll container that never scrolls, so a sticky preview would never
+   stick. Side by side, the page, the summary and Sign off all stay in view
+   while items are worked through. */
+.qa-studio__preview {
+  height: var(--qa-pane-height);
+  min-width: 0;
+}
+
+/* Nothing to frame: size to the message instead of a tall empty box. */
+.qa-studio__preview[data-framed="false"] {
+  height: auto;
+}
+
+/* The rail: one solid surface — no backdrop-filter or transform (the app
+   rail's glass would make it the containing block for the Sign-off dialog's
+   fixed backdrop and trap the dialog inside). Closed it clips: the panel is
+   not drawn. "Hard offset" look: a rounded, fully outlined rail held off the
+   window edges, with a crisp stepped shadow instead of a soft one. */
+.qa-rail {
+  position: absolute;
+  top: 0;
+  right: var(--qa-rail-edge);
+  bottom: var(--qa-rail-inset);
+  z-index: 3;
+  display: flex;
+  flex-direction: row-reverse;
+  width: var(--qa-rail-closed);
+  overflow: clip;
+  border: 1px solid var(--border-tile);
+  border-radius: 0.625rem;
+  background: var(--layer-1);
+  box-shadow: var(--qa-rail-offset);
+}
+
+/* Open: pinned; or peeking — under the pointer (unless an unpin under it
+   just suppressed that), on keyboard focus (:focus-visible, as the app rail),
+   or while anything in the panel itself has focus, so choosing a status or
+   typing a note never closes it when the pointer drifts. A click into the
+   page moves focus out, and it folds. Overflow is visible open: the Export
+   menu and the chip's popover must never be clipped. */
+.qa-rail[data-pinned="true"],
+.qa-rail:has(:focus-visible),
+.qa-rail:has(.qa-studio__run:focus-within),
+.qa-rail:not([data-hover-suppressed="true"]):hover {
+  width: var(--qa-rail-open);
+  overflow: visible;
+}
+
+/* Peeking paints over the page, so it lifts off it. */
+.qa-rail:not([data-pinned="true"]):has(:focus-visible),
+.qa-rail:not([data-pinned="true"]):has(.qa-studio__run:focus-within),
+.qa-rail:not([data-pinned="true"]):not([data-hover-suppressed="true"]):hover {
+  box-shadow: var(--qa-rail-offset), var(--shadow-hard);
+}
+
+/* The strip: the rail's own column at the edge, in every state. */
+.qa-rail__strip {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  width: calc(var(--qa-rail-closed) - 2px);
+  padding: 0.55rem 0 0;
+}
+
+.qa-rail__pin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid transparent;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background-color 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.qa-rail__pin:hover {
+  border-color: var(--border-tile);
+  background: var(--layer-2-hover);
+  color: var(--text-primary);
+}
+
+.qa-rail__pin[aria-pressed="true"] {
+  color: var(--brand);
+}
+
+.qa-rail__divider {
+  width: 1.5rem;
+  height: 1px;
+  background: var(--border);
+}
+
+.qa-rail__summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--brand);
+}
+
+.qa-rail__count {
+  font-size: 0.68rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+/* The panel: the one run column, beside the strip. Not drawn while the rail
+   is closed (still mounted: drafts, dialogs and polling carry on). */
+.qa-studio__run {
+  display: none;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  animation: qa-drawer-in 160ms ease-out;
+  /* The resize edge is placed against it. */
+  position: relative;
+}
+
+/* The panel's left edge: drag it towards the page to widen the panel. A
+   12px hit area over the rail's border, the grip shown on hover, focus and
+   while dragging. */
+.qa-rail__resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -7px;
+  z-index: 4;
+  width: 12px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.qa-rail__resize::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: 4px;
+  height: 2.75rem;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity 0.16s ease;
+}
+
+.qa-rail__resize:hover::after,
+.qa-rail__resize:focus-visible::after,
+.qa-rail__resize[data-active="true"]::after {
+  opacity: 1;
+}
+
+.qa-rail__resize:focus-visible {
+  outline: none;
+}
+
+/* While dragging: no text selection, and the preview iframe never takes the
+   pointer (it would swallow the moves). */
+.qa-studio[data-resizing="true"] {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.qa-studio[data-resizing="true"] iframe {
+  pointer-events: none;
+}
+
+.qa-rail[data-pinned="true"] > .qa-studio__run,
+.qa-rail:has(:focus-visible) > .qa-studio__run,
+.qa-rail:has(.qa-studio__run:focus-within) > .qa-studio__run,
+.qa-rail:not([data-hover-suppressed="true"]):hover > .qa-studio__run {
+  display: flex;
+}
+
+/* A capture takes the tab's pixels where the page is: a rail open over it
+   goes transparent for that moment, never hidden, so focus stays on Capture
+   and nothing remounts. */
+.qa-studio[data-capturing="true"] .qa-rail {
+  opacity: 0;
+  pointer-events: none;
+  animation: none;
+  transition: none;
+}
+
+/* The selected tab's panel takes what the tab bar leaves. */
+.qa-colpanel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.qa-colpanel[hidden] {
+  display: none;
+}
+
+/* The Playwright tab scrolls as one; so does the Checklist tab of a Project
+   run (and PO Studio's acceptance), which has no single item list. No
+   scrollbar-width here: it would outrank the "No scrollbar" rule below and
+   draw a light bar on the dark column. */
+.qa-colpanel[data-tab="playwright"],
+.qa-studio__run[data-scroll="column"] > .qa-colpanel {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.qa-colpanel > .qa-run-card {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.qa-colpanel > .qa-panel-state,
+.qa-colpanel > .qa-skeleton-card {
+  flex-shrink: 0;
+  margin: 0.75rem;
+}
+
+.qa-run-card > .qa-run {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.qa-run > .qa-run__items {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-right: -0.4rem;
+  padding-right: 0.4rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* No card, caption or surface around the page: the preview IS the hosted
+   page, so every pixel of the pane goes to it. */
+.qa-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* The stage the device is fitted into. Desktop fills it edge to edge; a
+   tablet or a phone gets a little room for its hardware. The fit rule
+   measures the content box, so the padding is never counted as screen. */
+.qa-stage {
+  position: relative;
+  display: grid;
+  place-items: start center;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.qa-stage:not([data-frame="browser"]) {
+  padding: 0.75rem;
+}
+
+/* ── Device ───────────────────────────────────────────────────────────────
+   One DOM for every device: .qa-device[data-frame][data-orientation] holds the
+   chrome parts and the screen. The box is the screen at its drawn size plus
+   the chrome insets (padding); only the iframe is scaled, so the chrome stays
+   legible and never overlaps the screen. Custom properties come from the
+   model: --qa-screen-w/h (the true viewport), --qa-scale, --qa-chrome-*. */
+.qa-device {
+  position: relative;
+  box-sizing: content-box;
+  width: calc(var(--qa-screen-w) * var(--qa-scale, 1) * 1px);
+  height: calc(var(--qa-screen-h) * var(--qa-scale, 1) * 1px);
+  padding: var(--qa-chrome-top) var(--qa-chrome-right) var(--qa-chrome-bottom) var(--qa-chrome-left);
+}
+
+.qa-device__screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--device-screen);
+}
+
+/* The page lays out at the device's real size and is drawn at --qa-scale. */
+.qa-device__frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: calc(var(--qa-screen-w) * 1px);
+  height: calc(var(--qa-screen-h) * 1px);
+  border: 0;
+  background: var(--device-screen);
+  transform: scale(var(--qa-scale, 1));
+  transform-origin: 0 0;
+}
+
+.qa-device__loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  background: var(--layer-1);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* Every chrome part exists in every frame; each frame shows its own. */
+.qa-device__chrome {
+  display: none;
+  position: absolute;
+}
+
+/* Desktop: the page itself, no mock browser window. One hairline edge, so a
+   page the same colour as the app still shows where it ends. */
+.qa-device[data-frame="browser"] .qa-device__screen {
+  border-radius: 0;
+  box-shadow: 0 0 0 1px var(--border-layer);
+}
+
+/* Tablet and phone: a dark chassis, whichever theme — hardware is dark. */
+.qa-device[data-frame="tablet"],
+.qa-device[data-frame="phone"] {
+  background: var(--device-chassis);
+  box-shadow:
+    0 0 0 1px var(--device-chassis-rim),
+    inset 0 0 0 3px var(--device-bezel),
+    var(--shadow-elevated);
+}
+
+.qa-device[data-frame="tablet"] {
+  border-radius: 30px;
+}
+
+.qa-device[data-frame="tablet"] .qa-device__screen {
+  border-radius: 8px;
+}
+
+/* Front camera, centred in the top bezel. */
+.qa-device[data-frame="tablet"] .qa-device__sensor {
+  display: block;
+  top: calc(var(--qa-chrome-top) / 2 - 4px);
+  left: calc(50% - 4px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--device-lens);
+  box-shadow: 0 0 0 2px var(--device-sensor);
+}
+
+/* Home bar, centred in the bottom bezel. */
+.qa-device[data-frame="tablet"] .qa-device__home {
+  display: block;
+  bottom: calc(var(--qa-chrome-bottom) / 2 - 2px);
+  left: calc(50% - 36px);
+  width: 72px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--device-home);
+}
+
+.qa-device[data-frame="phone"] {
+  border-radius: 42px;
+}
+
+.qa-device[data-frame="phone"] .qa-device__screen {
+  border-radius: 16px;
+}
+
+/* The dynamic island lives in the top bezel, above the screen, never on it. */
+.qa-device[data-frame="phone"] .qa-device__sensor {
+  display: block;
+  top: 12px;
+  left: calc(50% - 46px);
+  width: 92px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background:
+    radial-gradient(circle at calc(100% - 13px) 50%, var(--device-lens) 0 3.5px, transparent 4.5px),
+    var(--device-sensor);
+}
+
+.qa-device[data-frame="phone"] .qa-device__home {
+  display: block;
+  bottom: 11px;
+  left: calc(50% - 55px);
+  width: 110px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--device-home);
+}
+
+/* Side buttons, past the chassis edge: action + volume on one side, power on the other. */
+.qa-device[data-frame="phone"] .qa-device__buttons {
+  display: block;
+}
+
+.qa-device[data-frame="phone"] .qa-device__buttons--start {
+  top: 96px;
+  left: -3px;
+  width: 3px;
+  height: 150px;
+  border-radius: 2px 0 0 2px;
+  background: linear-gradient(
+    var(--device-button) 0 26px,
+    transparent 26px 42px,
+    var(--device-button) 42px 94px,
+    transparent 94px 104px,
+    var(--device-button) 104px 150px
+  );
+}
+
+.qa-device[data-frame="phone"] .qa-device__buttons--end {
+  top: 140px;
+  right: -3px;
+  width: 3px;
+  height: 84px;
+  border-radius: 0 2px 2px 0;
+  background: var(--device-button);
+}
+
+/* Landscape: the same chassis turned a quarter — island left, chin right,
+   the buttons along the bottom and top edges. */
+.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__sensor {
+  top: calc(50% - 46px);
+  left: 12px;
+  width: 22px;
+  height: 92px;
+  background:
+    radial-gradient(circle at 50% 13px, var(--device-lens) 0 3.5px, transparent 4.5px),
+    var(--device-sensor);
+}
+
+.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__home {
+  inset: calc(50% - 55px) 11px auto auto;
+  width: 5px;
+  height: 110px;
+}
+
+.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__buttons--start {
+  top: auto;
+  bottom: -3px;
+  left: 96px;
+  width: 150px;
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(
+    to right,
+    var(--device-button) 0 26px,
+    transparent 26px 42px,
+    var(--device-button) 42px 94px,
+    transparent 94px 104px,
+    var(--device-button) 104px 150px
+  );
+}
+
+.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__buttons--end {
+  top: -3px;
+  right: auto;
+  left: 140px;
+  width: 84px;
+  height: 3px;
+  border-radius: 2px 2px 0 0;
+}
+
+.qa-stage--empty {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  min-height: 20rem;
+  padding: 2rem 1.5rem;
+  /* Nothing to show: the message gets the surface the page would have had. */
+  border: 1px solid var(--border-layer);
+  border-radius: 0.9rem;
+  background: var(--layer-1);
+  text-align: center;
+}
+
+.qa-stage__reason {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.qa-stage .qa-stage__open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+}
+
+.qa-skeleton-stage {
+  height: var(--qa-pane-height);
+}
+
+.qa-skeleton-card {
+  height: 22rem;
+}
+
+/* ── States ──────────────────────────────────────────────────────────────── */
+.qa-panel-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: clamp(1.5rem, 4vw, 2.5rem) 1.25rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 0.8rem;
+  background: var(--bg-surface);
+  text-align: center;
+}
+
+.qa-studio__preview > .qa-panel-state {
+  min-height: 20rem;
+  align-content: center;
+}
+
+.qa-panel-state--danger {
+  border-style: solid;
+  border-color: var(--accent-rose-glow);
+  background: var(--accent-rose-light);
+}
+
+.qa-studio .qa-panel-state__title {
+  margin: 0;
+  font-family: inherit;
+  letter-spacing: -0.005em;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.qa-panel-state__text {
+  margin: 0;
+  max-width: 44ch;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.qa-form-error {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--danger);
+}
+
+.qa-required {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.qa-text-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.qa-text-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.qa-text-button:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* ── Run card ────────────────────────────────────────────────────────────── */
+.qa-run-card {
+  display: grid;
+  gap: 0.9rem;
+  padding: clamp(0.9rem, 1.6vw, 1.15rem);
+  border: 1px solid var(--border-layer);
+  border-radius: 0.9rem;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-soft);
+}
+
+.qa-run-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.qa-run-card__picker {
+  display: grid;
+  gap: 0.3rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.qa-run-card__picker .hier-select {
+  max-width: none;
+  font-weight: 600;
+}
+
+.qa-studio .qa-run-card__title {
+  margin: 0;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-run-card__count {
+  flex-shrink: 0;
+  padding-bottom: 0.3rem;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.qa-run-card__wait,
+.qa-run-card__started {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.qa-run-card__started strong {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.qa-run-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.qa-run-card__foot-text {
+  flex: 1 1 12rem;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.qa-run-card__foot > .primary-button {
+  margin-left: auto;
+}
+
+.qa-run {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.qa-run-skeleton {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.qa-run-skeleton__bar {
+  height: 3.5rem;
+}
+
+.qa-run-skeleton__row {
+  height: 4.75rem;
+}
+
+/* ── Summary ─────────────────────────────────────────────────────────────── */
+.qa-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.45rem 1rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--bg-frost);
+}
+
+.qa-summary__score {
+  display: flex;
+  align-items: baseline;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-summary__passed {
+  font-size: 1.6rem;
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.qa-summary__total {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.qa-summary__bar {
+  display: flex;
+  gap: 2px;
+  height: 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+
+.qa-summary__segment {
+  flex-basis: 0;
+  min-width: 4px;
+  background: var(--border-tile);
+}
+
+.qa-summary__segment--in_progress {
+  background: var(--brand);
+}
+
+.qa-summary__segment--passed {
+  background: var(--success);
+}
+
+.qa-summary__segment--failed {
+  background: var(--danger);
+}
+
+.qa-summary__segment--blocked {
+  background: var(--accent-rose);
+}
+
+.qa-summary__segment--returned_to_dev {
+  background: var(--warning);
+}
+
+.qa-summary__facts {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.qa-summary__fact--warn {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.qa-summary__fact--danger {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* A closing line in the box (who started the run) spans the whole width. */
+.qa-summary > .qa-run-card__started {
+  grid-column: 1 / -1;
+}
+
+/* In the column's first row (QA Studio, beside "QA testing"): the count over
+   a slim bar at the row's end, no box of its own; the open defects and
+   blockers show under it only when there are any. */
+.qa-summary--inline {
+  flex: 0 1 11rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+  min-width: 7.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.qa-summary--inline .qa-summary__score {
+  justify-content: flex-end;
+}
+
+.qa-summary--inline .qa-summary__passed {
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.qa-summary--inline .qa-summary__total {
+  font-size: 0.74rem;
+}
+
+.qa-summary--inline .qa-summary__bar {
+  height: 0.35rem;
+  border-radius: 0;
+}
+
+.qa-summary--inline .qa-summary__facts {
+  justify-content: flex-end;
+  gap: 0.2rem 0.75rem;
+  font-size: 0.7rem;
+}
+
+.qa-summary--compact {
+  grid-template-columns: auto minmax(5rem, 1fr);
+  gap: 0.25rem 0.75rem;
+  min-width: min(100%, 18rem);
+  padding: 0.45rem 0.65rem;
+}
+
+.qa-summary--compact .qa-summary__passed {
+  font-size: 1.2rem;
+}
+
+.qa-summary--compact .qa-summary__total {
+  font-size: 0.74rem;
+}
+
+.qa-summary--compact .qa-summary__bar {
+  height: 0.4rem;
+}
+
+.qa-summary--compact > .qa-run-card__started {
+  font-size: 0.7rem;
+}
+
+.pqa-run__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+
+/* QA's way into the test suite editor: tinted blue, so it reads as an action. */
+.pqa-run__toolbar .ghost-button.pqa-run__edit-test-cases {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+  color: var(--brand);
+  font-weight: 700;
+  transition:
+    background-color 140ms ease-out,
+    color 140ms ease-out,
+    border-color 140ms ease-out;
+}
+
+.pqa-run__toolbar .ghost-button.pqa-run__edit-test-cases:hover {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 28%, transparent);
+  color: var(--text-primary);
+}
+
+.pqa-run__toolbar .ghost-button.pqa-run__edit-test-cases:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ── Square edges ────────────────────────────────────────────────────────
+   Every box in the studio has square corners, the rail's panel included;
+   only pills (the chips, filters and status tags) and the buttons keep their
+   rounding. Scoped to the studio: other pages share some of these classes. */
+.qa-studio
+  :is(
+    .qa-panel-state,
+    .qa-skeleton-card,
+    .qa-skeleton-stage,
+    .qa-run-card,
+    .qa-run-card__history,
+    .qa-summary,
+    .qa-run-item,
+    .qa-run-item__facts,
+    .qa-fix-note,
+    .qa-item-editor,
+    .qa-inline-alert,
+    .qa-signoff-banner,
+    .qa-signoff-banner__conditions,
+    .pqa-head,
+    .pqa-alert,
+    .pqa-delivered,
+    .pqa-criteria,
+    .qa-evidence,
+    .qa-evidence__draft,
+    .qa-evidence__thumb,
+    .qa-promo,
+    .qa-promo__row,
+    .qa-promo-outcome,
+    .qa-promo-error,
+    .qa-promo-skeleton,
+    .qa-auto-detail,
+    .qa-auto__warning,
+    .qa-auto__failures,
+    .qa-auto-stage,
+    .qa-auto__empty,
+    .qa-live,
+    .qa-pw-item
+  ) {
+  border-radius: 0;
+}
+
+/* ── Sections, not boxes ─────────────────────────────────────────────────
+   In the rail's panel a checklist item, a browser test, a CI stage, a live
+   run and a requirement's tests are sections of one surface: no frame and
+   no fill. A thin line on the left edge carries the state (green passed,
+   red failed, amber blocked or returned, blue in progress), hairlines part
+   the rows of a list, and hover lifts a row with a soft wash of its own
+   tone and a bolder line. Scoped to the panel; the Runs report keeps its
+   cards. */
+.qa-studio__run
+  :is(.qa-run-item, .tr-case, .qa-auto-stage, .qa-live, .qa-pw-item, .qa-auto-detail, .qa-auto-failure) {
+  --qa-accent: var(--border-strong);
+
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: inset 2px 0 0 var(--qa-accent);
+  transition:
+    background-color 180ms ease-out,
+    box-shadow 180ms ease-out;
+}
+
+.qa-studio__run .qa-live {
+  --qa-accent: var(--qa-live-tone);
+}
+
+.qa-studio__run :is(.qa-auto-stage, .qa-pw-item, .qa-auto-detail) {
+  --qa-accent: var(--qa-tone);
+}
+
+.qa-studio__run .qa-auto-failure,
+.qa-studio__run .tr-case[data-tone="danger"],
+.qa-studio__run .qa-run-item[data-status="failed"] {
+  --qa-accent: var(--danger);
+}
+
+.qa-studio__run .tr-case[data-tone="success"],
+.qa-studio__run .qa-run-item[data-status="passed"] {
+  --qa-accent: var(--success);
+}
+
+.qa-studio__run .tr-case[data-tone="warning"],
+.qa-studio__run .qa-run-item[data-status="returned_to_dev"] {
+  --qa-accent: var(--warning);
+}
+
+.qa-studio__run .qa-run-item[data-status="blocked"] {
+  --qa-accent: var(--accent-rose);
+}
+
+.qa-studio__run .qa-run-item[data-status="in_progress"] {
+  --qa-accent: var(--brand);
+}
+
+/* Rows of a list sit flush, parted by a hairline. */
+.qa-studio__run :is(.qa-run__items, .tr-cases__list, .qa-pw-items__list, .qa-auto__stages, .qa-auto-failures__list) {
+  gap: 0;
+}
+
+.qa-studio__run
+  :is(.qa-run__items, .tr-cases__list, .qa-pw-items__list, .qa-auto__stages, .qa-auto-failures__list)
+  > * + * {
+  border-top: 1px solid var(--border);
+}
+
+/* Hover: the row under the pointer, never a section and the row inside it
+   at once, gets a bolder state line. No fill: a filled row reads as a box.
+   An item being edited keeps the bolder line. */
+.qa-studio__run :is(.qa-run-item, .tr-case, .qa-pw-item, .qa-auto-failure):hover,
+.qa-studio__run :is(.qa-auto-stage, .qa-live, .qa-auto-detail):hover:not(:has(:is(.tr-case, .qa-auto-failure):hover)),
+.qa-studio__run .qa-run-item--open {
+  box-shadow: inset 3px 0 0 var(--qa-accent);
+}
+
+.qa-studio__run :is(.qa-run-item, .tr-case, .qa-pw-item):hover :is(.qa-run-item__title, .tr-case__name, .qa-pw-item__title) {
+  color: var(--text-primary);
+}
+
+/* What sat in a framed box inside a row is plain content of the row: notes
+   and findings hang off a short line of their own, evidence opens under a
+   dashed rule, the criteria and empty states lose their fill and frame. */
+.qa-studio__run .qa-run-item__facts {
+  padding: 0.15rem 0 0.15rem 0.75rem;
+  border: 0;
+  background: none;
+  box-shadow: inset 2px 0 0 var(--border-strong);
+}
+
+.qa-studio__run .qa-run-item__facts--defect {
+  box-shadow: inset 2px 0 0 var(--danger);
+}
+
+/* The notes editor is part of the row, like the notes it edits: its fields
+   hang off a short line, with no frame or fill of their own. */
+.qa-studio__run .qa-item-editor {
+  padding: 0.15rem 0 0.15rem 0.75rem;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: inset 2px 0 0 var(--border-strong);
+}
+
+/* The item's state mark is an icon in its tone, not a framed square. */
+.qa-studio__run .qa-marker {
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 0;
+  background: none;
+}
+
+.qa-studio__run .qa-evidence {
+  padding: 0.65rem 0 0;
+  border: 0;
+  border-top: 1px dashed var(--border-strong);
+  border-radius: 0;
+  background: none;
+}
+
+.qa-studio__run .qa-evidence:focus-visible {
+  border-top-color: var(--border-brand);
+}
+
+.qa-studio__run .pqa-criteria {
+  padding: 0;
+  background: none;
+}
+
+.qa-studio__run :is(.qa-panel-state, .qa-auto__empty) {
+  border: 0;
+  background: none;
+}
+
+/* ── No scrollbar ────────────────────────────────────────────────────────
+   The panel and its lists still scroll (wheel, touch, keyboard); the bar is
+   not drawn. Instead the bottom edge of a scrolling area fades out, so more
+   below still reads, and a matching pad lets the last row clear the fade. */
+.qa-studio__run,
+.qa-studio__run * {
+  scrollbar-width: none;
+}
+
+.qa-studio__run::-webkit-scrollbar,
+.qa-studio__run ::-webkit-scrollbar {
+  display: none;
+}
+
+.qa-studio__run :is(.qa-colpanel[data-tab="playwright"], .qa-run > .qa-run__items),
+.qa-studio__run[data-scroll="column"] > .qa-colpanel {
+  padding-bottom: 1.5rem;
+  /* A mask reads only alpha: any opaque token draws the visible part. */
+  mask-image: linear-gradient(to bottom, var(--bg-base) calc(100% - 1.5rem), transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-studio__run
+    :is(.qa-run-item, .tr-case, .qa-auto-stage, .qa-live, .qa-pw-item, .qa-auto-detail, .qa-auto-failure) {
+    transition: none;
+  }
+}
+
+/* ── Items ───────────────────────────────────────────────────────────────── */
+.qa-run__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.qa-run-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: start;
+  padding: 0.8rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--bg-frost);
+  transition: border-color 0.16s ease;
+}
+
+.qa-run-item--open {
+  border-color: var(--border-brand);
+}
+
+.qa-marker {
+  --qa-tone: var(--text-muted);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-soft);
+  color: var(--qa-tone);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-marker--brand {
+  --qa-tone: var(--brand);
+
+  border-color: var(--border-brand);
+}
+
+.qa-marker--success {
+  --qa-tone: var(--success);
+
+  border-color: var(--success);
+  background: var(--accent-emerald-light);
+}
+
+.qa-marker--danger {
+  --qa-tone: var(--danger);
+
+  border-color: var(--accent-rose-glow);
+  background: var(--accent-rose-light);
+}
+
+.qa-marker--warning {
+  --qa-tone: var(--warning);
+
+  border-color: var(--border-amber);
+  background: var(--accent-amber-light);
+}
+
+.qa-run-item__body {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.qa-run-item__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.qa-run-item__title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.qa-run-item__desc {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: pre-line;
+}
+
+.qa-run-item__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qa-run-item__test {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.4rem;
+  overflow-wrap: anywhere;
+}
+
+.qa-run-item__previous,
+.qa-run-item__readonly {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.qa-run-item__by {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.qa-run-item__by strong {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.qa-run-item__readonly {
+  font-style: italic;
+}
+
+.qa-run-item__facts {
+  display: grid;
+  justify-items: start;
+  gap: 0.45rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
+}
+
+.qa-run-item__facts--defect {
+  border-left: 2px solid var(--danger);
+}
+
+.qa-run-item__text {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.qa-run-item__text-label {
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-run-item__text p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.qa-fix-note {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border-brand);
+  border-radius: 0.55rem;
+  background: var(--brand-light);
+}
+
+.qa-fix-note__head {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.qa-fix-note__head strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.qa-fix-note__text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  white-space: pre-line;
+}
+
+.qa-run-item__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+  margin-top: 0.15rem;
+}
+
+/* The re-test form takes the row's full width once opened. */
+.qa-run-item__controls .qa-retest {
+  flex: 1 1 100%;
+}
+
+.qa-status-select .hier-select {
+  width: auto;
+  min-width: 10.5rem;
+  max-width: none;
+  padding-block: 0.38rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.qa-run-item__saving {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.qa-item-editor {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--bg-soft);
+}
+
+.qa-item-editor .qa-editor-field {
+  margin: 0;
+}
+
+.qa-item-editor .hier-select,
+.qa-item-editor .hier-textarea {
+  max-width: none;
+  font-size: 0.82rem;
+}
+
+.qa-item-editor .hier-textarea {
+  min-height: 3.5rem;
+}
+
+.qa-item-editor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.qa-inline-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--accent-rose-glow);
+  border-radius: 0.55rem;
+  background: var(--accent-rose-light);
+}
+
+.qa-inline-alert p {
+  flex: 1 1 14rem;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+/* ── Signed-off banner ───────────────────────────────────────────────────── */
+.qa-signoff-banner {
+  --qa-tone: var(--success);
+  --qa-tone-fill: var(--accent-emerald-light);
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--qa-tone);
+  border-radius: 0.75rem;
+  background: var(--qa-tone-fill);
+}
+
+.qa-signoff-banner--warning {
+  --qa-tone: var(--warning);
+  --qa-tone-fill: var(--accent-amber-light);
+}
+
+.qa-signoff-banner--danger {
+  --qa-tone: var(--danger);
+  --qa-tone-fill: var(--accent-rose-light);
+}
+
+.qa-signoff-banner__seal {
+  display: inline-flex;
+  color: var(--qa-tone);
+}
+
+.qa-signoff-banner__body {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.qa-signoff-banner__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.qa-signoff-banner__meta,
+.qa-signoff-banner__note {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.qa-signoff-banner__meta strong {
+  font-weight: 600;
+}
+
+.qa-signoff-banner__note {
+  color: var(--text-muted);
+}
+
+.qa-signoff-banner__text {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+  white-space: pre-line;
+}
+
+.qa-signoff-banner__conditions {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.5rem;
+  background: var(--bg-soft);
+}
+
+.qa-signoff-banner__conditions span {
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.qa-signoff-banner__conditions p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  white-space: pre-line;
+}
+
+/* The reopen confirmation's second line, under what reopening costs. */
+.qa-reopen-confirm__note {
+  margin: 0 0 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ── Signoff dialog ──────────────────────────────────────────────────────── */
+.qa-verdicts {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0 0 0.95rem;
+  padding: 0;
+  border: 0;
+}
+
+.qa-verdicts legend {
+  margin-bottom: 0.45rem;
+}
+
+.qa-verdict {
+  --qa-tone: var(--text-muted);
+
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  background: var(--bg-soft);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.qa-verdict--success {
+  --qa-tone: var(--success);
+}
+
+.qa-verdict--warning {
+  --qa-tone: var(--warning);
+}
+
+.qa-verdict--danger {
+  --qa-tone: var(--danger);
+}
+
+.qa-verdict input {
+  width: auto;
+  margin-top: 0.2rem;
+  accent-color: var(--qa-tone);
+}
+
+.qa-verdict--on {
+  border-color: var(--qa-tone);
+}
+
+.qa-verdict--off {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.qa-verdict__text {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.qa-verdict__name {
+  font-size: 0.86rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.qa-verdict--on .qa-verdict__name {
+  color: var(--qa-tone);
+}
+
+.qa-verdict__hint {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.hier-dialog .qa-form-error {
+  margin-top: -0.4rem;
+}
+
+/* ── Full screen ─────────────────────────────────────────────────────────────
+   The same tree, re-laid out: the studio covers the viewport (above the
+   header at 110 and the rail at 100, below dialogs at 400), the run rail on
+   its right edge as docked. Nothing up the tree may carry a transform,
+   filter or backdrop-filter, or `position: fixed` would stop meaning "the
+   viewport" — and nothing here adds one. */
+.qa-studio[data-full-screen="true"] {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  /* None on the right or bottom: the rail sits on the window's edges, as docked. */
+  padding: 0.75rem 0 0 0.75rem;
+  background: var(--bg-base);
+  overscroll-behavior: contain;
+}
+
+/* The studio has no right padding (the rail is on the edge); the toolbar keeps its own. */
+.qa-studio[data-full-screen="true"] .qa-toolbar {
+  margin-right: 0.75rem;
+}
+
+.qa-studio[data-full-screen="true"] .qa-studio__panes {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 0;
+}
+
+.qa-studio[data-full-screen="true"] .qa-studio__preview,
+.qa-studio[data-full-screen="true"] .qa-studio__preview[data-framed="false"] {
+  height: 100%;
+  min-height: 0;
+}
+
+.qa-studio[data-full-screen="true"] .qa-stage {
+  place-items: center;
+}
+
+.qa-studio[data-full-screen="true"] .qa-stage:not([data-frame="browser"]) {
+  padding: 1.25rem;
+}
+
+.qa-studio[data-full-screen="true"] .qa-colpanel > .qa-run-card {
+  flex: 1 1 auto;
+  gap: 0.7rem;
+  padding: 0.75rem 1rem 0.9rem;
+}
+
+.qa-studio[data-full-screen="true"] .qa-run-card__head {
+  padding-bottom: 0.65rem;
+}
+
+.qa-studio[data-full-screen="true"] .qa-colpanel > .qa-panel-state,
+.qa-studio[data-full-screen="true"] .qa-colpanel > .qa-skeleton-card {
+  margin: 0.85rem 1rem 1rem;
+}
+
+/* A Project run's Checklist tab (and PO Studio's acceptance) is many
+   requirement groups, notices and a sign-off banner with no single list to
+   scroll, so its panel scrolls as one (above) and nothing inside is capped.
+   The Export menu belongs to the repository run, which keeps the item-list
+   scrolling; the sign-off dialog is fixed to the viewport (no transform or
+   filter up the tree), so a scrolling panel clips neither. */
+.qa-studio[data-studio] .qa-studio__run[data-scroll="column"] > .qa-colpanel > .qa-run-card {
+  flex: 0 0 auto;
+  max-height: none;
+}
+
+@keyframes qa-drawer-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* One row: the view's name on the left, the readiness chip and Merge to
+   main on the right. As tall as the strip's pin and divider beside it, so
+   the header's rule and the strip's line up. */
+.qa-drawer__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem 0.75rem;
+  min-height: 3.25rem;
+  padding: 0.45rem 0.75rem 0.45rem 1rem;
+  border-bottom: 1px solid var(--border-layer);
+  background: var(--layer-2);
+}
+
+.qa-drawer__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  color: var(--brand);
+}
+
+.qa-studio .qa-drawer__title {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.qa-drawer__title:focus {
+  outline: none;
+}
+
+.qa-drawer__title:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+
+.qa-rail__pin:focus-visible,
+.qa-icon-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* The CI dot on the closed strip. */
+.qa-rail__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--text-muted);
+  box-shadow: 0 0 0 3px var(--bg-soft);
+}
+
+.qa-rail__dot[data-tone="passed"] {
+  background: var(--success);
+}
+
+.qa-rail__dot[data-tone="failed"] {
+  background: var(--danger);
+}
+
+.qa-rail__dot[data-tone="running"] {
+  background: var(--brand);
+  animation: qa-dot-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes qa-dot-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ── Narrow screens ──────────────────────────────────────────────────────── */
+/* The tab row has no room for the scale beside the tabs: it would push them
+   onto a second line. Full screen keeps it. */
+@media (max-width: 1199px) {
+  .qa-toolbar[data-placement="tab-row"] .qa-scale {
+    display: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  /* The rail stays on the right edge, a strip as on a wide screen. Too narrow
+     to move the page aside, so pinned it opens over the page too: the page
+     keeps its width and the strip is all it ever gives up. */
+  .qa-studio[data-rail="pinned"] .qa-studio__panes {
+    padding-right: calc(var(--qa-rail-closed) + var(--qa-rail-edge) + 0.75rem);
+  }
+
+  .qa-rail[data-pinned="true"] {
+    box-shadow: var(--qa-rail-offset), var(--shadow-hard);
+  }
+}
+
+@media (max-width: 560px) {
+  /* A phone: the open rail covers the page but leaves the left edge showing,
+     so it still reads as a panel over it. */
+  .qa-studio {
+    --qa-rail-open: calc(100% - var(--qa-rail-edge) - 0.5rem);
+  }
+
+  .qa-toolbar .qa-toolbar__env {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  /* The icon switch keeps its size; the resolution takes the rest of its
+     line, and the actions wrap under them: two lines, not three. */
+  .qa-resolution {
+    flex: 1 1 9rem;
+  }
+
+  .qa-toolbar .qa-resolution__select {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+
+  .qa-stage:not([data-frame="browser"]) {
+    padding: 0.5rem;
+  }
+
+  .qa-studio[data-full-screen="true"] {
+    padding: 0.5rem 0 0 0.5rem;
+  }
+
+  .qa-run-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.55rem;
+    padding: 0.75rem;
+  }
+
+  .qa-marker {
+    display: none;
+  }
+
+  .qa-run-item__head {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .qa-signoff-banner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .qa-signoff-banner__seal {
+    display: none;
+  }
+
+  .qa-run-card__foot .primary-button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-device-switch__option,
+  .qa-icon-button,
+  .qa-run-item,
+  .qa-verdict,
+  .qa-rail__pin {
+    transition: none;
+  }
+
+  .qa-studio__run,
+  .qa-rail__dot[data-tone="running"] {
+    animation: none;
+  }
+}

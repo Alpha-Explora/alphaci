@@ -1,0 +1,599 @@
+/* ── Test cases under a story (the QA Team writes them; a run records each result) ── */
+
+/* A <details>, like the acceptance criteria: open while a test case is unresolved. */
+.pqa-tests {
+  min-width: 0;
+  padding: 0.45rem 0.65rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--bg-soft);
+}
+
+.pqa-tests__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.pqa-tests__summary:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.pqa-tests__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pqa-tests__count {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.pqa-tests__attention {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.pqa-tests__body {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.pqa-tests__category {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.pqa-tests__category-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.pqa-tests__category-name {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pqa-tests__category-actions,
+.pqa-test__actions,
+.pqa-tests__confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.74rem;
+}
+
+.pqa-tests__danger {
+  color: var(--danger);
+}
+
+.pqa-tests__list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pqa-tests__empty {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.pqa-tests__add {
+  justify-self: start;
+}
+
+.pqa-test {
+  --pqa-test-accent: var(--border-strong);
+  display: grid;
+  /* One track that may shrink: the row never grows past its card. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--pqa-test-accent);
+  border-radius: 0.45rem;
+  background: var(--bg-surface);
+}
+
+.pqa-test[data-status="passed"] {
+  --pqa-test-accent: var(--success);
+}
+
+.pqa-test[data-status="failed"] {
+  --pqa-test-accent: var(--danger);
+}
+
+.pqa-test[data-status="blocked"] {
+  --pqa-test-accent: var(--warning);
+}
+
+.pqa-test__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.pqa-test__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* Two classes: the shared .hier-select is width: 100%, which took the whole
+   row, squeezed the title to a sliver and pushed the control out of the card. */
+.pqa-test__head .pqa-test__select {
+  flex: 0 0 7.25rem;
+  width: 7.25rem;
+  min-width: 0;
+  min-height: 1.85rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.pqa-test__status {
+  flex: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.pqa-test__status[data-tone="success"] {
+  color: var(--success);
+}
+
+.pqa-test__status[data-tone="danger"] {
+  color: var(--danger);
+}
+
+.pqa-test__status[data-tone="warning"] {
+  color: var(--warning);
+}
+
+.pqa-test__expected,
+.pqa-test__note {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  white-space: pre-line;
+}
+
+.pqa-test__expected-label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.pqa-test__note {
+  padding-left: 0.5rem;
+  border-left: 2px solid var(--border-strong);
+}
+
+.pqa-tests__form {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.pqa-tests__form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ── Edit test suite: Features and stories on the left, the story's suite on the right ──
+   Like New Feature: a rail with its own scroll and an editor pane with its
+   own. The sheet holds one height, so switching stories never makes it jump. */
+.hier-dialog--wide:has(.pqa-suite-shell) {
+  height: min(46rem, calc(100dvh - 2.5rem));
+}
+
+.pqa-suite-shell {
+  position: relative;
+}
+
+.pqa-suite-shell > .hier-dialog-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.pqa-suite {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: clamp(15rem, 27vw, 19.5rem) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 1.25rem;
+  min-height: 17rem;
+}
+
+/* ── The rail ── */
+.pqa-suite__rail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.85rem;
+  background: var(--layer-0);
+}
+
+.pqa-suite__rail-list {
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+  min-height: 0;
+  padding: 0.6rem 0.45rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.pqa-suite__feature {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.pqa-suite__feature-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0 0.35rem;
+}
+
+.pqa-suite__feature-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pqa-suite__stories {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pqa-suite__story {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 2.6rem;
+  padding: 0.5rem 0.55rem 0.5rem 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease-out,
+    border-color 140ms ease-out;
+}
+
+/* The selected story's bar, on its leading edge. */
+.pqa-suite__story::before {
+  position: absolute;
+  inset-block: 0.55rem;
+  left: -1px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--brand);
+  content: "";
+  opacity: 0;
+  transition: opacity 140ms ease-out;
+}
+
+.pqa-suite__story:hover {
+  background: color-mix(in srgb, var(--layer-2) 55%, transparent);
+}
+
+.pqa-suite__story[data-selected="true"] {
+  border-color: var(--border-layer);
+  background: var(--layer-2);
+  box-shadow: var(--shadow-soft);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.pqa-suite__story[data-selected="true"]::before {
+  opacity: 1;
+}
+
+.pqa-suite__story:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.pqa-suite__story-index {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 0.4rem;
+  background: var(--brand-light);
+  color: var(--brand);
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pqa-suite__story-title {
+  display: -webkit-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.pqa-suite__story-count {
+  flex: none;
+  min-width: 1.35rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--border-brand);
+  border-radius: var(--radius-pill);
+  background: var(--brand-light);
+  color: var(--brand);
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.pqa-suite__story-count[data-empty="true"] {
+  border-color: var(--border-layer);
+  background: none;
+  color: var(--text-muted);
+}
+
+/* ── The pane ── */
+.pqa-suite__pane {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.1rem 0.35rem 0.5rem 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: pqa-suite-in 160ms ease-out;
+}
+
+@keyframes pqa-suite-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pqa-suite__pane {
+    animation: none;
+  }
+}
+
+.pqa-suite__story-head {
+  display: grid;
+  gap: 0.35rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border-layer);
+}
+
+.pqa-suite__eyebrow {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.pqa-suite__story-heading {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.pqa-suite__criteria {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.pqa-suite__criteria summary {
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.pqa-suite__criteria p {
+  margin: 0.35rem 0 0;
+  white-space: pre-line;
+}
+
+.pqa-suite__stats {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* The suite itself: each category a card, the add buttons dashed. */
+.pqa-tests--manage {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.pqa-tests--manage .pqa-tests__category {
+  gap: 0.5rem;
+  padding: 0.75rem 0.85rem 0.85rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.75rem;
+  background: var(--layer-0);
+}
+
+.pqa-tests__category-index {
+  margin: 0;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.pqa-tests--manage .pqa-tests__category-name {
+  font-size: 0.86rem;
+}
+
+.pqa-tests--manage .pqa-test {
+  padding: 0.55rem 0.7rem;
+  border-left-color: var(--brand);
+}
+
+.pqa-tests--manage .pqa-test__title {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.pqa-tests--manage .pqa-tests__add {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.1rem;
+  padding: 0.35rem 0.85rem;
+  border: 1px dashed var(--border-brand);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  transition: background-color 140ms ease-out;
+}
+
+.pqa-tests--manage .pqa-tests__add:hover:not(:disabled) {
+  border-style: solid;
+  background: var(--brand-light);
+}
+
+.pqa-tests--manage > .pqa-tests__add {
+  justify-self: stretch;
+  justify-content: center;
+  min-height: 2.6rem;
+  border-radius: 0.75rem;
+}
+
+.pqa-tests--manage .pqa-tests__form {
+  padding: 0.7rem;
+  border: 1px solid var(--border-brand);
+  border-radius: 0.65rem;
+  background: var(--bg-soft);
+}
+
+.pqa-tests__empty--suite {
+  padding: 1rem;
+  border: 1px dashed var(--border-layer);
+  border-radius: 0.75rem;
+  text-align: center;
+}
+
+/* ── Footer and the "are you sure" step ── */
+.pqa-suite__footer {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pqa-suite__saved {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.pqa-suite__confirm-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: var(--scrim);
+}
+
+.pqa-suite__confirm {
+  width: min(26rem, 100%);
+  padding: 1.25rem 1.35rem 1.1rem;
+  border: 1px solid var(--border-layer);
+  border-radius: 0.9rem;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-hard);
+  animation: pqa-suite-in 140ms ease-out;
+}
+
+.pqa-suite__confirm-title {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pqa-suite__confirm-text {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.pqa-suite__confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+
+@media (max-width: 760px) {
+  .pqa-suite {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .pqa-suite__rail {
+    max-height: 12rem;
+  }
+}
