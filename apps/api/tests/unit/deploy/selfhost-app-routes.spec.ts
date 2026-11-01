@@ -11,7 +11,11 @@ import { join, resolve } from 'node:path';
 
 // alphaci-app-routes writes one Caddy site per app address it finds in the
 // agent's assignments. It needs bash and jq, so it runs on Linux runners.
-const script = resolve('deploy/selfhost/alphaci-app-routes');
+// The appliance bundle sits at the monorepo root.
+const script = resolve(
+  __dirname,
+  '../../../../../deploy/selfhost/alphaci-app-routes',
+);
 const posixOnly = process.platform === 'win32' ? describe.skip : describe;
 
 function routes(settings: string, hosts: string[]): string {

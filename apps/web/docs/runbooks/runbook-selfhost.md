@@ -17,12 +17,14 @@ sources:
 ---
 # Self-hosted frontend image
 
-One frontend image serves every self-hosted customer. Alpha Explora builds it once with the fixed arguments below. Customers do not rebuild it and do not pass build arguments. The backend repository owns the install: `deploy/selfhost/` (Docker Compose, Caddy, `alphaci-ctl`) and its `docs/runbooks/runbook-selfhost-install.md`.
+One frontend image serves every self-hosted customer. Alpha Explora builds it once with the fixed arguments below. Customers do not rebuild it and do not pass build arguments. The install is the `deploy/selfhost/` bundle at the monorepo root (Docker Compose, Caddy, `alphaci-ctl`); the backend's `apps/api/docs/runbooks/runbook-selfhost-install.md` describes it.
 
 ## Build
 
+Run from the monorepo root; the Dockerfile prunes the workspace to this app.
+
 ```bash
-docker build \
+docker build -f apps/web/Dockerfile \
   --build-arg NEXT_PUBLIC_API_BASE_URL=/api/v1 \
   --build-arg ALPHACI_BUILD_PROFILE=enterprise \
   --build-arg ALPHACI_EDITION=enterprise \
@@ -47,7 +49,7 @@ The install pins the published image by digest: `ALPHACI_WEB_IMAGE=ghcr.io/alpha
 
 ## Runtime contract
 
-The customer's server serves one HTTPS origin. Caddy routes by path (backend `deploy/selfhost/caddy/Caddyfile`):
+The customer's server serves one HTTPS origin. Caddy routes by path (`deploy/selfhost/caddy/Caddyfile` at the monorepo root):
 
 ```
 {$ALPHACI_HOSTNAME} {

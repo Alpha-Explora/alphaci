@@ -13,7 +13,7 @@
 #
 # One image serves three roles: the API (default CMD), the one-shot migration
 # runner (self-hosted `migrate` service) and the CLI (`alphaci-ctl`). The
-# self-hosted appliance under apps/api/deploy/selfhost/ runs it; SaaS (Render)
+# self-hosted appliance under deploy/selfhost/ runs it; SaaS (Render)
 # runs the same CMD. All three use paths relative to the working directory
 # (`dist/src/...`, `scripts/...`), which stays the app folder.
 # =============================================================================
@@ -104,10 +104,11 @@ COPY --chown=nestjs:nodejs --from=builder /tmp/central-workflow/catalog /app/tem
 
 # Self-hosted runtime assets. The migration runner (dist/src/scripts/
 # migrate-selfhost.js) walks up from its own directory to find
-# supabase/migrations, and reads the role bootstrap from
-# deploy/selfhost/postgres-init. SaaS does not run either.
+# supabase/migrations, and reads the role bootstrap from the appliance bundle
+# two levels above the app folder, as in the repository. SaaS does not run
+# either.
 COPY --chown=nestjs:nodejs --from=pruner /repo/out/full/apps/api/supabase/migrations ./supabase/migrations
-COPY --chown=nestjs:nodejs --from=pruner /repo/out/full/apps/api/deploy/selfhost/postgres-init ./deploy/selfhost/postgres-init
+COPY --chown=nestjs:nodejs deploy/selfhost/postgres-init /app/deploy/selfhost/postgres-init
 
 USER nestjs
 

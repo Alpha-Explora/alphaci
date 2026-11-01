@@ -27,9 +27,10 @@
 **/.pnpm-store
 **/.cache
 **/*.pem
-apps/api/deploy/selfhost/secrets
-apps/api/deploy/selfhost/certs
-apps/api/deploy/selfhost/alphaci.env
+deploy/selfhost/secrets
+deploy/selfhost/certs
+deploy/selfhost/alphaci.env
+deploy/selfhost/.env
 
 # The API image never needs its test sources (the web build keeps its own).
 apps/api/test

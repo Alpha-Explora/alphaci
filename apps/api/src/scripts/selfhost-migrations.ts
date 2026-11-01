@@ -456,6 +456,10 @@ async function applyOne(
 /**
  * Walks up from startDir until a directory holds supabase/migrations. The same
  * code runs from src/scripts (ts-node) and from dist/src/scripts (the image).
+ *
+ * The role bootstrap ships in the self-hosted release bundle,
+ * deploy/selfhost/ at the monorepo root, two levels above the app folder. The
+ * API image copies it to the same place relative to /app/apps/api.
  */
 export function resolveSelfhostAssetPaths(startDir: string): {
   readonly migrationsDir: string;
@@ -469,6 +473,8 @@ export function resolveSelfhostAssetPaths(startDir: string): {
         migrationsDir,
         bootstrapSqlPath: join(
           current,
+          '..',
+          '..',
           'deploy',
           'selfhost',
           'postgres-init',

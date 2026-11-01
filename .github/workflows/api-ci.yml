@@ -10,6 +10,7 @@ on:
   push:
     paths:
       - 'apps/api/**'
+      - 'deploy/**'
       - 'packages/**'
       - 'package.json'
       - 'package-lock.json'
@@ -18,6 +19,7 @@ on:
   pull_request:
     paths:
       - 'apps/api/**'
+      - 'deploy/**'
       - 'packages/**'
       - 'package.json'
       - 'package-lock.json'

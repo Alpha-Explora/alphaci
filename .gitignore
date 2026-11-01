@@ -9,3 +9,9 @@ Thumbs.db
 !.env.example
 !**/deploy/**/*.env
 !**/deploy/**/.env.example
+
+# Self-hosted appliance: generated secrets and per-install settings.
+/deploy/selfhost/alphaci.env
+/deploy/selfhost/.env
+/deploy/selfhost/secrets/
+/deploy/selfhost/certs/

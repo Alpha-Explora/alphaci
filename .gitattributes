@@ -13,3 +13,4 @@
 apps/api/deploy/onprem/agent/* text eol=lf
 apps/api/deploy/onprem/deb/* text eol=lf
 apps/api/deploy/onprem/images/** text eol=lf
+deploy/selfhost/** text eol=lf
