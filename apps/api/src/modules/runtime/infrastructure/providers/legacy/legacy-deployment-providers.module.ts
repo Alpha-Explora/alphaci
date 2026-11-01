@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Inject, Module, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import type { AppConfig } from '#kernel/config/app.config';
@@ -44,14 +44,9 @@ import { VercelDeploymentPolicy } from '../vercel/vercel-deployment.policy';
     },
     {
       provide: RENDER_DEPLOYMENT_PROVIDER,
-      inject: [
-        ConfigService,
-        DeploymentProviderRegistry,
-        RenderDeploymentPolicy,
-      ],
+      inject: [ConfigService, RenderDeploymentPolicy],
       useFactory: (
         configService: ConfigService,
-        registry: DeploymentProviderRegistry,
         policy: RenderDeploymentPolicy,
       ) => {
         const config = configService.getOrThrow<AppConfig>('app');
@@ -66,21 +61,15 @@ import { VercelDeploymentPolicy } from '../vercel/vercel-deployment.policy';
             supportedSlots: ['backend'],
             previewDeployments: false,
           },
-          registry,
           policy,
         );
       },
     },
     {
       provide: VERCEL_DEPLOYMENT_PROVIDER,
-      inject: [
-        ConfigService,
-        DeploymentProviderRegistry,
-        VercelDeploymentPolicy,
-      ],
+      inject: [ConfigService, VercelDeploymentPolicy],
       useFactory: (
         configService: ConfigService,
-        registry: DeploymentProviderRegistry,
         policy: VercelDeploymentPolicy,
       ) => {
         const config = configService.getOrThrow<AppConfig>('app');
@@ -91,7 +80,6 @@ import { VercelDeploymentPolicy } from '../vercel/vercel-deployment.policy';
             supportedSlots: ['frontend'],
             previewDeployments: true,
           },
-          registry,
           policy,
         );
       },
@@ -109,4 +97,20 @@ import { VercelDeploymentPolicy } from '../vercel/vercel-deployment.policy';
     VercelDeploymentPolicy,
   ],
 })
-export class LegacyDeploymentProvidersModule {}
+export class LegacyDeploymentProvidersModule implements OnModuleInit {
+  constructor(
+    private readonly registry: DeploymentProviderRegistry,
+    @Inject(RENDER_DEPLOYMENT_PROVIDER)
+    private readonly renderProvider: RenderDeploymentProvider,
+    @Inject(VERCEL_DEPLOYMENT_PROVIDER)
+    private readonly vercelProvider: VercelDeploymentProvider,
+  ) {}
+
+  // Registration order is the order the provider catalog lists them in.
+  // Nest 12 runs provider lifecycle hooks by dependency depth rather than
+  // declaration order, so the module registers both in a fixed order.
+  onModuleInit(): void {
+    this.registry.register(this.renderProvider);
+    this.registry.register(this.vercelProvider);
+  }
+}

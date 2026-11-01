@@ -1,4 +1,4 @@
-import { Injectable, type OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import {
   vercelAliasHost,
@@ -11,7 +11,6 @@ import type {
   DeploymentProviderPresentation,
   ProviderFormSchema,
 } from '../../../core/deployment-provider.contract';
-import { DeploymentProviderRegistry } from '../../../core/deployment-provider.registry';
 import type { DeploymentProviderPolicy } from '../../../domain/deployment-provider.policy';
 import {
   LEGACY_PROVIDER_CAPABILITIES,
@@ -57,9 +56,7 @@ export const VERCEL_DEPLOYMENT_PROVIDER = Symbol('VercelDeploymentProvider');
 
 /** Compatibility descriptor for Vercel's existing runtime adapter. */
 @Injectable()
-export class VercelDeploymentProvider
-  implements DeploymentProvider, OnModuleInit
-{
+export class VercelDeploymentProvider implements DeploymentProvider {
   readonly id = 'vercel';
   readonly label: string;
   readonly supportedSlots: readonly string[];
@@ -73,7 +70,6 @@ export class VercelDeploymentProvider
 
   constructor(
     private readonly config: LegacyProviderConfig,
-    private readonly registry: DeploymentProviderRegistry,
     policy: DeploymentProviderPolicy,
   ) {
     this.label = config.label;
@@ -87,10 +83,6 @@ export class VercelDeploymentProvider
       logFilters: ['level', 'type', 'text'] as const,
     };
     this.policy = policy;
-  }
-
-  onModuleInit(): void {
-    this.registry.register(this);
   }
 
   isEnabled(): { enabled: boolean; reason?: string } {

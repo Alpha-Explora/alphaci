@@ -1,12 +1,10 @@
-import { DeploymentProviderRegistry } from '../../../core/deployment-provider.registry';
 import type { DeploymentProviderPolicy } from '../../../domain/deployment-provider.policy';
 import { RenderDeploymentProvider } from './render-deployment.provider';
 
 const testPolicy = {} as DeploymentProviderPolicy;
 
 describe('RenderDeploymentProvider', () => {
-  it('registers provider-owned metadata and preserves the backend slot policy', () => {
-    const registry = new DeploymentProviderRegistry();
+  it('exposes provider-owned metadata and preserves the backend slot policy', () => {
     const provider = new RenderDeploymentProvider(
       {
         label: 'Render',
@@ -14,13 +12,9 @@ describe('RenderDeploymentProvider', () => {
         supportedSlots: ['backend'],
         previewDeployments: false,
       },
-      registry,
       testPolicy,
     );
 
-    provider.onModuleInit();
-
-    expect(registry.get('render')).toBe(provider);
     expect(provider.supportedSlots).toEqual(['backend']);
     expect(
       provider.presentation?.publicUrl({
@@ -38,7 +32,6 @@ describe('RenderDeploymentProvider', () => {
         enabled: true,
         supportedSlots: ['backend'],
       },
-      new DeploymentProviderRegistry(),
       testPolicy,
     );
 
@@ -53,7 +46,6 @@ describe('RenderDeploymentProvider', () => {
   it('declares every filter Render honors server-side', () => {
     const provider = new RenderDeploymentProvider(
       { label: 'Render', enabled: true, supportedSlots: ['backend'] },
-      new DeploymentProviderRegistry(),
       testPolicy,
     );
 

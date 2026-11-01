@@ -1,4 +1,3 @@
-import { DeploymentProviderRegistry } from '../../../core/deployment-provider.registry';
 import type { DeploymentProviderPolicy } from '../../../domain/deployment-provider.policy';
 import { VercelDeploymentPolicy } from './vercel-deployment.policy';
 import { VercelDeploymentProvider } from './vercel-deployment.provider';
@@ -6,8 +5,7 @@ import { VercelDeploymentProvider } from './vercel-deployment.provider';
 const testPolicy = {} as DeploymentProviderPolicy;
 
 describe('VercelDeploymentProvider', () => {
-  it('registers provider-owned metadata and renders team-aware links', () => {
-    const registry = new DeploymentProviderRegistry();
+  it('exposes provider-owned metadata and renders team-aware links', () => {
     const provider = new VercelDeploymentProvider(
       {
         label: 'Vercel',
@@ -15,13 +13,9 @@ describe('VercelDeploymentProvider', () => {
         supportedSlots: ['frontend'],
         previewDeployments: true,
       },
-      registry,
       testPolicy,
     );
 
-    provider.onModuleInit();
-
-    expect(registry.get('vercel')).toBe(provider);
     expect(
       provider.presentation?.dashboardUrl({
         providerProjectId: 'prj-1',
@@ -49,7 +43,6 @@ describe('VercelDeploymentProvider', () => {
         enabled: true,
         supportedSlots: ['frontend'],
       },
-      new DeploymentProviderRegistry(),
       testPolicy,
     );
     const validateTeamAccess = jest.fn().mockResolvedValue({
@@ -76,7 +69,6 @@ describe('VercelDeploymentProvider', () => {
   it('declares no instance filter, unlike Render', () => {
     const provider = new VercelDeploymentProvider(
       { label: 'Vercel', enabled: true, supportedSlots: ['frontend'] },
-      new DeploymentProviderRegistry(),
       testPolicy,
     );
 
@@ -87,7 +79,6 @@ describe('VercelDeploymentProvider', () => {
 describe('Vercel presentation.publicUrl', () => {
   const provider = new VercelDeploymentProvider(
     { label: 'Vercel', enabled: true, supportedSlots: ['frontend'] },
-    new DeploymentProviderRegistry(),
     testPolicy,
   );
   const target = (over: Record<string, unknown> = {}) => ({
