@@ -9,7 +9,7 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const SNAPSHOT = path.join(ROOT, 'docs/capabilities/catalog.snapshot.json');
-const VENDOR_PACKAGE = path.join(ROOT, 'vendor', '@alphaci', 'capability-catalog');
+const VENDOR_PACKAGE = path.dirname(require.resolve('@alphaci/capability-catalog'));
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));

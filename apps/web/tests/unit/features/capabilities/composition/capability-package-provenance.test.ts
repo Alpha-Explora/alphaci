@@ -36,7 +36,7 @@ const {
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 const root = path.resolve(__dirname, "../../../../../");
-const vendorDirectory = path.join(root, "vendor", "@alphaci", "capability-catalog");
+const vendorDirectory = path.dirname(require.resolve("@alphaci/capability-catalog"));
 const snapshot = JSON.parse(
   readFileSync(path.join(root, "docs/capabilities/catalog.snapshot.json"), "utf8"),
 ) as Array<Record<string, unknown>>;

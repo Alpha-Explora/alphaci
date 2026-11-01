@@ -12,7 +12,8 @@ const {
 } = require('./lib/capability-package-provenance.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
-const PACKAGE_DIR = path.join(ROOT, 'packages', 'capability-catalog');
+// Shared workspace package at the monorepo root, consumed by apps/web.
+const PACKAGE_DIR = path.join(ROOT, '..', '..', 'packages', 'capability-catalog');
 const DEFAULT_VERSION = '0.2.0';
 const EDITIONS = ['saas', 'edu', 'enterprise'];
 

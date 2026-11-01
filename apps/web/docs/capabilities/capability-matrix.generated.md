@@ -6,7 +6,7 @@ tags: [capabilities, map, packs]
 status: stable
 sources:
   - id: "catalog-package"
-    resource: "vendor/@alphaci/capability-catalog"
+    resource: "../../packages/capability-catalog"
     title: "Versioned capability catalog fixture"
   - id: "catalog-snapshot"
     resource: "docs/capabilities/catalog.snapshot.json"

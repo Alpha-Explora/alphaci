@@ -378,7 +378,7 @@ function generateCapabilityMatrix(capabilities, surfaces) {
     description: 'Generated inventory of shared catalog keys and the frontend surfaces that consume them.',
     tags: ['capabilities', 'map', 'packs'],
     sources: [
-      { id: 'catalog-package', resource: 'vendor/@alphaci/capability-catalog', title: 'Versioned capability catalog fixture' },
+      { id: 'catalog-package', resource: '../../packages/capability-catalog', title: 'Versioned capability catalog fixture' },
       { id: 'catalog-snapshot', resource: 'docs/capabilities/catalog.snapshot.json', title: 'Shared catalog snapshot' },
       { id: 'surface-registry', resource: 'docs/capabilities/surface-registry.ts', title: 'Frontend surface map' },
       { id: 'capability-endpoint', resource: 'src/features/capabilities/current/data/capabilities-api.ts', title: 'Compatibility capability client' },

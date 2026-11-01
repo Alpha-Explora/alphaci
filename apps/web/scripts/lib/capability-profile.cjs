@@ -10,7 +10,8 @@ const {
 } = require('./capability-package-provenance.cjs');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const PACKAGE_DIR = path.join(ROOT, 'vendor', '@alphaci', 'capability-catalog');
+// Resolved through the npm workspace, so it follows packages/capability-catalog.
+const PACKAGE_DIR = path.dirname(require.resolve('@alphaci/capability-catalog'));
 const EXPECTED_PROVENANCE = path.join(ROOT, 'docs', 'capabilities', 'catalog.provenance.json');
 const PROFILE_PACKS = Object.freeze({
   hosted: Object.freeze(['saas', 'edu']),

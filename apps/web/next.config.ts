@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 import { createRequire } from "node:module";
-import { dirname, relative, sep } from "node:path";
+import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { apiProxyRewrites } from "./src/shared/api/api-proxy-rewrites";
@@ -52,7 +52,8 @@ const nextConfig: NextConfig = {
     ],
   },
   turbopack: {
-    root: rootDir,
+    // Monorepo root: dependencies are hoisted to the workspace node_modules.
+    root: resolve(rootDir, "..", ".."),
     resolveAlias: turbopackCapabilityAliases,
   },
   webpack(config) {
