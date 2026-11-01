@@ -39,7 +39,7 @@ docker build -f apps/web/Dockerfile \
 
 The builder stage pins `NEXT_PUBLIC_USE_MOCK=false` and `NEXT_PUBLIC_DEV_QUICK_LOGIN=false`, so a developer's local `.env` cannot switch on mock data or the quick-login control. Do not add `API_PROXY_TARGET`: the image does not accept it, and the reverse proxy owns `/api`.
 
-The install pins the published image by digest: `ALPHACI_WEB_IMAGE=ghcr.io/alpha-explora/alphaci-fe@sha256:<digest>` in the backend's `deploy/selfhost/.env`.
+The install pins the published image by digest: `ALPHACI_WEB_IMAGE=ghcr.io/alpha-explora/alphaci-fe@sha256:<digest>` in `deploy/selfhost/.env` (the install's `/opt/alphaci/.env`).
 
 ## Image layout
 
@@ -107,4 +107,4 @@ Expect `{"status":"ok"}`, then `200`, then `web` reported as `healthy`.
 
 - The bundle still contains the development fallback string `http://localhost:4000`. That branch runs only when the API base is unset, and the self-hosted build always sets it.
 - There is no `selfhosted` build profile. The image uses the `enterprise` profile. A dedicated profile would need matching changes in the backend's build-profile and capability catalog, which are outside this repository.
-- This repository has no workflow that builds or publishes the image. The release build runs outside it.
+- The monorepo's `.github/workflows/release.yml` builds and publishes the image (and the backend's) on a `v<version>` tag, with these arguments; the GitHub Release notes list both digests.

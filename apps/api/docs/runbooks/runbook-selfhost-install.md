@@ -49,7 +49,7 @@ The appliance needs inbound HTTPS from GitHub's runners (see [Firewall](#firewal
 - Inbound TCP 443 from the internet, and inbound TCP 80 when you use automatic certificates.
 - Outbound HTTPS to the hosts in the egress table below.
 - A GitHub organization the customer owns, and an account with owner rights on it.
-- The release bundle (the `deploy/selfhost/` directory) and the two image digests. Alpha Explora provides both.
+- The release bundle (the `deploy/selfhost/` directory) and the two image digests. Alpha Explora provides both: each `v<version>` GitHub Release of `Alpha-Explora/alphaci` lists the `ALPHACI_API_IMAGE` and `ALPHACI_WEB_IMAGE` lines to paste (built by `.github/workflows/release.yml`).
 - Pull access to `ghcr.io` for the two images: `docker login ghcr.io -u <user> --password-stdin` with a machine token.
 
 Create the install directory owned by uid 1001. The backend container runs as that uid, and `init` writes the secrets as it:
