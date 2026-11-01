@@ -1,0 +1,92 @@
+# Dependency updates for the monorepo.
+#
+# npm: one root lockfile for every workspace. Minor and patch updates arrive
+# weekly in grouped pull requests, one per family. Major versions are ignored
+# for now: they are scheduled by hand in docs/plans/2026-11-01-monorepo-improvements.md
+# (waves B–E). Remove the semver-major ignore once those waves land.
+#
+# A version must be public for 3 days before Dependabot proposes it, so a
+# compromised or quickly yanked release is less likely to reach a pull request.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Asia/Manila
+    cooldown:
+      default-days: 3
+    open-pull-requests-limit: 8
+    commit-message:
+      prefix: deps
+      prefix-development: deps-dev
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+    groups:
+      nestjs:
+        patterns: ['@nestjs/*']
+      next-and-react:
+        patterns:
+          - next
+          - eslint-config-next
+          - react
+          - react-dom
+          - '@types/react'
+          - '@types/react-dom'
+          - eslint-plugin-react-hooks
+      typescript-and-lint:
+        patterns:
+          - typescript
+          - typescript-eslint
+          - '@typescript-eslint/*'
+          - eslint
+          - '@eslint/*'
+          - 'eslint-*'
+          - prettier
+          - globals
+          - stylelint
+          - 'stylelint-*'
+          - dependency-cruiser
+      test-tooling:
+        patterns:
+          - jest
+          - 'jest-*'
+          - '@types/jest'
+          - ts-jest
+          - '@testing-library/*'
+          - playwright
+          - supertest
+          - '@types/supertest'
+      production:
+        dependency-type: production
+      development:
+        dependency-type: development
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: docker
+    directories:
+      - /apps/api
+      - /apps/web
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: build
+    groups:
+      base-images:
+        patterns: ['*']
