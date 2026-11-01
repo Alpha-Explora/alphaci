@@ -1,0 +1,16 @@
+# Git hooks, installed by the lefthook package on `npm install` (skipped in CI).
+#
+# pre-push typechecks the apps the push touches before CI does. Turbo only
+# checks apps changed since origin/main and replays unchanged results, so a
+# push without type changes takes a couple of seconds. CI still runs every
+# check. Skip once with `git push --no-verify` or `LEFTHOOK=0 git push`.
+#
+# Lint is not here yet: both apps use type-aware ESLint rules, which build the
+# whole TypeScript program first (45-60 s even for one file). Add it when
+# Oxlint lands (docs/plans/2026-11-01-monorepo-improvements.md, wave E).
+pre-push:
+  commands:
+    typecheck:
+      run: npx turbo run typecheck --affected --output-logs=errors-only
+      env:
+        TURBO_SCM_BASE: origin/main
