@@ -90,6 +90,11 @@ docker build -f apps/web/Dockerfile --build-arg NEXT_PUBLIC_API_BASE_URL=/api/v1
   --build-arg ALPHACI_BUILD_PROFILE=enterprise --build-arg ALPHACI_EDITION=enterprise -t alphaci-fe .
 ```
 
+Releases: pushing a `v<version>` tag runs `.github/workflows/release.yml`,
+which pushes both images to GHCR (`alphaci-be`, `alphaci-fe`) with provenance
+and an SBOM and publishes a GitHub Release listing both digests. Pull requests
+that touch the Dockerfiles or the lockfile build both images without pushing.
+
 ## Deployments
 
 - **API on Render**: `render.yaml` (outbox cron) builds `apps/api/Dockerfile`
