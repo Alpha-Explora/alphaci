@@ -10,7 +10,15 @@ services:
     name: alphaci-outbox-relay
     runtime: docker
     schedule: "*/1 * * * *"
-    dockerfilePath: ./Dockerfile
+    # Monorepo: build from the root so turbo prune can see the workspace.
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/**
+        - package.json
+        - package-lock.json
     dockerCommand: node scripts/process-outbox.cjs
     envVars:
       - key: NODE_ENV

@@ -1,7 +1,10 @@
 # =============================================================================
-# cicd-workflow-be — Production Dockerfile
+# AlphaCI API (apps/api) — Production Dockerfile
 #
-# Build context: cicd-workflow-be/ (this directory)
+# Build context: the monorepo root, not this directory:
+#   docker build -f apps/api/Dockerfile .
+# `turbo prune` narrows that context to this app, the workspace packages it
+# depends on, and a lockfile cut down to their dependencies.
 #
 # The workflow templates live in the central workflow repository. We clone it
 # during the build stage so the templates and catalog are baked into the image.
@@ -10,11 +13,23 @@
 #
 # One image serves three roles: the API (default CMD), the one-shot migration
 # runner (self-hosted `migrate` service) and the CLI (`alphaci-ctl`). The
-# self-hosted appliance under deploy/selfhost/ runs it; SaaS (Render) runs the
-# same CMD.
+# self-hosted appliance under apps/api/deploy/selfhost/ runs it; SaaS (Render)
+# runs the same CMD. All three use paths relative to the working directory
+# (`dist/src/...`, `scripts/...`), which stays the app folder.
 # =============================================================================
 
-# ── Stage 1: compile TypeScript + fetch templates ────────────────────────────
+# Keep in step with the `turbo` devDependency in the root package.json.
+ARG TURBO_VERSION=2.11.10
+
+# ── Stage 1: prune the monorepo to this app ──────────────────────────────────
+FROM node:22-alpine AS pruner
+ARG TURBO_VERSION
+WORKDIR /repo
+RUN npm install -g "turbo@${TURBO_VERSION}"
+COPY . .
+RUN turbo prune @alphaci/api --docker
+
+# ── Stage 2: compile TypeScript + fetch templates ────────────────────────────
 FROM node:22-alpine AS builder
 
 # Only this stage sees the token. The runtime stage copies the cloned templates
@@ -39,13 +54,13 @@ WORKDIR /app
 # git is needed to clone the template repo
 RUN apk add --no-cache git
 
-# Install deps first — layer is cached until package.json changes
-COPY package*.json ./
-RUN npm install
+# Install deps first — layer is cached until a package.json or the lockfile changes
+COPY --from=pruner /repo/out/json/ ./
+RUN npm ci
 
 # Compile source
-COPY tsconfig*.json nest-cli.json ./
-COPY src/ ./src/
+COPY --from=pruner /repo/out/full/ ./
+WORKDIR /app/apps/api
 RUN npm run build
 
 # Clone workflow templates — uses a separate fine-grained PAT (contents:read
@@ -56,7 +71,7 @@ RUN git clone --depth 1 --branch "${TEMPLATE_REPO_REF}" \
     /tmp/central-workflow \
   && rm -rf /tmp/central-workflow/.git
 
-# ── Stage 2: production runtime ───────────────────────────────────────────────
+# ── Stage 3: production runtime ───────────────────────────────────────────────
 FROM node:22-alpine AS runner
 
 ENV NODE_ENV=production
@@ -66,30 +81,33 @@ ENV TEMPLATE_REPO_PATH=/app/templates
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY --from=pruner /repo/out/json/ ./
 
 RUN apk upgrade --no-cache zlib \
-  && npm install --omit=dev \
+  && npm ci --omit=dev \
+  && npm cache clean --force \
   && addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nestjs
 
+WORKDIR /app/apps/api
+
 # Copy compiled application
-COPY --chown=nestjs:nodejs --from=builder /app/dist ./dist
+COPY --chown=nestjs:nodejs --from=builder /app/apps/api/dist ./dist
 # The cron deployment runs the same compiled application in application
 # context; keep its one entrypoint in the image instead of relying on dev
 # tooling or a source-only script that is absent from the production layer.
-COPY --chown=nestjs:nodejs scripts/process-outbox.cjs ./scripts/process-outbox.cjs
+COPY --chown=nestjs:nodejs --from=pruner /repo/out/full/apps/api/scripts/process-outbox.cjs ./scripts/process-outbox.cjs
 
-# Bake templates into the image — copied from the cloned repo in stage 1
-COPY --chown=nestjs:nodejs --from=builder /tmp/central-workflow/workflow-templates ./templates/workflow-templates
-COPY --chown=nestjs:nodejs --from=builder /tmp/central-workflow/catalog ./templates/catalog
+# Bake templates into the image — copied from the cloned repo in stage 2
+COPY --chown=nestjs:nodejs --from=builder /tmp/central-workflow/workflow-templates /app/templates/workflow-templates
+COPY --chown=nestjs:nodejs --from=builder /tmp/central-workflow/catalog /app/templates/catalog
 
 # Self-hosted runtime assets. The migration runner (dist/src/scripts/
 # migrate-selfhost.js) walks up from its own directory to find
 # supabase/migrations, and reads the role bootstrap from
 # deploy/selfhost/postgres-init. SaaS does not run either.
-COPY --chown=nestjs:nodejs supabase/migrations ./supabase/migrations
-COPY --chown=nestjs:nodejs deploy/selfhost/postgres-init ./deploy/selfhost/postgres-init
+COPY --chown=nestjs:nodejs --from=pruner /repo/out/full/apps/api/supabase/migrations ./supabase/migrations
+COPY --chown=nestjs:nodejs --from=pruner /repo/out/full/apps/api/deploy/selfhost/postgres-init ./deploy/selfhost/postgres-init
 
 USER nestjs
 
@@ -102,7 +120,7 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "const port = process.env.PORT || 4000; require('http').get('http://127.0.0.1:' + port + '/api/v1/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"
 
-# TypeScript's rootDir is the repository root, so Nest emits the entry point
-# under dist/src. Keep the web process and the cron runner on the same compiled
+# TypeScript's rootDir is the app folder, so Nest emits the entry point under
+# dist/src. Keep the web process and the cron runner on the same compiled
 # application tree; `dist/main` does not exist in this build layout.
 CMD ["node", "dist/src/main.js"]

@@ -1,0 +1,36 @@
+# Build context is the monorepo root for both images (apps/api/Dockerfile and
+# apps/web/Dockerfile). `turbo prune` then narrows it to one app.
+**/node_modules
+**/dist
+**/.next
+**/.capability-stubs
+**/.turbo
+**/coverage
+**/test-results
+**/artifacts
+.git
+.github
+.vscode
+.idea
+**/*.log
+**/*.tsbuildinfo
+
+# Local settings and credentials must stay outside production build contexts.
+# Local setup contains database backups, credentials and signing keys.
+**/.env
+**/.env.*
+!**/.env.example
+**/.temp
+**/.tmp
+**/.claude
+**/.worktrees
+**/.pnpm-store
+**/.cache
+**/*.pem
+apps/api/deploy/selfhost/secrets
+apps/api/deploy/selfhost/certs
+apps/api/deploy/selfhost/alphaci.env
+
+# The API image never needs its test sources (the web build keeps its own).
+apps/api/test
+apps/api/tests
