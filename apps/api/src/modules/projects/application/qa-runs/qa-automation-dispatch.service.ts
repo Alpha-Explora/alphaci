@@ -17,6 +17,10 @@ import {
   GITHUB_PROJECT_PORT,
   type GithubProjectPort,
 } from '#kernel/ports/github.port';
+import {
+  ONPREM_ASSIGNMENT,
+  type OnpremAssignmentPort,
+} from '#kernel/ports/onprem-assignment.port';
 import { canDispatchAutomation } from '../../domain/qa-run-access.rules';
 import { QaProjectRunsRepository } from '../../infrastructure/qa-project-runs.repository';
 import type { QaRunRepositoryRow } from '../../infrastructure/qa-runs.repository';
@@ -80,6 +84,10 @@ export class QaAutomationDispatchService {
     // tests/architecture/http-boot.spec.ts reads it back to prove it resolved.
     private readonly heads: QaUatHeadsService,
     private readonly iterations: ProjectIterationsService,
+    // Runtime owns on-prem hosts; Projects only knows which environments a
+    // branch names.
+    @Inject(ONPREM_ASSIGNMENT)
+    private readonly onpremAssignment: OnpremAssignmentPort,
     @Optional()
     @Inject(AuditEventPublisher)
     private readonly auditEventsService?: AuditEventPublisher,
@@ -256,9 +264,9 @@ export class QaAutomationDispatchService {
 
       // An environment pipeline's verify stage is told where to test: the
       // address of this repository's environment on the QA branch.
-      const address = await this.projectRuns.environmentAddress(
+      const address = await this.onpremAssignment.environmentAddress(
         target.project_id,
-        ref,
+        await this.projectRuns.environmentIdsForBranch(target.project_id, ref),
       );
       const result = await this.githubService.dispatchWorkflow(
         credential.token,

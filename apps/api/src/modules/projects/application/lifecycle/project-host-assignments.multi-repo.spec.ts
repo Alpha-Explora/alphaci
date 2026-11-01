@@ -144,6 +144,7 @@ describe('Host assignment after creating a two-repository project', () => {
         assignProvisionedEnvironment,
         ensureAutomaticAssignment,
         publicAddress: jest.fn(),
+        environmentAddress: jest.fn(),
       },
     );
   }

@@ -6,6 +6,7 @@ import {
 
 import type { PlatformAppRole } from '#kernel/ports/platform-admin.port';
 import type { GithubProjectPort } from '#kernel/ports/github.port';
+import type { OnpremAssignmentPort } from '#kernel/ports/onprem-assignment.port';
 import type { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
 import {
   deliveredIterationRow,
@@ -96,13 +97,21 @@ function setup({
     listCoverageByRunIds: jest
       .fn()
       .mockResolvedValue(new Map([[RUN_ID, coverage]])),
-    // The web app runs on an on-prem host; the API has no host address.
-    environmentAddress: jest.fn((projectId: string) =>
-      Promise.resolve(
-        projectId === 'p-web' ? 'https://uat-web.apps.example.com' : null,
-      ),
+    environmentIdsForBranch: jest.fn((projectId: string) =>
+      Promise.resolve([`env-${projectId}`]),
     ),
   } as unknown as jest.Mocked<QaProjectRunsRepository>;
+  // The web app runs on an on-prem host; the API has no host address.
+  const onprem = {
+    environmentAddress: jest.fn(
+      (_projectId: string, environmentIds: readonly string[]) =>
+        Promise.resolve(
+          environmentIds.includes('env-p-web')
+            ? 'https://uat-web.apps.example.com'
+            : null,
+        ),
+    ),
+  } as unknown as jest.Mocked<OnpremAssignmentPort>;
   const github = {
     listBranches: jest
       .fn()
@@ -137,6 +146,7 @@ function setup({
     github,
     heads,
     iterations,
+    onprem,
     audit,
   );
   return {
