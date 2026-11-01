@@ -3,7 +3,9 @@
   "ui": "stream",
   "envMode": "loose",
   "globalDependencies": [
-    ".gitattributes"
+    ".gitattributes",
+    "packages/capability-catalog/**",
+    "deploy/selfhost/**"
   ],
   "tasks": {
     "build": {
@@ -58,6 +60,68 @@
     "start:dev": {
       "cache": false,
       "persistent": true
+    },
+    "test:documentation": {
+      "outputs": []
+    },
+    "check:application-boundaries": {
+      "outputs": []
+    },
+    "check:architecture-metrics": {
+      "outputs": []
+    },
+    "check:provider-encapsulation": {
+      "outputs": []
+    },
+    "check:schema-ownership": {
+      "outputs": []
+    },
+    "check:composition-source": {
+      "outputs": []
+    },
+    "check:capability-ledger": {
+      "outputs": []
+    },
+    "check:composition-profiles": {
+      "outputs": []
+    },
+    "check:migration-order": {
+      "outputs": []
+    },
+    "lint:css": {
+      "outputs": []
+    },
+    "arch:check": {
+      "outputs": []
+    },
+    "check:profiles": {
+      "outputs": []
+    },
+    "complexity": {
+      "outputs": []
+    },
+    "check:profile-build:hosted": {
+      "env": [
+        "NEXT_PUBLIC_*",
+        "ALPHACI_*",
+        "API_PROXY_TARGET"
+      ],
+      "outputs": []
+    },
+    "check:profile-build:enterprise": {
+      "env": [
+        "NEXT_PUBLIC_*",
+        "ALPHACI_*",
+        "API_PROXY_TARGET"
+      ],
+      "outputs": []
+    },
+    "test:e2e": {
+      "cache": false,
+      "passThroughEnv": [
+        "TEMPLATE_REPO_PATH"
+      ],
+      "outputs": []
     }
   }
 }

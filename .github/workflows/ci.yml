@@ -1,0 +1,264 @@
+name: CI
+
+# One pipeline for the monorepo.
+#
+# `plan` installs dependencies once and decides which apps a pull request
+# affects (.github/scripts/plan-affected.sh). Every other job restores that
+# install and runs one slice of one app's checks in parallel. Pushes to main,
+# the nightly run and manual runs check everything.
+#
+# `ci-passed` is the only check the main ruleset requires: it fails when any
+# job failed or was cancelled, and passes when jobs were skipped because their
+# app was not affected.
+#
+# Local equivalents run from the repository root, for example:
+#   npx turbo run lint typecheck test --filter=@alphaci/api
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+  schedule:
+    # 04:00 Asia/Manila. Catches anything the affected logic missed.
+    - cron: '0 20 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: 24
+  # Optional Vercel Remote Cache. Turborepo uses it when both are set and
+  # falls back to running every task when they are not.
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.affected.outputs.api }}
+      web: ${{ steps.affected.outputs.web }}
+    steps:
+      # Full history, no file contents until needed: the affected check diffs
+      # against the base branch.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # Pull requests can read caches written on main, and every push to main
+      # runs this job, so a pull request starts from a warm install unless it
+      # changes the lockfile.
+      - id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - id: affected
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [[ "$EVENT" == "pull_request" ]]; then
+            .github/scripts/plan-affected.sh "origin/$BASE_REF" | tee -a "$GITHUB_OUTPUT"
+          else
+            .github/scripts/plan-affected.sh full | tee -a "$GITHUB_OUTPUT"
+          fi
+
+  affected-guard:
+    name: Affected detection guard
+    if: github.event_name == 'pull_request'
+    needs: plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          fail-on-cache-miss: true
+      - run: .github/scripts/affected-guard.sh
+
+  api:
+    name: API ${{ matrix.name }}
+    needs: plan
+    if: needs.plan.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: lint
+            tasks: lint
+          - name: typecheck and build
+            tasks: typecheck build
+          - name: tests
+            tasks: test
+            args: -- --ci --runInBand
+          - name: architecture and documentation
+            tasks: >-
+              boundaries check:application-boundaries check:architecture-metrics
+              check:provider-encapsulation check:schema-ownership check:capabilities
+              check:capability-package check:composition-source check:capability-ledger
+              check:composition-profiles check:migration-order check:documentation
+              test:documentation
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          fail-on-cache-miss: true
+      - name: turbo run ${{ matrix.tasks }}
+        env:
+          # The live database integration spec runs only when these are set.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_CA_CERT: ${{ secrets.SUPABASE_DB_CA_CERT }}
+        run: npx turbo run ${{ matrix.tasks }} --filter=@alphaci/api --continue ${{ matrix.args }}
+
+  api-e2e:
+    name: API end-to-end (Postgres fixture)
+    needs: plan
+    if: needs.plan.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # project-creation-environments reads the central workflow templates
+      # from this path, checked out next to the repository below.
+      TEMPLATE_REPO_PATH: ${{ github.workspace }}/alphaci-workflow
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Public repository. It must sit inside the workspace: actions/checkout
+      # refuses paths outside it. Pinned to the commit the suite was last run
+      # against. To bump it, run the suite against the new commit, then change
+      # `ref` here in the same pull request.
+      - uses: actions/checkout@v4
+        with:
+          repository: Alpha-Explora/alphaci-workflow
+          ref: 0e584eb948951c855fe46a3493a2b395b8a5d208
+          path: alphaci-workflow
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          fail-on-cache-miss: true
+
+      # global-setup starts the disposable Postgres fixture with docker compose.
+      - run: npx turbo run test:e2e --filter=@alphaci/api
+
+      - name: Upload e2e report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: apps/api/artifacts/e2e/
+          if-no-files-found: ignore
+
+  web:
+    name: Web ${{ matrix.name }}
+    needs: plan
+    if: needs.plan.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: lint
+            tasks: lint lint:css
+          - name: typecheck
+            tasks: typecheck
+          - name: tests
+            tasks: test
+            args: -- --ci
+          - name: architecture and documentation
+            tasks: >-
+              boundaries arch:check check:capability-package check:capabilities
+              check:profiles check:documentation complexity
+          # The two profile builds both write .next, so each gets its own job.
+          - name: hosted profile build
+            tasks: check:profile-build:hosted
+          - name: enterprise profile build
+            tasks: check:profile-build:enterprise
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          fail-on-cache-miss: true
+      - name: turbo run ${{ matrix.tasks }}
+        run: npx turbo run ${{ matrix.tasks }} --filter=@alphaci/web --continue ${{ matrix.args }}
+
+  ci-passed:
+    name: ci-passed
+    if: always()
+    needs: [plan, affected-guard, api, api-e2e, web]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every job passed or was skipped
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in
+              success|skipped) ;;
+              *) echo "::error::A required job ended as '$result'."; exit 1 ;;
+            esac
+          done
