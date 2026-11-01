@@ -22,6 +22,8 @@ const repositoryRoot = resolve(__dirname, '..', '..');
 const migrationsDir = join(repositoryRoot, 'supabase', 'migrations');
 const bootstrapSqlPath = join(
   repositoryRoot,
+  '..',
+  '..',
   'deploy',
   'selfhost',
   'postgres-init',

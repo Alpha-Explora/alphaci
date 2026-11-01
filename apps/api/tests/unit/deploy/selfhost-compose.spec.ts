@@ -9,7 +9,10 @@ interface ComposeService {
 }
 
 const compose = load(
-  readFileSync(resolve('deploy/selfhost/compose.yaml'), 'utf8'),
+  readFileSync(
+    resolve(__dirname, '../../../../../deploy/selfhost/compose.yaml'),
+    'utf8',
+  ),
 ) as { services: { migrate: ComposeService } };
 const migrate = compose.services.migrate;
 

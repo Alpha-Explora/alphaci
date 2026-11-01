@@ -17,6 +17,7 @@
 /turbo.json                                  @Alpha-Explora/maintainers
 /.github/workflows/                          @Alpha-Explora/maintainers
 /packages/                                   @Alpha-Explora/maintainers
+/deploy/selfhost/                            @Alpha-Explora/maintainers
 
 # ── Backend (apps/api) shared foundations ────────────────────────────────────
 /apps/api/src/kernel/                        @Alpha-Explora/maintainers

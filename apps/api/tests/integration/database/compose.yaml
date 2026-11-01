@@ -14,7 +14,7 @@ services:
     ports:
       - '127.0.0.1:55432:5432'
     volumes:
-      - ../../../deploy/selfhost/postgres-init/00-roles.sql:/docker-entrypoint-initdb.d/00-roles.sql:ro
+      - ../../../../../deploy/selfhost/postgres-init/00-roles.sql:/docker-entrypoint-initdb.d/00-roles.sql:ro
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:

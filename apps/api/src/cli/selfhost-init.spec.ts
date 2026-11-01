@@ -21,8 +21,11 @@ import {
 } from './selfhost-init';
 
 const REPO_ROOT = resolve(__dirname, '..', '..');
+// The appliance bundle sits at the monorepo root, two levels above apps/api.
 const EXAMPLE_PATH = join(
   REPO_ROOT,
+  '..',
+  '..',
   'deploy',
   'selfhost',
   'alphaci.env.example',
