@@ -70,5 +70,16 @@ export interface OnpremAssignmentPort {
     environmentId: string,
     slot: string,
   ): Promise<string | null>;
+  /**
+   * The address of the newest live host serving any of these environments:
+   * its configured public URL, else a running tunnel's. Unlike publicAddress
+   * it is not tied to a slot or to the release flag: an environment
+   * pipeline's verify stage tests whatever the host serves. Null when no host
+   * has an address yet.
+   */
+  environmentAddress(
+    projectId: string,
+    environmentIds: readonly string[],
+  ): Promise<string | null>;
 }
 export const ONPREM_ASSIGNMENT = Symbol('OnpremAssignmentPort');

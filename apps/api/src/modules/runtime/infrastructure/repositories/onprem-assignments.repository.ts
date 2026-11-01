@@ -254,6 +254,27 @@ export class OnpremAssignmentsRepository {
     );
     return result.rows[0]?.workspace_id ?? null;
   }
+  /** See OnpremAssignmentPort.environmentAddress. */
+  async environmentAddress(
+    projectId: string,
+    environmentIds: readonly string[],
+  ): Promise<string | null> {
+    if (environmentIds.length === 0) return null;
+    const result = await this.db.query<{ url: string | null }>(
+      `SELECT COALESCE(
+                NULLIF(h.assignment_config->'ingress'->>'publicUrl', ''),
+                CASE WHEN h.tunnel_status = 'running' THEN h.tunnel_url END
+              ) AS url
+         FROM env_provisioning.onprem_hosts h
+        WHERE h.project_id = $1
+          AND h.environment_id = ANY($2::uuid[])
+          AND h.revoked_at IS NULL
+        ORDER BY h.created_at DESC
+        LIMIT 1`,
+      [projectId, [...environmentIds]],
+    );
+    return result.rows[0]?.url ?? null;
+  }
   async current(
     projectId: string,
     environmentId: string,

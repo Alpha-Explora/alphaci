@@ -749,29 +749,18 @@ export class QaProjectRunsRepository {
   }
 
   /**
-   * The public address of a project environment on its on-prem host, by the
-   * environment's branch: the configured address, else a running tunnel's.
-   * The same address QA Studio previews (release-registry.repository.ts).
-   * Null when the environment is not on a host or has no address yet.
+   * The project's environments a branch names, by source branch or slug. The
+   * QA verify stage asks Runtime for the address of whichever one is on a host.
    */
-  async environmentAddress(
+  async environmentIdsForBranch(
     projectId: string,
     branch: string,
-  ): Promise<string | null> {
-    const result = await this.databaseService.query<{ url: string | null }>(
-      `SELECT COALESCE(
-                NULLIF(h.assignment_config->'ingress'->>'publicUrl', ''),
-                CASE WHEN h.tunnel_status = 'running' THEN h.tunnel_url END
-              ) AS url
-         FROM env_provisioning.onprem_hosts h
-         JOIN projects.project_environments e ON e.id = h.environment_id
-        WHERE h.project_id = $1
-          AND (e.source_branch = $2 OR e.slug = $2)
-          AND h.revoked_at IS NULL
-        ORDER BY h.created_at DESC
-        LIMIT 1`,
+  ): Promise<string[]> {
+    const result = await this.databaseService.query<{ id: string }>(
+      `SELECT id FROM projects.project_environments
+        WHERE project_id = $1 AND (source_branch = $2 OR slug = $2)`,
       [projectId, branch],
     );
-    return result.rows[0]?.url ?? null;
+    return result.rows.map((row) => row.id);
   }
 }
