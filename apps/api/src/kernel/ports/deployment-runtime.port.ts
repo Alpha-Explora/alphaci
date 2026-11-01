@@ -6,12 +6,42 @@
  * barrel while preserving the same in-process tokens and public shapes.  The
  * projects context owns HTTP DTOs and validation; Runtime owns provider and
  * persistence implementations.
+ *
+ * The HTTP response shapes in this port (deployment history, drift and drift
+ * repair) are defined once in `@alphaci/api-contracts`, which the web app
+ * imports too, and re-exported here under the names the API already uses.
+ * Change them there: a change that breaks the web then fails its typecheck in
+ * the same pull request.
  */
 
-/** Provider ids are open because providers are runtime plugins. */
-export type DeploymentProvider = string;
+import type {
+  DeploymentDriftFinding,
+  DeploymentDriftResponse,
+  DeploymentDriftSeverity,
+  DeploymentDriftSource,
+  DeploymentDriftStatus,
+  DeploymentHistoryResponse,
+  DeploymentProvider,
+  DeploymentSlot,
+} from '@alphaci/api-contracts';
+
+export type {
+  DeploymentDriftFinding,
+  DeploymentDriftResponse,
+  DeploymentDriftSeverity,
+  DeploymentDriftSource,
+  DeploymentDriftStatus,
+  DeploymentHistoryItem,
+  DeploymentHistoryMode,
+  DeploymentHistoryResponse,
+  DeploymentHistoryStatus,
+  DeploymentProvider,
+  DeploymentSlot,
+  ProjectDriftRepairAction,
+  ProjectDriftRepairResponse,
+} from '@alphaci/api-contracts';
+
 export type DeploymentProviderId = DeploymentProvider;
-export type DeploymentSlot = 'backend' | 'frontend' | 'standalone';
 export type DeploymentOwnershipMode = 'byo' | 'flowci_managed';
 export type DeploymentProvisioningAction = 'create' | 'register_existing';
 export type DeploymentEnvironmentLane = 'production' | 'preview';
@@ -19,19 +49,6 @@ export type EnvProvider = DeploymentProvider;
 export type EnvTargetSlot = DeploymentSlot;
 export type EnvOwnershipMode = DeploymentOwnershipMode;
 export type DeploymentStrategy = string;
-export type DeploymentHistoryStatus =
-  | 'queued'
-  | 'building'
-  | 'ready'
-  | 'failed'
-  | 'canceled'
-  /** Went live, then a newer deploy replaced it (Render's `deactivated`). */
-  | 'superseded'
-  | 'unknown';
-export type DeploymentHistoryMode = 'local_mock' | 'live' | 'unavailable';
-export type DeploymentDriftSeverity = 'info' | 'warning' | 'error';
-export type DeploymentDriftStatus = 'active' | 'resolved' | 'ignored';
-export type DeploymentDriftSource = 'local_snapshot' | 'github_live';
 export type EnvVarProvisionStatus = 'provisioned' | 'failed';
 
 /**
@@ -251,41 +268,6 @@ export const ENVIRONMENT_DEPLOYMENT_TARGET_RESOLVER = Symbol(
   'ENVIRONMENT_DEPLOYMENT_TARGET_RESOLVER',
 );
 
-export interface DeploymentHistoryItem {
-  id: string;
-  targetId: string;
-  targetName: string;
-  provider: DeploymentProvider;
-  /** The target's role, so a reader (e.g. the previews surface rule) can tell a backend deploy from a frontend one without asking Runtime. */
-  slot: DeploymentSlot;
-  environment: string | null;
-  branch: string | null;
-  commitSha: string | null;
-  commitMessage: string | null;
-  /** Who started the deployment, when the provider says. */
-  createdBy: string | null;
-  status: DeploymentHistoryStatus;
-  createdAt: string;
-  /** When the provider began the deploy, where it reports that apart from `createdAt`. */
-  startedAt?: string | null;
-  readyAt: string | null;
-  /** What started it, in the provider's word (Render: api, deploy_hook, new_commit, manual…). */
-  trigger?: string | null;
-  deploymentUrl: string | null;
-  pullRequestNumber: number | null;
-  inspectorUrl: string | null;
-  dashboardUrl: string;
-  consoleUrl: string;
-}
-
-export interface DeploymentHistoryResponse {
-  enabled: boolean;
-  mode: DeploymentHistoryMode;
-  liveProvidersEnabled: boolean;
-  deployments: DeploymentHistoryItem[];
-  providerError: string | null;
-}
-
 /**
  * An environment this project is configured to have, deployed or not.
  *
@@ -329,20 +311,6 @@ export interface DeploymentHistoryQuery {
 
 export const DEPLOYMENT_HISTORY_QUERY = Symbol('DEPLOYMENT_HISTORY_QUERY');
 
-export interface DeploymentDriftFinding {
-  id: string;
-  projectId: string;
-  targetId: string | null;
-  source: DeploymentDriftSource;
-  severity: DeploymentDriftSeverity;
-  code: string;
-  message: string;
-  details: Record<string, unknown>;
-  status: DeploymentDriftStatus;
-  detectedAt: string;
-  resolvedAt: string | null;
-}
-
 export interface DeploymentDriftFindingInput {
   projectId: string;
   targetId?: string | null;
@@ -351,12 +319,6 @@ export interface DeploymentDriftFindingInput {
   code: string;
   message: string;
   details?: Record<string, unknown>;
-}
-
-export interface DeploymentDriftResponse {
-  enabled: boolean;
-  mode: 'local_snapshot';
-  findings: DeploymentDriftFinding[];
 }
 
 export interface DeploymentDriftQuery {
@@ -546,22 +508,3 @@ export type DeploymentDefaultRole = 'backend' | 'frontend';
 export const DEPLOYMENT_PROVISIONING_DEFAULTS = Symbol(
   'DEPLOYMENT_PROVISIONING_DEFAULTS',
 );
-
-export type ProjectDriftRepairAction =
-  | 'regenerate_workflow_preview'
-  | 'create_workflow_update_pr'
-  | 'rotate_ci_token'
-  | 'detach_target'
-  | 'repair_branch_protection'
-  | 'repair_ci_api_url'
-  | 'mark_ignored';
-
-export interface ProjectDriftRepairResponse {
-  enabled: boolean;
-  mode: 'local_safe';
-  findingId: string;
-  action: ProjectDriftRepairAction;
-  status: 'completed' | 'disabled';
-  message: string;
-  result?: Record<string, unknown>;
-}

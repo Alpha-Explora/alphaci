@@ -1,3 +1,4 @@
+import type { DeploymentSlot } from "@alphaci/api-contracts";
 import type {
   CapabilityKey,
   Edition as CapabilityEdition,
@@ -34,7 +35,8 @@ export interface EnvVarScope {
   gitBranch: string | null;
 }
 export type EnvOwnershipMode = "byo" | "flowci_managed";
-export type EnvTargetSlot = "backend" | "frontend" | "standalone";
+/** The role a deployment target fills; the API calls it DeploymentSlot. */
+export type EnvTargetSlot = DeploymentSlot;
 export type DeploymentStrategy =
   | "provider_native"
   | "vercel_git_connected"
@@ -1322,204 +1324,27 @@ export interface ProjectCiRunRerunResponse {
   reason: string;
 }
 
-export type DeploymentHistoryStatus =
-  | "queued"
-  | "building"
-  | "ready"
-  | "failed"
-  | "canceled"
-  /** Went live, then a newer deploy replaced it (Render's "deactivated"). */
-  | "superseded"
-  | "unknown";
-
-export interface ProjectDeploymentHistoryItem {
-  id: string;
-  targetId: string;
-  targetName: string;
-  provider: EnvProvider;
-  /** Provider lane ('production' / 'preview') or the Render environment name. */
-  environment: string | null;
-  branch: string | null;
-  commitSha: string | null;
-  commitMessage: string | null;
-  status: DeploymentHistoryStatus;
-  createdAt: string;
-  /** When the host began the deploy, where it reports that apart from createdAt. Absent on older backends. */
-  startedAt?: string | null;
-  readyAt: string | null;
-  /** What started it, in the host's word (Render: api, new_commit, manual, deploy_hook…). */
-  trigger?: string | null;
-  /** The deployed site itself — per-deployment on Vercel, per-service on Render. */
-  deploymentUrl: string | null;
-  /** Set when the deployment was built for a pull request. */
-  pullRequestNumber: number | null;
-  /** Provider console for this single deployment, when the provider has one. */
-  inspectorUrl: string | null;
-  /** Provider console for the project as a whole. */
-  dashboardUrl: string;
-  /** Provider console's deployment list for the project. */
-  consoleUrl: string;
-}
-
-export interface ProjectDeploymentsResponse {
-  enabled: boolean;
-  /**
-   * `unavailable` means the provider was asked and did not answer — distinct
-   * from `local_mock`, which means there was nothing to ask.
-   */
-  mode: "local_mock" | "live" | "unavailable";
-  liveProvidersEnabled: boolean;
-  deployments: ProjectDeploymentHistoryItem[];
-  /** Safe message naming the providers that could not be reached. */
-  providerError: string | null;
-}
-
-/**
- * One branch's current deployment. The unit is the branch, not the deployment:
- * a push updates that branch's card rather than appending a row.
+/*
+ * Deployment history, previews and drift: defined once in
+ * @alphaci/api-contracts, which the API uses for these responses too. The
+ * aliases keep the names this app already uses.
  */
-/**
- * `not_deployed` is an environment that exists and has never been released to.
- *
- * Deliberately not a DeploymentHistoryStatus: nothing ran, so there is no
- * provider status to report. The branch is still a real environment with a
- * real address, and a freshly provisioned project is made entirely of them.
- */
-export type ProjectBranchPreviewStatus =
-  | DeploymentHistoryStatus
-  | "not_deployed";
-
-/** One of an environment's recent deploys, as its Overview card lists them. */
-export interface ProjectPreviewDeploy {
-  id: string;
-  status: DeploymentHistoryStatus;
-  commitSha: string | null;
-  commitMessage: string | null;
-  trigger: string | null;
-  createdAt: string;
-  startedAt: string | null;
-  readyAt: string | null;
-}
-
-export interface ProjectBranchPreview {
-  branch: string;
-  isProduction: boolean;
-  /** Null when nothing has been deployed to this environment yet. */
-  deploymentId: string | null;
-  targetId: string;
-  targetName: string;
-  provider: EnvProvider;
-  status: ProjectBranchPreviewStatus;
-  commitSha: string | null;
-  commitMessage: string | null;
-  pullRequestNumber: number | null;
-  /**
-   * Who started the newest deployment. Optional because a backend older than
-   * the field omits it; absent and null read the same.
-   */
-  createdBy?: string | null;
-  /**
-   * The environment's stable address where the backend knows it (the
-   * provider's domain for the branch), otherwise the deployment's own.
-   */
-  previewUrl: string | null;
-  /**
-   * This one deployment's own address. Linked, never framed: on Vercel it sits
-   * behind deployment protection. Optional for the same reason as createdBy.
-   */
-  deploymentUrl?: string | null;
-  inspectorUrl: string | null;
-  /** Null for an environment with no deployment to date. */
-  createdAt: string | null;
-  readyAt: string | null;
-  /*
-   * The three fields below are absent on a backend older than them; the card
-   * then shows no trigger, no duration and no recent deploys.
-   */
-  /** What started the current deploy, in the host's word. */
-  trigger?: string | null;
-  /** When the host began the current deploy. */
-  startedAt?: string | null;
-  /** The environment's newest deploys, newest first, the current one included. */
-  recentDeploys?: ProjectPreviewDeploy[];
-  /**
-   * null means undetermined. The UI must not frame it in that case — a browser
-   * fires no error event for an X-Frame-Options refusal, so an unverified
-   * embed shows an unexplained blank box.
-   */
-  embeddable: boolean | null;
-  embedBlockedReason: string | null;
-  /*
-   * The five fields below are optional: a backend older than the logs surface
-   * omits them all, and the card then shows the page, labelled as before.
-   */
-  /** The deployment target's slot. */
-  slot?: EnvTargetSlot | null;
-  /** `logs` for a backend target whose host serves logs; otherwise `page`. */
-  surface?: ProjectBranchPreviewSurface;
-  /** The host's display name, from its provider descriptor. */
-  providerLabel?: string;
-  /** The host can serve logs and its client implements them. */
-  logsAvailable?: boolean;
-  /**
-   * The current deploy's span: from its createdAt, `endTime: null` while it
-   * is the live one. Null for an environment nothing was deployed to.
-   */
-  logWindow?: { startTime: string; endTime: string | null } | null;
-}
-
-/** What a deployment card shows in its media slot. */
-export type ProjectBranchPreviewSurface = "page" | "logs";
-
-export interface ProjectPreviewsResponse {
-  enabled: boolean;
-  liveProvidersEnabled: boolean;
-  branches: ProjectBranchPreview[];
-  /** Set when a provider could not be reached, so an empty list is not read as "nothing deployed". */
-  providerError: string | null;
-}
-
-export type ProjectDriftSeverity = "info" | "warning" | "error";
-export type ProjectDriftStatus = "active" | "resolved" | "ignored";
-
-export interface ProjectDriftFinding {
-  id: string;
-  projectId: string;
-  targetId: string | null;
-  source: "local_snapshot" | "github_live";
-  severity: ProjectDriftSeverity;
-  code: string;
-  message: string;
-  details: Record<string, unknown>;
-  status: ProjectDriftStatus;
-  detectedAt: string;
-  resolvedAt: string | null;
-}
-
-export interface ProjectDriftResponse {
-  enabled: boolean;
-  mode: "local_snapshot";
-  findings: ProjectDriftFinding[];
-}
-
-export type ProjectDriftRepairAction =
-  | "regenerate_workflow_preview"
-  | "create_workflow_update_pr"
-  | "rotate_ci_token"
-  | "detach_target"
-  | "repair_branch_protection"
-  | "repair_ci_api_url"
-  | "mark_ignored";
-
-export interface ProjectDriftRepairResponse {
-  enabled: boolean;
-  mode: "local_safe";
-  findingId: string;
-  action: ProjectDriftRepairAction;
-  status: "completed" | "disabled";
-  message: string;
-  result?: Record<string, unknown>;
-}
+export type {
+  DeploymentHistoryItem as ProjectDeploymentHistoryItem,
+  DeploymentHistoryResponse as ProjectDeploymentsResponse,
+  DeploymentHistoryStatus,
+  ProjectBranchPreview,
+  ProjectBranchPreviewStatus,
+  PreviewSurface as ProjectBranchPreviewSurface,
+  ProjectPreviewDeploy,
+  ProjectPreviewsResponse,
+  DeploymentDriftFinding as ProjectDriftFinding,
+  DeploymentDriftResponse as ProjectDriftResponse,
+  DeploymentDriftSeverity as ProjectDriftSeverity,
+  DeploymentDriftStatus as ProjectDriftStatus,
+  ProjectDriftRepairAction,
+  ProjectDriftRepairResponse,
+} from "@alphaci/api-contracts";
 
 export interface ProjectSyncSnapshotResponse {
   snapshot: ProjectDashboardSnapshot;
