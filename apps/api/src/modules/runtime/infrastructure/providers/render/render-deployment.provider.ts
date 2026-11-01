@@ -1,11 +1,10 @@
-import { Injectable, type OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import type {
   DeploymentProvider,
   DeploymentProviderPresentation,
   ProviderFormSchema,
 } from '../../../core/deployment-provider.contract';
-import { DeploymentProviderRegistry } from '../../../core/deployment-provider.registry';
 import type { DeploymentProviderPolicy } from '../../../domain/deployment-provider.policy';
 import {
   LEGACY_PROVIDER_CAPABILITIES,
@@ -35,9 +34,7 @@ export const RENDER_DEPLOYMENT_PROVIDER = Symbol('RenderDeploymentProvider');
 
 /** Compatibility descriptor for Render's existing runtime adapter. */
 @Injectable()
-export class RenderDeploymentProvider
-  implements DeploymentProvider, OnModuleInit
-{
+export class RenderDeploymentProvider implements DeploymentProvider {
   readonly id = 'render';
   readonly label: string;
   readonly supportedSlots: readonly string[];
@@ -51,7 +48,6 @@ export class RenderDeploymentProvider
 
   constructor(
     private readonly config: LegacyProviderConfig,
-    private readonly registry: DeploymentProviderRegistry,
     policy: DeploymentProviderPolicy,
   ) {
     this.label = config.label;
@@ -64,10 +60,6 @@ export class RenderDeploymentProvider
       logFilters: ['level', 'type', 'text', 'instance'] as const,
     };
     this.policy = policy;
-  }
-
-  onModuleInit(): void {
-    this.registry.register(this);
   }
 
   isEnabled(): { enabled: boolean; reason?: string } {
