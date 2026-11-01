@@ -402,6 +402,13 @@ TypeScript 6.
 **Done when.** `lint` and `typecheck` each take a few seconds per app in CI,
 and no rule we enforce today was dropped without a written decision.
 
+### Node 26
+
+Node 26 became the active LTS in October 2026 (Dependabot proposed the base
+images in #10, closed). Move in one PR: both Dockerfiles, `NODE_VERSION` in
+`ci.yml`, `.nvmrc`, root `engines`, `@types/node` ^26, then the full gates and
+an image boot. Dependabot skips Node majors for base images until then.
+
 ### Rollback
 
 Every wave is its own PR on top of a green `main`, and the lockfile is the

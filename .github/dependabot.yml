@@ -87,6 +87,11 @@ updates:
       default-days: 3
     commit-message:
       prefix: build
+    # A Node major (24 -> 26) moves images, CI, .nvmrc, engines and @types/node
+    # together, so it is done by hand; Dependabot only refreshes within a major.
+    ignore:
+      - dependency-name: node
+        update-types: ['version-update:semver-major']
     groups:
       base-images:
         patterns: ['*']
