@@ -9,7 +9,7 @@ sources:
     resource: "package.json"
     title: "Repository verification scripts"
   - id: ci-workflow
-    resource: ".github/workflows/boundaries.yml"
+    resource: "../../.github/workflows/ci.yml"
     title: "Continuous integration workflow"
 ---
 # Local frontend verification
@@ -51,7 +51,7 @@ npm run build
 npm run check:documentation
 ```
 
-CI (`.github/workflows/boundaries.yml`) also runs `npm run check:profiles` and builds both profiles with `node scripts/build-profile.cjs --profile hosted` and `--profile enterprise`. Each profile build runs the exclusion check on its output.
+CI (the `Web …` jobs of the monorepo's `.github/workflows/ci.yml`) also runs `npm run check:profiles` and builds both profiles with `node scripts/build-profile.cjs --profile hosted` and `--profile enterprise`. Each profile build runs the exclusion check on its output.
 
 ## Test baseline
 

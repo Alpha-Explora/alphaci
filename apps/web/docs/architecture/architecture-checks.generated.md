@@ -15,7 +15,7 @@ sources:
     resource: "scripts/check-boundaries.mjs"
     title: "Feature MVVM layer checker"
   - id: "ci-source"
-    resource: ".github/workflows/boundaries.yml"
+    resource: "../../.github/workflows/ci.yml"
     title: "Continuous integration gate"
 ---
 

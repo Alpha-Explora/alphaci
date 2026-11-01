@@ -33,8 +33,8 @@ const customJestConfig = {
   coverageThreshold: {
     global: {
       // A floor across the measured layers (view-models, model, data, and the
-      // two tracked JSX files), enforced by the "Unit tests" step in
-      // .github/workflows/boundaries.yml, which runs the whole suite with no
+      // two tracked JSX files), enforced by the "Web tests" job in
+      // the monorepo's .github/workflows/ci.yml (Web tests), which runs the whole suite with no
       // exclusions. The numbers date from when that step first ran (345
       // tests, one suite excluded); on 2026-09-25 the suite was 1158 tests and
       // measured 73.35% statements, 74.6% branches, 73.63% functions and

@@ -12,7 +12,7 @@
     "build:edu": "node scripts/run-edition.mjs edu next build --webpack",
     "build:enterprise": "node scripts/run-edition.mjs enterprise next build --webpack",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
@@ -29,7 +29,9 @@
     "check:profiles": "node scripts/check-build-profiles.cjs",
     "build:profile": "node scripts/build-profile.cjs",
     "generate:architecture-maps": "node scripts/generate-architecture-maps.mjs",
-    "check:documentation": "node scripts/check-documentation.cjs"
+    "check:documentation": "node scripts/check-documentation.cjs",
+    "check:profile-build:hosted": "node scripts/build-profile.cjs --profile hosted",
+    "check:profile-build:enterprise": "node scripts/build-profile.cjs --profile enterprise"
   },
   "dependencies": {
     "@alphaci/capability-catalog": "*",

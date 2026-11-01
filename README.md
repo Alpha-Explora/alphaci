@@ -57,15 +57,27 @@ run.
 
 ## CI
 
-Workflows live in `.github/workflows/` and run only when their app, a shared
-package, or the root dependency files change:
+`.github/workflows/ci.yml` is the whole pipeline:
 
-| Workflow | App |
-|----------|-----|
-| `api-ci.yml` | API quality gate and the end-to-end suite |
-| `api-boundaries.yml` | API module boundaries |
-| `web-ci.yml` | Web boundaries, checks, profile builds and unit tests |
-| `onprem-agent-release.yml` | On-prem agent installer release, on `onprem-agent-v*` tags |
+- **`plan`** installs dependencies once (cached; pushes to `main` keep the
+  cache warm for pull requests) and decides which apps a pull request affects
+  with `.github/scripts/plan-affected.sh`. Changes to `deploy/`, workflows or
+  root workspace files run everything.
+- **`API …` and `Web …` jobs** run one slice of an app's checks each, in
+  parallel: lint, typecheck, tests, architecture and documentation checks,
+  the API end-to-end suite, and one job per web profile build. A job whose app
+  was not affected is skipped.
+- **`Affected detection guard`** replays synthetic changes through
+  `plan-affected.sh` so a detection bug fails CI instead of skipping work.
+- **`ci-passed`** fails if any job failed or was cancelled. It is the only
+  required check.
+
+Pushes to `main`, the nightly run (04:00 Manila) and manual runs check every
+app. Run the same slices locally with
+`npx turbo run lint typecheck test --filter=@alphaci/web`.
+
+`onprem-agent-release.yml` publishes the on-prem agent installer on
+`onprem-agent-v*` tags.
 
 ## Docker images
 
