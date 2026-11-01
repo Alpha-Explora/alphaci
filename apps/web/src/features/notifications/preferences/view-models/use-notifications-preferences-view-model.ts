@@ -27,13 +27,13 @@ export interface NotificationsPreferencesViewModel {
 export function useNotificationsPreferencesViewModel(): NotificationsPreferencesViewModel {
   const [preferences, setPreferences] =
     useState<NotificationPreferences | null>(null);
-  const [status, setStatus] = useState<NotificationsStatus>("idle");
+  // The read below starts on mount, so the panel is loading from its first render.
+  const [status, setStatus] = useState<NotificationsStatus>("loading");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
-    setStatus("loading");
     void notificationsRepository
       .getPreferences()
       .then((next) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -27,6 +27,20 @@ export interface OAuthLoginViewModel {
   handleQuickLogin: () => Promise<void>;
 }
 
+/* The origin never changes for the life of the page, so nothing to subscribe to. */
+function subscribeToOrigin() {
+  return () => {};
+}
+
+/** The page's own origin, or null during the server render. */
+function useBrowserOrigin(): string | null {
+  return useSyncExternalStore(
+    subscribeToOrigin,
+    () => window.location.origin,
+    () => null,
+  );
+}
+
 export function useOAuthLoginViewModel(
   mode: "login" | "signup",
 ): OAuthLoginViewModel {
@@ -36,11 +50,7 @@ export function useOAuthLoginViewModel(
   const [isWarming, setIsWarming] = useState(false);
   const [isQuickLoggingIn, setIsQuickLoggingIn] = useState(false);
   const [quickLoginError, setQuickLoginError] = useState<string | null>(null);
-  const [browserOrigin, setBrowserOrigin] = useState<string | null>(null);
-
-  useEffect(() => {
-    setBrowserOrigin(window.location.origin);
-  }, []);
+  const browserOrigin = useBrowserOrigin();
 
   const nextPath = useMemo(
     () => toSafeNextPath(searchParams.get("next")),

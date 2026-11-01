@@ -1,5 +1,5 @@
 import { act, useLayoutEffect } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { hydrateRoot, type Root } from "react-dom/client";
 
 import { createGitHubLoginUrl } from "../../../../../../src/features/auth/session";
 import { useOAuthLoginViewModel } from "../../../../../../src/features/auth/login/view-models/use-oauth-login-view-model";
@@ -34,7 +34,7 @@ function Probe() {
     committedHrefs.push(githubLoginHref);
   }, [githubLoginHref]);
 
-  return null;
+  return <a href={githubLoginHref}>Continue with GitHub</a>;
 }
 
 describe("useOAuthLoginViewModel", () => {
@@ -47,7 +47,6 @@ describe("useOAuthLoginViewModel", () => {
 
     container = document.createElement("div");
     document.body.appendChild(container);
-    root = createRoot(container);
   });
 
   afterEach(async () => {
@@ -57,14 +56,23 @@ describe("useOAuthLoginViewModel", () => {
     container.remove();
   });
 
-  it("keeps the first callback relative, then preserves the browser-origin OAuth href", async () => {
+  it("hydrates with the server's relative callback, then preserves the browser-origin OAuth href", async () => {
     const relativeReturnTo =
       "/auth/callback?intent=login&next=%2Fprojects%2Factive&provider=github";
+    // What the server rendered: it has no browser origin, so the callback is relative.
+    container.innerHTML = `<a href="${relativeReturnTo}">Continue with GitHub</a>`;
+    const recoverableErrors: unknown[] = [];
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => undefined);
 
     await act(async () => {
-      root.render(<Probe />);
+      root = hydrateRoot(container, <Probe />, {
+        onRecoverableError: (error) => recoverableErrors.push(error),
+      });
     });
 
+    expect(recoverableErrors).toEqual([]);
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
     expect(committedHrefs[0]).toBe(relativeReturnTo);
     expect(mockCreateGitHubLoginUrl.mock.calls[0]?.[0]).toBe(relativeReturnTo);
     expect(committedHrefs.at(-1)).toBe(

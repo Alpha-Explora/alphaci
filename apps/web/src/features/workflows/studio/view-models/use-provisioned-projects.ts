@@ -13,36 +13,50 @@ import type {
 
 export function useProvisionedProjects(setStatusMessage: (message: string) => void) {
   const [projects, setProjects] = useState<ProvisionedProject[]>([]);
-  const [loadingProjects, setLoadingProjects] = useState(false);
+  // The mount effect starts the first read, so the list is loading from the first render.
+  const [loadingProjects, setLoadingProjects] = useState(true);
   const [projectsError, setProjectsError] = useState<string | null>(null);
+
+  /**
+   * Reads the list; a loud read also ends the loading state it was started
+   * under. State is only written from the answer, never before the request.
+   */
+  const readProjects = useCallback(
+    (silent: boolean): Promise<void> =>
+      // Current Projects is group-centric: it needs every project the user can
+      // see so the selected group's count and repository list remain correct.
+      // The API enforces group/assignment visibility for this unfiltered query.
+      getProjects(100)
+        .then(
+          (response) => {
+            setProjects(response.items);
+            setProjectsError(null);
+          },
+          () => {
+            setProjectsError("Provisioned project history is temporarily unavailable.");
+            if (!silent) {
+              setStatusMessage("Provisioned project history is temporarily unavailable.");
+            }
+          },
+        )
+        .finally(() => {
+          if (!silent) {
+            setLoadingProjects(false);
+          }
+        }),
+    [setStatusMessage],
+  );
+
+  useEffect(() => {
+    void readProjects(false);
+  }, [readProjects]);
 
   const loadProjects = useCallback(async (silent = false) => {
     if (!silent) {
       setLoadingProjects(true);
     }
-
-    try {
-      // Current Projects is group-centric: it needs every project the user can
-      // see so the selected group's count and repository list remain correct.
-      // The API enforces group/assignment visibility for this unfiltered query.
-      const response = await getProjects(100);
-      setProjects(response.items);
-      setProjectsError(null);
-    } catch {
-      setProjectsError("Provisioned project history is temporarily unavailable.");
-      if (!silent) {
-        setStatusMessage("Provisioned project history is temporarily unavailable.");
-      }
-    } finally {
-      if (!silent) {
-        setLoadingProjects(false);
-      }
-    }
-  }, [setStatusMessage]);
-
-  useEffect(() => {
-    void loadProjects();
-  }, [loadProjects]);
+    await readProjects(silent);
+  }, [readProjects]);
 
   function prependSetupResult(response: SetupProjectResponse, payload: SetupProjectRequest) {
     setProjects((current) => [

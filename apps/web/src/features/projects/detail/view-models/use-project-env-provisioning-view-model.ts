@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   createDeploymentTarget,
@@ -39,29 +39,41 @@ export function useProjectEnvProvisioning(
   const [metadata, setMetadata] = useState<EnvVarMetadata[]>([]);
   const [providerConnections, setProviderConnections] = useState<ProviderConnection[]>([]);
   const [usageItems, setUsageItems] = useState<UsageLimitItem[]>([]);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Loading until the read for this project settles: a changed project reads
+  // as loading on the same render, and `load` (a handler) clears it to read again.
+  const requestKey = `${projectId}|${includeEnvMetadata}`;
+  const [settledKey, setSettledKey] = useState<string | null>(null);
+  const requestRef = useRef(0);
+  const loading = enabled && settledKey !== requestKey;
 
-  const load = useCallback(async () => {
-    if (!enabled) return;
-    setLoading(true);
+  const read = useCallback(async () => {
+    requestRef.current += 1;
+    const requestId = requestRef.current;
     try {
       const [nextTargets, nextMetadata, nextProviderConnections] = await Promise.all([
         listDeploymentTargets(projectId),
         includeEnvMetadata ? listProjectEnvMetadata(projectId) : Promise.resolve([]),
         listProviderConnections(),
       ]);
+      if (requestId !== requestRef.current) return;
       setTargets(nextTargets);
       setMetadata(nextMetadata);
       setProviderConnections(nextProviderConnections.filter((connection) => connection.status === "active"));
     } finally {
-      setLoading(false);
+      if (requestId === requestRef.current) setSettledKey(requestKey);
     }
-  }, [enabled, includeEnvMetadata, projectId]);
+  }, [includeEnvMetadata, projectId, requestKey]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (enabled) void read();
+  }, [enabled, read]);
+
+  const load = useCallback(async () => {
+    if (!enabled) return;
+    setSettledKey(null);
+    await read();
+  }, [enabled, read]);
 
   useEffect(() => {
     let cancelled = false;
