@@ -99,6 +99,17 @@ module.exports = {
       to: { path: '^src/features/' },
     },
     {
+      name: 'api-contracts-through-shared-api',
+      severity: 'error',
+      comment:
+        'Wire types shared with the API come from @alphaci/api-contracts, and ' +
+        'src/shared/api/contracts.ts is the one file that imports it: it ' +
+        're-exports them, some under this app\'s names. Import the type from ' +
+        'contracts.ts (or the feature barrel that already re-exports it).',
+      from: { path: '^src/', pathNot: '^src/shared/api/contracts\\.ts$' },
+      to: { path: '(^|/)packages/api-contracts/' },
+    },
+    {
       name: 'no-legacy-source-roots',
       severity: 'error',
       comment:

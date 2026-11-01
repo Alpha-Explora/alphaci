@@ -1,0 +1,19 @@
+{
+  "name": "@alphaci/api-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HTTP wire types shared by the AlphaCI API and web app. Types only: no build step, no runtime code.",
+  "license": "UNLICENSED",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}

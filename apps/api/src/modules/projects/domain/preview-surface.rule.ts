@@ -1,3 +1,5 @@
+import type { PreviewSurface } from '@alphaci/api-contracts';
+
 import type { DeploymentSlot } from '#kernel/ports/deployment-runtime.port';
 
 /**
@@ -8,10 +10,7 @@ import type { DeploymentSlot } from '#kernel/ports/deployment-runtime.port';
  * slot whose provider actually offers log retrieval gets the log surface, so
  * a frontend/standalone target - or a backend one on a provider with no log
  * capability - falls back to 'page' rather than showing a broken panel.
- */
-export type PreviewSurface = 'page' | 'logs';
-
-/**
+ *
  * A plain function, not an injectable class: undecorated classes in
  * runtime/domain get no constructor args from Nest (they need useFactory
  * wiring to see anything), and this rule has no dependencies to wire - it is

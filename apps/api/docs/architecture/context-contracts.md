@@ -26,6 +26,7 @@ This register describes the current in-process boundaries. A context index or po
 - A focused port is used for a real inversion or optional integration. Same-process reads may use the owning context's public index.
 - Nest feature-module imports belong to composition roots and are not application-level contracts.
 - Provider contracts and registries belong to Runtime. Provider adapters are not context boundaries.
+- HTTP response shapes that the web app also reads are defined once in the types-only workspace package `@alphaci/api-contracts` (`packages/api-contracts`) and re-exported, with `export type`, from the port or `*.types.ts` file that owned them. Today these are deployment history and drift (`deployment-runtime.port.ts`) and previews (`project-previews.types.ts`). Change those shapes in the package.
 
 ## Current directional edges
 

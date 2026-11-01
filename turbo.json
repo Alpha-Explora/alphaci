@@ -4,6 +4,7 @@
   "envMode": "loose",
   "globalDependencies": [
     ".gitattributes",
+    "packages/api-contracts/**",
     "packages/capability-catalog/**",
     "deploy/selfhost/**"
   ],

@@ -255,10 +255,21 @@ platform admin (`canOpenTeamActivity` in
 ## API ownership
 
 `src/shared/api/` owns generic transport (`request`, `ApiError`,
-`getApiBaseUrl`) and the shared wire types in `contracts.ts`. Each domain's
+`getApiBaseUrl`) and the wire types in `contracts.ts`. Each domain's
 endpoint functions live in its feature `data/` layer. Other features consume
 those operations through a domain or action barrel; routes never import data
 modules directly.
+
+Wire types the API also uses live in the workspace package
+`@alphaci/api-contracts` (`packages/api-contracts`), which the API's own code
+imports for the same responses. `contracts.ts` re-exports them (some under the
+names this app already used, e.g. `ProjectDriftFinding` for
+`DeploymentDriftFinding`), so features keep importing from `contracts.ts`; do
+not import the package from a feature. Do not redefine a type the package
+exports. When the API's shape and this app's expectation differ, the API wins:
+change the package and fix the web consumers in the same pull request. The
+rest of `contracts.ts` is still hand-written and moves to the package one
+domain at a time (see the package README).
 
 ---
 

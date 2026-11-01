@@ -34,6 +34,7 @@
     "check:profile-build:enterprise": "node scripts/build-profile.cjs --profile enterprise"
   },
   "dependencies": {
+    "@alphaci/api-contracts": "*",
     "@alphaci/capability-catalog": "*",
     "driver.js": "^1.4.0",
     "framer-motion": "^12.38.0",

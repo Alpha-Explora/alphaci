@@ -99,6 +99,7 @@
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@alphaci/api-contracts": "*",
     "@alphaci/capability-catalog": "*",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^10.0.1",
