@@ -18,15 +18,16 @@ workspace.
 - Upgrades never ride along with feature work, and feature work never rides
   along with upgrades.
 
-## Constraint: Actions minutes are now a budget
+## CI cost and speed
 
-`Alpha-Explora` is on GitHub's Free plan. The old `alphaci-golden-copy-be`
-and `-fe` repos were public, so Actions minutes were free and unlimited.
-`alphaci` is private, so it now spends the Free plan's **2,000 Linux minutes
-a month**, and its jobs run on 2-vCPU standard runners (public repos get
-4 vCPU).
+`alphaci` was private for its first day, which put it on the Free plan's
+2,000 Linux minutes a month and 2-vCPU runners. On 2026-11-02 the owner made
+it public, like the old `alphaci-golden-copy-be` and `-fe` repos, so Actions
+minutes are free again and jobs run on 4-vCPU standard runners. Minutes are
+no longer a budget; wall time to a verdict is what matters, because agents
+wait on it.
 
-Measured on `main` (runs 41320027302 and 41319167296):
+Measured on `main` while private (runs 41320027302 and 41319167296):
 
 | Job | Wall time | Biggest steps |
 |-----|-----------|---------------|
@@ -35,16 +36,7 @@ Measured on `main` (runs 41320027302 and 41319167296):
 | API boundaries | ~60 s | `npm ci`, dependency-cruiser |
 | Web job (serial) | 331 s | unit tests 91 s, `npm ci` 85 s, profile builds 82 s, lint 36 s |
 
-A push that touches both apps costs about 12 runner-minutes, so roughly 170
-such pushes a month. Every CI change below is judged on two numbers: wall
-time to a verdict, and minutes billed. Splitting one job into five parallel
-jobs cuts wall time but adds five setups to the bill, which is why the
-caching and affected-only steps come first.
-
-Decision needed (owner): keep `alphaci` private and stay inside the budget,
-make it public like the old repos were, or move the org to the Team plan
-(3,000 minutes). The plan works for all three; only the urgency of step 2
-changes.
+Splitting jobs and sharding are now cheap, so step 2 favours parallelism.
 
 ## Order
 
@@ -265,8 +257,8 @@ with Docker Compose) and the web `tests/e2e/playwright-e2e.ts` journeys.
 First PR: one journey (sign-in with the dev quick-login, open the project
 list). Then grow.
 
-**Cost.** This is the most expensive job in minutes. It runs only when both
-sides could be affected.
+**Cost.** The slowest job; it runs only when both sides could be affected, so
+it does not hold up single-app PRs.
 
 ---
 
@@ -291,20 +283,20 @@ on the org. Dependabot first; switch only if the PR noise is a problem.
 ## CI speed: what to take from the article
 
 The article went from 40 minutes to 2. We start at about 4–6 minutes, so the
-wins are smaller, but the minutes budget makes them matter more.
+wins are smaller, but agents push often, so every minute of waiting compounds.
 
 | Idea | Take it? | Where |
 |------|----------|-------|
 | Faster runners | **No, for now** (decision). | — |
 | Oxlint instead of ESLint | **Yes, mostly.** Lint is our second-slowest step (59 s API, 36 s web). Oxlint's type-aware mode is stable (tsgolint), but it needs TypeScript 7 and does not cover every rule we use (`react-hooks/set-state-in-effect` from the React Compiler plugin, `eslint-config-next` rules, prettier). Run Oxlint for everything it covers and keep a slim ESLint pass only for the rest. | Wave E |
 | Faster typechecker | **Yes, for checking only.** TypeScript 7 (`tsgo`) for `typecheck`. ts-jest, typescript-eslint and Nest's emit still need the TypeScript 6 API. | Wave E |
-| Shard tests onto bigger machines | **Shard, no bigger machines.** `jest --shard=i/n` across 2–3 jobs on standard runners, only if the API suite still dominates after the transform change below. Sharding costs setup minutes per shard. | Step 2 follow-up |
+| Shard tests onto bigger machines | **Shard, no bigger machines.** `jest --shard=i/n` across 2–3 jobs on standard runners, only if the API suite still dominates after the transform change below. Shards are free on a public repo; each still pays its own setup time. | Step 2 follow-up |
 | Stop reloading the app per test file | **Yes, differently.** The cheap win is the transform: `ts-jest` type-checks every file; `@swc/jest` only strips types (decorator metadata supported). Typecheck already runs as its own task. Vitest with `isolate: false` (Nest 12's default runner) is a bigger migration for 4,800 tests; revisit after measuring. | Wave B |
-| Fix setup (cache `node_modules`, seed caches from `main`, blobless clone, match parallelism to cores) | **Yes, all of it.** `npm ci` is 26–85 s of every job; GitHub runners for private repos have 2 vCPUs, so `--maxWorkers=2`. | Step 2 |
+| Fix setup (cache `node_modules`, seed caches from `main`, blobless clone, match parallelism to cores) | **Yes, all of it.** `npm ci` is 26–85 s of every job; public-repo runners have 4 vCPUs, so match `--maxWorkers` to that. | Step 2 |
 | Run everything in parallel | **Yes, with care.** The web job runs 15 steps in series. Split lint / typecheck / test / build, but share one cached install. | Step 2 |
 | Only run what a PR touches, full run nightly, test the skip logic | **Yes.** `turbo --affected`, nightly schedule, skip-logic guard job. | Step 2 |
 | Pre-push hook | **Yes.** lefthook, `turbo run lint typecheck --affected`. | Step 2 |
-| Spend $4,300/month | **No.** Our constraint is the opposite. | — |
+| Spend $4,300/month | **No.** Public repo, standard runners, no bill. | — |
 
 ---
 
