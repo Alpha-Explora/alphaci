@@ -21,7 +21,7 @@ The `FLOWCI_*` environment namespace remains a compatibility identifier where it
 
 ## Development
 
-Use Node.js 22, as CI does, and install from the monorepo root (`npm install` there; see the root `README.md`). Copy `.env.example` to `.env` (or `.env.local`, read first) and fill in the values the composition needs; each entry documents its sensitivity. Pipeline generation reads the central workflow templates from `TEMPLATE_REPO_PATH` (default `../../../alphaci-workflow` from `apps/api`, a checkout next to the monorepo of `Alpha-Explora/alphaci-workflow`).
+Use Node.js 24 (the root `.nvmrc`), as CI does, and install from the monorepo root (`npm install` there; see the root `README.md`). Copy `.env.example` to `.env` (or `.env.local`, read first) and fill in the values the composition needs; each entry documents its sensitivity. Pipeline generation reads the central workflow templates from `TEMPLATE_REPO_PATH` (default `../../../alphaci-workflow` from `apps/api`, a checkout next to the monorepo of `Alpha-Explora/alphaci-workflow`).
 
 Install and run the standard verification loop:
 
