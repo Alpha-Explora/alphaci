@@ -1,0 +1,465 @@
+import { createPublicKey } from 'node:crypto';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { DatabaseService } from '#kernel/db/database.service';
+import {
+  DEPLOYMENT_PROJECT_REFERENCE_LOOKUP,
+  type DeploymentProjectReferenceLookup,
+} from '#kernel/ports/deployment-runtime.port';
+import { validateCiApiConnectivity } from '#kernel/config/ci-api-connectivity';
+import {
+  RELEASE_TRUST_KEYS_ENV,
+  resolveReleaseSigningSource,
+  resolveServerSigning,
+  serverSignsReleases,
+} from '#kernel/config/release-signing.config';
+import {
+  kmsTrustProblem,
+  labTrustProblem,
+  readLabSigningKey,
+} from '#kernel/config/release-signing-key';
+import type {
+  AssignmentConfig,
+  TunnelStatus,
+} from '#kernel/ports/onprem-assignment.port';
+import {
+  TUNNEL_REPORT_WINDOW,
+  agentAtLeast,
+  ingressReadiness,
+  tunnelReport,
+} from '../../domain/onprem-tunnel';
+import { SERVICE_LINK_AGENT_VERSION } from '../../domain/onprem-service-link';
+import { OnpremAssignmentsRepository } from '../../infrastructure/repositories/onprem-assignments.repository';
+import { OnpremServiceLinksService } from './onprem-service-links.service';
+import { trustKeysWithSigner } from '../../domain/release-signature';
+import {
+  RELEASE_SIGNER,
+  type ReleaseSigner,
+} from '../ports/release-signer.port';
+
+export interface ReadinessCheck {
+  id: string;
+  status: 'passed' | 'failed' | 'unverified';
+  message: string;
+}
+export interface OnpremReadiness {
+  checks: ReadinessCheck[];
+}
+
+@Injectable()
+export class OnpremReadinessService {
+  constructor(
+    private readonly database: DatabaseService,
+    @Inject(DEPLOYMENT_PROJECT_REFERENCE_LOOKUP)
+    private readonly projects: DeploymentProjectReferenceLookup,
+    private readonly config: ConfigService,
+    @Optional()
+    @Inject(RELEASE_SIGNER)
+    private readonly releaseSigner?: ReleaseSigner,
+    @Optional()
+    private readonly assignments?: OnpremAssignmentsRepository,
+    @Optional()
+    private readonly serviceLinks?: OnpremServiceLinksService,
+  ) {}
+
+  async read(
+    projectId: string,
+    environmentId: string,
+    userId: string,
+  ): Promise<OnpremReadiness> {
+    if (!(await this.projects.findProjectReference(projectId, userId)))
+      throw new NotFoundException('Project not found');
+    const environment = await this.projects.findProjectEnvironment(
+      projectId,
+      environmentId,
+    );
+    if (!environment) throw new NotFoundException('Environment not found');
+    const checks: ReadinessCheck[] = [];
+    const check = (
+      id: string,
+      status: ReadinessCheck['status'],
+      message: string,
+    ) => checks.push({ id, status, message });
+    check(
+      'enabled',
+      this.config.get('ONPREM_RELEASES_ENABLED') === 'true'
+        ? 'passed'
+        : 'failed',
+      'On-prem release delivery configuration.',
+    );
+    try {
+      const result = await this.database.query<{
+        releases: string | null;
+        hosts: string | null;
+        active_host_index: boolean;
+        machine_schema: boolean;
+        tunnel_schema: boolean;
+      }>(
+        `SELECT to_regclass('env_provisioning.releases') AS releases,
+                to_regclass('env_provisioning.onprem_hosts') AS hosts,
+                EXISTS (SELECT 1 FROM pg_index
+                         WHERE indexrelid = to_regclass('env_provisioning.onprem_hosts_one_active_per_environment')
+                           AND indisvalid AND indisunique) AS active_host_index,
+                (to_regclass('env_provisioning.onprem_machines') IS NOT NULL
+                 AND to_regclass('env_provisioning.onprem_enrollments') IS NOT NULL
+                 AND to_regclass('env_provisioning.onprem_workspace_lifecycle') IS NOT NULL
+                 AND to_regclass('env_provisioning.onprem_port_reservations') IS NOT NULL
+                 AND EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('env_provisioning.onprem_hosts') AND attname='machine_id' AND NOT attisdropped)) AS machine_schema,
+                EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('env_provisioning.onprem_hosts') AND attname='tunnel_reported_at' AND NOT attisdropped) AS tunnel_schema`,
+      );
+      const schema = result.rows[0];
+      const missing = [
+        !schema?.releases && '20260928200000_release_registry.sql: releases',
+        !schema?.hosts && '20260928200000_release_registry.sql: onprem_hosts',
+        !schema?.active_host_index &&
+          '20261015010000_one_active_onprem_host.sql: onprem_hosts_one_active_per_environment',
+        !schema?.machine_schema &&
+          '20261015020000_onprem_machines.sql and 20261015030000_onprem_machine_assignments.sql',
+        !schema?.tunnel_schema &&
+          '20261017010000_onprem_tunnel_reports.sql: onprem_hosts tunnel columns',
+      ].filter(Boolean);
+      check(
+        'schema',
+        missing.length ? 'failed' : 'passed',
+        missing.length
+          ? 'Missing schema objects: ' + missing.join(', ')
+          : 'Required release and host schema objects exist.',
+      );
+      if (schema?.machine_schema && schema.tunnel_schema) {
+        await this.machineChecks(
+          projectId,
+          environmentId,
+          environment.role === 'production',
+          check,
+        );
+      } else if (schema?.hosts) {
+        const hosts = await this.database.query<{ count: string }>(
+          `SELECT count(*)::text AS count FROM env_provisioning.onprem_hosts WHERE project_id = $1 AND environment_id = $2 AND revoked_at IS NULL`,
+          [projectId, environmentId],
+        );
+        check(
+          'host',
+          Number(hosts.rows[0]?.count ?? 0) > 0 ? 'unverified' : 'failed',
+          Number(hosts.rows[0]?.count ?? 0) > 0
+            ? 'Host assigned; heartbeat and application health require separate evidence.'
+            : 'No host assigned.',
+        );
+      }
+    } catch {
+      check(
+        'schema',
+        'unverified',
+        'Schema could not be inspected. Check database connectivity.',
+      );
+    }
+    try {
+      validateCiApiConnectivity(
+        this.config.get<string>('PLATFORM_PUBLIC_URL') ||
+          this.config.get<string>('API_PUBLIC_URL') ||
+          '',
+        'github-hosted',
+      );
+      check('ci-api-url', 'passed', 'Public HTTPS API address configured.');
+    } catch {
+      check(
+        'ci-api-url',
+        'failed',
+        'Set PLATFORM_PUBLIC_URL to an HTTPS address reachable from GitHub-hosted runners.',
+      );
+    }
+    check(
+      'ci-api-reachability',
+      'unverified',
+      'Verify authorization and result reporting from an actual GitHub runner.',
+    );
+    try {
+      const keys: unknown = JSON.parse(
+        trustKeysWithSigner(
+          this.config.get<string>('ALPHACI_RELEASE_TRUST_KEYS_JSON'),
+          this.releaseSigner?.identity,
+        ) || '{}',
+      );
+      if (
+        !keys ||
+        typeof keys !== 'object' ||
+        Array.isArray(keys) ||
+        Object.keys(keys).length === 0
+      )
+        throw new Error();
+      for (const pem of Object.values(keys)) {
+        if (typeof pem !== 'string' || !pem.includes('BEGIN PUBLIC KEY'))
+          throw new Error();
+        const key = createPublicKey(pem);
+        if (
+          key.asymmetricKeyType !== 'ec' ||
+          key.asymmetricKeyDetails?.namedCurve !== 'prime256v1'
+        )
+          throw new Error();
+      }
+      check(
+        'signing-trust',
+        'passed',
+        'Release verification public keys configured.',
+      );
+    } catch {
+      check(
+        'signing-trust',
+        'failed',
+        'Configure valid P-256 release verification public keys.',
+      );
+    }
+    const signing = await this.releaseSigningStatus();
+    check('release-signing', signing.status, signing.message);
+    if (serverSignsReleases((key) => this.config.get<string>(key))) {
+      check(
+        'ci-signing-secret',
+        'passed',
+        'Not needed: this AlphaCI backend signs releases, so no signing key or secret is in GitHub.',
+      );
+    } else {
+      check(
+        'ci-signing-secret',
+        'unverified',
+        'CI signing secret access and a matching signature must be verified by the signing workflow.',
+      );
+    }
+    check(
+      'registry',
+      'unverified',
+      'Verify image pull access from the assigned host.',
+    );
+    return { checks };
+  }
+
+  /**
+   * Whether releases can be signed and verified: a usable signing source, and a
+   * trust entry that verifies its key ID. Cloud KMS is the production path; the
+   * lab key is accepted only as a lab-only source.
+   */
+  private async releaseSigningStatus(): Promise<{
+    status: ReadinessCheck['status'];
+    message: string;
+  }> {
+    const read = (key: string) => this.config.get<string>(key);
+    const failed = (message: string) => ({
+      status: 'failed' as const,
+      message,
+    });
+    const server = resolveServerSigning(read);
+    if (server.mode === 'invalid') {
+      return failed(`Releases cannot be signed: ${server.problem}`);
+    }
+    if (server.mode === 'file') {
+      const signer = this.releaseSigner;
+      if (!signer || signer.problem !== undefined || !signer.identity) {
+        return failed(
+          `Releases cannot be signed by this backend: ${signer?.problem ?? 'the signer is not available.'}`,
+        );
+      }
+      return {
+        status: 'passed',
+        message: `Releases are signed by this AlphaCI backend with key ${signer.identity.keyId}, which is trusted. No signing setting is pushed to GitHub.`,
+      };
+    }
+    const source = resolveReleaseSigningSource(read);
+    const trustKeys = read(RELEASE_TRUST_KEYS_ENV);
+    switch (source.kind) {
+      case 'none':
+        return failed(
+          'Releases cannot be signed: configure Cloud KMS (ALPHACI_RELEASE_KMS_KEY_VERSION with its two signer settings). Lab hosts only may use ONPREM_LAB_SIGNING_KEY_PATH.',
+        );
+      case 'invalid':
+        return failed(`Releases cannot be signed: ${source.problem}`);
+      case 'kms': {
+        const problem = kmsTrustProblem(source.keyVersion, trustKeys);
+        return problem
+          ? failed(problem)
+          : {
+              status: 'passed',
+              message:
+                'Releases are signed with Cloud KMS, and the key version is trusted.',
+            };
+      }
+      case 'lab': {
+        let pem: string;
+        try {
+          pem = await readLabSigningKey(source.keyPath);
+        } catch (error) {
+          return failed(
+            `The lab signing key cannot be used: ${error instanceof Error ? error.message : 'unreadable'}.`,
+          );
+        }
+        const problem = labTrustProblem(pem, trustKeys);
+        return problem
+          ? failed(problem)
+          : {
+              status: 'passed',
+              message:
+                'Releases are signed with a lab key (ONPREM_LAB_SIGNING_KEY_PATH) that is trusted. Lab hosts only; client hosts must use Cloud KMS.',
+            };
+      }
+    }
+  }
+
+  private async machineChecks(
+    projectId: string,
+    environmentId: string,
+    production: boolean,
+    check: (
+      id: string,
+      status: ReadinessCheck['status'],
+      message: string,
+    ) => void,
+  ) {
+    const result = await this.database.query<{
+      machine_id: string | null;
+      revoked: boolean;
+      fresh: boolean;
+      checks: ReadinessCheck[];
+      agent_version: string | null;
+      assignment_config: AssignmentConfig | null;
+      tunnel_status: TunnelStatus | null;
+      tunnel_url: string | null;
+      tunnel_message: string | null;
+      tunnel_reported_at: Date | null;
+      tunnel_fresh: boolean;
+    }>(
+      `SELECT h.machine_id, m.revoked_at IS NOT NULL AS revoked,
+                m.last_seen_at > NOW()-INTERVAL '90 seconds' AS fresh,
+                m.checks, m.agent_version, h.assignment_config,
+                h.tunnel_status, h.tunnel_url, h.tunnel_message, h.tunnel_reported_at,
+                h.tunnel_reported_at > NOW()-INTERVAL '${TUNNEL_REPORT_WINDOW}' AS tunnel_fresh
+           FROM env_provisioning.onprem_hosts h
+           LEFT JOIN env_provisioning.onprem_machines m ON m.id=h.machine_id
+          WHERE h.project_id=$1 AND h.environment_id=$2 AND h.revoked_at IS NULL`,
+      [projectId, environmentId],
+    );
+    const host = result.rows[0];
+    if (!host?.machine_id) {
+      check(
+        'host',
+        host ? 'unverified' : 'failed',
+        host
+          ? 'Legacy host assigned. Its heartbeat is unavailable.'
+          : 'No host assigned.',
+      );
+      return;
+    }
+    check(
+      'host',
+      !host.revoked && host.fresh ? 'passed' : 'failed',
+      host.revoked
+        ? 'Machine access was revoked. Assign this environment to another machine.'
+        : host.fresh
+          ? 'Machine checked in within 90 seconds.'
+          : 'Machine is offline. Start its agent and check connectivity.',
+    );
+    const docker = host.checks?.find((item) => item.id === 'docker');
+    check(
+      'host-prerequisites',
+      docker?.status === 'passed' ? 'passed' : 'failed',
+      docker?.message ?? 'No Docker prerequisite report received.',
+    );
+    const config = host.assignment_config;
+    check(
+      'health-paths',
+      config?.health.length && config.health.every((item) => item.path !== null)
+        ? 'passed'
+        : 'failed',
+      'Every deployed slot needs an explicit health path before the agent can deploy it.',
+    );
+    const ingress = config
+      ? ingressReadiness(
+          config.ingress,
+          config.ingress.mode === 'tunnel'
+            ? tunnelReport({
+                status: host.tunnel_status,
+                url: host.tunnel_url,
+                message: host.tunnel_message,
+                reportedAt: host.tunnel_reported_at,
+                fresh: host.tunnel_fresh,
+              })
+            : null,
+          production,
+          host.agent_version,
+        )
+      : { status: 'failed' as const, message: 'No assignment configuration.' };
+    check('ingress', ingress.status, ingress.message);
+    await this.serviceLinkCheck(
+      host.machine_id,
+      projectId,
+      environmentId,
+      host.agent_version,
+      check,
+    );
+    check(
+      'host-ports',
+      'unverified',
+      'Assignment ports are reserved in AlphaCI. The agent checks actual port availability before starting Compose.',
+    );
+    check(
+      'application-health',
+      'unverified',
+      'A machine connection does not prove a deployment healthy. Check its signed release and deployment history.',
+    );
+  }
+
+  /**
+   * Only for a linked environment: one half of a two-repository pair whose
+   * other half runs the same environment on the same machine. Every other
+   * environment's readiness is unchanged.
+   */
+  private async serviceLinkCheck(
+    machineId: string,
+    projectId: string,
+    environmentId: string,
+    agentVersion: string | null,
+    check: (
+      id: string,
+      status: ReadinessCheck['status'],
+      message: string,
+    ) => void,
+  ) {
+    if (!this.assignments || !this.serviceLinks) return;
+    try {
+      const bindings = await this.assignments.machineBindings(machineId);
+      const self = bindings.find(
+        (item) =>
+          item.projectId === projectId && item.environmentId === environmentId,
+      );
+      if (!self) return;
+      const link = (
+        await this.serviceLinks.linksFor(bindings, new Set([self.id]))
+      ).get(self.id);
+      if (!link) return;
+      const peer = link.peers[0]?.slot ?? 'other half';
+      if (!agentAtLeast(agentVersion, SERVICE_LINK_AGENT_VERSION)) {
+        check(
+          'service-link',
+          'failed',
+          `This environment's ${peer} runs on the same machine, but the machine's agent is older than ${SERVICE_LINK_AGENT_VERSION} and deploys them unlinked. Update the agent on this machine.`,
+        );
+        return;
+      }
+      const variables = Object.values(link.env).flatMap((env) =>
+        Object.keys(env ?? {}),
+      );
+      check(
+        'service-link',
+        'passed',
+        `Linked with this environment's ${peer} on the same machine through the Docker network ${link.network}.${variables.length ? ` The agent sets ${variables.join(', ')}.` : ''} Each side applies the link on its next deployment.`,
+      );
+    } catch {
+      check(
+        'service-link',
+        'unverified',
+        'Could not check whether this environment is linked with the other half of its project.',
+      );
+    }
+  }
+}

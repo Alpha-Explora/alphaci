@@ -1,0 +1,289 @@
+import type {
+  DeploymentStrategy,
+  EnvProvider,
+  EnvVarInput,
+  EnvVarScope,
+  RenderEnvironmentName,
+  RenderRuntime,
+  RenderServiceType,
+  DomainVerificationChallenge,
+} from '../../core/deployments.types';
+import type {
+  DeploymentLogLine,
+  DeploymentLogsWindow,
+  LogDirection,
+} from '../../core/deployment-logs.types';
+
+export interface ProviderAccountSummary {
+  id: string;
+  name: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ProviderDeploymentTarget {
+  id: string;
+  name: string;
+  provider: EnvProvider;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ProviderProvisionResult {
+  provisioned: Array<{ key: string; status: 'provisioned' }>;
+  failed: Array<{ key: string; status: 'failed'; errorSummary: string }>;
+}
+
+export interface CreateProviderTargetInput {
+  token: string;
+  repoFullName: string;
+  projectName: string;
+  branchName: string;
+  rootDirectory?: string;
+  buildCommand?: string;
+  startCommand?: string;
+  deploymentStrategy?: DeploymentStrategy;
+  renderServiceType?: RenderServiceType;
+  renderRuntime?: RenderRuntime;
+  renderInstanceType?: string;
+  renderRegion?: string;
+  renderEnvironmentName?: RenderEnvironmentName;
+  dockerContext?: string;
+  dockerfilePath?: string;
+  imageUrl?: string;
+  vercelOrgId?: string;
+  vercelTeamId?: string;
+  vercelTeamSlug?: string;
+}
+
+export interface UpsertProviderEnvInput extends EnvVarScope {
+  token: string;
+  targetId: string;
+  vars: EnvVarInput[];
+  /**
+   * Whether the provider project is linked to its Git repository, as recorded
+   * when the target was created. Vercel accepts a branch-scoped variable only
+   * on a linked project, so the client needs to know before it writes rather
+   * than learning it from a 400 per variable. Undefined means unknown, which
+   * is treated as linked — the pre-existing targets created before the flag
+   * was recorded are overwhelmingly linked ones.
+   */
+  gitConnected?: boolean;
+}
+
+export interface DeleteProviderEnvInput extends EnvVarScope {
+  token: string;
+  targetId: string;
+  key: string;
+}
+
+export interface ProviderTargetStatusInput {
+  token: string;
+  targetId: string;
+  // BYO Vercel connections carry their own team scope on the target's
+  // providerMetadata rather than the deployment's managed-account default —
+  // callers must pass it through so status/history/log lookups hit the
+  // right team instead of silently falling back to the managed default (or
+  // no scope at all).
+  vercelTeamId?: string;
+  vercelTeamSlug?: string;
+}
+
+export interface ProviderRollbackInput extends ProviderTargetStatusInput {
+  /** The provider's own id for the earlier deploy to put back live. */
+  deployId: string;
+}
+
+export interface ProviderRollbackResult {
+  /** The deploy now serving: Render's new rollback deploy, or Vercel's chosen deployment. */
+  deployId: string;
+  status: string;
+  /** True when the provider stops moving new deploys onto the domain until resumed (Vercel). */
+  holdsNewDeploys: boolean;
+}
+
+export interface ProviderTargetStatus {
+  exists: boolean;
+  state?: string;
+  url?: string | null;
+  // Provider-specific fields discovered during the live status check (e.g.
+  // Render's ownerId) that are worth persisting into providerMetadata so
+  // later operations (like log fetching) don't need a separate lookup.
+  metadata?: Record<string, unknown>;
+}
+
+export interface DeleteProviderTargetInput {
+  token: string;
+  targetId: string;
+}
+
+export interface DeleteProviderTargetResult {
+  deleted: boolean;
+}
+
+/**
+ * Which lane a deployment belongs to. Vercel reports `target: 'production'`
+ * for production and `null` for the per-PR previews it creates automatically
+ * on git-connected projects; providers that don't distinguish the two report
+ * null and callers fall back to the target's own environment name.
+ */
+export type ProviderDeployEnvironment = 'production' | 'preview';
+
+export interface ProviderDeployEvent {
+  id: string;
+  status: string;
+  createdAt: string;
+  /** When the provider began working on it, where that differs from when it was queued. */
+  startedAt?: string | null;
+  readyAt: string | null;
+  commitSha: string | null;
+  commitMessage: string | null;
+  /**
+   * Who started the deployment, by the login the provider shows for them.
+   * Null where the provider does not say.
+   */
+  createdBy: string | null;
+  trigger: string | null;
+  // The URL this one deployment answers on, for providers that give every
+  // deployment its own hostname. Render reuses a single stable service URL
+  // per service, so it returns null and callers fall back to the target's
+  // public URL.
+  deploymentUrl: string | null;
+  environment: ProviderDeployEnvironment | null;
+  // Set only when the deployment was built for a pull request. A preview can
+  // exist without one (a push to a non-production branch with no PR open).
+  pullRequestNumber: number | null;
+  // Git ref the deployment was built from.
+  commitRef: string | null;
+  // Provider console URL for this single deployment, as opposed to the
+  // project-level console link the caller derives from the target.
+  inspectorUrl: string | null;
+}
+
+export interface ProviderLogEntry {
+  timestamp: string;
+  message: string;
+  level: string;
+}
+
+export interface ProviderLogsInput extends ProviderTargetStatusInput {
+  // 'build' vs 'app'/runtime — exact meaning is provider-specific; clients
+  // ignore values they don't support rather than erroring.
+  type?: string;
+  startTime?: string;
+  endTime?: string;
+  // Render's log API requires the workspace owner id, which lives on the
+  // target's providerMetadata (see deployment-targets.service.ts).
+  renderOwnerId?: string;
+}
+
+/**
+ * The windowed, filterable log query behind the Render-parity logs endpoint.
+ * Supersedes ProviderLogsInput's single `type` string with arrays, and adds
+ * direction/limit/level/instance so a provider can honor the full filter set
+ * Render itself exposes. `type`/`level`/`instance` are arrays because the API
+ * accepts a comma list (e.g. `type=build,app`); a provider that cannot filter
+ * server-side may do it client-side (see the Vercel client) as long as it
+ * still returns this same page shape.
+ */
+export interface ProviderLogQuery extends ProviderTargetStatusInput {
+  startTime?: string;
+  endTime?: string;
+  direction?: LogDirection;
+  limit?: number;
+  type?: string[];
+  level?: string[];
+  text?: string;
+  instance?: string[];
+  // Render's log API requires the workspace owner id, which lives on the
+  // target's providerMetadata (see deployment-targets.service.ts).
+  renderOwnerId?: string;
+}
+
+export interface ProviderLogPage {
+  /** Always oldest -> newest, whatever direction was queried. */
+  logs: DeploymentLogLine[];
+  hasMore: boolean;
+  next: DeploymentLogsWindow | null;
+}
+
+export interface AddProviderDomainInput extends ProviderTargetStatusInput {
+  hostname: string;
+  /** Pins the hostname to one branch. Omitted means the production domain. */
+  gitBranch?: string | null;
+}
+
+export interface ProviderDomainInput extends ProviderTargetStatusInput {
+  hostname: string;
+}
+
+export interface ProviderDomainResult {
+  hostname: string;
+  apexDomain: string | null;
+  verified: boolean;
+  /** The provider's own challenges. Empty once nothing further is required. */
+  verification: DomainVerificationChallenge[];
+  /**
+   * Whether DNS points at the provider, when the provider reports it
+   * separately from ownership. Null when unknown.
+   */
+  misconfigured: boolean | null;
+}
+export interface RuntimeEnvProviderClient {
+  provider: EnvProvider;
+  validateConnection(token: string): Promise<ProviderAccountSummary>;
+  validateTeamAccess?(
+    token: string,
+    teamId: string,
+  ): Promise<{ id: string; slug?: string; name?: string }>;
+  listTargets(token: string): Promise<ProviderDeploymentTarget[]>;
+  createTarget(
+    input: CreateProviderTargetInput,
+  ): Promise<ProviderDeploymentTarget>;
+  upsertEnvironmentVariables(
+    input: UpsertProviderEnvInput,
+  ): Promise<ProviderProvisionResult>;
+  deleteEnvironmentVariable(
+    input: DeleteProviderEnvInput,
+  ): Promise<{ key: string; status: 'removed' }>;
+  getTargetStatus(
+    input: ProviderTargetStatusInput,
+  ): Promise<ProviderTargetStatus>;
+  deleteTarget(
+    input: DeleteProviderTargetInput,
+  ): Promise<DeleteProviderTargetResult>;
+  // Optional: not every client can list deploy/event history. Callers must
+  // check for its presence before calling.
+  getDeployHistory?(
+    input: ProviderTargetStatusInput,
+  ): Promise<ProviderDeployEvent[]>;
+  // Optional: put an earlier deploy back live without building anything.
+  // Callers must check for its presence before calling.
+  rollbackDeploy?(
+    input: ProviderRollbackInput,
+  ): Promise<ProviderRollbackResult>;
+  // Optional: end a rollback that holds new deploys (Vercel), putting the
+  // newest production deploy back live. Returns that deploy's id, or null
+  // when there is none. Callers must check for its presence before calling.
+  resumeDeploys?(
+    input: ProviderTargetStatusInput,
+  ): Promise<{ deployId: string | null }>;
+  // Optional: not every client can fetch runtime logs. Callers must check
+  // for its presence before calling. Kept as a thin compatibility wrapper
+  // around queryLogs on providers that implement both.
+  getLogs?(input: ProviderLogsInput): Promise<ProviderLogEntry[]>;
+  // Optional: the windowed/filterable/paginated logs operation behind the
+  // Render-parity logs endpoint. Callers must check for its presence before
+  // calling; a provider with no log API at all omits both operations.
+  queryLogs?(input: ProviderLogQuery): Promise<ProviderLogPage>;
+
+  /*
+   * Custom domains. Optional as a group: a provider that cannot attach a
+   * hostname simply omits them, and the service reports the capability as
+   * unavailable rather than failing a call. Callers must check for presence.
+   */
+  addDomain?(input: AddProviderDomainInput): Promise<ProviderDomainResult>;
+  listDomains?(
+    input: ProviderTargetStatusInput,
+  ): Promise<ProviderDomainResult[]>;
+  verifyDomain?(input: ProviderDomainInput): Promise<ProviderDomainResult>;
+  removeDomain?(input: ProviderDomainInput): Promise<{ removed: true }>;
+}

@@ -1,0 +1,471 @@
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Test } from '@nestjs/testing';
+
+import { EnvTokenEncryptionService } from './encryption.service';
+import { DeploymentTargetsRepository } from '../infrastructure/repositories/deployment-targets.repository';
+import { EnvVarsRepository } from '../infrastructure/repositories/env-vars.repository';
+import { EnvVarsService } from './env-vars.service';
+import { PROVIDER_CLIENT_REGISTRY } from './ports/provider-client-registry.port';
+import { ProviderConnectionsRepository } from '../infrastructure/repositories/provider-connections.repository';
+import {
+  AuditEventPublisher,
+  NotificationEventPublisher,
+} from '#kernel/events/platform-event-publisher';
+import { APP_ROLE_LOOKUP } from '#kernel/ports/app-role.port';
+import { DEPLOYMENT_PROJECT_REFERENCE_LOOKUP } from '#kernel/ports/deployment-runtime.port';
+import { USAGE_QUOTA } from '#kernel/ports/usage-quota.port';
+
+describe('EnvVarsService', () => {
+  async function createService(
+    overrides: {
+      envVarsRepository?: Partial<Record<string, jest.Mock>>;
+      deploymentTarget?: Record<string, unknown> | null;
+      providerClient?: Partial<Record<string, jest.Mock>>;
+      usageQuotaService?: Partial<Record<string, jest.Mock>>;
+      projectReferenceLookup?: Partial<Record<string, jest.Mock>>;
+      appRoleLookup?: Partial<Record<string, jest.Mock>>;
+      auditEventsService?: Partial<Record<string, jest.Mock>>;
+      notificationEventsService?: Partial<Record<string, jest.Mock>>;
+    } = {},
+  ) {
+    const envVarsRepository = {
+      listEnvMetadata: jest.fn(),
+      listEnvMetadataForUser: jest.fn(),
+      countExistingActiveKeys: jest.fn().mockResolvedValue(0),
+      findEnvMetadataForUser: jest.fn(),
+      markEnvMetadataRemoved: jest.fn(),
+      upsertEnvMetadataBatch: jest.fn(),
+      ...overrides.envVarsRepository,
+    };
+    const deploymentTargetsRepository = {
+      findDeploymentTargetForUser: jest.fn().mockResolvedValue(
+        overrides.deploymentTarget === null
+          ? null
+          : {
+              id: 'target-1',
+              projectId: 'project-1',
+              ownershipMode: 'flowci_managed',
+              provider: 'render',
+              providerConnectionId: null,
+              providerProjectId: 'srv-1',
+              ...overrides.deploymentTarget,
+            },
+      ),
+    };
+    const providerClient = {
+      upsertEnvironmentVariables: jest.fn().mockResolvedValue({
+        provisioned: [{ key: 'DATABASE_URL', status: 'provisioned' }],
+        failed: [],
+      }),
+      deleteEnvironmentVariable: jest.fn().mockResolvedValue({
+        key: 'DATABASE_URL',
+        status: 'removed',
+      }),
+      ...overrides.providerClient,
+    };
+    const usageQuotaService = {
+      assertWithinLimit: jest.fn(),
+      ...overrides.usageQuotaService,
+    };
+    const projectReferenceLookup = {
+      findProjectReference: jest.fn().mockResolvedValue({
+        projectId: 'project-1',
+        userId: 'user-1',
+        repoFullName: 'tone/orders-api',
+      }),
+      ...overrides.projectReferenceLookup,
+    };
+    // app_role is the authority for assertHttpAccess (the HTTP-facing gate,
+    // called by EnvVarsController — see persona-access.rules.ts's
+    // canManageEnvVars). Defaults to 'member' so tests unrelated to the gate
+    // do not each need to set it.
+    const appRoleLookup = {
+      findAppRole: jest.fn().mockResolvedValue('member'),
+      ...overrides.appRoleLookup,
+    };
+    const module = await Test.createTestingModule({
+      providers: [
+        EnvVarsService,
+        { provide: EnvVarsRepository, useValue: envVarsRepository },
+        {
+          provide: DeploymentTargetsRepository,
+          useValue: deploymentTargetsRepository,
+        },
+        {
+          provide: ProviderConnectionsRepository,
+          useValue: { findActiveProviderConnection: jest.fn() },
+        },
+        {
+          provide: PROVIDER_CLIENT_REGISTRY,
+          useValue: { getClient: jest.fn().mockReturnValue(providerClient) },
+        },
+        {
+          provide: EnvTokenEncryptionService,
+          useValue: { decrypt: jest.fn() },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            getOrThrow: jest.fn().mockReturnValue({
+              envProvisioning: {
+                flowciManaged: {
+                  renderToken: 'rnd',
+                  vercelToken: 'vercel-token',
+                },
+              },
+            }),
+          },
+        },
+        { provide: USAGE_QUOTA, useValue: usageQuotaService },
+        {
+          provide: DEPLOYMENT_PROJECT_REFERENCE_LOOKUP,
+          useValue: projectReferenceLookup,
+        },
+        { provide: APP_ROLE_LOOKUP, useValue: appRoleLookup },
+        {
+          provide: AuditEventPublisher,
+          useValue: {
+            recordProjectEvent: jest.fn(),
+            ...overrides.auditEventsService,
+          },
+        },
+        {
+          provide: NotificationEventPublisher,
+          useValue: {
+            record: jest.fn(),
+            ...overrides.notificationEventsService,
+          },
+        },
+      ],
+    }).compile();
+
+    return {
+      auditEventsService: module.get(AuditEventPublisher),
+      deploymentTargetsRepository,
+      envVarsRepository,
+      notificationEventsService: module.get(NotificationEventPublisher),
+      providerClient,
+      usageQuotaService,
+      projectReferenceLookup,
+      appRoleLookup,
+      service: module.get(EnvVarsService),
+    };
+  }
+
+  it('lists env metadata through the user-scoped repository method', async () => {
+    const { envVarsRepository, service } = await createService({
+      envVarsRepository: {
+        listEnvMetadataForUser: jest.fn().mockResolvedValue([
+          {
+            id: 'meta-1',
+            projectId: 'project-1',
+            deploymentTargetId: 'target-1',
+            lane: 'preview',
+            gitBranch: 'feat/checkout',
+            key: 'DATABASE_URL',
+            provider: 'render',
+            valueStored: false,
+            lastProvisionedAt: '2026-06-12T00:00:00.000Z',
+            lastProvisionedBy: 'user-1',
+            status: 'provisioned',
+            errorSummary: null,
+            removedAt: null,
+          },
+        ]),
+      },
+    });
+
+    await expect(
+      service.listEnvMetadata('project-1', 'user-1'),
+    ).resolves.toHaveLength(1);
+
+    expect(envVarsRepository.listEnvMetadataForUser).toHaveBeenCalledWith(
+      'project-1',
+      'user-1',
+    );
+    expect(envVarsRepository.listEnvMetadata).not.toHaveBeenCalled();
+  });
+
+  // provisionEnvVars is called directly, with no assertHttpAccess gate — the
+  // same way ProjectDeploymentProvisioningService's own env injection calls
+  // it during provisioning/cross-linking, unattended by any particular
+  // user's app_role (see EnvVarsController's doc comment). This test proves
+  // that internal path keeps working: no role or project-reference lookup
+  // is consulted here at all.
+  it('stores metadata only after provider env provisioning', async () => {
+    const {
+      auditEventsService,
+      envVarsRepository,
+      notificationEventsService,
+      service,
+      projectReferenceLookup,
+      appRoleLookup,
+    } = await createService();
+
+    await service.provisionEnvVars('project-1', 'user-1', {
+      deploymentTargetId: 'target-1',
+      lane: 'preview',
+      gitBranch: 'feat/checkout',
+      vars: [{ key: 'DATABASE_URL', value: 'postgres://secret' }],
+    });
+
+    expect(envVarsRepository.upsertEnvMetadataBatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entries: [
+          expect.objectContaining({
+            key: 'DATABASE_URL',
+            status: 'provisioned',
+          }),
+        ],
+      }),
+    );
+    expect(
+      JSON.stringify(envVarsRepository.upsertEnvMetadataBatch.mock.calls),
+    ).not.toContain('postgres://secret');
+    expect(projectReferenceLookup.findProjectReference).not.toHaveBeenCalled();
+    expect(appRoleLookup.findAppRole).not.toHaveBeenCalled();
+    expect(auditEventsService.recordProjectEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: 'user-1',
+        projectId: 'project-1',
+        eventCode: 'env_vars_provisioned',
+      }),
+    );
+    expect(notificationEventsService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        projectId: 'project-1',
+        eventCode: 'env_vars_provisioned',
+      }),
+    );
+  });
+
+  it('charges env key quota only for new keys', async () => {
+    const { envVarsRepository, service, usageQuotaService } =
+      await createService({
+        envVarsRepository: {
+          countExistingActiveKeys: jest.fn().mockResolvedValue(1),
+        },
+      });
+
+    await service.provisionEnvVars('project-1', 'user-1', {
+      deploymentTargetId: 'target-1',
+      lane: 'preview',
+      gitBranch: 'feat/checkout',
+      vars: [
+        { key: 'DATABASE_URL', value: 'postgres://secret' },
+        { key: 'API_URL', value: 'https://api.example.test' },
+      ],
+    });
+
+    expect(envVarsRepository.countExistingActiveKeys).toHaveBeenCalledWith({
+      deploymentTargetId: 'target-1',
+      lane: 'preview',
+      gitBranch: 'feat/checkout',
+      keys: ['DATABASE_URL', 'API_URL'],
+    });
+    expect(usageQuotaService.assertWithinLimit).toHaveBeenCalledWith(
+      'user-1',
+      'env_keys',
+      1,
+    );
+  });
+
+  it('parses .env text without returning secret values', async () => {
+    const { service } = await createService();
+
+    await expect(
+      service.validateEnvText('project-1', 'user-1', {
+        deploymentTargetId: 'target-1',
+        lane: 'preview',
+        gitBranch: 'feat/checkout',
+        text: 'DATABASE_URL=postgres://secret\nAPI_KEY="super-secret"\n# ignored\nEMPTY=',
+      }),
+    ).resolves.toEqual({
+      keyCount: 3,
+      keys: ['DATABASE_URL', 'API_KEY', 'EMPTY'],
+      duplicates: [],
+      invalidKeys: [],
+      warnings: [],
+    });
+  });
+
+  it('detects duplicate and invalid keys during .env validation', async () => {
+    const { service } = await createService();
+
+    await expect(
+      service.validateEnvText('project-1', 'user-1', {
+        deploymentTargetId: 'target-1',
+        lane: 'preview',
+        gitBranch: 'feat/checkout',
+        text: 'DATABASE_URL=one\nDATABASE_URL=two\nbad-key=value',
+      }),
+    ).resolves.toMatchObject({
+      keyCount: 3,
+      keys: ['DATABASE_URL'],
+      duplicates: ['DATABASE_URL'],
+      invalidKeys: ['bad-key'],
+    });
+  });
+
+  it('deletes Vercel env metadata and provider key', async () => {
+    const { auditEventsService, envVarsRepository, providerClient, service } =
+      await createService({
+        deploymentTarget: {
+          provider: 'vercel',
+          providerProjectId: 'prj_1',
+        },
+        envVarsRepository: {
+          findEnvMetadataForUser: jest.fn().mockResolvedValue({
+            id: 'meta-1',
+            projectId: 'project-1',
+            deploymentTargetId: 'target-1',
+            lane: 'preview',
+            gitBranch: 'feat/checkout',
+            key: 'DATABASE_URL',
+            provider: 'vercel',
+            status: 'provisioned',
+          }),
+          markEnvMetadataRemoved: jest.fn().mockResolvedValue({
+            id: 'meta-1',
+            key: 'DATABASE_URL',
+            status: 'removed',
+          }),
+        },
+      });
+
+    await expect(
+      service.deleteEnvMetadata('project-1', 'meta-1', 'user-1'),
+    ).resolves.toMatchObject({
+      removed: true,
+      key: 'DATABASE_URL',
+    });
+
+    // The stored row's own scope reaches the provider, so the delete lands on
+    // that branch's record and not another branch's.
+    expect(providerClient.deleteEnvironmentVariable).toHaveBeenCalledWith({
+      token: 'vercel-token',
+      targetId: 'prj_1',
+      lane: 'preview',
+      gitBranch: 'feat/checkout',
+      key: 'DATABASE_URL',
+    });
+    expect(envVarsRepository.markEnvMetadataRemoved).toHaveBeenCalledWith(
+      'meta-1',
+      'user-1',
+      null,
+    );
+    expect(auditEventsService.recordProjectEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: 'user-1',
+        projectId: 'project-1',
+        eventCode: 'env_var_removed',
+      }),
+    );
+  });
+
+  it('deletes Render env metadata and provider key where supported', async () => {
+    const { envVarsRepository, providerClient, service } = await createService({
+      envVarsRepository: {
+        findEnvMetadataForUser: jest.fn().mockResolvedValue({
+          id: 'meta-1',
+          projectId: 'project-1',
+          deploymentTargetId: 'target-1',
+          lane: 'preview',
+          gitBranch: 'feat/checkout',
+          key: 'API_KEY',
+          provider: 'render',
+          status: 'provisioned',
+        }),
+        markEnvMetadataRemoved: jest.fn().mockResolvedValue({
+          id: 'meta-1',
+          key: 'API_KEY',
+          status: 'removed',
+        }),
+      },
+    });
+
+    await expect(
+      service.deleteEnvMetadata('project-1', 'meta-1', 'user-1'),
+    ).resolves.toMatchObject({
+      removed: true,
+      key: 'API_KEY',
+    });
+
+    expect(providerClient.deleteEnvironmentVariable).toHaveBeenCalledWith({
+      token: 'rnd',
+      targetId: 'srv-1',
+      lane: 'preview',
+      gitBranch: 'feat/checkout',
+      key: 'API_KEY',
+    });
+    expect(envVarsRepository.markEnvMetadataRemoved).toHaveBeenCalledWith(
+      'meta-1',
+      'user-1',
+      null,
+    );
+  });
+
+  describe('assertHttpAccess', () => {
+    it('is a 404 for a project the caller cannot see', async () => {
+      const { service, projectReferenceLookup, appRoleLookup } =
+        await createService({
+          projectReferenceLookup: {
+            findProjectReference: jest.fn().mockResolvedValue(null),
+          },
+        });
+
+      await expect(
+        service.assertHttpAccess('project-1', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
+      expect(projectReferenceLookup.findProjectReference).toHaveBeenCalledWith(
+        'project-1',
+        'user-1',
+      );
+      // Visibility failed first; the role was never even looked up.
+      expect(appRoleLookup.findAppRole).not.toHaveBeenCalled();
+    });
+
+    it.each(['qa', 'lead'] as const)(
+      'is a 403 for a visible project when the caller persona is %s',
+      async (appRole) => {
+        const { service } = await createService({
+          appRoleLookup: { findAppRole: jest.fn().mockResolvedValue(appRole) },
+        });
+
+        const error = await service
+          .assertHttpAccess('project-1', 'user-1')
+          .catch((e: unknown) => e);
+
+        expect(error).toBeInstanceOf(ForbiddenException);
+        expect((error as ForbiddenException).getResponse()).toMatchObject({
+          code: 'ENV_VARS_LEAD_ONLY',
+        });
+      },
+    );
+
+    it('fails closed when the role cannot be resolved', async () => {
+      const { service } = await createService({
+        appRoleLookup: { findAppRole: jest.fn().mockResolvedValue(undefined) },
+      });
+
+      await expect(
+        service.assertHttpAccess('project-1', 'user-1'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it.each(['admin', 'member'] as const)(
+      'allows a visible project for an %s persona',
+      async (appRole) => {
+        const { service } = await createService({
+          appRoleLookup: { findAppRole: jest.fn().mockResolvedValue(appRole) },
+        });
+
+        await expect(
+          service.assertHttpAccess('project-1', 'user-1'),
+        ).resolves.toBeUndefined();
+      },
+    );
+  });
+});

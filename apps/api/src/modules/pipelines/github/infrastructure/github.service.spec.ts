@@ -1,0 +1,2684 @@
+import { createHmac, generateKeyPairSync } from 'node:crypto';
+
+import {
+  BadGatewayException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import type { ConfigService } from '@nestjs/config';
+
+import type { AppConfig } from '#kernel/config/app.config.js';
+import { GithubRepoDeleteError, GithubService } from './github.service.js';
+import type { GithubInstallationsRepository } from './github-installations.repository.js';
+
+const makeRepo = (overrides = {}) => ({
+  id: 1,
+  name: 'my-repo',
+  full_name: 'user/my-repo',
+  private: false,
+  description: 'A test repo',
+  default_branch: 'main',
+  html_url: 'https://github.com/user/my-repo',
+  updated_at: '2026-01-01T00:00:00Z',
+  ...overrides,
+});
+
+const { privateKey } = generateKeyPairSync('rsa', {
+  modulusLength: 2048,
+});
+
+const testPrivateKey = privateKey.export({
+  type: 'pkcs8',
+  format: 'pem',
+}) as string;
+
+const appConfig: AppConfig = {
+  deploymentMode: 'saas',
+  storage: { driver: 'postgres' },
+  frontendUrl: 'http://localhost:3000',
+  trustProxyHops: 1,
+  auth: {
+    devQuickLoginEnabled: false,
+  },
+  composition: {
+    edition: 'enterprise',
+    profile: 'enterprise',
+    client: { id: null, configPath: null, enabled: false },
+  },
+  github: {
+    clientId: 'client-id',
+    clientSecret: 'client-secret',
+    callbackUrl: 'http://localhost:4000/api/v1/auth/github/callback',
+    scope: 'read:user user:email',
+    appId: '123456',
+    appSlug: 'flowci-test',
+    appPrivateKey: testPrivateKey,
+    appWebhookSecret: 'webhook-secret',
+    internalOrg: '',
+    enforcedOrg: 'Alpha-Explora',
+    teamRoleSync: 'off',
+    leadTeamSlug: 'team-lead',
+    developerTeamSlug: 'developers',
+    qaTeamSlug: 'qa-team',
+    teamRoleReconcileIntervalMs: 0,
+  },
+  templates: {
+    repoPath: '../alphaci-workflow',
+    workflowDir: 'workflow-templates',
+    centralWorkflowRepo: 'Alpha-Explora/alphaci-workflow',
+  },
+  envProvisioning: {
+    enabled: false,
+    ownershipMode: 'flowci_managed',
+    encryptionKey: '',
+    flowciManaged: {
+      renderToken: '',
+      renderOwnerId: null,
+      vercelToken: '',
+      vercelTeamId: null,
+      vercelTeamSlug: null,
+      sonarToken: '',
+      sonarOrganization: '',
+    },
+  },
+  gcpDeployments: {
+    enabled: false,
+    sharedProjectId: '',
+    region: 'asia-southeast1',
+    artifactRegistryRepository: '',
+    workloadIdentityProvider: '',
+    deployerServiceAccount: '',
+    dedicatedProjectsEnabled: false,
+  },
+  projectSyncSnapshots: {
+    enabled: false,
+    liveGithubEnabled: false,
+    liveProvidersEnabled: false,
+  },
+  workflowSettingsPreview: {
+    enabled: false,
+  },
+  workflowUpdatePr: {
+    enabled: false,
+  },
+  subscription: {
+    gateEnabled: true,
+    mockEnabled: true,
+    defaultPlan: 'free',
+    seededPlans: {},
+    proMonthlyPricePhp: 300,
+  },
+  supabase: {
+    dbUrl: undefined,
+  },
+  session: {
+    secret: 'x'.repeat(32),
+    name: 'sid',
+    maxAgeMs: 60_000,
+    secure: false,
+    sameSite: 'lax',
+    storeDriver: 'memory',
+  },
+  archivedAccountRetentionDays: 30,
+  directory: { source: 'github_org', organization: '' },
+  projectTargetManagement: { enabled: false },
+  qaChecklists: { enabled: false },
+  ciRunTracking: { enabled: false, liveGithubEnabled: false },
+  deploymentHistory: { enabled: false, liveProvidersEnabled: false },
+  previewDeployments: { enabled: false },
+  driftDetection: { enabled: false },
+  driftRepair: { enabled: false, liveRepairEnabled: false },
+  driftLiveChecks: { enabled: false },
+  usageQuotas: { enabled: false },
+  workspaces: { enabled: false },
+  auditEvents: { enabled: false },
+  notifications: { enabled: false },
+  hierarchy: {
+    enabled: false,
+    githubSyncMode: 'stub',
+    encryptionKeyEnvVar: 'ENV_PROVISIONING_ENCRYPTION_KEY',
+    maxSyncRetries: 5,
+    syncPollIntervalMs: 5000,
+  },
+};
+
+const makeConfigService = (config: AppConfig = appConfig) =>
+  ({
+    get: jest.fn().mockReturnValue(config),
+  }) as unknown as ConfigService;
+
+const makeInstallationsRepository = () =>
+  ({
+    upsert: jest.fn().mockResolvedValue({
+      installationId: 12345,
+      userId: 'user-1',
+      accountLogin: 'tone',
+      accountId: 99,
+      accountType: 'Organization',
+      repositorySelection: 'all',
+      reposLinked: 2,
+    }),
+    replaceRepos: jest.fn().mockResolvedValue(undefined),
+    findByUserId: jest.fn().mockResolvedValue([
+      {
+        installationId: 12345,
+        userId: 'user-1',
+        accountLogin: 'tone',
+        accountId: 99,
+        accountType: 'Organization',
+        repositorySelection: 'all',
+        reposLinked: 2,
+      },
+    ]),
+    findByUserIdAndInstallationId: jest.fn().mockResolvedValue({
+      installationId: 12345,
+      userId: 'user-1',
+      accountLogin: 'tone',
+      accountId: 99,
+      accountType: 'Organization',
+      repositorySelection: 'all',
+      reposLinked: 2,
+    }),
+    findReposByUserId: jest.fn().mockResolvedValue([]),
+    beginWebhookDelivery: jest.fn().mockResolvedValue(true),
+    completeWebhookDelivery: jest.fn().mockResolvedValue(undefined),
+    releaseWebhookDelivery: jest.fn().mockResolvedValue(undefined),
+    setSuspended: jest.fn().mockResolvedValue(undefined),
+    deleteInstallation: jest.fn().mockResolvedValue(undefined),
+  }) as unknown as GithubInstallationsRepository;
+
+describe('GithubService', () => {
+  let service: GithubService;
+  let installationsRepository: GithubInstallationsRepository;
+  let fetchMock: jest.Mock;
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    installationsRepository = makeInstallationsRepository();
+    service = new GithubService(makeConfigService(), installationsRepository);
+    fetchMock = jest.fn();
+    globalThis.fetch = fetchMock;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    jest.restoreAllMocks();
+  });
+
+  /*
+   * The page size is pinned because shrinking it caused an outage rather than
+   * a slowdown. One push runs five workflows on each of three branches, so a
+   * page of 20 was filled by a single afternoon's work, and the runs past the
+   * edge did not degrade gracefully: two declared branches read "no runs"
+   * while GitHub plainly had runs for both.
+   */
+  describe('listWorkflowRuns paging', () => {
+    const okJson = (body: unknown) => ({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve(body),
+      text: () => Promise.resolve(JSON.stringify(body)),
+      headers: new Headers({ 'content-type': 'application/json' }),
+    });
+
+    it("asks for GitHub's maximum page by default", async () => {
+      fetchMock.mockResolvedValueOnce(okJson({ workflow_runs: [] }));
+
+      await service.listWorkflowRuns('token', 'o/r');
+
+      const url = String(fetchMock.mock.calls[0]?.[0]);
+      expect(url).toContain('per_page=100');
+    });
+
+    it('never asks for more than GitHub will return', async () => {
+      fetchMock.mockResolvedValueOnce(okJson({ workflow_runs: [] }));
+
+      await service.listWorkflowRuns('token', 'o/r', null, 5000);
+
+      const url = String(fetchMock.mock.calls[0]?.[0]);
+      expect(url).toContain('per_page=100');
+    });
+
+    it('filters by branch only when one is asked for', async () => {
+      fetchMock.mockResolvedValueOnce(okJson({ workflow_runs: [] }));
+      await service.listWorkflowRuns('token', 'o/r');
+      expect(String(fetchMock.mock.calls[0]?.[0])).not.toContain('branch=');
+
+      fetchMock.mockResolvedValueOnce(okJson({ workflow_runs: [] }));
+      await service.listWorkflowRuns('token', 'o/r', 'dev');
+      expect(String(fetchMock.mock.calls[1]?.[0])).toContain('branch=dev');
+    });
+  });
+
+  /*
+   * The member directory reads the org roster through here. It used to try
+   * only the caller's App installation; a database with no installation rows
+   * (a fresh or rebuilt one) therefore listed nobody, for every user.
+   */
+  describe('readOrganizationMembers', () => {
+    const roster = (logins: string[]) => ({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve(
+          logins.map((login) => ({ login, avatar_url: `https://a/${login}` })),
+        ),
+    });
+    const refused = { ok: false, status: 403, json: () => Promise.resolve({}) };
+    const authHeader = (call: number) =>
+      (fetchMock.mock.calls[call]?.[1] as { headers: Record<string, string> })
+        .headers['Authorization'];
+
+    it("reads with the caller's own token first", async () => {
+      fetchMock.mockResolvedValueOnce(roster(['lloydlim1', 'bpramos-ae']));
+
+      await expect(
+        service.readOrganizationMembers({
+          org: 'Alpha-Explora',
+          userId: 'user-1',
+          userToken: 'gho_user',
+        }),
+      ).resolves.toEqual([
+        { login: 'lloydlim1', avatarUrl: 'https://a/lloydlim1' },
+        { login: 'bpramos-ae', avatarUrl: 'https://a/bpramos-ae' },
+      ]);
+      expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+        'https://api.github.com/orgs/Alpha-Explora/members?per_page=100&page=1',
+      );
+      expect(authHeader(0)).toBe('Bearer gho_user');
+      expect(installationsRepository.findByUserId).not.toHaveBeenCalled();
+    });
+
+    it("falls back to the caller's App installation when the token is refused", async () => {
+      fetchMock
+        .mockResolvedValueOnce(refused)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ token: 'installation-token' }),
+        })
+        .mockResolvedValueOnce(roster(['lloydlim1']));
+
+      await expect(
+        service.readOrganizationMembers({
+          org: 'Alpha-Explora',
+          userId: 'user-1',
+          userToken: 'gho_user',
+        }),
+      ).resolves.toEqual([
+        { login: 'lloydlim1', avatarUrl: 'https://a/lloydlim1' },
+      ]);
+      expect(authHeader(2)).toBe('Bearer installation-token');
+    });
+
+    it("falls back to the org's App installation when the caller has neither", async () => {
+      (installationsRepository.findByUserId as jest.Mock).mockResolvedValueOnce(
+        [],
+      );
+      const findInstallationIdByAccountLogin = jest.fn().mockResolvedValue(777);
+      Object.assign(installationsRepository, {
+        findInstallationIdByAccountLogin,
+      });
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ token: 'org-installation-token' }),
+        })
+        .mockResolvedValueOnce(roster(['bpramos-ae']));
+
+      await expect(
+        service.readOrganizationMembers({
+          org: 'Alpha-Explora',
+          userId: 'user-1',
+          userToken: null,
+        }),
+      ).resolves.toEqual([
+        { login: 'bpramos-ae', avatarUrl: 'https://a/bpramos-ae' },
+      ]);
+      expect(findInstallationIdByAccountLogin).toHaveBeenCalledWith(
+        'Alpha-Explora',
+      );
+      expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+        'https://api.github.com/app/installations/777/access_tokens',
+      );
+    });
+
+    it('returns null, not an empty roster, when nothing can read it', async () => {
+      (installationsRepository.findByUserId as jest.Mock).mockResolvedValueOnce(
+        [],
+      );
+      Object.assign(installationsRepository, {
+        findInstallationIdByAccountLogin: jest.fn().mockResolvedValue(null),
+      });
+      fetchMock.mockResolvedValueOnce(refused);
+
+      await expect(
+        service.readOrganizationMembers({
+          org: 'Alpha-Explora',
+          userId: 'user-1',
+          userToken: 'gho_user',
+        }),
+      ).resolves.toBeNull();
+    });
+
+    it('reads every page of a large org', async () => {
+      const page1 = Array.from(
+        { length: 100 },
+        (_, i) => `member-${String(i)}`,
+      );
+      fetchMock
+        .mockResolvedValueOnce(roster(page1))
+        .mockResolvedValueOnce(roster(['last-member']));
+
+      const members = await service.readOrganizationMembers({
+        org: 'Alpha-Explora',
+        userId: 'user-1',
+        userToken: 'gho_user',
+      });
+
+      expect(members).toHaveLength(101);
+      expect(String(fetchMock.mock.calls[1]?.[0])).toContain('page=2');
+    });
+
+    it('reads nothing for a blank org', async () => {
+      await expect(
+        service.readOrganizationMembers({
+          org: '  ',
+          userId: 'user-1',
+          userToken: 'gho_user',
+        }),
+      ).resolves.toBeNull();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GitHub App tokens', () => {
+    it('builds the GitHub App install URL from config', () => {
+      expect(service.getAppInstallUrl()).toBe(
+        'https://github.com/apps/flowci-test/installations/new',
+      );
+    });
+
+    it('reads the app slug from ConfigService when building the install URL', () => {
+      const configService = makeConfigService({
+        ...appConfig,
+        github: { ...appConfig.github, appSlug: '' },
+      });
+      const dynamicService = new GithubService(
+        configService,
+        installationsRepository,
+      );
+
+      (configService.get as jest.Mock).mockReturnValue({
+        ...appConfig,
+        github: { ...appConfig.github, appSlug: 'alphaci-test' },
+      });
+
+      expect(dynamicService.getAppInstallUrl()).toBe(
+        'https://github.com/apps/alphaci-test/installations/new',
+      );
+    });
+
+    it('rejects install URL generation when the App slug is missing', () => {
+      const unconfigured = new GithubService(
+        makeConfigService({
+          ...appConfig,
+          github: { ...appConfig.github, appSlug: '' },
+        }),
+        installationsRepository,
+      );
+
+      expect(() => unconfigured.getAppInstallUrl()).toThrow(
+        'GitHub App installation is not configured',
+      );
+    });
+
+    it('throws when app credentials are missing for JWT creation', () => {
+      const unconfigured = new GithubService(
+        makeConfigService({
+          ...appConfig,
+          github: {
+            ...appConfig.github,
+            appId: '',
+            appPrivateKey: '',
+          },
+        }),
+        installationsRepository,
+      );
+
+      expect(() => unconfigured.createAppJwt()).toThrow(
+        'GitHub App credentials are not configured',
+      );
+    });
+
+    it('creates a signed app JWT with the configured app id', () => {
+      const jwt = service.createAppJwt();
+      const [, payloadPart] = jwt.split('.');
+      expect(payloadPart).toBeDefined();
+
+      const payload = JSON.parse(
+        Buffer.from(payloadPart ?? '', 'base64url').toString('utf8'),
+      ) as { iss: string; iat: number; exp: number };
+
+      expect(payload.iss).toBe('123456');
+      expect(payload.exp).toBeGreaterThan(payload.iat);
+      expect(payload.exp - payload.iat).toBeLessThanOrEqual(600);
+    });
+
+    it('requests an installation access token with an app JWT', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ token: 'installation-token' }),
+      });
+
+      await expect(service.createInstallationAccessToken(12345)).resolves.toBe(
+        'installation-token',
+      );
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.github.com/app/installations/12345/access_tokens',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: expect.stringMatching(/^Bearer /),
+          }),
+        }),
+      );
+    });
+
+    it('throws when installation token request fails', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        text: async () => 'bad gateway',
+      });
+
+      await expect(
+        service.createInstallationAccessToken(12345),
+      ).rejects.toThrow(
+        'GitHub installation token request failed (502): bad gateway',
+      );
+    });
+
+    it('throws when installation token response has no token', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      });
+
+      await expect(
+        service.createInstallationAccessToken(12345),
+      ).rejects.toThrow(
+        'GitHub installation token response did not include a token',
+      );
+    });
+  });
+
+  describe('linkInstallation', () => {
+    it('fetches installation metadata, stores it, and syncs linked repos', async () => {
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            account: { login: 'tone', id: 99, type: 'Organization' },
+            repository_selection: 'all',
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ token: 'installation-token' }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            repositories: [
+              { full_name: 'tone/api' },
+              { full_name: 'tone/web' },
+            ],
+          }),
+        });
+
+      const result = await service.linkInstallation('user-1', 12345);
+
+      expect(installationsRepository.upsert).toHaveBeenCalledWith(
+        'user-1',
+        12345,
+        'tone',
+        99,
+        'Organization',
+        'all',
+        2,
+      );
+      expect(installationsRepository.replaceRepos).toHaveBeenCalledWith(12345, [
+        'tone/api',
+        'tone/web',
+      ]);
+      expect(result).toEqual({ reposLinked: 2, repositorySelection: 'all' });
+    });
+  });
+
+  describe('linkInstallationForUser', () => {
+    const res = (status: number, body: unknown = {}) => ({
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => body,
+      text: async () => '',
+    });
+    const meta = (type: string | null, login: string | null = 'tone') =>
+      res(200, {
+        account: { login, id: 99, type },
+        repository_selection: 'all',
+      });
+    // The successful path continues into linkInstallation's own three calls.
+    const queueLink = () =>
+      fetchMock
+        .mockResolvedValueOnce(meta('Organization'))
+        .mockResolvedValueOnce(res(200, { token: 'installation-token' }))
+        .mockResolvedValueOnce(
+          res(200, { repositories: [{ full_name: 'tone/api' }] }),
+        );
+    const expectNothingLinked = () => {
+      expect(installationsRepository.upsert).not.toHaveBeenCalled();
+    };
+    const code = async (p: Promise<unknown>) => {
+      const e = await p.catch((x: unknown) => x);
+      expect(e).toBeInstanceOf(ForbiddenException);
+      expect((e as ForbiddenException).getResponse()).toMatchObject({
+        code: 'INSTALLATION_NOT_ACCESSIBLE',
+      });
+    };
+
+    it('401 with no OAuth token, no GitHub call, nothing linked', async () => {
+      await expect(
+        service.linkInstallationForUser('user-1', 1, undefined),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expectNothingLinked();
+    });
+
+    it('User account: links when the caller login matches (case-insensitive)', async () => {
+      fetchMock
+        .mockResolvedValueOnce(meta('User', 'Tone'))
+        .mockResolvedValueOnce(res(200, { login: 'tone' }));
+      queueLink();
+      await expect(
+        service.linkInstallationForUser('user-1', 1, 'gho'),
+      ).resolves.toMatchObject({ repositorySelection: 'all' });
+      expect(installationsRepository.upsert).toHaveBeenCalled();
+    });
+
+    it('User account: mismatched login is refused', async () => {
+      fetchMock
+        .mockResolvedValueOnce(meta('User', 'victim'))
+        .mockResolvedValueOnce(res(200, { login: 'attacker' }));
+      await code(service.linkInstallationForUser('user-1', 1, 'gho'));
+      expectNothingLinked();
+    });
+
+    it('Organization: active membership links', async () => {
+      fetchMock
+        .mockResolvedValueOnce(meta('Organization'))
+        .mockResolvedValueOnce(res(200, { state: 'active' }));
+      queueLink();
+      await service.linkInstallationForUser('user-1', 1, 'gho');
+      expect(String(fetchMock.mock.calls[1]?.[0])).toContain(
+        '/user/memberships/orgs/tone',
+      );
+      expect(installationsRepository.upsert).toHaveBeenCalled();
+    });
+
+    it('Organization: pending membership is refused', async () => {
+      fetchMock
+        .mockResolvedValueOnce(meta('Organization'))
+        .mockResolvedValueOnce(res(200, { state: 'pending' }));
+      await code(service.linkInstallationForUser('user-1', 1, 'gho'));
+      expectNothingLinked();
+    });
+
+    it.each([404, 403])(
+      'Organization: membership %s is refused',
+      async (st) => {
+        fetchMock
+          .mockResolvedValueOnce(meta('Organization'))
+          .mockResolvedValueOnce(res(st));
+        await code(service.linkInstallationForUser('user-1', 1, 'gho'));
+        expectNothingLinked();
+      },
+    );
+
+    it.each([
+      ['metadata 404', () => res(404)],
+      ['unknown type', () => meta('Bot')],
+      ['missing account', () => res(200, {})],
+    ])('fails closed when %s', async (_n, first) => {
+      fetchMock.mockResolvedValueOnce(first());
+      await code(service.linkInstallationForUser('user-1', 1, 'gho'));
+      expectNothingLinked();
+    });
+
+    it('401 when GitHub rejects the user token', async () => {
+      fetchMock
+        .mockResolvedValueOnce(meta('User'))
+        .mockResolvedValueOnce(res(401));
+      await expect(
+        service.linkInstallationForUser('user-1', 1, 'gho'),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+      expectNothingLinked();
+    });
+
+    it.each([
+      ['metadata', [res(502)]],
+      ['membership', [meta('Organization'), res(503)]],
+      ['user', [meta('User'), res(500)]],
+    ])('502 on GitHub 5xx (%s)', async (_n, responses) => {
+      for (const r of responses) fetchMock.mockResolvedValueOnce(r);
+      await expect(
+        service.linkInstallationForUser('user-1', 1, 'gho'),
+      ).rejects.toBeInstanceOf(BadGatewayException);
+      expectNothingLinked();
+    });
+  });
+
+  describe('getInstallationAccessTokenForUser', () => {
+    it('returns an installation token for the first all-repositories installation', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ token: 'installation-token' }),
+      });
+
+      await expect(
+        service.getInstallationAccessTokenForUser('user-1'),
+      ).resolves.toBe('installation-token');
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.github.com/app/installations/12345/access_tokens',
+        expect.any(Object),
+      );
+    });
+
+    it('returns null when no GitHub App installation is linked', async () => {
+      (installationsRepository.findByUserId as jest.Mock).mockResolvedValueOnce(
+        [],
+      );
+
+      await expect(
+        service.getInstallationAccessTokenForUser('user-1'),
+      ).resolves.toBeNull();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('returns null when the installation token exchange fails', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => 'github down',
+      });
+
+      await expect(
+        service.getInstallationAccessTokenForUser('user-1'),
+      ).resolves.toBeNull();
+    });
+  });
+
+  describe('getInstallationAccessTokenForUserRepo', () => {
+    it('uses an all-repositories installation for the requested owner', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ token: 'owner-installation-token' }),
+      });
+
+      await expect(
+        service.getInstallationAccessTokenForUserRepo('user-1', 'tone/api'),
+      ).resolves.toBe('owner-installation-token');
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.github.com/app/installations/12345/access_tokens',
+        expect.any(Object),
+      );
+    });
+
+    it('uses the selected-repository installation that contains the requested repo', async () => {
+      (installationsRepository.findByUserId as jest.Mock).mockResolvedValueOnce(
+        [
+          {
+            installationId: 111,
+            userId: 'user-1',
+            accountLogin: 'other',
+            accountId: 100,
+            accountType: 'Organization',
+            repositorySelection: 'selected',
+            reposLinked: 1,
+          },
+          {
+            installationId: 222,
+            userId: 'user-1',
+            accountLogin: 'tone',
+            accountId: 99,
+            accountType: 'Organization',
+            repositorySelection: 'selected',
+            reposLinked: 1,
+          },
+        ],
+      );
+      (
+        installationsRepository.findReposByUserId as jest.Mock
+      ).mockResolvedValueOnce([
+        { installationId: 111, repoFullName: 'other/api' },
+        { installationId: 222, repoFullName: 'tone/private-api' },
+      ]);
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ token: 'selected-installation-token' }),
+      });
+
+      await expect(
+        service.getInstallationAccessTokenForUserRepo(
+          'user-1',
+          'tone/private-api',
+        ),
+      ).resolves.toBe('selected-installation-token');
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.github.com/app/installations/222/access_tokens',
+        expect.any(Object),
+      );
+    });
+
+    it('returns null when no linked installation covers the requested repo', async () => {
+      (
+        installationsRepository.findReposByUserId as jest.Mock
+      ).mockResolvedValueOnce([]);
+
+      await expect(
+        service.getInstallationAccessTokenForUserRepo('user-1', 'other/api'),
+      ).resolves.toBeNull();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('organization provisioning', () => {
+    it('uses the explicitly selected linked organization installation', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ token: 'organization-token' }),
+      });
+
+      await expect(
+        service.getOrganizationProvisioningContext('user-1', 12345),
+      ).resolves.toEqual({
+        accessToken: 'organization-token',
+        ownerLogin: 'tone',
+      });
+    });
+
+    it('resolves the enforced org installation app-to-org via the App JWT', async () => {
+      // 1) GET /orgs/{org}/installation — app-level lookup, no per-user linkage.
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          id: 12345,
+          account: { login: 'tone' },
+          target_type: 'Organization',
+          repository_selection: 'all',
+        }),
+      });
+      // 2) POST installation access token.
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ token: 'organization-token' }),
+      });
+
+      await expect(
+        service.getOrganizationProvisioningContextByLogin('TONE'),
+      ).resolves.toEqual({
+        accessToken: 'organization-token',
+        ownerLogin: 'tone',
+      });
+    });
+
+    it('rejects with a server-config error when App credentials are missing', async () => {
+      const noCreds = new GithubService(null, installationsRepository);
+
+      await expect(
+        noCreds.getOrganizationProvisioningContextByLogin('Alpha-Explora'),
+      ).rejects.toThrow('GITHUB_APP_ID');
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(installationsRepository.findByUserId).not.toHaveBeenCalled();
+    });
+
+    it('rejects when the App is not installed on the enforced org (404)', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => ({}),
+        text: async () => 'Not Found',
+      });
+
+      await expect(
+        service.getOrganizationProvisioningContextByLogin('Alpha-Explora'),
+      ).rejects.toThrow(
+        'The GitHub App is not installed on the Alpha-Explora organization',
+      );
+    });
+
+    it('rejects when the enforced org installation lacks all-repositories access', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          id: 12345,
+          account: { login: 'tone' },
+          target_type: 'Organization',
+          repository_selection: 'selected',
+        }),
+      });
+
+      await expect(
+        service.getOrganizationProvisioningContextByLogin('TONE'),
+      ).rejects.toThrow('requires "All repositories"');
+    });
+  });
+
+  describe('GitHub webhooks', () => {
+    it('verifies the signature and suspends a linked installation', async () => {
+      const payload = {
+        action: 'suspend',
+        installation: { id: 12345 },
+      };
+      const rawBody = Buffer.from(JSON.stringify(payload));
+      const signature = `sha256=${createHmac('sha256', 'webhook-secret')
+        .update(rawBody)
+        .digest('hex')}`;
+
+      await expect(
+        service.handleWebhook(
+          signature,
+          'installation',
+          'delivery-1',
+          rawBody,
+          payload,
+        ),
+      ).resolves.toEqual({ accepted: true });
+
+      expect(installationsRepository.setSuspended).toHaveBeenCalledWith(
+        12345,
+        true,
+      );
+      expect(
+        installationsRepository.completeWebhookDelivery,
+      ).toHaveBeenCalledWith('delivery-1');
+    });
+
+    it('rejects an invalid webhook signature', async () => {
+      await expect(
+        service.handleWebhook(
+          'sha256=invalid',
+          'installation',
+          'delivery-2',
+          Buffer.from('{}'),
+          {},
+        ),
+      ).rejects.toThrow('Invalid GitHub webhook signature');
+    });
+
+    describe('repository deleted', () => {
+      const sign = (payload: unknown) => {
+        const rawBody = Buffer.from(JSON.stringify(payload));
+        const signature = `sha256=${createHmac('sha256', 'webhook-secret')
+          .update(rawBody)
+          .digest('hex')}`;
+        return { rawBody, signature };
+      };
+
+      it('emits repository.deleted with the repo full_name', async () => {
+        const payload = {
+          action: 'deleted',
+          repository: { full_name: 'Alpha-Explora/some-repo' },
+          installation: { id: 12345 },
+        };
+        const { rawBody, signature } = sign(payload);
+        const listener = jest.fn();
+        service.on('repository.deleted', listener);
+
+        await expect(
+          service.handleWebhook(
+            signature,
+            'repository',
+            'delivery-repo-1',
+            rawBody,
+            payload,
+          ),
+        ).resolves.toEqual({ accepted: true });
+
+        expect(listener).toHaveBeenCalledWith({
+          repoFullName: 'Alpha-Explora/some-repo',
+        });
+        expect(
+          installationsRepository.deleteInstallation,
+        ).not.toHaveBeenCalled();
+      });
+
+      it('ignores repository events for actions other than deleted', async () => {
+        const payload = {
+          action: 'renamed',
+          repository: { full_name: 'Alpha-Explora/some-repo' },
+        };
+        const { rawBody, signature } = sign(payload);
+        const listener = jest.fn();
+        service.on('repository.deleted', listener);
+
+        await service.handleWebhook(
+          signature,
+          'repository',
+          'delivery-repo-2',
+          rawBody,
+          payload,
+        );
+
+        expect(listener).not.toHaveBeenCalled();
+      });
+
+      it('does not emit when the repository object is missing', async () => {
+        const payload = { action: 'deleted' };
+        const { rawBody, signature } = sign(payload);
+        const listener = jest.fn();
+        service.on('repository.deleted', listener);
+
+        await expect(
+          service.handleWebhook(
+            signature,
+            'repository',
+            'delivery-repo-3',
+            rawBody,
+            payload,
+          ),
+        ).resolves.toEqual({ accepted: true });
+
+        expect(listener).not.toHaveBeenCalled();
+      });
+
+      it('does not emit when full_name is missing or not a string', async () => {
+        const payload = {
+          action: 'deleted',
+          repository: { full_name: 42 },
+        };
+        const { rawBody, signature } = sign(payload);
+        const listener = jest.fn();
+        service.on('repository.deleted', listener);
+
+        await expect(
+          service.handleWebhook(
+            signature,
+            'repository',
+            'delivery-repo-4',
+            rawBody,
+            payload,
+          ),
+        ).resolves.toEqual({ accepted: true });
+
+        expect(listener).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('GitHub App installation repository reads', () => {
+    it('returns linked repos from persistence', async () => {
+      (
+        installationsRepository.findReposByUserId as jest.Mock
+      ).mockResolvedValueOnce([{ fullName: 'tone/orders-api' }]);
+
+      await expect(service.listLinkedRepos('user-1')).resolves.toEqual([
+        { fullName: 'tone/orders-api' },
+      ]);
+    });
+
+    it('returns an empty repo list when persistence read fails', async () => {
+      (
+        installationsRepository.findReposByUserId as jest.Mock
+      ).mockRejectedValueOnce(new Error('db down'));
+
+      await expect(service.listLinkedRepos('user-1')).resolves.toEqual([]);
+    });
+
+    it('returns installation accounts from persistence', async () => {
+      await expect(service.listInstallationAccounts('user-1')).resolves.toEqual(
+        [expect.objectContaining({ installationId: 12345 })],
+      );
+    });
+
+    it('returns an empty account list when persistence read fails', async () => {
+      (installationsRepository.findByUserId as jest.Mock).mockRejectedValueOnce(
+        new Error('db down'),
+      );
+
+      await expect(service.listInstallationAccounts('user-1')).resolves.toEqual(
+        [],
+      );
+    });
+  });
+
+  describe('repoExists', () => {
+    it.each([
+      [200, true],
+      [404, false],
+    ])('maps GitHub status %s to %s', async (status, expected) => {
+      fetchMock.mockResolvedValueOnce({
+        status,
+        text: async () => '',
+      });
+
+      await expect(
+        service.repoExists('gh-token', 'tone/orders-api'),
+      ).resolves.toBe(expected);
+    });
+
+    it.each([401, 403, 503])(
+      'throws on status %s instead of reporting not-found — a rejected token or rate limit is not proof the repo is gone',
+      async (status) => {
+        fetchMock.mockResolvedValueOnce({
+          status,
+          text: async () => 'denied',
+        });
+
+        await expect(
+          service.repoExists('gh-token', 'tone/orders-api'),
+        ).rejects.toThrow(
+          `GitHub repo existence check failed (${String(status)}): denied`,
+        );
+      },
+    );
+  });
+
+  describe('deleteRepoForUser', () => {
+    it('resolves on a 204 success response', async () => {
+      fetchMock.mockResolvedValueOnce({
+        status: 204,
+        text: async () => '',
+      });
+
+      await expect(
+        service.deleteRepoForUser('gh-token', 'tone', 'orders-api'),
+      ).resolves.toBeUndefined();
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.github.com/repos/tone/orders-api',
+        expect.objectContaining({ method: 'DELETE' }),
+      );
+    });
+
+    it('throws a not_found GithubRepoDeleteError on 404', async () => {
+      fetchMock.mockResolvedValueOnce({
+        status: 404,
+        text: async () => 'Not Found',
+      });
+
+      const error = await service
+        .deleteRepoForUser('gh-token', 'tone', 'orders-api')
+        .catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(GithubRepoDeleteError);
+      expect((error as GithubRepoDeleteError).code).toBe('not_found');
+    });
+
+    /*
+     * Every 401 and 403 used to become `missing_scope`, with GitHub's body
+     * thrown away. Two real deletions were refused that way while the login
+     * requested delete_repo and the user was an organisation admin, so the
+     * advice to reconnect could not have helped. Each code now has to be
+     * earned by something in the response.
+     */
+    const refused = (
+      status: number,
+      body = '',
+      scopes: string | null = null,
+    ) => ({
+      status,
+      text: async () => body,
+      headers: new Headers(scopes === null ? {} : { 'x-oauth-scopes': scopes }),
+    });
+
+    const deleteError = async () =>
+      (await service
+        .deleteRepoForUser('gh-token', 'tone', 'orders-api')
+        .catch((e: unknown) => e)) as GithubRepoDeleteError;
+
+    it('calls a 401 a rejected token, not a missing scope', async () => {
+      fetchMock.mockResolvedValueOnce(refused(401));
+
+      const error = await deleteError();
+      expect(error).toBeInstanceOf(GithubRepoDeleteError);
+      expect(error.code).toBe('token_rejected');
+    });
+
+    it('recognises an organisation that restricts OAuth apps from the words GitHub uses', async () => {
+      fetchMock.mockResolvedValueOnce(
+        refused(
+          403,
+          JSON.stringify({
+            message:
+              'Although you appear to have the correct authorization credentials, the `tone` organization has enabled OAuth App access restrictions, meaning that data access to third-parties is limited.',
+          }),
+          'repo, workflow, read:org, delete_repo',
+        ),
+      );
+
+      const error = await deleteError();
+      expect(error.code).toBe('org_restricted');
+      expect(error.message).toContain('Third-party application access policy');
+    });
+
+    it('reports a missing scope only when the scopes on the token show it', async () => {
+      fetchMock.mockResolvedValueOnce(
+        refused(403, '', 'repo, workflow, read:org'),
+      );
+
+      const error = await deleteError();
+      expect(error.code).toBe('missing_scope');
+    });
+
+    it('does not blame the scope when the token has delete_repo', async () => {
+      fetchMock.mockResolvedValueOnce(
+        refused(403, '', 'repo, workflow, read:org, delete_repo'),
+      );
+
+      const error = await deleteError();
+      expect(error.code).toBe('forbidden');
+      expect(error.message).toContain('even though the token can delete');
+    });
+
+    it('says the cause is unknown rather than guessing when there is no scopes header', async () => {
+      fetchMock.mockResolvedValueOnce(refused(403));
+
+      const error = await deleteError();
+      expect(error.code).toBe('forbidden');
+      expect(error.message).not.toContain('even though');
+    });
+
+    it('never puts the GitHub response body into the message', async () => {
+      fetchMock.mockResolvedValueOnce(
+        refused(403, 'SECRET-LOOKING-BODY-TEXT', 'repo'),
+      );
+
+      const error = await deleteError();
+      expect(error.message).not.toContain('SECRET-LOOKING-BODY-TEXT');
+    });
+
+    it('throws an other GithubRepoDeleteError on unexpected statuses', async () => {
+      fetchMock.mockResolvedValueOnce({
+        status: 503,
+        text: async () => 'unavailable',
+      });
+
+      const error = await service
+        .deleteRepoForUser('gh-token', 'tone', 'orders-api')
+        .catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(GithubRepoDeleteError);
+      expect((error as GithubRepoDeleteError).code).toBe('other');
+    });
+
+    it('does not swallow errors the way deleteRepo() does (never resolves false)', async () => {
+      fetchMock.mockResolvedValueOnce({
+        status: 403,
+        text: async () => '',
+      });
+
+      // deleteRepo() would resolve to `false` here; deleteRepoForUser() must
+      // reject so the caller can surface the failure reason to the user.
+      await expect(
+        service.deleteRepoForUser('gh-token', 'tone', 'orders-api'),
+      ).rejects.toThrow(GithubRepoDeleteError);
+    });
+  });
+
+  describe('listRepos', () => {
+    it('returns a mapped repository by owner and name', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => makeRepo({ default_branch: 'master' }),
+      });
+
+      await expect(
+        service.getRepo('gh-token', 'user', 'my-repo'),
+      ).resolves.toMatchObject({
+        fullName: 'user/my-repo',
+        defaultBranch: 'master',
+      });
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.github.com/repos/user/my-repo',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer gh-token',
+          }),
+        }),
+      );
+    });
+
+    it('returns mapped repos on success', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [makeRepo()],
+      });
+
+      const result = await service.listRepos('gh-token');
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('api.github.com/user/repos'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer gh-token',
+          }),
+        }),
+      );
+
+      expect(result).toEqual([
+        {
+          id: 1,
+          name: 'my-repo',
+          fullName: 'user/my-repo',
+          private: false,
+          description: 'A test repo',
+          defaultBranch: 'main',
+          htmlUrl: 'https://github.com/user/my-repo',
+          updatedAt: '2026-01-01T00:00:00Z',
+        },
+      ]);
+    });
+
+    it('returns empty array when response is not ok', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ message: 'Unauthorized' }),
+      });
+
+      const result = await service.listRepos('bad-token');
+      expect(result).toEqual([]);
+    });
+
+    it('maps null description correctly', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [makeRepo({ description: null })],
+      });
+
+      const result = await service.listRepos('gh-token');
+      expect(result[0]?.description).toBeNull();
+    });
+
+    it('maps private repos correctly', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [makeRepo({ private: true })],
+      });
+
+      const result = await service.listRepos('gh-token');
+      expect(result[0]?.private).toBe(true);
+    });
+
+    it('returns empty array for empty response', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      });
+
+      const result = await service.listRepos('gh-token');
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('repository writes', () => {
+    it('throws when getRepo receives a non-ok response', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: async () => 'not found',
+      });
+
+      await expect(
+        service.getRepo('gh-token', 'tone', 'missing'),
+      ).rejects.toThrow('GitHub repo lookup failed (404): not found');
+    });
+
+    it('creates a repository inside the enforced organization, never a personal account', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          html_url: 'https://github.com/Alpha-Explora/orders-api',
+          clone_url: 'https://github.com/Alpha-Explora/orders-api.git',
+          owner: { login: 'Alpha-Explora' },
+          name: 'orders-api',
+        }),
+      });
+
+      await expect(
+        service.createRepo('gh-token', {
+          repoName: 'orders-api',
+          description: 'Orders API',
+          private: true,
+        }),
+      ).resolves.toEqual({
+        repoUrl: 'https://github.com/Alpha-Explora/orders-api',
+        cloneUrl: 'https://github.com/Alpha-Explora/orders-api.git',
+        ownerLogin: 'Alpha-Explora',
+        repoName: 'orders-api',
+      });
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.github.com/orgs/Alpha-Explora/repos',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            name: 'orders-api',
+            description: 'Orders API',
+            private: true,
+            auto_init: true,
+            default_branch: 'main',
+          }),
+        }),
+      );
+      // The personal /user/repos endpoint must never be reached.
+      expect(fetchMock).not.toHaveBeenCalledWith(
+        'https://api.github.com/user/repos',
+        expect.anything(),
+      );
+    });
+
+    it('uses an empty description when creating a repository without one', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          html_url: 'https://github.com/Alpha-Explora/orders-api',
+          clone_url: 'https://github.com/Alpha-Explora/orders-api.git',
+          owner: { login: 'Alpha-Explora' },
+          name: 'orders-api',
+        }),
+      });
+
+      await service.createRepo('gh-token', {
+        repoName: 'orders-api',
+        private: false,
+      });
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/orgs/Alpha-Explora/repos'),
+        expect.objectContaining({
+          body: expect.stringContaining('"description":""'),
+        }),
+      );
+    });
+
+    it.each([
+      [403, 'GitHub denied repository creation in organization Alpha-Explora'],
+      [401, 'GitHub denied repository creation in organization Alpha-Explora'],
+      [404, 'GitHub organization Alpha-Explora is unavailable'],
+      [422, 'Repository already exists in Alpha-Explora'],
+      [500, 'GitHub repo creation failed (500):'],
+    ])(
+      'maps org repo creation status %s to a useful exception',
+      async (status, message) => {
+        fetchMock.mockResolvedValueOnce({
+          ok: false,
+          status,
+          text: async () => 'failure body',
+        });
+
+        await expect(
+          service.createRepo('gh-token', {
+            repoName: 'orders-api',
+            private: true,
+          }),
+        ).rejects.toThrow(message);
+      },
+    );
+
+    /* GitHub names the actual cause in the 403 body — "OAuth App access
+     * restrictions", "Resource not accessible by integration". Dropping it
+     * left only generic advice pointing at settings that were already
+     * correct, which is what turned one 403 into an investigation. */
+    it.each([403, 401])(
+      'includes the GitHub response body in the %s message',
+      async (status) => {
+        fetchMock.mockResolvedValueOnce({
+          ok: false,
+          status,
+          text: async () =>
+            '{"message":"Although you appear to have the correct authorization credentials, the `Alphaexplora-Sandbox` organization has an IP allow list enabled"}',
+        });
+
+        await expect(
+          service.createRepo('gh-token', {
+            repoName: 'orders-api',
+            private: true,
+          }),
+        ).rejects.toThrow('IP allow list enabled');
+      },
+    );
+
+    it('refuses to create a repository when no enforced org is configured', async () => {
+      // There is no fallback org on purpose. A hardcoded one would turn a config
+      // failure into a silent write to whichever org it named — and on a
+      // deployment pointed at a sandbox, that means writing to production while
+      // reporting success. Refusing names the variable to set instead.
+      const unconfiguredService = new GithubService(
+        makeConfigService({
+          ...appConfig,
+          github: { ...appConfig.github, enforcedOrg: '' },
+        }),
+        installationsRepository,
+      );
+
+      await expect(
+        unconfiguredService.createRepo('gh-token', {
+          repoName: 'orders-api',
+          private: true,
+        }),
+      ).rejects.toThrow(/no.*destination org is configured/i);
+
+      // The point of the guard: nothing was created anywhere.
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('getEnforcedOrg is empty rather than guessing when ConfigService is absent', () => {
+      const noConfigService = new GithubService(null, installationsRepository);
+      expect(noConfigService.getEnforcedOrg()).toBe('');
+    });
+
+    it('creates an organization repository with a user OAuth token when an owner is selected', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          html_url: 'https://github.com/tone/orders-api',
+          clone_url: 'https://github.com/tone/orders-api.git',
+          owner: { login: 'tone' },
+          name: 'orders-api',
+        }),
+      });
+
+      await service.createRepo(
+        'oauth-user-token',
+        { repoName: 'orders-api', private: true },
+        'tone',
+      );
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.github.com/orgs/tone/repos',
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
+
+    it('forces creation into the enforced org when no owner is provided', async () => {
+      const enforcedService = new GithubService(
+        makeConfigService({
+          ...appConfig,
+          github: { ...appConfig.github, enforcedOrg: 'Alpha-Explora' },
+        }),
+        installationsRepository,
+      );
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          html_url: 'https://github.com/Alpha-Explora/orders-api',
+          clone_url: 'https://github.com/Alpha-Explora/orders-api.git',
+          owner: { login: 'Alpha-Explora' },
+          name: 'orders-api',
+        }),
+      });
+
+      await expect(
+        enforcedService.createRepo('gh-token', {
+          repoName: 'orders-api',
+          private: true,
+        }),
+      ).resolves.toMatchObject({ ownerLogin: 'Alpha-Explora' });
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.github.com/orgs/Alpha-Explora/repos',
+        expect.objectContaining({ method: 'POST' }),
+      );
+      // The personal /user/repos endpoint must never be reached.
+      expect(fetchMock).not.toHaveBeenCalledWith(
+        'https://api.github.com/user/repos',
+        expect.anything(),
+      );
+    });
+
+    it('creates a branch from an existing source branch ref', async () => {
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ object: { sha: 'base-sha' } }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+        });
+
+      await expect(
+        service.createBranch('gh-token', 'tone', 'orders-api', 'test', 'main'),
+      ).resolves.toBeUndefined();
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        'https://api.github.com/repos/tone/orders-api/git/refs',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            ref: 'refs/heads/test',
+            sha: 'base-sha',
+          }),
+        }),
+      );
+    });
+
+    it('throws when branch creation fails after source branch lookup', async () => {
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ object: { sha: 'base-sha' } }),
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 422,
+          text: async () => 'already exists',
+        });
+
+      await expect(
+        service.createBranch('gh-token', 'tone', 'orders-api', 'test', 'main'),
+      ).rejects.toThrow("Branch 'test' creation failed (422): already exists");
+    });
+  });
+
+  describe('file and pull request operations', () => {
+    it('returns null when a GitHub file is missing', async () => {
+      fetchMock.mockResolvedValueOnce({ status: 404 });
+
+      await expect(
+        service.getFileContent(
+          'gh-token',
+          'tone',
+          'orders-api',
+          'ci.yml',
+          'test',
+        ),
+      ).resolves.toBeNull();
+    });
+
+    it('decodes base64 GitHub file content', async () => {
+      fetchMock.mockResolvedValueOnce({
+        status: 200,
+        ok: true,
+        json: async () => ({
+          content: Buffer.from('name: CI').toString('base64'),
+          encoding: 'base64',
+        }),
+      });
+
+      await expect(
+        service.getFileContent(
+          'gh-token',
+          'tone',
+          'orders-api',
+          'ci.yml',
+          'test',
+        ),
+      ).resolves.toBe('name: CI');
+    });
+
+    it('returns null when GitHub content response is not base64 content', async () => {
+      fetchMock.mockResolvedValueOnce({
+        status: 200,
+        ok: true,
+        json: async () => ({ content: 'plain', encoding: 'utf-8' }),
+      });
+
+      await expect(
+        service.getFileContent(
+          'gh-token',
+          'tone',
+          'orders-api',
+          'ci.yml',
+          'test',
+        ),
+      ).resolves.toBeNull();
+    });
+
+    it('throws when GitHub file read fails', async () => {
+      fetchMock.mockResolvedValueOnce({
+        status: 500,
+        ok: false,
+        text: async () => 'server error',
+      });
+
+      await expect(
+        service.getFileContent(
+          'gh-token',
+          'tone',
+          'orders-api',
+          'ci.yml',
+          'test',
+        ),
+      ).rejects.toThrow('GitHub file read failed (500): server error');
+    });
+
+    it('updates an existing GitHub file and returns commit metadata', async () => {
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ sha: 'existing-sha' }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            commit: {
+              sha: 'commit-sha',
+              html_url: 'https://github.com/tone/orders-api/commit/commit-sha',
+            },
+          }),
+        });
+
+      await expect(
+        service.putFileContent(
+          'gh-token',
+          'tone',
+          'orders-api',
+          'ci.yml',
+          'name: CI',
+          'test',
+          'Update workflow',
+        ),
+      ).resolves.toEqual({
+        commitSha: 'commit-sha',
+        commitUrl: 'https://github.com/tone/orders-api/commit/commit-sha',
+      });
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        'https://api.github.com/repos/tone/orders-api/contents/ci.yml',
+        expect.objectContaining({
+          method: 'PUT',
+          body: expect.stringContaining('"sha":"existing-sha"'),
+        }),
+      );
+    });
+
+    it('creates a new GitHub file when no existing file is found', async () => {
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            content: {
+              html_url: 'https://github.com/tone/orders-api/blob/test/ci.yml',
+            },
+            commit: { sha: 'commit-sha' },
+          }),
+        });
+
+      await expect(
+        service.putFileContent(
+          'gh-token',
+          'tone',
+          'orders-api',
+          'ci.yml',
+          'name: CI',
+          'test',
+          'Create workflow',
+        ),
+      ).resolves.toEqual({
+        commitSha: 'commit-sha',
+        commitUrl: 'https://github.com/tone/orders-api/blob/test/ci.yml',
+      });
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          body: expect.not.stringContaining('"sha"'),
+        }),
+      );
+    });
+
+    it('throws when existing file lookup fails before write', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => 'lookup failed',
+      });
+
+      await expect(
+        service.putFileContent(
+          'gh-token',
+          'tone',
+          'orders-api',
+          'ci.yml',
+          'name: CI',
+          'test',
+          'Update workflow',
+        ),
+      ).rejects.toThrow('GitHub file lookup failed (500): lookup failed');
+    });
+
+    it('throws when GitHub file write fails', async () => {
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          text: async () => 'write failed',
+        });
+
+      await expect(
+        service.putFileContent(
+          'gh-token',
+          'tone',
+          'orders-api',
+          'ci.yml',
+          'name: CI',
+          'test',
+          'Update workflow',
+        ),
+      ).rejects.toThrow('GitHub file write failed (500): write failed');
+    });
+
+    it('creates a pull request and maps the response', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          number: 42,
+          html_url: 'https://github.com/tone/orders-api/pull/42',
+        }),
+      });
+
+      await expect(
+        service.createPullRequest('gh-token', 'tone', 'orders-api', {
+          title: 'Update workflow',
+          head: 'alphaci/update',
+          base: 'test',
+        }),
+      ).resolves.toEqual({
+        number: 42,
+        htmlUrl: 'https://github.com/tone/orders-api/pull/42',
+      });
+    });
+
+    it('throws when pull request creation fails', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 422,
+        text: async () => 'validation failed',
+      });
+
+      await expect(
+        service.createPullRequest('gh-token', 'tone', 'orders-api', {
+          title: 'Update workflow',
+          head: 'alphaci/update',
+          base: 'test',
+        }),
+      ).rejects.toThrow(
+        'GitHub pull request creation failed (422): validation failed',
+      );
+    });
+
+    it('throws when pull request response is incomplete', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ number: 42 }),
+      });
+
+      await expect(
+        service.createPullRequest('gh-token', 'tone', 'orders-api', {
+          title: 'Update workflow',
+          head: 'alphaci/update',
+          base: 'test',
+        }),
+      ).rejects.toThrow('GitHub pull request response was incomplete');
+    });
+  });
+
+  describe('getJobLogs', () => {
+    const reply = (status: number, body = '', headers: HeadersInit = {}) => ({
+      status,
+      ok: status >= 200 && status < 300,
+      text: () => Promise.resolve(body),
+      headers: new Headers(headers),
+    });
+
+    it('returns the log text when GitHub has it', async () => {
+      fetchMock.mockResolvedValueOnce(reply(200, 'line one'));
+      await expect(service.getJobLogs('t', 'o/r', 5)).resolves.toEqual({
+        status: 'ok',
+        content: 'line one',
+        truncated: false,
+      });
+    });
+
+    it('keeps the tail of an oversized log', async () => {
+      fetchMock.mockResolvedValueOnce(reply(200, 'abcdef'));
+      await expect(service.getJobLogs('t', 'o/r', 5, 3)).resolves.toEqual({
+        status: 'ok',
+        content: 'def',
+        truncated: true,
+      });
+    });
+
+    it('reports 410 Gone as an expired log', async () => {
+      fetchMock.mockResolvedValueOnce(reply(410));
+      await expect(service.getJobLogs('t', 'o/r', 5)).resolves.toEqual({
+        status: 'expired',
+      });
+    });
+
+    it('reports a 404 as no access, never as expired', async () => {
+      // A private repository answers a token that may not read Actions logs
+      // with a 404, which used to be mislabelled "log expired".
+      fetchMock.mockResolvedValueOnce(reply(404));
+      await expect(service.getJobLogs('t', 'o/r', 5)).resolves.toEqual({
+        status: 'no-access',
+      });
+    });
+
+    it('reports a permission 403 as no access instead of a 502', async () => {
+      fetchMock.mockResolvedValueOnce(
+        reply(403, 'Resource not accessible by integration', {
+          'x-ratelimit-remaining': '4999',
+        }),
+      );
+      await expect(service.getJobLogs('t', 'o/r', 5)).resolves.toEqual({
+        status: 'no-access',
+      });
+    });
+
+    it('still throws for a rate-limit 403 that outlasted the retries', async () => {
+      // Waiting longer than the inline cap returns the 403 to the caller.
+      fetchMock.mockResolvedValueOnce(
+        reply(403, 'rate limited', {
+          'x-ratelimit-remaining': '0',
+          'x-ratelimit-reset': String(Math.floor(Date.now() / 1000) + 3600),
+        }),
+      );
+      await expect(service.getJobLogs('t', 'o/r', 5)).rejects.toThrow(
+        'GitHub job log read failed (403)',
+      );
+    });
+
+    it('still throws for a genuine server error', async () => {
+      fetchMock.mockResolvedValueOnce(reply(500, 'boom'));
+      await expect(service.getJobLogs('t', 'o/r', 5)).rejects.toThrow(
+        'GitHub job log read failed (500): boom',
+      );
+    });
+  });
+
+  describe('getPullRequestChecks', () => {
+    const json = (body: unknown) => ({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve(body),
+      headers: new Headers(),
+    });
+    const failing = (status: number) => ({
+      ok: false,
+      status,
+      text: () => Promise.resolve('nope'),
+      headers: new Headers(),
+    });
+
+    /** Routes each GitHub URL to a canned reply; unknown URLs are a 404. */
+    function route(routes: Record<string, () => unknown>) {
+      fetchMock.mockImplementation((url: string) => {
+        const key = Object.keys(routes).find((k) => String(url).includes(k));
+        return Promise.resolve(
+          key
+            ? routes[key]!()
+            : { ok: false, status: 404, headers: new Headers() },
+        );
+      });
+    }
+
+    const actionsRun = (over: Record<string, unknown> = {}) => ({
+      id: 9001,
+      name: 'quality / Lint',
+      status: 'completed',
+      conclusion: 'success',
+      details_url: 'https://github.com/o/r/actions/runs/1/job/9001',
+      started_at: '2026-10-01T10:00:00Z',
+      completed_at: '2026-10-01T10:05:00Z',
+      app: { slug: 'github-actions' },
+      check_suite: { id: 77 },
+      output: { title: 'Lint ok', summary: 'No problems found.' },
+      ...over,
+    });
+
+    it('asks for the largest page of check runs', async () => {
+      route({
+        '/check-runs?': () => json({ check_runs: [] }),
+        '/status': () => json({ statuses: [] }),
+      });
+      await service.getPullRequestChecks('t', 'o/r', 'abc');
+      expect(String(fetchMock.mock.calls[0]?.[0])).toContain('per_page=100');
+    });
+
+    it('gives an Actions check its job id, workflow name and event', async () => {
+      route({
+        '/check-runs?': () => json({ check_runs: [actionsRun()] }),
+        '/actions/runs?head_sha=abc': () =>
+          json({
+            workflow_runs: [
+              { name: 'Quality', event: 'pull_request', check_suite_id: 77 },
+              { name: 'Other', event: 'push', check_suite_id: 78 },
+            ],
+          }),
+        '/status': () => json({ statuses: [] }),
+      });
+
+      const [check] = await service.getPullRequestChecks('t', 'o/r', 'abc');
+
+      expect(check).toEqual({
+        name: 'quality / Lint',
+        status: 'completed',
+        conclusion: 'success',
+        detailsUrl: 'https://github.com/o/r/actions/runs/1/job/9001',
+        startedAt: '2026-10-01T10:00:00Z',
+        completedAt: '2026-10-01T10:05:00Z',
+        id: 9001,
+        kind: 'check-run',
+        workflowName: 'Quality',
+        event: 'pull_request',
+        jobId: 9001,
+        title: 'Lint ok',
+        summary: 'No problems found.',
+        description: null,
+      });
+    });
+
+    it('distinguishes the same job name coming from two workflows', async () => {
+      route({
+        '/check-runs?': () =>
+          json({
+            check_runs: [
+              actionsRun({ id: 1, check_suite: { id: 77 } }),
+              actionsRun({ id: 2, check_suite: { id: 78 } }),
+            ],
+          }),
+        '/actions/runs?head_sha=abc': () =>
+          json({
+            workflow_runs: [
+              { name: 'Quality', event: 'pull_request', check_suite_id: 77 },
+              { name: 'Quality', event: 'push', check_suite_id: 78 },
+            ],
+          }),
+        '/status': () => json({ statuses: [] }),
+      });
+
+      const checks = await service.getPullRequestChecks('t', 'o/r', 'abc');
+      expect(checks.map((c) => [c.jobId, c.event])).toEqual([
+        [1, 'pull_request'],
+        [2, 'push'],
+      ]);
+    });
+
+    it('does not claim a job id for a check run from another app', async () => {
+      route({
+        '/check-runs?': () =>
+          json({
+            check_runs: [actionsRun({ app: { slug: 'sonarcloud' } })],
+          }),
+        '/status': () => json({ statuses: [] }),
+      });
+
+      const [check] = await service.getPullRequestChecks('t', 'o/r', 'abc');
+      expect(check).toMatchObject({
+        jobId: null,
+        workflowName: null,
+        event: null,
+        kind: 'check-run',
+      });
+      // No Actions check, so the workflow lookup is not even spent.
+      expect(
+        fetchMock.mock.calls.some((c) =>
+          String(c[0]).includes('/actions/runs'),
+        ),
+      ).toBe(false);
+    });
+
+    it('truncates a long check summary to about 500 characters', async () => {
+      route({
+        '/check-runs?': () =>
+          json({
+            check_runs: [
+              actionsRun({
+                output: { title: null, summary: 'x'.repeat(2000) },
+              }),
+            ],
+          }),
+        '/actions/runs?head_sha=abc': () => json({ workflow_runs: [] }),
+        '/status': () => json({ statuses: [] }),
+      });
+
+      const [check] = await service.getPullRequestChecks('t', 'o/r', 'abc');
+      expect(check!.summary).toHaveLength(503);
+      expect(check!.summary!.endsWith('...')).toBe(true);
+      expect(check!.title).toBeNull();
+    });
+
+    it('keeps the description of a commit status', async () => {
+      route({
+        '/check-runs?': () => json({ check_runs: [] }),
+        '/status': () =>
+          json({
+            statuses: [
+              {
+                context: 'ci/legacy',
+                state: 'failure',
+                description: 'Build broke on step 3',
+                target_url: 'https://ci.example/1',
+                created_at: 'a',
+                updated_at: 'b',
+              },
+            ],
+          }),
+      });
+
+      const [check] = await service.getPullRequestChecks('t', 'o/r', 'abc');
+      expect(check).toEqual({
+        name: 'ci/legacy',
+        status: 'completed',
+        conclusion: 'failure',
+        detailsUrl: 'https://ci.example/1',
+        startedAt: 'a',
+        completedAt: 'b',
+        id: null,
+        kind: 'status',
+        workflowName: null,
+        event: null,
+        jobId: null,
+        title: null,
+        summary: null,
+        description: 'Build broke on step 3',
+      });
+    });
+
+    it('attaches code annotations to failed check runs only', async () => {
+      route({
+        '/check-runs?': () =>
+          json({
+            check_runs: [
+              actionsRun({ id: 1, conclusion: 'failure' }),
+              actionsRun({ id: 2, conclusion: 'success' }),
+            ],
+          }),
+        '/actions/runs?head_sha=abc': () => json({ workflow_runs: [] }),
+        '/check-runs/1/annotations': () =>
+          json([
+            {
+              path: 'src/a.ts',
+              start_line: 12,
+              annotation_level: 'failure',
+              title: 'no-unused-vars',
+              message: "'x' is defined but never used",
+            },
+            {
+              path: '.github',
+              start_line: 1,
+              annotation_level: 'failure',
+              message: 'workflow noise',
+            },
+            {
+              path: 'src/a.ts',
+              start_line: 1,
+              annotation_level: 'failure',
+              message: 'Process completed with exit code 1.',
+            },
+          ]),
+        '/status': () => json({ statuses: [] }),
+      });
+
+      const [failed, passed] = await service.getPullRequestChecks(
+        't',
+        'o/r',
+        'abc',
+      );
+
+      expect(failed!.annotations).toEqual([
+        {
+          path: 'src/a.ts',
+          line: 12,
+          level: 'failure',
+          title: 'no-unused-vars',
+          message: "'x' is defined but never used",
+        },
+      ]);
+      expect(passed).not.toHaveProperty('annotations');
+      expect(
+        fetchMock.mock.calls.filter((c) =>
+          String(c[0]).includes('/annotations'),
+        ),
+      ).toHaveLength(1);
+    });
+
+    it('looks up annotations for at most ten failed checks', async () => {
+      route({
+        '/check-runs?': () =>
+          json({
+            check_runs: Array.from({ length: 14 }, (_, i) =>
+              actionsRun({ id: i + 1, conclusion: 'failure' }),
+            ),
+          }),
+        '/actions/runs?head_sha=abc': () => json({ workflow_runs: [] }),
+        '/annotations': () => json([]),
+        '/status': () => json({ statuses: [] }),
+      });
+
+      const checks = await service.getPullRequestChecks('t', 'o/r', 'abc');
+      expect(
+        fetchMock.mock.calls.filter((c) =>
+          String(c[0]).includes('/annotations'),
+        ),
+      ).toHaveLength(10);
+      expect(checks.filter((c) => c.annotations !== undefined)).toHaveLength(
+        10,
+      );
+    });
+
+    it('caps annotations at ten per check', async () => {
+      route({
+        '/check-runs?': () =>
+          json({ check_runs: [actionsRun({ id: 1, conclusion: 'failure' })] }),
+        '/actions/runs?head_sha=abc': () => json({ workflow_runs: [] }),
+        '/annotations': () =>
+          json(
+            Array.from({ length: 30 }, (_, i) => ({
+              path: 'src/a.ts',
+              start_line: i + 1,
+              annotation_level: 'failure',
+              message: `problem ${String(i)}`,
+            })),
+          ),
+        '/status': () => json({ statuses: [] }),
+      });
+
+      const [check] = await service.getPullRequestChecks('t', 'o/r', 'abc');
+      expect(check!.annotations).toHaveLength(10);
+    });
+
+    it('still returns the checks when the workflow lookup fails', async () => {
+      route({
+        '/check-runs?': () => json({ check_runs: [actionsRun()] }),
+        '/actions/runs?head_sha=abc': () => failing(500),
+        '/status': () => json({ statuses: [] }),
+      });
+
+      const [check] = await service.getPullRequestChecks('t', 'o/r', 'abc');
+      expect(check).toMatchObject({
+        name: 'quality / Lint',
+        workflowName: null,
+        event: null,
+        // The job id needs no extra call, so it survives the failure.
+        jobId: 9001,
+      });
+    });
+
+    it('still returns the checks when an annotation lookup fails', async () => {
+      route({
+        '/check-runs?': () =>
+          json({
+            check_runs: [
+              actionsRun({ id: 1, conclusion: 'failure' }),
+              actionsRun({ id: 2, conclusion: 'failure' }),
+            ],
+          }),
+        '/actions/runs?head_sha=abc': () => json({ workflow_runs: [] }),
+        '/check-runs/1/annotations': () => failing(403),
+        '/check-runs/2/annotations': () =>
+          json([
+            {
+              path: 'src/b.ts',
+              start_line: 2,
+              annotation_level: 'failure',
+              message: 'bad',
+            },
+          ]),
+        '/status': () => json({ statuses: [] }),
+      });
+
+      const [one, two] = await service.getPullRequestChecks('t', 'o/r', 'abc');
+      expect(one).not.toHaveProperty('annotations');
+      expect(two!.annotations).toHaveLength(1);
+    });
+  });
+
+  describe('secrets and branch protection', () => {
+    it('skips setting a secret when token is missing by default', async () => {
+      await expect(
+        service.setActionsSecret(
+          null,
+          'tone',
+          'orders-api',
+          'ALPHACI_TOKEN',
+          'x',
+        ),
+      ).resolves.toBeUndefined();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('throws when strict secret setting has no token', async () => {
+      await expect(
+        service.setActionsSecret(
+          undefined,
+          'tone',
+          'orders-api',
+          'ALPHACI_TOKEN',
+          'x',
+          {
+            throwOnFailure: true,
+          },
+        ),
+      ).rejects.toThrow('setActionsSecret: no token available');
+    });
+
+    it('returns without throwing when public key lookup fails in non-strict mode', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: async () => 'missing',
+      });
+
+      await expect(
+        service.setActionsSecret(
+          'gh-token',
+          'tone',
+          'orders-api',
+          'ALPHACI_TOKEN',
+          'x',
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it('throws when public key lookup fails in strict mode', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => 'key failed',
+      });
+
+      await expect(
+        service.setActionsSecretStrict(
+          'gh-token',
+          'tone',
+          'orders-api',
+          'ALPHACI_TOKEN',
+          'x',
+        ),
+      ).rejects.toThrow('setActionsSecret: failed to fetch public key');
+    });
+
+    describe('getBranchProtectionSummary', () => {
+      it('reads the protection facts of a protected branch', async () => {
+        fetchMock.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              required_pull_request_reviews: {
+                required_approving_review_count: 1,
+              },
+              allow_force_pushes: { enabled: false },
+              allow_deletions: { enabled: true },
+            }),
+        });
+
+        await expect(
+          service.getBranchProtectionSummary('t', 'tone', 'orders-api', 'uat'),
+        ).resolves.toEqual({
+          protected: true,
+          pullRequestRequired: true,
+          allowForcePushes: false,
+          allowDeletions: true,
+        });
+        expect(fetchMock).toHaveBeenCalledWith(
+          'https://api.github.com/repos/tone/orders-api/branches/uat/protection',
+          expect.anything(),
+        );
+      });
+
+      it('treats a 404 as an unprotected branch', async () => {
+        fetchMock.mockResolvedValueOnce({ ok: false, status: 404 });
+
+        await expect(
+          service.getBranchProtectionSummary('t', 'tone', 'orders-api', 'dev'),
+        ).resolves.toEqual({
+          protected: false,
+          pullRequestRequired: false,
+          allowForcePushes: true,
+          allowDeletions: true,
+        });
+      });
+
+      it('returns null, never a guess, when protection cannot be read', async () => {
+        fetchMock.mockResolvedValueOnce({ ok: false, status: 403 });
+
+        await expect(
+          service.getBranchProtectionSummary('t', 'tone', 'orders-api', 'uat'),
+        ).resolves.toBeNull();
+      });
+    });
+
+    it('reports a refused rule as failed instead of throwing', async () => {
+      fetchMock
+        .mockResolvedValueOnce({ ok: true, status: 200 })
+        .mockResolvedValueOnce({ ok: false, status: 404 })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 403,
+          text: () => Promise.resolve('{"message":"Resource not accessible"}'),
+        });
+
+      await expect(
+        service.ensurePullRequestProtection(
+          'gh-token',
+          'tone',
+          'orders-api',
+          'main',
+        ),
+      ).resolves.toMatchObject({
+        status: 'failed',
+        error: expect.stringContaining('Administration: write'),
+      });
+    });
+  });
+
+  describe('pull request authoring', () => {
+    const respond = (
+      status: number,
+      body: unknown,
+      headers: Record<string, string> = {},
+    ) => ({
+      ok: status >= 200 && status < 300,
+      status,
+      json: () => Promise.resolve(body),
+      text: () => Promise.resolve(JSON.stringify(body)),
+      headers: new Headers(headers),
+    });
+
+    it('compares with the three-dot form and keeps nested branch names intact', async () => {
+      fetchMock.mockResolvedValueOnce(
+        respond(200, { status: 'ahead', ahead_by: 1, files: [] }),
+      );
+
+      const result = await service.compareBranches(
+        'token',
+        'o/r',
+        'main',
+        'feature/login',
+      );
+
+      expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+        'https://api.github.com/repos/o/r/compare/main...feature/login',
+      );
+      expect(result?.aheadBy).toBe(1);
+    });
+
+    it('getBranchRelation reads only the status of compare/{base}...{head} with per_page=1', async () => {
+      fetchMock.mockResolvedValueOnce(
+        respond(200, { status: 'ahead', commits: [], files: [{}] }),
+      );
+
+      const relation = await service.getBranchRelation(
+        'token',
+        'o/r',
+        'a'.repeat(40),
+        'main',
+      );
+
+      expect(relation).toBe('ahead');
+      expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+        `https://api.github.com/repos/o/r/compare/${'a'.repeat(40)}...main?per_page=1`,
+      );
+    });
+
+    it('getBranchRelation is null for a missing ref or an unknown status', async () => {
+      fetchMock.mockResolvedValueOnce(respond(404, { message: 'Not Found' }));
+      await expect(
+        service.getBranchRelation('token', 'o/r', 'gone', 'main'),
+      ).resolves.toBeNull();
+
+      fetchMock.mockResolvedValueOnce(respond(200, { status: 'weird' }));
+      await expect(
+        service.getBranchRelation('token', 'o/r', 'a', 'main'),
+      ).resolves.toBeNull();
+    });
+
+    it('reports a missing branch as null rather than a gateway error', async () => {
+      fetchMock.mockResolvedValueOnce(respond(404, { message: 'Not Found' }));
+      await expect(
+        service.compareBranches('token', 'o/r', 'main', 'gone'),
+      ).resolves.toBeNull();
+    });
+
+    it('filters the open pull request lookup by owner:branch, as GitHub requires', async () => {
+      fetchMock.mockResolvedValueOnce(respond(200, []));
+
+      await service.findOpenPullRequest('token', 'org/repo', 'feature', 'main');
+
+      const url = new URL(String(fetchMock.mock.calls[0]?.[0]));
+      expect(url.searchParams.get('head')).toBe('org:feature');
+      expect(url.searchParams.get('base')).toBe('main');
+      expect(url.searchParams.get('state')).toBe('open');
+    });
+
+    it('opens a pull request and maps it to a summary', async () => {
+      fetchMock.mockResolvedValueOnce(
+        respond(201, {
+          number: 7,
+          title: 'Add login',
+          state: 'open',
+          html_url: 'https://github.com/o/r/pull/7',
+          head: { ref: 'feature' },
+          base: { ref: 'main' },
+          user: { login: 'lloydlim1' },
+        }),
+      );
+
+      const result = await service.openPullRequest('user-token', 'o/r', {
+        title: 'Add login',
+        head: 'feature',
+        base: 'main',
+        draft: true,
+      });
+
+      expect(result).toMatchObject({
+        created: true,
+        pullRequest: { number: 7, author: 'lloydlim1', headRef: 'feature' },
+      });
+      const init = fetchMock.mock.calls[0]?.[1] as {
+        method: string;
+        body: string;
+        headers: Record<string, string>;
+      };
+      expect(init.method).toBe('POST');
+      expect(init.headers['Authorization']).toBe('Bearer user-token');
+      expect(JSON.parse(init.body)).toEqual({
+        title: 'Add login',
+        head: 'feature',
+        base: 'main',
+        draft: true,
+      });
+    });
+
+    it("returns GitHub's validation sentence as a refusal, not an error", async () => {
+      fetchMock.mockResolvedValueOnce(
+        respond(422, {
+          message: 'Validation Failed',
+          errors: [{ message: 'No commits between main and feature' }],
+        }),
+      );
+
+      await expect(
+        service.openPullRequest('t', 'o/r', {
+          title: 'x',
+          head: 'feature',
+          base: 'main',
+        }),
+      ).resolves.toEqual({
+        created: false,
+        message: 'No commits between main and feature',
+      });
+    });
+
+    it('answers a rejected token with "sign in again" instead of a gateway error', async () => {
+      fetchMock.mockResolvedValueOnce(
+        respond(401, { message: 'Bad credentials', status: '401' }),
+      );
+
+      const result = await service.openPullRequest('revoked', 'o/r', {
+        title: 'x',
+        head: 'feature',
+        base: 'main',
+      });
+
+      expect(result.created).toBe(false);
+      expect(!result.created && result.message).toContain(
+        'Sign out and sign in again',
+      );
+    });
+
+    it('explains a permission refusal in terms of the person, not the endpoint', async () => {
+      fetchMock.mockResolvedValueOnce(
+        respond(
+          403,
+          { message: 'Resource not accessible' },
+          { 'x-ratelimit-remaining': '4000' },
+        ),
+      );
+
+      const result = await service.openPullRequest('t', 'o/r', {
+        title: 'x',
+        head: 'feature',
+        base: 'main',
+      });
+
+      expect(result.created).toBe(false);
+      expect(!result.created && result.message).toContain(
+        'does not have write access to o/r',
+      );
+    });
+
+    it('answers a merge with a revoked sign-in as a refusal, not a gateway error', async () => {
+      fetchMock.mockResolvedValueOnce(
+        respond(401, { message: 'Bad credentials' }),
+      );
+
+      await expect(
+        service.mergePullRequest('revoked', 'o/r', 1),
+      ).resolves.toEqual({
+        merged: false,
+        message: expect.stringContaining(
+          'Sign out and sign in again',
+        ) as string,
+        sha: null,
+      });
+    });
+
+    it('answers a merge without write access in terms of the person', async () => {
+      fetchMock.mockResolvedValueOnce(
+        respond(
+          403,
+          { message: 'Must have push access' },
+          { 'x-ratelimit-remaining': '4000' },
+        ),
+      );
+
+      const result = await service.mergePullRequest('t', 'o/r', 1);
+
+      expect(result.merged).toBe(false);
+      expect(result.message).toContain('does not have write access to o/r');
+      expect(result.message).toContain(
+        'Ask your Product owner to add you to this Project as a Developer.',
+      );
+    });
+
+    it('does not blame the person for a rate limit that outlasted the retries', async () => {
+      fetchMock.mockResolvedValue(
+        respond(
+          403,
+          { message: 'API rate limit exceeded' },
+          {
+            'x-ratelimit-remaining': '0',
+            // Far enough out that fetchWithRetry gives up at once.
+            'x-ratelimit-reset': String(Math.floor(Date.now() / 1000) + 3600),
+          },
+        ),
+      );
+
+      await expect(
+        service.openPullRequest('t', 'o/r', {
+          title: 'x',
+          head: 'feature',
+          base: 'main',
+        }),
+      ).rejects.toThrow('GitHub pull request creation failed (403)');
+    });
+  });
+
+  describe('getCommitAuthor', () => {
+    const respond = (status: number, body: unknown) => ({
+      ok: status >= 200 && status < 300,
+      status,
+      json: () => Promise.resolve(body),
+      text: () => Promise.resolve(JSON.stringify(body)),
+      headers: new Headers(),
+    });
+
+    it('maps a single-parent commit linked to a GitHub account', async () => {
+      fetchMock.mockResolvedValueOnce(
+        respond(200, {
+          author: { login: 'tone' },
+          parents: [{ sha: 'p1' }],
+        }),
+      );
+
+      const result = await service.getCommitAuthor(
+        'token',
+        'org/repo',
+        'a'.repeat(40),
+      );
+
+      expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+        `https://api.github.com/repos/org/repo/commits/${'a'.repeat(40)}`,
+      );
+      expect(result).toEqual({ login: 'tone', isMergeCommit: false });
+    });
+
+    it('flags a commit with more than one parent as a merge commit', async () => {
+      fetchMock.mockResolvedValueOnce(
+        respond(200, {
+          author: { login: 'tone' },
+          parents: [{ sha: 'p1' }, { sha: 'p2' }],
+        }),
+      );
+
+      const result = await service.getCommitAuthor('token', 'org/repo', 'sha');
+
+      expect(result).toEqual({ login: 'tone', isMergeCommit: true });
+    });
+
+    it('reports a null login when the commit is not linked to a GitHub account', async () => {
+      fetchMock.mockResolvedValueOnce(
+        respond(200, {
+          author: null,
+          parents: [{ sha: 'p1' }],
+        }),
+      );
+
+      const result = await service.getCommitAuthor('token', 'org/repo', 'sha');
+
+      expect(result).toEqual({ login: null, isMergeCommit: false });
+    });
+
+    it('returns null rather than a gateway error when the commit is not found', async () => {
+      fetchMock.mockResolvedValueOnce(respond(404, { message: 'Not Found' }));
+
+      await expect(
+        service.getCommitAuthor('token', 'org/repo', 'gone'),
+      ).resolves.toBeNull();
+    });
+  });
+});

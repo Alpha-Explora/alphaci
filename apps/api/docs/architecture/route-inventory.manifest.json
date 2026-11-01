@@ -1,0 +1,317 @@
+{
+  "routeCount": 271,
+  "referenceFile": "route-inventory.baseline.txt",
+  "referenceSha256": "5e1f7bae4b10fb8f9ace71306e263cdf5a26b2371967b00d96d7afc1c26f5fea",
+  "referenceKind": "pre-pr-baseline-equals-current",
+  "baselineAvailable": true,
+  "baselineFile": "route-inventory.baseline.txt",
+  "baselineSha256": "5e1f7bae4b10fb8f9ace71306e263cdf5a26b2371967b00d96d7afc1c26f5fea",
+  "baselineSourceCommit": "e3751eb857ca8f8172da26f8ae61c26f333af19b",
+  "capturedAtCheckpoint": "e3751eb857ca8f8172da26f8ae61c26f333af19b",
+  "amendments": [
+    {
+      "reason": "Release surface: a generated pipeline asks the platform to release what it built, so the hosting credential stays here instead of in every customer repository.",
+      "routes": [
+        "GET /api/v1/ci/releases/{releaseId}",
+        "POST /api/v1/ci/releases"
+      ]
+    },
+    {
+      "reason": "Member directory: who may join a workspace on this deployment, readable by the people in it, for the member picker and client systems (ADR-0011).",
+      "routes": [
+        "GET /api/v1/directory",
+        "GET /api/v1/directory/members"
+      ]
+    },
+    {
+      "reason": "Pull request authoring: compare two branches and open a pull request as the signed-in person, so work is proposed from the product instead of on GitHub.",
+      "routes": [
+        "GET /api/v1/projects/{projectId}/workspace/compare",
+        "POST /api/v1/projects/{projectId}/workspace/pull-requests"
+      ]
+    },
+    {
+      "reason": "QA checklists (Slice 2): team leads/admins define workspace-scoped QA checklists and share them to that workspace's projects; per-branch verification runs are a later slice.",
+      "routes": [
+        "GET /api/v1/workspaces/{workspaceId}/qa-checklists",
+        "POST /api/v1/workspaces/{workspaceId}/qa-checklists",
+        "GET /api/v1/qa-checklists/{id}",
+        "PATCH /api/v1/qa-checklists/{id}",
+        "PUT /api/v1/qa-checklists/{id}/items",
+        "POST /api/v1/qa-checklists/{id}/archive",
+        "PUT /api/v1/qa-checklists/{id}/projects",
+        "GET /api/v1/projects/{projectId}/qa-checklists"
+      ]
+    },
+    {
+      "reason": "QA verification runs (Slice 3): per-(checklist, branch, commit) verification runs, item statuses/defects, the returned-to-dev feedback loop, and sign-off/reopen — built on Slice 2's checklist definitions.",
+      "routes": [
+        "GET /api/v1/projects/{projectId}/qa-runs",
+        "GET /api/v1/projects/{projectId}/qa-runs/current",
+        "POST /api/v1/projects/{projectId}/qa-runs",
+        "GET /api/v1/projects/{projectId}/qa-runs/{runId}",
+        "PATCH /api/v1/projects/{projectId}/qa-runs/{runId}/items/{itemId}",
+        "POST /api/v1/projects/{projectId}/qa-runs/{runId}/items/{itemId}/request-retest",
+        "POST /api/v1/projects/{projectId}/qa-runs/{runId}/signoff",
+        "POST /api/v1/projects/{projectId}/qa-runs/{runId}/reopen",
+        "GET /api/v1/projects/{projectId}/qa-returned-items"
+      ]
+    },
+    {
+      "reason": "QA report export (Slice 4): a signed-off run's frozen report, or an open run's live one, downloadable as JSON or Markdown for sharing outside the product.",
+      "routes": [
+        "GET /api/v1/projects/{projectId}/qa-runs/{runId}/report"
+      ]
+    },
+    {
+      "reason": "Playwright and automated verification (Slice 5): \"Run Playwright\" re-dispatches the generated verify workflow for a QA run's branch, attributed to the signed-in user's own GitHub token.",
+      "routes": [
+        "POST /api/v1/projects/{projectId}/qa-runs/{runId}/automation/dispatch"
+      ]
+    },
+    {
+      "reason": "Project folders (A2): a team lead moves a repository into another project of the same team, so a frontend and backend that were created apart can sit under one project.",
+      "routes": [
+        "POST /api/v1/repositories/{repositoryId}/move"
+      ]
+    },
+    {
+      "reason": "QA promotion and My QA items (Slice 6): the \"Merge to main\" gate and action for a QA-approved uat commit, and the Overview \"My QA items\" card (returned items plus open developer-targeted items on the current uat run).",
+      "routes": [
+        "GET /api/v1/projects/{projectId}/qa/promotion",
+        "POST /api/v1/projects/{projectId}/qa/promotion/merge",
+        "GET /api/v1/projects/{projectId}/qa-my-items"
+      ]
+    },
+    {
+      "reason": "Vercel Protection Bypass for Automation: reinstall a target's CI secrets by hand",
+      "routes": [
+        "POST /api/v1/projects/{projectId}/deployment-targets/{targetId}/reinstall-secrets"
+      ]
+    },
+    {
+      "reason": "Delete a Project (delivery project) together with every repository inside it, reusing disconnectProject's GitHub/Render/Vercel/Sonar teardown per repository.",
+      "routes": [
+        "DELETE /api/v1/delivery-projects/{deliveryProjectId}"
+      ]
+    },
+    {
+      "reason": "Read-only list of the sibling repositories of the Project (delivery project) a project is filed under, for the project page repository switcher.",
+      "routes": [
+        "GET /api/v1/projects/{projectId}/folder"
+      ]
+    },
+    {
+      "reason": "Retired the legacy workspace-member write routes: team membership is managed only through the hierarchy groups routes (lead/admin-gated, offboarding revokes assignments). GET /workspaces/{workspaceId}/members stays read-only.",
+      "removedRoutes": [
+        "POST /api/v1/workspaces/{workspaceId}/members",
+        "PATCH /api/v1/workspaces/{workspaceId}/members/{memberId}",
+        "DELETE /api/v1/workspaces/{workspaceId}/members/{memberId}"
+      ]
+    },
+    {
+      "reason": "Project requirements: Product owners define functional (Feature -> User stories) and system requirements inside a Project, developers report Progress, QA verifies once per Project through Project-scope runs (design: docs/design/project-requirements.md, ADR-0014). The repository-scope run routes stay as read-only history.",
+      "routes": [
+        "DELETE /api/v1/requirements/{id}/items/{itemId}",
+        "GET /api/v1/delivery-projects/{deliveryProjectId}/qa-runs",
+        "GET /api/v1/delivery-projects/{deliveryProjectId}/qa-runs/current",
+        "GET /api/v1/delivery-projects/{deliveryProjectId}/qa-runs/{runId}",
+        "GET /api/v1/delivery-projects/{deliveryProjectId}/qa-runs/{runId}/report",
+        "GET /api/v1/delivery-projects/{deliveryProjectId}/qa/my-items",
+        "GET /api/v1/delivery-projects/{deliveryProjectId}/requirements",
+        "GET /api/v1/requirements/{id}",
+        "GET /api/v1/workspaces/{workspaceId}/qa-requirements/overview",
+        "PATCH /api/v1/delivery-projects/{deliveryProjectId}/qa-runs/{runId}/items/{itemId}",
+        "PATCH /api/v1/requirements/{id}",
+        "PATCH /api/v1/requirements/{id}/items/{itemId}",
+        "PATCH /api/v1/requirements/{id}/items/{itemId}/progress",
+        "POST /api/v1/delivery-projects/{deliveryProjectId}/qa-runs",
+        "POST /api/v1/delivery-projects/{deliveryProjectId}/qa-runs/{runId}/automation/dispatch",
+        "POST /api/v1/delivery-projects/{deliveryProjectId}/qa-runs/{runId}/reopen",
+        "POST /api/v1/delivery-projects/{deliveryProjectId}/qa-runs/{runId}/signoff",
+        "POST /api/v1/delivery-projects/{deliveryProjectId}/requirements",
+        "POST /api/v1/delivery-projects/{deliveryProjectId}/requirements/batch",
+        "POST /api/v1/requirements/{id}/archive",
+        "POST /api/v1/requirements/{id}/items",
+        "PUT /api/v1/requirements/{id}/items/order"
+      ]
+    },
+    {
+      "reason": "GitHub in the product (PR-only protection, commits, Audit activity): the Commits list of a branch; a forced GitHub activity sync into the Audit trail (any member who can see the repository); admin-only, idempotent pull-request-required branch protection for one repository and for every provisioned repository the admin can see (ADR-0015).",
+      "routes": [
+        "GET /api/v1/projects/{id}/commits",
+        "POST /api/v1/admin/branch-protection/apply",
+        "POST /api/v1/projects/{id}/audit/sync",
+        "POST /api/v1/projects/{id}/branch-protection"
+      ]
+    },
+    {
+      "reason": "Visual testing: token-authenticated visual baseline reads and result ingestion for the generated Playwright job, and the Visual tab (latest run, images, approve) under the project workspace.",
+      "routes": [
+        "GET /api/v1/ci/visual-baselines",
+        "GET /api/v1/ci/visual-baselines/file",
+        "GET /api/v1/projects/{projectId}/workspace/visual",
+        "GET /api/v1/projects/{projectId}/workspace/visual/image",
+        "POST /api/v1/ci/visual-results/file",
+        "POST /api/v1/ci/visual-summary",
+        "POST /api/v1/projects/{projectId}/workspace/visual/approve"
+      ]
+    },
+    {
+      "reason": "Add browser tests: report whether the starter browser tests are on a project's dev branch, and open a pull request into dev adding them as the signed-in person.",
+      "routes": [
+        "GET /api/v1/projects/{projectId}/workspace/browser-tests",
+        "POST /api/v1/projects/{projectId}/workspace/browser-tests"
+      ]
+    },
+    {
+      "reason": "Live Playwright progress: the generated verify workflow posts test-by-test events with its CI token while Playwright runs, and the studio Playwright tab reads the current stage, finished tests and what is running now.",
+      "routes": [
+        "GET /api/v1/projects/{projectId}/workspace/playwright-live",
+        "POST /api/v1/ci/playwright-progress"
+      ]
+    },
+    {
+      "reason": "Project members: a team lead or admin lists, adds and removes the Developers and QA Team people of a Project (Developers get GitHub Write on every repository of it), and re-runs the Developers' grant fan-out after live GitHub sync is enabled.",
+      "routes": [
+        "GET /api/v1/delivery-projects/{deliveryProjectId}/members",
+        "POST /api/v1/delivery-projects/{deliveryProjectId}/members",
+        "POST /api/v1/delivery-projects/{deliveryProjectId}/members/sync",
+        "DELETE /api/v1/delivery-projects/{deliveryProjectId}/members/{memberUserId}"
+      ]
+    },
+    {
+      "reason": "CI run report export: one pipeline execution (repository, branch, commit) as a downloadable failures-first report in JSON or Markdown, for the developer who has to fix it. Same session auth and project visibility as GET /ci/runs.",
+      "routes": [
+        "GET /api/v1/ci/runs/report"
+      ]
+    },
+    {
+      "reason": "SonarCloud repair: switch off Automatic Analysis on a provisioned project so SonarCloud accepts its CI scans again. Lead/admin only, same session auth and project visibility as the other project lifecycle routes.",
+      "routes": [
+        "POST /api/v1/projects/{id}/sonar/disable-automatic-analysis"
+      ]
+    },
+    {
+      "reason": "QA screenshots (A1): attach, list and delete evidence images on a Project run item, stored in a private bucket and served by short-lived signed URLs. Same session auth, capability gate and Project visibility as the other Project-run routes.",
+      "routes": [
+        "DELETE /api/v1/delivery-projects/{deliveryProjectId}/qa-runs/{runId}/attachments/{attachmentId}",
+        "GET /api/v1/delivery-projects/{deliveryProjectId}/qa-runs/{runId}/attachments",
+        "GET /api/v1/delivery-projects/{deliveryProjectId}/qa-runs/{runId}/items/{itemId}/attachments",
+        "POST /api/v1/delivery-projects/{deliveryProjectId}/qa-runs/{runId}/items/{itemId}/attachments"
+      ]
+    },
+    {
+      "reason": "Project environment targets, release promotion, and outbound on-prem host delivery.",
+      "routes": [
+        "GET /api/v1/onprem/assignments",
+        "GET /api/v1/projects/{projectId}/environments",
+        "GET /api/v1/projects/{projectId}/environments/{environmentId}/deployment-targets/{slot}",
+        "GET /api/v1/projects/{projectId}/environments/{environmentId}/deployments",
+        "GET /api/v1/projects/{projectId}/releases",
+        "PATCH /api/v1/projects/{projectId}/environments/{environmentId}",
+        "POST /api/v1/ci/deployments/{deploymentId}/status",
+        "POST /api/v1/ci/releases/{releaseId}/deployment-status",
+        "POST /api/v1/onprem/deployments/{deploymentId}/status",
+        "POST /api/v1/projects/{projectId}/environments",
+        "POST /api/v1/projects/{projectId}/environments/{environmentId}/hosts",
+        "POST /api/v1/projects/{projectId}/environments/{environmentId}/promotions",
+        "PUT /api/v1/ci/releases/{releaseId}/manifest",
+        "PUT /api/v1/projects/{projectId}/deployment-targets/{targetId}/environment"
+      ]
+    },
+    {
+      "reason": "Project Iterations phase 1: read the Iterations of a Project and its current one (ITERATIONS_PLAN.md section 5)",
+      "routes": [
+        "GET /api/v1/delivery-projects/{deliveryProjectId}/iterations",
+        "GET /api/v1/delivery-projects/{deliveryProjectId}/iterations/current"
+      ]
+    },
+    {
+      "reason": "Iterations phase 2: merge every covered repository of a Project to main and deliver the Iteration",
+      "routes": [
+        "POST /api/v1/delivery-projects/{deliveryProjectId}/promotion/merge-all"
+      ]
+    },
+    {
+      "reason": "Iterations phase 3: start the next Iteration with carry-over (ITERATIONS_PLAN.md section 5)",
+      "routes": [
+        "POST /api/v1/delivery-projects/{deliveryProjectId}/iterations"
+      ]
+    },
+    {
+      "reason": "Read on-prem deployment prerequisites without modifying schema or claiming runner and host health.",
+      "routes": [
+        "GET /api/v1/projects/{projectId}/environments/{environmentId}/onprem-readiness"
+      ]
+    },
+    {
+      "reason": "Enroll workspace machines with one-time codes, heartbeat and revoke credentials, and explicitly assign project environments.",
+      "routes": [
+        "GET /api/v1/workspaces/{workspaceId}/onprem-hosts",
+        "POST /api/v1/workspaces/{workspaceId}/onprem-host-enrollments",
+        "POST /api/v1/workspaces/{workspaceId}/onprem-hosts/{machineId}/revoke",
+        "POST /api/v1/onprem/enroll",
+        "POST /api/v1/onprem/heartbeat",
+        "GET /api/v1/projects/{projectId}/environments/{environmentId}/host-assignment",
+        "POST /api/v1/projects/{projectId}/environments/{environmentId}/host-assignment",
+        "DELETE /api/v1/projects/{projectId}/environments/{environmentId}/host-assignment"
+      ]
+    },
+    {
+      "reason": "Distribute the configured installer archive only when its bytes match the pinned checksum.",
+      "routes": [
+        "GET /api/v1/onprem/installer/{version}"
+      ]
+    },
+    {
+      "reason": "Code tab commit column: the latest commit of the opened folder or file and of each entry in it, read in batched GraphQL requests so the file list can show what last changed each path and when.",
+      "routes": [
+        "GET /api/v1/projects/{projectId}/workspace/files/commits"
+      ]
+    },
+    {
+      "reason": "Self-hosted storage (WP-A): screenshot bytes for STORAGE_DRIVER=postgres are served at a short-lived HMAC-signed link. No session guard, because the signed link is the authorization and <img> loads cannot send the session cookie cross-site.",
+      "routes": [
+        "GET /api/v1/qa-attachments/content"
+      ]
+    },
+    {
+      "reason": "Roll back a deployment from inside ALPHACI: put an earlier Render deploy or Vercel production deployment back live (Developers and admins, reason required, recorded in the Audit trail), and resume a Vercel rollback that holds new deploys.",
+      "routes": [
+        "POST /api/v1/projects/{projectId}/deployment-targets/{targetId}/rollback",
+        "POST /api/v1/projects/{projectId}/deployment-targets/{targetId}/rollback/resume"
+      ]
+    },
+    {
+      "reason": "Deliver recipient-scoped live Inbox snapshots for workspace membership notifications, protected by session and notification capability guards.",
+      "routes": [
+        "GET /api/v1/notifications/stream"
+      ]
+    },
+    {
+      "reason": "QA test cases: QA writes test case categories and test cases under a User story, and records each test case result in a Project run (ADR-0014, amendment 10).",
+      "routes": [
+        "POST /api/v1/requirements/{id}/items/{itemId}/test-categories",
+        "PATCH /api/v1/requirements/{id}/items/{itemId}/test-categories/{categoryId}",
+        "DELETE /api/v1/requirements/{id}/items/{itemId}/test-categories/{categoryId}",
+        "POST /api/v1/requirements/{id}/items/{itemId}/test-categories/{categoryId}/test-cases",
+        "PATCH /api/v1/requirements/{id}/items/{itemId}/test-cases/{testCaseId}",
+        "DELETE /api/v1/requirements/{id}/items/{itemId}/test-cases/{testCaseId}",
+        "PATCH /api/v1/delivery-projects/{deliveryProjectId}/qa-runs/{runId}/items/{itemId}/test-cases/{testCaseId}"
+      ]
+    },
+    {
+      "reason": "Hosting pre-fills an on-prem assignment with the container port and health path of the app AlphaCI scaffolded for the project, the same values automatic assignment uses.",
+      "routes": [
+        "GET /api/v1/projects/{projectId}/environments/{environmentId}/host-assignment/defaults"
+      ]
+    },
+    {
+      "reason": "Create a repository branch from the fixed dev source",
+      "routes": [
+        "POST /api/v1/projects/{projectId}/workspace/branches"
+      ]
+    }
+  ]
+}

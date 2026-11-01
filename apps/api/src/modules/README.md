@@ -1,0 +1,51 @@
+# Bounded-context modules
+
+`src/modules/` contains six bounded-context composition roots. A context is a
+business ownership boundary; a provider, repository, or deployment mode is not
+an additional top-level module.
+
+```text
+modules/
+├── identity-access/   auth, admin, capabilities, workspaces, hierarchy, member directory
+├── projects/          projects, environments, requirements, QA runs, catalog,
+│                      workflows, existing repositories
+├── pipelines/         GitHub integration and CI reporting
+├── runtime/           deployment targets, environment variables, providers, on-prem hosts, releases
+├── billing/           subscriptions and usage/quota policy
+└── platform-ops/      audit, notifications, feedback, outbox consumers
+```
+
+Each context has a `<context>.module.ts` composition root and an `index.ts`
+public API. Complex features may use the following layers; simple features stay
+flat rather than creating empty folders:
+
+```text
+api/             controllers and request/response DTOs
+application/     use cases and orchestration
+domain/          framework-free business rules
+infrastructure/  repositories and provider adapters
+contracts/       serialisable cross-context types and focused ports
+```
+
+## Boundary rules
+
+1. Cross-context production code imports only the owning context's `index.ts`,
+   `contracts/`, or an injected port token. A feature's concrete service,
+   repository, DTO, or provider adapter is private.
+2. Context composition roots may import another context's Nest module when the
+   Nest graph needs to be assembled. This is composition wiring, not a public
+   business dependency.
+3. `kernel/` may be used by contexts, but `kernel/` may never import a context.
+4. Provider implementations and their contribution pack live under
+   `runtime/infrastructure/providers/<id>`. Adding a provider requires one
+   Runtime composition binding for its pack, but does not require edits to the
+   generic registries, contracts, or another context. Public compatibility DTO
+   fields may remain at the Runtime boundary when they preserve an existing
+   API or storage contract.
+5. No circular dependencies exist between contexts or within their module
+   graphs.
+
+The rules are checked by `.dependency-cruiser.cjs`,
+`check:application-boundaries`, `check:provider-encapsulation`, and the schema
+ownership gate. The architecture metrics report is descriptive; dependency-
+cruiser is the authoritative import graph.

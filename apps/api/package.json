@@ -1,0 +1,202 @@
+{
+  "name": "template-repo-be-single",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "imports": {
+    "#kernel/*.js": {
+      "types": "./src/kernel/*",
+      "default": "./dist/src/kernel/*.js"
+    },
+    "#kernel/*": {
+      "types": "./src/kernel/*",
+      "default": "./dist/src/kernel/*.js"
+    },
+    "#modules/*.js": {
+      "types": "./src/modules/*",
+      "default": "./dist/src/modules/*.js"
+    },
+    "#modules/*": {
+      "types": "./src/modules/*",
+      "default": "./dist/src/modules/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:saas": "node scripts/run-edition.mjs saas nest start --watch",
+    "start:edu": "node scripts/run-edition.mjs edu nest start --watch",
+    "start:enterprise": "node scripts/run-edition.mjs enterprise nest start --watch",
+    "start:enterprise-client": "node scripts/run-edition.mjs enterprise-client nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/src/main",
+    "lint": "eslint \"{src,apps,libs,tests}/**/*.ts\"",
+    "lint:fix": "eslint \"{src,apps,libs,tests}/**/*.ts\" --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:e2e": "jest --config ./tests/e2e/jest-e2e.json --runInBand",
+    "routes:add": "node scripts/add-routes.cjs",
+    "db:hierarchy:verify": "node scripts/hierarchy-migrations.cjs verify",
+    "db:hierarchy:apply": "node scripts/hierarchy-migrations.cjs apply",
+    "check:github-teams": "node --env-file=.env -r ts-node/register scripts/check-github-team-setup.ts",
+    "db:apply": "node --env-file=.env -r ts-node/register scripts/apply-migrations.ts",
+    "boundaries": "depcruise src tests --config .dependency-cruiser.cjs --ignore-known",
+    "check:application-boundaries": "node ./scripts/check-application-boundaries.cjs",
+    "report:architecture-metrics": "node ./scripts/report-architecture-metrics.cjs",
+    "check:provider-encapsulation": "node ./scripts/check-provider-encapsulation.cjs",
+    "boundaries:graph": "depcruise src --config .dependency-cruiser.cjs --output-type dot > dependency-graph.dot",
+    "boundaries:new": "depcruise src tests --config .dependency-cruiser.cjs",
+    "db:apply:all": "node scripts/apply-all-migrations.mjs",
+    "db:migrate:selfhost": "node -r ts-node/register src/scripts/migrate-selfhost.ts",
+    "check:schema-ownership": "node ./scripts/check-schema-ownership.cjs",
+    "check:capabilities": "node ./scripts/check-capabilities.cjs",
+    "generate:composition": "node ./scripts/generate-composition-source.mjs",
+    "capability:new": "node ./scripts/new-capability.cjs",
+    "check:composition-source": "node ./scripts/generate-composition-source.mjs --check",
+    "check:capability-ledger": "node ./scripts/check-capability-ledger.cjs",
+    "ledger:record": "node ./scripts/record-capability-ledger.cjs",
+    "package:capability-catalog": "node ./scripts/package-capability-catalog.cjs",
+    "check:capability-package": "node ./scripts/check-capability-package.cjs",
+    "check:composition-profiles": "node ./scripts/check-build-profile-conformance.cjs",
+    "check:nest-watch": "node scripts/check-nest-watch.mjs",
+    "generate:architecture-maps": "node scripts/generate-architecture-maps.mjs",
+    "check:okf": "node scripts/check-okf-bundle.cjs docs",
+    "check:documentation": "node scripts/check-documentation.cjs",
+    "test:documentation": "node --test tests/architecture/check-okf-bundle.test.cjs",
+    "process:outbox": "npm run build && node scripts/process-outbox.cjs",
+    "routes:inventory": "npm run build && node scripts/route-inventory.cjs",
+    "check:vercel": "node -r ts-node/register scripts/check-vercel-managed-setup.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.3",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/swagger": "^11.4.7",
+    "@nestjs/throttler": "^6.5.0",
+    "@supabase/supabase-js": "^2.100.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "connect-pg-simple": "^10.0.0",
+    "exceljs": "^4.4.0",
+    "express": "5.2.1",
+    "express-session": "^1.19.0",
+    "google-auth-library": "^10.9.1",
+    "helmet": "^8.1.0",
+    "js-yaml": "^4.3.2",
+    "libsodium-wrappers": "^0.8.4",
+    "pg": "^8.20.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.18.0",
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@nestjs/testing": "^11.0.1",
+    "@types/connect-pg-simple": "^7.0.3",
+    "@types/express": "^5.0.0",
+    "@types/express-session": "^1.19.0",
+    "@types/helmet": "^0.0.48",
+    "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.7",
+    "@types/pg": "^8.20.0",
+    "@types/supertest": "^6.0.2",
+    "dependency-cruiser": "^18.2.0",
+    "eslint": "^10.1.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "globals": "^16.0.0",
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
+    "prettier": "^3.4.2",
+    "source-map-support": "^0.5.21",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.0",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0"
+  },
+  "overrides": {
+    "lodash": "4.18.1",
+    "picomatch": "^4.0.4",
+    "path-to-regexp": "^8.4.0",
+    "browserslist": "^4.28.7",
+    "fast-uri": "^3.1.6",
+    "multer": "^2.3.0",
+    "@humanfs/node": "0.16.8",
+    "qs": "6.16.0",
+    "jest-junit": {
+      "uuid": "11.1.1"
+    },
+    "exceljs": {
+      "uuid": "11.1.1"
+    },
+    "@istanbuljs/load-nyc-config@1.1.0": {
+      "js-yaml": "^3.15.2"
+    }
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "^#kernel/(.*)\\.js$": "<rootDir>/src/kernel/$1",
+      "^#kernel/(.*)$": "<rootDir>/src/kernel/$1",
+      "^#modules/(.*)\\.js$": "<rootDir>/src/modules/$1",
+      "^#modules/(.*)$": "<rootDir>/src/modules/$1",
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.(t|j)s"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "src/main.ts",
+      "src/scripts/",
+      "\\.module\\.ts$",
+      "\\.types\\.ts$",
+      "/dto/"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "json-summary",
+      "text",
+      "lcov"
+    ],
+    "reporters": [
+      "default",
+      [
+        "jest-junit",
+        {
+          "outputDirectory": "test-results",
+          "outputName": "junit.xml"
+        }
+      ]
+    ],
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/tests/architecture",
+      "<rootDir>/tests/unit",
+      "<rootDir>/tests/integration"
+    ]
+  }
+}

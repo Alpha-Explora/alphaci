@@ -1,0 +1,234 @@
+import { BadRequestException, Injectable } from '@nestjs/common';
+
+import {
+  vercelAliasHost,
+  vercelBranchAlias,
+} from '#kernel/ports/workflow-fragment.port';
+
+import type {
+  DeploymentProviderConnectionScopeInput,
+  DeploymentProviderPolicy,
+  DeploymentProviderProvisioningPolicy,
+  DeploymentProviderStrategyInput,
+  DeploymentProviderTargetPolicyInput,
+  DeploymentProviderTargetPolicyResult,
+  DeploymentProviderLogEntry,
+} from '../../../domain/deployment-provider.policy';
+import type { DeploymentProvisioningTarget } from '../../../core/deployment-provisioning.contract';
+import type { DeploymentStrategy } from '../../../core/deployments.types';
+
+/** Vercel owns team scope and its CI-pushed deployment strategy. */
+@Injectable()
+export class VercelDeploymentPolicy implements DeploymentProviderPolicy {
+  readonly providerId = 'vercel';
+  readonly managedQuota = {
+    quotaCode: 'managed_vercel_projects',
+    fleetCapConfigKey: 'vercelManagedFleetMax',
+    providerLabel: 'Vercel',
+    freeLimit: 1,
+    proLimit: 10,
+  };
+  readonly provisioning: DeploymentProviderProvisioningPolicy = {
+    resolveDefaultTargetRole: () => 'frontend',
+    /**
+     * Product default for a frontend project that asked for no hosting.
+     *
+     * Mirrors Render's backend default. Without it a React project was created
+     * with no deployment target: `vercel` was named as the default frontend
+     * provider but nothing ever read that, so the wizard's hosting step was the
+     * only way to get a deploy job, and skipping it produced a pipeline that
+     * built and tested and then deployed nowhere.
+     *
+     * No branchName: Vercel deploys every promotion branch, so the target is
+     * branch-neutral and `expandTargets` leaves branch selection to the
+     * pipeline. Render's default pins uat because a Render service is
+     * per-branch.
+     */
+    resolveDefaultCreateTarget: ({ serviceName, repoName, servicePath }) => {
+      const base = (serviceName || repoName || 'frontend')
+        .trim()
+        .toLowerCase()
+        .replaceAll(/[^a-z0-9._-]+/g, '-')
+        .replaceAll(/^-+|-+$/g, '');
+      return {
+        slot: 'frontend',
+        provider: 'vercel',
+        ownershipMode: 'flowci_managed',
+        projectName: base || 'frontend',
+        rootDirectory: servicePath?.trim() || '.',
+        buildCommand: 'npm run build',
+        env: [],
+      };
+    },
+    resolveCrossLinkLane: () => null,
+    /*
+     * The address each branch is actually served on, which is what a backend
+     * has to allow in CORS_ORIGINS.
+     *
+     * This built the `<project>-git-<branch>-<team>` form, which Vercel only
+     * assigns to builds from its own Git integration. The pipeline deploys with
+     * the CLI and aliases each preview to `<branch>-<project>.vercel.app`, so
+     * the uat backend was told to allow an origin its frontend never used, and
+     * no origin at all once a project was created without the Git link.
+     * vercelBranchAlias is the derivation the deploy job and the verify stage
+     * use, so the three cannot disagree.
+     */
+    resolvePublicUrl: ({ providerProjectName, branchName, lane }) => {
+      if (!providerProjectName) return null;
+      const aliasHost = vercelAliasHost(providerProjectName);
+      const branch = lane === 'production' ? null : branchName?.trim();
+      return `https://${branch ? vercelBranchAlias(branch, aliasHost) : aliasHost}`;
+    },
+    normalizeTarget: (target) => {
+      if (target.branchName !== 'test') return target;
+      const projectName = vercelProjectNameForBranch(target, 'uat');
+      return {
+        ...target,
+        branchName: 'uat',
+        ...(projectName ? { projectName } : {}),
+      };
+    },
+    expandTargets: ({ target }) => [target],
+    defaultImageUrl: () => null,
+  };
+
+  resolveStrategy(input: DeploymentProviderStrategyInput): DeploymentStrategy {
+    void input;
+    return 'vercel_ci_pushed';
+  }
+
+  resolveTarget(
+    input: DeploymentProviderTargetPolicyInput,
+  ): DeploymentProviderTargetPolicyResult {
+    return {
+      storage: {},
+      providerInput: this.resolveConnectionScope({
+        ownershipMode: input.ownershipMode,
+        connectionMetadata: input.connectionMetadata,
+        managedConfig: input.managedConfig,
+      }),
+      providerMetadata: {},
+    };
+  }
+
+  resolveConnectionScope(
+    input: DeploymentProviderConnectionScopeInput,
+  ): Record<string, unknown> {
+    if (input.ownershipMode === 'flowci_managed') {
+      const teamId = stringValue(input.managedConfig['vercelTeamId']);
+      const teamSlug = stringValue(input.managedConfig['vercelTeamSlug']);
+      if (!teamId) {
+        throw new BadRequestException(
+          'ALPHACI_VERCEL_TEAM_ID is required for ALPHACI-managed Vercel deployment targets',
+        );
+      }
+      return {
+        vercelOrgId: teamId,
+        vercelTeamId: teamId,
+        ...(teamSlug ? { vercelTeamSlug: teamSlug } : {}),
+      };
+    }
+
+    const teamId = stringValue(input.connectionMetadata['teamId']);
+    const teamSlug = stringValue(input.connectionMetadata['teamSlug']);
+    const orgId = stringValue(input.connectionMetadata['orgId']);
+    if (!orgId && !teamId) {
+      throw new BadRequestException(
+        'Vercel provider connection is missing org metadata. Reconnect the Vercel account before provisioning deployment targets.',
+      );
+    }
+
+    return {
+      vercelOrgId: orgId || teamId,
+      ...(teamId ? { vercelTeamId: teamId } : {}),
+      ...(teamSlug ? { vercelTeamSlug: teamSlug } : {}),
+    };
+  }
+
+  resolveOperationInput(input: {
+    providerMetadata: Record<string, unknown>;
+  }): Record<string, unknown> {
+    const teamId = stringValue(input.providerMetadata['vercelTeamId']);
+    const teamSlug = stringValue(input.providerMetadata['vercelTeamSlug']);
+    return {
+      ...(teamId ? { vercelTeamId: teamId } : {}),
+      ...(teamSlug ? { vercelTeamSlug: teamSlug } : {}),
+    };
+  }
+
+  resolveMockLogs(input: {
+    providerProjectName: string | null;
+    now: Date;
+  }): readonly DeploymentProviderLogEntry[] {
+    const offsetDate = (secondsAgo: number) =>
+      new Date(input.now.getTime() - secondsAgo * 1000).toISOString();
+
+    return [
+      {
+        timestamp: offsetDate(70),
+        message:
+          ' ready   - started server on 0.0.0.0:3000, url: http://localhost:3000',
+        level: 'info',
+      },
+      {
+        timestamp: offsetDate(68),
+        message: ' info    - Loaded env from /app/.env',
+        level: 'info',
+      },
+      {
+        timestamp: offsetDate(60),
+        message:
+          ' event   - compiled client and server successfully in 835ms (192 modules)',
+        level: 'info',
+      },
+      {
+        timestamp: offsetDate(50),
+        message: ' info    - [request] GET / 200 in 89ms',
+        level: 'info',
+      },
+      {
+        timestamp: offsetDate(40),
+        message: ' info    - [request] GET /api/capabilities 200 in 12ms',
+        level: 'info',
+      },
+      {
+        timestamp: offsetDate(30),
+        message:
+          ' warn    - [warning] Large page data detected in /projects/[projectId] (120kb)',
+        level: 'warn',
+      },
+      {
+        timestamp: offsetDate(15),
+        message:
+          ' error   - [problem] Failed to proxy socket connection: connection timeout at /api/ws',
+        level: 'error',
+      },
+    ];
+  }
+
+  resolveManagedToken(input: {
+    managedConfig: Record<string, unknown>;
+  }): string {
+    const token = stringValue(input.managedConfig['vercelToken']);
+    if (!token) {
+      throw new BadRequestException(
+        'ALPHACI-managed vercel token is not configured',
+      );
+    }
+    return token;
+  }
+}
+
+function vercelProjectNameForBranch(
+  target: DeploymentProvisioningTarget,
+  branchName: 'uat',
+): string | undefined {
+  const raw = target.projectName?.trim();
+  if (!raw) return undefined;
+  const base = raw.replace(/-(test|uat|main|production)$/i, '');
+  return `${base}-${branchName}`;
+}
+
+function stringValue(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
