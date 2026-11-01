@@ -4,8 +4,10 @@ import { join } from 'node:path';
 import { load } from 'js-yaml';
 
 const root = join(__dirname, '..', '..');
+// Workflows live at the monorepo root, two levels above apps/api.
+const monorepoRoot = join(root, '..', '..');
 const workflowPath = join(
-  root,
+  monorepoRoot,
   '.github',
   'workflows',
   'onprem-agent-release.yml',

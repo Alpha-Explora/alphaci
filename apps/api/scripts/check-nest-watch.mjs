@@ -2,13 +2,19 @@
 'use strict';
 
 import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outputDir = path.join(root, 'dist');
-const nestCli = path.join(root, 'node_modules', '@nestjs', 'cli', 'bin', 'nest.js');
+// Resolved through Node's lookup so it works wherever npm workspaces put it.
+const nestCli = path.join(
+  path.dirname(createRequire(import.meta.url).resolve('@nestjs/cli/package.json')),
+  'bin',
+  'nest.js',
+);
 const successMessage = 'Found 0 errors. Watching for file changes.';
 const failureMessage = "Cannot read properties of undefined (reading 'checkJsDirective')";
 const timeoutMs = 60_000;

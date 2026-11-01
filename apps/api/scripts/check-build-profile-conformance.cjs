@@ -61,7 +61,8 @@ function loadCompiledComposition(excludedSourceRoots = []) {
     )}\n`,
     'utf8',
   );
-  const tsc = path.join(ROOT, 'node_modules/typescript/bin/tsc');
+  // Resolved through Node's lookup so it works wherever npm workspaces put it.
+  const tsc = path.join(path.dirname(require.resolve('typescript/package.json')), 'bin', 'tsc');
   let result;
   try {
     result = spawnSync(

@@ -77,7 +77,7 @@ To reuse a running loopback PostgreSQL, set `E2E_DATABASE_URL` to its admin
 connection; the suite then leaves the container running.
 
 Scenarios that create projects read the central workflow templates from
-`TEMPLATE_REPO_PATH` (default `../alphaci-workflow`, a sibling checkout of
+`TEMPLATE_REPO_PATH` (default `../../../alphaci-workflow` from `apps/api`, a checkout next to the monorepo of
 `Alpha-Explora/alphaci-workflow`).
 
 Each run writes `artifacts/e2e/<commit>/report.json` with the commit, a dirty

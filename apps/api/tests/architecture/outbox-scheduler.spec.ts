@@ -2,10 +2,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = join(__dirname, '..', '..');
+// render.yaml sits at the monorepo root, two levels above apps/api.
+const monorepoRoot = join(root, '..', '..');
 
 describe('outbox scheduler wiring', () => {
   it('deploys exactly one scheduled owner for platform.outbox_events', () => {
-    const renderBlueprint = readFileSync(join(root, 'render.yaml'), 'utf8');
+    const renderBlueprint = readFileSync(join(monorepoRoot, 'render.yaml'), 'utf8');
     const dockerfile = readFileSync(join(root, 'Dockerfile'), 'utf8');
     const runner = readFileSync(
       join(root, 'scripts', 'process-outbox.cjs'),
@@ -94,7 +96,7 @@ describe('outbox scheduler wiring', () => {
   });
 
   it('defines durable relay leases and requires explicit hierarchy mode', () => {
-    const renderBlueprint = readFileSync(join(root, 'render.yaml'), 'utf8');
+    const renderBlueprint = readFileSync(join(monorepoRoot, 'render.yaml'), 'utf8');
     const reliabilityMigration = readFileSync(
       join(
         root,

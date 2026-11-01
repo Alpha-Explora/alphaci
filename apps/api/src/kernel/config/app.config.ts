@@ -21,8 +21,10 @@ function templatesConfig(env: NodeJS.ProcessEnv): AppConfig['templates'] {
     // checkout is named alphaci-workflow, so the engine catalog silently threw
     // and every local run fell back to the hardcoded static catalog while
     // deployed instances loaded the real one. Local and deployed disagreed with
-    // only a log warning to say so.
-    repoPath: env['TEMPLATE_REPO_PATH'] ?? '../alphaci-workflow',
+    // only a log warning to say so. The path is relative to the working
+    // directory, apps/api in the monorepo, so the default climbs out of the
+    // monorepo checkout to its sibling alphaci-workflow checkout.
+    repoPath: env['TEMPLATE_REPO_PATH'] ?? '../../../alphaci-workflow',
     // The templates are in workflow-templates/customer. The default named the
     // parent, which is a real directory holding only subfolders, so the loader
     // found no *.properties.json and every template lookup returned nothing —

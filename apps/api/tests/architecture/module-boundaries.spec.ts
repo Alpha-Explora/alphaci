@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 jest.setTimeout(120_000);
@@ -28,10 +28,14 @@ describe('module boundary policy', () => {
     // Invoke the local depcruise binary directly (not via npm) so the gate
     // works on machines where npm is not on PATH.
     const nodeCmd = process.execPath;
-    const depcruiseJs = resolve(
-      repositoryRoot,
-      'node_modules/dependency-cruiser/bin/dependency-cruise.mjs',
-    );
+    // npm workspaces may hoist the package to the monorepo root, and its
+    // exports hide package.json, so search Node's lookup path for the bin.
+    const depcruiseJs = (require.resolve.paths('dependency-cruiser') ?? [])
+      .map((dir) =>
+        resolve(dir, 'dependency-cruiser/bin/dependency-cruise.mjs'),
+      )
+      .find((candidate) => existsSync(candidate));
+    if (!depcruiseJs) throw new Error('dependency-cruiser is not installed');
     try {
       const quote = process.platform === 'win32' ? '"' : "'";
       const q = (value: string) => `${quote}${value}${quote}`;
