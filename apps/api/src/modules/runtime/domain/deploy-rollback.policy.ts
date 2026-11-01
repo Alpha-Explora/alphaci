@@ -94,8 +94,7 @@ export function rollbackCandidate(input: {
   events: ReadonlyArray<RollbackCandidateEvent>;
   rollback: Pick<DeployRollbackState, 'deployId'> | null;
 }):
-  | { ok: true; event: RollbackCandidateEvent }
-  | { ok: false; reason: string } {
+  { ok: true; event: RollbackCandidateEvent } | { ok: false; reason: string } {
   const event = input.events.find(({ id }) => id === input.deployId);
   if (!event) {
     return {

@@ -5,8 +5,6 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 
-import type { ProjectRequirementsReadinessPort } from '#kernel/ports/project-requirements-readiness.port';
-import type { WorkspacesPort } from '#kernel/ports/workspaces.port';
 import type { ProjectsRepository } from '../../infrastructure/projects.repository';
 import { WorkspaceGateService } from './workspace-gate.service';
 
@@ -29,8 +27,8 @@ function build(
   };
   const service = new WorkspaceGateService(
     projectsRepository as unknown as ProjectsRepository,
-    undefined as unknown as WorkspacesPort,
-    readiness as unknown as ProjectRequirementsReadinessPort,
+    undefined,
+    readiness,
   );
   return { service, projectsRepository, readiness };
 }
@@ -186,7 +184,7 @@ describe('WorkspaceGateService Feature-before-repository gate', () => {
     };
     const service = new WorkspaceGateService(
       projectsRepository as unknown as ProjectsRepository,
-      undefined as unknown as WorkspacesPort,
+      undefined,
       undefined,
     );
     await expect(

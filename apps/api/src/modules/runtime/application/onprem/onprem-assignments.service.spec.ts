@@ -128,9 +128,9 @@ describe('automatic assignment', () => {
       {
         assertProjectRole: jest.fn().mockResolvedValue({ workspaceId: 'ws' }),
       } as never,
-      { findAppRole: jest.fn().mockResolvedValue('member') } as never,
+      { findAppRole: jest.fn().mockResolvedValue('member') },
       projects as never,
-      targets as never,
+      targets,
       releasesConfig(),
     );
   beforeEach(() => {
@@ -462,9 +462,9 @@ describe('tunnel presentation', () => {
       {
         assertProjectRole: jest.fn().mockResolvedValue({ workspaceId: 'ws' }),
       } as never,
-      { findAppRole: jest.fn().mockResolvedValue('member') } as never,
+      { findAppRole: jest.fn().mockResolvedValue('member') },
       projects as never,
-      targets as never,
+      targets,
       releasesConfig(enabled),
     );
   const tunnelRow = {

@@ -35,8 +35,7 @@ export type PackedWorkflowBundle = {
 export type PackedFrontendPush = {
   additionalWorkflowPaths: string[];
   frontendPushResult:
-    | { commitSha: string; commitUrl: string | null }
-    | undefined;
+    { commitSha: string; commitUrl: string | null } | undefined;
 };
 
 export function packedSlotServicePath(
@@ -343,8 +342,7 @@ export async function pushPackedFrontendWorkflow(input: {
 }): Promise<PackedFrontendPush> {
   const additionalWorkflowPaths: string[] = [];
   let frontendPushResult:
-    | { commitSha: string; commitUrl: string | null }
-    | undefined;
+    { commitSha: string; commitUrl: string | null } | undefined;
   try {
     frontendPushResult = await input.support.pushWorkflowFiles(
       input.provisioningToken,
@@ -404,8 +402,7 @@ export async function persistPackedFrontendRowIfPushed(input: {
   repoUrl: string;
   frontendBundle: PackedWorkflowBundle;
   frontendPushResult:
-    | { commitSha: string; commitUrl: string | null }
-    | undefined;
+    { commitSha: string; commitUrl: string | null } | undefined;
   /**
    * The delivery project both slots must share — either the caller's
    * explicit dto.deliveryProjectId, or the chain the backend row just

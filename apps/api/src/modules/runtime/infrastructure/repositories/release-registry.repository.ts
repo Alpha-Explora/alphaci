@@ -15,11 +15,7 @@ import type {
 } from '../../domain/release-manifest';
 
 export type DeploymentStatus =
-  | 'pending'
-  | 'deploying'
-  | 'healthy'
-  | 'failed'
-  | 'rolled_back';
+  'pending' | 'deploying' | 'healthy' | 'failed' | 'rolled_back';
 
 /** Who carries a deployment out: the generated workflow, or the environment's host. */
 export type DeploymentDelivery = 'workflow' | 'host';

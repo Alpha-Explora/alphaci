@@ -90,7 +90,7 @@ describe('ProjectLifecycleService.disconnectProject external teardown', () => {
       auditEventsService as never,
       undefined,
       undefined,
-      teardown as never,
+      teardown,
       sonar as never,
     );
     return {

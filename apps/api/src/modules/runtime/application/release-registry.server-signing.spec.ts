@@ -91,7 +91,7 @@ describe('file-mode release signing on registration', () => {
       commitSha: COMMIT,
       workflowRun,
       artifacts: [{ slot: 'backend', image: IMAGE, digest: DIGEST }],
-      verificationStatus: 'pending' as 'pending' | 'verified',
+      verificationStatus: 'pending',
       manifest: null,
       manifestSha256: null,
       signature: null,
@@ -116,7 +116,7 @@ describe('file-mode release signing on registration', () => {
           current = {
             ...current,
             verificationStatus: 'verified',
-            manifest: input.manifest as never,
+            manifest: input.manifest,
             manifestSha256: input.manifestSha256,
             signature: input.signature,
           };

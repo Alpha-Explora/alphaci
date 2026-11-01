@@ -928,10 +928,7 @@ export interface GithubPullRequestProtectionOptions {
  *              (403/404 usually means the token lacks Administration: write)
  */
 export type GithubBranchProtectionStatus =
-  | 'applied'
-  | 'unchanged'
-  | 'missing'
-  | 'failed';
+  'applied' | 'unchanged' | 'missing' | 'failed';
 
 export interface GithubBranchProtectionOutcome {
   status: GithubBranchProtectionStatus;

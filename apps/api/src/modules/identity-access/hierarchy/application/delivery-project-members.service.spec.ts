@@ -30,7 +30,7 @@ function member(
 
 function setup({
   mode = 'live',
-  roles = {} as Record<string, PlatformAppRole>,
+  roles = {},
   teamMembers = ['dev-1', 'qa-1', 'lead-2', 'creator-1', 'dev-2'],
   repos = [
     { id: 'repo-a', createdBy: 'creator-1' },
@@ -134,7 +134,7 @@ function setup({
     databaseService as never,
     configService as never,
     auditEventsService as never,
-    appRoleLookup as never,
+    appRoleLookup,
   );
   return {
     service,

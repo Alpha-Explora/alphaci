@@ -21,7 +21,7 @@ function makeBody(
     commitSha: 'a'.repeat(40),
     events: [{ type: 'run_started', at: '2026-10-08T10:00:00.000Z', total: 1 }],
     ...overrides,
-  } as PlaywrightProgressBodyDto;
+  };
 }
 
 describe('CiPlaywrightProgressController', () => {

@@ -255,7 +255,7 @@ export class DeploymentTargetsController {
     if (mode === 'append') {
       return reader$.pipe(
         switchMap((reader) => this.logsHub.appendStream(reader, filters)),
-        map((data) => ({ data }) as MessageEvent),
+        map((data) => ({ data })),
         catchError((error: unknown) =>
           of({
             data: {
@@ -270,7 +270,7 @@ export class DeploymentTargetsController {
 
     return reader$.pipe(
       switchMap((reader) => this.logsHub.legacyStream(reader, filters)),
-      map((data) => ({ data }) as MessageEvent),
+      map((data) => ({ data })),
       catchError((error: unknown) =>
         of({
           data: {

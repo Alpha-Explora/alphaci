@@ -23,10 +23,7 @@ export type { ScaffoldFile } from './scaffolds/scaffold-file';
 export type { CanonicalStack } from './scaffolds/service-runtime-contract';
 
 export type CanonicalRepoShape =
-  | 'standalone'
-  | 'monorepo'
-  | 'microservices'
-  | 'multi-repo';
+  'standalone' | 'monorepo' | 'microservices' | 'multi-repo';
 
 /**
  * Accept legacy FE/API project type IDs as well as catalog stack keys. Older

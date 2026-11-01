@@ -8,7 +8,6 @@ import {
 import type { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
 import type { GithubProjectPort } from '#kernel/ports/github.port';
 import type { ProjectLookupPort } from '#kernel/ports/project-lookup.port';
-import type { ProjectRequirementsReadinessPort } from '#kernel/ports/project-requirements-readiness.port';
 import type {
   DeliveryProjectRecord,
   DeliveryProjectsRepository,
@@ -114,8 +113,8 @@ function setup({ featureCount = 1, ruleEnabled = true } = {}) {
     githubService as unknown as GithubProjectPort,
     projectLookup as unknown as ProjectLookupPort,
     auditEventsService as unknown as AuditEventPublisher,
-    readiness as unknown as ProjectRequirementsReadinessPort,
-    provisioning as never,
+    readiness,
+    provisioning,
     membersService as never,
   );
   return {

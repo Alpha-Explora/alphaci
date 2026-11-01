@@ -126,7 +126,7 @@ describe('DeploymentTargetsService rollback', () => {
       repository as never,
       connections as never,
       encryption as never,
-      clientRegistry as never,
+      clientRegistry,
       configService as never,
       new DeploymentStrategyResolver(),
       undefined,
@@ -137,7 +137,7 @@ describe('DeploymentTargetsService rollback', () => {
       undefined,
       capabilityResolver as never,
       undefined,
-      appRoleLookup as never,
+      appRoleLookup,
     );
   });
 

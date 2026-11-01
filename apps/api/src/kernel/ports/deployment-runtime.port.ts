@@ -111,23 +111,11 @@ export interface DeploymentProvisioningTarget {
   buildCommand?: string;
   startCommand?: string;
   renderDeployMethod?:
-    | 'managed_image'
-    | 'byo_image'
-    | 'native_git'
-    | 'existing_service';
+    'managed_image' | 'byo_image' | 'native_git' | 'existing_service';
   renderServiceType?:
-    | 'web_service'
-    | 'private_service'
-    | 'background_worker'
-    | 'cron_job';
+    'web_service' | 'private_service' | 'background_worker' | 'cron_job';
   renderRuntime?:
-    | 'node'
-    | 'python'
-    | 'ruby'
-    | 'go'
-    | 'rust'
-    | 'elixir'
-    | 'docker';
+    'node' | 'python' | 'ruby' | 'go' | 'rust' | 'elixir' | 'docker';
   renderInstanceType?: string;
   renderRegion?: string;
   renderEnvironmentName?: 'dev' | 'test' | 'uat' | 'production';
@@ -234,9 +222,7 @@ export interface EnvironmentDeploymentTarget {
 }
 
 export type EnvironmentTargetUnavailableReason =
-  | 'absent'
-  | 'missing'
-  | 'failed';
+  'absent' | 'missing' | 'failed';
 
 /**
  * Thrown when an environment has no usable target for a slot. Callers must

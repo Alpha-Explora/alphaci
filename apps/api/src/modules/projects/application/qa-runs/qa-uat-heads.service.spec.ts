@@ -65,9 +65,7 @@ describe('QaUatHeadsService', () => {
       'inst-token',
     );
 
-    github.getInstallationAccessTokenForUserRepo.mockResolvedValue(
-      null as never,
-    );
+    github.getInstallationAccessTokenForUserRepo.mockResolvedValue(null);
     expect(await service.resolveReadToken('acme/api', 'u1', 'oauth')).toBe(
       'oauth',
     );

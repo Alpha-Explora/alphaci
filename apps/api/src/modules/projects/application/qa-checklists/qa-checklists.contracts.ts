@@ -8,10 +8,7 @@
 export type QaChecklistTargetPersona = 'developer' | 'qa' | 'all';
 
 export type QaChecklistVerificationType =
-  | 'manual'
-  | 'playwright'
-  | 'unit_test'
-  | 'bruno';
+  'manual' | 'playwright' | 'unit_test' | 'bruno';
 
 export interface QaChecklistItem {
   id: string;

@@ -11,18 +11,10 @@
 
 /** Terminal states come from the reporter's run_finished event. */
 export type PlaywrightLiveRunState =
-  | 'running'
-  | 'passed'
-  | 'failed'
-  | 'timedout'
-  | 'interrupted';
+  'running' | 'passed' | 'failed' | 'timedout' | 'interrupted';
 
 export type PlaywrightLiveTestStatus =
-  | 'passed'
-  | 'failed'
-  | 'skipped'
-  | 'timedOut'
-  | 'interrupted';
+  'passed' | 'failed' | 'skipped' | 'timedOut' | 'interrupted';
 
 export interface PlaywrightLiveTestIdentity {
   id: string;

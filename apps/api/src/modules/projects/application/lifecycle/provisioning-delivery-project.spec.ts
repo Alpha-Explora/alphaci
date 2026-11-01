@@ -132,7 +132,7 @@ function makeService(
     undefined,
     createDefaultWorkflowFragmentRegistry(),
     undefined,
-    readiness as never,
+    readiness,
   );
 
   // Bypass the workflow-file generation internals (irrelevant to ordering) —

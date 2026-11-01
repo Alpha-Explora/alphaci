@@ -29,9 +29,9 @@ function releaseJob(branch: 'dev' | 'uat' | 'main' = 'uat'): {
       provider: 'render',
       deploymentStrategy: 'render_image_pushed',
       imageName: 'alphaci-backend-uat-demo',
-    } as never,
+    },
     branch,
-    { serviceName: 'svc', servicePath: '.', centralWorkflowRef: 'v1' } as never,
+    { serviceName: 'svc', servicePath: '.', centralWorkflowRef: 'v1' },
   );
 
   const job = Object.values(result?.jobs ?? {}).find((candidate) =>

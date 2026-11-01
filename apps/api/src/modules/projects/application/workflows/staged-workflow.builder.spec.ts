@@ -1929,7 +1929,7 @@ describe('no chained stage can cancel another branch', () => {
   const bundle = () =>
     buildStagedWorkflowBundle(
       makeTemplate('dotnet'),
-      { templateId: 'be-dotnet', serviceName: 'orders-api' } as never,
+      { templateId: 'be-dotnet', serviceName: 'orders-api' },
       new WorkflowFragmentRegistry([
         renderWorkflowFragment,
         vercelWorkflowFragment,

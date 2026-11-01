@@ -36,7 +36,7 @@ function build(options: { role?: string | undefined; visible?: boolean } = {}) {
     {} as never,
     accessService as never,
     changesRepository as never,
-    secretsProvider as never,
+    secretsProvider,
     auditEventsService as never,
     appRoleLookup as never,
   );

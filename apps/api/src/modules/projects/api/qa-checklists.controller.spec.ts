@@ -88,7 +88,7 @@ describe('WorkspaceQaChecklistsController', () => {
 
   it('creates a checklist for the workspace', async () => {
     const body = { name: 'Release checklist' };
-    await controller.create(makeRequest(), 'workspace-1', body as never);
+    await controller.create(makeRequest(), 'workspace-1', body);
 
     expect(service.createForWorkspace).toHaveBeenCalledWith(
       'workspace-1',
@@ -121,7 +121,7 @@ describe('QaChecklistsController', () => {
 
   it('updates checklist metadata', async () => {
     const body = { expectedVersion: 1, name: 'New name' };
-    await controller.updateMeta(makeRequest(), 'checklist-1', body as never);
+    await controller.updateMeta(makeRequest(), 'checklist-1', body);
     expect(service.updateMeta).toHaveBeenCalledWith(
       'checklist-1',
       'user-1',
@@ -131,7 +131,7 @@ describe('QaChecklistsController', () => {
 
   it('replaces the item list', async () => {
     const body = { expectedVersion: 1, items: [] };
-    await controller.replaceItems(makeRequest(), 'checklist-1', body as never);
+    await controller.replaceItems(makeRequest(), 'checklist-1', body);
     expect(service.replaceItems).toHaveBeenCalledWith(
       'checklist-1',
       'user-1',
@@ -146,11 +146,7 @@ describe('QaChecklistsController', () => {
 
   it('replaces the shared project set', async () => {
     const body = { projectIds: ['project-1'] };
-    await controller.setSharedProjects(
-      makeRequest(),
-      'checklist-1',
-      body as never,
-    );
+    await controller.setSharedProjects(makeRequest(), 'checklist-1', body);
     expect(service.setSharedProjects).toHaveBeenCalledWith(
       'checklist-1',
       'user-1',

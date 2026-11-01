@@ -53,21 +53,12 @@ export type DeliveryProjectMemberStatus = 'active' | 'removed';
 export type DesiredState = 'assigned' | 'unassigned';
 
 export type EffectiveState =
-  | 'unknown'
-  | 'pending'
-  | 'active'
-  | 'revoking'
-  | 'revoked'
-  | 'failed';
+  'unknown' | 'pending' | 'active' | 'revoking' | 'revoked' | 'failed';
 
 export type AssignmentStatus = 'pending' | 'active' | 'revoked' | 'failed';
 
 export type SyncState =
-  | 'pending'
-  | 'syncing'
-  | 'verified'
-  | 'failed'
-  | 'drift_detected';
+  'pending' | 'syncing' | 'verified' | 'failed' | 'drift_detected';
 
 export type EnvironmentScope = 'non_production' | 'production';
 
@@ -76,10 +67,7 @@ export type ConfigurationType = 'variable' | 'secret';
 export type ConfigurationAction = 'create' | 'update' | 'delete';
 
 export type ApprovalState =
-  | 'not_required'
-  | 'pending'
-  | 'approved'
-  | 'rejected';
+  'not_required' | 'pending' | 'approved' | 'rejected';
 
 export type ConfigurationSyncState = 'pending' | 'synced' | 'failed';
 

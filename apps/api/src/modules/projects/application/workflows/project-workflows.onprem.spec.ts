@@ -3,7 +3,6 @@ import { execFileSync } from 'node:child_process';
 import type { ProjectsRepository } from '../../infrastructure/projects.repository';
 import type { GithubProjectPort } from '#kernel/ports/github.port';
 import type { CapabilityResolverPort } from '#kernel/composition/capability-resolver.port';
-import type { DeploymentTargetsQuery } from '#kernel/ports/deployment-runtime.port';
 import { WorkflowFragmentRegistry } from '#kernel/ports/workflow-fragment.port';
 import { onpremComposeWorkflowFragment } from '#modules/runtime/infrastructure/providers/onprem/onprem-compose-workflow.fragment';
 import type { CatalogService } from '../catalog/catalog.service';
@@ -70,7 +69,7 @@ it('regenerates persisted environment targets instead of dropping host delivery'
     {
       deployment: () => new Set(['projects.workflow-settings-preview']),
     } as unknown as CapabilityResolverPort,
-    targets as unknown as DeploymentTargetsQuery,
+    targets,
   );
   const preview = await service.previewWorkflowSettings(
     'project',
@@ -188,7 +187,7 @@ async function regeneratedSignJobWith(
     {
       deployment: () => new Set(['projects.workflow-settings-preview']),
     } as unknown as CapabilityResolverPort,
-    targets as unknown as DeploymentTargetsQuery,
+    targets,
     { get: (key: string) => env[key] } as unknown as ConfigService,
   );
   const preview = await service.previewWorkflowSettings(

@@ -3,14 +3,7 @@ import { relative, resolve, sep } from 'node:path';
 import * as ts from 'typescript';
 
 type HttpMethod =
-  | 'GET'
-  | 'POST'
-  | 'PUT'
-  | 'PATCH'
-  | 'DELETE'
-  | 'ALL'
-  | 'HEAD'
-  | 'OPTIONS';
+  'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'ALL' | 'HEAD' | 'OPTIONS';
 
 interface BaselineRoute {
   readonly handler: string;

@@ -798,7 +798,7 @@ describe('ProjectWorkspaceService', () => {
     it('refuses a branch compared with itself before spending a GitHub call', async () => {
       const compareBranches = jest.fn();
       const { service, findByIdAndUser } = build({
-        github: { compareBranches } as Partial<GithubService>,
+        github: { compareBranches },
       });
 
       await expect(

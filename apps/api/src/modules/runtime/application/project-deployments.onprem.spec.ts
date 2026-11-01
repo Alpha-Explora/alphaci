@@ -2,7 +2,6 @@ import { ConfigService } from '@nestjs/config';
 import { ProjectDeploymentsService } from './project-deployments.service';
 import { DeploymentHistorySourceRegistry } from '../core/deployment-history-source.registry';
 import type { DeploymentTargetsRepository } from '../infrastructure/repositories/deployment-targets.repository';
-import type { ProviderClientRegistryPort } from './ports/provider-client-registry.port';
 import type { CapabilityResolverPort } from '#kernel/composition/capability-resolver.port';
 import type { RuntimeEnvProviderClient } from './ports/runtime-env-provider.client';
 
@@ -28,7 +27,7 @@ describe('Host-delivered deployment history', () => {
       targets as unknown as DeploymentTargetsRepository,
       undefined,
       config,
-      { getClient } as unknown as ProviderClientRegistryPort,
+      { getClient },
       undefined,
       undefined,
       undefined,

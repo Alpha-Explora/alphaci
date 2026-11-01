@@ -856,8 +856,7 @@ export class VercelEnvClient implements DeploymentProvider {
       'Vercel runtime logs could not be loaded',
     );
     const logsData = (await logsResponse.json()) as
-      | VercelRuntimeLogEntry[]
-      | { logs?: VercelRuntimeLogEntry[] };
+      VercelRuntimeLogEntry[] | { logs?: VercelRuntimeLogEntry[] };
     const logsList = Array.isArray(logsData) ? logsData : (logsData.logs ?? []);
 
     return logsList.map((line, index) => mapVercelRuntimeLogLine(line, index));

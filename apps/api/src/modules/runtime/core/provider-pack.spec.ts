@@ -120,7 +120,7 @@ describe('RuntimeProviderPackRegistry', () => {
   });
 
   it('requires a runtime client when provider metadata enables environment provisioning', () => {
-    const incomplete = { ...pack() } as RuntimeProviderPack;
+    const incomplete = { ...pack() };
     delete (incomplete as { client?: RuntimeProviderPack['client'] }).client;
 
     expect(() => new RuntimeProviderPackRegistry([incomplete])).toThrow(

@@ -20,9 +20,7 @@ export class CreateEnrollmentDto {
 export class HostCheckDto {
   @Matches(/^[a-z0-9-]{1,60}$/) id!: string;
   @IsIn(['passed', 'failed', 'unverified']) status!:
-    | 'passed'
-    | 'failed'
-    | 'unverified';
+    'passed' | 'failed' | 'unverified';
   @IsString() @MaxLength(300) message!: string;
 }
 export class MachineCheckInDto {

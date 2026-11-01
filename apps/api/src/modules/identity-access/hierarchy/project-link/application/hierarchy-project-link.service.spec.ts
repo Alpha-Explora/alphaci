@@ -414,7 +414,7 @@ describe('HierarchyProjectLinkService', () => {
         link: jest.fn(() =>
           Promise.reject(new ProjectNameTakenException('Payments')),
         ),
-      } as never);
+      });
       await expect(
         service.ensureLink({
           ...BASE,
@@ -427,7 +427,7 @@ describe('HierarchyProjectLinkService', () => {
     it('still swallows other link failures (best-effort contract)', async () => {
       const { service } = build({
         link: jest.fn(() => Promise.reject(new Error('db down'))),
-      } as never);
+      });
       await expect(service.ensureLink(BASE)).resolves.toBeNull();
     });
   });
@@ -466,7 +466,7 @@ describe('HierarchyProjectLinkService.getOverviewFacts', () => {
           },
         ]),
       ),
-    } as never);
+    });
 
     const facts = await service.getOverviewFacts(
       ['dp-1', 'dp-2', 'dp-3'],
@@ -503,7 +503,7 @@ describe('HierarchyProjectLinkService.getOverviewFacts', () => {
     const { service } = build({
       listMembershipSummaries,
       listLinkedRepositories,
-    } as never);
+    });
 
     await service.getOverviewFacts(['dp-1', 'dp-2'], 'viewer-1');
 
