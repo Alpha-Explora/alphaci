@@ -17,6 +17,7 @@
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:e2e": "tsx tests/e2e/playwright-e2e.ts",
+    "test:fullstack": "tsx tests/fullstack/run.ts",
     "boundaries": "depcruise src --config .dependency-cruiser.cjs",
     "lint:css": "stylelint \"src/**/*.css\" --max-warnings=715",
     "complexity": "node scripts/check-complexity.cjs",

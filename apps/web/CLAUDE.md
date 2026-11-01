@@ -342,7 +342,28 @@ functions 42, lines 50, statements 47**.
 ```bash
 npm test                # jest --runInBand (whole suite, with coverage)
 npm run test:e2e        # tsx tests/e2e/playwright-e2e.ts (a plain Node script)
+npm run test:fullstack  # the web against the real API; needs Docker
 ```
+
+`test:fullstack` (`tests/fullstack/run.ts`, the CI job `Full-stack e2e`)
+uses no fixtures. It starts the API e2e suite's disposable Postgres, applies
+the migrations with the self-hosted runner, starts the compiled API in
+self-hosted mode (`ALPHACI_DEPLOYMENT_MODE=selfhosted`, `DEV_QUICK_LOGIN=true`,
+throwaway secrets, provider reads off), builds the web with
+`NEXT_PUBLIC_API_BASE_URL=/api/v1` and `API_PROXY_TARGET` pointed at that API, and
+runs `next start`. Then Playwright chromium drives `tests/fullstack/journeys.ts`:
+it signs in through quick login and checks pages that show what the API
+returned. A run fails on any page or console error, on a failed or 4xx/5xx
+same-origin request the journey did not expect, or if the browser, the API or the
+web server tries to reach a non-loopback host (the API and web server
+go through a refusing proxy, `egress-guard.ts`). It always stops everything and
+writes `test-results/fullstack/`: `report.json`, one log per process, and a
+screenshot of each failed journey. It overwrites `.next`; `-- --skip-build`
+reuses `apps/api/dist` and a `.next` it built. Ports 4310/3310 (override with
+`FULLSTACK_API_PORT` / `FULLSTACK_WEB_PORT`) and 55432 (the fixture) must be free.
+A production build never shows the quick-login button (it also needs
+`NODE_ENV=development`), so the journey sends the button's
+`POST /api/v1/auth/dev/quick-login` from the page.
 
 Tests live in `tests/unit/` (`tests/unit/features/<domain>/...` follows the
 feature layout) and beside source as `*.test.ts(x)` / `*.spec.ts` under `src/`.
