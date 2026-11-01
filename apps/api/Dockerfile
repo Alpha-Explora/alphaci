@@ -22,7 +22,7 @@
 ARG TURBO_VERSION=2.11.10
 
 # ── Stage 1: prune the monorepo to this app ──────────────────────────────────
-FROM node:22-alpine AS pruner
+FROM node:24-alpine AS pruner
 ARG TURBO_VERSION
 WORKDIR /repo
 RUN npm install -g "turbo@${TURBO_VERSION}"
@@ -30,7 +30,7 @@ COPY . .
 RUN turbo prune @alphaci/api --docker
 
 # ── Stage 2: compile TypeScript + fetch templates ────────────────────────────
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 
 # Only this stage sees the token. The runtime stage copies the cloned templates
 # and nothing else from here, so the token is not in any layer of the final
@@ -72,7 +72,7 @@ RUN git clone --depth 1 --branch "${TEMPLATE_REPO_REF}" \
   && rm -rf /tmp/central-workflow/.git
 
 # ── Stage 3: production runtime ───────────────────────────────────────────────
-FROM node:22-alpine AS runner
+FROM node:24-alpine AS runner
 
 ENV NODE_ENV=production
 # Absolute path — CatalogService reads from TEMPLATE_REPO_PATH/TEMPLATE_WORKFLOW_DIR
