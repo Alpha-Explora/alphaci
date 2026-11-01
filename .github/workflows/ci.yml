@@ -202,6 +202,57 @@ jobs:
           path: apps/api/artifacts/e2e/
           if-no-files-found: ignore
 
+  # The web app against the real API (apps/web/tests/fullstack/run.ts): the
+  # API e2e Postgres fixture, the self-hosted migrator, the compiled API in
+  # self-hosted mode with quick login, `next build` + `next start`, and
+  # Playwright journeys. Runs when either app is affected.
+  fullstack-e2e:
+    name: Full-stack e2e
+    needs: plan
+    if: needs.plan.outputs.api == 'true' || needs.plan.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v6
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          fail-on-cache-miss: true
+
+      # The browser download is keyed on the installed Playwright version. The
+      # system libraries it needs are not in the cache, so a hit still
+      # installs those.
+      - id: playwright
+        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-headless-shell
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps --only-shell chromium
+      - if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - run: npm run test:fullstack -w @alphaci/web
+
+      - name: Upload full-stack report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fullstack-e2e-report
+          path: apps/web/test-results/fullstack/
+          if-no-files-found: ignore
+
   web:
     name: Web ${{ matrix.name }}
     needs: plan
@@ -248,7 +299,7 @@ jobs:
   ci-passed:
     name: ci-passed
     if: always()
-    needs: [plan, affected-guard, api, api-e2e, web]
+    needs: [plan, affected-guard, api, api-e2e, fullstack-e2e, web]
     runs-on: ubuntu-latest
     steps:
       - name: Every job passed or was skipped

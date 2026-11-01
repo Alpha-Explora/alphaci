@@ -75,6 +75,12 @@ from the turbo cache, so most pushes pass in a few seconds. Skip once with
   parallel: lint, typecheck, tests, architecture and documentation checks,
   the API end-to-end suite, and one job per web profile build. A job whose app
   was not affected is skipped.
+- **`Full-stack e2e`** runs when either app is affected. It starts Postgres,
+  the compiled API in self-hosted mode and the built web app, then drives
+  Playwright journeys against the real API, with every provider switched off
+  and outbound requests refused. Run it locally with
+  `npm run test:fullstack -w @alphaci/web` (needs Docker). On failure the job
+  uploads `apps/web/test-results/fullstack/` as `fullstack-e2e-report`.
 - **`Affected detection guard`** replays synthetic changes through
   `plan-affected.sh` so a detection bug fails CI instead of skipping work.
 - **`ci-passed`** fails if any job failed or was cancelled. It is the only
