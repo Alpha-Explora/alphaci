@@ -9,17 +9,36 @@
 # notifications repository; both are fixed, so every check below is strict
 # and whole-tree. Do not reintroduce a baseline to land a violation — fix
 # the edge.
-name: Boundaries
+name: Web CI
 
 on:
-  pull_request:
   push:
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'turbo.json'
+      - '.github/workflows/web-ci.yml'
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'turbo.json'
+      - '.github/workflows/web-ci.yml'
+  workflow_dispatch: {}
 
 permissions:
   contents: read
 
+defaults:
+  run:
+    working-directory: apps/web
+
 concurrency:
-  group: boundaries-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  group: web-ci-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -39,6 +58,7 @@ jobs:
           cache: npm
 
       - run: npm ci
+        working-directory: .
 
       - name: Import graph (barrels, cycles, shared purity)
         run: npm run boundaries

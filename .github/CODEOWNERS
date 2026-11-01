@@ -1,0 +1,48 @@
+# Feature ownership.
+#
+# Routes each PR to the person who owns that feature, so review is not a queue
+# behind one person. Backend and frontend use the same feature names
+# (apps/api/src/modules/ and apps/web/src/features/), so a developer owning a
+# feature owns it on both sides.
+#
+# REPLACE the placeholders below with real GitHub handles or teams before
+# enabling required reviews. Unassigned features fall through to the default.
+
+# ── Default ──────────────────────────────────────────────────────────────────
+*                                            @Alpha-Explora/maintainers
+
+# ── Monorepo foundations ─────────────────────────────────────────────────────
+/package.json                                @Alpha-Explora/maintainers
+/package-lock.json                           @Alpha-Explora/maintainers
+/turbo.json                                  @Alpha-Explora/maintainers
+/.github/workflows/                          @Alpha-Explora/maintainers
+/packages/                                   @Alpha-Explora/maintainers
+
+# ── Backend (apps/api) shared foundations ────────────────────────────────────
+/apps/api/src/kernel/                        @Alpha-Explora/maintainers
+/apps/api/.dependency-cruiser.cjs            @Alpha-Explora/maintainers
+/apps/api/supabase/migrations/               @Alpha-Explora/maintainers
+
+# ── Backend bounded contexts ─────────────────────────────────────────────────
+/apps/api/src/modules/identity-access/       @Alpha-Explora/maintainers
+/apps/api/src/modules/projects/              @Alpha-Explora/maintainers
+/apps/api/src/modules/pipelines/             @Alpha-Explora/maintainers
+/apps/api/src/modules/runtime/               @Alpha-Explora/maintainers
+/apps/api/src/modules/billing/               @Alpha-Explora/maintainers
+/apps/api/src/modules/platform-ops/          @Alpha-Explora/maintainers
+/apps/api/docs/                              @Alpha-Explora/maintainers
+
+# ── Frontend (apps/web) shared foundations ───────────────────────────────────
+/apps/web/src/shared/                        @Alpha-Explora/maintainers
+/apps/web/src/shared/styles/tokens.css       @Alpha-Explora/maintainers
+/apps/web/src/app/                           @Alpha-Explora/maintainers
+/apps/web/.dependency-cruiser.cjs            @Alpha-Explora/maintainers
+
+# ── Frontend features ────────────────────────────────────────────────────────
+# /apps/web/src/features/auth/               @handle
+# /apps/web/src/features/projects/           @handle
+# /apps/web/src/features/workflows/          @handle
+# /apps/web/src/features/runs/               @handle
+# /apps/web/src/features/notifications/      @handle
+# /apps/web/src/features/admin/              @handle
+# /apps/web/src/features/settings/           @handle

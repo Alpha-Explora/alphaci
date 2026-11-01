@@ -12,18 +12,36 @@
 # When you fix some, regenerate with:
 #   npx depcruise src tests --config .dependency-cruiser.cjs \
 #     --output-type baseline > .dependency-cruiser-known-violations.json
-name: Boundaries
+name: API Boundaries
 
 on:
-  push: {}
-  pull_request: {}
+  push:
+    paths:
+      - 'apps/api/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'turbo.json'
+      - '.github/workflows/api-boundaries.yml'
+  pull_request:
+    paths:
+      - 'apps/api/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'turbo.json'
+      - '.github/workflows/api-boundaries.yml'
   workflow_dispatch: {}
 
 permissions:
   contents: read
 
+defaults:
+  run:
+    working-directory: apps/api
+
 concurrency:
-  group: boundaries-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  group: api-boundaries-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -39,6 +57,7 @@ jobs:
           cache: npm
 
       - run: npm ci
+        working-directory: .
 
       - name: No new boundary violations
         run: npm run boundaries
