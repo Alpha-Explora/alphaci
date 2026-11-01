@@ -55,6 +55,13 @@ API's copy under `apps/api/node_modules`. Add a dependency to one app with
 `allowScripts` in the root `package.json` lists which install scripts npm may
 run.
 
+## Git hooks
+
+`npm install` installs a pre-push hook ([lefthook](https://lefthook.dev),
+`lefthook.yml`) that typechecks the apps a push touches. Unchanged apps replay
+from the turbo cache, so most pushes pass in a few seconds. Skip once with
+`git push --no-verify`.
+
 ## CI
 
 `.github/workflows/ci.yml` is the whole pipeline:
