@@ -1,4 +1,4 @@
-/** Self-contained so the same preflight can run in generated GitHub jobs. */
+/** The API's own check; generated GitHub jobs run CI_API_CONNECTIVITY_PREFLIGHT. */
 export function validateCiApiConnectivity(
   baseUrl: string,
   execution: 'github-hosted' | 'private-network',
@@ -47,3 +47,55 @@ export function validateCiApiConnectivity(
     throw new Error(problem);
   }
 }
+
+/**
+ * validateCiApiConnectivity as plain JavaScript, for the access job of every
+ * generated pipeline. A fixed string rather than the function's toString(),
+ * whose text depends on the compiler: a TypeScript upgrade or another build
+ * tool would otherwise change every customer's pipeline file. This is the
+ * text tsc emitted for the function, so pipelines stayed byte-identical.
+ * ci-api-connectivity.spec.ts checks that both give the same verdicts.
+ */
+export const CI_API_CONNECTIVITY_PREFLIGHT = String.raw`function validateCiApiConnectivity(baseUrl, execution) {
+    const problem = 'Configure PLATFORM_PUBLIC_URL with an HTTPS API address reachable from the GitHub runner. Localhost and private addresses cannot reach this laptop from GitHub-hosted jobs.';
+    let url;
+    try {
+        url = new URL(baseUrl);
+    }
+    catch {
+        throw new Error(problem);
+    }
+    if (url.username ||
+        url.password ||
+        !['http:', 'https:'].includes(url.protocol))
+        throw new Error(problem);
+    if (execution === 'private-network')
+        return;
+    if (url.protocol !== 'https:')
+        throw new Error(problem);
+    const host = url.hostname
+        .toLowerCase()
+        .replace(/^\[|\]$/g, '')
+        .replace(/\.$/, '');
+    if (host.includes(':')) {
+        if (!/^[23][0-9a-f]{3}:/.test(host))
+            throw new Error(problem);
+    }
+    else if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+        const [a = 0, b = 0] = host.split('.').map(Number);
+        if (a === 0 ||
+            a === 10 ||
+            a === 127 ||
+            a >= 224 ||
+            (a === 169 && b === 254) ||
+            (a === 172 && b >= 16 && b <= 31) ||
+            (a === 192 && (b === 168 || b === 0)) ||
+            (a === 100 && b >= 64 && b <= 127) ||
+            (a === 198 && (b === 18 || b === 19)))
+            throw new Error(problem);
+    }
+    else if (!host.includes('.') ||
+        /(^|\.)(localhost|local|internal|lan)$/.test(host)) {
+        throw new Error(problem);
+    }
+}`;

@@ -1,5 +1,5 @@
 import { dumpYaml } from './yaml';
-import { validateCiApiConnectivity } from '#kernel/config/ci-api-connectivity';
+import { CI_API_CONNECTIVITY_PREFLIGHT } from '#kernel/config/ci-api-connectivity';
 import { resolvePlatformBaseUrl } from '#kernel/config/ci-api-base-url';
 import type { ReleaseSigner } from '#kernel/config/release-signing.config';
 
@@ -2293,7 +2293,7 @@ function validationJob(stage: WorkflowStage) {
         name: 'Check ALPHACI API connectivity configuration',
         run: [
           "node <<'ALPHACI_PREFLIGHT'",
-          `const validate = ${validateCiApiConnectivity.toString()};`,
+          `const validate = ${CI_API_CONNECTIVITY_PREFLIGHT};`,
           "validate(process.env.ALPHACI_VALIDATE_URL, 'github-hosted');",
           'ALPHACI_PREFLIGHT',
         ].join('\n'),
