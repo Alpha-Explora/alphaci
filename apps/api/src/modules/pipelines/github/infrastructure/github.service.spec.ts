@@ -30,7 +30,7 @@ const { privateKey } = generateKeyPairSync('rsa', {
 const testPrivateKey = privateKey.export({
   type: 'pkcs8',
   format: 'pem',
-}) as string;
+});
 
 const appConfig: AppConfig = {
   deploymentMode: 'saas',

@@ -193,6 +193,9 @@ See [Dependency upgrade plan](#dependency-upgrade-plan) below. Step 4 of the
 original list ("line up tool versions, then share configs") is waves B and
 E plus the shared config package at the end.
 
+**Status (2026-11-02): done.** Waves A–E, js-yaml 5, the shared config
+package and Node 26 have landed; the status of each is under its heading.
+
 ---
 
 ## 5. Release workflow for both images
@@ -278,6 +281,10 @@ on the org. Dependabot first; switch only if the PR noise is a problem.
 
 **Starts after** wave A, so the first batch of PRs is small.
 
+**Status (2026-11-02): done in #8**, with majors and Node base-image majors
+held back (#14) while the waves were done by hand. The Node 26 PR lifted both
+holds; grouping and the 3-day cooldown stay.
+
 ---
 
 ## CI speed: what to take from the article
@@ -306,6 +313,8 @@ Snapshot from `npm outdated` on 2026-11-01. "Wanted" is the newest version
 the current range allows; "latest" may be a new major.
 
 ### Wave A: refresh within current ranges (low risk)
+
+**Status (2026-11-02): done in #7.**
 
 One PR. `npm update` for both apps. Lockfile only; `package.json` ranges do
 not change.
@@ -363,11 +372,18 @@ and the root `node_modules` holds a single copy.
 | **Web ESLint 9 → 10** | API is on 10. Needs `eslint-config-next` with ESLint 10 support (check its peer range first; if not ready, wait). | Flat config already; fix new defaults. |
 | **`globals` 16 → 17**, **`js-yaml` 4 → 5** (27 files), **`@testing-library/jest-dom` 6 → 7**, **`@types/supertest` 6 → 7** | Majors in tools/test libs. js-yaml 5 is the only one with runtime use (API parses workflow YAML). | One commit per package; read each changelog; for js-yaml, run the catalog/workflow-generation tests and the golden snapshots. |
 
+**Status of the table (2026-11-02): done.** Node 24 for the API in #4.
+TypeScript 6, ESLint 10, `@types/node` ^24, `globals` 17,
+`@testing-library/jest-dom` 7 and `@types/supertest` 7 in #9. ts-jest stays
+(transpile-only) instead of `@swc/jest`: the golden workflow snapshots embed
+function source text, and SWC formats it differently from the `tsc` build that
+ships. js-yaml 5 in its own PR, #19.
+
 **Then:** `packages/config` with `tsconfig.base.json`, a shared ESLint/Oxlint
 config and the prettier config. Both apps extend it. Add `syncpack` (or
 npm `overrides`) with a `check:versions` task so the versions stay aligned.
 
-**Status (2026-11-02): done, smaller than planned.** `packages/config`
+**Status (2026-11-02): done in #24, smaller than planned.** `packages/config`
 (`@alphaci/config`, a devDependency of both apps, no build step) holds only
 what both apps already set identically:
 
@@ -399,6 +415,11 @@ to the version already installed: `eslint` (API `^10.1.0` → `^10.14.0`),
 
 One PR per row.
 
+**Status (2026-11-02): done, except `google-auth-library`.** NestJS 12 in
+#16. `class-validator` 0.15 and `express` 5.3 came in a grouped Dependabot
+PR (#12). `google-auth-library` stays on 10: there is still no GCP sandbox to
+verify 11 against.
+
 | Change | What changes for us | How |
 |--------|---------------------|-----|
 | **NestJS 11 → 12** (`@nestjs/common`, `core`, `platform-express`, `testing`, `cli`, `schematics`, `swagger` 12, `config` 12) | Core ships as ESM but CommonJS apps keep working through `require(esm)` (Node ≥ 22.12; we are on 24 after wave B). `@nestjs/config` moves validation to Standard Schema; **we use no Joi `validationSchema`**, so no change. `ConsoleLogger` treats objects after the message as structured params; we found no `logger.x(msg, {…})` calls, but log-shape tests are checked. Route-conflict options are opt-in. | `npx @nestjs/cli upgrade --dry-run`, then apply; full suite, boot smoke, e2e, Docker image boot. Do not switch to ESM or Vitest in this PR. |
@@ -407,6 +428,8 @@ One PR per row.
 | **`express` 5.2 → 5.3** | Minor. | Ride along with Nest 12. |
 
 ### Wave D: web runtime majors
+
+**Status (2026-11-02): done in #21.** No code changes were needed.
 
 | Change | What changes for us | How |
 |--------|---------------------|-----|
@@ -430,7 +453,7 @@ TypeScript 6.
 **Done when.** `lint` and `typecheck` each take a few seconds per app in CI,
 and no rule we enforce today was dropped without a written decision.
 
-**Status (2026-11-02): done, with two deviations.**
+**Status (2026-11-02): done in #22, with two deviations.**
 
 - `typescript` stays the real `typescript@^6.0.3` instead of the
   `@typescript/typescript6` alias: that package is a shim (`main` and
@@ -472,6 +495,13 @@ Node 26 became the active LTS in October 2026 (Dependabot proposed the base
 images in #10, closed). Move in one PR: both Dockerfiles, `NODE_VERSION` in
 `ci.yml`, `.nvmrc`, root `engines`, `@types/node` ^26, then the full gates and
 an image boot. Dependabot skips Node majors for base images until then.
+
+**Status (2026-11-02): done in #26.** Both Dockerfiles (`node:26-alpine`),
+`NODE_VERSION` in `ci.yml`, `node-version` in `onprem-agent-release.yml`,
+`.nvmrc`, root `engines` (`>=26`), `@types/node` ^26 in both apps, and the
+docs that named Node 24. The Node versions offered to customers' projects
+(catalog, scaffold, wizard) are unchanged. The same PR removed Dependabot's
+npm `semver-major` ignore and its `node` base-image major ignore.
 
 ### Rollback
 

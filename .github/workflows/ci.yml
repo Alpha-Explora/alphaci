@@ -31,7 +31,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  NODE_VERSION: 24
+  NODE_VERSION: 26
   # Optional Vercel Remote Cache. Turborepo uses it when both are set and
   # falls back to running every task when they are not.
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}

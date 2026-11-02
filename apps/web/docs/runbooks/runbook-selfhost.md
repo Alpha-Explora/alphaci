@@ -43,7 +43,7 @@ The install pins the published image by digest: `ALPHACI_WEB_IMAGE=ghcr.io/alpha
 
 ## Image layout
 
-- Stages: `base` (`node:24-alpine`, `apk upgrade`), `deps` (`npm ci`), `builder` (`npm run build`), `runner`.
+- Stages: `base` (`node:26-alpine`, `apk upgrade`), `deps` (`npm ci`), `builder` (`npm run build`), `runner`.
 - `runner` installs production dependencies only, removes npm and npx, and copies `.next`, `public`, and the files `next start` needs to load `next.config.ts` again (the config, two `src/` modules, `scripts/lib`, `vendor`, and the catalog provenance record).
 - It runs `next start -p 3000` and exposes port 3000.
 

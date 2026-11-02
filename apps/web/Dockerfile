@@ -9,7 +9,7 @@
 # Keep in step with the `turbo` devDependency in the root package.json.
 ARG TURBO_VERSION=2.11.10
 
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 WORKDIR /app
 
 # Keep OS packages patched; avoid global npm upgrades that can introduce extra CVEs.
