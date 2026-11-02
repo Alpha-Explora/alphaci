@@ -133,7 +133,7 @@ jobs:
       matrix:
         include:
           - name: lint
-            tasks: lint
+            tasks: lint format:check
           - name: typecheck and build
             tasks: typecheck build
           - name: tests
@@ -300,7 +300,7 @@ jobs:
       matrix:
         include:
           - name: lint
-            tasks: lint lint:css
+            tasks: lint lint:css format:check
           - name: typecheck
             tasks: typecheck
           - name: tests

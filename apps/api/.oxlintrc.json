@@ -5,8 +5,7 @@
   // for one, type-aware rules included: tsgolint (TypeScript 7) supplies types.
   // eslint.config.mjs turns off every rule Oxlint runs (eslint-plugin-oxlint)
   // and keeps only what Oxlint lacks:
-  //   prettier/prettier                     no formatter check in Oxlint
-  //   @typescript-eslint/consistent-type-imports
+    //   @typescript-eslint/consistent-type-imports
   //                                         Oxlint's rule ignores decorator
   //                                         metadata, so it would demand
   //                                         `import type` for Nest DI params

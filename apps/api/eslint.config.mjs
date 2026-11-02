@@ -2,13 +2,12 @@
 // Second half of `npm run lint`. Oxlint (.oxlintrc.json) runs first and owns
 // every rule it supports, type-aware ones included. The presets below still
 // define the rule set; eslint-plugin-oxlint, last, turns off everything
-// .oxlintrc.json runs, which leaves prettier/prettier,
-// @typescript-eslint/consistent-type-imports and no-octal here.
+// .oxlintrc.json runs, which leaves @typescript-eslint/consistent-type-imports
+// and no-octal here. Formatting is `npm run format:check` (Prettier), not ESLint.
 import path from 'node:path';
 
 import eslint from '@eslint/js';
 import oxlint from 'eslint-plugin-oxlint';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -25,7 +24,6 @@ export default tseslint.config(
   // type-aware rule ever stops being covered by .oxlintrc.json, ESLint fails
   // loudly ("requires type information") instead of dropping it.
   ...tseslint.configs.recommendedTypeChecked,
-  eslintPluginPrettierRecommended,
   {
     languageOptions: {
       globals: {
@@ -47,7 +45,6 @@ export default tseslint.config(
         'error',
         { prefer: 'type-imports' },
       ],
-      'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
   },
   {
