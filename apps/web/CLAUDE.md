@@ -418,7 +418,7 @@ in the backend `.env`.
 | `react` / `react-dom` | ^19.2.5 |
 | `tailwindcss` | ^4.2.4 |
 | `typescript` | ^6.0.3 |
-| `framer-motion` | ^12.38.0 |
+| `framer-motion` | ^14.9.0 |
 | `jest` | ^30.3.0 |
 | `stylelint` | ^17.14.1 |
 | `dependency-cruiser` | ^18.2.0 |
