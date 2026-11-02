@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from '../yaml';
 
 import { ToolchainFragmentRegistry } from '#kernel/ports/toolchain-fragment.port';
 import { WorkflowFragmentRegistry } from '#kernel/ports/workflow-fragment.port';
@@ -346,7 +346,7 @@ describe('runtime version precedence', () => {
     const quality = bundle.workflowFiles.find(
       (file) => file.stage === 'quality',
     );
-    const doc = yaml.load(quality?.yaml ?? '') as {
+    const doc = loadYaml(quality?.yaml ?? '') as {
       jobs: Record<string, { with?: Record<string, unknown> }>;
     };
     return doc.jobs['dotnet-tests']?.with?.['dotnet-version'];

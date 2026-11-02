@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { load } from 'js-yaml';
+import { loadYaml } from '../../../src/modules/projects/application/workflows/yaml';
 import { FILE_ENV_ALLOW_LIST } from '../../../src/kernel/config/file-env';
 
 interface ComposeService {
@@ -8,7 +8,7 @@ interface ComposeService {
   secrets?: string[];
 }
 
-const compose = load(
+const compose = loadYaml(
   readFileSync(
     resolve(__dirname, '../../../../../deploy/selfhost/compose.yaml'),
     'utf8',

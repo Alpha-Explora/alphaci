@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from './yaml';
 
 import {
   BRANCHES_CREATED_ON_PROVISION,
@@ -57,7 +57,7 @@ function generatedTriggers(): Map<string, TriggerBlock> {
   return new Map(
     bundle.workflowFiles.map((file) => [
       file.path,
-      (yaml.load(file.yaml) as { on: TriggerBlock }).on,
+      (loadYaml(file.yaml) as { on: TriggerBlock }).on,
     ]),
   );
 }

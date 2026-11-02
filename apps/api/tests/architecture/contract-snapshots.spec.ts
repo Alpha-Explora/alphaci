@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from '../../src/modules/projects/application/workflows/yaml';
 
 import type { DeploymentProvider } from '../../src/modules/runtime/core/deployment-provider.contract';
 import { DeploymentProviderRegistry } from '../../src/modules/runtime/core/deployment-provider.registry';
@@ -96,7 +96,7 @@ describe('post-consolidation public contract snapshots', () => {
     const packageFile = bundle.workflowFiles.find(
       (file) => file.stage === 'package',
     );
-    const packageWorkflow = yaml.load(packageFile?.yaml ?? '') as {
+    const packageWorkflow = loadYaml(packageFile?.yaml ?? '') as {
       jobs: Record<string, unknown>;
     };
 

@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from './yaml';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -109,7 +109,7 @@ const fileOf = (
   stage: StagedWorkflowFile['stage'],
 ) => bundle.workflowFiles.find((file) => file.stage === stage)!;
 
-const parse = (file: StagedWorkflowFile) => yaml.load(file.yaml) as Parsed;
+const parse = (file: StagedWorkflowFile) => loadYaml(file.yaml) as Parsed;
 
 const reportStep = (file: StagedWorkflowFile) =>
   parse(file).jobs['report-results']!.steps![0]!;

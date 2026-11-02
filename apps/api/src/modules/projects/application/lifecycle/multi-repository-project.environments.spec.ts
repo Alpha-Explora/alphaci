@@ -1,7 +1,7 @@
 import { generateKeyPairSync } from 'node:crypto';
 
 import { Logger } from '@nestjs/common';
-import yaml from 'js-yaml';
+import { loadYaml } from '../workflows/yaml';
 
 import { WorkflowFragmentRegistry } from '#kernel/ports/workflow-fragment.port';
 import { onpremComposeWorkflowFragment } from '#modules/runtime/infrastructure/providers/onprem/onprem-compose-workflow.fragment';
@@ -270,9 +270,7 @@ function create(support: ReturnType<typeof fakeSupport>['support']) {
 
 type Workflow = { jobs: Record<string, unknown> };
 const jobsOf = (file: StagedWorkflowFile | undefined) =>
-  Object.keys(
-    (yaml.load(file?.yaml ?? '') as Workflow | undefined)?.jobs ?? {},
-  );
+  Object.keys((loadYaml(file?.yaml ?? '') as Workflow | undefined)?.jobs ?? {});
 
 describe('MultiRepositoryProjectProvisioner with project environments', () => {
   let warn: jest.SpyInstance;

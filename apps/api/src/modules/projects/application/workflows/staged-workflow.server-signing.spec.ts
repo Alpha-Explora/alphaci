@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from './yaml';
 
 import { WorkflowFragmentRegistry } from '#kernel/ports/workflow-fragment.port';
 import { onpremComposeWorkflowFragment } from '#modules/runtime/infrastructure/providers/onprem/onprem-compose-workflow.fragment';
@@ -97,7 +97,7 @@ function packageStage(options: StagedWorkflowOptions) {
   const file = bundle.workflowFiles.find((item) => item.stage === 'package');
   return {
     text: file?.yaml ?? '',
-    workflow: yaml.load(file?.yaml ?? '') as {
+    workflow: loadYaml(file?.yaml ?? '') as {
       jobs: Record<string, { needs?: string[] }>;
     },
   };

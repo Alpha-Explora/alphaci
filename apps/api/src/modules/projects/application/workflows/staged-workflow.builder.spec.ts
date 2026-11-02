@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from './yaml';
 import {
   resolvePlatformBaseUrl,
   rewriteCiApiBase,
@@ -119,7 +119,7 @@ describe('buildStagedWorkflowBundle', () => {
       templateId: 'be-nestjs',
       serviceName: 'orders-api',
     });
-    const access = yaml.load(bundle.workflowFiles[0]!.yaml) as Record<
+    const access = loadYaml(bundle.workflowFiles[0]!.yaml) as Record<
       string,
       unknown
     >;
@@ -141,7 +141,7 @@ describe('buildStagedWorkflowBundle', () => {
     for (const file of bundle.workflowFiles.filter(
       (item) => item.stage !== 'guard',
     )) {
-      const wf = yaml.load(file.yaml) as ParsedWorkflow;
+      const wf = loadYaml(file.yaml) as ParsedWorkflow;
       const reportJob = wf.jobs['report-results'];
 
       expect(reportJob).toBeDefined();
@@ -152,18 +152,18 @@ describe('buildStagedWorkflowBundle', () => {
     }
 
     // access: only needs validate-access
-    const access = yaml.load(bundle.workflowFiles[0]!.yaml) as ParsedWorkflow;
+    const access = loadYaml(bundle.workflowFiles[0]!.yaml) as ParsedWorkflow;
     expect(access.jobs['report-results']?.needs).toEqual(['validate-access']);
 
     // quality: needs every substantive quality job
-    const quality = yaml.load(bundle.workflowFiles[1]!.yaml) as ParsedWorkflow;
+    const quality = loadYaml(bundle.workflowFiles[1]!.yaml) as ParsedWorkflow;
     expect(quality.jobs['report-results']?.needs).toContain('backend-tests');
     expect(quality.jobs['report-results']?.needs).toContain('sonar');
     expect(quality.jobs['report-results']?.needs).toContain('typecheck');
 
     // package: needs validate-access + build, and the promotion jobs so the
     // report is sent after them rather than before
-    const pkg = yaml.load(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
+    const pkg = loadYaml(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
     expect(pkg.jobs['report-results']?.needs).toEqual([
       'pipeline-context',
       'validate-access',
@@ -236,8 +236,8 @@ describe('buildStagedWorkflowBundle', () => {
       '.github/workflows/05-alphaci-env-guard.yml',
     ]);
 
-    const quality = yaml.load(bundle.workflowFiles[1]!.yaml) as ParsedWorkflow;
-    const pkg = yaml.load(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
+    const quality = loadYaml(bundle.workflowFiles[1]!.yaml) as ParsedWorkflow;
+    const pkg = loadYaml(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
 
     expect(quality.name).toBe('ALPHACI 2 Quality (backend)');
     expect(quality.on.workflow_run?.workflows).toEqual([
@@ -274,7 +274,7 @@ describe('buildStagedWorkflowBundle', () => {
       servicePath: 'backend/',
     });
 
-    const quality = yaml.load(bundle.workflowFiles[1]!.yaml) as ParsedWorkflow;
+    const quality = loadYaml(bundle.workflowFiles[1]!.yaml) as ParsedWorkflow;
     expect(quality.jobs['backend-tests']?.with?.['working-directory']).toBe(
       'backend',
     );
@@ -307,10 +307,10 @@ describe('buildStagedWorkflowBundle', () => {
       serviceName: 'orders-web',
     });
 
-    const scaffoldedQuality = yaml.load(
+    const scaffoldedQuality = loadYaml(
       scaffolded.workflowFiles[1]!.yaml,
     ) as ParsedWorkflow;
-    const byoQuality = yaml.load(byo.workflowFiles[1]!.yaml) as ParsedWorkflow;
+    const byoQuality = loadYaml(byo.workflowFiles[1]!.yaml) as ParsedWorkflow;
 
     expect(
       scaffoldedQuality.jobs['frontend-tests']?.with?.['unit-tests-directory'],
@@ -332,7 +332,7 @@ describe('buildStagedWorkflowBundle', () => {
       coverageThreshold: 80,
     });
 
-    const quality = yaml.load(bundle.workflowFiles[1]!.yaml) as ParsedWorkflow;
+    const quality = loadYaml(bundle.workflowFiles[1]!.yaml) as ParsedWorkflow;
     const policy = bundle.workflowFiles[1]!.yaml;
 
     // One coverage threshold on every branch: dev, uat and main all need 80,
@@ -369,7 +369,7 @@ describe('buildStagedWorkflowBundle', () => {
       nodeVersion: '24',
     });
 
-    const quality = yaml.load(bundle.workflowFiles[1]!.yaml) as ParsedWorkflow;
+    const quality = loadYaml(bundle.workflowFiles[1]!.yaml) as ParsedWorkflow;
     const typecheck = quality.jobs['typecheck'];
     const qualityYaml = bundle.workflowFiles[1]!.yaml;
 
@@ -402,7 +402,7 @@ describe('buildStagedWorkflowBundle', () => {
       serviceName: 'orders-api',
     });
 
-    const quality = yaml.load(bundle.workflowFiles[1]!.yaml) as ParsedWorkflow;
+    const quality = loadYaml(bundle.workflowFiles[1]!.yaml) as ParsedWorkflow;
     const sonar = quality.jobs['sonar'];
 
     expect(sonar?.uses).toBe(
@@ -435,7 +435,7 @@ describe('buildStagedWorkflowBundle', () => {
       enhancements: ['strictProductionApproval'],
     });
 
-    const pkg = yaml.load(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
+    const pkg = loadYaml(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
     const gate = pkg.jobs['production-gate'];
 
     expect(gate?.uses).toBe(
@@ -470,7 +470,7 @@ describe('buildStagedWorkflowBundle', () => {
       workflowFragmentRegistry,
     );
 
-    const pkg = yaml.load(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
+    const pkg = loadYaml(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
     const packageYaml = bundle.workflowFiles[2]!.yaml;
 
     expect(pkg.jobs['deploy-vercel-standalone-uat']?.uses).toBe(
@@ -492,7 +492,7 @@ describe('buildStagedWorkflowBundle', () => {
       deploymentProvider: 'render',
     });
 
-    const pkg = yaml.load(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
+    const pkg = loadYaml(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
     const packageYaml = bundle.workflowFiles[2]!.yaml;
 
     expect(pkg.jobs['deploy-render']).toBeUndefined();
@@ -520,7 +520,7 @@ describe('buildStagedWorkflowBundle', () => {
       workflowFragmentRegistry,
     );
 
-    const pkg = yaml.load(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
+    const pkg = loadYaml(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
 
     expect(pkg.jobs['docker-backend-uat']?.uses).toBe(
       'Alpha-Explora/alphaci-workflow/.github/workflows/docker-build.yml@v1',
@@ -545,7 +545,7 @@ describe('buildStagedWorkflowBundle', () => {
       serviceName: 'orders-api',
     });
 
-    const pkg = yaml.load(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
+    const pkg = loadYaml(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
     const toUat = pkg.jobs['promote-to-uat'];
     const toMain = pkg.jobs['promote-to-main'];
 
@@ -578,7 +578,7 @@ describe('buildStagedWorkflowBundle', () => {
       deploymentProvider: 'render',
     });
 
-    const pkg = yaml.load(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
+    const pkg = loadYaml(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
     const toMain = pkg.jobs['promote-to-main'];
 
     expect(toMain?.needs).toEqual(['pipeline-context', 'build']);
@@ -603,7 +603,7 @@ describe('buildStagedWorkflowBundle', () => {
 
     it('watches every promotion-flow branch on push and pull request', () => {
       const guard = guardOf()!;
-      const wf = yaml.load(guard.yaml) as Record<string, unknown>;
+      const wf = loadYaml(guard.yaml) as Record<string, unknown>;
 
       expect(wf['on']).toEqual({
         push: { branches: ['dev', 'uat', 'main'] },
@@ -654,7 +654,7 @@ describe('failure capture in the reporting job', () => {
     const quality = bundle.workflowFiles.find((file) =>
       file.path.includes('10-alphaci-quality'),
     );
-    const parsed = yaml.load(quality!.yaml) as {
+    const parsed = loadYaml(quality!.yaml) as {
       jobs: Record<
         string,
         { permissions?: Record<string, string>; steps?: { run?: string }[] }
@@ -679,7 +679,7 @@ describe('failure capture in the reporting job', () => {
     const quality = bundle.workflowFiles.find((file) =>
       file.path.includes('10-alphaci-quality'),
     );
-    const parsed = yaml.load(quality!.yaml) as {
+    const parsed = loadYaml(quality!.yaml) as {
       jobs: Record<string, { permissions?: Record<string, string> }>;
     };
 
@@ -735,7 +735,7 @@ describe('test results in the reporting payload', () => {
     const quality = bundle.workflowFiles.find((file) =>
       file.path.includes('10-alphaci-quality'),
     );
-    const parsed = yaml.load(quality!.yaml) as {
+    const parsed = loadYaml(quality!.yaml) as {
       jobs: Record<
         string,
         { steps?: { run?: string; env?: Record<string, string> }[] }
@@ -830,7 +830,7 @@ describe('annotation capture keeps the real diagnostics', () => {
     const quality = bundle.workflowFiles.find((file) =>
       file.path.includes('10-alphaci-quality'),
     );
-    const parsed = yaml.load(quality!.yaml) as {
+    const parsed = loadYaml(quality!.yaml) as {
       jobs: Record<string, { steps?: { run?: string }[] }>;
     };
     const run = parsed.jobs['report-results']!.steps![0]!.run!;
@@ -922,7 +922,7 @@ describe('a stage that never ran reports nothing', () => {
     const file = bundle.workflowFiles.find((candidate) =>
       candidate.path.includes(pathFragment),
     );
-    const parsed = yaml.load(file!.yaml) as {
+    const parsed = loadYaml(file!.yaml) as {
       jobs: Record<
         string,
         { steps?: { run?: string; env?: Record<string, string> }[] }
@@ -1063,7 +1063,7 @@ describe('a stage that never ran reports nothing', () => {
       });
 
       const contextFor = (path: string) => {
-        const parsed = yaml.load(
+        const parsed = loadYaml(
           bundle.workflowFiles.find((f) => f.path.includes(path))!.yaml,
         ) as {
           jobs: Record<string, { steps?: { env?: Record<string, string> }[] }>;
@@ -1150,7 +1150,7 @@ describe('the reporting job captures on success, not only on failure', () => {
     const file = bundle.workflowFiles.find((candidate) =>
       candidate.path.includes('10-alphaci-quality'),
     );
-    const parsed = yaml.load(file!.yaml) as {
+    const parsed = loadYaml(file!.yaml) as {
       jobs: Record<
         string,
         { steps?: { run?: string; env?: Record<string, string> }[] }
@@ -1298,7 +1298,7 @@ describe('the verify stage', () => {
     const file = bundleWith(deploymentTargets).workflowFiles.find(
       (candidate) => candidate.stage === 'verify',
     );
-    return file ? (yaml.load(file.yaml) as ParsedWorkflow) : null;
+    return file ? (loadYaml(file.yaml) as ParsedWorkflow) : null;
   };
 
   /*
@@ -1352,7 +1352,7 @@ describe('the verify stage', () => {
         } as never,
         workflowFragmentRegistry,
       );
-      return yaml.load(
+      return loadYaml(
         bundle.workflowFiles.find((file) => file.stage === 'verify')!.yaml,
       ) as ParsedWorkflow;
     };
@@ -1445,7 +1445,7 @@ describe('the verify stage', () => {
     );
     expect(file).toBeDefined();
 
-    const parsed = yaml.load(file!.yaml) as ParsedWorkflow;
+    const parsed = loadYaml(file!.yaml) as ParsedWorkflow;
     const jobs = Object.keys(parsed.jobs);
 
     // A browser suite, because a bundle on a CDN has no /health to poll and no
@@ -1488,7 +1488,7 @@ describe('the verify stage', () => {
       workflowFragmentRegistry,
     );
 
-    const verify = yaml.load(
+    const verify = loadYaml(
       bundle.workflowFiles.find((candidate) => candidate.stage === 'verify')!
         .yaml,
     ) as ParsedWorkflow;
@@ -1533,7 +1533,7 @@ describe('the verify stage', () => {
       workflowFragmentRegistry,
     );
 
-    const parsed = yaml.load(
+    const parsed = loadYaml(
       bundle.workflowFiles.find((candidate) => candidate.stage === 'verify')!
         .yaml,
     ) as ParsedWorkflow;
@@ -1578,7 +1578,7 @@ describe('the verify stage', () => {
       workflowFragmentRegistry,
     );
 
-    const parsed = yaml.load(
+    const parsed = loadYaml(
       bundle.workflowFiles.find((candidate) => candidate.stage === 'package')!
         .yaml,
     ) as ParsedWorkflow;
@@ -1645,7 +1645,7 @@ describe('the verify stage', () => {
       workflowFragmentRegistry,
     );
 
-    const verify = yaml.load(
+    const verify = loadYaml(
       bundle.workflowFiles.find((candidate) => candidate.stage === 'verify')!
         .yaml,
     ) as ParsedWorkflow;
@@ -1716,7 +1716,7 @@ describe('the verify stage', () => {
     const file = bundle.workflowFiles.find(
       (candidate) => candidate.stage === 'verify',
     );
-    const parsed = yaml.load(file!.yaml) as {
+    const parsed = loadYaml(file!.yaml) as {
       jobs: Record<string, { steps?: { env?: Record<string, string> }[] }>;
     };
     const env = parsed.jobs['report-results']!.steps![0]!.env!;
@@ -1794,7 +1794,7 @@ describe('generated workflows never put a secret in a reusable call input', () =
 
       const offenders: string[] = [];
       for (const file of bundle.workflowFiles) {
-        const parsed = yaml.load(file.yaml) as {
+        const parsed = loadYaml(file.yaml) as {
           jobs?: Record<
             string,
             { uses?: string; with?: Record<string, unknown> }
@@ -1865,7 +1865,7 @@ describe('chained stages read the branch from the context job', () => {
     const offenders: string[] = [];
 
     for (const file of chainedFiles()) {
-      const parsed = yaml.load(file.yaml) as {
+      const parsed = loadYaml(file.yaml) as {
         jobs?: Record<string, { if?: string }>;
       };
       for (const [jobId, job] of Object.entries(parsed.jobs ?? {})) {
@@ -1885,7 +1885,7 @@ describe('chained stages read the branch from the context job', () => {
     const offenders: string[] = [];
 
     for (const file of chainedFiles()) {
-      const parsed = yaml.load(file.yaml) as {
+      const parsed = loadYaml(file.yaml) as {
         jobs?: Record<string, { with?: Record<string, unknown> }>;
       };
       for (const [jobId, job] of Object.entries(parsed.jobs ?? {})) {
@@ -1904,7 +1904,7 @@ describe('chained stages read the branch from the context job', () => {
 
   it('gives every chained stage a context job to read from', () => {
     for (const file of chainedFiles()) {
-      const parsed = yaml.load(file.yaml) as { jobs?: Record<string, unknown> };
+      const parsed = loadYaml(file.yaml) as { jobs?: Record<string, unknown> };
       expect(Object.keys(parsed.jobs ?? {})).toContain('pipeline-context');
     }
   });
@@ -1943,7 +1943,7 @@ describe('no chained stage can cancel another branch', () => {
 
     expect(chained.length).toBeGreaterThan(0);
     for (const file of chained) {
-      const parsed = yaml.load(file.yaml) as { concurrency?: unknown };
+      const parsed = loadYaml(file.yaml) as { concurrency?: unknown };
       expect(parsed.concurrency).toBeUndefined();
     }
   });
@@ -1953,7 +1953,7 @@ describe('no chained stage can cancel another branch', () => {
     const access = bundle().workflowFiles.find(
       (file) => file.stage === 'access',
     );
-    const parsed = yaml.load(access!.yaml) as { concurrency?: unknown };
+    const parsed = loadYaml(access!.yaml) as { concurrency?: unknown };
 
     expect(parsed.concurrency).toBeUndefined();
   });
@@ -1965,7 +1965,7 @@ describe('no chained stage can cancel another branch', () => {
    */
   it('keeps the env guard serialized per ref, where the branch is knowable', () => {
     const guard = bundle().workflowFiles.find((file) => file.stage === 'guard');
-    const parsed = yaml.load(guard!.yaml) as {
+    const parsed = loadYaml(guard!.yaml) as {
       concurrency?: { group?: string; 'cancel-in-progress'?: boolean };
     };
 
@@ -1981,7 +1981,7 @@ describe('promotion PR pairing input (sibling-repo)', () => {
       serviceName: 'orders-api',
       ...options,
     });
-    const pkg = yaml.load(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
+    const pkg = loadYaml(bundle.workflowFiles[2]!.yaml) as ParsedWorkflow;
     return {
       bundle,
       toUat: pkg.jobs['promote-to-uat'],

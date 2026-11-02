@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
 import { Injectable, NotFoundException, Optional } from '@nestjs/common';
-import yaml from 'js-yaml';
+import { dumpYaml, loadYaml } from './yaml';
 
 import {
   CatalogService,
@@ -97,7 +97,7 @@ export class WorkflowsService {
     const substitutionsApplied: string[] = [];
     const enhancementsApplied: string[] = [];
 
-    const parsed = yaml.load(source) as Record<string, unknown> | null;
+    const parsed = loadYaml(source) as Record<string, unknown> | null;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       throw new Error('Workflow template could not be parsed');
     }
@@ -159,11 +159,7 @@ export class WorkflowsService {
       enhancementsApplied,
     );
 
-    const generatedYaml = yaml.dump(parsed, {
-      lineWidth: -1,
-      noRefs: true,
-      sortKeys: false,
-    });
+    const generatedYaml = dumpYaml(parsed);
 
     return {
       generatedYaml,

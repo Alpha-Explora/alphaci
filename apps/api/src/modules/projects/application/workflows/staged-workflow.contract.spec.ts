@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from './yaml';
 
 import { resolveCentralWorkflowBase } from '#kernel/config/central-workflow';
 import { WorkflowFragmentRegistry } from '#kernel/ports/workflow-fragment.port';
@@ -83,7 +83,7 @@ interface ParsedWorkflow {
 }
 
 function centralWorkflowsIn(yamlText: string): string[] {
-  const parsed = yaml.load(yamlText) as ParsedWorkflow;
+  const parsed = loadYaml(yamlText) as ParsedWorkflow;
   const base = `${resolveCentralWorkflowBase()}/`;
 
   return Object.values(parsed.jobs ?? {})
@@ -173,7 +173,7 @@ describe('staged workflow generator: central workflow contract', () => {
     );
 
     const allUses = bundle.workflowFiles.flatMap((file) =>
-      Object.values((yaml.load(file.yaml) as ParsedWorkflow).jobs ?? {})
+      Object.values((loadYaml(file.yaml) as ParsedWorkflow).jobs ?? {})
         .map((job) => job?.uses)
         .filter((uses): uses is string => typeof uses === 'string'),
     );

@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from './yaml';
 
 import { WorkflowFragmentRegistry } from '#kernel/ports/workflow-fragment.port';
 import { renderWorkflowFragment } from '#modules/runtime/infrastructure/providers/render/render-workflow.fragment';
@@ -155,7 +155,7 @@ const allFiles = (): StagedWorkflowFile[] =>
     (bundle) => bundle.workflowFiles,
   );
 
-const parse = (file: StagedWorkflowFile) => yaml.load(file.yaml) as Parsed;
+const parse = (file: StagedWorkflowFile) => loadYaml(file.yaml) as Parsed;
 
 const chained = () =>
   allFiles().filter((file) => 'workflow_run' in parse(file).on);

@@ -1,5 +1,5 @@
 import type { ConfigService } from '@nestjs/config';
-import yaml from 'js-yaml';
+import { loadYaml } from './yaml';
 
 import { WorkflowFragmentRegistry } from '#kernel/ports/workflow-fragment.port';
 import { onpremComposeWorkflowFragment } from '#modules/runtime/infrastructure/providers/onprem/onprem-compose-workflow.fragment';
@@ -80,7 +80,7 @@ async function signJobWith(env: Record<string, string | undefined>) {
     file.path.endsWith('20-alphaci-package.yml'),
   );
   const jobs = (
-    yaml.load(packageFile!.yaml) as {
+    loadYaml(packageFile!.yaml) as {
       jobs: Record<string, { with?: Record<string, unknown> }>;
     }
   ).jobs;

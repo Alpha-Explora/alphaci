@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { load } from 'js-yaml';
+import { loadYaml } from '../../src/modules/projects/application/workflows/yaml';
 
 const root = join(__dirname, '..', '..');
 // Workflows live at the monorepo root, two levels above apps/api.
@@ -38,7 +38,7 @@ interface Workflow {
   jobs: Record<string, WorkflowJob>;
 }
 
-const workflow = load(readFileSync(workflowPath, 'utf8')) as Workflow;
+const workflow = loadYaml(readFileSync(workflowPath, 'utf8')) as Workflow;
 const script = (name: string) => join(root, 'scripts', name);
 const allRuns = () =>
   Object.values(workflow.jobs)
