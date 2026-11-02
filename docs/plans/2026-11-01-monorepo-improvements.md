@@ -295,7 +295,7 @@ wins are smaller, but agents push often, so every minute of waiting compounds.
 | Fix setup (cache `node_modules`, seed caches from `main`, blobless clone, match parallelism to cores) | **Yes, all of it.** `npm ci` is 26–85 s of every job; public-repo runners have 4 vCPUs, so match `--maxWorkers` to that. | Step 2 |
 | Run everything in parallel | **Yes, with care.** The web job runs 15 steps in series. Split lint / typecheck / test / build, but share one cached install. | Step 2 |
 | Only run what a PR touches, full run nightly, test the skip logic | **Yes.** `turbo --affected`, nightly schedule, skip-logic guard job. | Step 2 |
-| Pre-push hook | **Yes.** lefthook, `turbo run lint typecheck --affected`. | Step 2 |
+| Pre-push hook | **Yes.** lefthook: `turbo run typecheck --affected`, plus Oxlint and ESLint on the pushed files (wave E). | Step 2, wave E |
 | Spend $4,300/month | **No.** Public repo, standard runners, no bill. | — |
 
 ---
@@ -401,6 +401,42 @@ TypeScript 6.
 
 **Done when.** `lint` and `typecheck` each take a few seconds per app in CI,
 and no rule we enforce today was dropped without a written decision.
+
+**Status (2026-11-02): done, with two deviations.**
+
+- `typescript` stays the real `typescript@^6.0.3` instead of the
+  `@typescript/typescript6` alias: that package is a shim (`main` and
+  `lib/tsc.js` only), so tools and editors that read `typescript/lib/*`
+  would break. TypeScript 7 is `"typescript-7": "npm:typescript@^7.0.2"` at
+  the root. Both ship a `tsc` binary and only one can own
+  `node_modules/.bin/tsc` (here it was 7), so scripts call each compiler by
+  path: `typecheck` uses `typescript-7/bin/tsc`, and the API `build` (Nest's emit) uses
+  `typescript/bin/tsc`. TypeScript 7 accepts the API's
+  `experimentalDecorators`/`emitDecoratorMetadata` for checking and checks
+  the same files (2,361 API, 1,607 web) with zero errors.
+- Lint is not "a few seconds" for the API yet: Oxlint runs every rule it has
+  in 2–5 s, but the ESLint pass keeps `prettier/prettier`, and Prettier itself
+  takes ~20 s for 1,075 files (its CLI is no faster). Moving formatting to
+  Oxc's formatter is the next step, separately.
+
+Rules: the API keeps 3 of 93 rules in ESLint (`prettier/prettier`; `no-octal`,
+which Oxlint lacks; `@typescript-eslint/consistent-type-imports`, because
+Oxlint's version ignores decorator metadata and would demand `import type`
+for Nest constructor injection). The web app keeps 4 of 87
+(`react/no-deprecated`, `@next/next/no-location-assign-relative-destination`
+and the no-op `react/jsx-uses-*` helpers). Oxlint covers the React Compiler
+rules: on three historical snapshots with every `eslint-disable` stripped it
+reported the same `set-state-in-effect` (25/25, 18/18, 2/2), `refs`,
+`use-memo`, `exhaustive-deps` and `complexity` (46/46) findings as ESLint.
+Two rules were dropped on purpose: `react-hooks/config` and
+`react-hooks/gating` only validate React Compiler plugin options, which we do
+not set, yet they compiled every file (32 s of the web lint). The web lint
+stays non-type-aware, as it was.
+
+Measured locally on the same machine (CI runners have been about 1.5–2×
+faster): typecheck API 21 s → 2.5 s, web 30.5 s → 2 s; lint API 143 s →
+22 s, web 115 s → 12.5 s. The pre-push hook now lints the pushed files of each
+app (Oxlint, then ESLint), in about ten seconds with the typecheck.
 
 ### Node 26
 

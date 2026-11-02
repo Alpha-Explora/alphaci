@@ -1,6 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 
+// Read once when the module loads, not on every render: render must be pure.
+const COPYRIGHT_YEAR = new Date().getFullYear();
+
 export function SiteFooter() {
   return (
     <footer className="border-t border-white/10 bg-[#09090b] px-[clamp(2rem,7vw,8rem)] pb-8 pt-16 text-[var(--text-secondary)] max-[640px]:px-6">
@@ -59,7 +62,7 @@ export function SiteFooter() {
 
       <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-center text-[0.85rem] text-[var(--text-muted)] md:flex-row md:text-left">
         <span>Powered by Alphaexplora Information Technology Services</span>
-        <span>&copy; {new Date().getFullYear()} AlphaCI.</span>
+        <span>&copy; {COPYRIGHT_YEAR} AlphaCI.</span>
       </div>
     </footer>
   );

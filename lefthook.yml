@@ -1,16 +1,30 @@
 # Git hooks, installed by the lefthook package on `npm install` (skipped in CI).
 #
-# pre-push typechecks the apps the push touches before CI does. Turbo only
-# checks apps changed since origin/main and replays unchanged results, so a
-# push without type changes takes a couple of seconds. CI still runs every
-# check. Skip once with `git push --no-verify` or `LEFTHOOK=0 git push`.
-#
-# Lint is not here yet: both apps use type-aware ESLint rules, which build the
-# whole TypeScript program first (45-60 s even for one file). Add it when
-# Oxlint lands (docs/plans/2026-11-01-monorepo-improvements.md, wave E).
+# pre-push checks what the push touches before CI does, in parallel:
+# - typecheck: Turbo typechecks only apps changed since origin/main (with
+#   TypeScript 7) and replays unchanged results, so it takes a few seconds.
+# - lint-api / lint-web: Oxlint, then ESLint, on the pushed files of that app
+#   only (`root` filters {push_files} to the app and runs there). Oxlint runs
+#   every rule it has, type-aware ones included, in 2-3 s; ESLint keeps the few
+#   rules Oxlint lacks (prettier formatting on the API) and takes 5-7 s for a
+#   handful of files. A push that touches no app source skips them.
+# CI still runs every check on every file. Skip once with
+# `git push --no-verify` or `LEFTHOOK=0 git push`.
+glob_matcher: doublestar
 pre-push:
+  parallel: true
   commands:
     typecheck:
       run: npx turbo run typecheck --affected --output-logs=errors-only
       env:
         TURBO_SCM_BASE: origin/main
+    lint-api:
+      root: apps/api/
+      glob: 'apps/api/{src,tests}/**/*.ts'
+      run: npx oxlint {push_files} && npx eslint {push_files}
+    lint-web:
+      root: apps/web/
+      glob: 'apps/web/src/**/*.{ts,tsx}'
+      run: >-
+        npx oxlint --report-unused-disable-directives --max-warnings=0 {push_files}
+        && npx eslint --max-warnings=0 {push_files}
