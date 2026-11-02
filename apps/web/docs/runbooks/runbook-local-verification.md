@@ -18,7 +18,7 @@ Use this sequence before merging a change that affects source, styles, capabilit
 
 ## Preconditions
 
-- Use Node.js 24 as configured by CI.
+- Use Node.js 26 as configured by CI.
 - Install the exact lockfile with `npm ci`.
 - Provide `NEXT_PUBLIC_API_BASE_URL` when a running app or authenticated check needs the backend. `NEXT_PUBLIC_API_URL` remains a legacy alias.
 - Do not store provider tokens in the browser or in frontend environment files.

@@ -23,7 +23,7 @@ History: `apps/api` and `apps/web` were imported with their full history from
 
 ## Getting started
 
-Node 24 (`.nvmrc`) and npm. Always install from the repository root; there is
+Node 26 (`.nvmrc`) and npm. Always install from the repository root; there is
 one lockfile, `package-lock.json`.
 
 ```bash

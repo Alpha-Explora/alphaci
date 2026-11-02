@@ -112,7 +112,7 @@
     "@types/express-session": "^1.19.0",
     "@types/helmet": "^0.0.48",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.19.2",
+    "@types/node": "^26.6.6",
     "@types/pg": "^8.20.0",
     "@types/supertest": "^7.2.1",
     "dependency-cruiser": "^18.2.0",

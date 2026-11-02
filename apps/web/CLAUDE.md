@@ -410,7 +410,7 @@ npm run typecheck && npm run lint && npm run lint:css \
   && npm run check:documentation
 ```
 
-CI (the `Web …` jobs of `.github/workflows/ci.yml` at the monorepo root, Node 24) also runs the capability
+CI (the `Web …` jobs of `.github/workflows/ci.yml` at the monorepo root, Node 26) also runs the capability
 package, capability surface and build-profile checks, both profile builds, and
 `npm run complexity`.
 
@@ -455,7 +455,7 @@ ALPHACI_EDITION=enterprise                             # saas | edu | enterprise
 
 ## Docker
 
-Four-stage `Dockerfile` on `node:24-alpine` (`base` → `deps` → `builder` →
+Four-stage `Dockerfile` on `node:26-alpine` (`base` → `deps` → `builder` →
 `runner`). `base` runs `apk upgrade --no-cache`. `builder` takes build args
 `NEXT_PUBLIC_API_BASE_URL`, `ALPHACI_BUILD_PROFILE` and `ALPHACI_EDITION`, and
 pins `NEXT_PUBLIC_USE_MOCK=false` and `NEXT_PUBLIC_DEV_QUICK_LOGIN=false`.

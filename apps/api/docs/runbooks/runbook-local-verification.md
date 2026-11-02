@@ -18,7 +18,7 @@ Use this sequence before merging a change that affects source, schemas, provider
 
 ## Preconditions
 
-- Use Node.js 24 (the root `.nvmrc`), as configured by CI.
+- Use Node.js 26 (the root `.nvmrc`), as configured by CI.
 - Install the exact lockfile with `npm ci`.
 - Provide environment values from `.env.example` when a boot or integration check needs them.
 - Do not run database mutation commands against a shared environment without an approved target and rollback plan.
