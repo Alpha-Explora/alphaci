@@ -1,16 +1,43 @@
 # Git hooks, installed by the lefthook package on `npm install` (skipped in CI).
 #
+# pre-commit fixes what it can on the staged files and stages the result, so a
+# formatting or auto-fixable lint problem never reaches a push or CI:
+# - fix-api / fix-web: Oxlint applies its safe fixes in that app, without the
+#   type-aware rules (they load the TypeScript program: 8 s instead of 1 s).
+#   Anything it cannot fix is left for the pre-push lint, which fails on it.
+# - format: then Prettier writes the staged files, fixes included.
+# A normal commit takes a few seconds, most of it npx starting up.
+#
 # pre-push checks what the push touches before CI does, in parallel:
 # - typecheck: Turbo typechecks only apps changed since origin/main (with
 #   TypeScript 7) and replays unchanged results, so it takes a few seconds.
 # - lint-api / lint-web: Oxlint, then ESLint, on the pushed files of that app
 #   only (`root` filters {push_files} to the app and runs there). Oxlint runs
 #   every rule it has, type-aware ones included, in 2-3 s; ESLint keeps the few
-#   rules Oxlint lacks (prettier formatting on the API) and takes 5-7 s for a
-#   handful of files. A push that touches no app source skips them.
-# CI still runs every check on every file. Skip once with
-# `git push --no-verify` or `LEFTHOOK=0 git push`.
+#   rules Oxlint lacks and takes 5-7 s for a handful of files. A push that
+#   touches no app source skips them.
+# CI still runs every check on every file. Skip once with `--no-verify` or
+# `LEFTHOOK=0`.
 glob_matcher: doublestar
+pre-commit:
+  commands:
+    format:
+      priority: 2
+      glob: '{apps/api/{src,tests}/**/*.ts,apps/web/{src,tests}/**/*.{ts,tsx},apps/web/src/**/*.css}'
+      run: npx prettier --write --ignore-unknown {staged_files}
+      stage_fixed: true
+    fix-api:
+      priority: 1
+      root: apps/api/
+      glob: 'apps/api/{src,tests}/**/*.ts'
+      run: npx oxlint --fix {staged_files}
+      stage_fixed: true
+    fix-web:
+      priority: 1
+      root: apps/web/
+      glob: 'apps/web/src/**/*.{ts,tsx}'
+      run: npx oxlint --fix {staged_files}
+      stage_fixed: true
 pre-push:
   parallel: true
   commands:
@@ -21,7 +48,7 @@ pre-push:
     lint-api:
       root: apps/api/
       glob: 'apps/api/{src,tests}/**/*.ts'
-      run: npx oxlint {push_files} && npx eslint {push_files}
+      run: npx oxlint --type-aware {push_files} && npx eslint {push_files}
     lint-web:
       root: apps/web/
       glob: 'apps/web/src/**/*.{ts,tsx}'

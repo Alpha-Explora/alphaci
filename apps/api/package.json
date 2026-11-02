@@ -36,7 +36,7 @@
     "start:enterprise-client": "node scripts/run-edition.mjs enterprise-client nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main",
-    "lint": "oxlint src tests && eslint --concurrency=4 \"{src,apps,libs,tests}/**/*.ts\"",
+    "lint": "oxlint --type-aware src tests && eslint --concurrency=4 \"{src,apps,libs,tests}/**/*.ts\"",
     "lint:fix": "oxlint --fix src tests && eslint --concurrency=4 \"{src,apps,libs,tests}/**/*.ts\" --fix",
     "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --watch",
