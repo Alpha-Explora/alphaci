@@ -9,7 +9,7 @@ import type {
   DeploymentProvisioningVariableGroup,
   EnvLane,
   EnvOwnershipMode,
-  EnvProvider,
+  CreatableEnvProvider,
   ProviderConnection,
 } from "@/shared/api/contracts";
 import {
@@ -50,7 +50,7 @@ interface DeploymentProvisioningSetupProps {
 interface TargetOption {
   key: string;
   label: string;
-  provider: EnvProvider;
+  provider: CreatableEnvProvider;
 }
 
 function RemoveIcon() {
@@ -229,7 +229,7 @@ function ProviderGroups({
   value,
   onChange,
 }: Readonly<{
-  provider: EnvProvider;
+  provider: CreatableEnvProvider;
   providerTargets: TargetOption[];
   variableGroups: DeploymentProvisioningVariableGroup[];
   value: DeploymentProvisioningRequest;
@@ -278,7 +278,7 @@ interface GroupPanelProps {
   group: DeploymentProvisioningVariableGroup;
   groupIndex: number;
   onlyGroup: boolean;
-  provider: EnvProvider;
+  provider: CreatableEnvProvider;
   providerTargets: TargetOption[];
   variableGroups: DeploymentProvisioningVariableGroup[];
   value: DeploymentProvisioningRequest;

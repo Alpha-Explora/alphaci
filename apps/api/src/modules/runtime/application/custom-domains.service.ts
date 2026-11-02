@@ -27,6 +27,10 @@ import {
   type ProviderClientRegistryPort,
 } from './ports/provider-client-registry.port';
 import type { CustomDomainSummary } from '../core/deployments.types';
+import type {
+  AddCustomDomainRequest,
+  RemoveCustomDomainResponse,
+} from '@alphaci/api-contracts';
 
 /**
  * A hostname, as strictly as we can check locally.
@@ -39,12 +43,8 @@ import type { CustomDomainSummary } from '../core/deployments.types';
 const HOSTNAME_PATTERN =
   /^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+$/;
 
-export interface AddCustomDomainInput {
-  deploymentTargetId: string;
-  hostname: string;
-  /** Pins the hostname to one branch. Omitted means the production domain. */
-  gitBranch?: string | null;
-}
+/** The body of POST /projects/:projectId/domains, defined in `@alphaci/api-contracts`. */
+export type AddCustomDomainInput = AddCustomDomainRequest;
 
 @Injectable()
 export class CustomDomainsService {
@@ -191,11 +191,7 @@ export class CustomDomainsService {
     projectId: string,
     domainId: string,
     userId: string,
-  ): Promise<{
-    removed: true;
-    hostname: string;
-    providerError: string | null;
-  }> {
+  ): Promise<RemoveCustomDomainResponse> {
     await this.assertMutationAccess(projectId, userId);
     const domain = await this.getDomainOrThrow(projectId, domainId);
 

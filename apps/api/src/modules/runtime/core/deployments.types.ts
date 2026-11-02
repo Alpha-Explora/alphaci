@@ -1,37 +1,26 @@
 import type { DeploymentProviderId } from './deployment-provider-id';
 import type { RenderServiceType } from './deployment-target.types';
 
+/*
+ * The env-var and custom-domain HTTP shapes are defined once in
+ * `@alphaci/api-contracts`, which the web app imports too. Change them there:
+ * a change that breaks the web then fails its typecheck in the same pull
+ * request.
+ */
+export type {
+  CustomDomain as CustomDomainSummary,
+  DomainVerificationChallenge,
+  EnvLane,
+  EnvVarInput,
+  EnvVarMetadata,
+  EnvVarProvisionStatus,
+  EnvVarScope,
+} from '@alphaci/api-contracts';
+
 export type { DeploymentProviderId } from './deployment-provider-id';
 export type { RenderServiceType } from './deployment-target.types';
 
 export type EnvProvider = DeploymentProviderId;
-
-/**
- * Deployment lane an environment variable applies to.
- *
- * Mirrors what a provider actually has rather than a promotion ladder:
- * `production` is the lane the provider's production branch deploys to and
- * carries no branch of its own (Vercel resolves it from the project's
- * production-branch setting), while `preview` is always scoped to one branch.
- *
- * Replaced the old fixed 'test' | 'uat' | 'production' enum, which could not
- * express per-branch values and silently collapsed test and uat onto a single
- * Vercel record.
- */
-export type EnvLane = 'production' | 'preview';
-
-/**
- * Which values a provisioning call targets.
- *
- * The lane and the branch are not independent: production has no branch, and
- * preview is meaningless without one. The database enforces the same pairing
- * (project_env_var_metadata_lane_branch_check).
- */
-export interface EnvVarScope {
-  lane: EnvLane;
-  /** The branch these values apply to. Null if and only if lane is production. */
-  gitBranch: string | null;
-}
 
 export type EnvOwnershipMode = 'byo' | 'flowci_managed';
 export type EnvTargetSlot = 'backend' | 'frontend' | 'standalone';
@@ -56,12 +45,6 @@ export type RenderDeployMethod =
 export type RenderEnvironmentName = 'dev' | 'test' | 'uat' | 'production';
 export type ProviderConnectionStatus = 'active' | 'revoked' | 'failed';
 export type DeploymentTargetStatus = 'active' | 'missing' | 'failed';
-export type EnvVarProvisionStatus = 'provisioned' | 'failed';
-
-export interface EnvVarInput {
-  key: string;
-  value: string;
-}
 
 export interface ProviderConnectionSummary {
   id: string;
@@ -109,23 +92,6 @@ export interface DeploymentTargetSummary {
   status: DeploymentTargetStatus;
 }
 
-export interface EnvVarMetadata {
-  id: string;
-  projectId: string;
-  deploymentTargetId: string;
-  lane: EnvLane;
-  /** Null if and only if `lane` is production. */
-  gitBranch: string | null;
-  key: string;
-  provider: EnvProvider;
-  valueStored: false;
-  lastProvisionedAt: string;
-  lastProvisionedBy: string;
-  status: EnvVarProvisionStatus;
-  errorSummary: string | null;
-  removedAt?: string | null;
-}
-
 export interface UpdateDeploymentTargetMetadataInput {
   slot?: EnvTargetSlot;
   providerProjectName?: string;
@@ -134,40 +100,4 @@ export interface UpdateDeploymentTargetMetadataInput {
   buildCommand?: string | null;
   startCommand?: string | null;
   renderEnvironmentName?: RenderEnvironmentName | null;
-}
-
-/**
- * A DNS challenge the provider itself returned for domain verification.
- * Stored verbatim: the provider is the authority and its instructions change
- * without notice, so the UI repeats what the provider said rather than
- * hardcoding an apex IP that goes stale.
- */
-export interface DomainVerificationChallenge {
-  type: string;
-  domain: string;
-  value: string;
-  reason: string;
-}
-
-export interface CustomDomainSummary {
-  id: string;
-  projectId: string;
-  deploymentTargetId: string;
-  provider: EnvProvider;
-  hostname: string;
-  apexDomain: string | null;
-  /** Branch this hostname serves. Null for the production domain. */
-  gitBranch: string | null;
-  verified: boolean;
-  verification: DomainVerificationChallenge[];
-  /**
-   * Whether DNS currently points at the provider. Null until checked once -
-   * and reported separately from verified, because a domain can be verified
-   * as owned while still not pointed at the deployment.
-   */
-  misconfigured: boolean | null;
-  lastCheckedAt: string | null;
-  lastErrorSafeMessage: string | null;
-  createdAt: string;
-  updatedAt: string;
 }

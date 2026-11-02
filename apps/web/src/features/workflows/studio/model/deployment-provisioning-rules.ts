@@ -5,7 +5,7 @@ import type {
   DeploymentProvisioningVariableGroup,
   EnvLane,
   EnvOwnershipMode,
-  EnvProvider,
+  CreatableEnvProvider,
   EnvTargetSlot,
   RenderDeployMethod,
   RenderRuntime,
@@ -122,7 +122,7 @@ export function envVarsForDisplay(
   return envSet.vars.length > 0 ? envSet.vars : [{ key: "", value: "" }];
 }
 
-export function providerLabel(provider: EnvProvider): string {
+export function providerLabel(provider: CreatableEnvProvider): string {
   return provider === "render" ? "Render" : "Vercel";
 }
 
@@ -151,7 +151,7 @@ export function readonlyValueLabel(value: string): string {
 }
 
 export function blankVariableGroup(
-  provider: EnvProvider,
+  provider: CreatableEnvProvider,
   index = 1,
 ): DeploymentProvisioningVariableGroup {
   return {
@@ -164,7 +164,7 @@ export function blankVariableGroup(
 
 export function variableGroupsForValue(
   value: DeploymentProvisioningRequest,
-  providers: EnvProvider[],
+  providers: CreatableEnvProvider[],
 ): DeploymentProvisioningVariableGroup[] {
   if (value.variableGroups?.length) {
     const fallbackProvider = providers[0] ?? "render";
@@ -208,7 +208,7 @@ export function updateVariableGroupAt(
 export function addVariableGroup(
   value: DeploymentProvisioningRequest,
   currentGroups: DeploymentProvisioningVariableGroup[],
-  provider: EnvProvider,
+  provider: CreatableEnvProvider,
 ): DeploymentProvisioningRequest {
   const providerGroupCount = currentGroups.filter(
     (group) => group.provider === provider,
@@ -312,7 +312,7 @@ export function defaultProjectPlaceholder(
 }
 
 const OWNERSHIP_COPY: Record<
-  `${EnvProvider}:${"byo" | "managed"}:${"native_git" | "other"}`,
+  `${CreatableEnvProvider}:${"byo" | "managed"}:${"native_git" | "other"}`,
   string
 > = {
   "render:byo:native_git":
@@ -369,7 +369,7 @@ export function targetBranchName(value: string | undefined): string {
   return value?.trim() || "uat";
 }
 
-function defaultProviderForSlot(slot: EnvTargetSlot): EnvProvider {
+function defaultProviderForSlot(slot: EnvTargetSlot): CreatableEnvProvider {
   return slot === "frontend" ? "vercel" : "render";
 }
 

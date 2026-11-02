@@ -7,7 +7,7 @@ import type {
   DeploymentProvisioningRequest,
   DeploymentProvisioningTargetRequest,
   DeploymentProvisioningVariableGroup,
-  EnvProvider,
+  CreatableEnvProvider,
   EnvTargetSlot,
 } from "@/shared/api/contracts";
 import {
@@ -31,7 +31,7 @@ function sanitizedEnvSets(
 
 function sanitizedVariableGroups(
   groups: DeploymentProvisioningVariableGroup[] | undefined,
-  activeProviders: Set<EnvProvider>,
+  activeProviders: Set<CreatableEnvProvider>,
 ): DeploymentProvisioningVariableGroup[] {
   return (groups ?? [])
     .map((group, index) => {

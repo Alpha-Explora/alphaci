@@ -1,4 +1,9 @@
-import type { DeploymentSlot } from "@alphaci/api-contracts";
+import type {
+  DeploymentProvider,
+  DeploymentSlot,
+  EnvLane,
+  EnvVarMetadata,
+} from "@alphaci/api-contracts";
 import type {
   CapabilityKey,
   Edition as CapabilityEdition,
@@ -6,13 +11,23 @@ import type {
 
 export type SubscriptionPlan = "free" | "pro";
 export type SubscriptionStatus = "inactive" | "active" | "canceled";
-export type EnvProvider = "render" | "vercel";
+/**
+ * The providers this app offers when the user chooses one: in the
+ * create-project studio, when attaching hosting, and when connecting a
+ * provider account.
+ *
+ * Web-only, not a wire type. The API treats providers as plugins and sends any
+ * provider id as an open string (`DeploymentProvider`), so a response field
+ * that names a provider uses that and needs a fallback label for an id this
+ * list does not know.
+ */
+export type CreatableEnvProvider = "render" | "vercel";
 /**
  * Providers a deployment target can name. On-prem hosts are attached to
  * environments, not chosen in the create-project studio, so they extend the
  * provisioning providers here only.
  */
-export type DeploymentTargetProvider = EnvProvider | "onprem-compose";
+export type DeploymentTargetProvider = CreatableEnvProvider | "onprem-compose";
 /**
  * Render's own environment naming on a deployment target. NOT the env-var lane
  * — that is EnvLane. The two used to be one type, which made a Render service
@@ -20,20 +35,6 @@ export type DeploymentTargetProvider = EnvProvider | "onprem-compose";
  */
 export type EnvEnvironment = "test" | "uat" | "production";
 
-/**
- * Deployment lane an environment variable applies to.
- *
- * `production` is the lane the provider's production branch deploys to and
- * carries no branch of its own; `preview` is always scoped to one branch, which
- * is what gives every branch its own set of values.
- */
-export type EnvLane = "production" | "preview";
-
-/** A lane paired with its branch. gitBranch is null exactly when lane is production. */
-export interface EnvVarScope {
-  lane: EnvLane;
-  gitBranch: string | null;
-}
 export type EnvOwnershipMode = "byo" | "flowci_managed";
 /** The role a deployment target fills; the API calls it DeploymentSlot. */
 export type EnvTargetSlot = DeploymentSlot;
@@ -151,7 +152,7 @@ export interface CapabilitiesResponse {
   clientComposition: ClientCompositionInfo;
   envProvisioning: {
     enabled: boolean;
-    providers: EnvProvider[];
+    providers: CreatableEnvProvider[];
     environments: EnvEnvironment[];
     modes: EnvOwnershipMode[];
   };
@@ -228,7 +229,7 @@ export interface CapabilitiesResponse {
 
 export interface ProviderConnection {
   id: string;
-  provider: EnvProvider;
+  provider: DeploymentProvider;
   label: string;
   tokenLastFour: string;
   status: "active" | "revoked" | "failed";
@@ -239,7 +240,7 @@ export interface ProviderConnection {
 }
 
 export interface CreateProviderConnectionRequest {
-  provider: EnvProvider;
+  provider: CreatableEnvProvider;
   label: string;
   token: string;
   vercelTeamId?: string;
@@ -365,7 +366,7 @@ export interface DetachDeploymentTargetResponse {
 
 export interface DeploymentTargetActionsResponse {
   targetId: string;
-  provider: EnvProvider;
+  provider: DeploymentProvider;
   actions: {
     sync: {
       enabled: boolean;
@@ -438,105 +439,6 @@ export interface ResumeDeploymentTargetDeploysResponse {
   deployId: string | null;
 }
 
-export interface EnvVarMetadata {
-  id: string;
-  projectId: string;
-  deploymentTargetId: string;
-  lane: EnvLane;
-  /** Null exactly when `lane` is production. */
-  gitBranch: string | null;
-  key: string;
-  provider: EnvProvider;
-  valueStored: false;
-  lastProvisionedAt: string;
-  lastProvisionedBy: string;
-  status: "provisioned" | "failed";
-  errorSummary: string | null;
-  removedAt?: string | null;
-}
-
-export interface ProvisionEnvVarsRequest {
-  deploymentTargetId: string;
-  lane: EnvLane;
-  /** Required for the preview lane; rejected for production. */
-  gitBranch?: string | null;
-  vars: Array<{ key: string; value: string }>;
-}
-
-export interface ProvisionEnvVarsResponse {
-  provisioned: Array<{ key: string; status: "provisioned" }>;
-  failed: Array<{ key: string; status: "failed"; errorSummary: string }>;
-}
-
-export interface ValidateEnvVarsRequest {
-  deploymentTargetId: string;
-  lane: EnvLane;
-  gitBranch?: string | null;
-  text: string;
-}
-
-export interface ValidateEnvVarsResponse {
-  keyCount: number;
-  keys: string[];
-  duplicates: string[];
-  invalidKeys: string[];
-  warnings: Array<{ code: string; message: string }>;
-}
-
-/**
- * One DNS record the provider says must exist before a hostname will serve.
- * Passed through from the provider verbatim — never generated locally, so the
- * instructions cannot go stale when the provider changes them.
- */
-export interface DomainVerificationChallenge {
-  type: string;
-  domain: string;
-  value: string;
-  reason: string;
-}
-
-export interface CustomDomain {
-  id: string;
-  projectId: string;
-  deploymentTargetId: string;
-  provider: EnvProvider;
-  hostname: string;
-  apexDomain: string | null;
-  /** Branch this hostname serves. Null for the production domain. */
-  gitBranch: string | null;
-  verified: boolean;
-  verification: DomainVerificationChallenge[];
-  /**
-   * Whether DNS points at the provider. Null until checked once, and separate
-   * from `verified`: a domain can be verified as owned and still not pointed
-   * at the deployment.
-   */
-  misconfigured: boolean | null;
-  lastCheckedAt: string | null;
-  lastErrorSafeMessage: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface AddCustomDomainRequest {
-  deploymentTargetId: string;
-  hostname: string;
-  /** Omitted means the production domain. */
-  gitBranch?: string | null;
-}
-
-export interface RemoveCustomDomainResponse {
-  removed: true;
-  hostname: string;
-  /** Set when the local row was removed but the provider call failed. */
-  providerError: string | null;
-}
-
-export interface DeleteEnvVarMetadataResponse {
-  removed: true;
-  key: string;
-}
-
 export interface DeploymentProvisioningEnvSet {
   lane: EnvLane;
   /** Omitted on preview means "the branch this target tracks". */
@@ -546,7 +448,7 @@ export interface DeploymentProvisioningEnvSet {
 
 export interface DeploymentProvisioningVariableGroup {
   name?: string;
-  provider: EnvProvider;
+  provider: CreatableEnvProvider;
   appliesTo?: "all" | "selected";
   targetBranches?: string[];
   env: DeploymentProvisioningEnvSet[];
@@ -555,7 +457,7 @@ export interface DeploymentProvisioningVariableGroup {
 export interface DeploymentProvisioningTargetRequest {
   action?: "create" | "register_existing";
   slot: EnvTargetSlot;
-  provider: EnvProvider;
+  provider: CreatableEnvProvider;
   ownershipMode: EnvOwnershipMode;
   providerConnectionId?: string;
   projectName?: string;
@@ -611,7 +513,7 @@ export interface DeploymentProvisioningResult {
   status: "skipped" | "completed" | "partial" | "failed";
   targets: Array<{
     slot: EnvTargetSlot;
-    provider: EnvProvider;
+    provider: DeploymentProvider;
     ownershipMode?: EnvOwnershipMode;
     deploymentStrategy?: DeploymentStrategy | null;
     status: "created" | "registered" | "failed";
@@ -1344,6 +1246,26 @@ export type {
   DeploymentDriftStatus as ProjectDriftStatus,
   ProjectDriftRepairAction,
   ProjectDriftRepairResponse,
+} from "@alphaci/api-contracts";
+
+/*
+ * Environment variables and custom domains, also from @alphaci/api-contracts.
+ * `provider` on these is the open DeploymentProvider, not CreatableEnvProvider.
+ */
+export type {
+  AddCustomDomainRequest,
+  CustomDomain,
+  DeleteEnvVarMetadataResponse,
+  DeploymentProvider,
+  DomainVerificationChallenge,
+  EnvLane,
+  EnvVarMetadata,
+  EnvVarScope,
+  ProvisionEnvVarsRequest,
+  ProvisionEnvVarsResponse,
+  RemoveCustomDomainResponse,
+  ValidateEnvVarsRequest,
+  ValidateEnvVarsResponse,
 } from "@alphaci/api-contracts";
 
 export interface ProjectSyncSnapshotResponse {

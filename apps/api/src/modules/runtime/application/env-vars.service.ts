@@ -46,6 +46,12 @@ import type {
 import { ProviderConnectionsRepository } from '../infrastructure/repositories/provider-connections.repository';
 import { DeploymentProviderRegistry } from '../core/deployment-provider.registry';
 import type { DeploymentProvider } from '../core/deployment-provider.contract';
+import type {
+  DeleteEnvVarMetadataResponse,
+  ProvisionEnvVarsResponse,
+  ValidateEnvVarsRequest,
+  ValidateEnvVarsResponse,
+} from '@alphaci/api-contracts';
 
 const ENV_KEY_PATTERN = /^[A-Z_][A-Z0-9_]{1,127}$/;
 const MAX_ENV_VALUE_LENGTH = 16_384;
@@ -65,20 +71,9 @@ function gitConnectedFlag(
   return typeof gitConnected === 'boolean' ? { gitConnected } : {};
 }
 
-export interface ValidateEnvTextInput {
-  deploymentTargetId: string;
-  lane: EnvLane;
-  gitBranch?: string | null;
-  text: string;
-}
-
-export interface ValidateEnvTextResponse {
-  keyCount: number;
-  keys: string[];
-  duplicates: string[];
-  invalidKeys: string[];
-  warnings: Array<{ code: string; message: string }>;
-}
+/** The env-var HTTP shapes are defined once in `@alphaci/api-contracts`. */
+export type ValidateEnvTextInput = ValidateEnvVarsRequest;
+export type ValidateEnvTextResponse = ValidateEnvVarsResponse;
 
 @Injectable()
 export class EnvVarsService {
@@ -188,7 +183,7 @@ export class EnvVarsService {
     projectId: string,
     userId: string,
     dto: ProvisionEnvVarsDto,
-  ) {
+  ): Promise<ProvisionEnvVarsResponse> {
     if (dto.deploymentTargetId === undefined) {
       throw new BadRequestException('deploymentTargetId is required');
     }
@@ -287,7 +282,7 @@ export class EnvVarsService {
     projectId: string,
     metadataId: string,
     userId: string,
-  ): Promise<{ removed: true; key: string }> {
+  ): Promise<DeleteEnvVarMetadataResponse> {
     const metadata = await this.envVarsRepository.findEnvMetadataForUser(
       metadataId,
       userId,

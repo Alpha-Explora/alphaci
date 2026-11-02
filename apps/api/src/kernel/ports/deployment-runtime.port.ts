@@ -8,7 +8,7 @@
  * persistence implementations.
  *
  * The HTTP response shapes in this port (deployment history, drift and drift
- * repair) are defined once in `@alphaci/api-contracts`, which the web app
+ * repair, env-var metadata) are defined once in `@alphaci/api-contracts`, which the web app
  * imports too, and re-exported here under the names the API already uses.
  * Change them there: a change that breaks the web then fails its typecheck in
  * the same pull request.
@@ -23,6 +23,8 @@ import type {
   DeploymentHistoryResponse,
   DeploymentProvider,
   DeploymentSlot,
+  EnvLane,
+  EnvVarMetadata,
 } from '@alphaci/api-contracts';
 
 export type {
@@ -37,6 +39,8 @@ export type {
   DeploymentHistoryStatus,
   DeploymentProvider,
   DeploymentSlot,
+  EnvVarMetadata,
+  EnvVarProvisionStatus,
   ProjectDriftRepairAction,
   ProjectDriftRepairResponse,
 } from '@alphaci/api-contracts';
@@ -44,12 +48,11 @@ export type {
 export type DeploymentProviderId = DeploymentProvider;
 export type DeploymentOwnershipMode = 'byo' | 'flowci_managed';
 export type DeploymentProvisioningAction = 'create' | 'register_existing';
-export type DeploymentEnvironmentLane = 'production' | 'preview';
+export type DeploymentEnvironmentLane = EnvLane;
 export type EnvProvider = DeploymentProvider;
 export type EnvTargetSlot = DeploymentSlot;
 export type EnvOwnershipMode = DeploymentOwnershipMode;
 export type DeploymentStrategy = string;
-export type EnvVarProvisionStatus = 'provisioned' | 'failed';
 
 /**
  * Historical provider fields remain part of this compatibility contract. They
@@ -83,22 +86,6 @@ export interface DeploymentTargetSummary {
   deploymentStrategy: DeploymentStrategy;
   providerMetadata: Record<string, unknown>;
   status: 'active' | 'missing' | 'failed';
-}
-
-export interface EnvVarMetadata {
-  id: string;
-  projectId: string;
-  deploymentTargetId: string;
-  lane: DeploymentEnvironmentLane;
-  gitBranch: string | null;
-  key: string;
-  provider: DeploymentProvider;
-  valueStored: false;
-  lastProvisionedAt: string;
-  lastProvisionedBy: string;
-  status: EnvVarProvisionStatus;
-  errorSummary: string | null;
-  removedAt?: string | null;
 }
 
 export interface DeploymentProvisioningEnvVar {

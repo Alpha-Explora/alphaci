@@ -2,7 +2,7 @@
 
 import type {
   DeploymentTarget,
-  EnvProvider,
+  CreatableEnvProvider,
   RenderRuntime,
   UsageLimitItem,
 } from "@/features/projects";
@@ -47,13 +47,13 @@ export function EnvHostingSection({
   activeProviderConnectionId: string;
   branchName: string;
   buildCommand: string;
-  hosting: { label: string; provider: EnvProvider };
+  hosting: { label: string; provider: CreatableEnvProvider };
   matchingConnections: ProviderConnection[];
   message: string | null;
   onSaveTarget: () => void;
   ownershipMode: EnvOwnershipMode;
   projectName: string;
-  provider: EnvProvider;
+  provider: CreatableEnvProvider;
   providerProjectId: string;
   providerProjectName: string;
   renderRuntime: RenderRuntime;
@@ -161,7 +161,7 @@ function EnvHostingForm({
   onSaveTarget: () => void;
   ownershipMode: EnvOwnershipMode;
   projectName: string;
-  provider: EnvProvider;
+  provider: CreatableEnvProvider;
   providerProjectId: string;
   providerProjectName: string;
   renderRuntime: RenderRuntime;
@@ -275,7 +275,7 @@ function EnvConnectionSelect({
 }: Readonly<{
   activeProviderConnectionId: string;
   matchingConnections: ProviderConnection[];
-  provider: EnvProvider;
+  provider: CreatableEnvProvider;
   setProviderConnectionId: (value: string) => void;
 }>) {
   return (
@@ -315,7 +315,7 @@ function EnvCreateFields({
 }: Readonly<{
   buildCommand: string;
   projectName: string;
-  provider: EnvProvider;
+  provider: CreatableEnvProvider;
   renderRuntime: RenderRuntime;
   rootDirectory: string;
   setBuildCommand: (value: string) => void;
