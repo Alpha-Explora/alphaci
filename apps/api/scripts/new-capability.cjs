@@ -135,7 +135,8 @@ const webSteps = [
   ['scripts/generate-capability-surface-registry.cjs'],
   ['scripts/generate-architecture-maps.mjs'],
 ];
-for (const [cwd, args] of [...steps.map((step) => [ROOT, step]), ...webSteps.map((step) => [WEB, step])]) {
+
+function run(cwd, args) {
   const result = spawnSync(process.execPath, [path.join(cwd, ...args[0].split('/')), ...args.slice(1)], {
     cwd,
     encoding: 'utf8',
@@ -143,6 +144,15 @@ for (const [cwd, args] of [...steps.map((step) => [ROOT, step]), ...webSteps.map
   });
   if (result.status !== 0) fail('the follow-up step ' + args[0] + ' failed; the source was written and needs review');
 }
+
+for (const step of steps) run(ROOT, step);
+// The web app's expected provenance record is a copy of the package's own; the
+// pull request diff is where the new digest gets reviewed.
+fs.copyFileSync(
+  path.join(ROOT, '..', '..', 'packages', 'capability-catalog', 'provenance.json'),
+  path.join(WEB, 'capabilities', 'catalog.provenance.json'),
+);
+for (const step of webSteps) run(WEB, step);
 
 console.log('Added ' + key + ' to ' + record.editions.join(', ') + '.');
 if (record.configurationFlags.length > 0) {

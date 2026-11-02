@@ -162,7 +162,7 @@ Use `npm run ledger:record` in `apps/api` to append an entry; it computes the ha
 
 `apps/api/src/kernel/composition/catalog.source.json` is the authoring source. One record carries the capability, its pack membership, configuration flags, and its web surface, including any unique implementation symbols that profile checks must exclude. `capability-registry.ts`, `manifests.ts`, and the package are generated from it and must not be edited by hand; `npm run generate:composition` rewrites the registry/manifests and `npm run check:composition-source` rejects drift.
 
-`npm run capability:new` in `apps/api` adds a capability in one command. It writes the record, regenerates the registry, the manifests, and the package, appends the ledger entry, then refreshes the web snapshot, surface view, pack profiles, and generated maps. A configuration flag named by a record is code and still has to exist in `AppConfig`. See [ADR-0010](/architecture/decisions/adr-0010-single-authoring-source-for-composition.md).
+`npm run capability:new` in `apps/api` adds a capability in one command. It writes the record, regenerates the registry, the manifests, and the package, appends the ledger entry, copies the package provenance into the web app's expected record, then refreshes the web snapshot, surface view, pack profiles, and generated maps. A configuration flag named by a record is code and still has to exist in `AppConfig`. See [ADR-0010](/architecture/decisions/adr-0010-single-authoring-source-for-composition.md).
 
 ## Verification
 

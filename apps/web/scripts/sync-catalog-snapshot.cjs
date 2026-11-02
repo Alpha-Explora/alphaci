@@ -1,8 +1,8 @@
 'use strict';
 
-// Documentation helper. Active checks and builds consume the versioned local
-// @alphaci/capability-catalog fixture; this script refreshes the richer
-// documentation snapshot without consulting a sibling checkout.
+// Documentation helper. Active checks and builds consume the
+// @alphaci/capability-catalog workspace package; this script copies its
+// records into the documentation snapshot, which carries the same fields.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -21,23 +21,7 @@ function writeSnapshot(capabilities) {
 }
 
 function main() {
-  const existing = readJson(SNAPSHOT);
-  const detailsByKey = new Map(existing.map((record) => [record.key, record]));
-  const catalog = readJson(path.join(VENDOR_PACKAGE, 'catalog.json'));
-  const capabilities = catalog.map((record) => {
-    const details = detailsByKey.get(record.key);
-    if (!details) {
-      throw new Error('Snapshot is missing documentation details for ' + record.key);
-    }
-    return {
-      ...details,
-      key: record.key,
-      maturity: record.maturity,
-      editions: record.editions,
-      requires: record.requires,
-      surface: record.surface,
-    };
-  });
+  const capabilities = readJson(path.join(VENDOR_PACKAGE, 'catalog.json'));
   writeSnapshot(capabilities);
   console.log('Wrote ' + capabilities.length + ' capabilities to capabilities/catalog.snapshot.json');
 }
