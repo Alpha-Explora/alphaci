@@ -363,10 +363,11 @@ journeys (`qa-journeys.ts`) with `QaMockBackend`, whose replies use the web's
 wire types and whose rules are ported from the API, so a request the real
 server would refuse fails the journey. Any page or console error fails it too.
 `-g "qa:h"` runs one journey; `E2E_BASE_URL` runs the suite against an app
-already running (for example `next dev`) instead of building. Journeys written
-for the QA flow before the 2026-10-19/20 redesign are marked `fixme` (the
-`STALE` list in `qa-journeys.spec.ts`) until they are rewritten. Reports go
-to `playwright-report/e2e/` and `test-results/e2e/`.
+already running (for example `next dev`) instead of building. A change to a
+QA rule in the API changes the matching rule in `QaMockBackend` in the same
+pull request. Reports go to `playwright-report/e2e/` and `test-results/e2e/`.
+On Windows, set `NEXT_PUBLIC_API_BASE_URL=/api/v1` from PowerShell or cmd, not
+Git Bash: Git Bash turns a value starting with `/` into a Windows path.
 
 `test:fullstack` (`tests/fullstack/run.ts`, the CI job `Full-stack e2e`)
 uses no fixtures. It starts the API e2e suite's disposable Postgres, applies
