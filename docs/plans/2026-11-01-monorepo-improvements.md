@@ -496,7 +496,7 @@ images in #10, closed). Move in one PR: both Dockerfiles, `NODE_VERSION` in
 `ci.yml`, `.nvmrc`, root `engines`, `@types/node` ^26, then the full gates and
 an image boot. Dependabot skips Node majors for base images until then.
 
-**Status (2026-11-02): done in NODE26_PR.** Both Dockerfiles (`node:26-alpine`),
+**Status (2026-11-02): done in #26.** Both Dockerfiles (`node:26-alpine`),
 `NODE_VERSION` in `ci.yml`, `node-version` in `onprem-agent-release.yml`,
 `.nvmrc`, root `engines` (`>=26`), `@types/node` ^26 in both apps, and the
 docs that named Node 24. The Node versions offered to customers' projects
