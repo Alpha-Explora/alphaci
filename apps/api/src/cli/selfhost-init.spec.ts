@@ -8,6 +8,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
+import { PACK_MANIFESTS } from '#kernel/composition/manifests.js';
 import { generateP256PrivateKeyPem, p256KeyProblem } from './release-key';
 import {
   containerSecretPath,
@@ -136,6 +137,22 @@ describe('renderAlphaciEnv', () => {
 
     expect([...example.keys()].sort()).toEqual([...rendered.keys()].sort());
   });
+
+  // Both flags default to off in AppConfig, and the web calls these features
+  // on every signed-in page, so the appliance must switch them on.
+  it.each([
+    ['identity.workspaces', 'WORKSPACES_ENABLED'],
+    ['platform.notifications', 'NOTIFICATIONS_ENABLED'],
+  ])(
+    'turns on %s, which the enterprise edition includes',
+    (capability, flag) => {
+      const example = envKeys(readFileSync(EXAMPLE_PATH, 'utf8'));
+
+      expect(PACK_MANIFESTS.enterprise.capabilities).toContain(capability);
+      expect(rendered.get(flag)).toBe('true');
+      expect(example.get(flag)).toBe('true');
+    },
+  );
 
   it('keeps the example public URLs derived from ALPHACI_HOSTNAME', () => {
     const example = envKeys(readFileSync(EXAMPLE_PATH, 'utf8'));

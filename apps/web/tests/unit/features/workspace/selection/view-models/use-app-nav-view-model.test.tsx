@@ -11,12 +11,24 @@ jest.mock("../../../../../../src/features/hosts/availability", () => ({
   useHostAvailability: () => mockHostAvailability,
 }));
 
+const ALL_ON = {
+  status: "ready",
+  qaChecklistsEnabled: true,
+  workspacesEnabled: true,
+  notificationsEnabled: true,
+};
+let mockCapabilities: Record<string, unknown> = ALL_ON;
 jest.mock("../../../../../../src/features/capabilities/current", () => ({
-  useCapabilities: () => ({ qaChecklistsEnabled: true }),
+  ...jest.requireActual("../../../../../../src/features/capabilities/current"),
+  useCapabilities: () => mockCapabilities,
 }));
 
+const mockSummaryOptions: Array<{ capability: string }> = [];
 jest.mock("../../../../../../src/features/notifications/summary", () => ({
-  useNotificationsSummaryViewModel: () => ({ unreadCount: 0 }),
+  useNotificationsSummaryViewModel: (options: { capability: string }) => {
+    mockSummaryOptions.push(options);
+    return { unreadCount: 0 };
+  },
 }));
 
 /* The Activity entry is hidden by default (SIDEBAR_SHOWS_ACTIVITY, covered in
@@ -58,6 +70,8 @@ afterEach(() => {
   root = null;
   window.localStorage.clear();
   jest.clearAllMocks();
+  mockCapabilities = ALL_ON;
+  mockSummaryOptions.length = 0;
 });
 
 async function mainItemsFor(
@@ -149,5 +163,64 @@ describe("useAppNavViewModel Activity entry", () => {
         platformRole: "super_admin",
       }),
     ).toContain("activity");
+  });
+});
+
+/* /workspaces/me and every notifications route answer 404 while their
+ * capability is off, so the header asks /capabilities before calling them. */
+describe("useAppNavViewModel capability gating", () => {
+  async function renderNav() {
+    mockedGetWorkspaces.mockResolvedValue({ enabled: true, items: [] });
+    const captured: { vm: ReturnType<typeof useAppNavViewModel> | null } = { vm: null };
+    const capture = (vm: ReturnType<typeof useAppNavViewModel>) => {
+      captured.vm = vm;
+    };
+    function Probe({ onRender }: { onRender: typeof capture }) {
+      onRender(useAppNavViewModel({ guest: false, userId: "u-1", appRole: "member" }));
+      return null;
+    }
+    root = createRoot(document.createElement("div"));
+    await act(async () => {
+      root!.render(
+        <WorkspaceProvider>
+          <Probe onRender={capture} />
+        </WorkspaceProvider>,
+      );
+    });
+    return captured.vm!;
+  }
+
+  it("reads workspaces and starts notifications when both are on", async () => {
+    const vm = await renderNav();
+    expect(mockedGetWorkspaces).toHaveBeenCalledTimes(1);
+    expect(vm.workspaces.workspaces).toEqual({ enabled: true, items: [] });
+    expect(mockSummaryOptions.at(-1)?.capability).toBe("enabled");
+  });
+
+  it("calls neither while /capabilities has not answered", async () => {
+    mockCapabilities = { status: "loading", qaChecklistsEnabled: false };
+    const vm = await renderNav();
+    expect(mockedGetWorkspaces).not.toHaveBeenCalled();
+    expect(vm.workspaces.workspaces).toBeNull();
+    expect(mockSummaryOptions.at(-1)?.capability).toBe("pending");
+  });
+
+  it("renders workspaces off without calling /workspaces/me when the API reports them off", async () => {
+    window.localStorage.setItem("flowci.workspaceId", "ws-stale");
+    mockCapabilities = { ...ALL_ON, workspacesEnabled: false };
+    const vm = await renderNav();
+    expect(mockedGetWorkspaces).not.toHaveBeenCalled();
+    expect(vm.status).toBe("ready");
+    expect(vm.error).toBeNull();
+    expect(vm.workspaces.workspaces).toEqual({ enabled: false, items: [] });
+    // A team remembered from before is not kept selected.
+    expect(window.localStorage.getItem("flowci.workspaceId")).toBeNull();
+  });
+
+  it("keeps the notification feed stopped when the API reports notifications off", async () => {
+    mockCapabilities = { ...ALL_ON, notificationsEnabled: false };
+    await renderNav();
+    expect(mockSummaryOptions.at(-1)?.capability).toBe("disabled");
+    expect(mockedGetWorkspaces).toHaveBeenCalledTimes(1);
   });
 });

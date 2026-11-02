@@ -13,7 +13,13 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("../../../../../../src/features/capabilities/current", () => ({
-  useCapabilities: () => ({ qaChecklistsEnabled: false }),
+  ...jest.requireActual("../../../../../../src/features/capabilities/current"),
+  useCapabilities: () => ({
+    status: "ready",
+    qaChecklistsEnabled: false,
+    workspacesEnabled: true,
+    notificationsEnabled: true,
+  }),
 }));
 jest.mock("../../../../../../src/features/notifications/summary", () => ({
   useNotificationsSummaryViewModel: () => ({ unreadCount: 14, alerts: [], dismissAlert: jest.fn() }),

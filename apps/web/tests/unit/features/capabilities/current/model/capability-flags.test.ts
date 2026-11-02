@@ -1,6 +1,9 @@
 import type { CapabilitiesResponse } from "../../../../../../src/shared/api/contracts";
 import { disabledCapabilities } from "../../../../../../src/features/capabilities/current/data/capabilities-repository";
-import { capabilityViewFlags } from "../../../../../../src/features/capabilities/current/model/capability-flags";
+import {
+  capabilityAvailability,
+  capabilityViewFlags,
+} from "../../../../../../src/features/capabilities/current/model/capability-flags";
 
 describe("client composition capability projection", () => {
   it("fails closed when a legacy capability response omits capability keys", () => {
@@ -44,5 +47,21 @@ describe("client composition capability projection", () => {
     expect(capabilityViewFlags(withProjection).clientCompositionEnabled).toBe(
       true,
     );
+  });
+});
+
+describe("capabilityAvailability", () => {
+  it("waits while the capability probe is in flight, whatever the flag says", () => {
+    expect(capabilityAvailability("loading", false)).toBe("pending");
+    expect(capabilityAvailability("loading", true)).toBe("pending");
+  });
+
+  it("follows the flag once the API has answered", () => {
+    expect(capabilityAvailability("ready", true)).toBe("enabled");
+    expect(capabilityAvailability("ready", false)).toBe("disabled");
+  });
+
+  it("treats a failed probe as off, as the optional features it hides are", () => {
+    expect(capabilityAvailability("error", false)).toBe("disabled");
   });
 });

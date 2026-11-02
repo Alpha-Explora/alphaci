@@ -93,3 +93,19 @@ export function capabilityViewFlags(
     qaChecklistsEnabled: optionalEnabled(capabilities.qaChecklists),
   };
 }
+
+/**
+ * What a surface behind a capability may do. The API answers a disabled
+ * capability's routes with 404, so nothing is requested until the probe has
+ * answered (`pending`), and a capability reported off (or a failed probe,
+ * which hides optional features) renders its off state instead (`disabled`).
+ */
+export type CapabilityAvailability = "pending" | "enabled" | "disabled";
+
+export function capabilityAvailability(
+  status: "loading" | "ready" | "error",
+  enabled: boolean,
+): CapabilityAvailability {
+  if (status === "loading") return "pending";
+  return enabled ? "enabled" : "disabled";
+}

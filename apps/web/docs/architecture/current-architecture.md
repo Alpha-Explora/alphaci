@@ -68,7 +68,7 @@ Each feature domain has an `index.ts` public API. Actions inside a domain follow
 
 ## API and session
 
-The API base is `NEXT_PUBLIC_API_BASE_URL`, inlined at build time; `/api/v1` is appended when missing. The self-hosted image uses the relative `/api/v1`, and the reverse proxy serves the backend on the same origin. `credentials: "include"` is set on every call so the backend session cookie `cicd_workflow_sid` is sent. On a separate backend origin, the frontend origin must be in the backend `ALLOWED_ORIGINS`. Live notifications use an `EventSource` on `/notifications/stream` with periodic reads as fallback.
+The API base is `NEXT_PUBLIC_API_BASE_URL`, inlined at build time; `/api/v1` is appended when missing. The self-hosted image uses the relative `/api/v1`, and the reverse proxy serves the backend on the same origin. `credentials: "include"` is set on every call so the backend session cookie `cicd_workflow_sid` is sent. On a separate backend origin, the frontend origin must be in the backend `ALLOWED_ORIGINS`. Live notifications use an `EventSource` on `/notifications/stream` with periodic reads as fallback. The header's workspace list (`/workspaces/me`) and the notification feed (list, stream and fallback reads) start only after `GET /capabilities` reports `workspaces` or `notifications` enabled, because the backend answers those routes with 404 while the capability is off; off, the header shows no team picker and the Inbox says notifications are not enabled.
 
 ## Capability consumption
 

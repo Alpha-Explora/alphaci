@@ -46,7 +46,7 @@ describe("useWorkspaceSelectionViewModel", () => {
        * point, and there is no effect to move it into without changing what is
        * being asserted. */
       // eslint-disable-next-line react-hooks/immutability
-      captured.snapshot = useWorkspaceSelectionViewModel({ enabled: true });
+      captured.snapshot = useWorkspaceSelectionViewModel({ enabled: true, capability: "enabled" });
       return null;
     }
 
@@ -68,7 +68,7 @@ describe("useWorkspaceSelectionViewModel", () => {
 
   it("does not probe when the route is guest-only", async () => {
     function Probe() {
-      useWorkspaceSelectionViewModel({ enabled: false });
+      useWorkspaceSelectionViewModel({ enabled: false, capability: "enabled" });
       return null;
     }
 
@@ -83,6 +83,62 @@ describe("useWorkspaceSelectionViewModel", () => {
     });
 
     expect(mockedGetWorkspaces).not.toHaveBeenCalled();
+  });
+
+  describe("against the workspaces capability", () => {
+    type Snapshot = {
+      vm: ReturnType<typeof useWorkspaceSelectionViewModel>;
+      selectedId: string | null;
+    };
+
+    async function renderWith(
+      capability: "pending" | "disabled",
+    ): Promise<Snapshot> {
+      const captured: { snapshot: Snapshot | null } = { snapshot: null };
+      const capture = (snapshot: Snapshot) => {
+        captured.snapshot = snapshot;
+      };
+      function Probe({ onRender }: { onRender: typeof capture }) {
+        const vm = useWorkspaceSelectionViewModel({ enabled: true, capability });
+        onRender({ vm, selectedId: useWorkspaceSelection().selectedWorkspaceId });
+        return null;
+      }
+      root = createRoot(document.createElement("div"));
+      await act(async () => {
+        root!.render(
+          <WorkspaceProvider>
+            <Probe onRender={capture} />
+          </WorkspaceProvider>,
+        );
+      });
+      return captured.snapshot!;
+    }
+
+    it("waits for /capabilities before asking for workspaces", async () => {
+      const { vm } = await renderWith("pending");
+      expect(mockedGetWorkspaces).not.toHaveBeenCalled();
+      expect(vm.status).toBe("idle");
+      expect(vm.workspaces).toBeNull();
+    });
+
+    it("never asks while workspaces are off, and reports them off rather than failed", async () => {
+      window.localStorage.setItem("flowci.workspaceId", "workspace-1");
+      const { vm, selectedId } = await renderWith("disabled");
+      expect(mockedGetWorkspaces).not.toHaveBeenCalled();
+      expect(vm.status).toBe("ready");
+      expect(vm.error).toBeNull();
+      expect(vm.workspaces).toEqual({ enabled: false, items: [] });
+      expect(selectedId).toBeNull();
+      expect(window.localStorage.getItem("flowci.workspaceId")).toBeNull();
+    });
+
+    it("ignores a refresh while workspaces are off", async () => {
+      const { vm } = await renderWith("disabled");
+      await act(async () => {
+        await vm.loadWorkspaces();
+      });
+      expect(mockedGetWorkspaces).not.toHaveBeenCalled();
+    });
   });
 
   describe("for a platform admin", () => {
@@ -100,7 +156,7 @@ describe("useWorkspaceSelectionViewModel", () => {
       const captured: Captured = { vm: null, selectedId: null };
       function Probe() {
         // eslint-disable-next-line react-hooks/immutability
-        captured.vm = useWorkspaceSelectionViewModel({ enabled: true, includeOtherTeams });
+        captured.vm = useWorkspaceSelectionViewModel({ enabled: true, capability: "enabled", includeOtherTeams });
         // eslint-disable-next-line react-hooks/immutability
         captured.selectedId = useWorkspaceSelection().selectedWorkspaceId;
         return null;

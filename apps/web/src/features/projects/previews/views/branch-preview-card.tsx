@@ -5,7 +5,7 @@ import { useState } from "react";
 import {
   canFramePreview,
   previewFrameSandbox,
-  previewProviderLabel,
+  previewHostLabel,
   previewStatusLabel,
   previewStatusTone,
   previewUnavailableReason,
@@ -128,7 +128,7 @@ export function BranchPreviewCard({
             ) : null}
           </h4>
           <p className="branch-preview__meta">
-            {previewProviderLabel(preview.provider)} · {preview.targetName}
+            {previewHostLabel(preview)} · {preview.targetName}
             {preview.pullRequestNumber !== null
               ? ` · PR #${preview.pullRequestNumber}`
               : ""}

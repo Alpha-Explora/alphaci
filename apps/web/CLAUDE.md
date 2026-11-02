@@ -349,7 +349,8 @@ npm run test:fullstack  # the web against the real API; needs Docker
 uses no fixtures. It starts the API e2e suite's disposable Postgres, applies
 the migrations with the self-hosted runner, starts the compiled API in
 self-hosted mode (`ALPHACI_DEPLOYMENT_MODE=selfhosted`, `DEV_QUICK_LOGIN=true`,
-throwaway secrets, provider reads off), builds the web with
+throwaway secrets, provider reads off) with the composition settings and
+`*_ENABLED` feature flags of `deploy/selfhost/alphaci.env.example`, builds the web with
 `NEXT_PUBLIC_API_BASE_URL=/api/v1` and `API_PROXY_TARGET` pointed at that API, and
 runs `next start`. Then Playwright chromium drives `tests/fullstack/journeys.ts`:
 it signs in through quick login and checks pages that show what the API

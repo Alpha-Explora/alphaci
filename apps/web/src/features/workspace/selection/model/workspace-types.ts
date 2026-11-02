@@ -14,6 +14,12 @@ export interface WorkspacesMeResponse {
   items: WorkspaceSummary[];
 }
 
+/**
+ * The list while the API reports workspaces off. `/workspaces/me` answers 404
+ * then, so this is never fetched: the header renders its "disabled" slot.
+ */
+export const WORKSPACES_OFF: WorkspacesMeResponse = { enabled: false, items: [] };
+
 /** The global app role; one definition, owned by the API contract. */
 export type WorkspaceAppRole = AppRole;
 

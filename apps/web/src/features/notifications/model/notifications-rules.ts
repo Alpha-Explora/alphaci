@@ -1,6 +1,8 @@
 /* Pure domain rules. No React, no I/O — directly unit-testable. */
 
-import type { NotificationItem } from "./notifications-types";
+import type { CapabilityAvailability } from "@/features/capabilities/current";
+
+import type { NotificationItem, NotificationsStatus } from "./notifications-types";
 
 /**
  * QA (or, after QA's sign-off, the Product owner) refused an item: a
@@ -91,4 +93,30 @@ export function qaAlertsToShow(
 export function toUserError(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message) return error.message;
   return fallback;
+}
+
+/**
+ * The account whose feed to read, or null to read none. Every notifications
+ * route (list, stream, read) answers 404 while the capability is off, so the
+ * feed starts only once `/capabilities` reports it on.
+ */
+export function feedUserId(
+  userId: string | null,
+  capability: CapabilityAvailability,
+): string | null {
+  return capability === "enabled" ? userId : null;
+}
+
+/**
+ * The status a notifications view shows: loading while `/capabilities` is in
+ * flight, ready while the capability is off (the view renders its "not
+ * enabled" state from an empty, disabled response), else the feed's own.
+ */
+export function gatedFeedStatus(
+  capability: CapabilityAvailability,
+  feedStatus: NotificationsStatus,
+): NotificationsStatus {
+  if (capability === "pending") return "loading";
+  if (capability === "disabled") return "ready";
+  return feedStatus;
 }

@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-02
+
+- **Update**: The self-hosted install runbook and the workspace member notifications procedure say the appliance turns on `WORKSPACES_ENABLED` and `NOTIFICATIONS_ENABLED` by default, and that an install from before needs both lines added on upgrade.
+
 ## 2026-10-20
 
 - **Update**: An unset `ONPREM_INSTALLER_VERSION` now means the agent this backend ships (`deploy/onprem/agent/release-manifest.json`, 0.4.3), not 0.2.0. Updated the on-prem host setup runbook and both env examples. Regenerated the architecture maps for the new runtime file.
