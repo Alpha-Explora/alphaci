@@ -128,6 +128,7 @@ export class GithubWebhookProcessor {
   ): Promise<void> {
     if (!payload || typeof payload !== 'object') return;
     const body = payload as Record<string, unknown>;
+    if (!Object.hasOwn(this.eventHandlers, eventName)) return;
     const handler = this.eventHandlers[eventName];
     if (!handler) return;
     await handler(body);

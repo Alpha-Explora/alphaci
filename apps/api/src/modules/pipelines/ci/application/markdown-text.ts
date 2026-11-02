@@ -1,3 +1,5 @@
+import { markdownTableCell } from '#kernel/text/markdown-table-cell';
+
 /**
  * Text helpers for the Markdown reports. Everything here takes `unknown`:
  * stored results are jsonb, so a field typed string may arrive as anything,
@@ -30,12 +32,9 @@ export function textOf(value: unknown): string {
   return value instanceof Date ? (isoOf(value) ?? '') : '';
 }
 
-/** A table cell: one line, pipes escaped, EM DASH when empty. */
+/** A table cell: one line, backslashes and pipes escaped, EM DASH when empty. */
 export function cell(value: unknown): string {
-  const escaped = textOf(value)
-    .replace(/\r\n|\r|\n/g, '<br>')
-    .replace(/\|/g, '\\|')
-    .trim();
+  const escaped = markdownTableCell(textOf(value));
   return escaped.length > 0 ? escaped : EM_DASH;
 }
 

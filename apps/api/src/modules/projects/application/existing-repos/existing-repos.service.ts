@@ -29,6 +29,7 @@ import {
 } from '#kernel/rules/persona-access.rules';
 import type { DiscoverExistingRepoDto } from './dto/discover-existing-repo.dto';
 import type { SetupExistingRepoPrDto } from './dto/setup-existing-repo-pr.dto';
+import { fileSlug } from '../../domain/file-slug';
 
 export type ExistingRepoWarningCode =
   | 'branch_protected'
@@ -204,7 +205,7 @@ export class ExistingReposService {
       !canCreatePullRequest(
         role,
         dto.baseBranch,
-        `alphaci/${this.sanitizeBranchSlug(dto.serviceName)}-ci`,
+        `alphaci/${fileSlug(dto.serviceName)}-ci`,
       )
     ) {
       throw this.mainPrRestricted();
@@ -230,7 +231,7 @@ export class ExistingReposService {
       dto.coverageThreshold,
       dto.outputFileName,
     );
-    const branchName = `alphaci/${this.sanitizeBranchSlug(dto.serviceName)}-ci`;
+    const branchName = `alphaci/${fileSlug(dto.serviceName)}-ci`;
     const workflowPath = `.github/workflows/${outputFileName}`;
 
     await this.githubService.createBranch(
@@ -543,13 +544,6 @@ export class ExistingReposService {
     serviceName: string,
     templateId: string,
   ): string {
-    return `${this.sanitizeBranchSlug(serviceName) || 'service'}-${templateId}.yml`;
-  }
-
-  private sanitizeBranchSlug(value: string): string {
-    return value
-      .toLowerCase()
-      .replaceAll(/[^a-z0-9-]+/g, '-')
-      .replaceAll(/^-+|-+$/g, '');
+    return `${fileSlug(serviceName) || 'service'}-${templateId}.yml`;
   }
 }

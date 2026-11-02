@@ -50,6 +50,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 
 ### Fixed
 
+- **QA:** Report and CI results tables escape backslashes, so a cell ending in `\` no longer breaks the table.
 - **Pipelines:** A new project starts one pipeline per branch, not one per generated file.
 - **Pipelines:** New projects' pipelines pass from creation: images are named after the repository and installs skip npm releases younger than a day.
 - **Pipelines:** A commit runs one pipeline chain while a pipeline-branch pull request is open; `uat` used to deploy twice.
@@ -62,6 +63,8 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 
 ### Security
 
+- **API:** A crafted `Authorization` header or service path can no longer stall the API: CI token parsing and path trimming run in linear time.
+- **Sign-in:** The GitHub callback accepts its `code` and `state` only as single values.
 - **Pipelines:** Generated workflows no longer run stages chained off a fork's code, and write permissions sit only on the jobs that use them.
 - **On-prem:** Replacing a host revokes its previous credentials.
 

@@ -859,3 +859,31 @@ describe('translateResults, classifying which job failed', () => {
     expect(message?.severity).toBe('error');
   });
 });
+
+describe('a verify job that failed while waiting for the deployment', () => {
+  const failedIn = (name: string) =>
+    translateResults(
+      'verify',
+      'failure',
+      {},
+      `Failed GitHub Actions job: ${name}`,
+    )[0];
+
+  it.each([
+    'api-tests-uat / Verify > Wait for deployment',
+    'api-tests-uat / Verify > Wait for the service to be healthy',
+    'api-tests-uat / Verify > Health check',
+    'api-tests-uat / Verify > healthcheck',
+  ])('reads %s as the deployment, not the tests', (name) => {
+    expect(failedIn(name)?.title).toBe('The deployment never became healthy');
+  });
+
+  it('stays linear on a step name built to make a regex backtrack', () => {
+    const name = `api-tests-uat / Verify > Wait for ${'a '.repeat(50_000)}`;
+    const started = performance.now();
+    expect(failedIn(name)?.title).not.toBe(
+      'The deployment never became healthy',
+    );
+    expect(performance.now() - started).toBeLessThan(500);
+  });
+});

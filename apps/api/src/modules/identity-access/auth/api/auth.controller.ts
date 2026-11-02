@@ -23,6 +23,7 @@ import {
   type SubscriptionAccessPort,
 } from '#kernel/auth/subscription-access.port';
 import { PlatformAdminAccessService } from '#modules/identity-access/admin/index.js';
+import { singleQueryValue } from '#kernel/http/single-query-value';
 import { AuthService } from '../application/auth.service';
 
 @Throttle({ default: { ttl: 60_000, limit: 10 } })
@@ -56,13 +57,13 @@ export class AuthController {
   async githubCallback(
     @Req() req: Request,
     @Res() res: Response,
-    @Query('code') code?: string,
-    @Query('state') state?: string,
+    @Query('code') code?: unknown,
+    @Query('state') state?: unknown,
   ) {
     const redirectUrl = await this.authService.handleGitHubCallback(
       req,
-      code,
-      state,
+      singleQueryValue(code),
+      singleQueryValue(state),
     );
     return res.redirect(redirectUrl);
   }
