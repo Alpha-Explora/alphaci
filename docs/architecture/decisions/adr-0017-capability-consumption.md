@@ -26,7 +26,7 @@ sources:
 
 The frontend consumes `GET /api/v1/capabilities` as the compatibility surface. View-models read boolean flags from that response. Documentation records the mapping from shared catalog keys to compatibility fields, view flags, domains, and routes.
 
-The generated surface registry is not imported by the application. It does not add endpoints, flags, or persistence.
+The surface metadata in the catalog package is not imported by the application code. It does not add endpoints, flags, or persistence.
 
 ## Rejected alternatives
 

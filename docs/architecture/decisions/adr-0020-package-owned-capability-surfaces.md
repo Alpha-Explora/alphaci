@@ -21,14 +21,14 @@ The backend publishes the surface block, including `artifactSymbols`, in the ver
 
 `artifactSymbols` identify implementation names for exclusion scanning only. Excluded feature aliases expose a default `notFound()` stub and never re-emit those implementation names.
 
-`apps/web/capabilities/surface-registry.ts` is generated from the package and must not be edited by hand.
+The web app reads the surfaces from the package; it keeps no copy of them.
 
 ## Consequences
 
 - Surface changes are authored in the API composition source and regenerated into the package, which the web app consumes.
 - A real Enterprise client-composition surface is gated by the resolved backend capability and configuration projection; the frontend does not define a second client catalog or imply capabilities the backend did not enable.
 - Frontend profile exclusion and compatibility checks use the same versioned surface contract as the package drift check.
-- A stale or tampered package fails the API's package check; a stale generated surface registry fails the web capability check.
+- A stale or tampered package fails the API's package check.
 - The frontend no longer owns an independent surface map.
 
 ## Verification

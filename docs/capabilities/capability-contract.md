@@ -65,7 +65,7 @@ The `surface` block records how the web app presents a capability. The [surface 
 
 The API packages the public composition metadata as the workspace package `@alphaci/capability-catalog` (`packages/capability-catalog`), written by `npm run package:capability-catalog -w @alphaci/api`. The package contains stable keys, context, descriptions, maturity, edition applicability, dependency edges, configuration flags, and surface metadata. The web app resolves it through the npm workspace for its build profile, exclusion, and surface checks, and does not read the API's TypeScript source. Runtime availability still comes from the `/api/v1/capabilities` response; package metadata only describes the contract and the exclusion boundary.
 
-The web app keeps one generated file under `apps/web/capabilities/`: `surface-registry.ts`, a view of the package-owned surfaces that its capability check compares with the package and with the compatibility response types. It is not a catalog source.
+The web app keeps no copy of the package. Its capability check compares the package's surfaces with the compatibility response types.
 
 ### Package provenance and integrity
 
@@ -140,7 +140,7 @@ A client policy is a deny-only declaration for one client, selected by `ALPHACI_
 - Do not invent web-only capability keys.
 - Record provider-specific availability in the provider map and pack notes.
 - Record missing UI for an implemented key as an honest surface gap, not as `not-implemented`.
-- Update the source record, the package, the web surface view, and the generated matrices with the code or configuration change that changes the behavior.
+- Update the source record, the package, and the generated matrices with the code or configuration change that changes the behavior.
 
 A capability change that alters keys, maturity, or edition applicability regenerates every pack profile in the same change. Pack tables are a comparable projection of this registry; they are not a second catalog.
 
@@ -156,7 +156,7 @@ Use `npm run ledger:record` in `apps/api` to append an entry; it computes the ha
 
 `apps/api/src/kernel/composition/catalog.source.json` is the authoring source. One record carries the capability, its pack membership, configuration flags, and its web surface, including any unique implementation symbols that profile checks must exclude. `capability-registry.ts`, `manifests.ts`, and the package are generated from it and must not be edited by hand; `npm run generate:composition` rewrites the registry/manifests and `npm run check:composition-source` rejects drift.
 
-`npm run capability:new` in `apps/api` adds a capability in one command. It writes the record, regenerates the registry, the manifests, and the package, appends the ledger entry, then refreshes the web surface view, pack profiles, and generated maps. A configuration flag named by a record is code and still has to exist in `AppConfig`. See [ADR-0010](/architecture/decisions/adr-0010-single-authoring-source-for-composition.md).
+`npm run capability:new` in `apps/api` adds a capability in one command. It writes the record, regenerates the registry, the manifests, and the package, appends the ledger entry, then refreshes the pack profiles and generated maps. A configuration flag named by a record is code and still has to exist in `AppConfig`. See [ADR-0010](/architecture/decisions/adr-0010-single-authoring-source-for-composition.md).
 
 ## Verification
 

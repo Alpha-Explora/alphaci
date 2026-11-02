@@ -277,7 +277,6 @@ function generateFeatureMap() {
     tags: ['architecture', 'features', 'map'],
     sources: [
       { id: 'features', resource: 'apps/web/src/features', title: 'Feature domain tree' },
-      { id: 'surface-registry', resource: 'apps/web/capabilities/surface-registry.ts', title: 'Generated capability surface view' },
     ],
     body: `# Frontend feature map
 
@@ -337,7 +336,7 @@ This snapshot is generated from the current source tree. It is descriptive evide
 | Tests | \`npm test\` | Jest |
 | Dependency boundaries | \`npm run boundaries\` | dependency-cruiser |
 | Feature architecture | \`npm run arch:check\` | thin routes, view I/O, model purity |
-| Capability surfaces | \`npm run check:capabilities\` | surface registry, compatibility fields, and pack catalogs (the package itself: \`npm run check:capability-package -w @alphaci/api\`) |
+| Capability surfaces | \`npm run check:capabilities\` | package surfaces, compatibility fields, and pack catalogs (the package itself: \`npm run check:capability-package -w @alphaci/api\`) |
 | Documentation bundle | \`npm run check:documentation\` at the repository root | OKF v0.2 format, links, naming, current-state wording, generated-map drift, then each app's own check |
 | App documentation | \`npm run check:documentation\` | changelog, edition branches, and capability sources |
 
@@ -366,12 +365,11 @@ function generateCapabilityMatrix(capabilities, surfaces) {
     tags: ['capabilities', 'map', 'packs'],
     sources: [
       { id: 'catalog-package', resource: 'packages/capability-catalog', title: 'Versioned capability catalog fixture' },
-      { id: 'surface-registry', resource: 'apps/web/capabilities/surface-registry.ts', title: 'Frontend surface map' },
       { id: 'capability-endpoint', resource: 'apps/web/src/features/capabilities/current/data/capabilities-api.ts', title: 'Compatibility capability client' },
     ],
     body: `# Capability surface matrix
 
-This matrix is generated from the versioned \`@alphaci/capability-catalog\` package and the frontend surface registry. The frontend does not replace \`/api/v1/capabilities\` and does not implement entitlement resolution.
+This matrix is generated from the versioned \`@alphaci/capability-catalog\` package, which carries each capability's web surface. The frontend does not replace \`/api/v1/capabilities\` and does not implement entitlement resolution.
 
 | Capability key | Context | Maturity | Compatibility field | View flag | Frontend routes |
 |---|---|---|---|---|---|
@@ -445,7 +443,7 @@ function generatePack(pack, capabilities, manifests, surfaces, packageVersion) {
 - API edition selection: \`ALPHACI_EDITION=${pack.edition}\` selects the ${pack.displayName} manifest within the \`${pack.profile}\` build ceiling.
 - API artifact exclusion: ${pack.apiExclusion}
 - Web profile resolution: the build-time profile resolver projects the versioned catalog and aliases excluded feature barrels to fail-closed \`notFound()\` stubs. Runtime capability truth still comes from \`/api/v1/capabilities\`.
-- Excluded web feature barrels: ${profile.excludedFeatureBarrels.length > 0 ? profile.excludedFeatureBarrels.map((barrel) => `\`${barrel}\``).join(', ') : 'none in the current surface registry'}
+- Excluded web feature barrels: ${profile.excludedFeatureBarrels.length > 0 ? profile.excludedFeatureBarrels.map((barrel) => `\`${barrel}\``).join(', ') : 'none'}
 - Applicability: ${pack.composition}
 
 ## Capability status
@@ -476,7 +474,7 @@ ${pack.nonSupport}
 ## Ownership and verification
 
 - Owners: the API contexts in the [capability matrix](/capabilities/capability-matrix.generated.md) and the web domains in the [feature map](/architecture/web/feature-map.generated.md).
-- Source: \`apps/api/src/kernel/composition/catalog.source.json\`, published as \`@alphaci/capability-catalog@${packageVersion}\`; web surfaces in \`apps/web/capabilities/surface-registry.ts\`.
+- Source: \`apps/api/src/kernel/composition/catalog.source.json\`, published as \`@alphaci/capability-catalog@${packageVersion}\`.
 - Verification: \`npm run check:capabilities\` and \`npm run check:composition-profiles\` in \`apps/api\`; \`npm run check:documentation\` in \`apps/web\` and at the repository root.`,
   });
 }

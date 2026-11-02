@@ -129,9 +129,8 @@ const steps = [
     reference,
   ],
 ];
-// The web app regenerates its surface view and the three pack profiles from the package.
+// The web app regenerates the three pack profiles and its maps from the package.
 const webSteps = [
-  ['scripts/generate-capability-surface-registry.cjs'],
   ['scripts/generate-architecture-maps.mjs'],
 ];
 

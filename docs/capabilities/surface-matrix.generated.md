@@ -8,9 +8,6 @@ sources:
   - id: "catalog-package"
     resource: "packages/capability-catalog"
     title: "Versioned capability catalog fixture"
-  - id: "surface-registry"
-    resource: "apps/web/capabilities/surface-registry.ts"
-    title: "Frontend surface map"
   - id: "capability-endpoint"
     resource: "apps/web/src/features/capabilities/current/data/capabilities-api.ts"
     title: "Compatibility capability client"
@@ -18,7 +15,7 @@ sources:
 
 # Capability surface matrix
 
-This matrix is generated from the versioned `@alphaci/capability-catalog` package and the frontend surface registry. The frontend does not replace `/api/v1/capabilities` and does not implement entitlement resolution.
+This matrix is generated from the versioned `@alphaci/capability-catalog` package, which carries each capability's web surface. The frontend does not replace `/api/v1/capabilities` and does not implement entitlement resolution.
 
 | Capability key | Context | Maturity | Compatibility field | View flag | Frontend routes |
 |---|---|---|---|---|---|

@@ -6,11 +6,10 @@
  * and the live compatibility response shape.
  *
  * The backend owns capability keys, maturity, pack applicability, and surface
- * data in the @alphaci/capability-catalog workspace package. The web app keeps
- * a generated surface registry view; it is not authoritative.
+ * data in the @alphaci/capability-catalog workspace package.
  *
  * Checks:
- *   1. package surfaces and the generated surface registry match in key order
+ *   1. every package capability has a surface block
  *   2. every CapabilitiesResponse field is claimed by one apiField
  *   3. every CapabilityViewFlags *Enabled leaf is claimed by one viewFlag
  *   4. pack profiles list every package key in order with derived status
@@ -22,7 +21,6 @@ const ROOT = path.resolve(__dirname, '..');
 const REPO = path.resolve(ROOT, '..', '..');
 const { loadCatalogPackage } = require('./lib/capability-profile.cjs');
 
-const SURFACE_REGISTRY = path.join(ROOT, 'capabilities/surface-registry.ts');
 const CONTRACTS = path.join(ROOT, 'src/shared/api/contracts.ts');
 const VIEW_FLAGS = path.join(
   ROOT,
@@ -45,23 +43,6 @@ const NON_CAPABILITY_VIEW_FLAGS = new Set([
   'hierarchyGithubSyncMode',
 ]);
 const NON_CAPABILITY_API_FIELDS = new Set(['edition', 'capabilityKeys']);
-
-function readGeneratedSurfaceRegistry() {
-  const source = fs.readFileSync(SURFACE_REGISTRY, 'utf8');
-  const match = /export const CAPABILITY_SURFACES = (\[[\s\S]*?\])\s+as const;\s*$/m.exec(
-    source,
-  );
-  if (!match) {
-    throw new Error('surface-registry.ts must export a JSON-shaped generated CAPABILITY_SURFACES array');
-  }
-  return JSON.parse(match[1]);
-}
-
-function generatedSurfaceErrors(expected, actual) {
-  return JSON.stringify(actual) === JSON.stringify(expected)
-    ? []
-    : ['capabilities/surface-registry.ts is stale or differs from the vendored capability package'];
-}
 
 function expectedPackStatus(capability, edition) {
   if (!(capability.editions ?? []).includes(edition)) return 'not-applicable';
@@ -121,7 +102,7 @@ function surfaceCatalogErrors(capabilities, surfaces) {
   for (let index = 0; index < max; index += 1) {
     const expected = capabilities[index];
     const actual = surfaces[index];
-    const at = `capabilities/surface-registry.ts row ${index + 1}`;
+    const at = `@alphaci/capability-catalog surface ${index + 1}`;
     if (!expected) {
       errors.push(`${at}: extra surface key ${actual.key}`);
       continue;
@@ -160,14 +141,14 @@ function surfaceCatalogErrors(capabilities, surfaces) {
     if (NON_CAPABILITY_API_FIELDS.has(field)) continue;
     if (!seenApi.has(field)) {
       errors.push(
-        `src/shared/api/contracts.ts: CapabilitiesResponse.${field} is not claimed by surface-registry apiField`,
+        `src/shared/api/contracts.ts: CapabilitiesResponse.${field} is not claimed by any package surface apiField`,
       );
     }
   }
   for (const [field, key] of seenApi.entries()) {
     if (!contractFields.includes(field)) {
       errors.push(
-        `capabilities/surface-registry.ts: apiField ${field} for ${key} is not a CapabilitiesResponse field`,
+        `@alphaci/capability-catalog: apiField ${field} for ${key} is not a CapabilitiesResponse field`,
       );
     }
   }
@@ -180,14 +161,14 @@ function surfaceCatalogErrors(capabilities, surfaces) {
     if (NON_CAPABILITY_VIEW_FLAGS.has(field)) continue;
     if (!seenFlags.has(field)) {
       errors.push(
-        `src/features/capabilities/current/model/capability-flags.ts: ${field} is not claimed by surface-registry viewFlag`,
+        `src/features/capabilities/current/model/capability-flags.ts: ${field} is not claimed by any package surface viewFlag`,
       );
     }
   }
   for (const [field, key] of seenFlags.entries()) {
     if (!viewFields.includes(field)) {
       errors.push(
-        `capabilities/surface-registry.ts: viewFlag ${field} for ${key} is not a CapabilityViewFlags field`,
+        `@alphaci/capability-catalog: viewFlag ${field} for ${key} is not a CapabilityViewFlags field`,
       );
     }
   }
@@ -253,9 +234,7 @@ function collect() {
   }
   const capabilities = catalogPackage.catalog;
   const surfaces = catalogPackage.surfaces;
-  const generatedSurfaces = readGeneratedSurfaceRegistry();
   return [
-    ...generatedSurfaceErrors(surfaces, generatedSurfaces),
     ...surfaceCatalogErrors(capabilities, surfaces),
     ...packCatalogErrors(capabilities),
   ];
@@ -269,7 +248,7 @@ function main() {
     console.error(`Capability surface check failed: ${errors.length} error(s).`);
     errors.forEach((error) => console.error(`  ${error}`));
   } else {
-    console.log('Capability surface checks passed: surface registry, compatibility fields, and pack catalogs.');
+    console.log('Capability surface checks passed: package surfaces, compatibility fields, and pack catalogs.');
   }
   process.exitCode = errors.length > 0 ? 1 : 0;
 }
@@ -279,5 +258,4 @@ if (require.main === module) main();
 module.exports = {
   collect,
   expectedPackStatus,
-  readGeneratedSurfaceRegistry,
 };

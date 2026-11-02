@@ -40,10 +40,9 @@ package. CI runs it whenever the package or the API changes, because a change
 under `packages/` affects both apps.
 
 The web app reads the package directly. It keeps no expected provenance
-record, no catalog snapshot, and no copy of the digest code.
-`apps/web/capabilities/surface-registry.ts` stays: it is a generated view of
-the package's surfaces that the web capability check compares with the
-compatibility response types.
+record, no catalog snapshot, no generated surface registry, and no copy of
+the digest code. The web capability check compares the package's own
+surfaces with the compatibility response types.
 
 The provenance records `github.com/Alpha-Explora/alphaci` as its source
 repository and `apps/api/src/kernel/composition/catalog.source.json` as its
@@ -59,8 +58,8 @@ authoritative source.
 
 ## Consequences
 
-- `npm run capability:new` regenerates the package, the web surface view,
-  the pack profiles, and the maps, with nothing to copy by hand.
+- `npm run capability:new` regenerates the package, the pack profiles,
+  and the maps, with nothing to copy by hand.
 - The web image no longer copies a provenance record.
 - If the package is ever published outside this repository, a consumer there
   needs its own integrity check again.

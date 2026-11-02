@@ -23,7 +23,7 @@ sources:
 
 This frontend remains one codebase with one route tree. It produces more than one artifact. Each artifact is built for a profile, which is a declared set of packs, and excludes feature source belonging to packs outside that set.
 
-Exclusion is derived from the capability surface registry, which already records the domains and routes each capability owns. No pack-specific route tree, duplicated screen, or edition folder is introduced, and no edition comparison enters source.
+Exclusion is derived from the capability surfaces in the catalog package, which already record the domains and routes each capability owns. No pack-specific route tree, duplicated screen, or edition folder is introduced, and no edition comparison enters source.
 
 The capability catalog is consumed as a versioned dependency owned by the API: the workspace package `@alphaci/capability-catalog` in `packages/capability-catalog`.
 

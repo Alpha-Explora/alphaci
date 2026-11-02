@@ -56,7 +56,7 @@ git diff --check
 
 Each app's `generate:architecture-maps` writes its `*.generated.md` maps into `docs/`; the web one also writes the three `pack.md` profiles. The root `check:documentation` validates the bundle (OKF v0.2 format, links, naming, current-state wording, npm scripts named in docs, and that no app keeps its own `docs/` folder), runs both generators with `--check` to catch drift, then runs both apps' own checks through Turbo.
 
-The web profile and documentation checks consume the `@alphaci/capability-catalog` workspace package (`packages/capability-catalog`). After a catalog change, run `npm run package:capability-catalog` in `apps/api`, then in `apps/web` run `node scripts/generate-capability-surface-registry.cjs` and `npm run generate:architecture-maps`. `npm run capability:new` in `apps/api` runs that chain for a new capability.
+The web profile and documentation checks consume the `@alphaci/capability-catalog` workspace package (`packages/capability-catalog`). After a catalog change, run `npm run package:capability-catalog` in `apps/api`, then in `apps/web` run `npm run generate:architecture-maps`. `npm run capability:new` in `apps/api` runs that chain for a new capability.
 
 ## Full API loop
 

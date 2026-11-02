@@ -88,5 +88,5 @@ Marketing-site behavior is not a catalog capability and is not a registry key. T
 ## Ownership and verification
 
 - Owners: the API contexts in the [capability matrix](/capabilities/capability-matrix.generated.md) and the web domains in the [feature map](/architecture/web/feature-map.generated.md).
-- Source: `apps/api/src/kernel/composition/catalog.source.json`, published as `@alphaci/capability-catalog@0.2.0`; web surfaces in `apps/web/capabilities/surface-registry.ts`.
+- Source: `apps/api/src/kernel/composition/catalog.source.json`, published as `@alphaci/capability-catalog@0.2.0`.
 - Verification: `npm run check:capabilities` and `npm run check:composition-profiles` in `apps/api`; `npm run check:documentation` in `apps/web` and at the repository root.

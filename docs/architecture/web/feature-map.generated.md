@@ -8,9 +8,6 @@ sources:
   - id: "features"
     resource: "apps/web/src/features"
     title: "Feature domain tree"
-  - id: "surface-registry"
-    resource: "apps/web/capabilities/surface-registry.ts"
-    title: "Generated capability surface view"
 ---
 
 # Frontend feature map
