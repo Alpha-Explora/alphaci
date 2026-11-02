@@ -347,7 +347,9 @@ function EnvBranchField({
       />
       <datalist id="env-known-branches">
         {knownBranches.map((branch) => (
-          <option key={branch} value={branch} />
+          <option key={branch} value={branch}>
+            {branch}
+          </option>
         ))}
       </datalist>
     </label>

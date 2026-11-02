@@ -479,7 +479,9 @@ describe('Release registry and promotion', () => {
       const outcomes = await Promise.all(
         replacements.map((token) => poll(token)),
       );
-      expect(outcomes.map(({ status }) => status).sort()).toEqual([200, 401]);
+      expect(
+        outcomes.map(({ status }) => status).sort((a, b) => a - b),
+      ).toEqual([200, 401]);
       await poll(otherEnvironment).expect(200);
       await poll(otherProjectToken).expect(200);
     });
@@ -529,7 +531,9 @@ describe('Release registry and promotion', () => {
             .set(ci(project))
             .send({ repoFullName: project.repo, status: 'failed' }),
         ]);
-        expect([signed.status, failed.status].sort()).toEqual([200, 409]);
+        expect([signed.status, failed.status].sort((a, b) => a - b)).toEqual([
+          200, 409,
+        ]);
         const read = await request(e2e.http)
           .get('/api/v1/ci/releases/' + release.releaseId)
           .query({ repo: project.repo })

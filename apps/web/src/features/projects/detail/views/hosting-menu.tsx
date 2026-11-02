@@ -93,6 +93,7 @@ export function HostingMenu({
           role="menu"
           aria-label={label}
           className="hosting-menu__list"
+          tabIndex={-1}
           onKeyDown={menu.onMenuKeyDown}
         >
           {items.map((item) => (

@@ -329,6 +329,7 @@ function EvidenceBody({
     <section
       className="qa-evidence"
       aria-label={`Evidence for ${item.title}`}
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- focusable so a pasted screenshot lands here
       tabIndex={vm.canAdd ? 0 : undefined}
       onPaste={vm.canAdd ? pasteHandler(vm) : undefined}
     >

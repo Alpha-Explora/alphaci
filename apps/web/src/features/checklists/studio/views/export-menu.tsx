@@ -164,6 +164,7 @@ export function ExportMenu({
           role="menu"
           aria-label={label ?? DEFAULT_LABEL}
           className="qa-export__menu"
+          tabIndex={-1}
           onKeyDown={menu.onMenuKeyDown}
         >
           <a

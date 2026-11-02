@@ -113,6 +113,7 @@ export function SideTabs<T extends string>({
         aria-label={label}
         aria-orientation="vertical"
         onKeyDown={handleKeyDown}
+        tabIndex={-1}
         ref={listRef}
         className="side-tabs-list"
       >

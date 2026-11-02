@@ -11,6 +11,7 @@ export const PROJECT_NAME_HELP =
 export const PROJECT_NAME_TAKEN_MESSAGE =
   'A Project with this name already exists in this team. Choose another name.';
 
+// oxlint-disable-next-line eslint/no-control-regex -- this pattern exists to reject control characters
 const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F-\u009F]/;
 
 export type ProjectNameCheck =

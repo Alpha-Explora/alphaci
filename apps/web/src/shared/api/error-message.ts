@@ -53,7 +53,8 @@ export function serverErrorMessage(
     return;
   // Keep diagnostic payloads in ApiError.details, away from user-facing copy.
   if (
-    /[<>\u0000-\u0008\u000b\u000c\u000e-\u001f]|\n\s*at\s|\b(?:TypeError|ReferenceError|SyntaxError|SQLSTATE|ECONNREFUSED|ENOTFOUND)\b|\b(?:select\s+.+\s+from|insert\s+into|update\s+.+\s+set)\b|(?:password|secret|authorization|access_token|api[_-]?key)\s*[:=]|^\s*[\[{]/i.test(
+    // oxlint-disable-next-line eslint/no-control-regex -- control characters mark a diagnostic payload
+    /[<>\u0000-\u0008\u000b\u000c\u000e-\u001f]|\n\s*at\s|\b(?:TypeError|ReferenceError|SyntaxError|SQLSTATE|ECONNREFUSED|ENOTFOUND)\b|\b(?:select\s+.+\s+from|insert\s+into|update\s+.+\s+set)\b|(?:password|secret|authorization|access_token|api[_-]?key)\s*[:=]|^\s*[[{]/i.test(
       message,
     )
   )

@@ -97,6 +97,7 @@ export function ProjectDetailTopTabs<T extends string>({
         aria-label={label}
         aria-orientation="horizontal"
         onKeyDown={handleKeyDown}
+        tabIndex={-1}
         className="project-tabs__list"
       >
         {groups.map((group, groupIndex) => (

@@ -49,14 +49,14 @@ export function NotificationsPreferencesView() {
           <span aria-hidden="true" />
         </span>
       </label>
-      <label className="notification-preferences-card notification-preferences-card--disabled">
+      <div className="notification-preferences-card notification-preferences-card--disabled">
         <span className="notification-preferences-copy">
           <span className="notification-preferences-kicker">Digest</span>
           <strong>Email notifications</strong>
           <span>Reserved for workflow digests and failed-run summaries.</span>
         </span>
         <span className="notification-preferences-state">Soon</span>
-      </label>
+      </div>
       {message ? (
         <p className="error-text" style={{ margin: 0 }}>
           {message}
