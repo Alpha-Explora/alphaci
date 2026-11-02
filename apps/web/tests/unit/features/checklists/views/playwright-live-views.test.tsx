@@ -27,6 +27,7 @@ import {
 import { liveRun, liveTest } from '../playwright-live-fixtures';
 import { promotionWire } from '../qa-promotion-fixtures';
 import { projectRunWire, runItemWire } from '../requirement-fixtures';
+import { branchPreview } from '../../../../support/branch-preview';
 
 jest.mock(
   '../../../../../src/features/checklists/data/checklists-repository',
@@ -342,7 +343,7 @@ describe('PlaywrightLiveCard — tests', () => {
 
 /* ── In the studio: roles, live progress and the fallback ─────────────────── */
 
-const PREVIEW: ProjectBranchPreview = {
+const PREVIEW: ProjectBranchPreview = branchPreview({
   branch: 'uat',
   isProduction: false,
   deploymentId: 'd1',
@@ -360,7 +361,7 @@ const PREVIEW: ProjectBranchPreview = {
   embeddable: true,
   embedBlockedReason: null,
   surface: 'page',
-};
+});
 
 const SCOPE: QaScope = {
   kind: 'project',

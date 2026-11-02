@@ -106,12 +106,14 @@ describe('supportsScreenCapture', () => {
   });
 });
 
+type ImageSource = Parameters<typeof compressImage>[0];
+
 describe('compressImage', () => {
   const region = { x: 0, y: 0, width: 5120, height: 2880 };
 
   it('draws at most 2560px and keeps the first WebP under ~500 KB', async () => {
     useCanvas((type) => ({ type, size: 200_000 }));
-    const image = await compressImage({} as CanvasImageSource, region);
+    const image = await compressImage({} as ImageSource, region);
     expect(image).toMatchObject({
       type: 'image/webp',
       width: 2560,
@@ -138,7 +140,7 @@ describe('compressImage', () => {
       type,
       size: quality > 0.6 ? TARGET_IMAGE_BYTES + 1 : 300_000,
     }));
-    const image = await compressImage({} as CanvasImageSource, region);
+    const image = await compressImage({} as ImageSource, region);
     expect(encodeCalls.map((call) => call.quality)).toEqual([0.85, 0.7, 0.55]);
     expect(image.blob.size).toBe(300_000);
   });
@@ -150,7 +152,7 @@ describe('compressImage', () => {
         ? { type: 'image/png', size: 10 }
         : { type, size: 100_000 },
     );
-    const image = await compressImage({} as CanvasImageSource, region);
+    const image = await compressImage({} as ImageSource, region);
     expect(image.type).toBe('image/jpeg');
     expect(encodeCalls.map((call) => call.type)).toEqual([
       'image/webp',
@@ -160,7 +162,7 @@ describe('compressImage', () => {
 
   it('tries a smaller size, then keeps the smallest result under 3 MB', async () => {
     useCanvas((type) => ({ type, size: 1_000_000 }));
-    const image = await compressImage({} as CanvasImageSource, region);
+    const image = await compressImage({} as ImageSource, region);
     expect(image.blob.size).toBe(1_000_000);
     expect(new Set(encodeCalls.map((call) => call.width))).toEqual(
       new Set([2560, 1920]),
@@ -169,7 +171,7 @@ describe('compressImage', () => {
 
   it('says too large when nothing gets under 3 MB', async () => {
     useCanvas((type) => ({ type, size: MAX_IMAGE_BYTES + 1 }));
-    const failure = await compressImage({} as CanvasImageSource, region).catch(
+    const failure = await compressImage({} as ImageSource, region).catch(
       (cause: unknown) => cause,
     );
     expect(errorCode(failure)).toBe('QA_ATTACHMENT_TOO_LARGE');

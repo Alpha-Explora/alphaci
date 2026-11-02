@@ -22,6 +22,7 @@ import {
 } from '../support/api-client';
 import type { ProjectOptionsResponse } from '../../src/shared/api/contracts';
 import { ApiError } from '../../src/shared/api/request';
+import { disabledCapabilities } from '../../src/features/capabilities/current/data/capabilities-repository';
 
 jest.mock('framer-motion', () => {
   const React = jest.requireActual('react');
@@ -479,6 +480,7 @@ describe('WorkflowBuilder project setup', () => {
       ]),
     );
     mockedGetCapabilities.mockResolvedValue({
+      ...disabledCapabilities(),
       envProvisioning: {
         enabled: true,
         providers: ['render', 'vercel'],

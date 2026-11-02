@@ -7,6 +7,7 @@ import { useStudioPanel } from '../../../../../src/features/checklists/studio/vi
 import { STUDIO_RESOLUTION_KEYS } from '../../../../../src/features/checklists/studio/view-models/use-studio-resolution';
 import { useStudioViewportViewModel } from '../../../../../src/features/checklists/studio/view-models/use-studio-viewport-view-model';
 import type { ProjectBranchPreview } from '../../../../../src/shared/api/contracts';
+import { branchPreview } from '../../../../support/branch-preview';
 
 jest.mock(
   '../../../../../src/features/projects/data/projects-repository',
@@ -200,7 +201,7 @@ describe('useStudioPanel', () => {
 function preview(
   overrides: Partial<ProjectBranchPreview> = {},
 ): ProjectBranchPreview {
-  return {
+  return branchPreview({
     branch: 'uat',
     isProduction: false,
     deploymentId: 'd1',
@@ -219,7 +220,7 @@ function preview(
     embedBlockedReason: null,
     surface: 'page',
     ...overrides,
-  };
+  });
 }
 
 async function flush() {

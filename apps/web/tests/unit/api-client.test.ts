@@ -42,6 +42,7 @@ import {
   syncProjects,
 } from '../support/api-client';
 import { notificationsRepository } from '../../src/features/notifications/data/notifications-repository';
+import { setNodeEnv } from '../support/node-env';
 
 const getNotifications = notificationsRepository.list;
 const markNotificationRead = notificationsRepository.markRead;
@@ -73,9 +74,9 @@ describe('API client project setup helpers', () => {
     }
 
     if (originalNodeEnv === undefined) {
-      delete process.env.NODE_ENV;
+      setNodeEnv(undefined);
     } else {
-      process.env.NODE_ENV = originalNodeEnv;
+      setNodeEnv(originalNodeEnv);
     }
     jest.resetModules();
   });
@@ -971,7 +972,7 @@ describe('API client project setup helpers', () => {
   it('validates bulk env text without returning values', async () => {
     const payload = {
       deploymentTargetId: 'target-1',
-      environment: 'test' as const,
+      lane: 'production' as const,
       text: 'DATABASE_URL=postgres://secret',
     };
     fetchMock.mockResolvedValueOnce({
@@ -1081,7 +1082,7 @@ describe('API client project setup helpers', () => {
     await expect(
       provisionProjectEnvVars('project/1', {
         deploymentTargetId: 'target-2',
-        environment: 'test',
+        lane: 'production' as const,
         vars: [{ key: 'DATABASE_URL', value: 'postgres://secret' }],
       }),
     ).resolves.toMatchObject({ provisioned: [{ key: 'DATABASE_URL' }] });
@@ -1400,7 +1401,7 @@ describe('API client project setup helpers', () => {
 
   it('keeps a relative base for the same-origin proxy (API_PROXY_TARGET)', async () => {
     process.env.NEXT_PUBLIC_API_BASE_URL = '/api/v1';
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
     jest.resetModules();
 
     const { getApiBaseUrl } = await import('../support/api-client');
@@ -1411,7 +1412,7 @@ describe('API client project setup helpers', () => {
   it('accepts NEXT_PUBLIC_API_URL for non-production local development', async () => {
     delete process.env.NEXT_PUBLIC_API_BASE_URL;
     process.env.NEXT_PUBLIC_API_URL = 'http://127.0.0.1:4500';
-    process.env.NODE_ENV = 'test';
+    setNodeEnv('test');
     jest.resetModules();
 
     const { getApiBaseUrl } = await import('../support/api-client');
@@ -1422,7 +1423,7 @@ describe('API client project setup helpers', () => {
   it('falls back to the legacy API alias in production but warns (no throw)', async () => {
     delete process.env.NEXT_PUBLIC_API_BASE_URL;
     process.env.NEXT_PUBLIC_API_URL = 'https://flowci-be-test.onrender.com';
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
     jest.resetModules();
 
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
@@ -1442,7 +1443,7 @@ describe('API client project setup helpers', () => {
   it('loudly errors (but does not throw) when no API URL is set in production', async () => {
     delete process.env.NEXT_PUBLIC_API_BASE_URL;
     delete process.env.NEXT_PUBLIC_API_URL;
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
     jest.resetModules();
 
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -1463,7 +1464,7 @@ describe('API client project setup helpers', () => {
     process.env.NEXT_PUBLIC_API_BASE_URL =
       'https://alphaci-be-test.onrender.com';
     process.env.NEXT_PUBLIC_API_URL = 'https://flowci-be-test.onrender.com';
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
     jest.resetModules();
 
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});

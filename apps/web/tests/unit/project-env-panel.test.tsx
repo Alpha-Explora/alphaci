@@ -8,6 +8,9 @@ import { useCapabilities } from '../../src/features/capabilities/current';
 import { useProjectEnvProvisioning } from '../../src/features/projects/detail/view-models/use-project-env-provisioning-view-model';
 import type { ProvisionedProject } from '../../src/shared/api/contracts';
 import { getMyUsage } from '../../src/features/projects/detail/data/usage-api';
+import { disabledCapabilities } from '../../src/features/capabilities/current/data/capabilities-repository';
+import { capabilityViewFlags } from '../../src/features/capabilities/current/model/capability-flags';
+import type { CapabilitiesResponse } from '../../src/shared/api/contracts';
 
 jest.mock('framer-motion', () => {
   const React = jest.requireActual('react');
@@ -292,7 +295,7 @@ function changeValue(
      * created in a different document; tagName on a missing query is null.
      */
     const proto = Object.getPrototypeOf(element) as object | null;
-    const nodeName = element.nodeName.toUpperCase();
+    const nodeName = (element.nodeName ?? '').toUpperCase();
     const fallbackPrototype =
       nodeName === 'SELECT'
         ? HTMLSelectElement.prototype
@@ -355,46 +358,51 @@ function mockCapabilities(
   driftRepairEnabled = false,
   deploymentOwnershipMode: 'byo' | 'flowci_managed' = 'byo',
 ) {
-  mockedUseCapabilities.mockReturnValue({
-    capabilities: {
-      envProvisioning: {
-        enabled,
-        providers: enabled ? ['render', 'vercel'] : [],
-        environments: enabled ? ['test', 'uat', 'production'] : [],
-        modes: enabled ? [deploymentOwnershipMode] : [],
-      },
-      projectSyncSnapshots: {
-        enabled: syncSnapshotsEnabled,
-        mode: 'local_snapshot',
-      },
-      workflowSettingsPreview: {
-        enabled: workflowSettingsEnabled,
-      },
-      workflowUpdatePr: {
-        enabled: workflowUpdatePrEnabled,
-      },
-      projectTargetManagement: {
-        enabled: projectTargetManagementEnabled,
-      },
-      ciRunTracking: {
-        enabled: ciRunTrackingEnabled,
-        liveGithubEnabled: false,
-        mode: 'local_mock',
-      },
-      deploymentHistory: {
-        enabled: deploymentHistoryEnabled,
-        liveProvidersEnabled: false,
-        mode: 'local_mock',
-      },
-      driftDetection: {
-        enabled: driftDetectionEnabled,
-        mode: 'local_snapshot',
-      },
-      driftRepair: {
-        enabled: driftRepairEnabled,
-        mode: 'local_safe',
-      },
+  const capabilities: CapabilitiesResponse = {
+    ...disabledCapabilities(),
+    envProvisioning: {
+      enabled,
+      providers: enabled ? ['render', 'vercel'] : [],
+      environments: enabled ? ['test', 'uat', 'production'] : [],
+      modes: enabled ? [deploymentOwnershipMode] : [],
     },
+    projectSyncSnapshots: {
+      enabled: syncSnapshotsEnabled,
+      mode: 'local_snapshot',
+    },
+    workflowSettingsPreview: {
+      enabled: workflowSettingsEnabled,
+    },
+    workflowUpdatePr: {
+      enabled: workflowUpdatePrEnabled,
+    },
+    projectTargetManagement: {
+      enabled: projectTargetManagementEnabled,
+    },
+    ciRunTracking: {
+      enabled: ciRunTrackingEnabled,
+      liveGithubEnabled: false,
+      mode: 'local_mock',
+    },
+    deploymentHistory: {
+      enabled: deploymentHistoryEnabled,
+      liveProvidersEnabled: false,
+      mode: 'local_mock',
+    },
+    driftDetection: {
+      enabled: driftDetectionEnabled,
+      mode: 'local_snapshot',
+    },
+    driftRepair: {
+      enabled: driftRepairEnabled,
+      mode: 'local_safe',
+    },
+  };
+  mockedUseCapabilities.mockReturnValue({
+    capabilities,
+    status: 'ready',
+    error: null,
+    ...capabilityViewFlags(capabilities),
     envProvisioningEnabled: enabled,
     projectSyncSnapshotsEnabled: syncSnapshotsEnabled,
     workflowSettingsPreviewEnabled: workflowSettingsEnabled,
@@ -1950,9 +1958,10 @@ describe('Project env provisioning UI', () => {
       {
         ...vercelTarget,
         id: 'target-unknown',
+        // A provider this app does not know, on purpose.
         provider: 'railway',
         providerMetadata: {},
-      } as typeof vercelTarget,
+      } as unknown as typeof vercelTarget,
     ]);
     overview.capabilities = {
       ...overview.capabilities,

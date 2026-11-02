@@ -54,6 +54,7 @@ const FOLDER: ProjectFolderViewModel = {
     deliveryProjectId: 'dp-1',
     name: 'shop',
     href: '/workflows?group=ws-1&project=dp-1',
+    repositories: [],
   },
   options: [
     {

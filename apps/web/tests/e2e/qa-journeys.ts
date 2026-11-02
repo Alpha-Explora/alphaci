@@ -2249,6 +2249,9 @@ class QaMockBackend {
           providerLabel: 'Vercel',
           logsAvailable: false,
           logWindow: null,
+          trigger: null,
+          startedAt: null,
+          recentDeploys: [],
         },
         {
           branch: QA_BRANCH,
@@ -2274,6 +2277,9 @@ class QaMockBackend {
           providerLabel: 'Vercel',
           logsAvailable: false,
           logWindow: null,
+          trigger: null,
+          startedAt: null,
+          recentDeploys: [],
         },
       ],
     };

@@ -2,7 +2,6 @@ import { ApiError } from '../../../../../src/shared/api/request';
 import type { ProjectBranchPreview } from '../../../../../src/shared/api/contracts';
 import {
   canFramePreview,
-  commitUrl,
   createdLabel,
   deployedAgo,
   deploymentCardTitle,
@@ -16,17 +15,17 @@ import {
   previewStatusLabel,
   previewStatusTone,
   previewUnavailableReason,
-  pullRequestUrl,
   splitOverviewPreviews,
   projectStatusVariant,
   shortCommitSha,
   toOverviewError,
 } from '../../../../../src/features/projects/model/projects-rules';
+import { branchPreview } from '../../../../support/branch-preview';
 
 function preview(
   overrides: Partial<ProjectBranchPreview> = {},
 ): ProjectBranchPreview {
-  return {
+  return branchPreview({
     branch: 'feat/checkout',
     isProduction: false,
     deploymentId: 'dpl_1',
@@ -44,7 +43,7 @@ function preview(
     embeddable: true,
     embedBlockedReason: null,
     ...overrides,
-  };
+  });
 }
 
 /* These three decided what the project header showed and what a failed load
@@ -481,10 +480,13 @@ describe('createdLabel', () => {
     ).toBe('2h ago by LloydLim1');
   });
 
-  it('omits the name when the provider does not say, or the backend predates it', () => {
-    expect(createdLabel({ createdAt: '2026-09-23T10:00:00.000Z' }, now)).toBe(
-      '2h ago',
-    );
+  it('omits the name when the provider does not say', () => {
+    expect(
+      createdLabel(
+        { createdAt: '2026-09-23T10:00:00.000Z', createdBy: null },
+        now,
+      ),
+    ).toBe('2h ago');
   });
 
   it('says nothing has deployed rather than inventing a time', () => {

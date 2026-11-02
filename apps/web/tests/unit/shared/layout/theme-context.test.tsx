@@ -104,7 +104,8 @@ describe('ThemeProvider / useTheme', () => {
     // The context default is { theme: "dark", toggle: () => {} } — verify a
     // consumer rendered without ThemeProvider gets that default rather than
     // throwing, and that calling the default toggle is a safe no-op.
-    let outsideSnapshot: Snapshot | null = null;
+    // Assigned inside a render, which TypeScript cannot see: keep the wide type.
+    let outsideSnapshot = null as Snapshot | null;
     function OutsideProbe() {
       const result = useTheme();
       useEffect(() => {

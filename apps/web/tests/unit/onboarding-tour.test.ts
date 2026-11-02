@@ -17,10 +17,12 @@ const mockDriverInstance = {
   drive: jest.fn(),
   destroy: jest.fn(),
 };
-const mockDriver = jest.fn(() => mockDriverInstance);
+const mockDriver = jest.fn(
+  (_config: Record<string, unknown>) => mockDriverInstance,
+);
 
 jest.mock('driver.js', () => ({
-  driver: (...args: unknown[]) => mockDriver(...args),
+  driver: (config: Record<string, unknown>) => mockDriver(config),
 }));
 
 describe('getProjectTourSteps', () => {
@@ -147,7 +149,7 @@ describe('createProjectTour', () => {
   it('passes showProgress and allowClose to driver()', () => {
     const onFinished = jest.fn();
     createProjectTour({ onFinished });
-    const config = mockDriver.mock.calls[0][0] as Record<string, unknown>;
+    const config = mockDriver.mock.calls[0]![0];
     expect(config.showProgress).toBe(true);
     expect(config.allowClose).toBe(true);
   });
@@ -155,7 +157,7 @@ describe('createProjectTour', () => {
   it('passes the steps array to driver()', () => {
     const onFinished = jest.fn();
     createProjectTour({ onFinished });
-    const config = mockDriver.mock.calls[0][0] as Record<string, unknown>;
+    const config = mockDriver.mock.calls[0]![0];
     expect(Array.isArray(config.steps)).toBe(true);
     expect((config.steps as unknown[]).length).toBe(
       getProjectTourSteps().length,
@@ -165,7 +167,7 @@ describe('createProjectTour', () => {
   it('onDestroyed fires onFinished exactly once', () => {
     const onFinished = jest.fn();
     createProjectTour({ onFinished });
-    const config = mockDriver.mock.calls[0][0] as Record<string, unknown>;
+    const config = mockDriver.mock.calls[0]![0];
     const onDestroyed = config.onDestroyed as () => void;
 
     onDestroyed();

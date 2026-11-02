@@ -169,7 +169,7 @@ describe('existing-repo setup payload', () => {
       projectName: 'Checkout',
       repoFullName: 'tone/app',
       selectedProjectTypeId: 'node',
-      selectedWorkflowRecipeId: undefined,
+      selectedWorkflowRecipeId: 'node-standard-ci',
       recipesForSelectedProject: [],
       serviceName: 'app',
       servicePath: '.',
@@ -177,7 +177,7 @@ describe('existing-repo setup payload', () => {
       coverageThreshold: '80',
       outputFileName: 'ci.yml',
       deploymentProvisioning: undefined,
-    } as Parameters<typeof buildSetupExistingRepoPayload>[0]);
+    });
     expect(payload).not.toHaveProperty('baseBranch');
     expect(payload.projectName).toBe('Checkout');
   });

@@ -53,9 +53,15 @@ export interface Service {
   readonly logFile: string;
 }
 
+/**
+ * A child process environment. Unlike NodeJS.ProcessEnv under the Next.js types,
+ * NODE_ENV is optional: the stack hands children only the variables it chooses.
+ */
+type ChildEnv = Record<string, string | undefined>;
+
 interface SpawnOptions {
   readonly cwd: string;
-  readonly env: NodeJS.ProcessEnv;
+  readonly env: ChildEnv;
   /** Run `command` through the shell; needed for npm on Windows. */
   readonly shell?: boolean;
 }
@@ -83,7 +89,7 @@ export class ProcessGroup {
     const log = openSync(logFile, 'a');
     const child = spawn(command, args, {
       cwd: options.cwd,
-      env: options.env,
+      env: options.env as NodeJS.ProcessEnv,
       shell: options.shell ?? false,
       stdio: ['ignore', log, log],
       // Its own process group on POSIX, so stop() reaches its children too.
@@ -207,7 +213,7 @@ export function assertPortFree(port: number, hint: string): Promise<void> {
  * to run at all. Everything else is set explicitly, so a developer's shell
  * (GitHub App keys, SUPABASE_*, provider tokens) never reaches the stack.
  */
-function baseEnv(): NodeJS.ProcessEnv {
+function baseEnv(): ChildEnv {
   const keep = new Set([
     'PATH',
     'PATHEXT',
@@ -401,7 +407,7 @@ export function startApi(
 // ---------------------------------------------------------------------------
 
 /** Read by next.config.ts at build time and again by `next start`. */
-function webAppEnv(ports: StackPorts): NodeJS.ProcessEnv {
+function webAppEnv(ports: StackPorts): ChildEnv {
   return {
     // Same origin, as the self-hosted image serves it behind Caddy: the browser
     // calls /api/v1 on the web origin and Next proxies it to the API, so the

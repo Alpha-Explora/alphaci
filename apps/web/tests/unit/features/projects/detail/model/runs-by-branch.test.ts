@@ -2,8 +2,9 @@ import { groupRunsByPipelineBranch } from '@/features/projects/detail/model/runs
 import { PIPELINE_BRANCHES } from '@/shared/api/pipeline-branches';
 
 /** A GitHub run. `sha` defaults per-call so each run is its own commit. */
+let nextRunId = 1;
 function run(headBranch: string, createdAt: string, headSha = createdAt) {
-  return { headBranch, headSha, createdAt };
+  return { id: nextRunId++, headBranch, headSha, createdAt };
 }
 
 describe('groupRunsByPipelineBranch', () => {

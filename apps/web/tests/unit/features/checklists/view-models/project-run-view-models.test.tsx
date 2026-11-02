@@ -131,6 +131,9 @@ const ALL = {
   canSignOff: true,
   canReopen: true,
   canDispatch: true,
+  canManageTestCases: true,
+  canRecordTestCases: true,
+  canAccept: true,
 };
 
 describe('useProjectRunViewModel', () => {

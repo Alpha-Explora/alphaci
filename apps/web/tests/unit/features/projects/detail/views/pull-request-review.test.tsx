@@ -97,6 +97,7 @@ describe('PullRequestsTab review panel', () => {
 
     mockedBranches.mockResolvedValue({
       defaultBranch: 'main',
+      canCreateBranch: true,
       branches: [
         { name: 'main', protected: true, commitSha: 'a' },
         { name: 'dev', protected: false, commitSha: 'd' },
@@ -314,6 +315,7 @@ describe('PullRequestsTab, Phase 1 security gates', () => {
 
     mockedBranches.mockResolvedValue({
       defaultBranch: 'main',
+      canCreateBranch: true,
       branches: [
         { name: 'main', protected: true, commitSha: 'a' },
         { name: 'dev', protected: false, commitSha: 'd' },
@@ -494,6 +496,7 @@ describe('CreatePullRequestView, reached directly by QA', () => {
     // to resolve even though QA never sees what it loads.
     mockedBranches.mockResolvedValue({
       defaultBranch: 'main',
+      canCreateBranch: true,
       branches: [{ name: 'main', protected: true, commitSha: 'a' }],
     });
   });

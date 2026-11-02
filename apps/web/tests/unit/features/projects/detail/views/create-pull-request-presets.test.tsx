@@ -47,6 +47,7 @@ describe('CreatePullRequestView presets', () => {
   ) {
     mockBranches.mockResolvedValue({
       defaultBranch: 'main',
+      canCreateBranch: true,
       branches: names.map((name) => ({
         name,
         protected: false,

@@ -8,6 +8,7 @@ import { useMoveRepositoryViewModel } from '../../../../../../src/features/teams
 import { useDeleteProjectViewModel } from '../../../../../../src/features/teams/project-folders/view-models/use-delete-project-view-model';
 import { useCreateProjectFolderViewModel } from '../../../../../../src/features/teams/project-folders/view-models/use-create-project-folder-view-model';
 import { apiError, foldersSnapshot, GROUP_ID } from '../folder-fixtures';
+import type { DeleteProjectOutcome } from '../../../../../../src/features/teams/project-folders/model/project-folder-types';
 
 jest.mock(
   '../../../../../../src/features/teams/project-folders/data/project-folders-repository',
@@ -506,8 +507,8 @@ describe('useDeleteProjectViewModel', () => {
   });
 
   it('guards a stale response behind a request counter', async () => {
-    let resolveFirst!: (value: unknown) => void;
-    let resolveSecond!: (value: unknown) => void;
+    let resolveFirst!: (value: DeleteProjectOutcome) => void;
+    let resolveSecond!: (value: DeleteProjectOutcome) => void;
     repo.deleteProject
       .mockImplementationOnce(
         () => new Promise((resolve) => (resolveFirst = resolve)),

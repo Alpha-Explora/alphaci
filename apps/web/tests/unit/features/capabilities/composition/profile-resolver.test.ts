@@ -165,7 +165,7 @@ describe('frontend build profile resolver', () => {
       ...catalogPackage.manifests,
       saas: ['billing.checkout'],
     };
-    const catalog = catalogPackage.catalog.map((record) =>
+    const catalog = catalogPackage.catalog.map((record: { key: string }) =>
       record.key === 'billing.checkout'
         ? { ...record, requires: ['runtime.managed-secrets'] }
         : record,

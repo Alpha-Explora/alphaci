@@ -12,14 +12,16 @@ import { ApiError } from '../../../../../src/shared/api/request';
  * inspecting the DOM: the grouping, the summary counts and the error mapping
  * all lived inside the 771-line route. */
 
-function run(overrides: Partial<RunGroup> & { runId: string }): RunGroup {
+function run(overrides: Partial<RunGroup> & { runId: number }): RunGroup {
   return {
-    runId: overrides.runId,
     repoFullName: 'acme/web',
+    branch: 'main',
+    commitSha: 'abc1234',
     overallStatus: 'success',
     startedAt: '2026-08-01T00:00:00.000Z',
+    stages: [],
     ...overrides,
-  } as RunGroup;
+  };
 }
 
 describe('groupRunsByProject', () => {
@@ -29,9 +31,9 @@ describe('groupRunsByProject', () => {
 
   it('buckets runs by repository', () => {
     const grouped = groupRunsByProject([
-      run({ runId: '1', repoFullName: 'acme/web' }),
-      run({ runId: '2', repoFullName: 'acme/api' }),
-      run({ runId: '3', repoFullName: 'acme/web' }),
+      run({ runId: 1, repoFullName: 'acme/web' }),
+      run({ runId: 2, repoFullName: 'acme/api' }),
+      run({ runId: 3, repoFullName: 'acme/web' }),
     ]);
 
     expect(grouped).toHaveLength(2);
@@ -46,32 +48,32 @@ describe('groupRunsByProject', () => {
 
   it('sorts runs newest first inside a repository', () => {
     const [group] = groupRunsByProject([
-      run({ runId: 'old', startedAt: '2026-08-01T00:00:00.000Z' }),
-      run({ runId: 'new', startedAt: '2026-08-03T00:00:00.000Z' }),
-      run({ runId: 'mid', startedAt: '2026-08-02T00:00:00.000Z' }),
+      run({ runId: 1, startedAt: '2026-08-01T00:00:00.000Z' }),
+      run({ runId: 3, startedAt: '2026-08-03T00:00:00.000Z' }),
+      run({ runId: 2, startedAt: '2026-08-02T00:00:00.000Z' }),
     ]);
 
-    expect(group!.runs.map((r) => r.runId)).toEqual(['new', 'mid', 'old']);
+    expect(group!.runs.map((r) => r.runId)).toEqual([3, 2, 1]);
   });
 
   it('hoists the newest run of each repository as latestRun', () => {
     const [group] = groupRunsByProject([
-      run({ runId: 'old', startedAt: '2026-08-01T00:00:00.000Z' }),
-      run({ runId: 'new', startedAt: '2026-08-05T00:00:00.000Z' }),
+      run({ runId: 1, startedAt: '2026-08-01T00:00:00.000Z' }),
+      run({ runId: 3, startedAt: '2026-08-05T00:00:00.000Z' }),
     ]);
 
-    expect(group!.latestRun.runId).toBe('new');
+    expect(group!.latestRun.runId).toBe(3);
   });
 
   it('orders repositories by their most recent run', () => {
     const grouped = groupRunsByProject([
       run({
-        runId: 'a',
+        runId: 10,
         repoFullName: 'acme/stale',
         startedAt: '2026-08-01T00:00:00.000Z',
       }),
       run({
-        runId: 'b',
+        runId: 11,
         repoFullName: 'acme/fresh',
         startedAt: '2026-08-09T00:00:00.000Z',
       }),
@@ -85,8 +87,8 @@ describe('groupRunsByProject', () => {
 
   it('does not mutate the input array', () => {
     const runs = [
-      run({ runId: 'old', startedAt: '2026-08-01T00:00:00.000Z' }),
-      run({ runId: 'new', startedAt: '2026-08-05T00:00:00.000Z' }),
+      run({ runId: 1, startedAt: '2026-08-01T00:00:00.000Z' }),
+      run({ runId: 3, startedAt: '2026-08-05T00:00:00.000Z' }),
     ];
     const order = runs.map((r) => r.runId);
 
@@ -108,10 +110,10 @@ describe('summarizeRuns', () => {
 
   it('counts each status', () => {
     const summary = summarizeRuns([
-      run({ runId: '1', overallStatus: 'success' }),
-      run({ runId: '2', overallStatus: 'success' }),
-      run({ runId: '3', overallStatus: 'running' }),
-      run({ runId: '4', overallStatus: 'failure' }),
+      run({ runId: 1, overallStatus: 'success' }),
+      run({ runId: 2, overallStatus: 'success' }),
+      run({ runId: 3, overallStatus: 'running' }),
+      run({ runId: 4, overallStatus: 'failure' }),
     ]);
 
     expect(summary.total).toBe(4);
@@ -122,11 +124,11 @@ describe('summarizeRuns', () => {
 
   it('counts failure, partial and cancelled as needing attention', () => {
     const summary = summarizeRuns([
-      run({ runId: '1', overallStatus: 'failure' }),
-      run({ runId: '2', overallStatus: 'partial' }),
-      run({ runId: '3', overallStatus: 'cancelled' }),
-      run({ runId: '4', overallStatus: 'success' }),
-      run({ runId: '5', overallStatus: 'running' }),
+      run({ runId: 1, overallStatus: 'failure' }),
+      run({ runId: 2, overallStatus: 'partial' }),
+      run({ runId: 3, overallStatus: 'cancelled' }),
+      run({ runId: 4, overallStatus: 'success' }),
+      run({ runId: 5, overallStatus: 'running' }),
     ]);
 
     expect(summary.needsAttention).toBe(3);
@@ -134,12 +136,12 @@ describe('summarizeRuns', () => {
 
   it('picks the newest run regardless of input order', () => {
     const summary = summarizeRuns([
-      run({ runId: 'mid', startedAt: '2026-08-02T00:00:00.000Z' }),
-      run({ runId: 'new', startedAt: '2026-08-04T00:00:00.000Z' }),
-      run({ runId: 'old', startedAt: '2026-08-01T00:00:00.000Z' }),
+      run({ runId: 2, startedAt: '2026-08-02T00:00:00.000Z' }),
+      run({ runId: 3, startedAt: '2026-08-04T00:00:00.000Z' }),
+      run({ runId: 1, startedAt: '2026-08-01T00:00:00.000Z' }),
     ]);
 
-    expect(summary.latestRun?.runId).toBe('new');
+    expect(summary.latestRun?.runId).toBe(3);
   });
 });
 

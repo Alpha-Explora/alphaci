@@ -4,8 +4,9 @@ import {
 } from '@/features/projects/detail/model/runs-by-commit';
 import type { RunGroup, StageReport } from '@/shared/api/contracts';
 
+let nextRunId = 1;
 function run(headSha: string, createdAt: string) {
-  return { headSha, createdAt };
+  return { id: nextRunId++, headSha, createdAt };
 }
 
 function stage(
@@ -14,6 +15,7 @@ function stage(
   messages: StageReport['friendlyMessages'] = [],
 ): StageReport {
   return {
+    runId: 1,
     stage: name,
     status,
     friendlyMessages: messages,
@@ -106,6 +108,7 @@ describe('groupRunsByCommit', () => {
 
 describe('commitHeadline', () => {
   const ghRun = (conclusion: string | null, status = 'completed') => ({
+    id: nextRunId++,
     headSha: 'abc',
     createdAt: '2026-09-10T10:00:00Z',
     status,
@@ -209,7 +212,11 @@ describe('groupRunsByCommit — the report must match the branch, not just the s
     ],
   };
 
-  const ghRun = { headSha: 'a98cf82', createdAt: '2026-09-09T08:00:00Z' };
+  const ghRun = {
+    id: 1,
+    headSha: 'a98cf82',
+    createdAt: '2026-09-09T08:00:00Z',
+  };
 
   it("does not read another branch's report for the same commit", () => {
     // main is listed first, so a sha-only join would take it.

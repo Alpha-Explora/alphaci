@@ -37,7 +37,9 @@ jest.mock('../../../../../../src/features/notifications/summary', () => ({
 jest.mock(
   '../../../../../../src/features/workspace/selection/model/workspace-types',
   () => {
-    const actual = jest.requireActual(
+    const actual = jest.requireActual<
+      typeof import('../../../../../../src/features/workspace/selection/model/workspace-types')
+    >(
       '../../../../../../src/features/workspace/selection/model/workspace-types',
     );
     return {

@@ -12,12 +12,13 @@ import type {
   DeploymentTargetActionsResponse,
   ProjectDeploymentHistoryItem,
 } from '@/shared/api/contracts';
+import { deploymentHistoryItem } from '../../../../../support/deployment-history-item';
 
 function deploy(
   id: string,
   overrides: Partial<ProjectDeploymentHistoryItem> = {},
 ): ProjectDeploymentHistoryItem {
-  return {
+  return deploymentHistoryItem({
     id,
     targetId: 't-1',
     targetName: 'orders-api',
@@ -35,7 +36,7 @@ function deploy(
     dashboardUrl: '',
     consoleUrl: '',
     ...overrides,
-  };
+  });
 }
 
 const render = { id: 't-1', provider: 'render', providerMetadata: {} } as Pick<

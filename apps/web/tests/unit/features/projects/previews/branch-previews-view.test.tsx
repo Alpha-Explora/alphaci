@@ -6,11 +6,12 @@ import type {
   ProjectBranchPreview,
   ProjectPreviewsResponse,
 } from '@/shared/api/contracts';
+import { branchPreview } from '../../../../support/branch-preview';
 
 function preview(
   overrides: Partial<ProjectBranchPreview> = {},
 ): ProjectBranchPreview {
-  return {
+  return branchPreview({
     branch: 'feat/checkout',
     isProduction: false,
     deploymentId: 'dpl_1',
@@ -28,7 +29,7 @@ function preview(
     embeddable: true,
     embedBlockedReason: null,
     ...overrides,
-  };
+  });
 }
 
 function response(
