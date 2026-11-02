@@ -29,7 +29,7 @@ Install and run the standard verification loop:
 npm ci
 npm run typecheck
 npm run lint
-npm test -- --ci --runInBand
+npm test -- --ci
 npm run build
 npm run check:documentation
 ```
