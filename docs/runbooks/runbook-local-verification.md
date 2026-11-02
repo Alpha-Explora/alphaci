@@ -63,7 +63,7 @@ The web profile and documentation checks consume the `@alphaci/capability-catalo
 ```bash
 npm run typecheck
 npm run lint
-npm test -- --ci --runInBand
+npm test -- --ci
 npm run build
 npm run boundaries
 npm run check:application-boundaries

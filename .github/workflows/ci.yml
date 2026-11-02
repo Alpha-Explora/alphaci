@@ -141,9 +141,11 @@ jobs:
             tasks: lint format:check
           - name: typecheck and build
             tasks: typecheck build
+          # Jest's default workers (one per core but one): the suite shares no
+          # ports, files or database, and in band took twice as long.
           - name: tests
             tasks: test
-            args: -- --ci --runInBand
+            args: -- --ci
           - name: architecture and documentation
             tasks: >-
               boundaries check:application-boundaries check:architecture-metrics

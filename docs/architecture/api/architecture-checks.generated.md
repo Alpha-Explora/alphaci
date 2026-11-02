@@ -44,7 +44,7 @@ Dead in-process adapters measured by the source report: **0**.
 |---|---|---|
 | Type safety | `npm run typecheck` | TypeScript compiler |
 | Build | `npm run build` | TypeScript build configuration |
-| Lint and tests | `npm run lint` and `npm test -- --ci --runInBand` | ESLint and Jest |
+| Lint and tests | `npm run lint` and `npm test -- --ci` | ESLint and Jest |
 | Dependency boundaries | `npm run boundaries` | dependency-cruiser |
 | Application boundaries | `npm run check:application-boundaries` | cross-context contract/application rule checker |
 | Provider encapsulation | `npm run check:provider-encapsulation` | provider ownership checker |
