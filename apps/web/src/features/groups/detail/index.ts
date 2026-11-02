@@ -1,5 +1,5 @@
-export { GroupDetailView } from "./views/group-detail-view";
+export { GroupDetailView } from './views/group-detail-view';
 export {
   useGroupDetailViewModel,
   type GroupDetailViewModel,
-} from "./view-models/use-group-detail-view-model";
+} from './view-models/use-group-detail-view-model';

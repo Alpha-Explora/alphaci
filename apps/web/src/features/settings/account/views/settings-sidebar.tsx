@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
-import type { useAuthSession } from "@/features/auth/session";
+import type { useAuthSession } from '@/features/auth/session';
 
 import {
   SECTION_LABELS,
   type SettingsSection as SectionId,
-} from "../../model/settings-types";
+} from '../../model/settings-types';
 import {
   AlertTriangleIcon,
   AppearanceIcon,
   BookOpenIcon,
   GithubIcon,
   UserIcon,
-} from "./settings-chrome";
-import { settingsSidebarStyle } from "./settings-layout";
-import { SettingsUserAvatar } from "./settings-user-avatar";
+} from './settings-chrome';
+import { settingsSidebarStyle } from './settings-layout';
+import { SettingsUserAvatar } from './settings-user-avatar';
 
-type SettingsSession = ReturnType<typeof useAuthSession>["session"];
+type SettingsSession = ReturnType<typeof useAuthSession>['session'];
 
 function TeamIcon({ size = 14 }: Readonly<{ size?: number }>) {
   return (
@@ -42,18 +42,18 @@ function TeamIcon({ size = 14 }: Readonly<{ size?: number }>) {
 }
 
 function navButtonStateClass(isActive: boolean, isDanger: boolean): string {
-  if (isActive && isDanger) return "settings-nav-btn--active-danger";
-  if (isActive) return "settings-nav-btn--active";
-  if (isDanger) return "settings-nav-btn--inactive-danger";
-  return "settings-nav-btn--inactive";
+  if (isActive && isDanger) return 'settings-nav-btn--active-danger';
+  if (isActive) return 'settings-nav-btn--active';
+  if (isDanger) return 'settings-nav-btn--inactive-danger';
+  return 'settings-nav-btn--inactive';
 }
 
 function sectionIcon(sec: SectionId): ReactNode {
-  if (sec === "account") return <UserIcon size={14} />;
-  if (sec === "team") return <TeamIcon size={14} />;
-  if (sec === "appearance") return <AppearanceIcon size={14} />;
-  if (sec === "connections") return <GithubIcon size={14} />;
-  if (sec === "guide") return <BookOpenIcon size={14} />;
+  if (sec === 'account') return <UserIcon size={14} />;
+  if (sec === 'team') return <TeamIcon size={14} />;
+  if (sec === 'appearance') return <AppearanceIcon size={14} />;
+  if (sec === 'connections') return <GithubIcon size={14} />;
+  if (sec === 'guide') return <BookOpenIcon size={14} />;
   return <AlertTriangleIcon size={14} />;
 }
 
@@ -66,13 +66,13 @@ function SettingsNavButton({
   isActive: boolean;
   onSelect: (sec: SectionId) => void;
 }>) {
-  const isDanger = sec === "danger";
+  const isDanger = sec === 'danger';
   return (
     <button
       key={sec}
       type="button"
       onClick={() => onSelect(sec)}
-      aria-current={isActive ? "true" : undefined}
+      aria-current={isActive ? 'true' : undefined}
       className={`settings-nav-btn ${navButtonStateClass(isActive, isDanger)}`}
     >
       {sectionIcon(sec)}
@@ -104,20 +104,20 @@ export function SettingsSidebar({
       <div
         className="settings-sidebar-profile"
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.75rem",
-          paddingBottom: "0.85rem",
-          marginBottom: "0.5rem",
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          paddingBottom: '0.85rem',
+          marginBottom: '0.5rem',
         }}
       >
         <div
           style={{
-            position: "relative",
-            borderRadius: "50%",
-            padding: "1.5px",
+            position: 'relative',
+            borderRadius: '50%',
+            padding: '1.5px',
             background:
-              "linear-gradient(135deg, var(--brand), var(--accent-violet))",
+              'linear-gradient(135deg, var(--brand), var(--accent-violet))',
             flexShrink: 0,
           }}
         >
@@ -127,14 +127,14 @@ export function SettingsSidebar({
           <p
             style={{
               margin: 0,
-              fontSize: "0.82rem",
+              fontSize: '0.82rem',
               fontWeight: 700,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
-            {session?.user.name ?? session?.user.login ?? "Account"}
+            {session?.user.name ?? session?.user.login ?? 'Account'}
           </p>
         </div>
       </div>

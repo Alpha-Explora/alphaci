@@ -97,7 +97,7 @@
 }
 
 .qa-returned__meta > * + *::before {
-  content: "·";
+  content: '·';
   margin: 0 0.45rem;
   color: var(--border-tile);
 }
@@ -214,7 +214,7 @@
    "Returned by QA" keeps the warning edge (it needs you); a card holding only
    your checks on uat carries the brand edge instead — work to record, not a
    problem to fix. Sections are separated by a hairline, not boxed again. */
-.qa-mine[data-tone="checks"] {
+.qa-mine[data-tone='checks'] {
   border-left-color: var(--brand);
 }
 

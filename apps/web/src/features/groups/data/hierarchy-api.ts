@@ -37,22 +37,24 @@ import type {
   UpdateRepositoryRequest,
   UpdateSystemRequest,
   ConfigurationType,
-} from "@/features/groups/data/hierarchy-contracts";
-import { request } from "@/shared/api/request";
+} from '@/features/groups/data/hierarchy-contracts';
+import { request } from '@/shared/api/request';
 
 const enc = encodeURIComponent;
 
 /* ── Groups and members (plan §2.4) ────────────────────────────────────────── */
 
-export function createGroup(payload: CreateGroupRequest): Promise<GroupSummary> {
-  return request<GroupSummary>("/groups", {
-    method: "POST",
+export function createGroup(
+  payload: CreateGroupRequest,
+): Promise<GroupSummary> {
+  return request<GroupSummary>('/groups', {
+    method: 'POST',
     body: JSON.stringify(payload),
   });
 }
 
 export function getGroups(): Promise<GroupSummary[]> {
-  return request<GroupSummary[]>("/groups");
+  return request<GroupSummary[]>('/groups');
 }
 
 export function getGroup(groupId: string): Promise<GroupSummary> {
@@ -64,14 +66,14 @@ export function updateGroup(
   payload: UpdateGroupRequest,
 ): Promise<GroupSummary> {
   return request<GroupSummary>(`/groups/${enc(groupId)}`, {
-    method: "PATCH",
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 }
 
 export function archiveGroup(groupId: string): Promise<GroupSummary> {
   return request<GroupSummary>(`/groups/${enc(groupId)}/archive`, {
-    method: "POST",
+    method: 'POST',
   });
 }
 
@@ -79,13 +81,13 @@ export function deleteGroup(
   groupId: string,
 ): Promise<{ id: string; deleted: true }> {
   return request<{ id: string; deleted: true }>(`/groups/${enc(groupId)}`, {
-    method: "DELETE",
+    method: 'DELETE',
   });
 }
 
 export function reopenGroup(groupId: string): Promise<GroupSummary> {
   return request<GroupSummary>(`/groups/${enc(groupId)}/reopen`, {
-    method: "POST",
+    method: 'POST',
   });
 }
 
@@ -94,7 +96,7 @@ export function transferGroup(
   payload: TransferGroupRequest,
 ): Promise<GroupSummary> {
   return request<GroupSummary>(`/groups/${enc(groupId)}/transfer`, {
-    method: "POST",
+    method: 'POST',
     body: JSON.stringify(payload),
   });
 }
@@ -122,7 +124,7 @@ export function addGroupMember(
   payload: AddGroupMemberRequest,
 ): Promise<GroupMember> {
   return request<GroupMember>(`/groups/${enc(groupId)}/members`, {
-    method: "POST",
+    method: 'POST',
     body: JSON.stringify(payload),
   });
 }
@@ -132,7 +134,7 @@ export function removeGroupMember(
 ): Promise<{ id: string; removed: true }> {
   return request<{ id: string; removed: true }>(
     `/groups/${enc(groupId)}/members/${enc(memberId)}`,
-    { method: "DELETE" },
+    { method: 'DELETE' },
   );
 }
 
@@ -142,13 +144,13 @@ export function getGroupActivity(
 ): Promise<GroupActivityResponse> {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
-    if (value !== undefined && value !== null && value !== "") {
+    if (value !== undefined && value !== null && value !== '') {
       params.set(key, String(value));
     }
   }
   const qs = params.toString();
   return request<GroupActivityResponse>(
-    `/groups/${enc(groupId)}/activity${qs ? `?${qs}` : ""}`,
+    `/groups/${enc(groupId)}/activity${qs ? `?${qs}` : ''}`,
   );
 }
 
@@ -159,7 +161,7 @@ export function createSystem(
   payload: CreateSystemRequest,
 ): Promise<HierarchySystem> {
   return request<HierarchySystem>(`/groups/${enc(groupId)}/systems`, {
-    method: "POST",
+    method: 'POST',
     body: JSON.stringify(payload),
   });
 }
@@ -177,14 +179,14 @@ export function updateSystem(
   payload: UpdateSystemRequest,
 ): Promise<HierarchySystem> {
   return request<HierarchySystem>(`/systems/${enc(systemId)}`, {
-    method: "PATCH",
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 }
 
 export function archiveSystem(systemId: string): Promise<HierarchySystem> {
   return request<HierarchySystem>(`/systems/${enc(systemId)}/archive`, {
-    method: "POST",
+    method: 'POST',
   });
 }
 
@@ -194,7 +196,7 @@ export function createDeliveryProject(
 ): Promise<DeliveryProject> {
   return request<DeliveryProject>(
     `/systems/${enc(systemId)}/delivery-projects`,
-    { method: "POST", body: JSON.stringify(payload) },
+    { method: 'POST', body: JSON.stringify(payload) },
   );
 }
 
@@ -220,7 +222,7 @@ export function updateDeliveryProject(
 ): Promise<DeliveryProject> {
   return request<DeliveryProject>(
     `/delivery-projects/${enc(deliveryProjectId)}`,
-    { method: "PATCH", body: JSON.stringify(payload) },
+    { method: 'PATCH', body: JSON.stringify(payload) },
   );
 }
 
@@ -229,7 +231,7 @@ export function archiveDeliveryProject(
 ): Promise<DeliveryProject> {
   return request<DeliveryProject>(
     `/delivery-projects/${enc(deliveryProjectId)}/archive`,
-    { method: "POST" },
+    { method: 'POST' },
   );
 }
 
@@ -242,7 +244,7 @@ export function createRepository(
 ): Promise<CreatedRepositoryResponse> {
   return request<CreatedRepositoryResponse>(
     `/delivery-projects/${enc(deliveryProjectId)}/repositories`,
-    { method: "POST", body: JSON.stringify(payload) },
+    { method: 'POST', body: JSON.stringify(payload) },
   );
 }
 
@@ -265,7 +267,7 @@ export function updateRepository(
   payload: UpdateRepositoryRequest,
 ): Promise<HierarchyRepository> {
   return request<HierarchyRepository>(`/repositories/${enc(repositoryId)}`, {
-    method: "PATCH",
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 }
@@ -275,7 +277,7 @@ export function archiveRepository(
 ): Promise<HierarchyRepository> {
   return request<HierarchyRepository>(
     `/repositories/${enc(repositoryId)}/archive`,
-    { method: "POST" },
+    { method: 'POST' },
   );
 }
 
@@ -285,7 +287,7 @@ export function createRepositoryAssignment(
 ): Promise<RepositoryAssignment> {
   return request<RepositoryAssignment>(
     `/repositories/${enc(repositoryId)}/assignments`,
-    { method: "POST", body: JSON.stringify(payload) },
+    { method: 'POST', body: JSON.stringify(payload) },
   );
 }
 
@@ -303,7 +305,7 @@ export function removeRepositoryAssignment(
 ): Promise<RepositoryAssignment> {
   return request<RepositoryAssignment>(
     `/repositories/${enc(repositoryId)}/assignments/${enc(assignmentId)}`,
-    { method: "DELETE" },
+    { method: 'DELETE' },
   );
 }
 
@@ -313,7 +315,7 @@ export function reconcileRepositoryAssignment(
 ): Promise<RepositoryAssignment> {
   return request<RepositoryAssignment>(
     `/repositories/${enc(repositoryId)}/assignments/${enc(assignmentId)}/reconcile`,
-    { method: "POST" },
+    { method: 'POST' },
   );
 }
 
@@ -342,7 +344,7 @@ export function putConfigurationVariable(
 ): Promise<ConfigurationWriteResponse> {
   return request<ConfigurationWriteResponse>(
     `/repositories/${enc(repositoryId)}/configuration/variables/${enc(variableName)}`,
-    { method: "PUT", body: JSON.stringify(payload) },
+    { method: 'PUT', body: JSON.stringify(payload) },
   );
 }
 
@@ -353,7 +355,7 @@ export function putConfigurationSecret(
 ): Promise<ConfigurationWriteResponse> {
   return request<ConfigurationWriteResponse>(
     `/repositories/${enc(repositoryId)}/configuration/secrets/${enc(secretName)}`,
-    { method: "PUT", body: JSON.stringify(payload) },
+    { method: 'PUT', body: JSON.stringify(payload) },
   );
 }
 
@@ -364,16 +366,16 @@ export function deleteConfigurationEntry(
 ): Promise<{ deleted: true; name: string }> {
   return request<{ deleted: true; name: string }>(
     `/repositories/${enc(repositoryId)}/configuration/${enc(configurationType)}/${enc(name)}`,
-    { method: "DELETE" },
+    { method: 'DELETE' },
   );
 }
 
 /* ── Developer surface (plan §2.6 /me/*) ───────────────────────────────────── */
 
 export function getMyGroups(): Promise<MyGroupsResponse> {
-  return request<MyGroupsResponse>("/me/groups");
+  return request<MyGroupsResponse>('/me/groups');
 }
 
 export function getMyAssignedRepositories(): Promise<MyAssignedRepositoriesResponse> {
-  return request<MyAssignedRepositoriesResponse>("/me/assigned-repositories");
+  return request<MyAssignedRepositoriesResponse>('/me/assigned-repositories');
 }

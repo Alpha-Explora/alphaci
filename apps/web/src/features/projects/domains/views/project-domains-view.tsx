@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 import {
   domainNextStep,
   domainScopeLabel,
   domainStatus,
-} from "../../model/projects-rules";
-import { HOSTING_LEAD_ONLY_NOTE as DOMAINS_LEAD_ONLY_NOTE } from "../../detail/model/project-detail-tab-rules";
-import type { CustomDomain } from "../../model/projects-types";
+} from '../../model/projects-rules';
+import { HOSTING_LEAD_ONLY_NOTE as DOMAINS_LEAD_ONLY_NOTE } from '../../detail/model/project-detail-tab-rules';
+import type { CustomDomain } from '../../model/projects-types';
 
 export interface ProjectDomainsViewProps {
   domains: CustomDomain[];
-  status: "loading" | "ready" | "error";
+  status: 'loading' | 'ready' | 'error';
   error: string | null;
   busyDomainId: string | null;
   isAdding: boolean;
@@ -135,50 +135,50 @@ function DomainRow({
       ) : null}
 
       {canManage ? (
-      <footer className="project-domain__actions">
-        <button
-          className="ghost-button target-action-btn"
-          disabled={busy}
-          type="button"
-          onClick={() => onVerify(domain.id)}
-        >
-          {busy ? "Checking…" : "Check again"}
-        </button>
-        {confirmingRemove ? (
-          <>
-            <span className="project-domain__confirm">
-              Remove {domain.hostname}?
-            </span>
-            <button
-              className="ghost-button target-action-btn"
-              disabled={busy}
-              type="button"
-              onClick={() => {
-                setConfirmingRemove(false);
-                onRemove(domain.id);
-              }}
-            >
-              Yes, remove
-            </button>
-            <button
-              className="ghost-button target-action-btn"
-              type="button"
-              onClick={() => setConfirmingRemove(false)}
-            >
-              Cancel
-            </button>
-          </>
-        ) : (
+        <footer className="project-domain__actions">
           <button
             className="ghost-button target-action-btn"
             disabled={busy}
             type="button"
-            onClick={() => setConfirmingRemove(true)}
+            onClick={() => onVerify(domain.id)}
           >
-            Remove
+            {busy ? 'Checking…' : 'Check again'}
           </button>
-        )}
-      </footer>
+          {confirmingRemove ? (
+            <>
+              <span className="project-domain__confirm">
+                Remove {domain.hostname}?
+              </span>
+              <button
+                className="ghost-button target-action-btn"
+                disabled={busy}
+                type="button"
+                onClick={() => {
+                  setConfirmingRemove(false);
+                  onRemove(domain.id);
+                }}
+              >
+                Yes, remove
+              </button>
+              <button
+                className="ghost-button target-action-btn"
+                type="button"
+                onClick={() => setConfirmingRemove(false)}
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              className="ghost-button target-action-btn"
+              disabled={busy}
+              type="button"
+              onClick={() => setConfirmingRemove(true)}
+            >
+              Remove
+            </button>
+          )}
+        </footer>
       ) : null}
     </article>
   );
@@ -198,7 +198,7 @@ export function ProjectDomainsView({
   collapseAddForm = false,
   showReadOnlyNote = true,
 }: Readonly<ProjectDomainsViewProps>) {
-  if (status === "loading") {
+  if (status === 'loading') {
     return <p className="env-empty-state">Loading domains…</p>;
   }
 
@@ -247,18 +247,20 @@ function DomainAddArea({
   canManage: boolean;
   collapsible: boolean;
   isAdding: boolean;
-  onAdd: ProjectDomainsViewProps["onAdd"];
+  onAdd: ProjectDomainsViewProps['onAdd'];
   showReadOnlyNote: boolean;
   targets: Array<{ id: string; label: string }>;
 }>) {
-  const [hostname, setHostname] = useState("");
-  const [gitBranch, setGitBranch] = useState("");
-  const [targetId, setTargetId] = useState("");
+  const [hostname, setHostname] = useState('');
+  const [gitBranch, setGitBranch] = useState('');
+  const [targetId, setTargetId] = useState('');
   const [open, setOpen] = useState(false);
-  const activeTargetId = targetId || targets[0]?.id || "";
+  const activeTargetId = targetId || targets[0]?.id || '';
 
   if (!canManage) {
-    return showReadOnlyNote ? <p className="env-empty-state">{DOMAINS_LEAD_ONLY_NOTE}</p> : null;
+    return showReadOnlyNote ? (
+      <p className="env-empty-state">{DOMAINS_LEAD_ONLY_NOTE}</p>
+    ) : null;
   }
   if (collapsible && !open) {
     return (
@@ -309,7 +311,7 @@ function DomainAddForm({
   onHostname: (value: string) => void;
   onGitBranch: (value: string) => void;
   onTargetId: (value: string) => void;
-  onAdd: ProjectDomainsViewProps["onAdd"];
+  onAdd: ProjectDomainsViewProps['onAdd'];
   onAdded: () => void;
   /** Set when the form can be closed again (the collapsible layout). */
   onCancel?: () => void;
@@ -317,8 +319,7 @@ function DomainAddForm({
   if (targets.length === 0) {
     return (
       <p className="env-empty-state">
-        Add a hosting service first — a domain attaches to a deployment
-        target.
+        Add a hosting service first — a domain attaches to a deployment target.
       </p>
     );
   }
@@ -329,8 +330,8 @@ function DomainAddForm({
         event.preventDefault();
         void onAdd(activeTargetId, hostname, gitBranch).then((added) => {
           if (added) {
-            onHostname("");
-            onGitBranch("");
+            onHostname('');
+            onGitBranch('');
             onAdded();
           }
         });
@@ -372,7 +373,7 @@ function DomainAddForm({
         disabled={isAdding || !hostname.trim()}
         type="submit"
       >
-        {isAdding ? "Adding…" : "Add domain"}
+        {isAdding ? 'Adding…' : 'Add domain'}
       </button>
       {onCancel ? (
         <button className="ghost-button" type="button" onClick={onCancel}>

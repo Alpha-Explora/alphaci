@@ -10,7 +10,7 @@
  * source of truth for what actually gets created. Keep the two in step; if they
  * disagree, the backend is right.
  */
-export const PIPELINE_BRANCHES = ["dev", "uat", "main"] as const;
+export const PIPELINE_BRANCHES = ['dev', 'uat', 'main'] as const;
 
 export type PipelineBranch = (typeof PIPELINE_BRANCHES)[number];
 
@@ -33,7 +33,7 @@ export const PROMOTION_BRANCHES = PIPELINE_BRANCHES.slice(1);
  * QA Studio offers this environment and no other, so it must never be written
  * out as a literal in a view.
  */
-export const QA_BRANCH: PipelineBranch = "uat";
+export const QA_BRANCH: PipelineBranch = 'uat';
 
 /**
  * The production tier: the last rung, reached only through the promotion
@@ -42,10 +42,10 @@ export const QA_BRANCH: PipelineBranch = "uat";
  * rule asking "is this base the production branch" never spells out the
  * literal itself.
  */
-export const PRODUCTION_BRANCH: PipelineBranch = "main";
+export const PRODUCTION_BRANCH: PipelineBranch = 'main';
 
 /** The flow as a label, e.g. "dev > uat > main". */
-export const PROMOTION_FLOW_LABEL = PIPELINE_BRANCHES.join(" > ");
+export const PROMOTION_FLOW_LABEL = PIPELINE_BRANCHES.join(' > ');
 
 /**
  * Where a branch sits in the promotion flow, for ordering.

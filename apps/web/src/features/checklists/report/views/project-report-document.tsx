@@ -1,23 +1,47 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
-import { repositoryHeadLabel } from "../../model/project-report-rules";
-import type { QaProjectReport, QaProjectReportRepository } from "../../model/project-report-types";
-import { actorLabel, formatReportDate, reportVerdictTone, runStatusLabel } from "../../model/qa-report-rules";
-import { ExecutiveSummary, Meta, ReportSection, StateNote, VerdictStamp } from "./qa-report-document";
-import { ProjectAutomatedResults, ProjectChecklistTable, type RenderItemEvidence } from "./project-report-sections";
-import { DefectLog, SignoffRecord } from "./qa-report-sections";
+import { repositoryHeadLabel } from '../../model/project-report-rules';
+import type {
+  QaProjectReport,
+  QaProjectReportRepository,
+} from '../../model/project-report-types';
+import {
+  actorLabel,
+  formatReportDate,
+  reportVerdictTone,
+  runStatusLabel,
+} from '../../model/qa-report-rules';
+import {
+  ExecutiveSummary,
+  Meta,
+  ReportSection,
+  StateNote,
+  VerdictStamp,
+} from './qa-report-document';
+import {
+  ProjectAutomatedResults,
+  ProjectChecklistTable,
+  type RenderItemEvidence,
+} from './project-report-sections';
+import { DefectLog, SignoffRecord } from './qa-report-sections';
 
 function Masthead({ report }: Readonly<{ report: QaProjectReport }>) {
   return (
     <header className="qa-report-masthead">
       <div className="qa-report-masthead__title">
-        <p className="qa-report-masthead__eyebrow">ALPHACI · Quality assurance</p>
+        <p className="qa-report-masthead__eyebrow">
+          ALPHACI · Quality assurance
+        </p>
         <h1>QA Report</h1>
         <p className="qa-report-masthead__project">
-          <span className="qa-report-masthead__name">{report.project.name}</span>
-          <span className="qa-report-mono">{report.repositories.length} repositories</span>
+          <span className="qa-report-masthead__name">
+            {report.project.name}
+          </span>
+          <span className="qa-report-mono">
+            {report.repositories.length} repositories
+          </span>
         </p>
       </div>
       <VerdictStamp report={report} />
@@ -31,7 +55,10 @@ function MetaGrid({ report }: Readonly<{ report: QaProjectReport }>) {
     <dl className="qa-report-meta">
       <Meta label="Repositories">
         {report.repositories.map((repository) => (
-          <span key={repository.projectId} className="qa-report-mono qa-report-meta__aside">
+          <span
+            key={repository.projectId}
+            className="qa-report-mono qa-report-meta__aside"
+          >
             {repositoryHeadLabel(repository)}
           </span>
         ))}
@@ -41,16 +68,24 @@ function MetaGrid({ report }: Readonly<{ report: QaProjectReport }>) {
       </Meta>
       <Meta label="Run status">{runStatusLabel(report.run.status)}</Meta>
       <Meta label="Started by">
-        {report.run.createdBy ? actorLabel(report.run.createdBy) : <span className="qa-report-muted">Unknown</span>}
+        {report.run.createdBy ? (
+          actorLabel(report.run.createdBy)
+        ) : (
+          <span className="qa-report-muted">Unknown</span>
+        )}
         {report.run.createdAt ? (
-          <span className="qa-report-meta__aside">{formatReportDate(report.run.createdAt)}</span>
+          <span className="qa-report-meta__aside">
+            {formatReportDate(report.run.createdAt)}
+          </span>
         ) : null}
       </Meta>
       <Meta label="Signed off by">
         {signoff ? (
           <>
             {actorLabel(signoff.signedBy)}
-            <span className="qa-report-meta__aside">{formatReportDate(signoff.signedAt)}</span>
+            <span className="qa-report-meta__aside">
+              {formatReportDate(signoff.signedAt)}
+            </span>
           </>
         ) : (
           <span className="qa-report-muted">Not signed off</span>
@@ -66,7 +101,9 @@ function MetaGrid({ report }: Readonly<{ report: QaProjectReport }>) {
  * the screenshots (their storage, their images), so the report asks it rather
  * than reaching into it.
  */
-export type RenderVisualEvidence = (repository: QaProjectReportRepository) => ReactNode;
+export type RenderVisualEvidence = (
+  repository: QaProjectReportRepository,
+) => ReactNode;
 
 /** An appendix: the screenshots are the branch's latest run, so they come after the signed record. */
 function VisualEvidenceSection({
@@ -108,9 +145,16 @@ export function ProjectQaReportDocument({
       <MetaGrid report={report} />
       <ExecutiveSummary report={report} />
       <ReportSection id="qa-report-checklist" number="02" title="Checklist">
-        <ProjectChecklistTable items={report.run.items} renderItemEvidence={renderItemEvidence} />
+        <ProjectChecklistTable
+          items={report.run.items}
+          renderItemEvidence={renderItemEvidence}
+        />
       </ReportSection>
-      <ReportSection id="qa-report-automated" number="03" title="Automated results">
+      <ReportSection
+        id="qa-report-automated"
+        number="03"
+        title="Automated results"
+      >
         <ProjectAutomatedResults report={report} />
       </ReportSection>
       <ReportSection id="qa-report-defects" number="04" title="Defect log">
@@ -124,10 +168,12 @@ export function ProjectQaReportDocument({
       ) : null}
       <footer className="qa-report-footer">
         <span>
-          Run <span className="qa-report-mono">{report.run.id}</span> · {report.schemaVersion}
+          Run <span className="qa-report-mono">{report.run.id}</span> ·{' '}
+          {report.schemaVersion}
         </span>
         <span>
-          Generated by ALPHACI · {formatReportDate(report.generatedAt)} · {report.frozen ? "Frozen at sign-off" : "Live"}
+          Generated by ALPHACI · {formatReportDate(report.generatedAt)} ·{' '}
+          {report.frozen ? 'Frozen at sign-off' : 'Live'}
         </span>
       </footer>
     </article>

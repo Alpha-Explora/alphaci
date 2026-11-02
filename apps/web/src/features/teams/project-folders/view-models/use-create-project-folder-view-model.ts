@@ -1,11 +1,14 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { projectFoldersRepository } from "../data/project-folders-repository";
-import { createErrorMessage, projectNameError } from "../model/project-folder-rules";
+import { projectFoldersRepository } from '../data/project-folders-repository';
+import {
+  createErrorMessage,
+  projectNameError,
+} from '../model/project-folder-rules';
 
-export type CreateProjectFolderStatus = "idle" | "saving" | "error";
+export type CreateProjectFolderStatus = 'idle' | 'saving' | 'error';
 
 export interface CreateProjectFolderViewModel {
   status: CreateProjectFolderStatus;
@@ -33,7 +36,12 @@ export function useCreateProjectFolderViewModel(options: {
    */
   canCreate?: boolean;
 }): CreateProjectFolderViewModel {
-  const { groupId, onCreated, openOnArrival = false, canCreate = true } = options;
+  const {
+    groupId,
+    onCreated,
+    openOnArrival = false,
+    canCreate = true,
+  } = options;
   const [open, setOpen] = useState(false);
   const [arrivalPending, setArrivalPending] = useState(openOnArrival);
   // Applied while rendering (state derived from a changing input), once.
@@ -41,20 +49,20 @@ export function useCreateProjectFolderViewModel(options: {
     setArrivalPending(false);
     setOpen(true);
   }
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<CreateProjectFolderStatus>("idle");
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState<CreateProjectFolderStatus>('idle');
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
-    if (status === "saving") return;
+    if (status === 'saving') return;
     const invalid = projectNameError(name);
     if (invalid) {
-      setStatus("error");
+      setStatus('error');
       setError(invalid);
       return;
     }
-    setStatus("saving");
+    setStatus('saving');
     setError(null);
     const trimmed = name.trim();
     const trimmedDescription = description.trim();
@@ -63,11 +71,11 @@ export function useCreateProjectFolderViewModel(options: {
         name: trimmed,
         ...(trimmedDescription ? { description: trimmedDescription } : {}),
       });
-      setStatus("idle");
+      setStatus('idle');
       setOpen(false);
       onCreated(trimmed);
     } catch (cause) {
-      setStatus("error");
+      setStatus('error');
       setError(createErrorMessage(cause));
     }
   }
@@ -80,14 +88,14 @@ export function useCreateProjectFolderViewModel(options: {
     description,
     canSubmit: projectNameError(name) === null,
     openDialog: () => {
-      setName("");
-      setDescription("");
+      setName('');
+      setDescription('');
       setError(null);
-      setStatus("idle");
+      setStatus('idle');
       setOpen(true);
     },
     closeDialog: () => {
-      if (status !== "saving") setOpen(false);
+      if (status !== 'saving') setOpen(false);
     },
     setName,
     setDescription,

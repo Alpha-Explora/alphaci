@@ -249,7 +249,7 @@
 }
 
 .qa-toggle__track::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 50%;
   left: 0.15rem;
@@ -357,7 +357,7 @@
 }
 
 .qa-detail__meta > span + span::before {
-  content: "·";
+  content: '·';
   margin: 0 0.5rem;
   color: var(--border-tile);
 }
@@ -498,7 +498,7 @@
 }
 
 .qa-editor__dirty::before {
-  content: "";
+  content: '';
   width: 0.4rem;
   height: 0.4rem;
   border-radius: 50%;
@@ -645,7 +645,10 @@
 
 .qa-edit-item__grid {
   display: grid;
-  grid-template-columns: minmax(8.5rem, 11rem) minmax(8.5rem, 11rem) minmax(12rem, 1fr);
+  grid-template-columns: minmax(8.5rem, 11rem) minmax(8.5rem, 11rem) minmax(
+      12rem,
+      1fr
+    );
   gap: 0.6rem;
   align-items: end;
 }

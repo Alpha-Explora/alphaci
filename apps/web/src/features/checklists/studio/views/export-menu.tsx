@@ -1,11 +1,14 @@
-"use client";
+'use client';
 
-import "./export-menu.css";
+import './export-menu.css';
 
-import { useId, useRef, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from 'react';
 
-import { useMenuButton } from "../view-models/use-menu-button";
-import type { QaExportStatus, QaExportViewModel } from "../view-models/use-qa-export-view-model";
+import { useMenuButton } from '../view-models/use-menu-button';
+import type {
+  QaExportStatus,
+  QaExportViewModel,
+} from '../view-models/use-qa-export-view-model';
 import {
   BracesIcon,
   CheckIcon,
@@ -14,12 +17,12 @@ import {
   DocumentIcon,
   ExportIcon,
   SheetIcon,
-} from "./studio-icons";
+} from './studio-icons';
 
 const TRIGGER_LABELS: Partial<Record<QaExportStatus, string>> = {
-  copying: "Copying…",
-  copied: "Copied",
-  downloading: "Preparing…",
+  copying: 'Copying…',
+  copied: 'Copied',
+  downloading: 'Preparing…',
 };
 
 function MenuItemBody({
@@ -46,10 +49,13 @@ function MenuItemBody({
  * click is never popup-blocked — and the two fetch-based exports report back
  * through the status line below the run header.
  */
-const DEFAULT_LABEL = "Export report";
+const DEFAULT_LABEL = 'Export report';
 
 /** What the trigger says: the action in progress, else the label it rests on. */
-function triggerLabel(status: QaExportStatus, resting: string | undefined): string {
+function triggerLabel(
+  status: QaExportStatus,
+  resting: string | undefined,
+): string {
   return TRIGGER_LABELS[status] ?? resting ?? DEFAULT_LABEL;
 }
 
@@ -78,22 +84,38 @@ function DataExports({
   vm,
   busy,
   run,
-}: Readonly<{ vm: QaExportViewModel; busy: boolean; run: (action: () => Promise<void>) => void }>) {
+}: Readonly<{
+  vm: QaExportViewModel;
+  busy: boolean;
+  run: (action: () => Promise<void>) => void;
+}>) {
   const downloadExcel = vm.downloadExcel;
   if (downloadExcel) {
     return (
       <ActionItem busy={busy} onRun={() => run(downloadExcel)}>
-        <MenuItemBody icon={<SheetIcon />} title="Download Excel" hint="The full report as a workbook, one sheet per section" />
+        <MenuItemBody
+          icon={<SheetIcon />}
+          title="Download Excel"
+          hint="The full report as a workbook, one sheet per section"
+        />
       </ActionItem>
     );
   }
   return (
     <>
       <ActionItem busy={busy} onRun={() => run(vm.copyMarkdown)}>
-        <MenuItemBody icon={<CopyIcon />} title="Copy PR Markdown" hint="GitHub-flavoured, to paste into a pull request" />
+        <MenuItemBody
+          icon={<CopyIcon />}
+          title="Copy PR Markdown"
+          hint="GitHub-flavoured, to paste into a pull request"
+        />
       </ActionItem>
       <ActionItem busy={busy} onRun={() => run(vm.downloadJson)}>
-        <MenuItemBody icon={<BracesIcon />} title="Download JSON" hint="The full report as JSON" />
+        <MenuItemBody
+          icon={<BracesIcon />}
+          title="Download JSON"
+          hint="The full report as JSON"
+        />
       </ActionItem>
     </>
   );
@@ -102,12 +124,15 @@ function DataExports({
 export function ExportMenu({
   vm,
   label,
-}: Readonly<{ vm: QaExportViewModel; /** What the trigger says at rest. */ label?: string }>) {
+}: Readonly<{
+  vm: QaExportViewModel;
+  /** What the trigger says at rest. */ label?: string;
+}>) {
   const menuId = useId();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menu = useMenuButton({ triggerRef, menuRef });
-  const busy = vm.status === "copying" || vm.status === "downloading";
+  const busy = vm.status === 'copying' || vm.status === 'downloading';
   const triggerText = triggerLabel(vm.status, label);
 
   function run(action: () => Promise<void>) {
@@ -120,7 +145,7 @@ export function ExportMenu({
       <button
         ref={triggerRef}
         type="button"
-        className={`qa-export__trigger${vm.status === "copied" ? " qa-export__trigger--done" : ""}`}
+        className={`qa-export__trigger${vm.status === 'copied' ? ' qa-export__trigger--done' : ''}`}
         aria-haspopup="menu"
         aria-expanded={menu.open}
         aria-controls={menu.open ? menuId : undefined}
@@ -128,7 +153,7 @@ export function ExportMenu({
         onClick={menu.toggle}
         onKeyDown={menu.onTriggerKeyDown}
       >
-        {vm.status === "copied" ? <CheckIcon /> : <ExportIcon />}
+        {vm.status === 'copied' ? <CheckIcon /> : <ExportIcon />}
         <span>{triggerText}</span>
         <ChevronDownIcon />
       </button>
@@ -150,7 +175,11 @@ export function ExportMenu({
             rel="noopener noreferrer"
             onClick={() => menu.close(false)}
           >
-            <MenuItemBody icon={<DocumentIcon />} title="Download PDF" hint="Opens the print view in a new tab" />
+            <MenuItemBody
+              icon={<DocumentIcon />}
+              title="Download PDF"
+              hint="Opens the print view in a new tab"
+            />
           </a>
           <DataExports vm={vm} busy={busy} run={run} />
         </div>
@@ -161,16 +190,20 @@ export function ExportMenu({
 
 /** What the last export did. Success is announced; a failure stays until dismissed. */
 export function ExportStatus({ vm }: Readonly<{ vm: QaExportViewModel }>) {
-  const failed = vm.status === "failed";
+  const failed = vm.status === 'failed';
   return (
     <>
       <p className="sr-only" role="status" aria-live="polite">
-        {vm.status === "copied" ? vm.message : ""}
+        {vm.status === 'copied' ? vm.message : ''}
       </p>
       {failed && vm.message ? (
         <div className="qa-export__error" role="alert">
           <p>{vm.message}</p>
-          <button type="button" className="qa-export__dismiss" onClick={vm.dismiss}>
+          <button
+            type="button"
+            className="qa-export__dismiss"
+            onClick={vm.dismiss}
+          >
             Dismiss
           </button>
         </div>

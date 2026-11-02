@@ -1,29 +1,32 @@
-"use client";
+'use client';
 
-import "./qa-report.css";
+import './qa-report.css';
 
-import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useState, type ReactNode } from "react";
+import Link from 'next/link';
+import { useParams, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useState, type ReactNode } from 'react';
 
-import { ThemeToggle } from "@/shared/layout/theme-toggle";
+import { ThemeToggle } from '@/shared/layout/theme-toggle';
 
 import {
   useProjectReportViewModel,
   type ProjectReportViewModel,
-} from "../view-models/use-project-report-view-model";
-import type { QaProjectReportRepository } from "../../model/project-report-types";
-import { useAutoPrint } from "../view-models/use-qa-report-view-model";
+} from '../view-models/use-project-report-view-model';
+import type { QaProjectReportRepository } from '../../model/project-report-types';
+import { useAutoPrint } from '../view-models/use-qa-report-view-model';
 import {
   useReportEvidenceViewModel,
   type ReportEvidenceViewModel,
-} from "../view-models/use-report-evidence-view-model";
-import { ProjectQaReportDocument, type RenderVisualEvidence } from "./project-report-document";
-import { ReportItemEvidence } from "./project-report-evidence";
-import { PrinterIcon } from "./report-icons";
+} from '../view-models/use-report-evidence-view-model';
+import {
+  ProjectQaReportDocument,
+  type RenderVisualEvidence,
+} from './project-report-document';
+import { ReportItemEvidence } from './project-report-evidence';
+import { PrinterIcon } from './report-icons';
 
 function param(value: string | string[] | undefined): string {
-  return (Array.isArray(value) ? value[0] : value) ?? "";
+  return (Array.isArray(value) ? value[0] : value) ?? '';
 }
 
 function Toolbar({ vm }: Readonly<{ vm: ProjectReportViewModel }>) {
@@ -36,7 +39,7 @@ function Toolbar({ vm }: Readonly<{ vm: ProjectReportViewModel }>) {
           <button
             type="button"
             className="qa-report-toolbar__print"
-            disabled={vm.status !== "ready"}
+            disabled={vm.status !== 'ready'}
             onClick={vm.print}
           >
             <PrinterIcon />
@@ -50,7 +53,11 @@ function Toolbar({ vm }: Readonly<{ vm: ProjectReportViewModel }>) {
 
 function ReportSkeleton() {
   return (
-    <div className="qa-report-sheet qa-report-sheet--skeleton" aria-busy="true" aria-label="Loading the QA report">
+    <div
+      className="qa-report-sheet qa-report-sheet--skeleton"
+      aria-busy="true"
+      aria-label="Loading the QA report"
+    >
       <span className="qa-report-skeleton qa-report-skeleton--title" />
       <span className="qa-report-skeleton qa-report-skeleton--meta" />
       <span className="qa-report-skeleton qa-report-skeleton--block" />
@@ -71,7 +78,11 @@ function ReportError({ vm }: Readonly<{ vm: ProjectReportViewModel }>) {
           Sign in
         </Link>
       ) : (
-        <button type="button" className="qa-report-toolbar__print" onClick={vm.reload}>
+        <button
+          type="button"
+          className="qa-report-toolbar__print"
+          onClick={vm.reload}
+        >
           Try again
         </button>
       )}
@@ -88,13 +99,15 @@ function ReportBody({
   evidence: ReportEvidenceViewModel;
   renderVisualEvidence?: RenderVisualEvidence;
 }>) {
-  if (vm.status === "loading") return <ReportSkeleton />;
-  if (vm.status === "error" || !vm.report) return <ReportError vm={vm} />;
+  if (vm.status === 'loading') return <ReportSkeleton />;
+  if (vm.status === 'error' || !vm.report) return <ReportError vm={vm} />;
   return (
     <ProjectQaReportDocument
       report={vm.report}
       renderVisualEvidence={renderVisualEvidence}
-      renderItemEvidence={(item) => <ReportItemEvidence item={item} vm={evidence} />}
+      renderItemEvidence={(item) => (
+        <ReportItemEvidence item={item} vm={evidence} />
+      )}
     />
   );
 }
@@ -105,33 +118,59 @@ export type RenderRepositoryEvidence = (
   controls: { onSettled: () => void },
 ) => ReactNode;
 
-function ProjectQaReportPage({ renderEvidence }: Readonly<{ renderEvidence?: RenderRepositoryEvidence }>) {
+function ProjectQaReportPage({
+  renderEvidence,
+}: Readonly<{ renderEvidence?: RenderRepositoryEvidence }>) {
   const params = useParams<{ deliveryProjectId: string; runId: string }>();
   const search = useSearchParams();
   const [settled, setSettled] = useState<ReadonlySet<string>>(() => new Set());
   const settle = useCallback(
     (projectId: string) =>
-      setSettled((previous) => (previous.has(projectId) ? previous : new Set(previous).add(projectId))),
+      setSettled((previous) =>
+        previous.has(projectId) ? previous : new Set(previous).add(projectId),
+      ),
     [],
   );
   const deliveryProjectId = param(params?.deliveryProjectId);
   const runId = param(params?.runId);
-  const vm = useProjectReportViewModel({ deliveryProjectId, runId, autoPrint: false });
-  const itemEvidence = useReportEvidenceViewModel({ deliveryProjectId, runId, report: vm.report });
+  const vm = useProjectReportViewModel({
+    deliveryProjectId,
+    runId,
+    autoPrint: false,
+  });
+  const itemEvidence = useReportEvidenceViewModel({
+    deliveryProjectId,
+    runId,
+    report: vm.report,
+  });
   // The print dialog waits for the screenshots: printing before they load would
   // put empty frames in the PDF.
   const evidenceIn =
-    !renderEvidence || (vm.report !== null && vm.report.repositories.every((r) => settled.has(r.projectId)));
+    !renderEvidence ||
+    (vm.report !== null &&
+      vm.report.repositories.every((r) => settled.has(r.projectId)));
   // ...and so does each item's own evidence.
-  useAutoPrint(search?.get("print") === "1" && vm.status === "ready" && evidenceIn && itemEvidence.settled);
+  useAutoPrint(
+    search?.get('print') === '1' &&
+      vm.status === 'ready' &&
+      evidenceIn &&
+      itemEvidence.settled,
+  );
   const renderVisualEvidence: RenderVisualEvidence | undefined = renderEvidence
-    ? (repository) => renderEvidence(repository, { onSettled: () => settle(repository.projectId) })
+    ? (repository) =>
+        renderEvidence(repository, {
+          onSettled: () => settle(repository.projectId),
+        })
     : undefined;
   return (
     <div className="qa-report-page">
       <Toolbar vm={vm} />
       <main className="qa-report-page__main">
-        <ReportBody vm={vm} evidence={itemEvidence} renderVisualEvidence={renderVisualEvidence} />
+        <ReportBody
+          vm={vm}
+          evidence={itemEvidence}
+          renderVisualEvidence={renderVisualEvidence}
+        />
       </main>
     </div>
   );
@@ -141,7 +180,9 @@ function ProjectQaReportPage({ renderEvidence }: Readonly<{ renderEvidence?: Ren
  * The printable Project QA report: the same fixed template as a repository's
  * report, without the app shell, so the PDF holds the report and nothing else.
  */
-export function ProjectQaReportView({ renderEvidence }: Readonly<{ renderEvidence?: RenderRepositoryEvidence }>) {
+export function ProjectQaReportView({
+  renderEvidence,
+}: Readonly<{ renderEvidence?: RenderRepositoryEvidence }>) {
   return (
     <Suspense
       fallback={

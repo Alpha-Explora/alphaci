@@ -1,17 +1,18 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { iterationsRepository } from "../../data/iterations-repository";
-import type { CurrentIteration } from "../../model/iteration-types";
-import { useIterationEpoch } from "./iteration-epoch";
+import { iterationsRepository } from '../../data/iterations-repository';
+import type { CurrentIteration } from '../../model/iteration-types';
+import { useIterationEpoch } from './iteration-epoch';
 
 /**
  * `idle`: nothing to read (no Project, or not enabled). `unavailable`: the
  * route is missing (an older backend's 404), failed, or named no iteration —
  * every screen then shows nothing iteration-related, exactly as before.
  */
-export type CurrentIterationStatus = "idle" | "loading" | "ready" | "unavailable";
+export type CurrentIterationStatus =
+  'idle' | 'loading' | 'ready' | 'unavailable';
 
 export interface CurrentIterationViewModel {
   status: CurrentIterationStatus;
@@ -25,10 +26,13 @@ interface Loaded {
   current: CurrentIteration | null;
 }
 
-function statusOf(active: boolean, loaded: Loaded | null): CurrentIterationStatus {
-  if (!active) return "idle";
-  if (!loaded) return "loading";
-  return loaded.current ? "ready" : "unavailable";
+function statusOf(
+  active: boolean,
+  loaded: Loaded | null,
+): CurrentIterationStatus {
+  if (!active) return 'idle';
+  if (!loaded) return 'loading';
+  return loaded.current ? 'ready' : 'unavailable';
 }
 
 /**
@@ -63,7 +67,7 @@ export function useCurrentIterationViewModel(options: {
   const [nonce, setNonce] = useState(0);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const requestRef = useRef(0);
-  const key = deliveryProjectId ?? "";
+  const key = deliveryProjectId ?? '';
   const active = enabled && Boolean(deliveryProjectId);
   const reload = () => setNonce((value) => value + 1);
   useWatchedReload(watch ?? null, reload);
@@ -77,12 +81,17 @@ export function useCurrentIterationViewModel(options: {
     Promise.resolve()
       .then(() => iterationsRepository.current(key))
       .then((current) => {
-        if (requestId === requestRef.current) setLoaded({ key, current: current ?? null });
+        if (requestId === requestRef.current)
+          setLoaded({ key, current: current ?? null });
       })
       .catch(() => {
         // A failed refresh keeps what was on screen; a first read hides the iteration.
         if (requestId !== requestRef.current) return;
-        setLoaded((previous) => (previous?.key === key && previous.current ? previous : { key, current: null }));
+        setLoaded((previous) =>
+          previous?.key === key && previous.current
+            ? previous
+            : { key, current: null },
+        );
       });
   }, [active, key, nonce, epoch]);
 

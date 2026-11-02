@@ -10,7 +10,7 @@
  * or malformed field degrades to a safe default instead of a crash. */
 
 /** Derived by the server from the declared stack, never from the name. */
-export type RepoRole = "frontend" | "backend" | "service" | "app";
+export type RepoRole = 'frontend' | 'backend' | 'service' | 'app';
 
 /* ── Wire shapes (GET /groups/:groupId/project-folders) ─────────────────── */
 
@@ -193,4 +193,4 @@ export interface DeleteProjectFailure {
   failedRepository: { repositoryId: string; name: string } | null;
 }
 
-export type ProjectFoldersStatus = "loading" | "ready" | "error";
+export type ProjectFoldersStatus = 'loading' | 'ready' | 'error';

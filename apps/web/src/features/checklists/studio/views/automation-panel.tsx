@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import "./automation.css";
+import './automation.css';
 
-import { useId } from "react";
+import { useId } from 'react';
 
-import { TestCaseList } from "@/features/runs/test-report";
+import { TestCaseList } from '@/features/runs/test-report';
 
-import { TonePill } from "../../items";
+import { TonePill } from '../../items';
 import {
   automationStages,
   failuresToggleLabel,
@@ -21,19 +21,27 @@ import {
   stageTestCases,
   stageTestsLabel,
   unlistedFailuresNote,
-} from "../../model/qa-automation-rules";
+} from '../../model/qa-automation-rules';
 import type {
   QaAutomationStage,
   QaRunAutomationResult,
   QaStageResult,
   QaStageTests,
-} from "../../model/qa-automation-types";
-import { liveWaitingConfirmation, type LiveConfirmationMode } from "../../model/playwright-live-rules";
-import { formatReportDate } from "../../model/qa-report-rules";
-import { agoLabel } from "../../model/qa-run-rules";
-import type { AutomationDispatchControls } from "../view-models/use-qa-automation-view-model";
-import { useDisclosure } from "../view-models/use-remembered-flag";
-import { ChevronDownIcon, CrossIcon, PlayIcon, WarningIcon } from "./studio-icons";
+} from '../../model/qa-automation-types';
+import {
+  liveWaitingConfirmation,
+  type LiveConfirmationMode,
+} from '../../model/playwright-live-rules';
+import { formatReportDate } from '../../model/qa-report-rules';
+import { agoLabel } from '../../model/qa-run-rules';
+import type { AutomationDispatchControls } from '../view-models/use-qa-automation-view-model';
+import { useDisclosure } from '../view-models/use-remembered-flag';
+import {
+  ChevronDownIcon,
+  CrossIcon,
+  PlayIcon,
+  WarningIcon,
+} from './studio-icons';
 
 /* The building blocks of the studio column's Playwright tab: one card per CI
  * stage, "Run Playwright" and what starting it said. The tab arranges them
@@ -52,7 +60,12 @@ function StageFigures({ result }: Readonly<{ result: QaStageResult }>) {
   if (!label) {
     const line = stageNoCountsLine(result);
     return (
-      <span className={line.isReason ? "qa-auto-stage__reason" : "qa-auto-stage__none"} title={line.text}>
+      <span
+        className={
+          line.isReason ? 'qa-auto-stage__reason' : 'qa-auto-stage__none'
+        }
+        title={line.text}
+      >
         {line.text}
       </span>
     );
@@ -62,7 +75,10 @@ function StageFigures({ result }: Readonly<{ result: QaStageResult }>) {
       <span className="qa-auto-stage__count">{label}</span>
       {share === null ? null : (
         <span className="qa-auto-stage__bar" aria-hidden="true">
-          <span className="qa-auto-stage__fill" style={{ width: `${share}%` }} />
+          <span
+            className="qa-auto-stage__fill"
+            style={{ width: `${share}%` }}
+          />
         </span>
       )}
     </span>
@@ -74,21 +90,36 @@ function FailureList({
   stage,
   tests,
   hidden,
-}: Readonly<{ id: string; stage: QaAutomationStage; tests: QaStageTests | null; hidden: boolean }>) {
+}: Readonly<{
+  id: string;
+  stage: QaAutomationStage;
+  tests: QaStageTests | null;
+  hidden: boolean;
+}>) {
   const failures = listedFailures(tests);
   const note = unlistedFailuresNote(tests);
   if (failures.length === 0 && !note) return null;
   return (
-    <div id={id} className="qa-auto-failures" hidden={failures.length > 0 && hidden}>
+    <div
+      id={id}
+      className="qa-auto-failures"
+      hidden={failures.length > 0 && hidden}
+    >
       {failures.length > 0 ? (
-        <ol className="qa-auto-failures__list" aria-label={`${stageName(stage)} failures`}>
+        <ol
+          className="qa-auto-failures__list"
+          aria-label={`${stageName(stage)} failures`}
+        >
           {failures.map((failure, index) => (
             <li key={`${index}-${failure.name}`} className="qa-auto-failure">
               <CrossIcon />
               <div className="qa-auto-failure__body">
                 <code className="qa-auto-failure__name">{failure.name}</code>
                 {failure.message ? (
-                  <p className="qa-auto-failure__message" title={failure.message}>
+                  <p
+                    className="qa-auto-failure__message"
+                    title={failure.message}
+                  >
                     {failure.message}
                   </p>
                 ) : null}
@@ -116,10 +147,18 @@ interface FailuresDisclosure {
 function FailedToggle({
   tests,
   disclosure,
-}: Readonly<{ tests: QaStageTests | null; disclosure: FailuresDisclosure | null }>) {
+}: Readonly<{
+  tests: QaStageTests | null;
+  disclosure: FailuresDisclosure | null;
+}>) {
   const failed = tests?.failed ?? 0;
-  const toggleLabel = disclosure ? failuresToggleLabel(tests, disclosure.open) : null;
-  if (!toggleLabel || !disclosure) return failed > 0 ? <span className="qa-auto-stage__failed">{failed} failed</span> : null;
+  const toggleLabel = disclosure
+    ? failuresToggleLabel(tests, disclosure.open)
+    : null;
+  if (!toggleLabel || !disclosure)
+    return failed > 0 ? (
+      <span className="qa-auto-stage__failed">{failed} failed</span>
+    ) : null;
   const listed = listedFailures(tests).length;
   return (
     <button
@@ -130,7 +169,9 @@ function FailedToggle({
       title={toggleLabel}
       onClick={disclosure.onToggle}
     >
-      {failed > 0 ? `${failed} failed` : `${listed} ${listed === 1 ? "failure" : "failures"}`}
+      {failed > 0
+        ? `${failed} failed`
+        : `${listed} ${listed === 1 ? 'failure' : 'failures'}`}
       <span className="sr-only">{` — ${toggleLabel.toLowerCase()}`}</span>
       <ChevronDownIcon />
     </button>
@@ -150,7 +191,10 @@ function StageMeta({
       {ago ? (
         <span>
           <span className="sr-only">Reported </span>
-          <time dateTime={result.reportedAt ?? undefined} title={`Reported ${formatReportDate(result.reportedAt)}`}>
+          <time
+            dateTime={result.reportedAt ?? undefined}
+            title={`Reported ${formatReportDate(result.reportedAt)}`}
+          >
             {ago}
           </time>
         </span>
@@ -172,19 +216,38 @@ function StageCard({ result }: Readonly<{ result: QaStageResult }>) {
   // With per-test records, the test list replaces the folded failure list.
   const cases = stageTestCases(result.tests);
   return (
-    <article className={`qa-auto-stage qa-auto-stage--${tone}`} aria-labelledby={headingId}>
+    <article
+      className={`qa-auto-stage qa-auto-stage--${tone}`}
+      aria-labelledby={headingId}
+    >
       <div className="qa-auto-stage__row">
         <h4 id={headingId} className="qa-auto-stage__title">
           {stageName(result.stage)}
-          <span className="qa-auto-stage__coverage"> — {stageCoverage(result.stage)}</span>
+          <span className="qa-auto-stage__coverage">
+            {' '}
+            — {stageCoverage(result.stage)}
+          </span>
         </h4>
         <TonePill tone={tone} label={stageRunLabel(result.status)} />
       </div>
-      <StageMeta result={result} disclosure={cases ? null : { id: failuresId, open, onToggle: toggle }} />
+      <StageMeta
+        result={result}
+        disclosure={cases ? null : { id: failuresId, open, onToggle: toggle }}
+      />
       {cases ? (
-        <TestCaseList cases={cases} total={result.tests?.total} label={`${stageName(result.stage)} tests`} foldable />
+        <TestCaseList
+          cases={cases}
+          total={result.tests?.total}
+          label={`${stageName(result.stage)} tests`}
+          foldable
+        />
       ) : (
-        <FailureList id={failuresId} stage={result.stage} tests={result.tests} hidden={!open} />
+        <FailureList
+          id={failuresId}
+          stage={result.stage}
+          tests={result.tests}
+          hidden={!open}
+        />
       )}
     </article>
   );
@@ -198,14 +261,23 @@ function StageMissing({
   stage,
   commitSha,
   upstream,
-}: Readonly<{ stage: QaAutomationStage; commitSha: string | null; upstream: QaStageResult | null }>) {
+}: Readonly<{
+  stage: QaAutomationStage;
+  commitSha: string | null;
+  upstream: QaStageResult | null;
+}>) {
   return (
     <p className="qa-auto-stage qa-auto-stage--missing">
       <span className="qa-auto-stage__title">
         {stageName(stage)}
-        <span className="qa-auto-stage__coverage"> — {stageCoverage(stage)}</span>
+        <span className="qa-auto-stage__coverage">
+          {' '}
+          — {stageCoverage(stage)}
+        </span>
       </span>
-      <span className="qa-auto-stage__none">{stageMissingLine(stage, commitSha, upstream)}</span>
+      <span className="qa-auto-stage__none">
+        {stageMissingLine(stage, commitSha, upstream)}
+      </span>
     </p>
   );
 }
@@ -213,18 +285,23 @@ function StageMissing({
 /* ── Run Playwright and its feedback ─────────────────────────────────────── */
 
 function runButtonLabel(vm: AutomationDispatchControls): string {
-  if (vm.status === "dispatching") return "Starting…";
-  return vm.status === "watching" || vm.status === "dispatched" ? "Run Playwright again" : "Run Playwright";
+  if (vm.status === 'dispatching') return 'Starting…';
+  return vm.status === 'watching' || vm.status === 'dispatched'
+    ? 'Run Playwright again'
+    : 'Run Playwright';
 }
 
 /** For QA Team, Team leads and Admins; disabled (with the reason) on a signed-off run. */
-export function RunPlaywrightButton({ vm, reasonId }: Readonly<{ vm: AutomationDispatchControls; reasonId: string }>) {
+export function RunPlaywrightButton({
+  vm,
+  reasonId,
+}: Readonly<{ vm: AutomationDispatchControls; reasonId: string }>) {
   if (!vm.canDispatch) return null;
   return (
     <button
       type="button"
       className="qa-auto__run"
-      disabled={vm.status === "dispatching" || vm.blockedReason !== null}
+      disabled={vm.status === 'dispatching' || vm.blockedReason !== null}
       aria-describedby={vm.blockedReason ? reasonId : undefined}
       onClick={() => void vm.dispatch()}
     >
@@ -235,7 +312,10 @@ export function RunPlaywrightButton({ vm, reasonId }: Readonly<{ vm: AutomationD
 }
 
 /** Why the offered button is disabled; nothing when it is not. */
-export function DispatchReason({ vm, id }: Readonly<{ vm: AutomationDispatchControls; id: string }>) {
+export function DispatchReason({
+  vm,
+  id,
+}: Readonly<{ vm: AutomationDispatchControls; id: string }>) {
   if (!vm.canDispatch || !vm.blockedReason) return null;
   return (
     <p id={id} className="qa-auto__reason">
@@ -245,7 +325,10 @@ export function DispatchReason({ vm, id }: Readonly<{ vm: AutomationDispatchCont
 }
 
 /** Per-repository refusals, one "repo — reason" line each. */
-function DispatchFailureList({ lines, lead }: Readonly<{ lines: string[]; lead?: string }>) {
+function DispatchFailureList({
+  lines,
+  lead,
+}: Readonly<{ lines: string[]; lead?: string }>) {
   if (lines.length === 0) return null;
   return (
     <div className="qa-auto__failures">
@@ -269,18 +352,31 @@ function confirmationLine(
   vm: AutomationDispatchControls,
   live: LiveConfirmationMode,
 ): { text: string; watching: boolean } | null {
-  if (!vm.confirmation || live === "hidden") return null;
-  if (live === "waiting") return { text: liveWaitingConfirmation(vm.confirmation), watching: true };
-  return { text: vm.confirmation, watching: vm.status === "watching" };
+  if (!vm.confirmation || live === 'hidden') return null;
+  if (live === 'waiting')
+    return { text: liveWaitingConfirmation(vm.confirmation), watching: true };
+  return { text: vm.confirmation, watching: vm.status === 'watching' };
 }
 
-function Confirmation({ line, live }: Readonly<{ line: { text: string; watching: boolean }; live: LiveConfirmationMode }>) {
+function Confirmation({
+  line,
+  live,
+}: Readonly<{
+  line: { text: string; watching: boolean };
+  live: LiveConfirmationMode;
+}>) {
   return (
     <p className="qa-auto__confirm">
-      <span className="qa-auto__pulse" data-watching={line.watching ? "true" : "false"} aria-hidden="true" />
+      <span
+        className="qa-auto__pulse"
+        data-watching={line.watching ? 'true' : 'false'}
+        aria-hidden="true"
+      />
       <span>
         {line.text}
-        {line.watching && live === "as-is" ? <span className="qa-auto__watching"> Checking every 20 seconds.</span> : null}
+        {line.watching && live === 'as-is' ? (
+          <span className="qa-auto__watching"> Checking every 20 seconds.</span>
+        ) : null}
       </span>
     </p>
   );
@@ -289,7 +385,7 @@ function Confirmation({ line, live }: Readonly<{ line: { text: string; watching:
 /** Always mounted, so the confirmation is announced when it appears. */
 export function DispatchFeedback({
   vm,
-  live = "as-is",
+  live = 'as-is',
 }: Readonly<{ vm: AutomationDispatchControls; live?: LiveConfirmationMode }>) {
   const line = confirmationLine(vm, live);
   return (
@@ -339,14 +435,21 @@ export function AutomationStages({
   commitSha: string | null;
   stages?: ReadonlyArray<QaAutomationStage>;
 }>) {
-  const shown = automationStages(automation).filter(({ stage }) => !stages || stages.includes(stage));
+  const shown = automationStages(automation).filter(
+    ({ stage }) => !stages || stages.includes(stage),
+  );
   return (
     <div className="qa-auto__stages">
       {shown.map(({ stage, result }) =>
         result ? (
           <StageCard key={stage} result={result} />
         ) : (
-          <StageMissing key={stage} stage={stage} commitSha={commitSha} upstream={automation.quality} />
+          <StageMissing
+            key={stage}
+            stage={stage}
+            commitSha={commitSha}
+            upstream={automation.quality}
+          />
         ),
       )}
     </div>

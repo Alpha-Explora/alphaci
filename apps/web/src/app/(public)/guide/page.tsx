@@ -1,1 +1,1 @@
-export { GuideOverviewView as default } from "@/features/guide/overview";
+export { GuideOverviewView as default } from '@/features/guide/overview';

@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import "./po-studio.css";
+import './po-studio.css';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
-import { IterationWaitingNotice, StartIterationAction } from "../../iteration";
+import { IterationWaitingNotice, StartIterationAction } from '../../iteration';
 import {
   poAcceptanceState,
   poWaitingText,
   poWaitingTitle,
   type PoAcceptanceState,
-} from "../../model/po-studio-rules";
-import { resolveProjectRunPermissions } from "../../model/project-run-rules";
-import type { ProjectQaRun } from "../../model/project-run-types";
-import { UNFILED_REASON } from "../../model/qa-promotion-rules";
-import type { QaScope } from "../../model/qa-scope";
-import type { ProjectRunViewModel } from "../view-models/use-project-run-view-model";
-import { usePoAcceptanceViewModel } from "../view-models/use-po-acceptance-view-model";
-import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
-import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
-import { useRunTestCasesViewModel } from "../view-models/use-run-test-cases-view-model";
-import { PoDeliveredBanner } from "./po-delivery";
-import { PoRunItems } from "./po-run-items";
-import { RunSummary } from "./run-signoff";
+} from '../../model/po-studio-rules';
+import { resolveProjectRunPermissions } from '../../model/project-run-rules';
+import type { ProjectQaRun } from '../../model/project-run-types';
+import { UNFILED_REASON } from '../../model/qa-promotion-rules';
+import type { QaScope } from '../../model/qa-scope';
+import type { ProjectRunViewModel } from '../view-models/use-project-run-view-model';
+import { usePoAcceptanceViewModel } from '../view-models/use-po-acceptance-view-model';
+import type { PoDeliveryViewModel } from '../view-models/use-po-delivery-view-model';
+import type { QaPromotionViewModel } from '../view-models/use-qa-promotion-view-model';
+import { useRunTestCasesViewModel } from '../view-models/use-run-test-cases-view-model';
+import { PoDeliveredBanner } from './po-delivery';
+import { PoRunItems } from './po-run-items';
+import { RunSummary } from './run-signoff';
 
 /**
  * The Product owner's check of the release candidate: how far QA got, then
@@ -66,13 +66,18 @@ function PoRunCheck({
     <>
       <RunSummary run={run} />
       {delivered ? null : (
-        <PoRunItems run={run} acceptance={acceptance} testCases={testCases} onReload={vm.refresh} />
+        <PoRunItems
+          run={run}
+          acceptance={acceptance}
+          testCases={testCases}
+          onReload={vm.refresh}
+        />
       )}
     </>
   );
 }
 
-type ProjectScope = Extract<QaScope, { kind: "project" }>;
+type ProjectScope = Extract<QaScope, { kind: 'project' }>;
 
 /**
  * What is still missing before main: QA's sign-off, or the Product owner's
@@ -88,8 +93,14 @@ function AcceptanceStatus({ run }: Readonly<{ run: ProjectQaRun | null }>) {
 }
 
 /** Delivered, by the promotion status or by the stored iteration. */
-function isDelivered(state: PoAcceptanceState, delivery: PoDeliveryViewModel): boolean {
-  return state === "delivered" || delivery.iteration.current?.iteration.status === "delivered";
+function isDelivered(
+  state: PoAcceptanceState,
+  delivery: PoDeliveryViewModel,
+): boolean {
+  return (
+    state === 'delivered' ||
+    delivery.iteration.current?.iteration.status === 'delivered'
+  );
 }
 
 /**
@@ -97,9 +108,12 @@ function isDelivered(state: PoAcceptanceState, delivery: PoDeliveryViewModel): b
  * Product owner or admin the server lets start; the waiting sentence for
  * anyone it does not; nothing when the server did not say.
  */
-function DeliveredNext({ delivery }: Readonly<{ delivery: PoDeliveryViewModel }>) {
+function DeliveredNext({
+  delivery,
+}: Readonly<{ delivery: PoDeliveryViewModel }>) {
   const step = delivery.start.step;
-  if (step.kind === "waiting") return <IterationWaitingNotice text={step.text} />;
+  if (step.kind === 'waiting')
+    return <IterationWaitingNotice text={step.text} />;
   return <StartIterationAction vm={delivery.start} />;
 }
 
@@ -123,11 +137,14 @@ function ProjectAcceptance({
   delivery: PoDeliveryViewModel;
   appRole: AppRole | null | undefined;
 }>) {
-  const run = projectRun.status === "ready" ? projectRun.run : null;
+  const run = projectRun.status === 'ready' ? projectRun.run : null;
   const delivered = isDelivered(state, delivery);
-  const ready = state === "ready";
+  const ready = state === 'ready';
   return (
-    <div className="qa-run-card po-accept" data-state={delivered ? "delivered" : state}>
+    <div
+      className="qa-run-card po-accept"
+      data-state={delivered ? 'delivered' : state}
+    >
       <div className="qa-run-card__head">
         <div className="qa-run-card__picker">
           <span className="qa-toolbar__label">Product acceptance</span>
@@ -138,10 +155,14 @@ function ProjectAcceptance({
         <PoDeliveredBanner
           current={delivery.iteration.current}
           fallback={promotion.data?.iteration ?? null}
-          next={delivery.start.step.kind === "none" ? null : <DeliveredNext delivery={delivery} />}
+          next={
+            delivery.start.step.kind === 'none' ? null : (
+              <DeliveredNext delivery={delivery} />
+            )
+          }
         />
-      ) : (
-        ready ? null : <AcceptanceStatus run={run} />
+      ) : ready ? null : (
+        <AcceptanceStatus run={run} />
       )}
       {run ? (
         <PoRunCheck
@@ -180,9 +201,16 @@ export function PoAcceptancePanel({
   delivery: PoDeliveryViewModel;
   appRole: AppRole | null | undefined;
 }>) {
-  const state = poAcceptanceState({ scope: qaScope, promotionStatus: promotion.status, promotion: promotion.data });
-  if (state === "loading") return <div className="hier-skeleton qa-skeleton-card" aria-hidden="true" />;
-  if (state === "unfiled" || qaScope.kind !== "project") {
+  const state = poAcceptanceState({
+    scope: qaScope,
+    promotionStatus: promotion.status,
+    promotion: promotion.data,
+  });
+  if (state === 'loading')
+    return (
+      <div className="hier-skeleton qa-skeleton-card" aria-hidden="true" />
+    );
+  if (state === 'unfiled' || qaScope.kind !== 'project') {
     return (
       <div className="qa-panel-state">
         <h3 className="qa-panel-state__title">Nothing to accept here</h3>

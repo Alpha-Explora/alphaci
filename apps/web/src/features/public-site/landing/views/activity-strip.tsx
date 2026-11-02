@@ -1,8 +1,12 @@
 const RECENT_ACTIVITY = [
-  { repo: "payments-api", action: "Production release approved", time: "2m ago" },
-  { repo: "auth-service", action: "Tests passed (142/142)", time: "8m ago" },
-  { repo: "frontend", action: "Release lane healthy", time: "15m ago" },
-  { repo: "worker", action: "Lint + security check", time: "23m ago" },
+  {
+    repo: 'payments-api',
+    action: 'Production release approved',
+    time: '2m ago',
+  },
+  { repo: 'auth-service', action: 'Tests passed (142/142)', time: '8m ago' },
+  { repo: 'frontend', action: 'Release lane healthy', time: '15m ago' },
+  { repo: 'worker', action: 'Lint + security check', time: '23m ago' },
 ];
 
 export function ActivityStrip() {
@@ -45,13 +49,15 @@ export function ActivityStrip() {
             <span className="min-w-[110px] font-mono text-[0.78rem] font-semibold text-foreground">
               {item.repo}
             </span>
-            <span className="flex-1 text-[0.8rem] text-secondary-text">{item.action}</span>
-            <span className="flex-shrink-0 font-mono text-[0.7rem] text-muted-text">{item.time}</span>
+            <span className="flex-1 text-[0.8rem] text-secondary-text">
+              {item.action}
+            </span>
+            <span className="flex-shrink-0 font-mono text-[0.7rem] text-muted-text">
+              {item.time}
+            </span>
           </div>
         ))}
       </div>
     </section>
   );
 }
-
-

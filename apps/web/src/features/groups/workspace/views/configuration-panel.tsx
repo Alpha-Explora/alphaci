@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 import {
   deleteConfigurationEntry,
   getRepositoryConfiguration,
   putConfigurationSecret,
   putConfigurationVariable,
-} from "@/features/groups";
-import { ApiError } from "@/shared/api/request";
+} from '@/features/groups';
+import { ApiError } from '@/shared/api/request';
 import {
   CONFIGURATION_LEAD_ONLY_NOTE,
   roleGateMessage,
-} from "../../model/role-gate-rules";
+} from '../../model/role-gate-rules';
 import type {
   ConfigurationItemMetadata,
   ConfigurationType,
   RepositoryConfigurationResponse,
-} from "@/features/groups";
-import { timeAgo, useApiResource } from "@/features/groups";
-import { LoadingRows, ResourceBoundary, SectionHeader } from "./primitives";
+} from '@/features/groups';
+import { timeAgo, useApiResource } from '@/features/groups';
+import { LoadingRows, ResourceBoundary, SectionHeader } from './primitives';
 
 /**
  * Repository configuration broker (write-only).
@@ -41,15 +41,15 @@ function ConfigWriteForm({
   onWritten: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [value, setValue] = useState("");
+  const [name, setName] = useState('');
+  const [value, setValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const isSecret = configurationType === "secret";
+  const isSecret = configurationType === 'secret';
 
   function reset() {
-    setName("");
-    setValue("");
+    setName('');
+    setValue('');
     setError(null);
   }
 
@@ -57,7 +57,7 @@ function ConfigWriteForm({
     event.preventDefault();
     const trimmedName = name.trim();
     if (!trimmedName || !value) {
-      setError("Both a name and a value are required.");
+      setError('Both a name and a value are required.');
       return;
     }
     setSubmitting(true);
@@ -65,7 +65,7 @@ function ConfigWriteForm({
     try {
       const payload = {
         value,
-        environmentScope: "non_production" as const,
+        environmentScope: 'non_production' as const,
       };
       if (isSecret) {
         await putConfigurationSecret(repositoryId, trimmedName, payload);
@@ -105,15 +105,18 @@ function ConfigWriteForm({
       noValidate
       className="hier-inline-form"
       style={{
-        width: "100%",
-        padding: "0.9rem 1rem",
-        background: "var(--bg-frost)",
-        border: "1px solid var(--border-soft)",
-        borderRadius: "0.7rem",
+        width: '100%',
+        padding: '0.9rem 1rem',
+        background: 'var(--bg-frost)',
+        border: '1px solid var(--border-soft)',
+        borderRadius: '0.7rem',
       }}
     >
       <div className="hier-field">
-        <label className="hier-field-label" htmlFor={`cfg-name-${configurationType}`}>
+        <label
+          className="hier-field-label"
+          htmlFor={`cfg-name-${configurationType}`}
+        >
           Name
         </label>
         <input
@@ -121,18 +124,21 @@ function ConfigWriteForm({
           className="hier-input"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder={isSecret ? "API_TOKEN" : "FEATURE_FLAG"}
+          placeholder={isSecret ? 'API_TOKEN' : 'FEATURE_FLAG'}
           autoComplete="off"
         />
       </div>
       <div className="hier-field">
-        <label className="hier-field-label" htmlFor={`cfg-value-${configurationType}`}>
+        <label
+          className="hier-field-label"
+          htmlFor={`cfg-value-${configurationType}`}
+        >
           Value
         </label>
         <input
           id={`cfg-value-${configurationType}`}
           className="hier-input"
-          type={isSecret ? "password" : "text"}
+          type={isSecret ? 'password' : 'text'}
           value={value}
           onChange={(event) => setValue(event.target.value)}
           autoComplete="off"
@@ -140,7 +146,10 @@ function ConfigWriteForm({
         />
       </div>
       <div className="hier-field">
-        <label className="hier-field-label" htmlFor={`cfg-scope-${configurationType}`}>
+        <label
+          className="hier-field-label"
+          htmlFor={`cfg-scope-${configurationType}`}
+        >
           Environment
         </label>
         <select
@@ -154,9 +163,9 @@ function ConfigWriteForm({
           </option>
         </select>
       </div>
-      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
         <button type="submit" className="primary-button" disabled={submitting}>
-          {submitting ? "Saving…" : "Save"}
+          {submitting ? 'Saving…' : 'Save'}
         </button>
         <button
           type="button"
@@ -171,7 +180,11 @@ function ConfigWriteForm({
         </button>
       </div>
       {error && (
-        <p className="error-text" role="alert" style={{ margin: 0, width: "100%" }}>
+        <p
+          className="error-text"
+          role="alert"
+          style={{ margin: 0, width: '100%' }}
+        >
           {error}
         </p>
       )}
@@ -214,7 +227,7 @@ function ConfigList({
   if (items.length === 0) {
     return (
       <div className="hier-tree-empty">
-        No {configurationType === "secret" ? "secrets" : "variables"} set.
+        No {configurationType === 'secret' ? 'secrets' : 'variables'} set.
       </div>
     );
   }
@@ -222,7 +235,11 @@ function ConfigList({
   return (
     <>
       {error ? (
-        <p className="error-text" role="alert" style={{ margin: "0.5rem 1rem" }}>
+        <p
+          className="error-text"
+          role="alert"
+          style={{ margin: '0.5rem 1rem' }}
+        >
           {error}
         </p>
       ) : null}
@@ -230,13 +247,13 @@ function ConfigList({
         <div key={`${item.environmentScope}:${item.name}`} className="hier-row">
           <div className="hier-row-identity">
             <div className="hier-row-name">
-              <strong style={{ fontFamily: "var(--font-mono), monospace" }}>
+              <strong style={{ fontFamily: 'var(--font-mono), monospace' }}>
                 {item.name}
               </strong>
               <span>
-                {item.environmentScope === "production"
-                  ? "Production"
-                  : "Non-production"}{" "}
+                {item.environmentScope === 'production'
+                  ? 'Production'
+                  : 'Non-production'}{' '}
                 · updated {timeAgo(item.updatedAt)}
               </span>
             </div>
@@ -244,7 +261,7 @@ function ConfigList({
           <div className="hier-row-actions">
             {/* Value is never shown — write-only broker. */}
             <span className="hier-badge hier-badge--muted">
-              {configurationType === "secret" ? "Secret" : "Variable"}
+              {configurationType === 'secret' ? 'Secret' : 'Variable'}
             </span>
             {canWrite ? (
               <button
@@ -271,15 +288,16 @@ export function ConfigurationPanel({
   /** Developer or admin: the only roles the backend lets write configuration. */
   canWrite: boolean;
 }) {
-  const { data, state, reload } = useApiResource<RepositoryConfigurationResponse>(
-    () => getRepositoryConfiguration(repositoryId),
-    [repositoryId],
-  );
+  const { data, state, reload } =
+    useApiResource<RepositoryConfigurationResponse>(
+      () => getRepositoryConfiguration(repositoryId),
+      [repositoryId],
+    );
 
-  if (state === "loading") {
+  if (state === 'loading') {
     return <LoadingRows rows={2} />;
   }
-  if (state !== "ready" || !data) {
+  if (state !== 'ready' || !data) {
     return (
       <ResourceBoundary
         state={state}
@@ -290,7 +308,7 @@ export function ConfigurationPanel({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <p className="hier-subtitle" style={{ margin: 0 }}>
         Manage non-production variables and secrets. Values are write-only —
         AlphaCI stores names and metadata only, never the value. Production

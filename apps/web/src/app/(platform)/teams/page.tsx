@@ -1,1 +1,1 @@
-export { TeamsDetailView as default } from "@/features/teams/detail";
+export { TeamsDetailView as default } from '@/features/teams/detail';

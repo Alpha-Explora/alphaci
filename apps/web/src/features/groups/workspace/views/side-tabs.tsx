@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 
-import { revealScrollDelta } from "../../model/side-tab-scroll";
+import { revealScrollDelta } from '../../model/side-tab-scroll';
 
 /**
  * A vertical, grouped tab rail — the side-panel form of a tab strip.
@@ -84,16 +84,16 @@ export function SideTabs<T extends string>({
 
   function handleKeyDown(event: React.KeyboardEvent) {
     const delta =
-      event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
+      event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0;
     let next: SideTabItem<T> | undefined;
 
     if (delta !== 0) {
       const at = flat.findIndex((item) => item.id === value);
       // Wrap: the ARIA pattern expects a ring, not a dead end.
       next = flat[(at + delta + flat.length) % flat.length];
-    } else if (event.key === "Home") {
+    } else if (event.key === 'Home') {
       next = flat[0];
-    } else if (event.key === "End") {
+    } else if (event.key === 'End') {
       next = flat[flat.length - 1];
     }
     if (!next) return;
@@ -143,7 +143,7 @@ export function SideTabs<T extends string>({
                   // Only the selected tab is reachable by Tab; arrows do the rest.
                   tabIndex={selected ? 0 : -1}
                   onClick={() => onChange(item.id)}
-                  className={`side-tab${selected ? " side-tab--selected" : ""}`}
+                  className={`side-tab${selected ? ' side-tab--selected' : ''}`}
                 >
                   <span className="side-tab-label">{item.label}</span>
                   {item.badge !== undefined ? (

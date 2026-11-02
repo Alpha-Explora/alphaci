@@ -1,5 +1,5 @@
-export { GroupProjectsView } from "./views/group-projects-view";
+export { GroupProjectsView } from './views/group-projects-view';
 export {
   useGroupProjectsViewModel,
   type GroupProjectsViewModel,
-} from "./view-models/use-group-projects-view-model";
+} from './view-models/use-group-projects-view-model';

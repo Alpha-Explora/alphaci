@@ -9,11 +9,11 @@
 
 export function downloadBlob(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
+  const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = filename;
-  anchor.rel = "noopener";
-  anchor.style.display = "none";
+  anchor.rel = 'noopener';
+  anchor.style.display = 'none';
   document.body.appendChild(anchor);
   try {
     anchor.click();

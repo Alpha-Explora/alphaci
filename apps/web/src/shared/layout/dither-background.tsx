@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import { useTheme } from "@/shared/layout/theme-context";
+import { useEffect, useRef } from 'react';
+import { useTheme } from '@/shared/layout/theme-context';
 
 /* DitherBackground
    ────────────────
@@ -39,7 +39,7 @@ interface DitherBackgroundProps {
 }
 
 export function DitherBackground({
-  className = "auth-dither-background",
+  className = 'auth-dither-background',
 }: Readonly<DitherBackgroundProps>) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { theme } = useTheme();
@@ -48,11 +48,11 @@ export function DitherBackground({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const context = canvas.getContext("2d", { alpha: true });
+    const context = canvas.getContext('2d', { alpha: true });
     if (!context) return;
 
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const isLight = theme === "light";
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const isLight = theme === 'light';
     // Azure accent on the dark graphite surface; darker graphite dots on light.
     const dot = isLight ? [40, 52, 74] : [88, 166, 255];
     const baseAlpha = isLight ? 26 : 26;
@@ -122,8 +122,7 @@ export function DitherBackground({
             const dy = y - pointer.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             const falloff = Math.exp(-dist / (radius * 0.5));
-            ripple =
-              Math.sin(dist * 0.32 - t * 3.0) * falloff * energy * 0.65;
+            ripple = Math.sin(dist * 0.32 - t * 3.0) * falloff * energy * 0.65;
           }
 
           const brightness = ambient + ripple;
@@ -154,22 +153,16 @@ export function DitherBackground({
       // Static single frame — no animation, no pointer coupling.
       draw(0);
     } else {
-      window.addEventListener("pointermove", movePointer, { passive: true });
+      window.addEventListener('pointermove', movePointer, { passive: true });
       frame = window.requestAnimationFrame(draw);
     }
 
     return () => {
       observer.disconnect();
-      window.removeEventListener("pointermove", movePointer);
+      window.removeEventListener('pointermove', movePointer);
       window.cancelAnimationFrame(frame);
     };
   }, [theme]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className={className}
-      aria-hidden="true"
-    />
-  );
+  return <canvas ref={canvasRef} className={className} aria-hidden="true" />;
 }

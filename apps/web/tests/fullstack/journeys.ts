@@ -31,7 +31,9 @@ export interface Journey {
 
 function expectEqual(actual: unknown, expected: unknown, what: string): void {
   if (actual !== expected) {
-    throw new Error(`${what}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+    throw new Error(
+      `${what}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
+    );
   }
 }
 
@@ -41,9 +43,15 @@ const signInWithQuickLogin: Journey = {
   // as signed out.
   expectedResponses: [{ status: 401, method: 'GET', path: '/api/v1/auth/me' }],
   async run(page, baseUrl) {
-    const session = page.waitForResponse((response) => response.url() === `${baseUrl}/api/v1/auth/me`);
+    const session = page.waitForResponse(
+      (response) => response.url() === `${baseUrl}/api/v1/auth/me`,
+    );
     await page.goto(`${baseUrl}/login`);
-    expectEqual((await session).status(), 401, 'GET /api/v1/auth/me before sign-in');
+    expectEqual(
+      (await session).status(),
+      401,
+      'GET /api/v1/auth/me before sign-in',
+    );
     await expectVisibleText(page, 'Continue with GitHub');
     // A production build never offers the button, whatever the flags say.
     expectEqual(
@@ -55,7 +63,10 @@ const signInWithQuickLogin: Journey = {
     // So the journey makes the call the button makes: from the page, same
     // origin, through the web server's /api/v1 proxy to the API.
     const status = await page.evaluate(async () => {
-      const response = await fetch('/api/v1/auth/dev/quick-login', { method: 'POST', credentials: 'include' });
+      const response = await fetch('/api/v1/auth/dev/quick-login', {
+        method: 'POST',
+        credentials: 'include',
+      });
       return response.status;
     });
     expectEqual(status, 201, 'POST /api/v1/auth/dev/quick-login');
@@ -65,7 +76,10 @@ const signInWithQuickLogin: Journey = {
     await page.waitForURL(`${baseUrl}/home`, { timeout: 15_000 });
     // The first-visit welcome greets the account by login; it opens because
     // the API reports that this new account has not finished onboarding.
-    await expectVisibleText(page, `Welcome to ALPHACI, @${QUICK_LOGIN_ACCOUNT.login}`);
+    await expectVisibleText(
+      page,
+      `Welcome to ALPHACI, @${QUICK_LOGIN_ACCOUNT.login}`,
+    );
   },
 };
 
@@ -78,4 +92,7 @@ const settingsShowsTheAccount: Journey = {
   },
 };
 
-export const journeys: readonly Journey[] = [signInWithQuickLogin, settingsShowsTheAccount];
+export const journeys: readonly Journey[] = [
+  signInWithQuickLogin,
+  settingsShowsTheAccount,
+];

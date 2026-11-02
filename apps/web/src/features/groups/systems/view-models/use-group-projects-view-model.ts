@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useApiResource } from "@/features/groups";
-import { useAuthSession } from "@/features/auth/session";
-import { newProjectHref } from "@/features/workflows";
+import { useApiResource } from '@/features/groups';
+import { useAuthSession } from '@/features/auth/session';
+import { newProjectHref } from '@/features/workflows';
 
-import { groupsRepository } from "../../data/groups-repository";
-import { canCreateProjectFolder } from "../../model/creation-role-rules";
-import type { ProvisionedProject } from "../../model/groups-types";
+import { groupsRepository } from '../../data/groups-repository';
+import { canCreateProjectFolder } from '../../model/creation-role-rules';
+import type { ProvisionedProject } from '../../model/groups-types';
 
 export interface GroupProjectsViewModel {
   projects: ProvisionedProject[];
-  status: ReturnType<typeof useApiResource<ProvisionedProject[]>>["state"];
+  status: ReturnType<typeof useApiResource<ProvisionedProject[]>>['state'];
   reload: () => void;
   /** True when the caller may create a Project in this group (Product owner, admin). */
   canManage: boolean;

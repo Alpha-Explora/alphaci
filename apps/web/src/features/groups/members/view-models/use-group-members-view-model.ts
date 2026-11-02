@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { useApiResource } from "@/features/groups";
+import { useApiResource } from '@/features/groups';
 
-import { groupsRepository } from "../../data/groups-repository";
-import { isGroupManagerRole } from "../../model/groups-rules";
-import type { GroupMember, GroupSummary } from "../../model/groups-types";
+import { groupsRepository } from '../../data/groups-repository';
+import { isGroupManagerRole } from '../../model/groups-rules';
+import type { GroupMember, GroupSummary } from '../../model/groups-types';
 
 export interface GroupMembersViewModel {
   members: GroupMember[];
-  status: ReturnType<typeof useApiResource<GroupMember[]>>["state"];
+  status: ReturnType<typeof useApiResource<GroupMember[]>>['state'];
   reload: () => void;
   /** Whether the caller may add or remove members. */
   canManage: boolean;

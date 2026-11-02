@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 
-import type { EnvVarMetadata } from "@/shared/api/contracts";
-import { cleanUserMessage } from "@/features/workflows";
+import type { EnvVarMetadata } from '@/shared/api/contracts';
+import { cleanUserMessage } from '@/features/workflows';
 import {
   missingKeysHeadline,
   missingLaneKeys,
@@ -12,14 +12,14 @@ import {
   variablesScopeLabel,
   variablesScopeLine,
   type HostingEnvironment,
-} from "../model/hosting-environment-rules";
+} from '../model/hosting-environment-rules';
 import type {
   EnvVariablesEditor,
   EnvVariablesScope,
   ProjectEnvProvisioning,
-} from "../view-models/use-env-variables-editor-view-model";
-import { EnvVariablesForm } from "./env-variables-form";
-import { HostingMenu } from "./hosting-menu";
+} from '../view-models/use-env-variables-editor-view-model';
+import { EnvVariablesForm } from './env-variables-form';
+import { HostingMenu } from './hosting-menu';
 
 /** The writable side: the provisioning read and the editor over it. Null renders read-only. */
 export interface ManagedVariables {
@@ -52,39 +52,67 @@ export function HostingVariablesCard({
   focus: boolean;
 }>) {
   const headingRef = useRef<HTMLHeadingElement | null>(null);
-  const rows = variablesInScope(metadata, scope.targetId, scope.lane, scope.branch);
-  const missing = missingLaneKeys(metadata, scope.targetId, scope.lane, scope.branch);
+  const rows = variablesInScope(
+    metadata,
+    scope.targetId,
+    scope.lane,
+    scope.branch,
+  );
+  const missing = missingLaneKeys(
+    metadata,
+    scope.targetId,
+    scope.lane,
+    scope.branch,
+  );
 
   useEffect(() => {
     if (!focus) return;
-    headingRef.current?.scrollIntoView?.({ block: "start" });
+    headingRef.current?.scrollIntoView?.({ block: 'start' });
     headingRef.current?.focus();
   }, [focus]);
 
   return (
-    <section className="hosting-card hosting-vars" aria-labelledby="hosting-vars-heading">
+    <section
+      className="hosting-card hosting-vars"
+      aria-labelledby="hosting-vars-heading"
+    >
       <div className="hosting-card__head">
         <div>
-          <h4 className="hosting-card__title" id="hosting-vars-heading" ref={headingRef} tabIndex={-1}>
+          <h4
+            className="hosting-card__title"
+            id="hosting-vars-heading"
+            ref={headingRef}
+            tabIndex={-1}
+          >
             Variables
           </h4>
-          <p className="hosting-quiet hosting-vars__scope">{variablesScopeLine(scope.lane, scope.branch, rows.length)}</p>
+          <p className="hosting-quiet hosting-vars__scope">
+            {variablesScopeLine(scope.lane, scope.branch, rows.length)}
+          </p>
         </div>
         <VariableActions managed={managed} scope={scope} />
       </div>
-      <PreviewBranchSelect environment={environment} value={scope.branch} onChange={onPreviewBranchChange} />
+      <PreviewBranchSelect
+        environment={environment}
+        value={scope.branch}
+        onChange={onPreviewBranchChange}
+      />
       <LaneCheck missing={missing} managed={managed} scope={scope} />
       <VariablesForm managed={managed} />
       <EditorMessage managed={managed} />
       <VariableRows rows={rows} managed={managed} />
       <p className="hosting-quiet hosting-vars__footer">
-        Values are write-only: ALPHACI sends them to {providerName} and never shows them again.
+        Values are write-only: ALPHACI sends them to {providerName} and never
+        shows them again.
       </p>
     </section>
   );
 }
 
-function VariableActions({ managed, scope }: Readonly<{ managed: ManagedVariables | null; scope: EnvVariablesScope }>) {
+function VariableActions({
+  managed,
+  scope,
+}: Readonly<{ managed: ManagedVariables | null; scope: EnvVariablesScope }>) {
   if (!managed) return null;
   return (
     <div className="hosting-card__actions">
@@ -111,12 +139,21 @@ function PreviewBranchSelect({
   environment,
   value,
   onChange,
-}: Readonly<{ environment: HostingEnvironment; value: string | null; onChange: (branch: string) => void }>) {
-  if (environment.kind !== "previews" || !environment.previewBranches.length) return null;
+}: Readonly<{
+  environment: HostingEnvironment;
+  value: string | null;
+  onChange: (branch: string) => void;
+}>) {
+  if (environment.kind !== 'previews' || !environment.previewBranches.length)
+    return null;
   return (
     <label className="hosting-field">
       <span>Preview branch</span>
-      <select aria-label="Preview branch" value={value ?? ""} onChange={(event) => onChange(event.target.value)}>
+      <select
+        aria-label="Preview branch"
+        value={value ?? ''}
+        onChange={(event) => onChange(event.target.value)}
+      >
         {environment.previewBranches.map((branch) => (
           <option key={branch} value={branch}>
             {branch}
@@ -132,11 +169,17 @@ function LaneCheck({
   missing,
   managed,
   scope,
-}: Readonly<{ missing: string[]; managed: ManagedVariables | null; scope: EnvVariablesScope }>) {
+}: Readonly<{
+  missing: string[];
+  managed: ManagedVariables | null;
+  scope: EnvVariablesScope;
+}>) {
   if (!missing.length) return null;
   return (
     <div className="hosting-notice hosting-notice--block" role="status">
-      <p className="hosting-notice__title">{missingKeysHeadline(missing.length)}</p>
+      <p className="hosting-notice__title">
+        {missingKeysHeadline(missing.length)}
+      </p>
       <ul className="hosting-notice__keys">
         {missing.map((key) => (
           <li key={key}>
@@ -157,7 +200,9 @@ function LaneCheck({
   );
 }
 
-function VariablesForm({ managed }: Readonly<{ managed: ManagedVariables | null }>) {
+function VariablesForm({
+  managed,
+}: Readonly<{ managed: ManagedVariables | null }>) {
   if (!managed?.editor.isAddingVariable) return null;
   const { editor, env } = managed;
   return (
@@ -186,14 +231,19 @@ function VariablesForm({ managed }: Readonly<{ managed: ManagedVariables | null 
       previewBranch={editor.previewBranch}
       rows={editor.rows}
       saving={env.saving}
-      scopeLabel={variablesScopeLabel(editor.lane, editor.previewBranch || null)}
+      scopeLabel={variablesScopeLabel(
+        editor.lane,
+        editor.previewBranch || null,
+      )}
       setIsBulkEnvDialogOpen={editor.setIsBulkEnvDialogOpen}
       targets={env.targets}
     />
   );
 }
 
-function EditorMessage({ managed }: Readonly<{ managed: ManagedVariables | null }>) {
+function EditorMessage({
+  managed,
+}: Readonly<{ managed: ManagedVariables | null }>) {
   const message = managed?.editor.message;
   if (!message) return null;
   return (
@@ -206,8 +256,14 @@ function EditorMessage({ managed }: Readonly<{ managed: ManagedVariables | null 
 function VariableRows({
   rows,
   managed,
-}: Readonly<{ rows: ReadonlyArray<EnvVarMetadata>; managed: ManagedVariables | null }>) {
-  if (!rows.length) return <p className="hosting-quiet">No variables in this environment yet.</p>;
+}: Readonly<{
+  rows: ReadonlyArray<EnvVarMetadata>;
+  managed: ManagedVariables | null;
+}>) {
+  if (!rows.length)
+    return (
+      <p className="hosting-quiet">No variables in this environment yet.</p>
+    );
   return (
     <ul className="hosting-rows" aria-label="Variables">
       {rows.map((item) => (
@@ -222,10 +278,12 @@ function VariableRows({
 }
 
 function VariableState({ item }: Readonly<{ item: EnvVarMetadata }>) {
-  if (item.status === "failed") {
+  if (item.status === 'failed') {
     return (
       <span className="hosting-row__failed">
-        {item.errorSummary ? cleanUserMessage(item.errorSummary) : "Failed to provision"}
+        {item.errorSummary
+          ? cleanUserMessage(item.errorSummary)
+          : 'Failed to provision'}
       </span>
     );
   }
@@ -233,13 +291,20 @@ function VariableState({ item }: Readonly<{ item: EnvVarMetadata }>) {
 }
 
 /** Re-enter a value or remove the key, as the variables list always offered; removing asks first. */
-function RowActions({ item, managed }: Readonly<{ item: EnvVarMetadata; managed: ManagedVariables | null }>) {
+function RowActions({
+  item,
+  managed,
+}: Readonly<{ item: EnvVarMetadata; managed: ManagedVariables | null }>) {
   if (!managed) return null;
   const { editor } = managed;
   if (editor.confirmDeleteId === item.id) {
     return (
       <span className="hosting-row__confirm">
-        <button type="button" className="hosting-btn" onClick={editor.cancelDelete}>
+        <button
+          type="button"
+          className="hosting-btn"
+          onClick={editor.cancelDelete}
+        >
           Cancel
         </button>
         <button
@@ -256,8 +321,15 @@ function RowActions({ item, managed }: Readonly<{ item: EnvVarMetadata; managed:
     <HostingMenu
       label={`Actions for ${item.key}`}
       items={[
-        { label: "Re-enter value", onSelect: () => editor.startReProvision(item) },
-        { label: "Remove", destructive: true, onSelect: () => void editor.deleteMetadata(item) },
+        {
+          label: 'Re-enter value',
+          onSelect: () => editor.startReProvision(item),
+        },
+        {
+          label: 'Remove',
+          destructive: true,
+          onSelect: () => void editor.deleteMetadata(item),
+        },
       ]}
     />
   );

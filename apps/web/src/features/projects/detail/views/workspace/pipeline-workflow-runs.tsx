@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { relativeTime } from "@/features/runs";
-import type { StageReport } from "@/shared/api/contracts";
+import { relativeTime } from '@/features/runs';
+import type { StageReport } from '@/shared/api/contracts';
 
 import {
   failureForJob,
@@ -9,31 +9,31 @@ import {
   jobLogReady,
   logUnavailableMessage,
   type FailureEntry,
-} from "../../model/failure-log-rules";
-import { diagnoseRunWithoutJobs } from "../../model/run-diagnosis";
+} from '../../model/failure-log-rules';
+import { diagnoseRunWithoutJobs } from '../../model/run-diagnosis';
 import {
   githubStatusChip,
   runDuration,
   runEventLabel,
   workflowRunLabel,
-} from "../../model/pipeline-run-card-rules";
-import type { WorkflowRunSummary } from "../../view-models/use-pipeline-runs-view-model";
+} from '../../model/pipeline-run-card-rules';
+import type { WorkflowRunSummary } from '../../view-models/use-pipeline-runs-view-model';
 import {
   useJobLogViewModel,
   useRunJobsViewModel,
   type RunJob,
   type RunJobsViewModel,
-} from "../../view-models/use-run-jobs-view-model";
-import { useStageFailureLogViewModel } from "../../view-models/use-stage-failure-log-view-model";
-import { JobLogPanel } from "./job-log-view";
-import { ChevronIcon } from "./pipeline-glyphs";
-import { FailureHint, StatusChip } from "./pipeline-stage-detail";
+} from '../../view-models/use-run-jobs-view-model';
+import { useStageFailureLogViewModel } from '../../view-models/use-stage-failure-log-view-model';
+import { JobLogPanel } from './job-log-view';
+import { ChevronIcon } from './pipeline-glyphs';
+import { FailureHint, StatusChip } from './pipeline-stage-detail';
 import {
   WorkspaceEmpty,
   WorkspaceError,
   WorkspaceLoading,
   statusTone,
-} from "./workspace-states";
+} from './workspace-states';
 
 /**
  * The GitHub runs one commit produced, one row each: which workflow, how it
@@ -57,7 +57,11 @@ export function WorkflowRunList({
   stages: readonly StageReport[];
 }>) {
   return (
-    <ul id={id} className="pipe-runs" aria-label="Workflow runs for this commit">
+    <ul
+      id={id}
+      className="pipe-runs"
+      aria-label="Workflow runs for this commit"
+    >
       {runs.map((run) => (
         <RunRow
           key={`${run.id}-${run.runAttempt}`}
@@ -85,12 +89,14 @@ function RunRow({
   const view = useRunJobsViewModel({
     projectId,
     runId: run.id,
-    isRunning: run.status !== "completed",
+    isRunning: run.status !== 'completed',
   });
   const bodyId = `run-body-${String(run.id)}-${String(run.runAttempt)}`;
 
   return (
-    <li className={`pipe-run pipe-run--${statusTone(run.status, run.conclusion)}`}>
+    <li
+      className={`pipe-run pipe-run--${statusTone(run.status, run.conclusion)}`}
+    >
       <button
         type="button"
         className="pipe-run__head"
@@ -117,7 +123,10 @@ function RunRow({
 }
 
 /** "#90 · chained · dev 1d65fe4 · 2h ago · 2m 0s". */
-function RunMeta({ branch, run }: Readonly<{ branch: string; run: WorkflowRunSummary }>) {
+function RunMeta({
+  branch,
+  run,
+}: Readonly<{ branch: string; run: WorkflowRunSummary }>) {
   const duration = runDuration(run);
   return (
     <span className="pipe-run__meta">
@@ -128,14 +137,16 @@ function RunMeta({ branch, run }: Readonly<{ branch: string; run: WorkflowRunSum
         <code className="pipe-sha">{run.headSha.slice(0, 7)}</code>
       </span>
       {run.runAttempt > 1 && <span>attempt {run.runAttempt}</span>}
-      {run.createdAt && <time dateTime={run.createdAt}>{relativeTime(run.createdAt)}</time>}
+      {run.createdAt && (
+        <time dateTime={run.createdAt}>{relativeTime(run.createdAt)}</time>
+      )}
       {duration && <span>{duration}</span>}
     </span>
   );
 }
 
 function isFailed(conclusion: string | null): boolean {
-  return conclusion === "failure" || conclusion === "timed_out";
+  return conclusion === 'failure' || conclusion === 'timed_out';
 }
 
 /**
@@ -147,18 +158,22 @@ function RunJobs({
   projectId,
   run,
   view,
-}: Readonly<{ projectId: string; run: WorkflowRunSummary; view: RunJobsViewModel }>) {
+}: Readonly<{
+  projectId: string;
+  run: WorkflowRunSummary;
+  view: RunJobsViewModel;
+}>) {
   const failureLog = useStageFailureLogViewModel({
     projectId,
     runId: run.id,
     enabled: isFailed(run.conclusion),
   });
 
-  if (view.status === "loading") return <WorkspaceLoading rows={3} />;
-  if (view.status === "error") {
+  if (view.status === 'loading') return <WorkspaceLoading rows={3} />;
+  if (view.status === 'error') {
     return (
       <WorkspaceError
-        message={view.error ?? "The jobs for this run could not be read."}
+        message={view.error ?? 'The jobs for this run could not be read.'}
         onRetry={view.retry}
       />
     );
@@ -167,8 +182,13 @@ function RunJobs({
   if (view.jobs.length === 0) {
     // A run with no jobs is not one thing: a workflow rejected before any job
     // ran is a real failure with a nameable cause. From the row's own data.
-    const diagnosis = diagnoseRunWithoutJobs({ status: run.status, conclusion: run.conclusion });
-    return <WorkspaceEmpty title={diagnosis.title} message={diagnosis.message} />;
+    const diagnosis = diagnoseRunWithoutJobs({
+      status: run.status,
+      conclusion: run.conclusion,
+    });
+    return (
+      <WorkspaceEmpty title={diagnosis.title} message={diagnosis.message} />
+    );
   }
   return (
     <ul className="pipe-jobs">
@@ -177,7 +197,11 @@ function RunJobs({
           key={job.id}
           projectId={projectId}
           job={job}
-          failure={isFailed(job.conclusion) ? failureForJob(failureLog.log, job.id) : null}
+          failure={
+            isFailed(job.conclusion)
+              ? failureForJob(failureLog.log, job.id)
+              : null
+          }
         />
       ))}
     </ul>
@@ -189,7 +213,11 @@ function JobRow({
   job,
   failure,
 }: Readonly<{ projectId: string; job: RunJob; failure: FailureEntry | null }>) {
-  const view = useJobLogViewModel({ projectId, jobId: job.id, ready: jobLogReady(job.status) });
+  const view = useJobLogViewModel({
+    projectId,
+    jobId: job.id,
+    ready: jobLogReady(job.status),
+  });
   const logId = `job-log-${String(job.id)}`;
 
   return (
@@ -204,7 +232,7 @@ function JobRow({
           aria-controls={view.open ? logId : undefined}
           onClick={view.toggle}
         >
-          {view.open ? "Hide log" : "View log"}
+          {view.open ? 'Hide log' : 'View log'}
         </button>
       </div>
 
@@ -245,7 +273,9 @@ function JobErrorPreview({ failure }: Readonly<{ failure: FailureEntry }>) {
   return (
     <div className="pipe-job__error">
       {failure.reason ? (
-        <p className="pipe-stage__reason">{logUnavailableMessage(failure.reason)}</p>
+        <p className="pipe-stage__reason">
+          {logUnavailableMessage(failure.reason)}
+        </p>
       ) : (
         <PreviewLines lines={failurePreview(failure.lines)} />
       )}

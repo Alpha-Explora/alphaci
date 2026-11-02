@@ -1,41 +1,62 @@
-"use client";
+'use client';
 
-import "./hosting.css";
+import './hosting.css';
 
-import { useId } from "react";
+import { useId } from 'react';
 
-import { ProjectDomainsPanel } from "@/features/projects/domains";
-import type { DeploymentTarget, EnvVarMetadata, ProvisionedProject } from "@/features/projects";
-import type { AppRole, ProjectDeploymentHistoryItem } from "@/shared/api/contracts";
-import { shortCommitSha } from "../../model/projects-rules";
-import { canRollBackTo, liveDeployId, rollbackHold } from "../model/deploy-rollback-rules";
+import { ProjectDomainsPanel } from '@/features/projects/domains';
+import type {
+  DeploymentTarget,
+  EnvVarMetadata,
+  ProvisionedProject,
+} from '@/features/projects';
+import type {
+  AppRole,
+  ProjectDeploymentHistoryItem,
+} from '@/shared/api/contracts';
+import { shortCommitSha } from '../../model/projects-rules';
+import {
+  canRollBackTo,
+  liveDeployId,
+  rollbackHold,
+} from '../model/deploy-rollback-rules';
 import {
   environmentScopeBranch,
   hostingEmptyBody,
   type HostingEmptyBody,
   type HostingEnvironmentKind,
-} from "../model/hosting-environment-rules";
+} from '../model/hosting-environment-rules';
 import {
   canManageEnvVars,
   canManageHosting,
   HOSTING_LEAD_ONLY_NOTE,
-} from "../model/project-detail-tab-rules";
-import { providerDisplayName } from "../model/provider-urls";
+} from '../model/project-detail-tab-rules';
+import { providerDisplayName } from '../model/provider-urls';
 import {
   useDeploymentTargetsViewModel,
   type DeploymentTargetsViewModel,
-} from "../view-models/use-deployment-targets-view-model";
-import { useEnvVariablesEditor } from "../view-models/use-env-variables-editor-view-model";
-import { useHostingTabViewModel } from "../view-models/use-hosting-tab-view-model";
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
-import { useProjectEnvProvisioning } from "../view-models/use-project-env-provisioning-view-model";
-import { HostingDeploymentCard } from "./hosting-deployment-card";
-import type { RollbackControls } from "./hosting-rollback";
-import { environmentPanelId, environmentTabId, HostingEnvironmentSwitcher } from "./hosting-environment-switcher";
-import { HostingServiceHeader, HostingServiceSelector } from "./hosting-service-header";
-import { HostingVariablesCard, type ManagedVariables } from "./hosting-variables-card";
-import { EnvironmentOperationsPanel } from "./environment-operations-panel";
-import { ProjectEnvPanel } from "./project-env-panel";
+} from '../view-models/use-deployment-targets-view-model';
+import { useEnvVariablesEditor } from '../view-models/use-env-variables-editor-view-model';
+import { useHostingTabViewModel } from '../view-models/use-hosting-tab-view-model';
+import type { ProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
+import { useProjectEnvProvisioning } from '../view-models/use-project-env-provisioning-view-model';
+import { HostingDeploymentCard } from './hosting-deployment-card';
+import type { RollbackControls } from './hosting-rollback';
+import {
+  environmentPanelId,
+  environmentTabId,
+  HostingEnvironmentSwitcher,
+} from './hosting-environment-switcher';
+import {
+  HostingServiceHeader,
+  HostingServiceSelector,
+} from './hosting-service-header';
+import {
+  HostingVariablesCard,
+  type ManagedVariables,
+} from './hosting-variables-card';
+import { EnvironmentOperationsPanel } from './environment-operations-panel';
+import { ProjectEnvPanel } from './project-env-panel';
 
 type TabProps = Readonly<{
   project: ProvisionedProject;
@@ -57,7 +78,7 @@ export function HostingTab({ project, vm }: TabProps) {
         appRole={vm.appRole}
         onTargetCreated={vm.handleTargetCreated}
         projectId={project.id}
-        workspaceId={project.workspaceId??null}
+        workspaceId={project.workspaceId ?? null}
         targets={vm.deploymentTargets}
       />
       <HostingContent project={project} vm={vm} />
@@ -66,8 +87,13 @@ export function HostingTab({ project, vm }: TabProps) {
 }
 
 function HostingContent({ project, vm }: TabProps) {
-  if (!vm.deploymentTargets.length) return <HostingEmptyState project={project} vm={vm} />;
-  if (canManageEnvVars(vm.appRole) && vm.envProvisioningEnabled && project.status === "provisioned") {
+  if (!vm.deploymentTargets.length)
+    return <HostingEmptyState project={project} vm={vm} />;
+  if (
+    canManageEnvVars(vm.appRole) &&
+    vm.envProvisioningEnabled &&
+    project.status === 'provisioned'
+  ) {
     return <ManagedHosting project={project} vm={vm} />;
   }
   return (
@@ -85,7 +111,15 @@ function HostingContent({ project, vm }: TabProps) {
 function ManagedHosting({ project, vm }: TabProps) {
   const env = useProjectEnvProvisioning(project.id, true, true);
   const editor = useEnvVariablesEditor(env);
-  return <HostingLayout project={project} vm={vm} metadata={env.metadata} managed={{ env, editor }} showVariables />;
+  return (
+    <HostingLayout
+      project={project}
+      vm={vm}
+      metadata={env.metadata}
+      managed={{ env, editor }}
+      showVariables
+    />
+  );
 }
 
 function HostingLayout({
@@ -163,7 +197,7 @@ function HostingLayout({
         }}
       />
       <div
-        className={`hosting-columns${showVariables ? "" : " hosting-columns--single"}`}
+        className={`hosting-columns${showVariables ? '' : ' hosting-columns--single'}`}
         role="tabpanel"
         id={environmentPanelId(idPrefix)}
         aria-labelledby={environmentTabId(idPrefix, environment.kind)}
@@ -175,12 +209,18 @@ function HostingLayout({
           deploys={hosting.deploys}
           allDeploys={hosting.allDeploys}
           history={{
-            enabled: vm.deploymentHistoryEnabled && vm.overview?.capabilities.deploymentHistory === true,
+            enabled:
+              vm.deploymentHistoryEnabled &&
+              vm.overview?.capabilities.deploymentHistory === true,
             response: vm.deployments,
           }}
-          onOpenPullRequest={vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined}
+          onOpenPullRequest={
+            vm.visibleTabs.includes('pulls') ? vm.openPullRequest : undefined
+          }
           domains={
-            environment.kind === "production" ? <HostingDomains project={project} vm={vm} /> : null
+            environment.kind === 'production' ? (
+              <HostingDomains project={project} vm={vm} />
+            ) : null
           }
           rollback={rollbackControlsFor({
             target,
@@ -200,7 +240,7 @@ function HostingLayout({
             metadata={metadata}
             managed={managed}
             providerName={providerDisplayName(target.provider)}
-            focus={vm.hostingFocus === "variables"}
+            focus={vm.hostingFocus === 'variables'}
           />
         ) : null}
       </div>
@@ -226,12 +266,17 @@ function rollbackControlsFor(input: {
   const allowed = canManageHosting(input.appRole);
   const liveId = liveDeployId(target, input.deploys);
   return {
-    offers: (deploy) => canRollBackTo({ allowed, actions, target, deploy, liveId }),
+    offers: (deploy) =>
+      canRollBackTo({ allowed, actions, target, deploy, liveId }),
     hold,
     canResume: allowed && hold !== null,
     busy: targetsVm.rollingBackTargetId === target.id,
     rollback: (deploy, reason) =>
-      targetsVm.rollback(target, { id: deploy.id, sha: shortCommitSha(deploy.commitSha) }, reason),
+      targetsVm.rollback(
+        target,
+        { id: deploy.id, sha: shortCommitSha(deploy.commitSha) },
+        reason,
+      ),
     resume: () => targetsVm.resumeDeploys(target),
   };
 }
@@ -257,7 +302,10 @@ function HostingDomains({ project, vm }: TabProps) {
   );
 }
 
-function domainTargetOption(target: DeploymentTarget): { id: string; label: string } {
+function domainTargetOption(target: DeploymentTarget): {
+  id: string;
+  label: string;
+} {
   return {
     id: target.id,
     label: `${providerDisplayName(target.provider)} · ${target.providerProjectName}`,
@@ -269,23 +317,33 @@ function HostingEmptyState({ project, vm }: TabProps) {
   const body = hostingEmptyBody({
     canManage: canManageHosting(vm.appRole),
     envProvisioningEnabled: vm.envProvisioningEnabled,
-    provisioned: project.status === "provisioned",
+    provisioned: project.status === 'provisioned',
   });
   return (
-    <section className="hosting-card hosting-empty" aria-labelledby="hosting-empty-heading">
+    <section
+      className="hosting-card hosting-empty"
+      aria-labelledby="hosting-empty-heading"
+    >
       <h3 className="hosting-empty__title" id="hosting-empty-heading">
         Host this repository
       </h3>
-      <p className="hosting-quiet">Connect one hosting service and ALPHACI deploys this repository from Git:</p>
+      <p className="hosting-quiet">
+        Connect one hosting service and ALPHACI deploys this repository from
+        Git:
+      </p>
       <ul className="hosting-empty__points">
         <li>
           <code className="hosting-mono">main</code> publishes to Production.
         </li>
         <li>
-          <code className="hosting-mono">uat</code> gets its own address, where QA checks it.
+          <code className="hosting-mono">uat</code> gets its own address, where
+          QA checks it.
         </li>
         <li>Every other branch gets a preview.</li>
-        <li>Variables are set per environment, and their values are never shown again.</li>
+        <li>
+          Variables are set per environment, and their values are never shown
+          again.
+        </li>
       </ul>
       <EmptyStateBody body={body} project={project} vm={vm} />
     </section>
@@ -296,19 +354,28 @@ function EmptyStateBody({
   body,
   project,
   vm,
-}: Readonly<{ body: HostingEmptyBody; project: ProvisionedProject; vm: ProjectDetailTabsViewModel }>) {
-  if (body === "create") {
+}: Readonly<{
+  body: HostingEmptyBody;
+  project: ProvisionedProject;
+  vm: ProjectDetailTabsViewModel;
+}>) {
+  if (body === 'create') {
     return (
       <div className="hosting-empty__setup">
-        <ProjectEnvPanel onTargetCreated={vm.handleTargetCreated} project={project} section="hosting" />
+        <ProjectEnvPanel
+          onTargetCreated={vm.handleTargetCreated}
+          project={project}
+          section="hosting"
+        />
       </div>
     );
   }
   return <p className="env-empty-state">{EMPTY_NOTES[body]}</p>;
 }
 
-const EMPTY_NOTES: Record<Exclude<HostingEmptyBody, "create">, string> = {
+const EMPTY_NOTES: Record<Exclude<HostingEmptyBody, 'create'>, string> = {
   lead_only: HOSTING_LEAD_ONLY_NOTE,
-  disabled: "Hosting service provisioning is not enabled.",
-  not_provisioned: "A hosting service can be added once the repository is provisioned.",
+  disabled: 'Hosting service provisioning is not enabled.',
+  not_provisioned:
+    'A hosting service can be added once the repository is provisioned.',
 };

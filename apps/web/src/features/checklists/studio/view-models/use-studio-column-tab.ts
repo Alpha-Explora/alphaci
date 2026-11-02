@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent } from 'react';
 
 import {
   resolveStudioColumnTab,
   STUDIO_COLUMN_TABS,
   studioColumnTabKey,
   type StudioColumnTab,
-} from "../../model/playwright-tab-rules";
-import { useRememberedChoice } from "./use-remembered-flag";
+} from '../../model/playwright-tab-rules';
+import { useRememberedChoice } from './use-remembered-flag';
 
 export interface StudioColumnTabViewModel {
   tab: StudioColumnTab;
@@ -21,15 +21,25 @@ export interface StudioColumnTabViewModel {
   tabRef: (tab: StudioColumnTab) => (node: HTMLButtonElement | null) => void;
 }
 
-const STEPS: Readonly<Record<string, number>> = { ArrowDown: 1, ArrowUp: -1, ArrowRight: 1, ArrowLeft: -1 };
+const STEPS: Readonly<Record<string, number>> = {
+  ArrowDown: 1,
+  ArrowUp: -1,
+  ArrowRight: 1,
+  ArrowLeft: -1,
+};
 
-function keyTarget(key: string, current: StudioColumnTab): StudioColumnTab | null {
-  if (key === "Home") return STUDIO_COLUMN_TABS[0];
-  if (key === "End") return STUDIO_COLUMN_TABS[STUDIO_COLUMN_TABS.length - 1];
+function keyTarget(
+  key: string,
+  current: StudioColumnTab,
+): StudioColumnTab | null {
+  if (key === 'Home') return STUDIO_COLUMN_TABS[0];
+  if (key === 'End') return STUDIO_COLUMN_TABS[STUDIO_COLUMN_TABS.length - 1];
   const step = STEPS[key];
   if (!step) return null;
   const count = STUDIO_COLUMN_TABS.length;
-  return STUDIO_COLUMN_TABS[(STUDIO_COLUMN_TABS.indexOf(current) + step + count) % count];
+  return STUDIO_COLUMN_TABS[
+    (STUDIO_COLUMN_TABS.indexOf(current) + step + count) % count
+  ];
 }
 
 /**
@@ -38,13 +48,22 @@ function keyTarget(key: string, current: StudioColumnTab): StudioColumnTab | nul
  * convenience — unreadable storage opens the Checklist), and the tablist's
  * arrow-key movement. Selection follows focus, as in the Project QA workspace.
  */
-export function useStudioColumnTab(studio: "qa" | "po"): StudioColumnTabViewModel {
-  const [tab, choose] = useRememberedChoice(studioColumnTabKey(studio), resolveStudioColumnTab);
-  const [playwrightOpened, setPlaywrightOpened] = useState(tab === "playwright");
-  const nodes = useRef<Partial<Record<StudioColumnTab, HTMLButtonElement | null>>>({});
+export function useStudioColumnTab(
+  studio: 'qa' | 'po',
+): StudioColumnTabViewModel {
+  const [tab, choose] = useRememberedChoice(
+    studioColumnTabKey(studio),
+    resolveStudioColumnTab,
+  );
+  const [playwrightOpened, setPlaywrightOpened] = useState(
+    tab === 'playwright',
+  );
+  const nodes = useRef<
+    Partial<Record<StudioColumnTab, HTMLButtonElement | null>>
+  >({});
 
   function select(next: StudioColumnTab) {
-    if (next === "playwright") setPlaywrightOpened(true);
+    if (next === 'playwright') setPlaywrightOpened(true);
     if (next !== tab) choose(next);
   }
 

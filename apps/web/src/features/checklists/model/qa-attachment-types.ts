@@ -6,13 +6,13 @@
  * reads these shapes; the `…Wire` names mirror QA_ATTACHMENTS_PLAN.md §5 A1. */
 
 /** Why the image is there: QA's evidence, a Developer's proof of a fix, or CI's screenshot. */
-export type QaAttachmentKind = "evidence" | "fix_proof" | "automated";
+export type QaAttachmentKind = 'evidence' | 'fix_proof' | 'automated';
 
 /** How a person added it (or `playwright` for CI). */
-export type QaAttachmentSource = "capture" | "paste" | "upload" | "playwright";
+export type QaAttachmentSource = 'capture' | 'paste' | 'upload' | 'playwright';
 
 /** The image types the server accepts, read from the file's own bytes. */
-export type QaImageType = "image/png" | "image/jpeg" | "image/webp";
+export type QaImageType = 'image/png' | 'image/jpeg' | 'image/webp';
 
 export interface QaAttachment {
   id: string;
@@ -62,7 +62,7 @@ export interface EvidenceUploadInput {
   file: Blob;
   fileName: string;
   caption: string | null;
-  source: Exclude<QaAttachmentSource, "playwright">;
+  source: Exclude<QaAttachmentSource, 'playwright'>;
 }
 
 /** An image ready to save: compressed, measured, previewable. */

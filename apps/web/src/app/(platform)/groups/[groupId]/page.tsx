@@ -1,1 +1,1 @@
-export { GroupDetailView as default } from "@/features/groups/detail";
+export { GroupDetailView as default } from '@/features/groups/detail';

@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { useCapabilities } from "@/features/capabilities/current";
-import type { DeploymentLogFocus } from "@/features/projects/deployment-logs";
-import { projectsRepository } from "../../data/projects-repository";
-import type { ProjectStatus } from "../../model/projects-types";
+import { useCapabilities } from '@/features/capabilities/current';
+import type { DeploymentLogFocus } from '@/features/projects/deployment-logs';
+import { projectsRepository } from '../../data/projects-repository';
+import type { ProjectStatus } from '../../model/projects-types';
 import type {
   AppRole,
   DeploymentTarget,
@@ -13,7 +13,7 @@ import type {
   ProjectDeploymentsResponse,
   ProjectOverviewResponse,
   WorkflowFileMetadata,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 import {
   applyTargetChange,
   applyTargetCreated,
@@ -37,12 +37,15 @@ import {
   type PipelineView,
   type ProjectDetailTab,
   type WorkflowUpdateAccess,
-} from "../model/project-detail-tab-rules";
-import { useLazyProjectQuery } from "./use-lazy-project-query";
-import type { BrowseCommit } from "../model/code-commit-rules";
-import { useProjectAuditViewModel, type ProjectAuditViewModel } from "./use-project-audit-view-model";
-import { useProjectWorkflowSettingsViewModel } from "./use-project-workflow-settings-view-model";
-import type { ProjectWorkflowSettingsViewModel } from "./use-project-workflow-settings-view-model";
+} from '../model/project-detail-tab-rules';
+import { useLazyProjectQuery } from './use-lazy-project-query';
+import type { BrowseCommit } from '../model/code-commit-rules';
+import {
+  useProjectAuditViewModel,
+  type ProjectAuditViewModel,
+} from './use-project-audit-view-model';
+import { useProjectWorkflowSettingsViewModel } from './use-project-workflow-settings-view-model';
+import type { ProjectWorkflowSettingsViewModel } from './use-project-workflow-settings-view-model';
 
 export interface ProjectDetailTabsViewModel {
   tab: ProjectDetailTab;
@@ -114,7 +117,7 @@ export interface ProjectDetailTabsViewModel {
   overview: ProjectOverviewResponse | null;
   workflowFiles: WorkflowFileMetadata[];
   deploymentTargets: DeploymentTarget[];
-  envMetadata: ProjectOverviewResponse["environment"]["items"];
+  envMetadata: ProjectOverviewResponse['environment']['items'];
   handleTargetChanged: (target: DeploymentTarget) => void;
   handleTargetCreated: (target: DeploymentTarget) => void;
   handleTargetDetached: (targetId: string) => void;
@@ -163,22 +166,33 @@ export function useProjectDetailTabsViewModel(options: {
   // A deep link (#qa) picks the first tab. Safe to read window here: the tab
   // set only mounts client-side, once the project overview has loaded.
   const [selectedTab, setTabState] = useState<ProjectDetailTab>(
-    () => (typeof window === "undefined" ? null : tabFromHash(window.location.hash)) ?? "overview",
+    () =>
+      (typeof window === 'undefined'
+        ? null
+        : tabFromHash(window.location.hash)) ?? 'overview',
   );
   const [highlightMyQaItems] = useState<boolean>(() =>
-    typeof window === "undefined" ? false : shouldHighlightMyQaItems(window.location.search),
+    typeof window === 'undefined'
+      ? false
+      : shouldHighlightMyQaItems(window.location.search),
   );
   const [logFocus, setLogFocus] = useState<DeploymentLogFocus | null>(null);
   const [hostingFocus, setHostingFocus] = useState<HostingFocus | null>(() =>
-    typeof window === "undefined" ? null : hostingFocusFromHash(window.location.hash),
+    typeof window === 'undefined'
+      ? null
+      : hostingFocusFromHash(window.location.hash),
   );
   const [pullFocus, setPullFocus] = useState<number | null>(null);
   const [codeCommit, setCodeCommit] = useState<BrowseCommit | null>(null);
   const [commitsBranch, setCommitsBranch] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : commitsBranchFromUrl(window.location.hash, window.location.search),
+    typeof window === 'undefined'
+      ? null
+      : commitsBranchFromUrl(window.location.hash, window.location.search),
   );
   const [selectedPipelineView, setPipelineView] = useState<PipelineView>(() =>
-    typeof window === "undefined" ? "runs" : pipelineViewFromHash(window.location.hash),
+    typeof window === 'undefined'
+      ? 'runs'
+      : pipelineViewFromHash(window.location.hash),
   );
 
   const caps = useCapabilities();
@@ -189,12 +203,15 @@ export function useProjectDetailTabsViewModel(options: {
   // Checklists tab, the strip falls back to Overview on the same render.
   const tab = resolveVisibleTab(selectedTab, visibleTabs);
   const configurationAvailable = pipelineConfigurationAvailable(visibleTabs);
-  const pipelineView = resolvePipelineView(selectedPipelineView, configurationAvailable);
+  const pipelineView = resolvePipelineView(
+    selectedPipelineView,
+    configurationAvailable,
+  );
   const overviewQuery = useLazyProjectQuery<ProjectOverviewResponse>({
     projectId,
     enabled: Boolean(projectId),
     load: loadOverview,
-    errorMessage: "Unable to load project overview.",
+    errorMessage: 'Unable to load project overview.',
   });
   const overview = overviewQuery.data;
   const overviewCaps = overviewCapabilityFlags(overview);
@@ -218,7 +235,7 @@ export function useProjectDetailTabsViewModel(options: {
       overviewCiRunTracking: overviewCaps.ciRunTracking,
     }),
     load: loadCiRuns,
-    errorMessage: "Unable to load CI runs.",
+    errorMessage: 'Unable to load CI runs.',
   });
   const deploymentsQuery = useLazyProjectQuery<ProjectDeploymentsResponse>({
     projectId,
@@ -228,9 +245,12 @@ export function useProjectDetailTabsViewModel(options: {
       overviewDeploymentHistory: overviewCaps.deploymentHistory,
     }),
     load: loadDeployments,
-    errorMessage: "Unable to load deployment history.",
+    errorMessage: 'Unable to load deployment history.',
   });
-  const audit = useProjectAuditViewModel({ projectId, enabled: tab === "audit" });
+  const audit = useProjectAuditViewModel({
+    projectId,
+    enabled: tab === 'audit',
+  });
 
   const { workflowFiles, deploymentTargets, envMetadata } = tabData;
 
@@ -240,12 +260,12 @@ export function useProjectDetailTabsViewModel(options: {
     setPullFocus(null);
     setCommitsBranch(null);
     setCodeCommit(null);
-    setPipelineView("runs");
+    setPipelineView('runs');
     setTabState(next);
   }
 
   function openPipeline(view: PipelineView) {
-    setTab("pipeline");
+    setTab('pipeline');
     setPipelineView(view);
   }
 
@@ -253,14 +273,14 @@ export function useProjectDetailTabsViewModel(options: {
     setHostingFocus(null);
     setLogFocus(null);
     setPullFocus(null);
-    setTabState("checklists");
+    setTabState('checklists');
   }
 
   function openTargetLogs(focus: DeploymentLogFocus) {
     setHostingFocus(null);
     setPullFocus(null);
     setLogFocus(focus);
-    setTabState("hosting");
+    setTabState('hosting');
   }
 
   function openCommits(branch?: string | null) {
@@ -268,14 +288,14 @@ export function useProjectDetailTabsViewModel(options: {
     setLogFocus(null);
     setPullFocus(null);
     setCommitsBranch(branch ?? null);
-    setTabState("commits");
+    setTabState('commits');
   }
 
   function openPullRequest(pullRequestNumber: number) {
     setHostingFocus(null);
     setLogFocus(null);
     setPullFocus(pullRequestNumber);
-    setTabState("pulls");
+    setTabState('pulls');
   }
 
   function openCodeAt(commit: BrowseCommit) {
@@ -283,7 +303,7 @@ export function useProjectDetailTabsViewModel(options: {
     setLogFocus(null);
     setPullFocus(null);
     setCodeCommit(commit);
-    setTabState("code");
+    setTabState('code');
   }
 
   function handleTargetChanged(target: DeploymentTarget) {

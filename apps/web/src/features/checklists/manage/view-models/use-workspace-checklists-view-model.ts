@@ -1,26 +1,26 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { checklistsRepository } from "../../data/checklists-repository";
+import { checklistsRepository } from '../../data/checklists-repository';
 import {
   checklistErrorMessage,
   isArchived,
   sortChecklists,
   upsertChecklist,
-} from "../../model/checklist-rules";
+} from '../../model/checklist-rules';
 import type {
   ChecklistsStatus,
   QaChecklist,
   QaChecklistListResponse,
-} from "../../model/checklist-types";
+} from '../../model/checklist-types';
 
 /** Which screen of the section is showing. One at a time, like the rest of the team panel. */
 export type ChecklistScreen =
-  | { kind: "list" }
-  | { kind: "view"; checklistId: string }
-  | { kind: "edit"; checklistId: string }
-  | { kind: "create" };
+  | { kind: 'list' }
+  | { kind: 'view'; checklistId: string }
+  | { kind: 'edit'; checklistId: string }
+  | { kind: 'create' };
 
 export interface WorkspaceChecklistsViewModel {
   status: ChecklistsStatus;
@@ -55,19 +55,23 @@ interface LoadResult {
   error: string | null;
 }
 
-const LOAD_ERROR = "QA checklists could not be loaded. Try again in a moment.";
+const LOAD_ERROR = 'QA checklists could not be loaded. Try again in a moment.';
 
-function initialScreen(checklistId: string | null | undefined): ChecklistScreen {
-  return checklistId ? { kind: "view", checklistId } : { kind: "list" };
+function initialScreen(
+  checklistId: string | null | undefined,
+): ChecklistScreen {
+  return checklistId ? { kind: 'view', checklistId } : { kind: 'list' };
 }
 
 function screenChecklistId(screen: ChecklistScreen): string | null {
-  return screen.kind === "view" || screen.kind === "edit" ? screen.checklistId : null;
+  return screen.kind === 'view' || screen.kind === 'edit'
+    ? screen.checklistId
+    : null;
 }
 
 function loadStatus(result: LoadResult | null): ChecklistsStatus {
-  if (!result) return "loading";
-  return result.error ? "error" : "ready";
+  if (!result) return 'loading';
+  return result.error ? 'error' : 'ready';
 }
 
 /**
@@ -81,11 +85,11 @@ function resolveScreen(
   selected: QaChecklist | null,
   canManage: boolean,
 ): ChecklistScreen {
-  if (screen.kind === "create") return canManage ? screen : { kind: "list" };
-  if (screen.kind === "list" || status !== "ready") return screen;
-  if (!selected) return { kind: "list" };
-  if (screen.kind === "edit" && (!canManage || isArchived(selected))) {
-    return { kind: "view", checklistId: selected.id };
+  if (screen.kind === 'create') return canManage ? screen : { kind: 'list' };
+  if (screen.kind === 'list' || status !== 'ready') return screen;
+  if (!selected) return { kind: 'list' };
+  if (screen.kind === 'edit' && (!canManage || isArchived(selected))) {
+    return { kind: 'view', checklistId: selected.id };
   }
   return screen;
 }
@@ -122,11 +126,16 @@ export function useWorkspaceChecklistsViewModel(options: {
     checklistsRepository
       .listForWorkspace(workspaceId, { includeArchived: showArchived })
       .then((data) => {
-        if (requestId === requestRef.current) setResult({ key, data, error: null });
+        if (requestId === requestRef.current)
+          setResult({ key, data, error: null });
       })
       .catch((cause: unknown) => {
         if (requestId !== requestRef.current) return;
-        setResult({ key, data: null, error: checklistErrorMessage(cause, LOAD_ERROR) });
+        setResult({
+          key,
+          data: null,
+          error: checklistErrorMessage(cause, LOAD_ERROR),
+        });
       });
   }, [enabled, workspaceId, showArchived, key]);
 
@@ -139,7 +148,9 @@ export function useWorkspaceChecklistsViewModel(options: {
   );
 
   const rawScreen =
-    screenState.workspaceId === workspaceId ? screenState.screen : { kind: "list" as const };
+    screenState.workspaceId === workspaceId
+      ? screenState.screen
+      : { kind: 'list' as const };
   const selectedId = screenChecklistId(rawScreen);
   const selected = checklists.find((item) => item.id === selectedId) ?? null;
   const screen = resolveScreen(rawScreen, status, selected, canManage);
@@ -153,7 +164,10 @@ export function useWorkspaceChecklistsViewModel(options: {
     (update: (items: QaChecklist[]) => QaChecklist[]) => {
       setResult((previous) => {
         if (!previous?.data) return previous;
-        return { ...previous, data: { ...previous.data, items: update(previous.data.items) } };
+        return {
+          ...previous,
+          data: { ...previous.data, items: update(previous.data.items) },
+        };
       });
     },
     [],
@@ -169,23 +183,24 @@ export function useWorkspaceChecklistsViewModel(options: {
     setShowArchived,
     screen,
     selected,
-    openChecklist: (checklistId) => setScreen({ kind: "view", checklistId }),
-    editChecklist: (checklistId) => setScreen({ kind: "edit", checklistId }),
-    startCreate: () => setScreen({ kind: "create" }),
-    backToList: () => setScreen({ kind: "list" }),
+    openChecklist: (checklistId) => setScreen({ kind: 'view', checklistId }),
+    editChecklist: (checklistId) => setScreen({ kind: 'edit', checklistId }),
+    startCreate: () => setScreen({ kind: 'create' }),
+    backToList: () => setScreen({ kind: 'list' }),
     reload: () => setNonce((value) => value + 1),
     applySaved: (checklist) => {
       patchItems((items) => upsertChecklist(items, checklist));
-      setScreen({ kind: "view", checklistId: checklist.id });
+      setScreen({ kind: 'view', checklistId: checklist.id });
     },
-    applyShared: (checklist) => patchItems((items) => upsertChecklist(items, checklist)),
+    applyShared: (checklist) =>
+      patchItems((items) => upsertChecklist(items, checklist)),
     applyArchived: (checklist) => {
       patchItems((items) =>
         showArchived
           ? upsertChecklist(items, checklist)
           : items.filter((item) => item.id !== checklist.id),
       );
-      setScreen({ kind: "list" });
+      setScreen({ kind: 'list' });
     },
   };
 }

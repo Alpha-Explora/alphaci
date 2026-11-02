@@ -9,7 +9,7 @@
 import {
   getProjectTourSteps,
   createProjectTour,
-} from "../../src/features/workflows/studio/views/tours/create-project-tour";
+} from '../../src/features/workflows/studio/views/tours/create-project-tour';
 
 // driver.js imports CSS at module level which jest-environment-jsdom cannot
 // process. Stub the entire module so the tests focus on step logic only.
@@ -19,75 +19,79 @@ const mockDriverInstance = {
 };
 const mockDriver = jest.fn(() => mockDriverInstance);
 
-jest.mock("driver.js", () => ({
+jest.mock('driver.js', () => ({
   driver: (...args: unknown[]) => mockDriver(...args),
 }));
 
-describe("getProjectTourSteps", () => {
-  it("returns a non-empty array of steps", () => {
+describe('getProjectTourSteps', () => {
+  it('returns a non-empty array of steps', () => {
     const steps = getProjectTourSteps();
     expect(steps.length).toBeGreaterThan(0);
   });
 
-  it("includes a step for the repo-shape selector", () => {
+  it('includes a step for the repo-shape selector', () => {
     const steps = getProjectTourSteps();
     const step = steps.find((s) => s.element === "[data-tour='repo-shape']");
     expect(step).toBeDefined();
     expect(step?.popover?.title).toBeTruthy();
   });
 
-  it("includes a step for the project type select", () => {
+  it('includes a step for the project type select', () => {
     const steps = getProjectTourSteps();
-    const step = steps.find((s) => s.element === "#project-type-select");
+    const step = steps.find((s) => s.element === '#project-type-select');
     expect(step).toBeDefined();
   });
 
-  it("includes a step for the workflow recipe select", () => {
+  it('includes a step for the workflow recipe select', () => {
     const steps = getProjectTourSteps();
-    const step = steps.find((s) => s.element === "#workflow-recipe-select");
+    const step = steps.find((s) => s.element === '#workflow-recipe-select');
     expect(step).toBeDefined();
   });
 
-  it("includes a step for the repository name input", () => {
+  it('includes a step for the repository name input', () => {
     const steps = getProjectTourSteps();
-    const step = steps.find((s) => s.element === "#repo-name");
+    const step = steps.find((s) => s.element === '#repo-name');
     expect(step).toBeDefined();
   });
 
-  it("includes a step for the repo visibility selector", () => {
+  it('includes a step for the repo visibility selector', () => {
     const steps = getProjectTourSteps();
-    const step = steps.find((s) => s.element === "#repo-visibility");
+    const step = steps.find((s) => s.element === '#repo-visibility');
     expect(step).toBeDefined();
   });
 
-  it("includes a step for the node version selector", () => {
+  it('includes a step for the node version selector', () => {
     const steps = getProjectTourSteps();
-    const step = steps.find((s) => s.element === "#node-version");
+    const step = steps.find((s) => s.element === '#node-version');
     expect(step).toBeDefined();
   });
 
-  it("includes a step for the coverage threshold selector", () => {
+  it('includes a step for the coverage threshold selector', () => {
     const steps = getProjectTourSteps();
-    const step = steps.find((s) => s.element === "#coverage-threshold");
+    const step = steps.find((s) => s.element === '#coverage-threshold');
     expect(step).toBeDefined();
   });
 
   /* The Repository step no longer asks for a service name or path, and the
    * Automation step no longer offers a workflow file name or check chips. */
-  it.each(["#service-name", "#service-path", "#output-file-name", "[data-tour='test-toggles']"])(
-    "has no step for the removed %s field",
-    (selector) => {
-      expect(getProjectTourSteps().some((step) => step.element === selector)).toBe(false);
-    },
-  );
+  it.each([
+    '#service-name',
+    '#service-path',
+    '#output-file-name',
+    "[data-tour='test-toggles']",
+  ])('has no step for the removed %s field', (selector) => {
+    expect(
+      getProjectTourSteps().some((step) => step.element === selector),
+    ).toBe(false);
+  });
 
-  it("final step targets the Create button", () => {
+  it('final step targets the Create button', () => {
     const steps = getProjectTourSteps();
     const last = steps.at(-1);
     expect(last?.element).toBe("[data-testid='setup-project-button']");
   });
 
-  it("every step has a non-empty popover title and description", () => {
+  it('every step has a non-empty popover title and description', () => {
     const steps = getProjectTourSteps();
     for (const step of steps) {
       expect(step.popover?.title?.trim()).toBeTruthy();
@@ -95,22 +99,22 @@ describe("getProjectTourSteps", () => {
     }
   });
 
-  it("every step has a valid element selector string", () => {
+  it('every step has a valid element selector string', () => {
     const steps = getProjectTourSteps();
     for (const step of steps) {
-      expect(typeof step.element).toBe("string");
+      expect(typeof step.element).toBe('string');
       expect((step.element as string).length).toBeGreaterThan(0);
     }
   });
 });
 
-describe("createProjectTour", () => {
+describe('createProjectTour', () => {
   // createProjectTour filters steps to anchors present in the DOM. Inject a
   // matching element for every step selector so the full step set survives.
   function injectAnchors() {
     for (const step of getProjectTourSteps()) {
       const selector = step.element as string;
-      const el = document.createElement("div");
+      const el = document.createElement('div');
       const idMatch = selector.match(/^#(.+)$/);
       const attrMatch = selector.match(/^\[([^=]+)='([^']+)'\]$/);
       if (idMatch) {
@@ -133,14 +137,14 @@ describe("createProjectTour", () => {
     document.body.replaceChildren();
   });
 
-  it("calls driver() and returns the instance", () => {
+  it('calls driver() and returns the instance', () => {
     const onFinished = jest.fn();
     const instance = createProjectTour({ onFinished });
     expect(mockDriver).toHaveBeenCalledTimes(1);
     expect(instance).toBe(mockDriverInstance);
   });
 
-  it("passes showProgress and allowClose to driver()", () => {
+  it('passes showProgress and allowClose to driver()', () => {
     const onFinished = jest.fn();
     createProjectTour({ onFinished });
     const config = mockDriver.mock.calls[0][0] as Record<string, unknown>;
@@ -148,15 +152,17 @@ describe("createProjectTour", () => {
     expect(config.allowClose).toBe(true);
   });
 
-  it("passes the steps array to driver()", () => {
+  it('passes the steps array to driver()', () => {
     const onFinished = jest.fn();
     createProjectTour({ onFinished });
     const config = mockDriver.mock.calls[0][0] as Record<string, unknown>;
     expect(Array.isArray(config.steps)).toBe(true);
-    expect((config.steps as unknown[]).length).toBe(getProjectTourSteps().length);
+    expect((config.steps as unknown[]).length).toBe(
+      getProjectTourSteps().length,
+    );
   });
 
-  it("onDestroyed fires onFinished exactly once", () => {
+  it('onDestroyed fires onFinished exactly once', () => {
     const onFinished = jest.fn();
     createProjectTour({ onFinished });
     const config = mockDriver.mock.calls[0][0] as Record<string, unknown>;

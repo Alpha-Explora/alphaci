@@ -9,5 +9,5 @@ export type {
   NotificationPreferences,
   UpdateNotificationPreferencesRequest,
   NotificationsStatus,
-} from "./model/notifications-types";
-export { notificationHref } from "./model/notification-links";
+} from './model/notifications-types';
+export { notificationHref } from './model/notification-links';

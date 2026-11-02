@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import type { ClientCompositionInfo } from "@/shared/api/contracts";
+import type { ClientCompositionInfo } from '@/shared/api/contracts';
 
 export function EnterpriseClientCompositionSettingsView({
   composition,
@@ -35,17 +35,17 @@ export function EnterpriseClientCompositionSettingsView({
         <dl className="client-composition-details">
           <div>
             <dt>Client</dt>
-            <dd>{composition.displayName ?? composition.clientId ?? "—"}</dd>
+            <dd>{composition.displayName ?? composition.clientId ?? '—'}</dd>
           </div>
           <div>
             <dt>Client ID</dt>
             <dd>
-              <code>{composition.clientId ?? "—"}</code>
+              <code>{composition.clientId ?? '—'}</code>
             </dd>
           </div>
           <div>
             <dt>Edition</dt>
-            <dd>{composition.edition ?? "—"}</dd>
+            <dd>{composition.edition ?? '—'}</dd>
           </div>
         </dl>
         <div className="client-composition-policy">

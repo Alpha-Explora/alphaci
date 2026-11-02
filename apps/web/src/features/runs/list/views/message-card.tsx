@@ -1,7 +1,10 @@
-"use client";
+'use client';
 
-import type { FriendlyMessage } from "../../model/runs-types";
-import { plainFriendlyMessage, severityColors } from "../../model/runs-presentation";
+import type { FriendlyMessage } from '../../model/runs-types';
+import {
+  plainFriendlyMessage,
+  severityColors,
+} from '../../model/runs-presentation';
 
 interface MessageCardProps {
   message: FriendlyMessage;
@@ -85,15 +88,15 @@ function SuccessIcon() {
   );
 }
 
-function SeverityIcon({ severity }: { severity: FriendlyMessage["severity"] }) {
+function SeverityIcon({ severity }: { severity: FriendlyMessage['severity'] }) {
   switch (severity) {
-    case "error":
+    case 'error':
       return <ErrorIcon />;
-    case "warning":
+    case 'warning':
       return <WarningIcon />;
-    case "info":
+    case 'info':
       return <InfoIcon />;
-    case "success":
+    case 'success':
       return <SuccessIcon />;
   }
 }
@@ -108,23 +111,23 @@ export function MessageCard({ message: stored }: MessageCardProps) {
       style={{
         borderLeft: `3px solid ${colors.border}`,
         background: colors.bg,
-        borderRadius: "0 0.6rem 0.6rem 0",
-        padding: "0.75rem 1rem",
-        display: "grid",
-        gap: "0.35rem",
+        borderRadius: '0 0.6rem 0.6rem 0',
+        padding: '0.75rem 1rem',
+        display: 'grid',
+        gap: '0.35rem',
       }}
     >
       {/* Title row */}
-      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-        <span style={{ color: colors.icon, flexShrink: 0, display: "flex" }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <span style={{ color: colors.icon, flexShrink: 0, display: 'flex' }}>
           <SeverityIcon severity={message.severity} />
         </span>
         <p
           style={{
             margin: 0,
-            fontSize: "0.84rem",
+            fontSize: '0.84rem',
             fontWeight: 700,
-            color: "var(--text-primary)",
+            color: 'var(--text-primary)',
             lineHeight: 1.3,
           }}
         >
@@ -136,10 +139,10 @@ export function MessageCard({ message: stored }: MessageCardProps) {
       <p
         style={{
           margin: 0,
-          fontSize: "0.8rem",
-          color: "var(--text-secondary)",
+          fontSize: '0.8rem',
+          color: 'var(--text-secondary)',
           lineHeight: 1.55,
-          paddingLeft: "1.1rem",
+          paddingLeft: '1.1rem',
         }}
       >
         {message.detail}
@@ -150,22 +153,22 @@ export function MessageCard({ message: stored }: MessageCardProps) {
         <ul
           role="list"
           style={{
-            margin: "0.15rem 0 0",
+            margin: '0.15rem 0 0',
             padding: 0,
-            paddingLeft: "1.1rem",
-            listStyle: "none",
-            display: "grid",
-            gap: "0.25rem",
+            paddingLeft: '1.1rem',
+            listStyle: 'none',
+            display: 'grid',
+            gap: '0.25rem',
           }}
         >
           {message.items.map((item, i) => (
             <li
               key={i}
               style={{
-                display: "flex",
-                alignItems: "baseline",
-                gap: "0.45rem",
-                fontSize: "0.78rem",
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: '0.45rem',
+                fontSize: '0.78rem',
                 lineHeight: 1.45,
               }}
             >
@@ -174,27 +177,27 @@ export function MessageCard({ message: stored }: MessageCardProps) {
                 aria-hidden="true"
                 style={{
                   flexShrink: 0,
-                  width: "5px",
-                  height: "5px",
-                  borderRadius: "50%",
+                  width: '5px',
+                  height: '5px',
+                  borderRadius: '50%',
                   background: colors.icon,
                   opacity: 0.65,
-                  marginTop: "0.38em",
+                  marginTop: '0.38em',
                 }}
               />
               <span style={{ minWidth: 0 }}>
-                <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
                   {item.label}
                 </span>
                 {item.sub && (
                   <span
                     style={{
-                      marginLeft: "0.4rem",
-                      color: "var(--text-muted)",
+                      marginLeft: '0.4rem',
+                      color: 'var(--text-muted)',
                       fontFamily:
                         "ui-monospace, 'Cascadia Code', 'Fira Code', monospace",
-                      fontSize: "0.73rem",
-                      letterSpacing: "0.01em",
+                      fontSize: '0.73rem',
+                      letterSpacing: '0.01em',
                     }}
                   >
                     {item.sub}
@@ -211,11 +214,11 @@ export function MessageCard({ message: stored }: MessageCardProps) {
         <p
           style={{
             margin: 0,
-            fontSize: "0.74rem",
-            color: "var(--text-muted)",
+            fontSize: '0.74rem',
+            color: 'var(--text-muted)',
             lineHeight: 1.5,
-            paddingLeft: "1.1rem",
-            fontStyle: "italic",
+            paddingLeft: '1.1rem',
+            fontStyle: 'italic',
           }}
         >
           {message.hint}

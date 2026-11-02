@@ -27,7 +27,11 @@
 .notification-preferences-card--enabled {
   border-color: rgba(52, 211, 153, 0.24);
   background:
-    linear-gradient(135deg, rgba(52, 211, 153, 0.075), rgba(88, 166, 255, 0.035)),
+    linear-gradient(
+      135deg,
+      rgba(52, 211, 153, 0.075),
+      rgba(88, 166, 255, 0.035)
+    ),
     rgba(255, 255, 255, 0.03);
 }
 
@@ -79,7 +83,7 @@
 }
 
 .notification-preferences-toggle span::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 0.18rem;
   left: 0.2rem;
@@ -119,36 +123,40 @@
   width: 72%;
   height: 0.7rem;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--layer-2), var(--layer-1-hover), var(--layer-2));
+  background: linear-gradient(
+    90deg,
+    var(--layer-2),
+    var(--layer-1-hover),
+    var(--layer-2)
+  );
 }
 
 .notification-preferences-skeleton--short {
   width: 44%;
 }
 
-[data-theme="light"] .notification-preferences-card--enabled {
+[data-theme='light'] .notification-preferences-card--enabled {
   border-color: rgba(5, 150, 105, 0.22);
   background:
     linear-gradient(135deg, rgba(5, 150, 105, 0.06), rgba(9, 105, 218, 0.035)),
     rgba(250, 250, 251, 0.78);
 }
 
-[data-theme="light"] .notification-preferences-toggle span {
+[data-theme='light'] .notification-preferences-toggle span {
   background: rgba(17, 17, 22, 0.06);
 }
 
-[data-theme="light"] .notification-preferences-toggle span::after {
+[data-theme='light'] .notification-preferences-toggle span::after {
   background: var(--text-secondary);
 }
 
-[data-theme="light"] .notification-preferences-state {
+[data-theme='light'] .notification-preferences-state {
   background: rgba(17, 17, 22, 0.035);
   border-color: rgba(17, 17, 22, 0.08);
 }
 
 /* Panel is portaled to <body> and positioned `fixed` via inline left/top set in JS,
    so it escapes the sidebar's `overflow: hidden` clip. */
-
 
 .notification-center-unread-chip {
   font-size: 0.65rem;
@@ -270,17 +278,25 @@
   font-size: 0.78rem;
   font-weight: 650;
   cursor: pointer;
-  transition: background 0.16s ease, color 0.16s ease;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
 }
 
-.inbox-filter-tab:hover { color: var(--text-primary); }
+.inbox-filter-tab:hover {
+  color: var(--text-primary);
+}
 
-.inbox-filter-tab:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.inbox-filter-tab:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
 
 .inbox-filter-tab--active {
   background: var(--bg-elevated);
   color: var(--accent-indigo);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-indigo) 35%, transparent);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--accent-indigo) 35%, transparent);
 }
 
 .inbox-filter-tab-count {
@@ -290,7 +306,9 @@
   opacity: 0.75;
 }
 
-.inbox-error-inline { margin: 0; }
+.inbox-error-inline {
+  margin: 0;
+}
 
 /* ── Non-list states (guest / loading / disabled / empty) ────────────────── */
 .inbox-state-copy {
@@ -358,10 +376,14 @@
   text-transform: uppercase;
 }
 
-.inbox-list > .inbox-day-label:first-child { border-top: 0; }
+.inbox-list > .inbox-day-label:first-child {
+  border-top: 0;
+}
 
 /* The row right under a day label doesn't need its own duplicate hairline. */
-.inbox-day-label + .inbox-row { border-top: 0; }
+.inbox-day-label + .inbox-row {
+  border-top: 0;
+}
 
 .inbox-row {
   position: relative;
@@ -372,7 +394,9 @@
   padding: 0.4rem 1.1rem;
   border-top: 1px solid var(--border-soft);
   background: transparent;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .inbox-row:hover,
@@ -381,7 +405,9 @@
   transform: translateX(2px);
 }
 
-.inbox-row--read { opacity: 0.68; }
+.inbox-row--read {
+  opacity: 0.68;
+}
 
 .inbox-row-text {
   display: block;
@@ -399,11 +425,17 @@
   font-weight: 700;
 }
 
-.inbox-row--read .inbox-row-title { font-weight: 600; }
+.inbox-row--read .inbox-row-title {
+  font-weight: 600;
+}
 
-.inbox-row-snippet { font-weight: 400; }
+.inbox-row-snippet {
+  font-weight: 400;
+}
 
-.inbox-row-snippet::before { content: " - "; }
+.inbox-row-snippet::before {
+  content: ' - ';
+}
 
 .inbox-row-time {
   flex: 0 0 auto;
@@ -451,14 +483,22 @@
 }
 
 @media (max-width: 720px) {
-  .inbox-row-text { white-space: normal; }
-  .inbox-row-action { min-width: 0; }
+  .inbox-row-text {
+    white-space: normal;
+  }
+  .inbox-row-action {
+    min-width: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .inbox-filter-tab,
   .inbox-row,
-  .inbox-row-action { transition: none; }
+  .inbox-row-action {
+    transition: none;
+  }
   .inbox-row:hover,
-  .inbox-row:focus-within { transform: none; }
+  .inbox-row:focus-within {
+    transform: none;
+  }
 }

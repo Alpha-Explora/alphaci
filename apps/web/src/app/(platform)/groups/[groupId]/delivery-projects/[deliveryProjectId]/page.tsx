@@ -1,1 +1,1 @@
-export { DeliveryProjectView as default } from "@/features/groups/delivery-project";
+export { DeliveryProjectView as default } from '@/features/groups/delivery-project';

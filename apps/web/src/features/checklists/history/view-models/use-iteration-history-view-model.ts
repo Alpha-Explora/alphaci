@@ -1,22 +1,23 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { iterationsRepository } from "../../data/iterations-repository";
-import { projectQaRunsRepository } from "../../data/project-qa-runs-repository";
-import { useIterationEpoch } from "../../iteration";
-import type { HistoryIteration } from "../../model/iteration-types";
-import type { ProjectQaRun } from "../../model/project-run-types";
-import { errorStatus } from "../../model/wire-readers";
+import { iterationsRepository } from '../../data/iterations-repository';
+import { projectQaRunsRepository } from '../../data/project-qa-runs-repository';
+import { useIterationEpoch } from '../../iteration';
+import type { HistoryIteration } from '../../model/iteration-types';
+import type { ProjectQaRun } from '../../model/project-run-types';
+import { errorStatus } from '../../model/wire-readers';
 
 /** `unavailable`: this backend has no iterations route (a 404); the tab says so. */
-export type IterationHistoryStatus = "idle" | "loading" | "ready" | "error" | "unavailable";
+export type IterationHistoryStatus =
+  'idle' | 'loading' | 'ready' | 'error' | 'unavailable';
 
 /** One delivered iteration's frozen QA report, read when its card is first opened. */
 export type HistoryReport =
-  | { status: "loading" }
-  | { status: "ready"; run: ProjectQaRun }
-  | { status: "error"; message: string };
+  | { status: 'loading' }
+  | { status: 'ready'; run: ProjectQaRun }
+  | { status: 'error'; message: string };
 
 export interface IterationHistoryViewModel {
   status: IterationHistoryStatus;
@@ -32,18 +33,23 @@ export interface IterationHistoryViewModel {
   reload: () => void;
 }
 
-const LOAD_ERROR = "The Project's history could not be loaded. Try again in a moment.";
-const REPORT_ERROR = "This version's QA results could not be loaded. Try again in a moment.";
+const LOAD_ERROR =
+  "The Project's history could not be loaded. Try again in a moment.";
+const REPORT_ERROR =
+  "This version's QA results could not be loaded. Try again in a moment.";
 
 interface Loaded {
   key: string;
   iterations: HistoryIteration[];
-  status: "ready" | "error" | "unavailable";
+  status: 'ready' | 'error' | 'unavailable';
 }
 
-function statusOf(active: boolean, loaded: Loaded | null): IterationHistoryStatus {
-  if (!active) return "idle";
-  return loaded ? loaded.status : "loading";
+function statusOf(
+  active: boolean,
+  loaded: Loaded | null,
+): IterationHistoryStatus {
+  if (!active) return 'idle';
+  return loaded ? loaded.status : 'loading';
 }
 
 /**
@@ -58,7 +64,7 @@ export function useIterationHistoryViewModel(options: {
   enabled: boolean;
 }): IterationHistoryViewModel {
   const { deliveryProjectId, enabled } = options;
-  const key = deliveryProjectId ?? "";
+  const key = deliveryProjectId ?? '';
   const active = enabled && Boolean(deliveryProjectId);
   const [nonce, setNonce] = useState(0);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -74,27 +80,39 @@ export function useIterationHistoryViewModel(options: {
     iterationsRepository
       .list(key)
       .then((iterations) => {
-        if (requestId === requestRef.current) setLoaded({ key, iterations, status: "ready" });
+        if (requestId === requestRef.current)
+          setLoaded({ key, iterations, status: 'ready' });
       })
       .catch((cause: unknown) => {
         if (requestId !== requestRef.current) return;
-        const status = errorStatus(cause) === 404 ? "unavailable" : "error";
+        const status = errorStatus(cause) === 404 ? 'unavailable' : 'error';
         setLoaded({ key, iterations: [], status });
       });
   }, [active, key, nonce, epoch]);
 
   function loadReport(runId: string) {
-    setReports((current) => ({ ...current, [runId]: { status: "loading" } }));
+    setReports((current) => ({ ...current, [runId]: { status: 'loading' } }));
     projectQaRunsRepository
       .get(key, runId)
-      .then((run) => setReports((current) => ({ ...current, [runId]: { status: "ready", run } })))
-      .catch(() => setReports((current) => ({ ...current, [runId]: { status: "error", message: REPORT_ERROR } })));
+      .then((run) =>
+        setReports((current) => ({
+          ...current,
+          [runId]: { status: 'ready', run },
+        })),
+      )
+      .catch(() =>
+        setReports((current) => ({
+          ...current,
+          [runId]: { status: 'error', message: REPORT_ERROR },
+        })),
+      );
   }
 
   function toggle(iteration: HistoryIteration) {
     const opening = !open[iteration.id];
     setOpen((current) => ({ ...current, [iteration.id]: opening }));
-    const runId = iteration.status === "delivered" ? iteration.signoffRunId : null;
+    const runId =
+      iteration.status === 'delivered' ? iteration.signoffRunId : null;
     if (opening && runId && !reports[runId]) loadReport(runId);
   }
 
@@ -102,7 +120,7 @@ export function useIterationHistoryViewModel(options: {
   return {
     status: statusOf(active, current),
     iterations: current?.iterations ?? [],
-    error: current?.status === "error" ? LOAD_ERROR : null,
+    error: current?.status === 'error' ? LOAD_ERROR : null,
     open,
     reports,
     toggle,

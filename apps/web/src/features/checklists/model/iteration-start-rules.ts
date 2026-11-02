@@ -8,21 +8,32 @@
  * nothing is carried over. On a backend that does not send `canStartNext`,
  * every rule here answers "nothing": the screens render exactly as before. */
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
-import { iterationDateLabel, iterationName, normalizeIteration } from "./iteration-rules";
-import type { CurrentIteration, IterationNextStep, StartedIteration, StartIterationInput } from "./iteration-types";
-import { qaCodeMessage } from "./qa-error-messages";
-import { errorCode, errorStatus, record } from "./wire-readers";
+import {
+  iterationDateLabel,
+  iterationName,
+  normalizeIteration,
+} from './iteration-rules';
+import type {
+  CurrentIteration,
+  IterationNextStep,
+  StartedIteration,
+  StartIterationInput,
+} from './iteration-types';
+import { qaCodeMessage } from './qa-error-messages';
+import { errorCode, errorStatus, record } from './wire-readers';
 
 /** The goal's longest form, as the server enforces it. */
 export const ITERATION_GOAL_MAX = 120;
 
-const NONE: IterationNextStep = { kind: "none" };
+const NONE: IterationNextStep = { kind: 'none' };
 
 /** Product owners (`lead`) and admins start iterations (decision D5). */
-export function roleCanStartIteration(role: AppRole | null | undefined): boolean {
-  return role === "lead" || role === "admin";
+export function roleCanStartIteration(
+  role: AppRole | null | undefined,
+): boolean {
+  return role === 'lead' || role === 'admin';
 }
 
 /** "Start iteration 4". */
@@ -33,16 +44,25 @@ export function startIterationLabel(nextNumber: number): string {
 type DeliveredIteration = { number: number; deliveredAt: string | null };
 
 /** "Iteration 3 was delivered on 14 Oct 2026." (without a date: "Iteration 3 was delivered."). */
-export function iterationDeliveredOnText(iteration: DeliveredIteration, locale?: string): string {
-  const date = iterationDateLabel(iteration.deliveredAt, { withYear: true, locale });
-  return `${iterationName(iteration.number)} was delivered${date ? ` on ${date}` : ""}.`;
+export function iterationDeliveredOnText(
+  iteration: DeliveredIteration,
+  locale?: string,
+): string {
+  const date = iterationDateLabel(iteration.deliveredAt, {
+    withYear: true,
+    locale,
+  });
+  return `${iterationName(iteration.number)} was delivered${date ? ` on ${date}` : ''}.`;
 }
 
 /**
  * Between delivery and the next start (P15): "Iteration 3 was delivered on
  * 14 Oct 2026. Waiting for the Product owner to start iteration 4."
  */
-export function waitingForNextIterationText(iteration: DeliveredIteration, locale?: string): string {
+export function waitingForNextIterationText(
+  iteration: DeliveredIteration,
+  locale?: string,
+): string {
   return `${iterationDeliveredOnText(iteration, locale)} Waiting for the Product owner to start version ${String(iteration.number + 1)}.`;
 }
 
@@ -59,13 +79,17 @@ export function iterationNextStep(
   role: AppRole | null | undefined,
   locale?: string,
 ): IterationNextStep {
-  if (current?.iteration.status !== "delivered") return NONE;
+  if (current?.iteration.status !== 'delivered') return NONE;
   if (current.canStartNext === false) {
-    return { kind: "waiting", text: waitingForNextIterationText(current.iteration, locale) };
+    return {
+      kind: 'waiting',
+      text: waitingForNextIterationText(current.iteration, locale),
+    };
   }
-  if (current.canStartNext !== true || !roleCanStartIteration(role)) return NONE;
+  if (current.canStartNext !== true || !roleCanStartIteration(role))
+    return NONE;
   return {
-    kind: "start",
+    kind: 'start',
     nextNumber: current.iteration.number + 1,
     text: iterationDeliveredOnText(current.iteration, locale),
   };
@@ -97,9 +121,9 @@ export function startIterationDescription(nextNumber: number): string {
 }
 
 const STATUS_COPY: Readonly<Record<number, string>> = {
-  401: "Your session has ended. Sign in again to start the next version.",
-  403: "Only a Product owner or admin can start the next version.",
-  404: "This Project could not be found, or this server cannot start versions yet.",
+  401: 'Your session has ended. Sign in again to start the next version.',
+  403: 'Only a Product owner or admin can start the next version.',
+  404: 'This Project could not be found, or this server cannot start versions yet.',
 };
 
 /**
@@ -111,7 +135,10 @@ export function startIterationErrorMessage(cause: unknown): string {
   const byCode = qaCodeMessage(cause);
   if (byCode) return byCode;
   const status = errorStatus(cause);
-  return (status !== null && STATUS_COPY[status]) || "The next version could not be started. Try again in a moment.";
+  return (
+    (status !== null && STATUS_COPY[status]) ||
+    'The next version could not be started. Try again in a moment.'
+  );
 }
 
 /**
@@ -119,5 +146,5 @@ export function startIterationErrorMessage(cause: unknown): string {
  * re-reads the Project, so every screen shows the iteration that is active.
  */
 export function startErrorRefreshesOnClose(cause: unknown): boolean {
-  return errorCode(cause) === "ITERATION_ACTIVE";
+  return errorCode(cause) === 'ITERATION_ACTIVE';
 }

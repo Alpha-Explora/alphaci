@@ -8,7 +8,6 @@
 
 /* ── In-flow guard state (loading / error) ──────────────────────────────── */
 
-
 @keyframes state-pulse {
   0%,
   100% {
@@ -65,7 +64,6 @@
 
 /* ── Keyframes ───────────────────────────────────────────────────────────── */
 
-
 @keyframes flow-pulse {
   0%,
   100% {
@@ -114,7 +112,6 @@
    ══════════════════════════════════════════════════════════════════════════════ */
 
 /* ── Orb drift animations for FlowBackground ─────────────────────────────── */
-
 
 /* ── CSS-driven FlowBackground orb animations (replaces JS-animated motion.div) */
 @keyframes orb-drift-a {
@@ -185,7 +182,6 @@
    UI OVERHAUL — HUD/TERMINAL AESTHETIC ADDITIONS
    ═══════════════════════════════════════════════════ */
 
-
 /* ── Pipeline node HUD pulse (drop-shadow safe with clip-path) ── */
 @keyframes hud-pulse {
   0%,
@@ -222,7 +218,6 @@
 /* ════════════════════════════════════════════════════════════════════════════
    APP SIDEBAR — fixed left sidebar replacing the top nav dock
    ════════════════════════════════════════════════════════════════════════════ */
-
 
 @keyframes sidebar-edge-pulse {
   0%,

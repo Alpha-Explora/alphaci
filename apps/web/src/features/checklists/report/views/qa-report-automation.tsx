@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { AutomatedBadge, TonePill } from "../../items";
+import { AutomatedBadge, TonePill } from '../../items';
 import {
   automatedCellNote,
   automationStages,
@@ -13,17 +13,17 @@ import {
   stageRunLabel,
   stageRunTone,
   unlistedFailuresNote,
-} from "../../model/qa-automation-rules";
+} from '../../model/qa-automation-rules';
 import type {
   QaAutomationStage,
   QaRunAutomationResult,
   QaStageResult,
   QaStageTests,
-} from "../../model/qa-automation-types";
-import { formatReportDate } from "../../model/qa-report-rules";
-import type { QaReport } from "../../model/qa-report-types";
-import { commitLabel } from "../../model/qa-run-rules";
-import type { QaRunItem } from "../../model/qa-run-types";
+} from '../../model/qa-automation-types';
+import { formatReportDate } from '../../model/qa-report-rules';
+import type { QaReport } from '../../model/qa-report-types';
+import { commitLabel } from '../../model/qa-run-rules';
+import type { QaRunItem } from '../../model/qa-run-types';
 
 /* ── Checklist table: the item's automated result beside its status ─────── */
 
@@ -51,12 +51,19 @@ function testsCell(tests: QaStageTests | null) {
       <span className="qa-report-auto__count">
         {tests.passed} / {tests.total}
       </span>
-      {tests.failed ? <span className="qa-report-table__sub qa-report-auto__failed">{tests.failed} failed</span> : null}
+      {tests.failed ? (
+        <span className="qa-report-table__sub qa-report-auto__failed">
+          {tests.failed} failed
+        </span>
+      ) : null}
     </>
   );
 }
 
-function StageRow({ stage, result }: Readonly<{ stage: QaAutomationStage; result: QaStageResult | null }>) {
+function StageRow({
+  stage,
+  result,
+}: Readonly<{ stage: QaAutomationStage; result: QaStageResult | null }>) {
   return (
     <tr>
       <th scope="row">
@@ -65,13 +72,22 @@ function StageRow({ stage, result }: Readonly<{ stage: QaAutomationStage; result
       </th>
       <td>
         {result ? (
-          <TonePill tone={stageRunTone(result.status)} label={stageRunLabel(result.status)} />
+          <TonePill
+            tone={stageRunTone(result.status)}
+            label={stageRunLabel(result.status)}
+          />
         ) : (
           <span className="qa-report-muted">Not reported</span>
         )}
       </td>
       <td>{testsCell(result?.tests ?? null)}</td>
-      <td>{result?.reportedAt ? formatReportDate(result.reportedAt) : <span className="qa-report-muted">—</span>}</td>
+      <td>
+        {result?.reportedAt ? (
+          formatReportDate(result.reportedAt)
+        ) : (
+          <span className="qa-report-muted">—</span>
+        )}
+      </td>
     </tr>
   );
 }
@@ -83,14 +99,17 @@ function StageFailures({ result }: Readonly<{ result: QaStageResult }>) {
   return (
     <div className="qa-report-auto__failures">
       <h3 className="qa-report-auto__failures-title">
-        {stageName(result.stage)} failures{failures.length > 0 ? ` (${failures.length} listed)` : ""}
+        {stageName(result.stage)} failures
+        {failures.length > 0 ? ` (${failures.length} listed)` : ''}
       </h3>
       {failures.length > 0 ? (
         <ol className="qa-report-auto__list">
           {failures.map((failure, index) => (
             <li key={`${index}-${failure.name}`}>
               <code className="qa-report-auto__name">{failure.name}</code>
-              {failure.message ? <p className="qa-report-auto__message">{failure.message}</p> : null}
+              {failure.message ? (
+                <p className="qa-report-auto__message">{failure.message}</p>
+              ) : null}
             </li>
           ))}
         </ol>
@@ -105,8 +124,9 @@ function NotCollected() {
     <div className="qa-report-empty">
       <p className="qa-report-empty__title">Not available yet</p>
       <p>
-        No automated test results were collected for this report. Items verified by Playwright, unit
-        tests or Bruno are recorded in the checklist above with the result the tester entered.
+        No automated test results were collected for this report. Items verified
+        by Playwright, unit tests or Bruno are recorded in the checklist above
+        with the result the tester entered.
       </p>
     </div>
   );
@@ -117,23 +137,30 @@ function NotCollected() {
  * "Not available yet" when the report carries none — including every report
  * built before automation existed, where the field is absent altogether.
  */
-export function AutomatedResultsBody({ report }: Readonly<{ report: QaReport }>) {
-  if (report.automatedResults === null || report.automatedResults === undefined) return <NotCollected />;
+export function AutomatedResultsBody({
+  report,
+}: Readonly<{ report: QaReport }>) {
+  if (report.automatedResults === null || report.automatedResults === undefined)
+    return <NotCollected />;
   const automation = normalizeRunAutomation(report.automatedResults);
   const where = commitLabel(report.run.branch, report.run.commitSha);
   if (!hasStageResults(automation)) {
     return (
       <div className="qa-report-empty">
         <p className="qa-report-empty__title">No results reported</p>
-        <p>CI had not reported the verify or quality stage for {where} when this report was generated.</p>
+        <p>
+          CI had not reported the verify or quality stage for {where} when this
+          report was generated.
+        </p>
       </div>
     );
   }
   return (
     <div className="qa-report-auto">
       <p className="qa-report-auto__lede">
-        From CI for <span className="qa-report-mono">{where}</span>. Informational — each item&apos;s status in the
-        checklist is the result the tester recorded.
+        From CI for <span className="qa-report-mono">{where}</span>.
+        Informational — each item&apos;s status in the checklist is the result
+        the tester recorded.
       </p>
       <AutomationTable automation={automation} />
     </div>
@@ -141,7 +168,9 @@ export function AutomatedResultsBody({ report }: Readonly<{ report: QaReport }>)
 }
 
 /** The stage-by-stage table for one set of CI results, then each stage's listed failures. */
-export function AutomationTable({ automation }: Readonly<{ automation: QaRunAutomationResult }>) {
+export function AutomationTable({
+  automation,
+}: Readonly<{ automation: QaRunAutomationResult }>) {
   const stages = automationStages(automation);
   return (
     <>
@@ -168,7 +197,9 @@ export function AutomationTable({ automation }: Readonly<{ automation: QaRunAuto
           </tbody>
         </table>
       </div>
-      {stages.map(({ stage, result }) => (result ? <StageFailures key={stage} result={result} /> : null))}
+      {stages.map(({ stage, result }) =>
+        result ? <StageFailures key={stage} result={result} /> : null,
+      )}
     </>
   );
 }

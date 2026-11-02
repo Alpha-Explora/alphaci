@@ -1,0 +1,10 @@
+# Generated or vendored; formatted by their generators, or not ours to format.
+node_modules/
+**/dist/
+**/.next/
+**/coverage/
+apps/web/.capability-stubs/
+apps/web/scripts/check-boundaries.mjs
+apps/web/scripts/lib/paths.mjs
+packages/capability-catalog/
+*.generated.md

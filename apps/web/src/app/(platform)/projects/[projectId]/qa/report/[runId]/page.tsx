@@ -1,1 +1,1 @@
-export { QaReportView as default } from "@/features/checklists/report";
+export { QaReportView as default } from '@/features/checklists/report';

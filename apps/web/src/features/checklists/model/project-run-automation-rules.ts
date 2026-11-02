@@ -12,30 +12,38 @@
  * anything — undefined, null, a partial object — and says "not sent" with
  * null, so the Playwright tab can tell an older server from "no results". */
 
-import { normalizeRunAutomation } from "./qa-automation-rules";
-import type { QaRunAutomationResult } from "./qa-automation-types";
+import { normalizeRunAutomation } from './qa-automation-rules';
+import type { QaRunAutomationResult } from './qa-automation-types';
 import type {
   ProjectDispatched,
   ProjectDispatchFailure,
   ProjectDispatchResult,
   RepositoryAutomation,
-} from "./project-run-types";
-import { record, records, text, type Loose } from "./wire-readers";
+} from './project-run-types';
+import { record, records, text, type Loose } from './wire-readers';
 
 /** The merged result, or null when the body has no `automation` key at all. */
-export function projectRunAutomationFrom(raw: Loose): QaRunAutomationResult | null {
-  return "automation" in raw ? normalizeRunAutomation(raw.automation) : null;
+export function projectRunAutomationFrom(
+  raw: Loose,
+): QaRunAutomationResult | null {
+  return 'automation' in raw ? normalizeRunAutomation(raw.automation) : null;
 }
 
 function repositoryAutomationFrom(value: Loose): RepositoryAutomation | null {
   const projectId = text(value.projectId);
   const repoFullName = text(value.repoFullName);
   if (!projectId || !repoFullName) return null;
-  return { projectId, repoFullName, automation: normalizeRunAutomation(value.automation) };
+  return {
+    projectId,
+    repoFullName,
+    automation: normalizeRunAutomation(value.automation),
+  };
 }
 
 /** The per-repository breakdown, or null when the server sent none. */
-export function automationByRepositoryFrom(raw: Loose): RepositoryAutomation[] | null {
+export function automationByRepositoryFrom(
+  raw: Loose,
+): RepositoryAutomation[] | null {
   if (!Array.isArray(raw.automationByRepository)) return null;
   return records(raw.automationByRepository)
     .map(repositoryAutomationFrom)
@@ -50,11 +58,14 @@ function dispatchedFrom(value: Loose): ProjectDispatched | null {
     repoFullName: text(value.repoFullName) ?? projectId,
     ref: text(value.ref),
     headSha: text(value.headSha),
-    targetsRunCommit: typeof value.targetsRunCommit === "boolean" ? value.targetsRunCommit : null,
+    targetsRunCommit:
+      typeof value.targetsRunCommit === 'boolean'
+        ? value.targetsRunCommit
+        : null,
   };
 }
 
-const FAILURE_FALLBACK = "Playwright could not be started in this repository.";
+const FAILURE_FALLBACK = 'Playwright could not be started in this repository.';
 
 function failureFrom(value: Loose): ProjectDispatchFailure | null {
   const projectId = text(value.projectId);
@@ -68,7 +79,9 @@ function failureFrom(value: Loose): ProjectDispatchFailure | null {
 }
 
 /** The 202 reply: where the verify workflow started, and where it could not. */
-export function normalizeProjectDispatch(value: unknown): ProjectDispatchResult {
+export function normalizeProjectDispatch(
+  value: unknown,
+): ProjectDispatchResult {
   const raw = record(value) ?? {};
   return {
     dispatched: records(raw.dispatched)

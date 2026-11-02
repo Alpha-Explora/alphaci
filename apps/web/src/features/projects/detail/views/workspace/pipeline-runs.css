@@ -267,7 +267,7 @@
 
 .pipe-commit__meta > * + *::before,
 .pipe-run__meta > * + *::before {
-  content: "·";
+  content: '·';
   margin-right: 0.5rem;
   color: var(--text-muted);
 }
@@ -313,9 +313,9 @@
   transition: transform 160ms ease-out;
 }
 
-.pipe-foot-toggle[aria-expanded="false"] .pipe-glyph,
-.pipe-logs-toggle[aria-expanded="false"] .pipe-glyph,
-.pipe-run__head[aria-expanded="false"] .pipe-run__caret .pipe-glyph,
+.pipe-foot-toggle[aria-expanded='false'] .pipe-glyph,
+.pipe-logs-toggle[aria-expanded='false'] .pipe-glyph,
+.pipe-run__head[aria-expanded='false'] .pipe-run__caret .pipe-glyph,
 .pipe-why:not([open]) .pipe-why__summary .pipe-glyph {
   transform: rotate(-90deg);
 }
@@ -351,7 +351,7 @@
   flex: 1 1 1rem;
   min-width: 1rem;
   border-top: 2px dashed var(--border-strong);
-  content: "";
+  content: '';
 }
 
 .pipe-step--success:not(:last-child)::after {
@@ -384,7 +384,7 @@
   background: var(--bg-frost);
 }
 
-.pipe-step[data-open="true"] .pipe-step__button {
+.pipe-step[data-open='true'] .pipe-step__button {
   border-color: var(--border-strong);
   background: var(--pipe-fill);
 }
@@ -538,7 +538,7 @@
 }
 
 .pipe-figures__note + .pipe-figures__note::before {
-  content: "·";
+  content: '·';
   margin-right: 0.55rem;
 }
 
@@ -576,7 +576,7 @@
   transition: transform 160ms ease-out;
 }
 
-.pipe-toggle[aria-expanded="true"] .pipe-glyph {
+.pipe-toggle[aria-expanded='true'] .pipe-glyph {
   transform: rotate(180deg);
 }
 

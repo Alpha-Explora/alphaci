@@ -23,38 +23,38 @@
  * telling people to build locally when a registry push had failed.
  */
 
-import type { StageCheck } from "@/shared/api/contracts";
+import type { StageCheck } from '@/shared/api/contracts';
 
-import { checkTone } from "@/features/runs";
+import { checkTone } from '@/features/runs';
 
-import { isFailedConclusion } from "./github-conclusion";
+import { isFailedConclusion } from './github-conclusion';
 
 /** Which branch a source branch promotes into, if any. */
 const PROMOTES_INTO: Readonly<Record<string, string>> = {
-  dev: "uat",
-  uat: "main",
+  dev: 'uat',
+  uat: 'main',
 };
 
 export type PromotionState =
   /** The promotion pull request was opened or updated. */
-  | "opened"
+  | 'opened'
   /**
    * The promotion job was still running when the stage reported, so its
    * outcome is not in the report. Saying "not opened" here was false half the
    * time: the stage reports first and the promotion job finishes after it.
    */
-  | "in-progress"
+  | 'in-progress'
   /**
    * The promotion job was still running when the stage reported, and GitHub
    * has since finished the stage's run as failed: the promotion is what broke.
    */
-  | "failed"
+  | 'failed'
   /** Something in the stage failed, so the promotion job never ran. */
-  | "blocked"
+  | 'blocked'
   /** The job skipped and nothing visible explains it. */
-  | "did-not-run"
+  | 'did-not-run'
   /** This branch does not promote, or the stage carries no promotion job. */
-  | "not-applicable";
+  | 'not-applicable';
 
 export interface PromotionReadiness {
   state: PromotionState;
@@ -69,7 +69,7 @@ export interface PromotionReadiness {
 }
 
 const NOT_APPLICABLE: PromotionReadiness = {
-  state: "not-applicable",
+  state: 'not-applicable',
   target: null,
   blockedBy: [],
 };
@@ -107,15 +107,15 @@ function inFlightPromotion(
   target: string,
   packageRun: PackageRunState | null,
 ): PromotionReadiness {
-  if (packageRun?.status === "completed") {
-    if (packageRun.conclusion === "success") {
-      return { state: "opened", target, blockedBy: [] };
+  if (packageRun?.status === 'completed') {
+    if (packageRun.conclusion === 'success') {
+      return { state: 'opened', target, blockedBy: [] };
     }
     if (isFailedConclusion(packageRun.conclusion)) {
-      return { state: "failed", target, blockedBy: [] };
+      return { state: 'failed', target, blockedBy: [] };
     }
   }
-  return { state: "in-progress", target, blockedBy: [] };
+  return { state: 'in-progress', target, blockedBy: [] };
 }
 
 /*
@@ -123,9 +123,12 @@ function inFlightPromotion(
  * itself or another branch's deploy, and neither is something to report as a
  * reason: the first is the outcome being explained, the second never applied.
  */
-function blockingChecks(checks: readonly StageCheck[], branch: string): string[] {
+function blockingChecks(
+  checks: readonly StageCheck[],
+  branch: string,
+): string[] {
   return checks
-    .filter((check) => checkTone(check.conclusion) === "failed")
+    .filter((check) => checkTone(check.conclusion) === 'failed')
     .filter((check) => !belongsToAnotherBranch(check.name, branch))
     .map((check) => check.name);
 }
@@ -148,16 +151,16 @@ export function promotionReadiness(
     return NOT_APPLICABLE;
   }
 
-  if (promotionJob.conclusion === "success") {
-    return { state: "opened", target, blockedBy: [] };
+  if (promotionJob.conclusion === 'success') {
+    return { state: 'opened', target, blockedBy: [] };
   }
 
-  if (checkTone(promotionJob.conclusion) === "running") {
+  if (checkTone(promotionJob.conclusion) === 'running') {
     return inFlightPromotion(target, packageRun);
   }
 
   const blockedBy = blockingChecks(checks ?? [], branch);
   return blockedBy.length > 0
-    ? { state: "blocked", target, blockedBy }
-    : { state: "did-not-run", target, blockedBy: [] };
+    ? { state: 'blocked', target, blockedBy }
+    : { state: 'did-not-run', target, blockedBy: [] };
 }

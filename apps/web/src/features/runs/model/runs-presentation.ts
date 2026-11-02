@@ -1,19 +1,21 @@
-import type { FriendlyMessage } from "@/shared/api/contracts";
-import { stripAnsi } from "@/shared/ui/strip-ansi";
+import type { FriendlyMessage } from '@/shared/api/contracts';
+import { stripAnsi } from '@/shared/ui/strip-ansi';
 
 import type {
   RunOverallStatus,
   StageStatus,
   MessageSeverity,
   StageId,
-} from "./runs-types";
+} from './runs-types';
 
 /**
  * A friendly message as the page shows it: the stored text can carry the
  * terminal colour codes a runner printed (Playwright errors quoted into a
  * detail or an item), which a browser renders as stray "[2m" fragments.
  */
-export function plainFriendlyMessage(message: FriendlyMessage): FriendlyMessage {
+export function plainFriendlyMessage(
+  message: FriendlyMessage,
+): FriendlyMessage {
   return {
     ...message,
     title: stripAnsi(message.title),
@@ -43,45 +45,45 @@ export interface StatusColors {
 
 export function runStatusColors(status: RunOverallStatus): StatusColors {
   switch (status) {
-    case "success":
+    case 'success':
       return {
-        ring: "var(--success)",
-        glow: "rgba(52,211,153,0.35)",
-        bg: "rgba(52,211,153,0.12)",
-        text: "var(--success)",
-        label: "Passed",
+        ring: 'var(--success)',
+        glow: 'rgba(52,211,153,0.35)',
+        bg: 'rgba(52,211,153,0.12)',
+        text: 'var(--success)',
+        label: 'Passed',
       };
-    case "failure":
+    case 'failure':
       return {
-        ring: "var(--danger)",
-        glow: "rgba(248,113,113,0.35)",
-        bg: "rgba(248,113,113,0.12)",
-        text: "var(--danger)",
-        label: "Failed",
+        ring: 'var(--danger)',
+        glow: 'rgba(248,113,113,0.35)',
+        bg: 'rgba(248,113,113,0.12)',
+        text: 'var(--danger)',
+        label: 'Failed',
       };
-    case "running":
+    case 'running':
       return {
-        ring: "var(--brand)",
-        glow: "var(--brand-glow)",
-        bg: "var(--brand-light)",
-        text: "var(--brand)",
-        label: "Running",
+        ring: 'var(--brand)',
+        glow: 'var(--brand-glow)',
+        bg: 'var(--brand-light)',
+        text: 'var(--brand)',
+        label: 'Running',
       };
-    case "partial":
+    case 'partial':
       return {
-        ring: "var(--accent-amber)",
-        glow: "rgba(251,191,36,0.3)",
-        bg: "var(--accent-amber-light)",
-        text: "var(--accent-amber)",
-        label: "Partial",
+        ring: 'var(--accent-amber)',
+        glow: 'rgba(251,191,36,0.3)',
+        bg: 'var(--accent-amber-light)',
+        text: 'var(--accent-amber)',
+        label: 'Partial',
       };
-    case "cancelled":
+    case 'cancelled':
       return {
-        ring: "var(--text-muted)",
-        glow: "rgba(100,116,139,0.2)",
-        bg: "rgba(100,116,139,0.1)",
-        text: "var(--text-muted)",
-        label: "Cancelled",
+        ring: 'var(--text-muted)',
+        glow: 'rgba(100,116,139,0.2)',
+        bg: 'rgba(100,116,139,0.1)',
+        text: 'var(--text-muted)',
+        label: 'Cancelled',
       };
   }
 }
@@ -97,58 +99,58 @@ export interface StageColors {
 
 export function stageStatusColors(status: StageStatus): StageColors {
   switch (status) {
-    case "success":
+    case 'success':
       return {
-        ring: "var(--success)",
-        glow: "rgba(52,211,153,0.4)",
-        bg: "rgba(52,211,153,0.1)",
-        iconColor: "var(--success)",
+        ring: 'var(--success)',
+        glow: 'rgba(52,211,153,0.4)',
+        bg: 'rgba(52,211,153,0.1)',
+        iconColor: 'var(--success)',
       };
-    case "failure":
+    case 'failure':
       return {
-        ring: "var(--danger)",
-        glow: "rgba(248,113,113,0.4)",
-        bg: "rgba(248,113,113,0.1)",
-        iconColor: "var(--danger)",
+        ring: 'var(--danger)',
+        glow: 'rgba(248,113,113,0.4)',
+        bg: 'rgba(248,113,113,0.1)',
+        iconColor: 'var(--danger)',
       };
-    case "running":
+    case 'running':
       return {
-        ring: "var(--brand)",
-        glow: "var(--brand-glow)",
-        bg: "var(--brand-light)",
-        iconColor: "var(--brand)",
+        ring: 'var(--brand)',
+        glow: 'var(--brand-glow)',
+        bg: 'var(--brand-light)',
+        iconColor: 'var(--brand)',
       };
-    case "cancelled":
+    case 'cancelled':
       return {
-        ring: "var(--text-muted)",
-        glow: "rgba(100,116,139,0.2)",
-        bg: "rgba(100,116,139,0.08)",
-        iconColor: "var(--text-muted)",
+        ring: 'var(--text-muted)',
+        glow: 'rgba(100,116,139,0.2)',
+        bg: 'rgba(100,116,139,0.08)',
+        iconColor: 'var(--text-muted)',
       };
-    case "pending":
+    case 'pending':
       return {
-        ring: "var(--border-strong)",
-        glow: "transparent",
-        bg: "rgba(255,255,255,0.04)",
-        iconColor: "var(--text-muted)",
+        ring: 'var(--border-strong)',
+        glow: 'transparent',
+        bg: 'rgba(255,255,255,0.04)',
+        iconColor: 'var(--text-muted)',
       };
     // A stage that never started is a broken pipeline, not a quiet one, so it
     // reads like a failure rather than like something still waiting.
-    case "stalled":
+    case 'stalled':
       return {
-        ring: "var(--danger)",
-        glow: "rgba(248,113,113,0.4)",
-        bg: "rgba(248,113,113,0.1)",
-        iconColor: "var(--danger)",
+        ring: 'var(--danger)',
+        glow: 'rgba(248,113,113,0.4)',
+        bg: 'rgba(248,113,113,0.1)',
+        iconColor: 'var(--danger)',
       };
     // Blocked is a consequence of an earlier failure, not a problem of its own.
     // It stays muted so the stage that actually broke is what draws the eye.
-    case "blocked":
+    case 'blocked':
       return {
-        ring: "var(--border-strong)",
-        glow: "transparent",
-        bg: "rgba(255,255,255,0.02)",
-        iconColor: "var(--text-muted)",
+        ring: 'var(--border-strong)',
+        glow: 'transparent',
+        bg: 'rgba(255,255,255,0.02)',
+        iconColor: 'var(--text-muted)',
       };
   }
 }
@@ -164,33 +166,33 @@ export interface SeverityColors {
 
 export function severityColors(severity: MessageSeverity): SeverityColors {
   switch (severity) {
-    case "error":
+    case 'error':
       return {
-        border: "var(--danger)",
-        bg: "rgba(248,113,113,0.06)",
-        icon: "var(--danger)",
-        label: "Error",
+        border: 'var(--danger)',
+        bg: 'rgba(248,113,113,0.06)',
+        icon: 'var(--danger)',
+        label: 'Error',
       };
-    case "warning":
+    case 'warning':
       return {
-        border: "var(--accent-amber)",
-        bg: "rgba(251,191,36,0.06)",
-        icon: "var(--accent-amber)",
-        label: "Warning",
+        border: 'var(--accent-amber)',
+        bg: 'rgba(251,191,36,0.06)',
+        icon: 'var(--accent-amber)',
+        label: 'Warning',
       };
-    case "info":
+    case 'info':
       return {
-        border: "var(--brand)",
-        bg: "rgba(56,189,248,0.06)",
-        icon: "var(--brand)",
-        label: "Info",
+        border: 'var(--brand)',
+        bg: 'rgba(56,189,248,0.06)',
+        icon: 'var(--brand)',
+        label: 'Info',
       };
-    case "success":
+    case 'success':
       return {
-        border: "var(--success)",
-        bg: "rgba(52,211,153,0.06)",
-        icon: "var(--success)",
-        label: "Success",
+        border: 'var(--success)',
+        bg: 'rgba(52,211,153,0.06)',
+        icon: 'var(--success)',
+        label: 'Success',
       };
   }
 }
@@ -206,10 +208,10 @@ export function relativeTime(isoString: string): string {
   const then = new Date(isoString).getTime();
   const diffMs = now - then;
 
-  if (diffMs < 0) return "just now";
+  if (diffMs < 0) return 'just now';
 
   const seconds = Math.floor(diffMs / 1000);
-  if (seconds < 60) return "just now";
+  if (seconds < 60) return 'just now';
 
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
@@ -237,19 +239,19 @@ export function shortSha(sha: string): string {
 
 export function stageLabel(stage: StageId): string {
   switch (stage) {
-    case "access":
-      return "Access";
-    case "quality":
-      return "Quality";
-    case "package":
-      return "Package";
-    case "verify":
-      return "Verify";
+    case 'access':
+      return 'Access';
+    case 'quality':
+      return 'Quality';
+    case 'package':
+      return 'Package';
+    case 'verify':
+      return 'Verify';
   }
 }
 
 /** How a tool's outcome should read: the semantic tone, not a colour. */
-export type CheckTone = "passed" | "failed" | "skipped" | "running";
+export type CheckTone = 'passed' | 'failed' | 'skipped' | 'running';
 
 /**
  * Map a GitHub job conclusion onto a tone.
@@ -262,19 +264,19 @@ export type CheckTone = "passed" | "failed" | "skipped" | "running";
  */
 export function checkTone(conclusion: string): CheckTone {
   switch (conclusion) {
-    case "success":
-      return "passed";
-    case "failure":
-    case "timed_out":
-    case "startup_failure":
-    case "action_required":
-      return "failed";
-    case "running":
-    case "in_progress":
-    case "queued":
-      return "running";
+    case 'success':
+      return 'passed';
+    case 'failure':
+    case 'timed_out':
+    case 'startup_failure':
+    case 'action_required':
+      return 'failed';
+    case 'running':
+    case 'in_progress':
+    case 'queued':
+      return 'running';
     default:
-      return "skipped";
+      return 'skipped';
   }
 }
 
@@ -288,24 +290,24 @@ export function checkTone(conclusion: string): CheckTone {
  */
 export function checkLabel(name: string): string {
   const known: Record<string, string> = {
-    "validate-access": "Access check",
-    "branch-policy": "Branch policy",
-    "dotnet-tests": "Unit tests & coverage",
-    "backend-tests": "Unit tests & coverage",
-    "frontend-tests": "Unit tests & coverage",
-    lint: "Format & style",
-    typecheck: "Static analysis",
-    security: "Dependency audit",
-    secrets: "Secret scan",
-    licenses: "Licence scan",
-    sbom: "SBOM export",
-    sonar: "Code quality & SAST",
-    build: "Build & publish",
+    'validate-access': 'Access check',
+    'branch-policy': 'Branch policy',
+    'dotnet-tests': 'Unit tests & coverage',
+    'backend-tests': 'Unit tests & coverage',
+    'frontend-tests': 'Unit tests & coverage',
+    lint: 'Format & style',
+    typecheck: 'Static analysis',
+    security: 'Dependency audit',
+    secrets: 'Secret scan',
+    licenses: 'Licence scan',
+    sbom: 'SBOM export',
+    sonar: 'Code quality & SAST',
+    build: 'Build & publish',
   };
 
   return (
     known[name] ??
-    name.replace(/[-_]/g, " ").replace(/^./, (c) => c.toUpperCase())
+    name.replace(/[-_]/g, ' ').replace(/^./, (c) => c.toUpperCase())
   );
 }
 
@@ -356,10 +358,10 @@ export function summarizeChecks(
     checks.filter((check) => checkTone(check.conclusion) === tone).length;
 
   return {
-    passed: count("passed"),
-    failed: count("failed"),
-    skipped: count("skipped"),
-    running: count("running"),
+    passed: count('passed'),
+    failed: count('failed'),
+    skipped: count('skipped'),
+    running: count('running'),
     total: checks.length,
   };
 }
@@ -389,7 +391,7 @@ export function checkSummaryLabel(summary: CheckSummary): string {
 
   // Every conclusion fell outside the four tones — possible for a pipeline
   // newer than this build. Say how many there are rather than nothing.
-  return parts.length > 0 ? parts.join(", ") : `${summary.total} checks`;
+  return parts.length > 0 ? parts.join(', ') : `${summary.total} checks`;
 }
 
 /**
@@ -405,8 +407,8 @@ export function checkSummaryLabel(summary: CheckSummary): string {
 export function formatFailedJobs(rawLogs: string): string {
   const lines = rawLogs
     .split(/\r?\n/)
-    .map((line) => line.replace(/^Failed GitHub Actions job:\s*/i, "").trim())
+    .map((line) => line.replace(/^Failed GitHub Actions job:\s*/i, '').trim())
     .filter((line) => line.length > 0);
 
-  return lines.length > 0 ? lines.join("\n") : rawLogs;
+  return lines.length > 0 ? lines.join('\n') : rawLogs;
 }

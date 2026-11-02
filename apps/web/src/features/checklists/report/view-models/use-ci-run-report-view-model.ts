@@ -1,12 +1,18 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { ciRunReportRepository } from "../../data/ci-run-report-repository";
-import { ciRunReportBaseName } from "../../model/ci-run-report-rules";
-import type { CiRunReport, CiRunReportRef } from "../../model/ci-run-report-types";
-import { reportErrorCopy, type QaReportErrorCopy } from "../../model/qa-report-rules";
-import { useAutoPrint, type QaReportStatus } from "./use-qa-report-view-model";
+import { ciRunReportRepository } from '../../data/ci-run-report-repository';
+import { ciRunReportBaseName } from '../../model/ci-run-report-rules';
+import type {
+  CiRunReport,
+  CiRunReportRef,
+} from '../../model/ci-run-report-types';
+import {
+  reportErrorCopy,
+  type QaReportErrorCopy,
+} from '../../model/qa-report-rules';
+import { useAutoPrint, type QaReportStatus } from './use-qa-report-view-model';
 
 export interface CiRunReportViewModel {
   status: QaReportStatus;
@@ -22,7 +28,7 @@ interface ReportState {
   error: QaReportErrorCopy | null;
 }
 
-const LOADING: ReportState = { status: "loading", report: null, error: null };
+const LOADING: ReportState = { status: 'loading', report: null, error: null };
 
 /** The tab title doubles as the browser's "Save as PDF" file name. */
 function useDocumentTitle(ref: CiRunReportRef | null, ready: boolean) {
@@ -47,9 +53,9 @@ export function useCiRunReportViewModel(options: {
   autoPrint: boolean;
 }): CiRunReportViewModel {
   const { run, autoPrint } = options;
-  const repoFullName = run?.repoFullName ?? "";
-  const branch = run?.branch ?? "";
-  const commitSha = run?.commitSha ?? "";
+  const repoFullName = run?.repoFullName ?? '';
+  const branch = run?.branch ?? '';
+  const commitSha = run?.commitSha ?? '';
   const known = run !== null;
   const [state, setState] = useState<ReportState>(LOADING);
   const [attempt, setAttempt] = useState(0);
@@ -60,22 +66,32 @@ export function useCiRunReportViewModel(options: {
     const id = ++requestId.current;
     ciRunReportRepository.report({ repoFullName, branch, commitSha }).then(
       (report) => {
-        if (id === requestId.current) setState({ status: "ready", report, error: null });
+        if (id === requestId.current)
+          setState({ status: 'ready', report, error: null });
       },
       (cause: unknown) => {
-        if (id === requestId.current) setState({ status: "error", report: null, error: reportErrorCopy(cause) });
+        if (id === requestId.current)
+          setState({
+            status: 'error',
+            report: null,
+            error: reportErrorCopy(cause),
+          });
       },
     );
   }, [known, repoFullName, branch, commitSha, attempt]);
 
-  useAutoPrint(autoPrint && state.status === "ready");
-  useDocumentTitle(run, state.status === "ready");
+  useAutoPrint(autoPrint && state.status === 'ready');
+  useDocumentTitle(run, state.status === 'ready');
 
   if (!known) {
     return {
-      status: "error",
+      status: 'error',
       report: null,
-      error: { title: "This report is not available", text: "The link is missing the repository, branch or commit.", signIn: false },
+      error: {
+        title: 'This report is not available',
+        text: 'The link is missing the repository, branch or commit.',
+        signIn: false,
+      },
       reload: () => undefined,
       print: () => undefined,
     };

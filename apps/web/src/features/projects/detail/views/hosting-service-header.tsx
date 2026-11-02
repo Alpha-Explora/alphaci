@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 import {
   DeploymentLogsConsole,
   type DeploymentLogFocus,
-} from "@/features/projects/deployment-logs";
+} from '@/features/projects/deployment-logs';
 import type {
   DeploymentTarget,
   UpdateDeploymentTargetRequest,
-} from "@/features/projects";
-import type { AppRole } from "@/shared/api/contracts";
+} from '@/features/projects';
+import type { AppRole } from '@/shared/api/contracts';
 import {
   serviceMeta,
   targetStatusPill,
-} from "../model/hosting-environment-rules";
+} from '../model/hosting-environment-rules';
 import {
   canManageHosting,
   canReinstallDeploymentSecrets,
@@ -23,12 +23,12 @@ import {
   logsToggleLabel,
   reinstallSecretsLabel,
   targetSyncLabel,
-} from "../model/project-detail-tab-rules";
-import { providerDisplayName } from "../model/provider-urls";
-import type { DeploymentTargetsViewModel } from "../view-models/use-deployment-targets-view-model";
-import { DeploymentTargetEditor } from "./deployment-target-editor";
-import { HostingMenu, type HostingMenuItem } from "./hosting-menu";
-import { HostingPill, ProviderMark } from "./hosting-status";
+} from '../model/project-detail-tab-rules';
+import { providerDisplayName } from '../model/provider-urls';
+import type { DeploymentTargetsViewModel } from '../view-models/use-deployment-targets-view-model';
+import { DeploymentTargetEditor } from './deployment-target-editor';
+import { HostingMenu, type HostingMenuItem } from './hosting-menu';
+import { HostingPill, ProviderMark } from './hosting-status';
 
 /** With two or more services: which one the tab shows. */
 export function HostingServiceSelector({
@@ -42,7 +42,11 @@ export function HostingServiceSelector({
 }>) {
   if (targets.length < 2) return null;
   return (
-    <div className="hosting-services" role="group" aria-label="Hosting services">
+    <div
+      className="hosting-services"
+      role="group"
+      aria-label="Hosting services"
+    >
       {targets.map((target) => (
         <button
           key={target.id}
@@ -51,7 +55,9 @@ export function HostingServiceSelector({
           aria-pressed={target.id === selectedId}
           onClick={() => onSelect(target.id)}
         >
-          <span className="hosting-services__provider">{providerDisplayName(target.provider)}</span>
+          <span className="hosting-services__provider">
+            {providerDisplayName(target.provider)}
+          </span>
           {target.providerProjectName}
         </button>
       ))}
@@ -82,10 +88,13 @@ interface ServiceHeaderProps {
  */
 export function HostingServiceHeader(props: Readonly<ServiceHeaderProps>) {
   const { target, appRole, managementEnabled, vm } = props;
-  const [editValues, setEditValues] = useState<UpdateDeploymentTargetRequest | null>(null);
+  const [editValues, setEditValues] =
+    useState<UpdateDeploymentTargetRequest | null>(null);
   const [detachConfirm, setDetachConfirm] = useState(false);
   const [deleteProviderResource, setDeleteProviderResource] = useState(false);
-  const [logsOpen, setLogsOpen] = useState(props.logFocus?.targetId === target.id);
+  const [logsOpen, setLogsOpen] = useState(
+    props.logFocus?.targetId === target.id,
+  );
   const canManage = canManageHosting(appRole);
 
   function openEdit() {
@@ -103,7 +112,7 @@ export function HostingServiceHeader(props: Readonly<ServiceHeaderProps>) {
     if (!detachConfirm) {
       setDetachConfirm(true);
       setDeleteProviderResource(false);
-      vm.setMessage("Confirm detach to remove this target from ALPHACI only.");
+      vm.setMessage('Confirm detach to remove this target from ALPHACI only.');
       return;
     }
     const detached = await vm.detach(target, deleteProviderResource);
@@ -129,7 +138,10 @@ export function HostingServiceHeader(props: Readonly<ServiceHeaderProps>) {
   });
 
   return (
-    <section className="hosting-card hosting-service" aria-label={`${target.providerProjectName} service`}>
+    <section
+      className="hosting-card hosting-service"
+      aria-label={`${target.providerProjectName} service`}
+    >
       <div className="hosting-service__top">
         <ServiceIdentity target={target} />
         <div className="hosting-service__actions">
@@ -151,7 +163,10 @@ export function HostingServiceHeader(props: Readonly<ServiceHeaderProps>) {
               {targetSyncLabel(vm.syncingTargetId === target.id)}
             </button>
           ) : null}
-          <HostingMenu label={`More actions for ${target.providerProjectName}`} items={items} />
+          <HostingMenu
+            label={`More actions for ${target.providerProjectName}`}
+            items={items}
+          />
         </div>
       </div>
       <ServiceMetaLine target={target} />
@@ -180,19 +195,26 @@ export function HostingServiceHeader(props: Readonly<ServiceHeaderProps>) {
         onChange={setEditValues}
         onSave={() => void saveEdit()}
       />
-      <TargetLogs open={logsOpen} logFocus={props.logFocus} projectId={props.projectId} target={target} />
+      <TargetLogs
+        open={logsOpen}
+        logFocus={props.logFocus}
+        projectId={props.projectId}
+        target={target}
+      />
     </section>
   );
 }
 
-function editValuesFor(target: DeploymentTarget): UpdateDeploymentTargetRequest {
+function editValuesFor(
+  target: DeploymentTarget,
+): UpdateDeploymentTargetRequest {
   return {
     slot: target.slot,
     providerProjectName: target.providerProjectName,
     branchName: target.branchName,
-    rootDirectory: target.rootDirectory ?? "",
-    buildCommand: target.buildCommand ?? "",
-    startCommand: target.startCommand ?? "",
+    rootDirectory: target.rootDirectory ?? '',
+    buildCommand: target.buildCommand ?? '',
+    startCommand: target.startCommand ?? '',
     renderEnvironmentName: target.renderEnvironmentName ?? null,
   };
 }
@@ -208,7 +230,13 @@ interface MenuInput {
 
 function editItem(input: MenuInput): HostingMenuItem[] {
   if (!canManageHosting(input.appRole)) return [];
-  return [{ label: "Edit build settings", disabled: !input.managementEnabled, onSelect: input.onEdit }];
+  return [
+    {
+      label: 'Edit build settings',
+      disabled: !input.managementEnabled,
+      onSelect: input.onEdit,
+    },
+  ];
 }
 
 /**
@@ -218,8 +246,10 @@ function editItem(input: MenuInput): HostingMenuItem[] {
  */
 function reinstallItem(input: MenuInput): HostingMenuItem[] {
   const { target, vm } = input;
-  if (!input.managementEnabled || !canReinstallDeploymentSecrets(input.appRole)) return [];
-  if (!vm.targetActions[target.id]?.actions.reinstallDeploymentSecrets.enabled) return [];
+  if (!input.managementEnabled || !canReinstallDeploymentSecrets(input.appRole))
+    return [];
+  if (!vm.targetActions[target.id]?.actions.reinstallDeploymentSecrets.enabled)
+    return [];
   const reinstalling = vm.reinstallingTargetId === target.id;
   return [
     {
@@ -236,8 +266,8 @@ function detachItem(input: MenuInput): HostingMenuItem[] {
   const detaching = input.vm.detachingTargetId === input.target.id;
   return [
     {
-      label: "Detach",
-      hint: "Removes the service from ALPHACI; you confirm first.",
+      label: 'Detach',
+      hint: 'Removes the service from ALPHACI; you confirm first.',
       destructive: true,
       disabled: !input.managementEnabled || detaching,
       onSelect: input.onDetach,
@@ -265,16 +295,17 @@ function ServiceIdentity({ target }: Readonly<{ target: DeploymentTarget }>) {
 function ServiceMetaLine({ target }: Readonly<{ target: DeploymentTarget }>) {
   const meta = serviceMeta(target);
   // A pushed image has no build or directory on the host; saying one would be wrong.
-  if (!meta.builds) return <p className="hosting-service__meta">{meta.summary}</p>;
+  if (!meta.builds)
+    return <p className="hosting-service__meta">{meta.summary}</p>;
   return (
     <p className="hosting-service__meta">
-      {meta.summary} ·{" "}
+      {meta.summary} ·{' '}
       {meta.buildCommand ? (
         <>
-          <code className="hosting-mono">{meta.buildCommand}</code> in{" "}
+          <code className="hosting-mono">{meta.buildCommand}</code> in{' '}
         </>
       ) : (
-        "default build in "
+        'default build in '
       )}
       <code className="hosting-mono">{meta.rootDirectory}</code>
     </p>
@@ -282,7 +313,10 @@ function ServiceMetaLine({ target }: Readonly<{ target: DeploymentTarget }>) {
 }
 
 /** The tab's one provider notice: amber, with Retry. */
-function ProviderNotice({ notice, onRetry }: Readonly<{ notice: string | null; onRetry: () => void }>) {
+function ProviderNotice({
+  notice,
+  onRetry,
+}: Readonly<{ notice: string | null; onRetry: () => void }>) {
   if (!notice) return null;
   return (
     <div className="hosting-notice" role="status">
@@ -304,7 +338,7 @@ function TargetMessage({
       {message}
       {signInHref ? (
         <>
-          {" "}
+          {' '}
           <a className="inline-link" href={signInHref}>
             Sign in again
           </a>
@@ -337,9 +371,14 @@ function DetachConfirm({
   return (
     <div className="hosting-confirm">
       <label className="hosting-confirm__check">
-        <input type="checkbox" checked={checked} onChange={(event) => onCheckedChange(event.target.checked)} />
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => onCheckedChange(event.target.checked)}
+        />
         <span>
-          Also delete the {target.provider} resource ({target.providerProjectName}). This cannot be undone.
+          Also delete the {target.provider} resource (
+          {target.providerProjectName}). This cannot be undone.
         </span>
       </label>
       <div className="hosting-confirm__actions">

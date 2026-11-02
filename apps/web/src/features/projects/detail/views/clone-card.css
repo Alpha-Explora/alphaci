@@ -59,14 +59,16 @@
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: color 0.15s ease-out, background-color 0.15s ease-out;
+  transition:
+    color 0.15s ease-out,
+    background-color 0.15s ease-out;
 }
 
 .clone-card__tab:hover {
   color: var(--text-primary);
 }
 
-.clone-card__tab[aria-selected="true"] {
+.clone-card__tab[aria-selected='true'] {
   background: var(--bg-surface, var(--layer-2));
   color: var(--text-primary);
 }
@@ -116,7 +118,7 @@
   color: var(--text-primary);
 }
 
-.clone-card__copy[data-copied="true"] {
+.clone-card__copy[data-copied='true'] {
   color: var(--brand);
 }
 

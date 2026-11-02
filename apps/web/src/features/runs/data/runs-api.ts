@@ -1,5 +1,5 @@
-import type { RunsResponse } from "@/shared/api/contracts";
-import { request } from "@/shared/api/request";
+import type { RunsResponse } from '@/shared/api/contracts';
+import { request } from '@/shared/api/request';
 
 export interface GetRunsOptions {
   /** Narrow to the runs of the projects the caller can see in this team. */
@@ -11,8 +11,8 @@ export async function getRuns(
   options: GetRunsOptions = {},
 ): Promise<RunsResponse> {
   const params = new URLSearchParams();
-  if (repoFullName) params.set("repoFullName", repoFullName);
-  if (options.workspaceId) params.set("workspaceId", options.workspaceId);
+  if (repoFullName) params.set('repoFullName', repoFullName);
+  if (options.workspaceId) params.set('workspaceId', options.workspaceId);
   const query = params.toString();
-  return request<RunsResponse>(query ? `/ci/runs?${query}` : "/ci/runs");
+  return request<RunsResponse>(query ? `/ci/runs?${query}` : '/ci/runs');
 }

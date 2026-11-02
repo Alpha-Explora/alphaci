@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useReducedMotion } from 'framer-motion';
 
-import { FlowBackground } from "@/shared/layout/flow-background";
-import { PipelineLoader } from "@/shared/layout/pipeline-loader";
-import { WorkspaceProvider } from "@/features/workspace/selection";
-import { useAuthSession } from "@/features/auth/session";
+import { FlowBackground } from '@/shared/layout/flow-background';
+import { PipelineLoader } from '@/shared/layout/pipeline-loader';
+import { WorkspaceProvider } from '@/features/workspace/selection';
+import { useAuthSession } from '@/features/auth/session';
 
-import { HomeDashboardContent } from "./home-dashboard-content";
+import { HomeDashboardContent } from './home-dashboard-content';
 
 /**
  * Public view for the home route.
@@ -21,8 +21,14 @@ import { HomeDashboardContent } from "./home-dashboard-content";
  */
 export function HomeDashboardView() {
   const router = useRouter();
-  const { status, session, error: sessionError, refresh, signOut, isSigningOut } =
-    useAuthSession();
+  const {
+    status,
+    session,
+    error: sessionError,
+    refresh,
+    signOut,
+    isSigningOut,
+  } = useAuthSession();
   // Surfaced in the dashboard header rather than swallowed: a failed sign-out
   // leaves the user still signed in, and they need to know that.
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null);
@@ -31,24 +37,24 @@ export function HomeDashboardView() {
   // Internal workspace: there is no guest/preview mode. Unauthenticated
   // visitors are sent to sign-in rather than shown a preview dashboard.
   useEffect(() => {
-    if (status === "signed-out") router.replace("/login?next=/home");
+    if (status === 'signed-out') router.replace('/login?next=/home');
   }, [status, router]);
 
   async function handleLogout() {
     setLogoutMessage(null);
     try {
       await signOut();
-      router.push("/");
+      router.push('/');
     } catch {
-      setLogoutMessage("Sign out failed. Please retry, or use the Home link.");
+      setLogoutMessage('Sign out failed. Please retry, or use the Home link.');
     }
   }
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return <PipelineLoader label="Loading your dashboard" />;
   }
 
-  if (status === "error") {
+  if (status === 'error') {
     return (
       <main className="dash-shell">
         <FlowBackground />
@@ -57,8 +63,8 @@ export function HomeDashboardView() {
             <div
               className="state-icon"
               style={{
-                background: "rgba(255,79,79,0.08)",
-                border: "1px solid rgba(255,79,79,0.2)",
+                background: 'rgba(255,79,79,0.08)',
+                border: '1px solid rgba(255,79,79,0.2)',
               }}
             >
               <svg
@@ -99,7 +105,7 @@ export function HomeDashboardView() {
     );
   }
 
-  if (status === "signed-out") {
+  if (status === 'signed-out') {
     return <PipelineLoader label="Redirecting to sign in" />;
   }
 
@@ -110,7 +116,7 @@ export function HomeDashboardView() {
         onLogout={() => void handleLogout()}
         isLoggingOut={isSigningOut}
         prefersReducedMotion={prefersReducedMotion}
-        enabled={status === "signed-in"}
+        enabled={status === 'signed-in'}
         sessionError={sessionError}
         logoutMessage={logoutMessage}
       />

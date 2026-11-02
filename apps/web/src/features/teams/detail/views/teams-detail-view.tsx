@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { TeamPageShell, type TeamPageHeading } from "@/features/teams/shell";
+import { TeamPageShell, type TeamPageHeading } from '@/features/teams/shell';
 
-import { legacyTeamsRedirect } from "../../model/teams-rules";
-import { TeamMembersPanel } from "./team-members-panel";
+import { legacyTeamsRedirect } from '../../model/teams-rules';
+import { TeamMembersPanel } from './team-members-panel';
 
 const HEADING: TeamPageHeading = {
-  title: (team) => (team ? `Members · ${team.name}` : "Teams"),
+  title: (team) => (team ? `Members · ${team.name}` : 'Teams'),
 };
 
 /**
@@ -27,7 +27,11 @@ export function TeamsDetailView() {
       redirect={legacyTeamsRedirect}
     >
       {({ team, vm }) => (
-        <TeamMembersPanel key={team.id} team={team} onMembershipChanged={vm.refreshTeam} />
+        <TeamMembersPanel
+          key={team.id}
+          team={team}
+          onMembershipChanged={vm.refreshTeam}
+        />
       )}
     </TeamPageShell>
   );

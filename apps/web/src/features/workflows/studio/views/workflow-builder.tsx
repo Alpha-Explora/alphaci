@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import { MotionConfig, motion, useReducedMotion } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { MotionConfig, motion, useReducedMotion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 
-import { useWorkflowStudioViewModel } from "../view-models/use-workflow-studio-view-model";
-import { statusBannerVariant } from "../model/workflow-studio-rules";
-import { studioCreateGates } from "../model/role-gate-rules";
-import { WorkflowCurrentTab } from "./workflow-current-tab";
-import { GeneratingOverlay } from "./generating-overlay";
-import { WorkflowSetupTab } from "./workflow-setup-tab";
-import { BackIcon, GuideIcon } from "./studio-icons";
+import { useWorkflowStudioViewModel } from '../view-models/use-workflow-studio-view-model';
+import { statusBannerVariant } from '../model/workflow-studio-rules';
+import { studioCreateGates } from '../model/role-gate-rules';
+import { WorkflowCurrentTab } from './workflow-current-tab';
+import { GeneratingOverlay } from './generating-overlay';
+import { WorkflowSetupTab } from './workflow-setup-tab';
+import { BackIcon, GuideIcon } from './studio-icons';
 
 interface WorkflowBuilderProps {
   login: string;
   plan: string;
   guest?: boolean;
   onboardingCompleted?: boolean;
-  session?: import("@/shared/api/contracts").AuthMeResponse | null;
+  session?: import('@/shared/api/contracts').AuthMeResponse | null;
 }
 
 function WorkflowStatusBanners({
@@ -34,11 +34,11 @@ function WorkflowStatusBanners({
   // would otherwise report its reason off-screen and the button looks dead.
   useEffect(() => {
     if (statusMessage)
-      banner.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      banner.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
   }, [statusMessage]);
   if (!statusMessage && !catalogError && !projectOptionsError) return null;
   return (
-    <div ref={banner} style={{ padding: "0.5rem var(--layout-gutter) 0" }}>
+    <div ref={banner} style={{ padding: '0.5rem var(--layout-gutter) 0' }}>
       {statusMessage ? (
         <motion.p
           className={`status-banner ${statusBannerVariant(statusMessage)}`}
@@ -53,13 +53,17 @@ function WorkflowStatusBanners({
       ) : null}
       {catalogError ? (
         <div className="error-inline" role="alert">
-          <span className="error-inline-icon" aria-hidden="true">⚠</span>
+          <span className="error-inline-icon" aria-hidden="true">
+            ⚠
+          </span>
           <p className="error-inline-msg">{catalogError}</p>
         </div>
       ) : null}
       {projectOptionsError ? (
         <div className="error-inline" role="alert">
-          <span className="error-inline-icon" aria-hidden="true">⚠</span>
+          <span className="error-inline-icon" aria-hidden="true">
+            ⚠
+          </span>
           <p className="error-inline-msg">{projectOptionsError}</p>
         </div>
       ) : null}
@@ -80,7 +84,10 @@ function SetupViewHeader({
     <div className="project-detail-header current-projects-header">
       <div className="current-projects-heading">
         <h1 className="workflow-page-title">Create project</h1>
-        <p>Provision a repository and its gated ALPHACI workflow inside one of your teams.</p>
+        <p>
+          Provision a repository and its gated ALPHACI workflow inside one of
+          your teams.
+        </p>
       </div>
       <div className="current-projects-actions">
         <button type="button" className="ghost-button" onClick={onBack}>
@@ -103,23 +110,61 @@ function SetupViewHeader({
   );
 }
 
-export function WorkflowBuilder({ guest = false, session, onboardingCompleted }: Readonly<WorkflowBuilderProps>) {
+export function WorkflowBuilder({
+  guest = false,
+  session,
+  onboardingCompleted,
+}: Readonly<WorkflowBuilderProps>) {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const reducedMotion = prefersReducedMotion === true;
-  const vm = useWorkflowStudioViewModel({ guest, session, onboardingCompleted });
+  const vm = useWorkflowStudioViewModel({
+    guest,
+    session,
+    onboardingCompleted,
+  });
   const gates = studioCreateGates(session?.appRole, guest);
-  const sendGuestToSignup = () => router.push("/signup");
+  const sendGuestToSignup = () => router.push('/signup');
   const {
-    activeView, statusMessage, isCreatingProject, isDiscoveringExistingRepo, isSettingUpExistingRepo,
-    createResult, existingRepoDiscovery, existingRepoResult, setupMode, setSetupMode,
-    existingRepoFullName, setExistingRepoFullName, existingRepoBaseBranch, setExistingRepoBaseBranch,
-    workspaces, setSelectedCreateWorkspaceId, createWorkspaceId, projectKnown, clearChosenProject,
-    targetProjectLabel, joinedProjectName, projectChoice, projectBlocker,
-    showProjects, openIndividualSetup,
-    handleCreateProject, handleDiscoverExistingRepo, handleSetupExistingRepo, handleGenerateWorkflow,
-    catalog, projectCatalog, projects, createForm, deploymentProvisioning,
-    deploymentOwnershipMode, envProvisioningEnabled, hosting, github, startTour,
+    activeView,
+    statusMessage,
+    isCreatingProject,
+    isDiscoveringExistingRepo,
+    isSettingUpExistingRepo,
+    createResult,
+    existingRepoDiscovery,
+    existingRepoResult,
+    setupMode,
+    setSetupMode,
+    existingRepoFullName,
+    setExistingRepoFullName,
+    existingRepoBaseBranch,
+    setExistingRepoBaseBranch,
+    workspaces,
+    setSelectedCreateWorkspaceId,
+    createWorkspaceId,
+    projectKnown,
+    clearChosenProject,
+    targetProjectLabel,
+    joinedProjectName,
+    projectChoice,
+    projectBlocker,
+    showProjects,
+    openIndividualSetup,
+    handleCreateProject,
+    handleDiscoverExistingRepo,
+    handleSetupExistingRepo,
+    handleGenerateWorkflow,
+    catalog,
+    projectCatalog,
+    projects,
+    createForm,
+    deploymentProvisioning,
+    deploymentOwnershipMode,
+    envProvisioningEnabled,
+    hosting,
+    github,
+    startTour,
     startCurrentProjectsTour,
   } = vm;
 
@@ -134,7 +179,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
   });
 
   return (
-    <MotionConfig reducedMotion={reducedMotion ? "always" : "never"}>
+    <MotionConfig reducedMotion={reducedMotion ? 'always' : 'never'}>
       <GeneratingOverlay isVisible={isCreatingProject} />
       <section className="workflow-surface">
         <WorkflowStatusBanners
@@ -143,9 +188,13 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
           projectOptionsError={projectCatalog.projectOptionsError}
         />
         <div className="workflow-view-body">
-          {activeView === "setup" ? (
+          {activeView === 'setup' ? (
             <div className="project-detail-panel project-detail-panel--page setup-view">
-              <SetupViewHeader guest={guest} onBack={showProjects} onStartTour={startTour} />
+              <SetupViewHeader
+                guest={guest}
+                onBack={showProjects}
+                onStartTour={startTour}
+              />
               <WorkflowSetupTab
                 canCreateRepositories={gates.canCreateRepositories}
                 form={createForm}
@@ -187,7 +236,7 @@ export function WorkflowBuilder({ guest = false, session, onboardingCompleted }:
               />
             </div>
           ) : null}
-          {activeView === "current" ? (
+          {activeView === 'current' ? (
             <WorkflowCurrentTab
               latestResult={createResult}
               loadingProjects={projects.loadingProjects}
@@ -228,7 +277,8 @@ function studioGuestActions(input: {
     };
   }
   return {
-    onCreateProject: () => void input.handleCreateProject(input.createWorkspaceId ?? undefined),
+    onCreateProject: () =>
+      void input.handleCreateProject(input.createWorkspaceId ?? undefined),
     onDiscoverExistingRepo: input.handleDiscoverExistingRepo,
     onGenerateWorkflow: input.handleGenerateWorkflow,
     onSetupExistingRepo: input.handleSetupExistingRepo,

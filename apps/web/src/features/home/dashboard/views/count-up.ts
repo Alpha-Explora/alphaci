@@ -1,10 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
 /* A rendering concern, not a view-model: it animates a number that is already
  * resolved. Kept beside the views that use it. */
-export function useCountUp(target: number | null, duration = 900): number | null {
+export function useCountUp(
+  target: number | null,
+  duration = 900,
+): number | null {
   const [count, setCount] = useState<number | null>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -44,4 +47,3 @@ export function useCountUp(target: number | null, duration = 900): number | null
 
   return count;
 }
-

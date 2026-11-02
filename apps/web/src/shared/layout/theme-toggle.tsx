@@ -1,15 +1,25 @@
-"use client";
+'use client';
 
-import { AnimatePresence, motion } from "framer-motion";
-import { useTheme } from "@/shared/layout/theme-context";
+import { AnimatePresence, motion } from 'framer-motion';
+import { useTheme } from '@/shared/layout/theme-context';
 
 interface ThemeToggleProps {
-  size?: "sm" | "md";
+  size?: 'sm' | 'md';
 }
 
 function SunIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <circle cx="12" cy="12" r="4" />
       <line x1="12" y1="2" x2="12" y2="4" />
       <line x1="12" y1="20" x2="12" y2="22" />
@@ -25,7 +35,17 @@ function SunIcon() {
 
 function MoonIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
     </svg>
   );
@@ -38,36 +58,36 @@ const iconVariants = {
 };
 
 const springTransition = {
-  type: "spring" as const,
+  type: 'spring' as const,
   stiffness: 400,
   damping: 22,
 };
 
-export function ThemeToggle({ size = "sm" }: ThemeToggleProps) {
+export function ThemeToggle({ size = 'sm' }: ThemeToggleProps) {
   const { theme, toggle } = useTheme();
-  const dim = size === "md" ? "2.25rem" : "2rem";
-  const isDark = theme === "dark";
+  const dim = size === 'md' ? '2.25rem' : '2rem';
+  const isDark = theme === 'dark';
 
   return (
     <button
       type="button"
       onClick={toggle}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       style={{
         width: dim,
         height: dim,
-        borderRadius: "var(--radius-pill)",
-        border: "1px solid var(--border)",
-        background: "var(--bg-frost)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "pointer",
-        color: isDark ? "#fbbf24" : "#6366f1",
+        borderRadius: 'var(--radius-pill)',
+        border: '1px solid var(--border)',
+        background: 'var(--bg-frost)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        color: isDark ? '#fbbf24' : '#6366f1',
         flexShrink: 0,
-        position: "relative",
-        overflow: "hidden",
-        transition: "border-color 0.2s, background 0.2s",
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'border-color 0.2s, background 0.2s',
       }}
     >
       <AnimatePresence mode="wait" initial={false}>
@@ -79,7 +99,7 @@ export function ThemeToggle({ size = "sm" }: ThemeToggleProps) {
             animate="animate"
             exit="exit"
             transition={springTransition}
-            style={{ display: "flex", position: "absolute" }}
+            style={{ display: 'flex', position: 'absolute' }}
           >
             <SunIcon />
           </motion.span>
@@ -91,7 +111,7 @@ export function ThemeToggle({ size = "sm" }: ThemeToggleProps) {
             animate="animate"
             exit="exit"
             transition={springTransition}
-            style={{ display: "flex", position: "absolute" }}
+            style={{ display: 'flex', position: 'absolute' }}
           >
             <MoonIcon />
           </motion.span>

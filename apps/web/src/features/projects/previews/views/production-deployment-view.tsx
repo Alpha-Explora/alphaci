@@ -1,22 +1,25 @@
-"use client";
+'use client';
 
-import { useId, useState } from "react";
+import { useId, useState } from 'react';
 
-import type { DeploymentLogFocus } from "@/features/projects/deployment-logs";
-import { previewKey, splitOverviewPreviews } from "../../model/projects-rules";
-import type { ProjectBranchPreview } from "../../model/projects-types";
-import { ActiveBranchesList } from "./active-branches-list";
-import { BranchPreviewsView, type BranchPreviewsViewProps } from "./branch-previews-view";
-import { EnvironmentSwitcher, environmentTabId } from "./environment-switcher";
-import { ProductionDeploymentCard } from "./production-deployment-card";
+import type { DeploymentLogFocus } from '@/features/projects/deployment-logs';
+import { previewKey, splitOverviewPreviews } from '../../model/projects-rules';
+import type { ProjectBranchPreview } from '../../model/projects-types';
+import { ActiveBranchesList } from './active-branches-list';
+import {
+  BranchPreviewsView,
+  type BranchPreviewsViewProps,
+} from './branch-previews-view';
+import { EnvironmentSwitcher, environmentTabId } from './environment-switcher';
+import { ProductionDeploymentCard } from './production-deployment-card';
 
 /** Rows before the rest are left to the Hosting tab, which lists them all. */
 const ACTIVE_BRANCH_ROWS = 5;
-const BRANCHES_WITH_PRODUCTION = new Set(["main", "uat"]);
+const BRANCHES_WITH_PRODUCTION = new Set(['main', 'uat']);
 
 export type ProductionDeploymentViewProps = Pick<
   BranchPreviewsViewProps,
-  "previews" | "status" | "error"
+  'previews' | 'status' | 'error'
 > & {
   /** The project the previews belong to; a backend card's logs need it. */
   projectId?: string;
@@ -47,7 +50,8 @@ function EnvironmentCards({
   const idPrefix = useId();
   const panelId = `${idPrefix}-panel`;
   const [chosen, setChosen] = useState<string | null>(null);
-  const shown = cards.find((preview) => previewKey(preview) === chosen) ?? cards[0];
+  const shown =
+    cards.find((preview) => previewKey(preview) === chosen) ?? cards[0];
   if (!shown) return null;
   const shownKey = previewKey(shown);
 
@@ -60,7 +64,11 @@ function EnvironmentCards({
         panelId={panelId}
         selected={shownKey}
       />
-      <div aria-labelledby={environmentTabId(idPrefix, shownKey)} id={panelId} role="tabpanel">
+      <div
+        aria-labelledby={environmentTabId(idPrefix, shownKey)}
+        id={panelId}
+        role="tabpanel"
+      >
         {/* Keyed, so switching environment starts that target's own log tail. */}
         <ProductionDeploymentCard
           key={shownKey}
@@ -92,12 +100,16 @@ export function ProductionDeploymentView({
   onOpenPullRequest,
 }: Readonly<ProductionDeploymentViewProps>) {
   const { production, environments, branches } =
-    status === "ready"
+    status === 'ready'
       ? splitOverviewPreviews(previews)
       : { production: [], environments: [], branches: [] };
-  const hasLiveProduction = production.some((preview) => preview.status === "ready");
+  const hasLiveProduction = production.some(
+    (preview) => preview.status === 'ready',
+  );
   const visibleBranches = hasLiveProduction
-    ? branches.filter((preview) => BRANCHES_WITH_PRODUCTION.has(preview.branch.toLowerCase()))
+    ? branches.filter((preview) =>
+        BRANCHES_WITH_PRODUCTION.has(preview.branch.toLowerCase()),
+      )
     : branches;
 
   if (production.length === 0) {

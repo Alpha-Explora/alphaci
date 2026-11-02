@@ -155,7 +155,7 @@
 }
 
 .guide-faq-item summary::before {
-  content: "+";
+  content: '+';
   display: inline-flex;
   width: 1rem;
   justify-content: center;
@@ -165,7 +165,7 @@
 }
 
 .guide-faq-item[open] summary::before {
-  content: "\2212";
+  content: '\2212';
 }
 
 .guide-faq-item summary::-webkit-details-marker {

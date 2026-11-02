@@ -19,8 +19,8 @@ export function canUseDevQuickLogin({
   apiBaseUrlConfigured,
 }: DevQuickLoginEligibilityInput): boolean {
   return (
-    nodeEnv === "development" &&
-    featureFlag === "true" &&
+    nodeEnv === 'development' &&
+    featureFlag === 'true' &&
     browserOrigin !== null &&
     isLoopbackHttpOrigin(browserOrigin) &&
     apiBaseUrlConfigured &&
@@ -32,10 +32,10 @@ export function isLoopbackHttpOrigin(value: string): boolean {
   try {
     const url = new URL(value);
     return (
-      url.protocol === "http:" &&
+      url.protocol === 'http:' &&
       !url.username &&
       !url.password &&
-      !url.pathname.replace(/\/$/, "") &&
+      !url.pathname.replace(/\/$/, '') &&
       !url.search &&
       !url.hash &&
       isLoopbackHostname(url.hostname)
@@ -49,7 +49,7 @@ function isLoopbackHttpTarget(value: string): boolean {
   try {
     const url = new URL(value);
     return (
-      url.protocol === "http:" &&
+      url.protocol === 'http:' &&
       !url.username &&
       !url.password &&
       !url.search &&
@@ -62,17 +62,16 @@ function isLoopbackHttpTarget(value: string): boolean {
 }
 
 function isLoopbackHostname(value: string): boolean {
-  const hostname = value.replace(/^\[|\]$/g, "").toLowerCase();
-  if (hostname === "localhost" || hostname === "::1") return true;
+  const hostname = value.replace(/^\[|\]$/g, '').toLowerCase();
+  if (hostname === 'localhost' || hostname === '::1') return true;
 
-  const octets = hostname.split(".");
+  const octets = hostname.split('.');
   if (octets.length !== 4 || !octets.every((octet) => /^\d+$/.test(octet))) {
     return false;
   }
 
   const numbers = octets.map(Number);
   return (
-    numbers[0] === 127 &&
-    numbers.every((octet) => octet >= 0 && octet <= 255)
+    numbers[0] === 127 && numbers.every((octet) => octet >= 0 && octet <= 255)
   );
 }

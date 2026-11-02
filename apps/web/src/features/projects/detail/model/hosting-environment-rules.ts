@@ -6,10 +6,10 @@ import type {
   ProjectDeploymentHistoryItem,
   ProjectDeploymentsResponse,
   ProjectPreviewsResponse,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 
-import { deployedAgo, previewStatusTone } from "../../model/projects-rules";
-import { providerDisplayName } from "./provider-urls";
+import { deployedAgo, previewStatusTone } from '../../model/projects-rules';
+import { providerDisplayName } from './provider-urls';
 
 /*
  * The Hosting tab, organised by the real data model: one deployment target
@@ -20,13 +20,13 @@ import { providerDisplayName } from "./provider-urls";
  * models read the data and the views draw what these return.
  */
 
-export const PRODUCTION_BRANCH = "main";
-export const UAT_BRANCH = "uat";
+export const PRODUCTION_BRANCH = 'main';
+export const UAT_BRANCH = 'uat';
 
-export type HostingEnvironmentKind = "production" | "uat" | "previews";
+export type HostingEnvironmentKind = 'production' | 'uat' | 'previews';
 
 /** A status dot's colour. `idle`: nothing deployed (or not known). */
-export type HostingTone = "ok" | "pending" | "danger" | "idle";
+export type HostingTone = 'ok' | 'pending' | 'danger' | 'idle';
 
 export interface HostingEnvironment {
   kind: HostingEnvironmentKind;
@@ -45,28 +45,28 @@ export interface HostingEnvironment {
 }
 
 export interface HostingEnvironmentInput {
-  target: Pick<DeploymentTarget, "id" | "branchName">;
+  target: Pick<DeploymentTarget, 'id' | 'branchName'>;
   /**
    * The project's other services in the same slot. A branch one of them
    * tracks is that service's environment, not this one's: a uat service is
    * not shown an empty "Production" because main has a service of its own.
    */
-  siblings?: ReadonlyArray<Pick<DeploymentTarget, "id" | "branchName">>;
+  siblings?: ReadonlyArray<Pick<DeploymentTarget, 'id' | 'branchName'>>;
   /** The branch previews read; null while it is unknown (off, loading or failed). */
   previews: ReadonlyArray<ProjectBranchPreview> | null;
   metadata: ReadonlyArray<EnvVarMetadata>;
   deployments: ReadonlyArray<ProjectDeploymentHistoryItem>;
 }
 
-const STATUS_WORDS: Record<ProjectBranchPreview["status"], string> = {
-  queued: "queued",
-  building: "building",
-  ready: "live",
-  failed: "failed",
-  canceled: "canceled",
-  superseded: "replaced",
-  unknown: "unknown",
-  not_deployed: "not deployed",
+const STATUS_WORDS: Record<ProjectBranchPreview['status'], string> = {
+  queued: 'queued',
+  building: 'building',
+  ready: 'live',
+  failed: 'failed',
+  canceled: 'canceled',
+  superseded: 'replaced',
+  unknown: 'unknown',
+  not_deployed: 'not deployed',
 };
 
 /** The branches with an environment of their own (not a preview). */
@@ -74,12 +74,20 @@ export function isNamedEnvironmentBranch(branch: string): boolean {
   return branch === PRODUCTION_BRANCH || branch === UAT_BRANCH;
 }
 
-function forTarget<T extends { targetId: string }>(items: ReadonlyArray<T>, targetId: string): T[] {
+function forTarget<T extends { targetId: string }>(
+  items: ReadonlyArray<T>,
+  targetId: string,
+): T[] {
   return items.filter((item) => item.targetId === targetId);
 }
 
-function metadataForTarget(metadata: ReadonlyArray<EnvVarMetadata>, targetId: string): EnvVarMetadata[] {
-  return metadata.filter((item) => item.deploymentTargetId === targetId && !item.removedAt);
+function metadataForTarget(
+  metadata: ReadonlyArray<EnvVarMetadata>,
+  targetId: string,
+): EnvVarMetadata[] {
+  return metadata.filter(
+    (item) => item.deploymentTargetId === targetId && !item.removedAt,
+  );
 }
 
 /**
@@ -90,7 +98,8 @@ function metadataForTarget(metadata: ReadonlyArray<EnvVarMetadata>, targetId: st
  */
 export function targetBranchSet(input: HostingEnvironmentInput): Set<string> {
   const branches = new Set<string>([input.target.branchName].filter(Boolean));
-  for (const preview of forTarget(input.previews ?? [], input.target.id)) branches.add(preview.branch);
+  for (const preview of forTarget(input.previews ?? [], input.target.id))
+    branches.add(preview.branch);
   for (const item of metadataForTarget(input.metadata, input.target.id)) {
     if (item.gitBranch) branches.add(item.gitBranch);
   }
@@ -108,30 +117,39 @@ export function previewForBranch(
   targetId: string,
   branch: string,
 ): ProjectBranchPreview | null {
-  return forTarget(previews ?? [], targetId).find((preview) => preview.branch === branch) ?? null;
+  return (
+    forTarget(previews ?? [], targetId).find(
+      (preview) => preview.branch === branch,
+    ) ?? null
+  );
 }
 
-export function environmentTone(preview: Pick<ProjectBranchPreview, "status"> | null): HostingTone {
-  if (!preview || preview.status === "not_deployed") return "idle";
+export function environmentTone(
+  preview: Pick<ProjectBranchPreview, 'status'> | null,
+): HostingTone {
+  if (!preview || preview.status === 'not_deployed') return 'idle';
   return previewStatusTone(preview.status);
 }
 
 /** "live", "not deployed", or "status unknown" while previews could not be read. */
-export function environmentStatusWord(preview: Pick<ProjectBranchPreview, "status"> | null, previewsKnown: boolean): string {
+export function environmentStatusWord(
+  preview: Pick<ProjectBranchPreview, 'status'> | null,
+  previewsKnown: boolean,
+): string {
   if (preview) return STATUS_WORDS[preview.status];
-  return previewsKnown ? "not deployed" : "status unknown";
+  return previewsKnown ? 'not deployed' : 'status unknown';
 }
 
 function branchEnvironment(
-  kind: "production" | "uat",
+  kind: 'production' | 'uat',
   branch: string,
   input: HostingEnvironmentInput,
 ): HostingEnvironment {
   const preview = previewForBranch(input.previews, input.target.id, branch);
   return {
     kind,
-    label: kind === "production" ? "Production" : "UAT",
-    lane: kind === "production" ? "production" : "preview",
+    label: kind === 'production' ? 'Production' : 'UAT',
+    lane: kind === 'production' ? 'production' : 'preview',
     branch,
     tone: environmentTone(preview),
     subLabel: `${branch} · ${environmentStatusWord(preview, input.previews !== null)}`,
@@ -140,23 +158,36 @@ function branchEnvironment(
   };
 }
 
-const TONE_RANK: Record<HostingTone, number> = { danger: 3, pending: 2, ok: 1, idle: 0 };
+const TONE_RANK: Record<HostingTone, number> = {
+  danger: 3,
+  pending: 2,
+  ok: 1,
+  idle: 0,
+};
 
 /** The loudest of several tones: one failed preview colours the whole tab. */
 export function loudestTone(tones: ReadonlyArray<HostingTone>): HostingTone {
-  return tones.reduce<HostingTone>((loudest, tone) => (TONE_RANK[tone] > TONE_RANK[loudest] ? tone : loudest), "idle");
+  return tones.reduce<HostingTone>(
+    (loudest, tone) => (TONE_RANK[tone] > TONE_RANK[loudest] ? tone : loudest),
+    'idle',
+  );
 }
 
 export function branchCountLabel(count: number): string {
-  return `${count} ${count === 1 ? "branch" : "branches"}`;
+  return `${count} ${count === 1 ? 'branch' : 'branches'}`;
 }
 
-function previewsEnvironment(branches: string[], input: HostingEnvironmentInput): HostingEnvironment {
-  const tones = branches.map((branch) => environmentTone(previewForBranch(input.previews, input.target.id, branch)));
+function previewsEnvironment(
+  branches: string[],
+  input: HostingEnvironmentInput,
+): HostingEnvironment {
+  const tones = branches.map((branch) =>
+    environmentTone(previewForBranch(input.previews, input.target.id, branch)),
+  );
   return {
-    kind: "previews",
-    label: "Previews",
-    lane: "preview",
+    kind: 'previews',
+    label: 'Previews',
+    lane: 'preview',
     branch: null,
     tone: loudestTone(tones),
     subLabel: branchCountLabel(branches.length),
@@ -172,7 +203,9 @@ function previewsEnvironment(branches: string[], input: HostingEnvironmentInput)
  * to that service, so a service per branch shows its own environment only;
  * a target is never left with no tab at all.
  */
-export function deriveHostingEnvironments(input: HostingEnvironmentInput): HostingEnvironment[] {
+export function deriveHostingEnvironments(
+  input: HostingEnvironmentInput,
+): HostingEnvironment[] {
   const branches = targetBranchSet(input);
   const claimed = new Set(
     (input.siblings ?? [])
@@ -180,11 +213,21 @@ export function deriveHostingEnvironments(input: HostingEnvironmentInput): Hosti
       .map((sibling) => sibling.branchName as string),
   );
   const environments: HostingEnvironment[] = [];
-  if (!claimed.has(PRODUCTION_BRANCH)) environments.push(branchEnvironment("production", PRODUCTION_BRANCH, input));
-  if (branches.has(UAT_BRANCH) && !claimed.has(UAT_BRANCH)) environments.push(branchEnvironment("uat", UAT_BRANCH, input));
-  const previewBranches = [...branches].filter((branch) => !isNamedEnvironmentBranch(branch)).sort();
-  if (previewBranches.length) environments.push(previewsEnvironment(previewBranches, input));
-  if (!environments.length) environments.push(branchEnvironment("production", PRODUCTION_BRANCH, input));
+  if (!claimed.has(PRODUCTION_BRANCH))
+    environments.push(
+      branchEnvironment('production', PRODUCTION_BRANCH, input),
+    );
+  if (branches.has(UAT_BRANCH) && !claimed.has(UAT_BRANCH))
+    environments.push(branchEnvironment('uat', UAT_BRANCH, input));
+  const previewBranches = [...branches]
+    .filter((branch) => !isNamedEnvironmentBranch(branch))
+    .sort();
+  if (previewBranches.length)
+    environments.push(previewsEnvironment(previewBranches, input));
+  if (!environments.length)
+    environments.push(
+      branchEnvironment('production', PRODUCTION_BRANCH, input),
+    );
   return environments;
 }
 
@@ -193,11 +236,17 @@ export function selectEnvironment(
   environments: ReadonlyArray<HostingEnvironment>,
   kind: HostingEnvironmentKind,
 ): HostingEnvironment {
-  return environments.find((environment) => environment.kind === kind) ?? environments[0];
+  return (
+    environments.find((environment) => environment.kind === kind) ??
+    environments[0]
+  );
 }
 
 /** The preview branch to show: the one asked for while it exists, else the first. */
-export function resolvePreviewBranch(branches: ReadonlyArray<string>, asked: string | null): string | null {
+export function resolvePreviewBranch(
+  branches: ReadonlyArray<string>,
+  asked: string | null,
+): string | null {
   if (asked && branches.includes(asked)) return asked;
   return branches[0] ?? null;
 }
@@ -205,7 +254,7 @@ export function resolvePreviewBranch(branches: ReadonlyArray<string>, asked: str
 /* ── Roving tab focus (WAI-ARIA tabs) ─────────────────────────────────────── */
 
 /** Shared with the Overview's environment switcher. */
-export { nextTabIndex } from "../../model/projects-rules";
+export { nextTabIndex } from '../../model/projects-rules';
 
 /* ── Deploys ──────────────────────────────────────────────────────────────── */
 
@@ -218,7 +267,10 @@ export interface EnvironmentDeploys {
   byBranch: boolean;
 }
 
-function newestFirst(a: ProjectDeploymentHistoryItem, b: ProjectDeploymentHistoryItem): number {
+function newestFirst(
+  a: ProjectDeploymentHistoryItem,
+  b: ProjectDeploymentHistoryItem,
+): number {
   return b.createdAt.localeCompare(a.createdAt);
 }
 
@@ -230,9 +282,13 @@ export function targetDeploys(
   return forTarget(deployments, targetId).sort(newestFirst);
 }
 
-function deployMatches(deploy: ProjectDeploymentHistoryItem, environment: Pick<HostingEnvironment, "kind" | "branch">): boolean {
+function deployMatches(
+  deploy: ProjectDeploymentHistoryItem,
+  environment: Pick<HostingEnvironment, 'kind' | 'branch'>,
+): boolean {
   if (!deploy.branch) return false;
-  if (environment.kind === "previews") return !isNamedEnvironmentBranch(deploy.branch);
+  if (environment.kind === 'previews')
+    return !isNamedEnvironmentBranch(deploy.branch);
   return deploy.branch === environment.branch;
 }
 
@@ -244,11 +300,15 @@ function deployMatches(deploy: ProjectDeploymentHistoryItem, environment: Pick<H
 export function deploysForEnvironment(
   deployments: ReadonlyArray<ProjectDeploymentHistoryItem>,
   targetId: string,
-  environment: Pick<HostingEnvironment, "kind" | "branch">,
+  environment: Pick<HostingEnvironment, 'kind' | 'branch'>,
 ): EnvironmentDeploys {
   const all = targetDeploys(deployments, targetId);
-  if (!all.some((deploy) => deploy.branch)) return { items: all, byBranch: false };
-  return { items: all.filter((deploy) => deployMatches(deploy, environment)), byBranch: true };
+  if (!all.some((deploy) => deploy.branch))
+    return { items: all, byBranch: false };
+  return {
+    items: all.filter((deploy) => deployMatches(deploy, environment)),
+    byBranch: true,
+  };
 }
 
 /** How many recent deploys an environment shows before "All deploys". */
@@ -257,15 +317,22 @@ export const RECENT_DEPLOY_LIMIT = 5;
 /* ── The one provider notice ──────────────────────────────────────────────── */
 
 export interface HostingNoticeInput {
-  provider: DeploymentTarget["provider"];
-  deployments: Pick<ProjectDeploymentsResponse, "mode" | "providerError"> | null;
+  provider: DeploymentTarget['provider'];
+  deployments: Pick<
+    ProjectDeploymentsResponse,
+    'mode' | 'providerError'
+  > | null;
   deploymentsError: string | null;
-  previews: Pick<ProjectPreviewsResponse, "providerError"> | null;
+  previews: Pick<ProjectPreviewsResponse, 'providerError'> | null;
   previewsError: string | null;
 }
 
 function providerUnanswered(input: HostingNoticeInput): boolean {
-  if (input.deployments?.providerError || input.deployments?.mode === "unavailable") return true;
+  if (
+    input.deployments?.providerError ||
+    input.deployments?.mode === 'unavailable'
+  )
+    return true;
   return Boolean(input.previews?.providerError);
 }
 
@@ -287,10 +354,15 @@ export function hostingNotice(input: HostingNoticeInput): string | null {
 
 /* ── Service header ───────────────────────────────────────────────────────── */
 
-const SLOT_LABELS: Readonly<Record<string, string>> = { frontend: "Frontend", backend: "Backend" };
+const SLOT_LABELS: Readonly<Record<string, string>> = {
+  frontend: 'Frontend',
+  backend: 'Backend',
+};
 
 function slotLabel(slot: string): string {
-  return SLOT_LABELS[slot] ?? `${slot.slice(0, 1).toUpperCase()}${slot.slice(1)}`;
+  return (
+    SLOT_LABELS[slot] ?? `${slot.slice(0, 1).toUpperCase()}${slot.slice(1)}`
+  );
 }
 
 export interface ServiceMeta {
@@ -303,35 +375,54 @@ export interface ServiceMeta {
 }
 
 /** A service the pipeline builds an image for and the host only runs. */
-function runsPushedImage(target: Pick<DeploymentTarget, "imageUrl" | "deploymentStrategy">): boolean {
-  return Boolean(target.imageUrl) || target.deploymentStrategy === "render_image_pushed";
+function runsPushedImage(
+  target: Pick<DeploymentTarget, 'imageUrl' | 'deploymentStrategy'>,
+): boolean {
+  return (
+    Boolean(target.imageUrl) ||
+    target.deploymentStrategy === 'render_image_pushed'
+  );
 }
 
 /** The header's one quiet meta line, in parts so the commands can be set in mono. */
 export function serviceMeta(
   target: Pick<
     DeploymentTarget,
-    "provider" | "slot" | "buildCommand" | "rootDirectory" | "imageUrl" | "deploymentStrategy"
+    | 'provider'
+    | 'slot'
+    | 'buildCommand'
+    | 'rootDirectory'
+    | 'imageUrl'
+    | 'deploymentStrategy'
   >,
 ): ServiceMeta {
   const image = runsPushedImage(target);
-  const source = image ? "deploys the pipeline's image" : "deploys from Git";
+  const source = image ? "deploys the pipeline's image" : 'deploys from Git';
   return {
-    summary: [providerDisplayName(target.provider), slotLabel(target.slot), source].join(" · "),
+    summary: [
+      providerDisplayName(target.provider),
+      slotLabel(target.slot),
+      source,
+    ].join(' · '),
     builds: !image,
     buildCommand: target.buildCommand?.trim() || null,
-    rootDirectory: target.rootDirectory?.trim() || ".",
+    rootDirectory: target.rootDirectory?.trim() || '.',
   };
 }
 
-const TARGET_STATUS: Readonly<Record<DeploymentTarget["status"], { label: string; tone: HostingTone }>> = {
-  active: { label: "Active", tone: "ok" },
-  missing: { label: "Missing at provider", tone: "danger" },
-  failed: { label: "Failed", tone: "danger" },
+const TARGET_STATUS: Readonly<
+  Record<DeploymentTarget['status'], { label: string; tone: HostingTone }>
+> = {
+  active: { label: 'Active', tone: 'ok' },
+  missing: { label: 'Missing at provider', tone: 'danger' },
+  failed: { label: 'Failed', tone: 'danger' },
 };
 
-export function targetStatusPill(status: DeploymentTarget["status"]): { label: string; tone: HostingTone } {
-  return TARGET_STATUS[status] ?? { label: status, tone: "idle" };
+export function targetStatusPill(status: DeploymentTarget['status']): {
+  label: string;
+  tone: HostingTone;
+} {
+  return TARGET_STATUS[status] ?? { label: status, tone: 'idle' };
 }
 
 /* ── Variables ────────────────────────────────────────────────────────────── */
@@ -342,7 +433,9 @@ function laneKeys(
   lane: EnvLane,
   branch: string | null,
 ): Set<string> {
-  return new Set(variablesInScope(metadata, targetId, lane, branch).map((item) => item.key));
+  return new Set(
+    variablesInScope(metadata, targetId, lane, branch).map((item) => item.key),
+  );
 }
 
 /**
@@ -356,7 +449,11 @@ export function variablesInScope(
   branch: string | null,
 ): EnvVarMetadata[] {
   return metadataForTarget(metadata, targetId)
-    .filter((item) => item.lane === lane && (lane === "production" || item.gitBranch === branch))
+    .filter(
+      (item) =>
+        item.lane === lane &&
+        (lane === 'production' || item.gitBranch === branch),
+    )
     .sort((a, b) => a.key.localeCompare(b.key));
 }
 
@@ -372,40 +469,53 @@ export function missingLaneKeys(
   lane: EnvLane,
   branch: string | null,
 ): string[] {
-  if (lane === "production") return [];
+  if (lane === 'production') return [];
   const here = laneKeys(metadata, targetId, lane, branch);
-  return [...laneKeys(metadata, targetId, "production", null)].filter((key) => !here.has(key)).sort();
+  return [...laneKeys(metadata, targetId, 'production', null)]
+    .filter((key) => !here.has(key))
+    .sort();
 }
 
 export function variableCountLabel(count: number): string {
-  return `${count} ${count === 1 ? "variable" : "variables"}`;
+  return `${count} ${count === 1 ? 'variable' : 'variables'}`;
 }
 
 /** "Production · branch main", "Preview · branch uat". */
-export function variablesScopeLabel(lane: EnvLane, branch: string | null): string {
-  if (lane === "production") return `Production · branch ${PRODUCTION_BRANCH}`;
-  return `Preview · branch ${branch ?? ""}`;
+export function variablesScopeLabel(
+  lane: EnvLane,
+  branch: string | null,
+): string {
+  if (lane === 'production') return `Production · branch ${PRODUCTION_BRANCH}`;
+  return `Preview · branch ${branch ?? ''}`;
 }
 
 /** "Production · branch main · 6 variables", "Preview · branch uat · 4 variables". */
-export function variablesScopeLine(lane: EnvLane, branch: string | null, count: number): string {
+export function variablesScopeLine(
+  lane: EnvLane,
+  branch: string | null,
+  count: number,
+): string {
   return `${variablesScopeLabel(lane, branch)} · ${variableCountLabel(count)}`;
 }
 
 /** "set 2d ago by lim". */
-export function variableSetLabel(item: Pick<EnvVarMetadata, "lastProvisionedAt" | "lastProvisionedBy">, now: number = Date.now()): string {
-  const by = item.lastProvisionedBy ? ` by ${item.lastProvisionedBy}` : "";
+export function variableSetLabel(
+  item: Pick<EnvVarMetadata, 'lastProvisionedAt' | 'lastProvisionedBy'>,
+  now: number = Date.now(),
+): string {
+  const by = item.lastProvisionedBy ? ` by ${item.lastProvisionedBy}` : '';
   return `set ${deployedAgo(item.lastProvisionedAt, now)}${by}`;
 }
 
 /** "N variables set in Production are missing here". */
 export function missingKeysHeadline(count: number): string {
-  return `${variableCountLabel(count)} set in Production ${count === 1 ? "is" : "are"} missing here`;
+  return `${variableCountLabel(count)} set in Production ${count === 1 ? 'is' : 'are'} missing here`;
 }
 
 /* ── Empty state ──────────────────────────────────────────────────────────── */
 
-export type HostingEmptyBody = "create" | "lead_only" | "disabled" | "not_provisioned";
+export type HostingEmptyBody =
+  'create' | 'lead_only' | 'disabled' | 'not_provisioned';
 
 /** What the "Host this repository" card offers this viewer. */
 export function hostingEmptyBody(input: {
@@ -413,9 +523,9 @@ export function hostingEmptyBody(input: {
   envProvisioningEnabled: boolean;
   provisioned: boolean;
 }): HostingEmptyBody {
-  if (!input.canManage) return "lead_only";
-  if (!input.envProvisioningEnabled) return "disabled";
-  return input.provisioned ? "create" : "not_provisioned";
+  if (!input.canManage) return 'lead_only';
+  if (!input.envProvisioningEnabled) return 'disabled';
+  return input.provisioned ? 'create' : 'not_provisioned';
 }
 
 /* ── Deployment card ──────────────────────────────────────────────────────── */
@@ -425,52 +535,58 @@ export function hostingEmptyBody(input: {
  * read, else (Production only) the service's own public URL.
  */
 export function environmentAddress(
-  environment: Pick<HostingEnvironment, "kind" | "preview">,
+  environment: Pick<HostingEnvironment, 'kind' | 'preview'>,
   servicePublicUrl: string | null,
 ): string | null {
   const own = environment.preview?.previewUrl?.trim();
   if (own) return own;
-  return environment.kind === "production" ? servicePublicUrl : null;
+  return environment.kind === 'production' ? servicePublicUrl : null;
 }
 
 /** Known to have nothing deployed: the previews read says so, or does not list the branch. */
 export function isKnownUndeployed(
-  environment: Pick<HostingEnvironment, "preview">,
+  environment: Pick<HostingEnvironment, 'preview'>,
   previewsKnown: boolean,
 ): boolean {
-  if (environment.preview) return environment.preview.status === "not_deployed";
+  if (environment.preview) return environment.preview.status === 'not_deployed';
   return previewsKnown;
 }
 
 /** The one sentence an environment with nothing deployed gets instead of an empty box. */
-export function undeployedSentence(branch: string, hasAddress: boolean): string {
-  const where = hasAddress ? "publishes to this address" : "publishes it";
+export function undeployedSentence(
+  branch: string,
+  hasAddress: boolean,
+): string {
+  const where = hasAddress ? 'publishes to this address' : 'publishes it';
   return `Nothing is deployed here yet. The first merge into ${branch} ${where}.`;
 }
 
 const TONE_WORDS: Record<HostingTone, string> = {
-  ok: "Live",
-  pending: "Deploying",
-  danger: "Failed",
-  idle: "Not deployed",
+  ok: 'Live',
+  pending: 'Deploying',
+  danger: 'Failed',
+  idle: 'Not deployed',
 };
 
 /** The Deployment card's pill: the environment's own status word, or the tone's for Previews. */
-export function environmentPillLabel(environment: Pick<HostingEnvironment, "kind" | "preview" | "tone">, previewsKnown: boolean): string {
-  if (environment.kind === "previews") return TONE_WORDS[environment.tone];
+export function environmentPillLabel(
+  environment: Pick<HostingEnvironment, 'kind' | 'preview' | 'tone'>,
+  previewsKnown: boolean,
+): string {
+  if (environment.kind === 'previews') return TONE_WORDS[environment.tone];
   const word = environmentStatusWord(environment.preview, previewsKnown);
   return `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`;
 }
 
 const DEPLOY_TONES: Readonly<Record<string, HostingTone>> = {
-  ready: "ok",
-  failed: "danger",
-  error: "danger",
-  canceled: "danger",
-  cancelled: "danger",
-  queued: "pending",
-  building: "pending",
-  initializing: "pending",
+  ready: 'ok',
+  failed: 'danger',
+  error: 'danger',
+  canceled: 'danger',
+  cancelled: 'danger',
+  queued: 'pending',
+  building: 'pending',
+  initializing: 'pending',
 };
 
 /**
@@ -478,14 +594,14 @@ const DEPLOY_TONES: Readonly<Record<string, HostingTone>> = {
  * danger, queued and building are amber. Anything else is not known.
  */
 export function deployTone(status: string): HostingTone {
-  return DEPLOY_TONES[status.toLowerCase()] ?? "idle";
+  return DEPLOY_TONES[status.toLowerCase()] ?? 'idle';
 }
 
 /** The preview branch an environment's variables live under: none for Production. */
 export function environmentScopeBranch(
-  environment: Pick<HostingEnvironment, "kind" | "branch">,
+  environment: Pick<HostingEnvironment, 'kind' | 'branch'>,
   previewBranch: string | null,
 ): string | null {
-  if (environment.kind === "production") return null;
-  return environment.kind === "previews" ? previewBranch : environment.branch;
+  if (environment.kind === 'production') return null;
+  return environment.kind === 'previews' ? previewBranch : environment.branch;
 }

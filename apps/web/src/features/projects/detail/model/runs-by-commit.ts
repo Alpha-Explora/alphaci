@@ -17,15 +17,15 @@
  * the runs of a commit are one object.
  */
 
-import type { RunGroup, RunOverallStatus } from "@/shared/api/contracts";
+import type { RunGroup, RunOverallStatus } from '@/shared/api/contracts';
 
-import { isFailedConclusion } from "./github-conclusion";
+import { isFailedConclusion } from './github-conclusion';
 
 import {
   indexReportedIdentities,
   reportedCommitSha,
   type ReportedIdentity,
-} from "./reported-run-identity";
+} from './reported-run-identity';
 
 /**
  * The fields the grouping needs from a GitHub run.
@@ -137,21 +137,24 @@ export function groupRunsByCommit<T extends CommitRun>(
 /** How a commit's headline reads: the word, and the tone to paint it. */
 export interface CommitHeadline {
   label: string;
-  tone: "success" | "failure" | "running" | "neutral" | "warning";
+  tone: 'success' | 'failure' | 'running' | 'neutral' | 'warning';
   /** True when this came from our grading rather than a single GitHub run. */
   fromReport: boolean;
 }
 
-const OVERALL_TONE: Record<RunOverallStatus, CommitHeadline["tone"]> = {
-  success: "success",
-  failure: "failure",
-  running: "running",
-  cancelled: "neutral",
-  partial: "neutral",
+const OVERALL_TONE: Record<RunOverallStatus, CommitHeadline['tone']> = {
+  success: 'success',
+  failure: 'failure',
+  running: 'running',
+  cancelled: 'neutral',
+  partial: 'neutral',
 };
 
-function concludedAsFailed(run: { status: string; conclusion: string | null }): boolean {
-  return run.status === "completed" && isFailedConclusion(run.conclusion);
+function concludedAsFailed(run: {
+  status: string;
+  conclusion: string | null;
+}): boolean {
+  return run.status === 'completed' && isFailedConclusion(run.conclusion);
 }
 
 /**
@@ -186,14 +189,14 @@ function reportHeadline(
   runs: readonly (CommitRun & { status: string; conclusion: string | null })[],
 ): CommitHeadline {
   const lateFailure =
-    report.overallStatus === "success" &&
+    report.overallStatus === 'success' &&
     report.stages.some(
       (stage) =>
-        stage.status === "success" &&
+        stage.status === 'success' &&
         runs.some((run) => run.id === stage.runId && concludedAsFailed(run)),
     );
   if (lateFailure) {
-    return { label: "attention", tone: "warning", fromReport: true };
+    return { label: 'attention', tone: 'warning', fromReport: true };
   }
   return {
     label: report.overallStatus,
@@ -202,16 +205,19 @@ function reportHeadline(
   };
 }
 
-function runHeadline(run: { status: string; conclusion: string | null }): CommitHeadline {
+function runHeadline(run: {
+  status: string;
+  conclusion: string | null;
+}): CommitHeadline {
   const { status, conclusion } = run;
-  const label = status === "completed" ? (conclusion ?? "completed") : status;
-  let tone: CommitHeadline["tone"] = "neutral";
-  if (status !== "completed") {
-    tone = status === "queued" || status === "waiting" ? "neutral" : "running";
-  } else if (conclusion === "success") {
-    tone = "success";
+  const label = status === 'completed' ? (conclusion ?? 'completed') : status;
+  let tone: CommitHeadline['tone'] = 'neutral';
+  if (status !== 'completed') {
+    tone = status === 'queued' || status === 'waiting' ? 'neutral' : 'running';
+  } else if (conclusion === 'success') {
+    tone = 'success';
   } else if (concludedAsFailed(run)) {
-    tone = "failure";
+    tone = 'failure';
   }
   return { label, tone, fromReport: false };
 }

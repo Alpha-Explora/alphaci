@@ -1,1 +1,1 @@
-export { ProjectDetailView as default } from "@/features/projects/detail";
+export { ProjectDetailView as default } from '@/features/projects/detail';

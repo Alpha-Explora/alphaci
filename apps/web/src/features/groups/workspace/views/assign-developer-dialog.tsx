@@ -1,15 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { createRepositoryAssignment, getGroupMembers } from "@/features/groups";
-import { ApiError } from "@/shared/api/request";
-import type {
-  GroupMember,
-  RepositoryAssignment,
-} from "@/features/groups";
-import { roleGateMessage } from "../../model/role-gate-rules";
-import { FormDialog } from "./primitives";
+import { createRepositoryAssignment, getGroupMembers } from '@/features/groups';
+import { ApiError } from '@/shared/api/request';
+import type { GroupMember, RepositoryAssignment } from '@/features/groups';
+import { roleGateMessage } from '../../model/role-gate-rules';
+import { FormDialog } from './primitives';
 
 export function AssignDeveloperDialog({
   open,
@@ -24,7 +21,7 @@ export function AssignDeveloperDialog({
   onClose: () => void;
   onAssigned: (assignment: RepositoryAssignment) => void;
 }) {
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState('');
   const [members, setMembers] = useState<GroupMember[]>([]);
   // Each opening reads the members again: closing starts a new opening, and
   // the list counts as loading until the read for this opening settles.
@@ -37,7 +34,7 @@ export function AssignDeveloperDialog({
   const loadingMembers = open && settledKey !== membersKey;
 
   function reset() {
-    setUserId("");
+    setUserId('');
     setError(null);
     setOpening((value) => value + 1);
   }
@@ -52,12 +49,13 @@ export function AssignDeveloperDialog({
         setMembers(
           items.filter(
             (member) =>
-              member.role === "member" && member.memberStatus === "active",
+              member.role === 'member' && member.memberStatus === 'active',
           ),
         );
       })
       .catch(() => {
-        if (requestId === requestRef.current) setError("Group members could not be loaded.");
+        if (requestId === requestRef.current)
+          setError('Group members could not be loaded.');
       })
       .finally(() => {
         if (requestId === requestRef.current) setSettledKey(membersKey);
@@ -67,7 +65,7 @@ export function AssignDeveloperDialog({
   async function handleSubmit() {
     const trimmed = userId.trim();
     if (!trimmed) {
-      setError("Choose a group member to assign.");
+      setError('Choose a group member to assign.');
       return;
     }
     setSubmitting(true);
@@ -89,9 +87,9 @@ export function AssignDeveloperDialog({
       } else if (cause instanceof ApiError && cause.status === 404) {
         setError("That user isn't an active member of this group.");
       } else if (cause instanceof ApiError && cause.status === 409) {
-        setError("That member already has an assignment here.");
+        setError('That member already has an assignment here.');
       } else {
-        setError("The assignment could not be created. Please try again.");
+        setError('The assignment could not be created. Please try again.');
       }
     } finally {
       setSubmitting(false);
@@ -125,7 +123,7 @@ export function AssignDeveloperDialog({
           disabled={loadingMembers}
         >
           <option value="">
-            {loadingMembers ? "Loading members…" : "Select a member"}
+            {loadingMembers ? 'Loading members…' : 'Select a member'}
           </option>
           {members.map((member) => (
             <option key={member.userId} value={member.userId}>

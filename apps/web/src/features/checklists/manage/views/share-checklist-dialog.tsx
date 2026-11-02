@@ -1,12 +1,15 @@
-"use client";
+'use client';
 
-import { FormDialog } from "@/features/groups/workspace";
+import { FormDialog } from '@/features/groups/workspace';
 
-import type { ChecklistShareTarget, QaChecklist } from "../../model/checklist-types";
-import type { ShareChecklistViewModel } from "../view-models/use-share-checklist-view-model";
+import type {
+  ChecklistShareTarget,
+  QaChecklist,
+} from '../../model/checklist-types';
+import type { ShareChecklistViewModel } from '../view-models/use-share-checklist-view-model';
 
 function selectionSummary(selected: number, total: number): string {
-  if (selected === 0) return "Not shared to any project";
+  if (selected === 0) return 'Not shared to any project';
   if (selected === total) return `All ${total} projects`;
   return `${selected} of ${total} projects`;
 }
@@ -25,7 +28,8 @@ export function ShareChecklistDialog({
   vm: ShareChecklistViewModel;
 }>) {
   const allIds = projects.map((project) => project.id);
-  const allSelected = projects.length > 0 && vm.selectedIds.length === projects.length;
+  const allSelected =
+    projects.length > 0 && vm.selectedIds.length === projects.length;
   return (
     <FormDialog
       open={vm.open}
@@ -33,7 +37,7 @@ export function ShareChecklistDialog({
       title={`Share “${checklist.name}”`}
       description="Shared checklists appear on each project's Checklists tab for its developers and QA."
       submitLabel="Save sharing"
-      submitting={vm.status === "loading"}
+      submitting={vm.status === 'loading'}
       error={vm.error}
       canSubmit={vm.dirty}
       onSubmit={() => void vm.submit()}
@@ -46,13 +50,15 @@ export function ShareChecklistDialog({
       ) : (
         <fieldset className="qa-share">
           <legend className="qa-share__legend">
-            <span>{selectionSummary(vm.selectedIds.length, projects.length)}</span>
+            <span>
+              {selectionSummary(vm.selectedIds.length, projects.length)}
+            </span>
             <button
               type="button"
               className="inline-link qa-link-button"
               onClick={() => vm.setAll(allSelected ? [] : allIds)}
             >
-              {allSelected ? "Clear all" : "Select all"}
+              {allSelected ? 'Clear all' : 'Select all'}
             </button>
           </legend>
           <ul className="qa-share__list">
@@ -60,7 +66,9 @@ export function ShareChecklistDialog({
               const checked = vm.selectedIds.includes(project.id);
               return (
                 <li key={project.id}>
-                  <label className={`qa-share__row${checked ? " qa-share__row--on" : ""}`}>
+                  <label
+                    className={`qa-share__row${checked ? ' qa-share__row--on' : ''}`}
+                  >
                     <input
                       type="checkbox"
                       checked={checked}
@@ -69,7 +77,9 @@ export function ShareChecklistDialog({
                     <span className="qa-share__text">
                       <span className="qa-share__name">{project.name}</span>
                       {project.detail ? (
-                        <span className="qa-share__detail">{project.detail}</span>
+                        <span className="qa-share__detail">
+                          {project.detail}
+                        </span>
                       ) : null}
                     </span>
                   </label>

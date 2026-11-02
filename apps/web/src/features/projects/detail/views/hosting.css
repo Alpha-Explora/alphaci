@@ -158,7 +158,7 @@
 }
 
 .hosting-btn:disabled,
-.hosting-btn[aria-disabled="true"],
+.hosting-btn[aria-disabled='true'],
 .hosting-tab .hosting-card .ghost-button:disabled,
 .hosting-tab .hosting-card .primary-button:disabled,
 .hosting-card.hosting-empty .ghost-button:disabled,
@@ -226,7 +226,7 @@
   cursor: pointer;
 }
 
-.hosting-services__option[aria-pressed="true"] {
+.hosting-services__option[aria-pressed='true'] {
   border-color: var(--border-brand);
   background: var(--brand-light);
   color: var(--text-primary);
@@ -376,7 +376,7 @@
 }
 
 .hosting-menu__trigger:hover,
-.hosting-menu__trigger[aria-expanded="true"] {
+.hosting-menu__trigger[aria-expanded='true'] {
   color: var(--text-primary);
   background: var(--layer-2);
 }
@@ -421,7 +421,7 @@
   background: var(--layer-2-hover);
 }
 
-.hosting-menu__item[aria-disabled="true"] {
+.hosting-menu__item[aria-disabled='true'] {
   color: var(--text-muted);
   cursor: not-allowed;
 }
@@ -461,7 +461,7 @@
   background: var(--layer-1-hover);
 }
 
-.hosting-envs__tab[aria-selected="true"] {
+.hosting-envs__tab[aria-selected='true'] {
   border-color: var(--border-brand);
   background: var(--layer-1);
   color: var(--text-primary);

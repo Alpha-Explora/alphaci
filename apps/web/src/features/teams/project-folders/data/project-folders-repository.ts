@@ -1,12 +1,12 @@
-import { requirementsRepository } from "@/features/checklists";
-import { archiveDeliveryProject } from "@/features/groups";
-import { request } from "@/shared/api/request";
+import { requirementsRepository } from '@/features/checklists';
+import { archiveDeliveryProject } from '@/features/groups';
+import { request } from '@/shared/api/request';
 
 import {
   normaliseDeleteOutcome,
   normaliseMoveOutcome,
   normaliseProjectFolders,
-} from "../model/project-folder-rules";
+} from '../model/project-folder-rules';
 import type {
   CreateProjectFolderRequest,
   DeleteProjectFolderRequest,
@@ -14,7 +14,7 @@ import type {
   MoveOutcome,
   MoveRepositoryRequest,
   ProjectFoldersSnapshot,
-} from "../model/project-folder-types";
+} from '../model/project-folder-types';
 
 /* The only place in the project explorer that performs I/O. View-models call
  * this; views never do. Every read is normalised here, so nothing above this
@@ -24,24 +24,35 @@ const enc = encodeURIComponent;
 
 export const projectFoldersRepository = {
   async list(groupId: string): Promise<ProjectFoldersSnapshot> {
-    const raw = await request<unknown>(`/groups/${enc(groupId)}/project-folders`);
+    const raw = await request<unknown>(
+      `/groups/${enc(groupId)}/project-folders`,
+    );
     return normaliseProjectFolders(raw, groupId);
   },
 
   /** Creates an empty Project in the team. Lead/admin only. */
-  async create(groupId: string, input: CreateProjectFolderRequest): Promise<void> {
+  async create(
+    groupId: string,
+    input: CreateProjectFolderRequest,
+  ): Promise<void> {
     await request<unknown>(`/groups/${enc(groupId)}/projects`, {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify(input),
     });
   },
 
-  async moveRepository(repositoryId: string, deliveryProjectId: string): Promise<MoveOutcome> {
+  async moveRepository(
+    repositoryId: string,
+    deliveryProjectId: string,
+  ): Promise<MoveOutcome> {
     const body: MoveRepositoryRequest = { deliveryProjectId };
-    const raw = await request<unknown>(`/repositories/${enc(repositoryId)}/move`, {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
+    const raw = await request<unknown>(
+      `/repositories/${enc(repositoryId)}/move`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      },
+    );
     return normaliseMoveOutcome(raw);
   },
 
@@ -55,10 +66,13 @@ export const projectFoldersRepository = {
     deliveryProjectId: string,
     input: DeleteProjectFolderRequest,
   ): Promise<DeleteProjectOutcome> {
-    const raw = await request<unknown>(`/delivery-projects/${enc(deliveryProjectId)}`, {
-      method: "DELETE",
-      body: JSON.stringify(input),
-    });
+    const raw = await request<unknown>(
+      `/delivery-projects/${enc(deliveryProjectId)}`,
+      {
+        method: 'DELETE',
+        body: JSON.stringify(input),
+      },
+    );
     return normaliseDeleteOutcome(raw, deliveryProjectId);
   },
 

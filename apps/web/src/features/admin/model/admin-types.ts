@@ -6,8 +6,8 @@ export type {
   AppRole,
   FeedbackRecord,
   FeedbackStatus,
-} from "@/features/admin/data/admin-api";
-export { APP_ROLE_LABELS } from "@/features/admin/data/admin-api";
+} from '@/features/admin/data/admin-api';
+export { APP_ROLE_LABELS } from '@/features/admin/data/admin-api';
 
 /** Lifecycle of one independently-loaded admin section. */
-export type AdminStatus = "loading" | "ready" | "error";
+export type AdminStatus = 'loading' | 'ready' | 'error';

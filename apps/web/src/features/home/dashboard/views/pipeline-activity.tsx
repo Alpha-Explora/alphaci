@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { Fragment } from "react";
-import { motion } from "framer-motion";
+import Link from 'next/link';
+import { Fragment } from 'react';
+import { motion } from 'framer-motion';
 
 import {
   RUN_STAGE_LABELS,
   connectorTone,
   shortRepoName,
   timeAgo,
-} from "../../model/home-rules";
+} from '../../model/home-rules';
 import {
   runCardHref,
   runCardReason,
   runCardStages,
-} from "../../model/home-run-card-rules";
+} from '../../model/home-run-card-rules';
 import type {
   RunGroup,
   RunOverallStatus,
   RunStats,
-} from "../../model/home-types";
-import { QuickActionRunIcon } from "./dashboard-chrome";
-import { EASE_OUT, sectionVariants } from "./motion";
+} from '../../model/home-types';
+import { QuickActionRunIcon } from './dashboard-chrome';
+import { EASE_OUT, sectionVariants } from './motion';
 
 /* ── Sparkline of recent run outcomes (oldest → newest, left → right) ───────── */
 
@@ -57,7 +57,6 @@ export function RunSparkline({
   );
 }
 
-
 /* ── Run activity card — the star: a full-width horizontal pipeline track ───── */
 
 const runListVariants = {
@@ -73,7 +72,6 @@ const runCardVariants = {
     transition: { duration: 0.4, ease: EASE_OUT },
   },
 };
-
 
 export function RunActivityCard({
   run,
@@ -92,12 +90,12 @@ export function RunActivityCard({
   const reason = runCardReason(run);
   const stageSummary = stages
     .map((stage) => `${RUN_STAGE_LABELS[stage.id]} ${stage.status}`)
-    .join(", ");
-  const reasonSentence = reason ? ` ${reason}.` : "";
+    .join(', ');
+  const reasonSentence = reason ? ` ${reason}.` : '';
 
   return (
     <motion.div
-      className={`run-card run-card--${run.overallStatus}${featured ? " run-card--featured" : ""}`}
+      className={`run-card run-card--${run.overallStatus}${featured ? ' run-card--featured' : ''}`}
       variants={reduced ? undefined : runCardVariants}
     >
       <Link
@@ -111,7 +109,7 @@ export function RunActivityCard({
           <div className="run-card-head">
             <span className="run-card-repo">{repoShort}</span>
             <span className="run-card-branch-pill">{run.branch}</span>
-            {run.overallStatus === "running" ? (
+            {run.overallStatus === 'running' ? (
               <span className="run-status-live" aria-hidden="true" />
             ) : null}
           </div>
@@ -127,9 +125,7 @@ export function RunActivityCard({
                 return (
                   <Fragment key={stage.id}>
                     {seg ? (
-                      <span
-                        className={`run-track-seg run-track-seg--${seg}`}
-                      />
+                      <span className={`run-track-seg run-track-seg--${seg}`} />
                     ) : null}
                     <span
                       className={`run-track-dot pipeline-dot pipeline-dot--${stage.status}`}
@@ -154,7 +150,9 @@ export function RunActivityCard({
         </div>
 
         <div className="run-card-side">
-          <span className={`run-status-word run-status-word--${run.overallStatus}`}>
+          <span
+            className={`run-status-word run-status-word--${run.overallStatus}`}
+          >
             {run.overallStatus}
           </span>
           <span className="run-card-cta">
@@ -231,7 +229,7 @@ export function PipelineActivity({
       aria-labelledby="runs-hero-title"
       custom={3}
       variants={sectionVariants}
-      initial={reduced ? false : "hidden"}
+      initial={reduced ? false : 'hidden'}
       animate="visible"
     >
       <div className="dashboard-panel-heading runs-hero-heading">
@@ -247,7 +245,7 @@ export function PipelineActivity({
             </span>
           ) : null}
           <Link href="/runs" className="dashboard-inline-link">
-            {runs.length ? `View all ${runs.length} runs` : "Open runs"}{" "}
+            {runs.length ? `View all ${runs.length} runs` : 'Open runs'}{' '}
             <span aria-hidden="true">→</span>
           </Link>
         </div>
@@ -256,7 +254,13 @@ export function PipelineActivity({
       {/* Operational signal folded in from the retired scope banner:
          the one line answering "is anything wrong?". */}
       <PipelineSignals loading={loading} attentionItems={attentionItems} />
-      <RunsStream loading={loading} latest={latest} rest={rest} reduced={reduced} projectIds={projectIds} />
+      <RunsStream
+        loading={loading}
+        latest={latest}
+        rest={rest}
+        reduced={reduced}
+        projectIds={projectIds}
+      />
 
       {/* Recent outcomes sparkline pinned at the foot of the hero. */}
       <div className="runs-outcomes ops-block">
@@ -267,19 +271,109 @@ export function PipelineActivity({
   );
 }
 
-function PipelineSignals({ loading, attentionItems }: Readonly<{ loading: boolean; attentionItems: AttentionItem[] }>) {
-  if (loading) return <div className="runs-hero-status" role="status"><span className="runs-hero-signal runs-hero-signal--idle">Refreshing signals…</span></div>;
-  if (attentionItems.length) return <div className="runs-hero-status" role="status">{attentionItems.map((item) => <Link key={item.label} href={item.href} className={`runs-hero-chip runs-hero-chip--${item.tone}`} title={item.detail}><span className="runs-hero-chip-dot" aria-hidden="true" />{item.label}<span aria-hidden="true">→</span></Link>)}</div>;
-  return <div className="runs-hero-status" role="status"><span className="runs-hero-signal"><span className="runs-hero-chip-dot" aria-hidden="true" />All systems operational</span></div>;
+function PipelineSignals({
+  loading,
+  attentionItems,
+}: Readonly<{ loading: boolean; attentionItems: AttentionItem[] }>) {
+  if (loading)
+    return (
+      <div className="runs-hero-status" role="status">
+        <span className="runs-hero-signal runs-hero-signal--idle">
+          Refreshing signals…
+        </span>
+      </div>
+    );
+  if (attentionItems.length)
+    return (
+      <div className="runs-hero-status" role="status">
+        {attentionItems.map((item) => (
+          <Link
+            key={item.label}
+            href={item.href}
+            className={`runs-hero-chip runs-hero-chip--${item.tone}`}
+            title={item.detail}
+          >
+            <span className="runs-hero-chip-dot" aria-hidden="true" />
+            {item.label}
+            <span aria-hidden="true">→</span>
+          </Link>
+        ))}
+      </div>
+    );
+  return (
+    <div className="runs-hero-status" role="status">
+      <span className="runs-hero-signal">
+        <span className="runs-hero-chip-dot" aria-hidden="true" />
+        All systems operational
+      </span>
+    </div>
+  );
 }
 
-function RunsStream({ loading, latest, rest, reduced, projectIds }: Readonly<{ loading: boolean; latest: RunGroup | null; rest: RunGroup[]; reduced: boolean | null; projectIds: ReadonlyMap<string, string> | null }>) {
-  if (loading) return <div className="runs-stream"><RunCardSkeleton /><RunCardSkeleton /></div>;
+function RunsStream({
+  loading,
+  latest,
+  rest,
+  reduced,
+  projectIds,
+}: Readonly<{
+  loading: boolean;
+  latest: RunGroup | null;
+  rest: RunGroup[];
+  reduced: boolean | null;
+  projectIds: ReadonlyMap<string, string> | null;
+}>) {
+  if (loading)
+    return (
+      <div className="runs-stream">
+        <RunCardSkeleton />
+        <RunCardSkeleton />
+      </div>
+    );
   if (!latest) return <EmptyRuns />;
-  return <motion.div className="runs-stream" variants={reduced ? undefined : runListVariants} initial={reduced ? false : "hidden"} animate="visible"><RunActivityCard run={latest} reduced={reduced} featured projectIds={projectIds} />{rest.map((run) => <RunActivityCard key={run.runId} run={run} reduced={reduced} projectIds={projectIds} />)}</motion.div>;
+  return (
+    <motion.div
+      className="runs-stream"
+      variants={reduced ? undefined : runListVariants}
+      initial={reduced ? false : 'hidden'}
+      animate="visible"
+    >
+      <RunActivityCard
+        run={latest}
+        reduced={reduced}
+        featured
+        projectIds={projectIds}
+      />
+      {rest.map((run) => (
+        <RunActivityCard
+          key={run.runId}
+          run={run}
+          reduced={reduced}
+          projectIds={projectIds}
+        />
+      ))}
+    </motion.div>
+  );
 }
 
 function EmptyRuns() {
-  return <div className="runs-stream"><Link href="/workflows?tab=setup" className="runs-empty"><span className="runs-empty-icon" aria-hidden="true"><QuickActionRunIcon /></span><span><strong>No runs yet</strong><small>Push to a provisioned repository and its per-stage status streams in here live.</small></span><span className="dashboard-row-arrow" aria-hidden="true">→</span></Link></div>;
+  return (
+    <div className="runs-stream">
+      <Link href="/workflows?tab=setup" className="runs-empty">
+        <span className="runs-empty-icon" aria-hidden="true">
+          <QuickActionRunIcon />
+        </span>
+        <span>
+          <strong>No runs yet</strong>
+          <small>
+            Push to a provisioned repository and its per-stage status streams in
+            here live.
+          </small>
+        </span>
+        <span className="dashboard-row-arrow" aria-hidden="true">
+          →
+        </span>
+      </Link>
+    </div>
+  );
 }
-

@@ -6,13 +6,16 @@
  * @testing-library/react's renderHook in this jest environment.
  */
 
-import { act, useEffect } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act, useEffect } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 
-import { ThemeProvider, useTheme } from "../../../../src/shared/layout/theme-context";
+import {
+  ThemeProvider,
+  useTheme,
+} from '../../../../src/shared/layout/theme-context';
 
 interface Snapshot {
-  theme: "dark" | "light";
+  theme: 'dark' | 'light';
   toggle: () => void;
 }
 
@@ -26,14 +29,14 @@ function Probe() {
   return null;
 }
 
-describe("ThemeProvider / useTheme", () => {
+describe('ThemeProvider / useTheme', () => {
   let container: HTMLDivElement;
   let root: Root;
 
   beforeEach(() => {
     latestSnapshot = null;
-    document.documentElement.removeAttribute("data-theme");
-    container = document.createElement("div");
+    document.documentElement.removeAttribute('data-theme');
+    container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
   });
@@ -45,7 +48,7 @@ describe("ThemeProvider / useTheme", () => {
     container.remove();
   });
 
-  it("defaults to dark theme and sets the data-theme attribute on mount", async () => {
+  it('defaults to dark theme and sets the data-theme attribute on mount', async () => {
     await act(async () => {
       root.render(
         <ThemeProvider>
@@ -54,28 +57,11 @@ describe("ThemeProvider / useTheme", () => {
       );
     });
 
-    expect(latestSnapshot?.theme).toBe("dark");
-    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+    expect(latestSnapshot?.theme).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
 
-  it("toggle flips from dark to light and updates the DOM attribute", async () => {
-    await act(async () => {
-      root.render(
-        <ThemeProvider>
-          <Probe />
-        </ThemeProvider>,
-      );
-    });
-
-    await act(async () => {
-      latestSnapshot?.toggle();
-    });
-
-    expect(latestSnapshot?.theme).toBe("light");
-    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
-  });
-
-  it("toggle flips back from light to dark on a second call", async () => {
+  it('toggle flips from dark to light and updates the DOM attribute', async () => {
     await act(async () => {
       root.render(
         <ThemeProvider>
@@ -87,17 +73,34 @@ describe("ThemeProvider / useTheme", () => {
     await act(async () => {
       latestSnapshot?.toggle();
     });
-    expect(latestSnapshot?.theme).toBe("light");
+
+    expect(latestSnapshot?.theme).toBe('light');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+  });
+
+  it('toggle flips back from light to dark on a second call', async () => {
+    await act(async () => {
+      root.render(
+        <ThemeProvider>
+          <Probe />
+        </ThemeProvider>,
+      );
+    });
+
+    await act(async () => {
+      latestSnapshot?.toggle();
+    });
+    expect(latestSnapshot?.theme).toBe('light');
 
     await act(async () => {
       latestSnapshot?.toggle();
     });
 
-    expect(latestSnapshot?.theme).toBe("dark");
-    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+    expect(latestSnapshot?.theme).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
 
-  it("useTheme falls back to the default context value outside a provider", () => {
+  it('useTheme falls back to the default context value outside a provider', () => {
     // The context default is { theme: "dark", toggle: () => {} } — verify a
     // consumer rendered without ThemeProvider gets that default rather than
     // throwing, and that calling the default toggle is a safe no-op.
@@ -110,7 +113,7 @@ describe("ThemeProvider / useTheme", () => {
       return null;
     }
 
-    const outsideContainer = document.createElement("div");
+    const outsideContainer = document.createElement('div');
     document.body.appendChild(outsideContainer);
     const outsideRoot = createRoot(outsideContainer);
 
@@ -118,7 +121,7 @@ describe("ThemeProvider / useTheme", () => {
       outsideRoot.render(<OutsideProbe />);
     });
 
-    expect(outsideSnapshot?.theme).toBe("dark");
+    expect(outsideSnapshot?.theme).toBe('dark');
     expect(() => outsideSnapshot?.toggle()).not.toThrow();
 
     act(() => {

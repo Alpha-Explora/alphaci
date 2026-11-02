@@ -20,8 +20,8 @@ const ANSI = /\u001B\[[\d;]*m/g;
 /** GitHub prefixes every line with the instant it was written. */
 const TIMESTAMP = /^(\d{4}-\d{2}-\d{2}T[\d:.]+Z)\s?/;
 
-const GROUP_START = "##[group]";
-const GROUP_END = "##[endgroup]";
+const GROUP_START = '##[group]';
+const GROUP_END = '##[endgroup]';
 
 /** A step that ends like this failed, whether or not it also logged an error. */
 const EXIT_CODE = /Process completed with exit code (\d+)/;
@@ -31,7 +31,7 @@ const EXIT_CODE = /Process completed with exit code (\d+)/;
    of at its error. */
 const POST_JOB = /^Post job cleanup\.?$/;
 
-export type JobLogSeverity = "error" | "warning" | "plain";
+export type JobLogSeverity = 'error' | 'warning' | 'plain';
 
 export interface JobLogLine {
   text: string;
@@ -69,7 +69,7 @@ interface SectionDraft {
 function draft(title: string): SectionDraft {
   return {
     title,
-    command: title.startsWith("Run ") ? title.slice(4).trim() : null,
+    command: title.startsWith('Run ') ? title.slice(4).trim() : null,
     lines: [],
     failed: false,
     firstAt: null,
@@ -79,14 +79,14 @@ function draft(title: string): SectionDraft {
 }
 
 function severityOf(text: string): JobLogSeverity {
-  if (text.startsWith("##[error]")) return "error";
-  if (text.startsWith("##[warning]")) return "warning";
-  return "plain";
+  if (text.startsWith('##[error]')) return 'error';
+  if (text.startsWith('##[warning]')) return 'warning';
+  return 'plain';
 }
 
 /** The markers have done their job once the severity is read. */
 function stripMarkers(text: string): string {
-  return text.replace(/^##\[(error|warning|notice|command|debug)\]/, "");
+  return text.replace(/^##\[(error|warning|notice|command|debug)\]/, '');
 }
 
 function finish(section: SectionDraft): JobLogSection {
@@ -108,8 +108,8 @@ function finish(section: SectionDraft): JobLogSection {
 function trimBlankEdges(lines: JobLogLine[]): JobLogLine[] {
   let start = 0;
   let end = lines.length;
-  while (start < end && lines[start].text.trim() === "") start += 1;
-  while (end > start && lines[end - 1].text.trim() === "") end -= 1;
+  while (start < end && lines[start].text.trim() === '') start += 1;
+  while (end > start && lines[end - 1].text.trim() === '') end -= 1;
   return lines.slice(start, end);
 }
 
@@ -123,7 +123,7 @@ function trimBlankEdges(lines: JobLogLine[]): JobLogLine[] {
  */
 /** One log line, with the timestamp and colour taken off. */
 function readLine(rawLine: string): { at: number; body: string } {
-  const clean = rawLine.replace(ANSI, "");
+  const clean = rawLine.replace(ANSI, '');
   const stamp = TIMESTAMP.exec(clean);
 
   return {
@@ -148,7 +148,7 @@ function openGroup(body: string, at: number): SectionDraft {
 function appendLine(section: SectionDraft, body: string): void {
   const severity = severityOf(body);
   const exit = EXIT_CODE.exec(body);
-  if (severity === "error" || (exit && exit[1] !== "0")) {
+  if (severity === 'error' || (exit && exit[1] !== '0')) {
     section.failed = true;
   }
 
@@ -159,7 +159,7 @@ export function parseJobLog(raw: string): JobLogSection[] {
   const sections: JobLogSection[] = [];
   // Output before the first group: the runner's own set-up chatter. Kept,
   // because when a job dies there it is the only thing that explains why.
-  let current = draft("Job start");
+  let current = draft('Job start');
 
   for (const rawLine of raw.split(/\r?\n/)) {
     const { at, body } = readLine(rawLine);
@@ -178,7 +178,7 @@ export function parseJobLog(raw: string): JobLogSection[] {
 
     if (POST_JOB.test(body.trim())) {
       if (current.lines.length > 0) sections.push(finish(current));
-      current = draft("Post job cleanup");
+      current = draft('Post job cleanup');
       stamp(current, at);
       continue;
     }

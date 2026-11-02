@@ -1,22 +1,25 @@
-"use client";
+'use client';
 
-import { type FormEvent } from "react";
+import { type FormEvent } from 'react';
 
-import { SeverityBadge, StatusPill } from "../../items";
-import { QaFindings } from "../../returned";
-import { groupRunItems } from "../../model/project-run-rules";
-import type { ProjectQaRun, ProjectQaRunItem } from "../../model/project-run-types";
+import { SeverityBadge, StatusPill } from '../../items';
+import { QaFindings } from '../../returned';
+import { groupRunItems } from '../../model/project-run-rules';
+import type {
+  ProjectQaRun,
+  ProjectQaRunItem,
+} from '../../model/project-run-types';
 import {
   agoLabel,
   QA_SEVERITIES,
   severityLabel,
   statusShowsDefect,
-} from "../../model/qa-run-rules";
-import type { QaDefectSeverity } from "../../model/qa-run-types";
-import { kindCopy } from "../../model/requirement-rules";
-import type { PoAcceptanceViewModel } from "../view-models/use-po-acceptance-view-model";
-import type { RunTestCasesViewModel } from "../view-models/use-run-test-cases-view-model";
-import { RunTestCases } from "./run-test-cases";
+} from '../../model/qa-run-rules';
+import type { QaDefectSeverity } from '../../model/qa-run-types';
+import { kindCopy } from '../../model/requirement-rules';
+import type { PoAcceptanceViewModel } from '../view-models/use-po-acceptance-view-model';
+import type { RunTestCasesViewModel } from '../view-models/use-run-test-cases-view-model';
+import { RunTestCases } from './run-test-cases';
 
 type ItemProps = Readonly<{
   item: ProjectQaRunItem;
@@ -26,40 +29,52 @@ type ItemProps = Readonly<{
 }>;
 
 /** "2 of 3 passed by you", over the Product owner's own decisions. */
-export function poPassedLabel(items: ReadonlyArray<Pick<ProjectQaRunItem, "poAcceptance">>): string {
-  const passed = items.filter((item) => item.poAcceptance.status === "passed").length;
+export function poPassedLabel(
+  items: ReadonlyArray<Pick<ProjectQaRunItem, 'poAcceptance'>>,
+): string {
+  const passed = items.filter(
+    (item) => item.poAcceptance.status === 'passed',
+  ).length;
   return `${String(passed)} of ${String(items.length)} passed by you`;
 }
 
 function AcceptedLine({ item }: Readonly<{ item: ProjectQaRunItem }>) {
   const accepted = item.poAcceptance;
-  if (accepted.status !== "passed") return null;
+  if (accepted.status !== 'passed') return null;
   const ago = agoLabel(accepted.acceptedAt);
   return (
     <p className="po-check__by">
-      Passed by <strong>@{accepted.acceptedBy?.login ?? "a Product owner"}</strong>
-      {ago ? ` · ${ago}` : ""}
+      Passed by{' '}
+      <strong>@{accepted.acceptedBy?.login ?? 'a Product owner'}</strong>
+      {ago ? ` · ${ago}` : ''}
     </p>
   );
 }
 
 /** Passed (yours), or Pass and Fail while it waits for you. Nothing before QA signs off. */
-function Decision({ item, acceptance }: Pick<ItemProps, "item" | "acceptance">) {
-  if (item.poAcceptance.status === "passed") {
+function Decision({
+  item,
+  acceptance,
+}: Pick<ItemProps, 'item' | 'acceptance'>) {
+  if (item.poAcceptance.status === 'passed') {
     return <span className="po-check__accepted">Passed</span>;
   }
   if (!acceptance.canAccept || item.rowVersion === null) return null;
   const busy = acceptance.busyItemId !== null;
   const failing = acceptance.failing?.itemId === item.id;
   return (
-    <span className="po-check__decide" role="group" aria-label={`Your decision on ${item.title}`}>
+    <span
+      className="po-check__decide"
+      role="group"
+      aria-label={`Your decision on ${item.title}`}
+    >
       <button
         type="button"
         className="po-check__pass"
         disabled={busy || failing}
         onClick={() => void acceptance.pass(item)}
       >
-        {acceptance.busyItemId === item.id ? "Saving…" : "Pass"}
+        {acceptance.busyItemId === item.id ? 'Saving…' : 'Pass'}
       </button>
       <button
         type="button"
@@ -73,7 +88,10 @@ function Decision({ item, acceptance }: Pick<ItemProps, "item" | "acceptance">) 
   );
 }
 
-function FailForm({ item, acceptance }: Pick<ItemProps, "item" | "acceptance">) {
+function FailForm({
+  item,
+  acceptance,
+}: Pick<ItemProps, 'item' | 'acceptance'>) {
   const draft = acceptance.failing;
   if (!draft || draft.itemId !== item.id) return null;
   const saving = acceptance.busyItemId === item.id;
@@ -84,7 +102,12 @@ function FailForm({ item, acceptance }: Pick<ItemProps, "item" | "acceptance">) 
   }
 
   return (
-    <form className="po-check__fail-form" aria-label={`Fail ${item.title}`} onSubmit={handleSubmit} noValidate>
+    <form
+      className="po-check__fail-form"
+      aria-label={`Fail ${item.title}`}
+      onSubmit={handleSubmit}
+      noValidate
+    >
       <label className="hier-field">
         <span className="hier-field-label">What is wrong</span>
         <textarea
@@ -95,7 +118,9 @@ function FailForm({ item, acceptance }: Pick<ItemProps, "item" | "acceptance">) 
           autoFocus
           aria-required="true"
           placeholder="The profile does not show in the header after logging in"
-          onChange={(event) => acceptance.updateFail({ notes: event.target.value })}
+          onChange={(event) =>
+            acceptance.updateFail({ notes: event.target.value })
+          }
         />
       </label>
       <label className="hier-field po-check__severity">
@@ -104,7 +129,11 @@ function FailForm({ item, acceptance }: Pick<ItemProps, "item" | "acceptance">) 
           className="hier-select"
           value={draft.severity}
           disabled={saving}
-          onChange={(event) => acceptance.updateFail({ severity: event.target.value as QaDefectSeverity })}
+          onChange={(event) =>
+            acceptance.updateFail({
+              severity: event.target.value as QaDefectSeverity,
+            })
+          }
         >
           {QA_SEVERITIES.map((severity) => (
             <option key={severity} value={severity}>
@@ -114,8 +143,9 @@ function FailForm({ item, acceptance }: Pick<ItemProps, "item" | "acceptance">) 
         </select>
       </label>
       <p className="po-check__fail-note">
-        Failing reopens the QA run and sends this story back to the Developers. The QA Team and the Developers are
-        notified, and QA checks it again once it is fixed.
+        Failing reopens the QA run and sends this story back to the Developers.
+        The QA Team and the Developers are notified, and QA checks it again once
+        it is fixed.
       </p>
       {acceptance.failError ? (
         <p className="qa-form-error" role="alert">
@@ -123,10 +153,19 @@ function FailForm({ item, acceptance }: Pick<ItemProps, "item" | "acceptance">) 
         </p>
       ) : null}
       <div className="po-check__fail-actions">
-        <button type="submit" className="po-check__fail-submit" disabled={saving}>
-          {saving ? "Sending back…" : "Fail and return to Development"}
+        <button
+          type="submit"
+          className="po-check__fail-submit"
+          disabled={saving}
+        >
+          {saving ? 'Sending back…' : 'Fail and return to Development'}
         </button>
-        <button type="button" className="ghost-button" disabled={saving} onClick={acceptance.cancelFail}>
+        <button
+          type="button"
+          className="ghost-button"
+          disabled={saving}
+          onClick={acceptance.cancelFail}
+        >
           Cancel
         </button>
       </div>
@@ -134,7 +173,11 @@ function FailForm({ item, acceptance }: Pick<ItemProps, "item" | "acceptance">) 
   );
 }
 
-function ItemError({ item, acceptance, onReload }: Pick<ItemProps, "item" | "acceptance" | "onReload">) {
+function ItemError({
+  item,
+  acceptance,
+  onReload,
+}: Pick<ItemProps, 'item' | 'acceptance' | 'onReload'>) {
   const error = acceptance.error;
   if (!error || error.itemId !== item.id) return null;
   return (
@@ -145,7 +188,11 @@ function ItemError({ item, acceptance, onReload }: Pick<ItemProps, "item" | "acc
           Reload run
         </button>
       ) : (
-        <button type="button" className="qa-text-button" onClick={acceptance.dismissError}>
+        <button
+          type="button"
+          className="qa-text-button"
+          onClick={acceptance.dismissError}
+        >
           Dismiss
         </button>
       )}
@@ -155,7 +202,11 @@ function ItemError({ item, acceptance, onReload }: Pick<ItemProps, "item" | "acc
 
 function CheckItem({ item, acceptance, testCases, onReload }: ItemProps) {
   return (
-    <li className="po-check__item" data-status={item.status} data-accepted={item.poAcceptance.status}>
+    <li
+      className="po-check__item"
+      data-status={item.status}
+      data-accepted={item.poAcceptance.status}
+    >
       <div className="po-check__item-head">
         <span className="po-check__title">{item.title}</span>
         <span className="po-check__qa">
@@ -172,7 +223,12 @@ function CheckItem({ item, acceptance, testCases, onReload }: ItemProps) {
         </details>
       ) : null}
       {/* QA's test cases and results, read-only for the Product owner. */}
-      <RunTestCases item={item} vm={testCases} onReload={onReload} canEditDefinitions={false} />
+      <RunTestCases
+        item={item}
+        vm={testCases}
+        onReload={onReload}
+        canEditDefinitions={false}
+      />
       <QaFindings runItem={item} />
       <div className="po-check__foot">
         <AcceptedLine item={item} />
@@ -221,11 +277,19 @@ export function PoRunItems({
               {kindCopy(group.kind).singular}
             </span>
             <span className="po-check__name">{group.requirementName}</span>
-            <span className="po-check__passed">{poPassedLabel(group.items)}</span>
+            <span className="po-check__passed">
+              {poPassedLabel(group.items)}
+            </span>
           </p>
           <ol className="po-check__items">
             {group.items.map((item) => (
-              <CheckItem key={item.id} item={item} acceptance={acceptance} testCases={testCases} onReload={onReload} />
+              <CheckItem
+                key={item.id}
+                item={item}
+                acceptance={acceptance}
+                testCases={testCases}
+                onReload={onReload}
+              />
             ))}
           </ol>
         </section>

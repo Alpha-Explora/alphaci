@@ -7,14 +7,14 @@
 // CSI sequences (ESC [ params final-byte), OSC sequences (ESC ] ... BEL/ST),
 // and any other two-byte ESC sequence. Built from a string so the source holds
 // no literal control characters.
-const ESC = "\\u001b";
+const ESC = '\\u001b';
 const CSI = `${ESC}\\[[0-?]*[ -/]*[@-~]`;
 const OSC = `${ESC}\\][^\\u0007\\u001b]*(?:\\u0007|${ESC}\\\\)`;
 const OTHER = `${ESC}[@-Z\\\\-_]`;
-const ANSI_PATTERN = new RegExp(`${CSI}|${OSC}|${OTHER}`, "g");
+const ANSI_PATTERN = new RegExp(`${CSI}|${OSC}|${OTHER}`, 'g');
 
 /** The text without terminal escape sequences. Null and undefined read as "". */
 export function stripAnsi(text: string | null | undefined): string {
-  if (!text) return "";
-  return text.replace(ANSI_PATTERN, "");
+  if (!text) return '';
+  return text.replace(ANSI_PATTERN, '');
 }

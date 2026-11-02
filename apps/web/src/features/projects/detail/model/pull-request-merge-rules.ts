@@ -8,15 +8,15 @@
  * "you cannot merge this" when they could.
  */
 
-import type { AppRole } from "@/shared/api/contracts";
-import { PRODUCTION_BRANCH } from "@/shared/api/pipeline-branches";
+import type { AppRole } from '@/shared/api/contracts';
+import { PRODUCTION_BRANCH } from '@/shared/api/pipeline-branches';
 
 import {
   isPullRequestRole,
   isPullRequestRouteAllowed,
-} from "./pull-request-compose-rules";
+} from './pull-request-compose-rules';
 
-export type MergeTone = "ok" | "caution" | "blocked" | "pending";
+export type MergeTone = 'ok' | 'caution' | 'blocked' | 'pending';
 
 export interface MergeExplanation {
   tone: MergeTone;
@@ -28,58 +28,67 @@ export function explainMergeState(
   viewerIsAuthor: boolean,
 ): MergeExplanation {
   switch (mergeableState) {
-    case "clean":
-      return { tone: "ok", message: "Ready to merge." };
-    case "unstable":
+    case 'clean':
+      return { tone: 'ok', message: 'Ready to merge.' };
+    case 'unstable':
       // Mergeable, with checks that failed or are still running. Nothing on
       // the base branch requires them, or the state would be `blocked`.
       return {
-        tone: "caution",
+        tone: 'caution',
         message:
-          "Some checks failed or are still running. The base branch does not require them, so this can still be merged — look at them first.",
+          'Some checks failed or are still running. The base branch does not require them, so this can still be merged — look at them first.',
       };
-    case "has_hooks":
-      return { tone: "ok", message: "Ready to merge; GitHub will run the repository's merge hooks." };
-    case "behind":
+    case 'has_hooks':
       return {
-        tone: "blocked",
+        tone: 'ok',
         message:
-          "The base branch has moved on, and this repository requires branches to be up to date before merging. Update the branch first.",
+          "Ready to merge; GitHub will run the repository's merge hooks.",
       };
-    case "dirty":
+    case 'behind':
       return {
-        tone: "blocked",
+        tone: 'blocked',
         message:
-          "The branch conflicts with its base and has to be updated before it can merge.",
+          'The base branch has moved on, and this repository requires branches to be up to date before merging. Update the branch first.',
       };
-    case "draft":
+    case 'dirty':
       return {
-        tone: "blocked",
-        message: "This is a draft. Mark it ready for review before merging.",
+        tone: 'blocked',
+        message:
+          'The branch conflicts with its base and has to be updated before it can merge.',
       };
-    case "blocked":
+    case 'draft':
       return {
-        tone: "blocked",
+        tone: 'blocked',
+        message: 'This is a draft. Mark it ready for review before merging.',
+      };
+    case 'blocked':
+      return {
+        tone: 'blocked',
         message: viewerIsAuthor
-          ? "A branch protection rule is not satisfied yet, usually a required review — and GitHub does not let you approve your own pull request, so a teammate has to."
-          : "A branch protection rule on the base branch is not satisfied yet, usually a required review or check.",
+          ? 'A branch protection rule is not satisfied yet, usually a required review — and GitHub does not let you approve your own pull request, so a teammate has to.'
+          : 'A branch protection rule on the base branch is not satisfied yet, usually a required review or check.',
       };
-    case "unknown":
+    case 'unknown':
       return {
-        tone: "pending",
+        tone: 'pending',
         message:
-          "GitHub is still working out whether this can merge. Reload in a moment.",
+          'GitHub is still working out whether this can merge. Reload in a moment.',
       };
     default:
-      return { tone: "pending", message: `GitHub reports this as '${mergeableState}'.` };
+      return {
+        tone: 'pending',
+        message: `GitHub reports this as '${mergeableState}'.`,
+      };
   }
 }
 
 /** The merge button's label, in GitHub's own words for each method. */
-export function mergeButtonLabel(method: "merge" | "squash" | "rebase"): string {
-  if (method === "squash") return "Squash and merge";
-  if (method === "rebase") return "Rebase and merge";
-  return "Merge";
+export function mergeButtonLabel(
+  method: 'merge' | 'squash' | 'rebase',
+): string {
+  if (method === 'squash') return 'Squash and merge';
+  if (method === 'rebase') return 'Rebase and merge';
+  return 'Merge';
 }
 
 /* ── Phase 1 security gates: who may merge here at all ──────────────────── */
@@ -100,19 +109,22 @@ export function mergeButtonLabel(method: "merge" | "squash" | "rebase"): string 
  */
 export type WorkspaceMergeGate =
   | { allowed: true }
-  | { allowed: false; reason: "qa-role" | "main-via-qa-studio" | "route-restricted" };
+  | {
+      allowed: false;
+      reason: 'qa-role' | 'main-via-qa-studio' | 'route-restricted';
+    };
 
 export function workspaceMergeGate(
   role: AppRole | null | undefined,
   base: string,
   head: string,
 ): WorkspaceMergeGate {
-  if (!isPullRequestRole(role)) return { allowed: false, reason: "qa-role" };
+  if (!isPullRequestRole(role)) return { allowed: false, reason: 'qa-role' };
   if (base === PRODUCTION_BRANCH) {
-    return { allowed: false, reason: "main-via-qa-studio" };
+    return { allowed: false, reason: 'main-via-qa-studio' };
   }
   if (!isPullRequestRouteAllowed(role, head, base)) {
-    return { allowed: false, reason: "route-restricted" };
+    return { allowed: false, reason: 'route-restricted' };
   }
   return { allowed: true };
 }

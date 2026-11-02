@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { requirementsRepository } from "../../data/requirements-repository";
+import { requirementsRepository } from '../../data/requirements-repository';
 import {
   addCard as addCardRule,
   batchPayload,
@@ -19,7 +19,7 @@ import {
   selectedAfterRemove,
   updateCard as updateCardRule,
   type CardErrorField,
-} from "../../model/requirement-batch-rules";
+} from '../../model/requirement-batch-rules';
 import {
   addStoryRow,
   blankRequirementDraft,
@@ -31,19 +31,20 @@ import {
   requirementError,
   updateRequirementPayload,
   type RequirementError,
-} from "../../model/requirement-rules";
+} from '../../model/requirement-rules';
 import type {
   Requirement,
   RequirementCardDraft,
   RequirementDraft,
   RequirementKind,
-} from "../../model/requirement-types";
+} from '../../model/requirement-types';
 
-export type RequirementDialogStatus = "closed" | "editing" | "saving" | "confirm-archive" | "archiving";
+export type RequirementDialogStatus =
+  'closed' | 'editing' | 'saving' | 'confirm-archive' | 'archiving';
 
 export type RequirementDialogMode =
-  | { kind: "create"; requirementKind: RequirementKind }
-  | { kind: "edit"; requirement: Requirement };
+  | { kind: 'create'; requirementKind: RequirementKind }
+  | { kind: 'edit'; requirement: Requirement };
 
 /** The card a failed Create points at, the field to focus in it, and which failure it was (to focus once per failure). */
 export interface CardFocus {
@@ -52,7 +53,7 @@ export interface CardFocus {
   attempt: number;
 }
 
-type CardText = Partial<Pick<RequirementDraft, "name" | "description">>;
+type CardText = Partial<Pick<RequirementDraft, 'name' | 'description'>>;
 
 export interface RequirementDialogViewModel {
   status: RequirementDialogStatus;
@@ -96,9 +97,10 @@ export interface RequirementDialogViewModel {
   confirmArchive: () => Promise<void>;
 }
 
-const SAVE_ERROR = "The requirement could not be saved. Try again in a moment.";
-const CREATE_ERROR = "Nothing was created. Try again in a moment.";
-const ARCHIVE_ERROR = "The requirement could not be archived. Try again in a moment.";
+const SAVE_ERROR = 'The requirement could not be saved. Try again in a moment.';
+const CREATE_ERROR = 'Nothing was created. Try again in a moment.';
+const ARCHIVE_ERROR =
+  'The requirement could not be archived. Try again in a moment.';
 
 interface ServerCardError {
   key: string;
@@ -110,7 +112,7 @@ function editValidation(
   mode: RequirementDialogMode | null,
   draft: RequirementDraft,
 ): string | null {
-  if (!attempted || mode?.kind !== "edit") return null;
+  if (!attempted || mode?.kind !== 'edit') return null;
   return requirementDraftError(draft, mode.requirement.kind);
 }
 
@@ -121,15 +123,26 @@ function visibleCardErrors(
   server: ServerCardError | null,
 ): Record<string, string> {
   const errors: Record<string, string> =
-    attempted && mode?.kind === "create" ? cardErrorsRule(cards, mode.requirementKind) : {};
-  if (server && !errors[server.key] && cards.some((card) => card.key === server.key)) {
+    attempted && mode?.kind === 'create'
+      ? cardErrorsRule(cards, mode.requirementKind)
+      : {};
+  if (
+    server &&
+    !errors[server.key] &&
+    cards.some((card) => card.key === server.key)
+  ) {
     errors[server.key] = server.message;
   }
   return errors;
 }
 
-function submitLabelFor(mode: RequirementDialogMode | null, cards: RequirementCardDraft[]): string {
-  return mode?.kind === "create" ? batchSubmitLabel(mode.requirementKind, cards) : "Save";
+function submitLabelFor(
+  mode: RequirementDialogMode | null,
+  cards: RequirementCardDraft[],
+): string {
+  return mode?.kind === 'create'
+    ? batchSubmitLabel(mode.requirementKind, cards)
+    : 'Save';
 }
 
 /**
@@ -153,7 +166,8 @@ export function useRequirementDialogViewModel(options: {
   const [selected, setSelected] = useState<string | null>(null);
   const [attempted, setAttempted] = useState(false);
   const [error, setError] = useState<RequirementError | null>(null);
-  const [serverCardError, setServerCardError] = useState<ServerCardError | null>(null);
+  const [serverCardError, setServerCardError] =
+    useState<ServerCardError | null>(null);
   const [cardFocus, setCardFocus] = useState<CardFocus | null>(null);
 
   function reset() {
@@ -165,7 +179,7 @@ export function useRequirementDialogViewModel(options: {
 
   function openCreate(requirementKind: RequirementKind) {
     setArchiving(null);
-    setMode({ kind: "create", requirementKind });
+    setMode({ kind: 'create', requirementKind });
     const fresh = firstCards();
     setCards(fresh);
     setSelected(fresh[0].key);
@@ -174,7 +188,7 @@ export function useRequirementDialogViewModel(options: {
 
   function openEdit(requirement: Requirement) {
     setArchiving(null);
-    setMode({ kind: "edit", requirement });
+    setMode({ kind: 'edit', requirement });
     setDraft(requirementDraftFrom(requirement));
     reset();
   }
@@ -194,10 +208,17 @@ export function useRequirementDialogViewModel(options: {
   /** Opens the card a failed Create names and asks the view to focus `field` in it. */
   function pointAt(key: string, field: CardErrorField) {
     setSelected(key);
-    setCardFocus((previous) => ({ key, field, attempt: (previous?.attempt ?? 0) + 1 }));
+    setCardFocus((previous) => ({
+      key,
+      field,
+      attempt: (previous?.attempt ?? 0) + 1,
+    }));
   }
 
-  async function write(task: () => Promise<Requirement | null>, fallback: string) {
+  async function write(
+    task: () => Promise<Requirement | null>,
+    fallback: string,
+  ) {
     setBusy(true);
     setError(null);
     try {
@@ -224,16 +245,22 @@ export function useRequirementDialogViewModel(options: {
     setError(null);
     setServerCardError(null);
     try {
-      const created = await requirementsRepository.createBatch(deliveryProjectId, batchPayload(kind, sent));
+      const created = await requirementsRepository.createBatch(
+        deliveryProjectId,
+        batchPayload(kind, sent),
+      );
       created.forEach(onSaved);
       setMode(null);
     } catch (cause) {
       const failure = requirementBatchError(cause, kind, sent, CREATE_ERROR);
       setError({ message: failure.message, stale: failure.stale });
       if (failure.cardKey && failure.cardMessage) {
-        setServerCardError({ key: failure.cardKey, message: failure.cardMessage });
+        setServerCardError({
+          key: failure.cardKey,
+          message: failure.cardMessage,
+        });
         // The server names a card by its name: taken, or a duplicate.
-        pointAt(failure.cardKey, { field: "name" });
+        pointAt(failure.cardKey, { field: 'name' });
       }
     } finally {
       setBusy(false);
@@ -243,14 +270,18 @@ export function useRequirementDialogViewModel(options: {
   async function submit() {
     if (!mode || busy) return;
     setAttempted(true);
-    if (mode.kind === "create") {
+    if (mode.kind === 'create') {
       await createAll(mode.requirementKind);
       return;
     }
     if (requirementDraftError(draft, mode.requirement.kind)) return;
     const target = mode.requirement;
     const body = updateRequirementPayload(target, draft);
-    await write(async () => (body ? requirementsRepository.update(target.id, body) : null), SAVE_ERROR);
+    await write(
+      async () =>
+        body ? requirementsRepository.update(target.id, body) : null,
+      SAVE_ERROR,
+    );
   }
 
   async function confirmArchive() {
@@ -259,7 +290,10 @@ export function useRequirementDialogViewModel(options: {
     await write(() => requirementsRepository.archive(target.id), ARCHIVE_ERROR);
   }
 
-  function changeCard(key: string, change: (card: RequirementCardDraft) => RequirementCardDraft) {
+  function changeCard(
+    key: string,
+    change: (card: RequirementCardDraft) => RequirementCardDraft,
+  ) {
     setCards((current) => updateCardRule(current, key, change));
   }
 
@@ -282,11 +316,16 @@ export function useRequirementDialogViewModel(options: {
 
   function updateCard(key: string, patch: CardText) {
     // The server's complaint was about the name as sent; a new name retires it.
-    if (patch.name !== undefined) setServerCardError((current) => (current?.key === key ? null : current));
+    if (patch.name !== undefined)
+      setServerCardError((current) => (current?.key === key ? null : current));
     changeCard(key, (card) => ({ ...card, ...patch }));
   }
 
-  function pasteCardStories(key: string, index: number, pasted: string): boolean {
+  function pasteCardStories(
+    key: string,
+    index: number,
+    pasted: string,
+  ): boolean {
     const card = cards.find((entry) => entry.key === key);
     const rows = card ? pasteIntoStoryRows(card.stories, index, pasted) : null;
     if (!rows) return false;
@@ -295,14 +334,14 @@ export function useRequirementDialogViewModel(options: {
   }
 
   function status(): RequirementDialogStatus {
-    if (archiving) return busy ? "archiving" : "confirm-archive";
-    if (!mode) return "closed";
-    return busy ? "saving" : "editing";
+    if (archiving) return busy ? 'archiving' : 'confirm-archive';
+    if (!mode) return 'closed';
+    return busy ? 'saving' : 'editing';
   }
 
   return {
     status: status(),
-    mode: archiving ? { kind: "edit", requirement: archiving } : mode,
+    mode: archiving ? { kind: 'edit', requirement: archiving } : mode,
     draft,
     updateDraft: (patch) => setDraft((current) => ({ ...current, ...patch })),
     cards,
@@ -313,9 +352,12 @@ export function useRequirementDialogViewModel(options: {
     addCard,
     removeCard,
     updateCard,
-    editCardStory: (key, index, value) => setStories(key, (rows) => editStoryRow(rows, index, value)),
-    addCardStory: (key, afterIndex) => setStories(key, (rows) => addStoryRow(rows, afterIndex)),
-    removeCardStory: (key, index) => setStories(key, (rows) => removeStoryRow(rows, index)),
+    editCardStory: (key, index, value) =>
+      setStories(key, (rows) => editStoryRow(rows, index, value)),
+    addCardStory: (key, afterIndex) =>
+      setStories(key, (rows) => addStoryRow(rows, afterIndex)),
+    removeCardStory: (key, index) =>
+      setStories(key, (rows) => removeStoryRow(rows, index)),
     pasteCardStories,
     submitLabel: submitLabelFor(mode, cards),
     cardFocus,

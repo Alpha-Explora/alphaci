@@ -1,29 +1,40 @@
-"use client";
+'use client';
 
-import "./history.css";
+import './history.css';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
-import { StatusPill, VerdictPill } from "../../items";
+import { StatusPill, VerdictPill } from '../../items';
 import {
   HISTORY_EMPTY_TEXT,
   HISTORY_INTRO,
   historyMetaLabel,
   historyNoReportText,
   historySignoffLabel,
-} from "../../model/iteration-history-rules";
-import { iterationTitle } from "../../model/iteration-rules";
-import type { HistoryIteration } from "../../model/iteration-types";
-import { groupPassLabel, groupRunItems, headLabel } from "../../model/project-run-rules";
-import type { ProjectQaRun, ProjectRunGroup } from "../../model/project-run-types";
-import { blockersLabel, openDefectsLabel, passedLabel } from "../../model/qa-run-rules";
-import { kindCopy, progressLabel } from "../../model/requirement-rules";
-import { showsRepositories } from "../../model/studio-role-rules";
+} from '../../model/iteration-history-rules';
+import { iterationTitle } from '../../model/iteration-rules';
+import type { HistoryIteration } from '../../model/iteration-types';
+import {
+  groupPassLabel,
+  groupRunItems,
+  headLabel,
+} from '../../model/project-run-rules';
+import type {
+  ProjectQaRun,
+  ProjectRunGroup,
+} from '../../model/project-run-types';
+import {
+  blockersLabel,
+  openDefectsLabel,
+  passedLabel,
+} from '../../model/qa-run-rules';
+import { kindCopy, progressLabel } from '../../model/requirement-rules';
+import { showsRepositories } from '../../model/studio-role-rules';
 import {
   useIterationHistoryViewModel,
   type HistoryReport,
   type IterationHistoryViewModel,
-} from "../view-models/use-iteration-history-view-model";
+} from '../view-models/use-iteration-history-view-model';
 
 /** A chevron, decorative: the card's toggle says open or closed in words (aria-expanded). */
 function Chevron() {
@@ -50,11 +61,15 @@ function Chevron() {
  * "Delivered" or "Active", in the iteration pill's tones. The card title
  * already names the iteration, so the pill says only its state.
  */
-function StateTag({ status }: Readonly<{ status: HistoryIteration["status"] }>) {
+function StateTag({
+  status,
+}: Readonly<{ status: HistoryIteration['status'] }>) {
   return (
     <span className="iteration-status" data-status={status}>
       <span className="iteration-status__dot" aria-hidden="true" />
-      <span className="iteration-status__label">{status === "delivered" ? "Delivered" : "Active"}</span>
+      <span className="iteration-status__label">
+        {status === 'delivered' ? 'Delivered' : 'Active'}
+      </span>
     </span>
   );
 }
@@ -70,12 +85,19 @@ function HistoryGroup({ group }: Readonly<{ group: ProjectRunGroup }>) {
         <span className="ihist-group__name">{group.requirementName}</span>
         <span className="ihist-group__count">{groupPassLabel(group)}</span>
       </p>
-      <ul className="ihist-items" aria-label={`${kindCopy(group.kind).items} of ${group.requirementName}`}>
+      <ul
+        className="ihist-items"
+        aria-label={`${kindCopy(group.kind).items} of ${group.requirementName}`}
+      >
         {group.items.map((item) => (
           <li key={item.id} className="ihist-item">
             <span className="ihist-item__title">{item.title}</span>
             <span className="ihist-item__facts">
-              {item.progress ? <span className="ihist-item__progress">{progressLabel(item.progress)}</span> : null}
+              {item.progress ? (
+                <span className="ihist-item__progress">
+                  {progressLabel(item.progress)}
+                </span>
+              ) : null}
               <StatusPill status={item.status} />
             </span>
           </li>
@@ -86,19 +108,27 @@ function HistoryGroup({ group }: Readonly<{ group: ProjectRunGroup }>) {
 }
 
 /** The frozen report: who signed it off, the score, the heads it verified, every item. */
-function FrozenReport({ run, showRepositories }: Readonly<{ run: ProjectQaRun; showRepositories: boolean }>) {
+function FrozenReport({
+  run,
+  showRepositories,
+}: Readonly<{ run: ProjectQaRun; showRepositories: boolean }>) {
   const signoff = run.signoff;
   return (
     <div className="ihist-report">
       {signoff ? (
         <div className="ihist-signoff">
           <VerdictPill verdict={signoff.verdict} />
-          <span className="ihist-signoff__by">{historySignoffLabel(signoff)}</span>
-          {signoff.summary ? <p className="ihist-signoff__summary">{signoff.summary}</p> : null}
+          <span className="ihist-signoff__by">
+            {historySignoffLabel(signoff)}
+          </span>
+          {signoff.summary ? (
+            <p className="ihist-signoff__summary">{signoff.summary}</p>
+          ) : null}
         </div>
       ) : null}
       <p className="ihist-score">
-        {passedLabel(run)} · {openDefectsLabel(run.summary.openDefects)} · {blockersLabel(run.summary.blockers)}
+        {passedLabel(run)} · {openDefectsLabel(run.summary.openDefects)} ·{' '}
+        {blockersLabel(run.summary.blockers)}
       </p>
       {showRepositories && run.repositories.length > 0 ? (
         <ul className="ihist-heads" aria-label="What QA verified">
@@ -122,11 +152,15 @@ function ReportBody({
   report,
   onRetry,
   showRepositories,
-}: Readonly<{ report: HistoryReport | undefined; onRetry: () => void; showRepositories: boolean }>) {
-  if (!report || report.status === "loading") {
+}: Readonly<{
+  report: HistoryReport | undefined;
+  onRetry: () => void;
+  showRepositories: boolean;
+}>) {
+  if (!report || report.status === 'loading') {
     return <div className="hier-skeleton ihist-skeleton" aria-hidden="true" />;
   }
-  if (report.status === "error") {
+  if (report.status === 'error') {
     return (
       <div className="ihist-note" role="alert">
         <p>{report.message}</p>
@@ -144,12 +178,20 @@ function HistoryCard({
   iteration,
   vm,
   showRepositories,
-}: Readonly<{ iteration: HistoryIteration; vm: IterationHistoryViewModel; showRepositories: boolean }>) {
+}: Readonly<{
+  iteration: HistoryIteration;
+  vm: IterationHistoryViewModel;
+  showRepositories: boolean;
+}>) {
   const open = vm.open[iteration.id] === true;
   const bodyId = `history-${iteration.id}`;
   const note = historyNoReportText(iteration);
   return (
-    <li className="ihist-card" data-status={iteration.status} data-open={String(open)}>
+    <li
+      className="ihist-card"
+      data-status={iteration.status}
+      data-open={String(open)}
+    >
       <div className="ihist-card__head">
         <h4 className="ihist-card__title">
           <button
@@ -172,7 +214,11 @@ function HistoryCard({
             <p className="ihist-note">{note}</p>
           ) : (
             <ReportBody
-              report={iteration.signoffRunId ? vm.reports[iteration.signoffRunId] : undefined}
+              report={
+                iteration.signoffRunId
+                  ? vm.reports[iteration.signoffRunId]
+                  : undefined
+              }
               onRetry={() => vm.retryReport(iteration)}
               showRepositories={showRepositories}
             />
@@ -183,14 +229,19 @@ function HistoryCard({
   );
 }
 
-function HistoryBody({ vm, showRepositories }: Readonly<{ vm: IterationHistoryViewModel; showRepositories: boolean }>) {
-  if (vm.status === "loading" || vm.status === "idle") {
+function HistoryBody({
+  vm,
+  showRepositories,
+}: Readonly<{ vm: IterationHistoryViewModel; showRepositories: boolean }>) {
+  if (vm.status === 'loading' || vm.status === 'idle') {
     return <div className="hier-skeleton ihist-skeleton" aria-hidden="true" />;
   }
-  if (vm.status === "unavailable") {
-    return <p className="ihist-note">This server does not keep versions yet.</p>;
+  if (vm.status === 'unavailable') {
+    return (
+      <p className="ihist-note">This server does not keep versions yet.</p>
+    );
   }
-  if (vm.status === "error") {
+  if (vm.status === 'error') {
     return (
       <div className="ihist-note" role="alert">
         <p>{vm.error}</p>
@@ -200,11 +251,17 @@ function HistoryBody({ vm, showRepositories }: Readonly<{ vm: IterationHistoryVi
       </div>
     );
   }
-  if (vm.iterations.length === 0) return <p className="ihist-note">{HISTORY_EMPTY_TEXT}</p>;
+  if (vm.iterations.length === 0)
+    return <p className="ihist-note">{HISTORY_EMPTY_TEXT}</p>;
   return (
     <ul className="ihist-list" aria-label="Versions, newest first">
       {vm.iterations.map((iteration) => (
-        <HistoryCard key={iteration.id} iteration={iteration} vm={vm} showRepositories={showRepositories} />
+        <HistoryCard
+          key={iteration.id}
+          iteration={iteration}
+          vm={vm}
+          showRepositories={showRepositories}
+        />
       ))}
     </ul>
   );

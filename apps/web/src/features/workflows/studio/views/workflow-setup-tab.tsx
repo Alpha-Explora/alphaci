@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import "./setup-wizard.css";
+import './setup-wizard.css';
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 
 import type {
   CreateProjectResult,
@@ -11,15 +11,15 @@ import type {
   EnvOwnershipMode,
   SetupProjectResponse,
   WorkspaceSummary,
-} from "@/shared/api/contracts";
-import { healthyHosts } from "@/features/hosts";
-import type { CreateProjectFormState } from "../view-models/use-create-project-form";
-import type { DeploymentProvisioningFormState } from "../view-models/use-deployment-provisioning-form";
-import type { GithubInstallationsState } from "../view-models/use-github-installations";
-import type { HostingChoiceState } from "../view-models/use-hosting-choice";
-import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
-import { useProjectUsage } from "../view-models/use-project-usage";
-import { useSetupHostSelection } from "../view-models/use-setup-host-selection";
+} from '@/shared/api/contracts';
+import { healthyHosts } from '@/features/hosts';
+import type { CreateProjectFormState } from '../view-models/use-create-project-form';
+import type { DeploymentProvisioningFormState } from '../view-models/use-deployment-provisioning-form';
+import type { GithubInstallationsState } from '../view-models/use-github-installations';
+import type { HostingChoiceState } from '../view-models/use-hosting-choice';
+import type { ProjectOptionsCatalogState } from '../view-models/use-project-options-catalog';
+import { useProjectUsage } from '../view-models/use-project-usage';
+import { useSetupHostSelection } from '../view-models/use-setup-host-selection';
 import {
   canSelectWizardStep,
   countWorkspaces,
@@ -41,24 +41,24 @@ import {
   nextWizardStep,
   teamChoiceState,
   wizardStepReadyFlags,
-} from "../model/setup-tab-rules";
-import { REPOSITORY_CREATE_ROLE_NOTE } from "../model/role-gate-rules";
-import { renderVariablesBlockingFor } from "../model/hosting-choice-rules";
+} from '../model/setup-tab-rules';
+import { REPOSITORY_CREATE_ROLE_NOTE } from '../model/role-gate-rules';
+import { renderVariablesBlockingFor } from '../model/hosting-choice-rules';
 import {
   createBlockerReason,
   deliveryHostProblems,
   firstHostProblem,
   isDeliveryStepReady,
-} from "../model/setup-delivery-rules";
-import type { ProjectChoice } from "./setup-wizard-props";
-import { ExistingRepoSetupPanel } from "./existing-repo-setup-panel";
-import { NewRepoWizard, RepositoryCreationProgress } from "./new-repo-wizard";
-import { SetupModeToggle } from "./setup-mode-toggle";
-import { SetupResultPanel } from "./setup-result-panel";
-import { CatalogLoadingNotice, SetupTabHeader } from "./setup-tab-header";
-import { WIZARD_STEPS } from "./setup-tab-shared";
-import { SetupTeamScope } from "./setup-team-scope";
-import { GenerateYamlLink } from "./setup-wizard-automation";
+} from '../model/setup-delivery-rules';
+import type { ProjectChoice } from './setup-wizard-props';
+import { ExistingRepoSetupPanel } from './existing-repo-setup-panel';
+import { NewRepoWizard, RepositoryCreationProgress } from './new-repo-wizard';
+import { SetupModeToggle } from './setup-mode-toggle';
+import { SetupResultPanel } from './setup-result-panel';
+import { CatalogLoadingNotice, SetupTabHeader } from './setup-tab-header';
+import { WIZARD_STEPS } from './setup-tab-shared';
+import { SetupTeamScope } from './setup-team-scope';
+import { GenerateYamlLink } from './setup-wizard-automation';
 
 interface WorkflowSetupTabProps {
   /**
@@ -75,7 +75,7 @@ interface WorkflowSetupTabProps {
    * if they have several. There is no unowned/individual scope — a project
    * always belongs to a team.
    */
-  creationScope: "choose-team" | "in-team";
+  creationScope: 'choose-team' | 'in-team';
   /**
    * Teams the caller can create in — only supplied for the "choose-team"
    * scope, where no team context has already fixed the answer. `null` while
@@ -120,10 +120,10 @@ interface WorkflowSetupTabProps {
   isCreatingProject: boolean;
   isDiscoveringExistingRepo: boolean;
   isSettingUpExistingRepo: boolean;
-  setupMode: "new" | "existing";
+  setupMode: 'new' | 'existing';
   onChangeExistingRepoBaseBranch: (value: string) => void;
   onChangeExistingRepoFullName: (value: string) => void;
-  onChangeSetupMode: (value: "new" | "existing") => void;
+  onChangeSetupMode: (value: 'new' | 'existing') => void;
   onCreateProject: () => void;
   onDiscoverExistingRepo: () => void;
   onGenerateWorkflow: () => void;
@@ -211,7 +211,7 @@ export function WorkflowSetupTab({
   // can hold the wizard. The hosting choice is the effective one, so on-prem
   // here means the deployment offers it.
   const hostSelection = useSetupHostSelection({
-    enabled: hosting.choice === "onprem",
+    enabled: hosting.choice === 'onprem',
   });
   const [activeWizardStep, setActiveWizardStep] = useState(0);
   const [furthestWizardStep, setFurthestWizardStep] = useState(0);
@@ -308,7 +308,8 @@ export function WorkflowSetupTab({
     repository: isRepositoryStepReady({
       projectName: joinedProjectName === null ? form.projectName : null,
       projectNameServerError: form.projectNameError,
-      projectChoiceMissing: isProjectChoiceMissing(projectChoice) || projectBlocker !== null,
+      projectChoiceMissing:
+        isProjectChoiceMissing(projectChoice) || projectBlocker !== null,
       repoName: form.repoName,
       isMicroservicesShape: projectCatalog.isMicroservicesShape,
       isMultiRepoShape: projectCatalog.isMultiRepoShape,
@@ -326,7 +327,9 @@ export function WorkflowSetupTab({
   // A "name taken" refusal takes the user back to the Repository step, where
   // the field shows it. Applied while rendering (state derived from a changing
   // input), not in an effect.
-  const [seenProjectNameError, setSeenProjectNameError] = useState<string | null>(null);
+  const [seenProjectNameError, setSeenProjectNameError] = useState<
+    string | null
+  >(null);
   if (form.projectNameError !== seenProjectNameError) {
     setSeenProjectNameError(form.projectNameError);
     if (form.projectNameError && !isExistingMode) {
@@ -383,7 +386,7 @@ export function WorkflowSetupTab({
         <SetupTabHeader
           // The top-level create view already has the page's "Create project"
           // h1; a team panel has no heading of its own, so it keeps this one.
-          showTitle={creationScope === "in-team"}
+          showTitle={creationScope === 'in-team'}
           form={form}
           isExistingMode={isExistingMode}
           projectCatalog={projectCatalog}

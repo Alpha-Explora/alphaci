@@ -1,8 +1,8 @@
-import type { NotificationItem } from "../../model/notifications-types";
+import type { NotificationItem } from '../../model/notifications-types';
 
 /* Inbox-only shapes. Domain-wide types live in features/notifications/model. */
 
-export type NotificationsInboxFilter = "all" | "unread";
+export type NotificationsInboxFilter = 'all' | 'unread';
 
 export interface NotificationsInboxGroup {
   label: string;
@@ -13,5 +13,5 @@ export interface NotificationsInboxGroup {
  * surface rather than stacked cards, while keeping a stable per-item index for
  * a capped stagger-in. */
 export type NotificationsInboxRow =
-  | { type: "header"; label: string }
-  | { type: "item"; item: NotificationItem; index: number };
+  | { type: 'header'; label: string }
+  | { type: 'item'; item: NotificationItem; index: number };

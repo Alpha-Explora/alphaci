@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { projectsRepository } from "../../data/projects-repository";
-import type { ProjectStatus } from "../../model/projects-types";
+import { projectsRepository } from '../../data/projects-repository';
+import type { ProjectStatus } from '../../model/projects-types';
 import {
   appendAuditPage,
   AUDIT_PAGE_SIZE,
@@ -14,9 +14,9 @@ import {
   type AuditGithubSync,
   type AuditPage,
   type AuditRow,
-} from "../model/audit-event-rules";
-import { githubReadFailure } from "../model/github-read-failure";
-import { useLazyProjectQuery } from "./use-lazy-project-query";
+} from '../model/audit-event-rules';
+import { githubReadFailure } from '../model/github-read-failure';
+import { useLazyProjectQuery } from './use-lazy-project-query';
 
 export interface ProjectAuditViewModel {
   status: ProjectStatus;
@@ -58,8 +58,9 @@ interface SyncFailure {
   signInHref: string | null;
 }
 
-const LOAD_ERROR = "Unable to load audit events.";
-const LOAD_MORE_ERROR = "Unable to load older audit events. Try again in a moment.";
+const LOAD_ERROR = 'Unable to load audit events.';
+const LOAD_MORE_ERROR =
+  'Unable to load older audit events. Try again in a moment.';
 
 /** A "stale" first import is still running server-side: look again this often, this many times. */
 export const AUDIT_STALE_REFRESH_MS = 5000;
@@ -73,7 +74,10 @@ async function loadFirstPage(projectId: string): Promise<AuditState> {
 }
 
 /** The page of events before `before`, stamped with when it was read. */
-async function loadOlderPage(projectId: string, before: string): Promise<AuditState> {
+async function loadOlderPage(
+  projectId: string,
+  before: string,
+): Promise<AuditState> {
   const response = await projectsRepository.audit(projectId, {
     limit: AUDIT_PAGE_SIZE,
     before,
@@ -132,8 +136,10 @@ function useStaleAuditRefresh(input: StaleRefreshInput) {
   });
 
   useEffect(() => {
-    if (attempts.current.projectId !== projectId) attempts.current = { projectId, count: 0 };
-    if (!enabled || !stale || attempts.current.count >= AUDIT_STALE_REFRESH_MAX) return;
+    if (attempts.current.projectId !== projectId)
+      attempts.current = { projectId, count: 0 };
+    if (!enabled || !stale || attempts.current.count >= AUDIT_STALE_REFRESH_MAX)
+      return;
     let active = true;
     const timer = setTimeout(() => {
       if (latest.current.olderLoaded()) return;
@@ -155,7 +161,8 @@ function syncFailure(cause: unknown, projectId: string): SyncFailure {
   const failure = githubReadFailure(cause, {
     projectId,
     subject: "sync this repository's GitHub activity",
-    notFound: "This repository is not available to you, or it no longer exists.",
+    notFound:
+      'This repository is not available to you, or it no longer exists.',
     fallback: "Couldn't sync with GitHub. Try again in a moment.",
   });
   return { message: failure.message, signInHref: failure.signInHref };
@@ -180,7 +187,7 @@ export function useProjectAuditViewModel(options: {
   });
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<AuditFilter>("all");
+  const [filter, setFilter] = useState<AuditFilter>('all');
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<SyncFailure | null>(null);
   const { next, rows, githubSync, recording, readAt } = pageParts(query.data);
@@ -188,7 +195,7 @@ export function useProjectAuditViewModel(options: {
   useStaleAuditRefresh({
     projectId,
     enabled,
-    stale: githubSync?.status === "stale",
+    stale: githubSync?.status === 'stale',
     readAt,
     olderLoaded: () => olderLoaded.current,
     replace: query.replace,
@@ -202,7 +209,9 @@ export function useProjectAuditViewModel(options: {
       const { page, readAt } = await loadOlderPage(projectId, next);
       olderLoaded.current = true;
       query.setData((current) =>
-        current ? { page: appendAuditPage(current.page, page), readAt } : current,
+        current
+          ? { page: appendAuditPage(current.page, page), readAt }
+          : current,
       );
     } catch {
       setLoadMoreError(LOAD_MORE_ERROR);

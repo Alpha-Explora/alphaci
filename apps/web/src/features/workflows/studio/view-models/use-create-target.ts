@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
-import { getDeliveryProject } from "@/features/groups";
-import type { WorkspaceSummary } from "@/shared/api/contracts";
+import { getDeliveryProject } from '@/features/groups';
+import type { WorkspaceSummary } from '@/shared/api/contracts';
 
 import {
   applicableTargetProject,
@@ -16,7 +16,7 @@ import {
   type CreateTargetView,
   type ProjectChoiceOption,
   type ResolvedTargetProject,
-} from "../model/create-target-rules";
+} from '../model/create-target-rules';
 
 export interface CreateTarget extends CreateTargetView {
   /** The team a link asked for on arrival; the workspace load preselects it. */
@@ -24,7 +24,9 @@ export interface CreateTarget extends CreateTargetView {
   /** Pick (or, with null, clear) the Project in the selected team. */
   chooseProject: (option: ProjectChoiceOption | null) => void;
   /** The Project id to send for a repository created in `workspaceId`. */
-  deliveryProjectIdFor: (workspaceId: string | null | undefined) => string | undefined;
+  deliveryProjectIdFor: (
+    workspaceId: string | null | undefined,
+  ) => string | undefined;
 }
 
 /**
@@ -44,7 +46,8 @@ export function useCreateTarget(options: {
   selectWorkspace: (workspaceId: string) => void;
   openSetup: () => void;
 }): CreateTarget {
-  const { guest, workspaces, selectedWorkspaceId, selectWorkspace, openSetup } = options;
+  const { guest, workspaces, selectedWorkspaceId, selectWorkspace, openSetup } =
+    options;
   const searchParams = useSearchParams();
   const link = parseCreateTargetParams(searchParams);
   const [initialGroupId] = useState(link.groupId);
@@ -57,8 +60,11 @@ export function useCreateTarget(options: {
 
   if (searchKey !== seenSearch) {
     setSeenSearch(searchKey);
-    if (searchParams.get("tab") === "setup") openSetup();
-    if (link.groupId && workspaces?.some((workspace) => workspace.id === link.groupId)) {
+    if (searchParams.get('tab') === 'setup') openSetup();
+    if (
+      link.groupId &&
+      workspaces?.some((workspace) => workspace.id === link.groupId)
+    ) {
       selectWorkspace(link.groupId);
     }
     if (!link.deliveryProjectId) setTarget(null);
@@ -68,7 +74,7 @@ export function useCreateTarget(options: {
   // ?project= is the Projects view opening that Project's detail, and must not
   // quietly file the next repository created from the header's button there.
   const deliveryProjectId =
-    searchParams.get("tab") === "setup" ? link.deliveryProjectId : null;
+    searchParams.get('tab') === 'setup' ? link.deliveryProjectId : null;
   useEffect(() => {
     if (!deliveryProjectId || guest) return;
     let active = true;
@@ -90,8 +96,12 @@ export function useCreateTarget(options: {
   return {
     ...createTargetView({ linked, chosen, selectedWorkspaceId, workspaces }),
     initialGroupId,
-    chooseProject: (option) => setChosen(chosenTargetProject(option, selectedWorkspaceId)),
+    chooseProject: (option) =>
+      setChosen(chosenTargetProject(option, selectedWorkspaceId)),
     deliveryProjectIdFor: (forWorkspaceId) =>
-      effectiveDeliveryProjectId(applicableTargetProject(linked, chosen, forWorkspaceId), forWorkspaceId),
+      effectiveDeliveryProjectId(
+        applicableTargetProject(linked, chosen, forWorkspaceId),
+        forWorkspaceId,
+      ),
   };
 }

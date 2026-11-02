@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import "./hierarchy.css";
+import './hierarchy.css';
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, type ReactNode } from 'react';
 
-import { AppNav } from "@/features/workspace/selection";
-import { FlowBackground } from "@/shared/layout/flow-background";
-import { PipelineLoader } from "@/shared/layout/pipeline-loader";
-import { WorkspaceProvider } from "@/features/workspace/selection";
-import { useAuthSession } from "@/features/auth/session";
-import type { AuthMeResponse } from "@/shared/api/contracts";
-import { isGuest } from "@/features/auth/session";
+import { AppNav } from '@/features/workspace/selection';
+import { FlowBackground } from '@/shared/layout/flow-background';
+import { PipelineLoader } from '@/shared/layout/pipeline-loader';
+import { WorkspaceProvider } from '@/features/workspace/selection';
+import { useAuthSession } from '@/features/auth/session';
+import type { AuthMeResponse } from '@/shared/api/contracts';
+import { isGuest } from '@/features/auth/session';
 
 /* ── Page shell ───────────────────────────────────────────────────────────────
  * Encapsulates the auth guard + AppNav + dashboard chrome used by every existing
@@ -36,32 +36,32 @@ export function HierarchyPageShell({
     useAuthSession();
 
   useEffect(() => {
-    if (status === "signed-out") {
+    if (status === 'signed-out') {
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
     }
   }, [status, router, pathname]);
 
   async function handleLogout() {
     await signOut();
-    router.push("/");
+    router.push('/');
   }
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return <PipelineLoader label="Loading your workspace" />;
   }
 
-  if (status === "signed-out") {
+  if (status === 'signed-out') {
     return <PipelineLoader label="Redirecting to sign in" />;
   }
 
-  if (status === "error") {
+  if (status === 'error') {
     return (
       <main className="dash-shell">
         <FlowBackground />
         <div className="state-body">
           <div className="state-card">
             <h1>Session verification failed</h1>
-            <p>{error ?? "We could not verify your session."}</p>
+            <p>{error ?? 'We could not verify your session.'}</p>
             <div className="hero-actions">
               <button
                 className="primary-button"

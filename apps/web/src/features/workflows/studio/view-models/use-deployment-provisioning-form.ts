@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
+import { useMemo, useState } from 'react';
 
 import type {
   DeploymentProvisioningEnvSet,
@@ -9,12 +9,12 @@ import type {
   DeploymentProvisioningVariableGroup,
   CreatableEnvProvider,
   EnvTargetSlot,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 import {
   defaultProvisioningTarget,
   reseedTargets,
   sanitizeProvisioningTarget,
-} from "../model/deployment-provisioning-rules";
+} from '../model/deployment-provisioning-rules';
 
 function sanitizedEnvSets(
   envSets: DeploymentProvisioningEnvSet[] | undefined,
@@ -35,8 +35,8 @@ function sanitizedVariableGroups(
 ): DeploymentProvisioningVariableGroup[] {
   return (groups ?? [])
     .map((group, index) => {
-      const provider = group.provider ?? [...activeProviders][0] ?? "render";
-      const appliesTo = group.appliesTo ?? "all";
+      const provider = group.provider ?? [...activeProviders][0] ?? 'render';
+      const appliesTo = group.appliesTo ?? 'all';
       const env = sanitizedEnvSets(group.env);
       const targetBranches = [...new Set(group.targetBranches ?? [])].filter(
         Boolean,
@@ -46,7 +46,7 @@ function sanitizedVariableGroups(
         name: group.name?.trim() || `Variable group ${index + 1}`,
         provider,
         appliesTo,
-        ...(appliesTo === "selected" ? { targetBranches } : {}),
+        ...(appliesTo === 'selected' ? { targetBranches } : {}),
         env,
       };
     })
@@ -54,13 +54,13 @@ function sanitizedVariableGroups(
       (group) =>
         activeProviders.has(group.provider) &&
         group.env.length > 0 &&
-        (group.appliesTo !== "selected" ||
+        (group.appliesTo !== 'selected' ||
           (group.targetBranches?.length ?? 0) > 0),
     );
 }
 
 function targetBranchKey(target: DeploymentProvisioningTargetRequest): string {
-  const branch = target.branchName?.trim() || "uat";
+  const branch = target.branchName?.trim() || 'uat';
   return `${target.slot}:${target.provider}:${branch}`;
 }
 
@@ -77,7 +77,7 @@ function countRenderVariables(
 ): number {
   const renderTargetKeys = new Set(
     targets
-      .filter((target) => target.provider === "render")
+      .filter((target) => target.provider === 'render')
       .map((target) => targetBranchKey(target)),
   );
 
@@ -86,16 +86,16 @@ function countRenderVariables(
   }
 
   const branchVarCount = targets
-    .filter((target) => target.provider === "render")
+    .filter((target) => target.provider === 'render')
     .reduce((total, target) => total + countEnvVars(target.env), 0);
 
   const groupVarCount = variableGroups
     .filter((group) => {
-      if (group.provider !== "render") {
+      if (group.provider !== 'render') {
         return false;
       }
 
-      if (group.appliesTo !== "selected") {
+      if (group.appliesTo !== 'selected') {
         return true;
       }
 
@@ -109,10 +109,17 @@ function countRenderVariables(
 }
 
 /** The provisioning request as sent: empty variables dropped, targets trimmed. */
-function hostedPayloadFor(request: DeploymentProvisioningRequest): DeploymentProvisioningRequest {
+function hostedPayloadFor(
+  request: DeploymentProvisioningRequest,
+): DeploymentProvisioningRequest {
   const sharedEnv = sanitizedEnvSets(request.sharedEnv);
-  const activeProviders = new Set(request.targets.map((target) => target.provider));
-  const variableGroups = sanitizedVariableGroups(request.variableGroups, activeProviders);
+  const activeProviders = new Set(
+    request.targets.map((target) => target.provider),
+  );
+  const variableGroups = sanitizedVariableGroups(
+    request.variableGroups,
+    activeProviders,
+  );
   const targets = request.targets.map((target) => ({
     ...sanitizeProvisioningTarget(target),
     env: sanitizedEnvSets(target.env),
@@ -120,7 +127,9 @@ function hostedPayloadFor(request: DeploymentProvisioningRequest): DeploymentPro
   return {
     ...request,
     enabled: true,
-    ...(variableGroups.length ? { variableGroups } : { variableGroups: undefined }),
+    ...(variableGroups.length
+      ? { variableGroups }
+      : { variableGroups: undefined }),
     ...(sharedEnv.length ? { sharedEnv } : { sharedEnv: undefined }),
     targets,
   };
@@ -132,16 +141,22 @@ export interface ProvisioningSeed {
   projectName: string;
 }
 
-function seedKey(repoShapeId: string | undefined, seeds: readonly ProvisioningSeed[]): string {
-  return `${repoShapeId ?? ""}|${seeds.map((seed) => `${seed.slot}:${seed.projectName}`).join(",")}`;
+function seedKey(
+  repoShapeId: string | undefined,
+  seeds: readonly ProvisioningSeed[],
+): string {
+  return `${repoShapeId ?? ''}|${seeds.map((seed) => `${seed.slot}:${seed.projectName}`).join(',')}`;
 }
 
 function initialTargets(
   repoShapeId: string | undefined,
   seeds: readonly ProvisioningSeed[] | undefined,
 ): DeploymentProvisioningTargetRequest[] {
-  if (!seeds?.length) return [defaultProvisioningTarget("backend", "", repoShapeId)];
-  return seeds.map((seed) => defaultProvisioningTarget(seed.slot, seed.projectName, repoShapeId));
+  if (!seeds?.length)
+    return [defaultProvisioningTarget('backend', '', repoShapeId)];
+  return seeds.map((seed) =>
+    defaultProvisioningTarget(seed.slot, seed.projectName, repoShapeId),
+  );
 }
 
 export function useDeploymentProvisioningForm(
@@ -162,7 +177,7 @@ export function useDeploymentProvisioningForm(
     targets: initialTargets(repoShapeId, seeds),
   }));
   const [seeded, setSeeded] = useState(() => ({
-    key: seeds ? seedKey(repoShapeId, seeds) : "",
+    key: seeds ? seedKey(repoShapeId, seeds) : '',
     seeds: seeds ?? [],
   }));
 
@@ -202,11 +217,15 @@ export function useDeploymentProvisioningForm(
   const payload = enabled ? hostedPayload : undefined;
 
   const hostedRenderVariableCount = useMemo(
-    () => countRenderVariables(hostedPayload.targets, hostedPayload.variableGroups ?? []),
+    () =>
+      countRenderVariables(
+        hostedPayload.targets,
+        hostedPayload.variableGroups ?? [],
+      ),
     [hostedPayload],
   );
   const hostedRenderVariablesRequired = hostedPayload.targets.some(
-    (target) => target.provider === "render",
+    (target) => target.provider === 'render',
   );
   /** Render deploys with no variable at all, were hosting on. */
   const hostedRenderVariablesMissing =

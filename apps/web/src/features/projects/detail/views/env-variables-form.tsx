@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import type { FormEvent } from "react";
+import type { FormEvent } from 'react';
 
 import type {
   DeploymentTarget,
   EnvLane,
   UsageLimitItem,
   ValidateEnvVarsResponse,
-} from "@/features/projects";
-import { formatQuotaStatus } from "@/features/workflows";
+} from '@/features/projects';
+import { formatQuotaStatus } from '@/features/workflows';
 import {
   activeBranch,
   targetOptionLabel,
   type EnvRow,
-} from "../model/env-panel-rules";
-import { EnvBulkDialog } from "./env-bulk-dialog";
+} from '../model/env-panel-rules';
+import { EnvBulkDialog } from './env-bulk-dialog';
 
 export function EnvVariablesForm({
   activeTarget,
@@ -86,7 +86,7 @@ export function EnvVariablesForm({
       <div className="env-section-header">
         <div>
           <h4>Add variables</h4>
-          <p className="helper-text" style={{ margin: "0.25rem 0 0" }}>
+          <p className="helper-text" style={{ margin: '0.25rem 0 0' }}>
             Add values to the selected hosting service and environment.
           </p>
         </div>
@@ -115,7 +115,11 @@ export function EnvVariablesForm({
           rows={rows}
           scopeLabel={scopeLabel}
           submitDisabled={
-            saving || loading || !activeTargetId || invalid || envKeyQuotaReached
+            saving ||
+            loading ||
+            !activeTargetId ||
+            invalid ||
+            envKeyQuotaReached
           }
         />
 
@@ -164,12 +168,12 @@ function EnvBranchTargetPicker({
           <button
             key={target.id}
             className={
-              activeTargetId === target.id ? "primary-button" : "ghost-button"
+              activeTargetId === target.id ? 'primary-button' : 'ghost-button'
             }
             type="button"
             onClick={() => onTargetIdChange(target.id)}
           >
-            {target.provider === "render" ? "Render" : "Vercel"}{" "}
+            {target.provider === 'render' ? 'Render' : 'Vercel'}{' '}
             {activeBranch(target.branchName)}
           </button>
         ))}
@@ -217,10 +221,12 @@ function EnvVariableEditor({
           <strong>Variables</strong>
           <span>{scopeLabel ?? laneHint(lane)}</span>
         </div>
-        {scopeLabel ? null : <EnvLaneToggle lane={lane} onLaneChange={onLaneChange} />}
+        {scopeLabel ? null : (
+          <EnvLaneToggle lane={lane} onLaneChange={onLaneChange} />
+        )}
       </div>
 
-      {lane === "preview" && !scopeLabel ? (
+      {lane === 'preview' && !scopeLabel ? (
         <EnvBranchField
           knownBranches={knownBranches}
           onPreviewBranchChange={onPreviewBranchChange}
@@ -269,17 +275,25 @@ function EnvVariableEditor({
         <button className="ghost-button" type="button" onClick={onCancel}>
           Cancel
         </button>
-        <button className="ghost-button" type="button" onClick={onOpenBulkDialog}>
+        <button
+          className="ghost-button"
+          type="button"
+          onClick={onOpenBulkDialog}
+        >
           Paste a .env file
         </button>
         <button
           className="ghost-button"
           type="button"
-          onClick={() => onRowsChange([...rows, { key: "", value: "" }])}
+          onClick={() => onRowsChange([...rows, { key: '', value: '' }])}
         >
           Add row
         </button>
-        <button className="primary-button" disabled={submitDisabled} type="submit">
+        <button
+          className="primary-button"
+          disabled={submitDisabled}
+          type="submit"
+        >
           Provision
         </button>
       </div>
@@ -288,9 +302,9 @@ function EnvVariableEditor({
 }
 
 function laneHint(lane: EnvLane): string {
-  return lane === "production"
-    ? "These values apply to the production branch."
-    : "These values apply to this branch only.";
+  return lane === 'production'
+    ? 'These values apply to the production branch.'
+    : 'These values apply to this branch only.';
 }
 
 function EnvLaneToggle({
@@ -299,14 +313,14 @@ function EnvLaneToggle({
 }: Readonly<{ lane: EnvLane; onLaneChange: (value: EnvLane) => void }>) {
   return (
     <div className="env-environment-tabs" aria-label="Deployment lane">
-      {(["production", "preview"] as EnvLane[]).map((value) => (
+      {(['production', 'preview'] as EnvLane[]).map((value) => (
         <button
           key={value}
-          className={lane === value ? "primary-button" : "ghost-button"}
+          className={lane === value ? 'primary-button' : 'ghost-button'}
           type="button"
           onClick={() => onLaneChange(value)}
         >
-          {value === "production" ? "Production" : "Branch"}
+          {value === 'production' ? 'Production' : 'Branch'}
         </button>
       ))}
     </div>

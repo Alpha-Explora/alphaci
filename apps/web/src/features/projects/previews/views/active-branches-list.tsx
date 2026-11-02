@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   createdLabel,
@@ -7,9 +7,14 @@ import {
   previewStatusLabel,
   previewStatusTone,
   shortCommitSha,
-} from "../../model/projects-rules";
-import type { ProjectBranchPreview } from "../../model/projects-types";
-import { BranchIcon, CommitIcon, ExternalIcon, PullRequestIcon } from "./deployment-icons";
+} from '../../model/projects-rules';
+import type { ProjectBranchPreview } from '../../model/projects-types';
+import {
+  BranchIcon,
+  CommitIcon,
+  ExternalIcon,
+  PullRequestIcon,
+} from './deployment-icons';
 
 type RowProps = Readonly<{
   preview: ProjectBranchPreview;
@@ -20,7 +25,9 @@ function RowCommit({ preview }: RowProps) {
   const sha = shortCommitSha(preview.commitSha);
   if (!sha) {
     return (
-      <span className="active-branch__commit active-branch__muted">No commit yet</span>
+      <span className="active-branch__commit active-branch__muted">
+        No commit yet
+      </span>
     );
   }
 
@@ -29,7 +36,9 @@ function RowCommit({ preview }: RowProps) {
       <CommitIcon />
       <span className="deploy-card__sha">{sha}</span>
       {preview.commitMessage ? (
-        <span className="deploy-card__commit-message">{preview.commitMessage}</span>
+        <span className="deploy-card__commit-message">
+          {preview.commitMessage}
+        </span>
       ) : null}
     </span>
   );
@@ -67,7 +76,7 @@ function RowPullRequest({ preview, onOpenPullRequest }: RowProps) {
  * as a broken deployment.
  */
 function RowVisit({ preview }: RowProps) {
-  if (preview.status !== "ready" || !preview.previewUrl) return null;
+  if (preview.status !== 'ready' || !preview.previewUrl) return null;
 
   return (
     <a
@@ -93,7 +102,10 @@ function ActiveBranchRow({ preview, onOpenPullRequest }: RowProps) {
         <span className="deploy-card__branch">{preview.branch}</span>
       </span>
       <span className="active-branch__status">
-        <span aria-hidden="true" className={`deploy-card__dot deploy-card__dot--${tone}`} />
+        <span
+          aria-hidden="true"
+          className={`deploy-card__dot deploy-card__dot--${tone}`}
+        />
         {previewStatusLabel(preview.status)}
       </span>
       <RowCommit preview={preview} />
@@ -125,7 +137,10 @@ export function ActiveBranchesList({
   const hidden = branches.length - shown.length;
 
   return (
-    <section aria-labelledby="active-branches-heading" className="active-branches">
+    <section
+      aria-labelledby="active-branches-heading"
+      className="active-branches"
+    >
       <h3 className="active-branches__title" id="active-branches-heading">
         Active branches
       </h3>
@@ -140,7 +155,8 @@ export function ActiveBranchesList({
       </ul>
       {hidden > 0 ? (
         <p className="branch-previews__more">
-          {hidden} more {hidden === 1 ? "branch" : "branches"} on the Hosting tab.
+          {hidden} more {hidden === 1 ? 'branch' : 'branches'} on the Hosting
+          tab.
         </p>
       ) : null}
     </section>

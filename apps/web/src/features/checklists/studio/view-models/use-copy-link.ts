@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-export type CopyLinkStatus = "idle" | "copied" | "failed";
+export type CopyLinkStatus = 'idle' | 'copied' | 'failed';
 
 /** How long "Copied" stays before the button goes back to offering a copy. */
 export const COPY_LINK_RESET_MS = 2_000;
@@ -19,7 +19,7 @@ export interface CopyLinkState {
  * worked: the link is not on screen to select by hand.
  */
 export function useCopyLink(url: string | null): CopyLinkState {
-  const [status, setStatus] = useState<CopyLinkStatus>("idle");
+  const [status, setStatus] = useState<CopyLinkStatus>('idle');
   const timer = useRef<number | null>(null);
 
   useEffect(
@@ -31,15 +31,18 @@ export function useCopyLink(url: string | null): CopyLinkState {
 
   async function copy() {
     if (!url) return;
-    let next: CopyLinkStatus = "copied";
+    let next: CopyLinkStatus = 'copied';
     try {
       await navigator.clipboard.writeText(url);
     } catch {
-      next = "failed";
+      next = 'failed';
     }
     setStatus(next);
     if (timer.current !== null) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setStatus("idle"), COPY_LINK_RESET_MS);
+    timer.current = window.setTimeout(
+      () => setStatus('idle'),
+      COPY_LINK_RESET_MS,
+    );
   }
 
   return { status, copy };

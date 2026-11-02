@@ -10,7 +10,7 @@ export type {
   StageId,
   StageStatus,
   WorkflowHistoryItem,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 export type {
   DeliveryProject,
   GroupActivityItem,
@@ -18,12 +18,12 @@ export type {
   HierarchyRepository,
   HierarchySystem,
   MyAssignedRepository,
-} from "@/features/groups";
+} from '@/features/groups';
 export type {
   FolderRepository,
   ProjectFolder,
   ProjectFoldersSnapshot,
-} from "@/features/teams/project-folders";
+} from '@/features/teams/project-folders';
 export type {
   TeamQaDefectCounts,
   TeamQaLatestRun,
@@ -32,18 +32,22 @@ export type {
   TeamQaPromotion,
   TeamQaRequirementSummary,
   TeamQaVerificationCounts,
-} from "@/features/checklists";
-export type { AppRole } from "@/shared/api/contracts";
+} from '@/features/checklists';
+export type { AppRole } from '@/shared/api/contracts';
 
-import type { RunGroup, RunOverallStatus, StageId } from "@/shared/api/contracts";
+import type {
+  RunGroup,
+  RunOverallStatus,
+  StageId,
+} from '@/shared/api/contracts';
 import type {
   DeliveryProject,
   HierarchyRepository,
   HierarchySystem,
-} from "@/features/groups";
+} from '@/features/groups';
 
 /** Lifecycle of one independently-loaded dashboard section. */
-export type SectionStatus = "loading" | "ready" | "error";
+export type SectionStatus = 'loading' | 'ready' | 'error';
 
 /** A system with its delivery projects, each with its repositories. */
 export interface DeliveryPortfolioNode {
@@ -54,10 +58,10 @@ export interface DeliveryPortfolioNode {
 }
 
 /** Status-badge tone for a provisioned project. */
-export type ProjectTone = "ok" | "warn" | "danger" | "muted";
+export type ProjectTone = 'ok' | 'warn' | 'danger' | 'muted';
 
 /** Colour of a connector segment between two pipeline stages. */
-export type ConnectorTone = "success" | "danger" | "flowing" | "pending";
+export type ConnectorTone = 'success' | 'danger' | 'flowing' | 'pending';
 
 /** A dashboard chip pointing at work that needs a person. */
 export interface WorkspaceAttentionItem {

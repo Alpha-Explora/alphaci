@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore } from 'react';
 
 /* The origin never changes for the life of the page, so nothing to subscribe to. */
 function subscribe() {

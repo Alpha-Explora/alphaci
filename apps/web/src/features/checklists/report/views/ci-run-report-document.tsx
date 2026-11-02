@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import type { StageResults } from "@/shared/api/contracts";
+import type { StageResults } from '@/shared/api/contracts';
 
-import { TonePill } from "../../items";
+import { TonePill } from '../../items';
 import {
   ciOverallLabel,
   ciOverallTone,
@@ -11,11 +11,15 @@ import {
   ciStageTitle,
   ciStageTone,
   ciSummaryLine,
-} from "../../model/ci-run-report-rules";
-import type { CiRunReport, CiRunReportFailure, CiRunReportStage } from "../../model/ci-run-report-types";
-import { formatReportDate } from "../../model/qa-report-rules";
-import { PrintSonar, PrintTestCases } from "./ci-run-report-details";
-import { Meta, ReportSection } from "./qa-report-document";
+} from '../../model/ci-run-report-rules';
+import type {
+  CiRunReport,
+  CiRunReportFailure,
+  CiRunReportStage,
+} from '../../model/ci-run-report-types';
+import { formatReportDate } from '../../model/qa-report-rules';
+import { PrintSonar, PrintTestCases } from './ci-run-report-details';
+import { Meta, ReportSection } from './qa-report-document';
 
 /* One pipeline execution as a printable sheet: what failed and how to fix it
  * first, then every stage with the figures it reported. The same fixed
@@ -30,7 +34,9 @@ function Masthead({ report }: Readonly<{ report: CiRunReport }>) {
         <p className="qa-report-masthead__eyebrow">ALPHACI · Pipeline</p>
         <h1>CI results</h1>
         <p className="qa-report-masthead__project">
-          <span className="qa-report-masthead__name">{report.repoFullName}</span>
+          <span className="qa-report-masthead__name">
+            {report.repoFullName}
+          </span>
           <span className="qa-report-mono">
             {report.branch} @ {ciShortSha(report.commitSha)}
           </span>
@@ -38,7 +44,9 @@ function Masthead({ report }: Readonly<{ report: CiRunReport }>) {
       </div>
       <div className={`qa-report-stamp qa-report-stamp--${tone}`}>
         <span className="qa-report-stamp__label">Result</span>
-        <span className="qa-report-stamp__value">{ciOverallLabel(report.overallStatus)}</span>
+        <span className="qa-report-stamp__value">
+          {ciOverallLabel(report.overallStatus)}
+        </span>
       </div>
     </header>
   );
@@ -57,7 +65,9 @@ function MetaGrid({ report }: Readonly<{ report: CiRunReport }>) {
         <span className="qa-report-mono">{ciShortSha(report.commitSha)}</span>
       </Meta>
       <Meta label="Stages">{ciSummaryLine(report.summary)}</Meta>
-      <Meta label="Started">{report.startedAt ? formatReportDate(report.startedAt) : "—"}</Meta>
+      <Meta label="Started">
+        {report.startedAt ? formatReportDate(report.startedAt) : '—'}
+      </Meta>
       <Meta label="Generated">{formatReportDate(report.generatedAt)}</Meta>
     </dl>
   );
@@ -97,7 +107,9 @@ function FailureBlock({ failure }: Readonly<{ failure: CiRunReportFailure }>) {
                 {failure.items.map((item, index) => (
                   <li key={`${index}-${item.label}`}>
                     {item.label}
-                    {item.sub ? <span className="qa-report-table__sub">{item.sub}</span> : null}
+                    {item.sub ? (
+                      <span className="qa-report-table__sub">{item.sub}</span>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -121,7 +133,10 @@ function Failures({ report }: Readonly<{ report: CiRunReport }>) {
   return (
     <div className="qa-report-defects">
       {report.failures.map((failure, index) => (
-        <FailureBlock key={`${failure.stage}-${index}-${failure.title}`} failure={failure} />
+        <FailureBlock
+          key={`${failure.stage}-${index}-${failure.title}`}
+          failure={failure}
+        />
       ))}
     </div>
   );
@@ -142,13 +157,22 @@ function StagesTable({ report }: Readonly<{ report: CiRunReport }>) {
           {report.stages.map((stage) => (
             <tr key={stage.stage}>
               <th scope="row">
-                <span className="qa-report-table__title">{ciStageTitle(stage.stage)}</span>
+                <span className="qa-report-table__title">
+                  {ciStageTitle(stage.stage)}
+                </span>
               </th>
               <td>
-                <TonePill tone={ciStageTone(stage.status)} label={ciStageStatusLabel(stage.status)} />
+                <TonePill
+                  tone={ciStageTone(stage.status)}
+                  label={ciStageStatusLabel(stage.status)}
+                />
               </td>
               <td>
-                {stage.reportedAt ? formatReportDate(stage.reportedAt) : <span className="qa-report-muted">—</span>}
+                {stage.reportedAt ? (
+                  formatReportDate(stage.reportedAt)
+                ) : (
+                  <span className="qa-report-muted">—</span>
+                )}
               </td>
             </tr>
           ))}
@@ -166,24 +190,48 @@ interface FigureLine {
 function testsLine(results: StageResults): FigureLine[] {
   const { tests } = results;
   if (!tests) return [];
-  const failed = tests.failed > 0 ? `, ${tests.failed} failed` : "";
-  return [{ label: "Tests", value: `${tests.passed} / ${tests.total} passed${failed}` }];
+  const failed = tests.failed > 0 ? `, ${tests.failed} failed` : '';
+  return [
+    {
+      label: 'Tests',
+      value: `${tests.passed} / ${tests.total} passed${failed}`,
+    },
+  ];
 }
 
 function coverageLine(results: StageResults): FigureLine[] {
   const { coverage } = results;
-  return coverage ? [{ label: "Coverage", value: `${coverage.pct}% (threshold ${coverage.threshold}%)` }] : [];
+  return coverage
+    ? [
+        {
+          label: 'Coverage',
+          value: `${coverage.pct}% (threshold ${coverage.threshold}%)`,
+        },
+      ]
+    : [];
 }
 
 function lintLine(results: StageResults): FigureLine[] {
   const { lint } = results;
-  return lint ? [{ label: "Lint", value: `${lint.errors} errors, ${lint.warnings} warnings` }] : [];
+  return lint
+    ? [
+        {
+          label: 'Lint',
+          value: `${lint.errors} errors, ${lint.warnings} warnings`,
+        },
+      ]
+    : [];
 }
 
 function securityLine(results: StageResults): FigureLine[] {
   const { security } = results;
   return security
-    ? [{ label: "Dependency vulnerabilities", value: `${security.critical} critical, ${security.high} high` }]
+    ? [
+        {
+          label: 'Dependency vulnerabilities',
+          value: `${security.critical} critical, ${security.high} high`,
+        },
+      ]
     : [];
 }
 
@@ -192,15 +240,21 @@ function findingsLine(results: StageResults): FigureLine[] {
   if (!findings) return [];
   const parts = [
     findings.secrets !== undefined ? `${findings.secrets} secrets` : null,
-    findings.forbiddenLicenses !== undefined ? `${findings.forbiddenLicenses} forbidden licences` : null,
-    findings.undeterminedLicenses !== undefined ? `${findings.undeterminedLicenses} undetermined licences` : null,
+    findings.forbiddenLicenses !== undefined
+      ? `${findings.forbiddenLicenses} forbidden licences`
+      : null,
+    findings.undeterminedLicenses !== undefined
+      ? `${findings.undeterminedLicenses} undetermined licences`
+      : null,
   ].filter((part): part is string => part !== null);
-  return parts.length > 0 ? [{ label: "Findings", value: parts.join(", ") }] : [];
+  return parts.length > 0
+    ? [{ label: 'Findings', value: parts.join(', ') }]
+    : [];
 }
 
 function sonarLine(results: StageResults): FigureLine[] {
   const { sonar } = results;
-  return sonar ? [{ label: "Quality gate", value: sonar.gate ?? "—" }] : [];
+  return sonar ? [{ label: 'Quality gate', value: sonar.gate ?? '—' }] : [];
 }
 
 /** The figures a stage reported, one line each. Empty when it reported none. */
@@ -221,12 +275,16 @@ function FailedTests({ results }: Readonly<{ results: StageResults | null }>) {
   if (failures.length === 0) return null;
   return (
     <div className="qa-report-auto__failures">
-      <h4 className="qa-report-auto__failures-title">Failed tests ({failures.length} listed)</h4>
+      <h4 className="qa-report-auto__failures-title">
+        Failed tests ({failures.length} listed)
+      </h4>
       <ol className="qa-report-auto__list">
         {failures.map((failure, index) => (
           <li key={`${index}-${failure.name}`}>
             <code className="qa-report-auto__name">{failure.name}</code>
-            {failure.message ? <p className="qa-report-auto__message">{failure.message}</p> : null}
+            {failure.message ? (
+              <p className="qa-report-auto__message">{failure.message}</p>
+            ) : null}
           </li>
         ))}
       </ol>
@@ -239,7 +297,8 @@ function StageDetail({ stage }: Readonly<{ stage: CiRunReportStage }>) {
   return (
     <div className="qa-report-auto">
       <p className="qa-report-auto__lede">
-        <strong>{ciStageTitle(stage.stage)}</strong> · {ciStageStatusLabel(stage.status)}
+        <strong>{ciStageTitle(stage.stage)}</strong> ·{' '}
+        {ciStageStatusLabel(stage.status)}
       </p>
       {lines.length > 0 ? (
         <dl className="qa-report-meta">
@@ -250,9 +309,15 @@ function StageDetail({ stage }: Readonly<{ stage: CiRunReportStage }>) {
           ))}
         </dl>
       ) : (
-        <p className="qa-report-muted">No figures were reported for this stage.</p>
+        <p className="qa-report-muted">
+          No figures were reported for this stage.
+        </p>
       )}
-      {stage.results?.tests?.cases ? <PrintTestCases results={stage.results} /> : <FailedTests results={stage.results} />}
+      {stage.results?.tests?.cases ? (
+        <PrintTestCases results={stage.results} />
+      ) : (
+        <FailedTests results={stage.results} />
+      )}
       <PrintSonar sonar={stage.results?.sonar} />
       {stage.checks.length > 0 ? (
         <div className="qa-report-table-wrap">
@@ -279,7 +344,9 @@ function StageDetail({ stage }: Readonly<{ stage: CiRunReportStage }>) {
 }
 
 /** The fixed CI run template. */
-export function CiRunReportDocument({ report }: Readonly<{ report: CiRunReport }>) {
+export function CiRunReportDocument({
+  report,
+}: Readonly<{ report: CiRunReport }>) {
   return (
     <article
       className={`qa-report-sheet qa-report qa-report--${ciOverallTone(report.overallStatus)}`}
@@ -300,9 +367,12 @@ export function CiRunReportDocument({ report }: Readonly<{ report: CiRunReport }
       </ReportSection>
       <footer className="qa-report-footer">
         <span>
-          {report.repoFullName} · {report.branch} @ {ciShortSha(report.commitSha)} · {report.schemaVersion}
+          {report.repoFullName} · {report.branch} @{' '}
+          {ciShortSha(report.commitSha)} · {report.schemaVersion}
         </span>
-        <span>Generated by ALPHACI · {formatReportDate(report.generatedAt)}</span>
+        <span>
+          Generated by ALPHACI · {formatReportDate(report.generatedAt)}
+        </span>
       </footer>
     </article>
   );

@@ -242,7 +242,7 @@
   color: var(--danger);
 }
 
-.deploy-logs__chip[aria-pressed="true"] {
+.deploy-logs__chip[aria-pressed='true'] {
   border-color: var(--danger);
   background: color-mix(in srgb, var(--danger) 16%, transparent);
   color: var(--danger);
@@ -317,7 +317,6 @@
 .deploy-logs-tail .deploy-logs__scroller::-webkit-scrollbar {
   display: none;
 }
-
 
 /* ── Hosting console ──────────────────────────────────────────────────── */
 

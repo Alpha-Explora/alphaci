@@ -1,4 +1,4 @@
-import { request, requestBlob, requestText } from "@/shared/api/request";
+import { request, requestBlob, requestText } from '@/shared/api/request';
 
 import type {
   CreateQaRunInput,
@@ -8,11 +8,14 @@ import type {
   QaRunListResponse,
   QaSignoffInput,
   UpdateQaRunItemInput,
-} from "../model/qa-run-types";
-import type { QaReport } from "../model/qa-report-types";
-import { XLSX_TYPE } from "../model/qa-report-rules";
-import type { QaAutomationDispatchWire } from "../model/qa-automation-types";
-import type { QaPromotionMergeWire, QaPromotionStatusWire } from "../model/qa-promotion-types";
+} from '../model/qa-run-types';
+import type { QaReport } from '../model/qa-report-types';
+import { XLSX_TYPE } from '../model/qa-report-rules';
+import type { QaAutomationDispatchWire } from '../model/qa-automation-types';
+import type {
+  QaPromotionMergeWire,
+  QaPromotionStatusWire,
+} from '../model/qa-promotion-types';
 
 /* The only place in the checklists domain that talks to the QA run endpoints.
  *
@@ -37,16 +40,16 @@ function runPath(projectId: string, runId: string): string {
 function query(params: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== "") search.set(key, String(value));
+    if (value !== undefined && value !== '') search.set(key, String(value));
   }
   const text = search.toString();
-  return text ? `?${text}` : "";
+  return text ? `?${text}` : '';
 }
 
 function post(body?: unknown): RequestInit {
   return body === undefined
-    ? { method: "POST" }
-    : { method: "POST", body: JSON.stringify(body) };
+    ? { method: 'POST' }
+    : { method: 'POST', body: JSON.stringify(body) };
 }
 
 export const qaRunsRepository = {
@@ -54,7 +57,9 @@ export const qaRunsRepository = {
     projectId: string,
     filters: { branch?: string; checklistId?: string; limit?: number } = {},
   ): Promise<QaRunListResponse> {
-    return request<QaRunListResponse>(`${runsPath(projectId)}${query(filters)}`);
+    return request<QaRunListResponse>(
+      `${runsPath(projectId)}${query(filters)}`,
+    );
   },
 
   current(
@@ -68,7 +73,10 @@ export const qaRunsRepository = {
 
   create(projectId: string, input: CreateQaRunInput): Promise<QaRun> {
     // Only these two fields, whatever the caller passed: never a sha.
-    const body: CreateQaRunInput = { checklistId: input.checklistId, branch: input.branch };
+    const body: CreateQaRunInput = {
+      checklistId: input.checklistId,
+      branch: input.branch,
+    };
     return request<QaRun>(runsPath(projectId), post(body));
   },
 
@@ -83,7 +91,7 @@ export const qaRunsRepository = {
     input: UpdateQaRunItemInput,
   ): Promise<QaRun> {
     return request<QaRun>(`${runPath(projectId, runId)}/items/${id(itemId)}`, {
-      method: "PATCH",
+      method: 'PATCH',
       body: JSON.stringify(input),
     });
   },
@@ -100,7 +108,11 @@ export const qaRunsRepository = {
     );
   },
 
-  signoff(projectId: string, runId: string, input: QaSignoffInput): Promise<QaRun> {
+  signoff(
+    projectId: string,
+    runId: string,
+    input: QaSignoffInput,
+  ): Promise<QaRun> {
     return request<QaRun>(`${runPath(projectId, runId)}/signoff`, post(input));
   },
 
@@ -110,21 +122,29 @@ export const qaRunsRepository = {
 
   /** The `qa-report/v1` JSON. For a signed-off run it describes the frozen copy. */
   report(projectId: string, runId: string): Promise<QaReport> {
-    return request<QaReport>(`${runPath(projectId, runId)}/report${query({ format: "json" })}`);
+    return request<QaReport>(
+      `${runPath(projectId, runId)}/report${query({ format: 'json' })}`,
+    );
   },
 
   /** The same report as GitHub-flavoured Markdown, ready to paste into a PR. */
   reportMarkdown(projectId: string, runId: string): Promise<string> {
-    return requestText(`${runPath(projectId, runId)}/report${query({ format: "md" })}`, {
-      headers: { Accept: "text/markdown" },
-    });
+    return requestText(
+      `${runPath(projectId, runId)}/report${query({ format: 'md' })}`,
+      {
+        headers: { Accept: 'text/markdown' },
+      },
+    );
   },
 
   /** The same report as an Excel workbook (.xlsx), one sheet per section. */
   reportExcel(projectId: string, runId: string): Promise<Blob> {
-    return requestBlob(`${runPath(projectId, runId)}/report${query({ format: "xlsx" })}`, {
-      headers: { Accept: XLSX_TYPE },
-    });
+    return requestBlob(
+      `${runPath(projectId, runId)}/report${query({ format: 'xlsx' })}`,
+      {
+        headers: { Accept: XLSX_TYPE },
+      },
+    );
   },
 
   /**
@@ -133,8 +153,14 @@ export const qaRunsRepository = {
    * still the run's commit. No body: the server picks the workflow and ref
    * from the run, so a stale page cannot aim it anywhere else.
    */
-  dispatchAutomation(projectId: string, runId: string): Promise<QaAutomationDispatchWire> {
-    return request<QaAutomationDispatchWire>(`${runPath(projectId, runId)}/automation/dispatch`, post());
+  dispatchAutomation(
+    projectId: string,
+    runId: string,
+  ): Promise<QaAutomationDispatchWire> {
+    return request<QaAutomationDispatchWire>(
+      `${runPath(projectId, runId)}/automation/dispatch`,
+      post(),
+    );
   },
 
   returnedItems(projectId: string): Promise<QaReturnedItemsResponse> {
@@ -154,7 +180,9 @@ export const qaRunsRepository = {
 
   /** Whether uat's current head is QA-approved for main. Read through `normalizePromotionStatus`. */
   promotion(projectId: string): Promise<QaPromotionStatusWire> {
-    return request<QaPromotionStatusWire>(`/projects/${id(projectId)}/qa/promotion`);
+    return request<QaPromotionStatusWire>(
+      `/projects/${id(projectId)}/qa/promotion`,
+    );
   },
 
   /**
@@ -163,6 +191,9 @@ export const qaRunsRepository = {
    * page can never merge a commit QA did not approve.
    */
   mergePromotion(projectId: string): Promise<QaPromotionMergeWire> {
-    return request<QaPromotionMergeWire>(`/projects/${id(projectId)}/qa/promotion/merge`, post());
+    return request<QaPromotionMergeWire>(
+      `/projects/${id(projectId)}/qa/promotion/merge`,
+      post(),
+    );
   },
 };

@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   getDeploymentTargetLogs,
   LOG_PAGE_LIMIT,
   openDeploymentLogStream,
-} from "../data/deployment-logs-api";
+} from '../data/deployment-logs-api';
 import type {
   DeploymentLogLine,
   DeploymentLogsQuery,
@@ -15,12 +15,12 @@ import type {
   LogQueryFilters,
   LogSource,
   LogWindow,
-} from "../model/deployment-logs-types";
+} from '../model/deployment-logs-types';
 import {
   errorCount,
   newestTimestamp,
   olderPageCursor,
-} from "../model/log-buffer";
+} from '../model/log-buffer';
 import {
   applyAppend,
   applyError,
@@ -33,28 +33,29 @@ import {
   initialLogState,
   stateFor,
   type LogState,
-} from "../model/log-state";
-import { LEGACY_LOG_FILTERS } from "../model/log-normalize";
-import { useHiddenPause } from "./use-hidden-pause";
+} from '../model/log-state';
+import { LEGACY_LOG_FILTERS } from '../model/log-normalize';
+import { useHiddenPause } from './use-hidden-pause';
 
 /** Debounce on the server-side search, so typing is not a query per key. */
 export const LOG_SEARCH_DEBOUNCE_MS = 350;
 /** Pages fetched at most to close the gap a pause left. 10 x 100 lines. */
 const GAP_FILL_PAGES = 10;
 
-const LOAD_ERROR = "Could not load logs. Please retry.";
-const OLDER_ERROR = "Could not load older logs. Please retry.";
-const CLOSED_ERROR = "The live log connection closed. Restart the tail to retry.";
-const MALFORMED_ERROR = "Received a malformed log update.";
+const LOAD_ERROR = 'Could not load logs. Please retry.';
+const OLDER_ERROR = 'Could not load older logs. Please retry.';
+const CLOSED_ERROR =
+  'The live log connection closed. Restart the tail to retry.';
+const MALFORMED_ERROR = 'Received a malformed log update.';
 
-export type DeploymentLogsStatus = "idle" | "loading" | "ready" | "error";
+export type DeploymentLogsStatus = 'idle' | 'loading' | 'ready' | 'error';
 /**
  * `live` tails an open window; `paused` is the same window after the tab has
  * been hidden for a while (the stream is closed to spare provider calls); `closed` is a window
  * that has ended, fetched once; `off` has no window at all.
  */
-export type LogTailState = "off" | "connecting" | "live" | "paused" | "closed";
-export type OlderPageState = "available" | "loading" | "none";
+export type LogTailState = 'off' | 'connecting' | 'live' | 'paused' | 'closed';
+export type OlderPageState = 'available' | 'loading' | 'none';
 
 export interface DeploymentLogsViewModel {
   status: DeploymentLogsStatus;
@@ -91,24 +92,28 @@ function timeOf(iso: string): number {
 }
 
 function logsQuery(
-  type: LogQueryFilters["type"],
+  type: LogQueryFilters['type'],
   errorsOnly: boolean,
   text: string,
 ): DeploymentLogsQuery {
   return {
     limit: LOG_PAGE_LIMIT,
     ...(type ? { type: [type] } : {}),
-    ...(errorsOnly ? { level: ["error" as const] } : {}),
+    ...(errorsOnly ? { level: ['error' as const] } : {}),
     ...(text ? { text } : {}),
   };
 }
 
-function deriveStatus(state: LogState, key: string, on: boolean): DeploymentLogsStatus {
-  if (!on) return "idle";
+function deriveStatus(
+  state: LogState,
+  key: string,
+  on: boolean,
+): DeploymentLogsStatus {
+  if (!on) return 'idle';
   if (state.key !== key || !state.received) {
-    return state.key === key && state.error ? "error" : "loading";
+    return state.key === key && state.error ? 'error' : 'loading';
   }
-  return "ready";
+  return 'ready';
 }
 
 /** The parts of the ViewModel read straight off the current state. */
@@ -132,17 +137,18 @@ function deriveTail(
   paused: boolean,
   received: boolean,
 ): LogTailState {
-  if (!on || !logWindow) return "off";
-  if (logWindow.endTime !== null) return "closed";
-  if (paused) return "paused";
-  return received ? "live" : "connecting";
+  if (!on || !logWindow) return 'off';
+  if (logWindow.endTime !== null) return 'closed';
+  if (paused) return 'paused';
+  return received ? 'live' : 'connecting';
 }
 
 function deriveOlder(state: LogState, current: boolean): OlderPageState {
-  if (!current) return "none";
-  if (state.older === "loading") return "loading";
-  const more = state.buffer.trimmedOldest || (state.hasMore && state.next !== null);
-  return more ? "available" : "none";
+  if (!current) return 'none';
+  if (state.older === 'loading') return 'loading';
+  const more =
+    state.buffer.trimmedOldest || (state.hasMore && state.next !== null);
+  return more ? 'available' : 'none';
 }
 
 function readOptions(options: {
@@ -167,7 +173,7 @@ interface GapFill {
   projectId: string;
   targetId: string;
   query: DeploymentLogsQuery;
-  from: DeploymentLogsResponse["next"];
+  from: DeploymentLogsResponse['next'];
   /** The newest line held before the gap opened; paging stops once past it. */
   until: string;
   isCurrent: () => boolean;
@@ -182,11 +188,15 @@ interface GapFill {
 async function fillGap(fill: GapFill): Promise<void> {
   let cursor = fill.from;
   for (let page = 0; cursor && page < GAP_FILL_PAGES; page += 1) {
-    const response = await getDeploymentTargetLogs(fill.projectId, fill.targetId, {
-      ...fill.query,
-      ...cursor,
-      direction: "backward",
-    });
+    const response = await getDeploymentTargetLogs(
+      fill.projectId,
+      fill.targetId,
+      {
+        ...fill.query,
+        ...cursor,
+        direction: 'backward',
+      },
+    );
     if (!fill.isCurrent()) return;
     fill.merge(response.logs);
     const oldest = response.logs[0];
@@ -224,8 +234,8 @@ export function useDeploymentLogsViewModel(options: {
   const { windowStart, windowEnd, type, on } = readOptions(options);
 
   const [errorsOnly, setErrorsOnly] = useState(false);
-  const [search, setSearch] = useState("");
-  const [text, setText] = useState("");
+  const [search, setSearch] = useState('');
+  const [text, setText] = useState('');
   const [nonce, setNonce] = useState(0);
   const paused = useHiddenPause();
 
@@ -239,7 +249,10 @@ export function useDeploymentLogsViewModel(options: {
     text,
     nonce,
   ]);
-  const query = useMemo(() => logsQuery(type, errorsOnly, text), [type, errorsOnly, text]);
+  const query = useMemo(
+    () => logsQuery(type, errorsOnly, text),
+    [type, errorsOnly, text],
+  );
 
   const [state, setState] = useState<LogState>(() => initialLogState(key));
   // The effects below read the latest state without depending on it: the
@@ -252,7 +265,10 @@ export function useDeploymentLogsViewModel(options: {
   }, [state, key]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setText(search.trim()), LOG_SEARCH_DEBOUNCE_MS);
+    const timer = setTimeout(
+      () => setText(search.trim()),
+      LOG_SEARCH_DEBOUNCE_MS,
+    );
     return () => clearTimeout(timer);
   }, [search]);
 
@@ -268,11 +284,13 @@ export function useDeploymentLogsViewModel(options: {
       { ...query, startTime: resumeFrom ?? windowStart },
       {
         onEvent: (event) => {
-          if (event.kind === "append") {
-            setState((prev) => applyAppend(prev, key, event.source, event.logs));
+          if (event.kind === 'append') {
+            setState((prev) =>
+              applyAppend(prev, key, event.source, event.logs),
+            );
             return;
           }
-          if (event.kind === "status") {
+          if (event.kind === 'status') {
             setState((prev) =>
               event.rateLimited
                 ? applyRateLimited(prev, key, event.retryAfterMs, Date.now())
@@ -294,7 +312,7 @@ export function useDeploymentLogsViewModel(options: {
           }).catch(() => undefined);
         },
         onError: (reason) => {
-          const message = reason === "closed" ? CLOSED_ERROR : MALFORMED_ERROR;
+          const message = reason === 'closed' ? CLOSED_ERROR : MALFORMED_ERROR;
           setState((prev) => applyError(prev, key, message));
         },
       },
@@ -310,7 +328,7 @@ export function useDeploymentLogsViewModel(options: {
       ...query,
       startTime: windowStart,
       endTime: windowEnd,
-      direction: "backward",
+      direction: 'backward',
     })
       .then((page) => {
         if (active) setState((prev) => applySnapshot(prev, key, page));
@@ -327,14 +345,14 @@ export function useDeploymentLogsViewModel(options: {
   const older = deriveOlder(current, on && current.received);
 
   function loadOlder() {
-    if (!logWindow || older !== "available") return;
+    if (!logWindow || older !== 'available') return;
     const cursor = olderPageCursor(current.buffer, current.next, logWindow);
     if (!cursor) return;
     setState((prev) => applyOlderLoading(prev, key));
     getDeploymentTargetLogs(projectId, targetId, {
       ...query,
       ...cursor,
-      direction: "backward",
+      direction: 'backward',
     })
       .then((page) => setState((prev) => applyOlderPage(prev, key, page)))
       .catch(() =>

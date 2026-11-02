@@ -1,7 +1,7 @@
 import type {
   DeploymentLogLine,
   DeploymentLogsResponse,
-} from "../../../../../src/features/projects/deployment-logs/model/deployment-logs-types";
+} from '../../../../../src/features/projects/deployment-logs/model/deployment-logs-types';
 
 /**
  * A stand-in for the browser's EventSource. jsdom has none, so tests install
@@ -53,8 +53,9 @@ export class FakeEventSource {
   }
 
   static latest(): FakeEventSource {
-    const source = FakeEventSource.instances[FakeEventSource.instances.length - 1];
-    if (!source) throw new Error("no EventSource was opened");
+    const source =
+      FakeEventSource.instances[FakeEventSource.instances.length - 1];
+    if (!source) throw new Error('no EventSource was opened');
     return source;
   }
 
@@ -72,11 +73,11 @@ export function line(
 ): DeploymentLogLine {
   return {
     id,
-    timestamp: `2026-09-24T10:00:${String(second).padStart(2, "0")}.000Z`,
+    timestamp: `2026-09-24T10:00:${String(second).padStart(2, '0')}.000Z`,
     message: `message ${id}`,
-    level: "info",
-    type: "app",
-    instance: "srv-d1abc-5d8f9c7b6-x2k4j",
+    level: 'info',
+    type: 'app',
+    instance: 'srv-d1abc-5d8f9c7b6-x2k4j',
     labels: {},
     ...overrides,
   };
@@ -87,11 +88,11 @@ export function page(
   overrides: Partial<DeploymentLogsResponse> = {},
 ): DeploymentLogsResponse {
   return {
-    source: "live",
+    source: 'live',
     logs,
     hasMore: false,
     next: null,
-    filters: ["level", "type", "text", "instance"],
+    filters: ['level', 'type', 'text', 'instance'],
     ...overrides,
   };
 }

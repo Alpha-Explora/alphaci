@@ -1,12 +1,16 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { qaRunsRepository } from "../../data/qa-runs-repository";
-import { reportBaseName, reportErrorCopy, type QaReportErrorCopy } from "../../model/qa-report-rules";
-import type { QaReport } from "../../model/qa-report-types";
+import { qaRunsRepository } from '../../data/qa-runs-repository';
+import {
+  reportBaseName,
+  reportErrorCopy,
+  type QaReportErrorCopy,
+} from '../../model/qa-report-rules';
+import type { QaReport } from '../../model/qa-report-types';
 
-export type QaReportStatus = "loading" | "ready" | "error";
+export type QaReportStatus = 'loading' | 'ready' | 'error';
 
 export interface QaReportViewModel {
   status: QaReportStatus;
@@ -22,14 +26,18 @@ interface ReportState {
   error: QaReportErrorCopy | null;
 }
 
-const LOADING: ReportState = { status: "loading", report: null, error: null };
+const LOADING: ReportState = { status: 'loading', report: null, error: null };
 
 /** Drop `?print=1` once the dialog has opened, so a refresh does not reopen it. */
 function forgetPrintFlag() {
   const url = new URL(window.location.href);
-  if (!url.searchParams.has("print")) return;
-  url.searchParams.delete("print");
-  window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  if (!url.searchParams.has('print')) return;
+  url.searchParams.delete('print');
+  window.history.replaceState(
+    window.history.state,
+    '',
+    `${url.pathname}${url.search}${url.hash}`,
+  );
 }
 
 /**
@@ -43,7 +51,10 @@ export function useAutoPrint(enabled: boolean) {
   useEffect(() => {
     if (!enabled || printed.current) return;
     let cancelled = false;
-    const fontsReady = typeof document !== "undefined" && document.fonts ? document.fonts.ready : Promise.resolve();
+    const fontsReady =
+      typeof document !== 'undefined' && document.fonts
+        ? document.fonts.ready
+        : Promise.resolve();
     void Promise.resolve(fontsReady).then(() => {
       if (cancelled || printed.current) return;
       printed.current = true;
@@ -86,15 +97,21 @@ export function useQaReportViewModel(options: {
     const id = ++requestId.current;
     qaRunsRepository.report(projectId, runId).then(
       (report) => {
-        if (id === requestId.current) setState({ status: "ready", report, error: null });
+        if (id === requestId.current)
+          setState({ status: 'ready', report, error: null });
       },
       (cause: unknown) => {
-        if (id === requestId.current) setState({ status: "error", report: null, error: reportErrorCopy(cause) });
+        if (id === requestId.current)
+          setState({
+            status: 'error',
+            report: null,
+            error: reportErrorCopy(cause),
+          });
       },
     );
   }, [projectId, runId, attempt]);
 
-  useAutoPrint(autoPrint && state.status === "ready");
+  useAutoPrint(autoPrint && state.status === 'ready');
   useDocumentTitle(state.report);
 
   return {

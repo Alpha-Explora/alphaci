@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { getProjectOptions } from "@/features/workflows/studio/data/catalog-api";
+import { getProjectOptions } from '@/features/workflows/studio/data/catalog-api';
 import type {
   MvpProjectOptionKey,
   ProjectOptionSet,
@@ -10,32 +10,32 @@ import type {
   ProjectTypeOption,
   RepoShapeOption,
   WorkflowRecipeOption,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 
 const emptyCatalog: ProjectOptionsResponse = {
   repoShapes: [],
   projectTypes: [],
   recipes: [],
   nodeVersions: [],
-  enforcedOrg: "",
+  enforcedOrg: '',
 };
 
 export const mvpProjectOptionKeys: MvpProjectOptionKey[] = [
-  "lint",
-  "unit",
-  "build",
-  "coverage",
-  "security",
-  "docker",
+  'lint',
+  'unit',
+  'build',
+  'coverage',
+  'security',
+  'docker',
 ];
 
 export const projectOptionLabels: Record<MvpProjectOptionKey, string> = {
-  lint: "Lint",
-  unit: "Unit tests",
-  build: "Build",
-  coverage: "Coverage",
-  security: "Security",
-  docker: "Docker",
+  lint: 'Lint',
+  unit: 'Unit tests',
+  build: 'Build',
+  coverage: 'Coverage',
+  security: 'Security',
+  docker: 'Docker',
 };
 
 function optionDefaults(
@@ -45,7 +45,8 @@ function optionDefaults(
   return Object.fromEntries(
     mvpProjectOptionKeys.map((key) => [
       key,
-      Boolean(projectType?.defaultOptions[key]) && recipe?.supportedOptions[key] !== false,
+      Boolean(projectType?.defaultOptions[key]) &&
+        recipe?.supportedOptions[key] !== false,
     ]),
   ) as Record<MvpProjectOptionKey, boolean>;
 }
@@ -81,9 +82,9 @@ interface OptionsState {
 const initialOptions: OptionsState = {
   catalog: emptyCatalog,
   selection: {
-    repoShapeId: "",
-    projectTypeId: "",
-    workflowRecipeId: "",
+    repoShapeId: '',
+    projectTypeId: '',
+    workflowRecipeId: '',
     tests: optionDefaults(null, null),
   },
 };
@@ -92,12 +93,17 @@ function enabledShapesOf(catalog: ProjectOptionsResponse): RepoShapeOption[] {
   return catalog.repoShapes.filter((shape) => shape.enabled);
 }
 
-function typesForShape(catalog: ProjectOptionsResponse, repoShapeId: string): ProjectTypeOption[] {
+function typesForShape(
+  catalog: ProjectOptionsResponse,
+  repoShapeId: string,
+): ProjectTypeOption[] {
   if (!repoShapeId) {
     return [];
   }
 
-  return catalog.projectTypes.filter((projectType) => projectType.repoShapes.includes(repoShapeId));
+  return catalog.projectTypes.filter((projectType) =>
+    projectType.repoShapes.includes(repoShapeId),
+  );
 }
 
 /** The current id while the options still have it, else the first option's. */
@@ -106,7 +112,7 @@ function keepOrFirst(options: { id: string }[], current: string): string {
     return current;
   }
 
-  return options[0]?.id ?? "";
+  return options[0]?.id ?? '';
 }
 
 /** The current recipe while the project type still allows it, else its default, else the first. */
@@ -116,23 +122,30 @@ function pickRecipe(
   current: string,
 ): string {
   if (!projectType || recipes.length === 0) {
-    return "";
+    return '';
   }
 
   if (recipes.some((recipe) => recipe.id === current)) {
     return current;
   }
 
-  const defaultRecipe = recipes.find((recipe) => recipe.id === projectType.defaultRecipe);
-  return defaultRecipe?.id ?? recipes[0]?.id ?? "";
+  const defaultRecipe = recipes.find(
+    (recipe) => recipe.id === projectType.defaultRecipe,
+  );
+  return defaultRecipe?.id ?? recipes[0]?.id ?? '';
 }
 
 /** The project type and recipe objects a selection points at. */
-function resolveSelection(catalog: ProjectOptionsResponse, selection: Selection) {
+function resolveSelection(
+  catalog: ProjectOptionsResponse,
+  selection: Selection,
+) {
   const types = typesForShape(catalog, selection.repoShapeId);
-  const projectType = types.find((option) => option.id === selection.projectTypeId) ?? null;
+  const projectType =
+    types.find((option) => option.id === selection.projectTypeId) ?? null;
   const recipes = recipesForProject(projectType, catalog.recipes);
-  const recipe = recipes.find((option) => option.id === selection.workflowRecipeId) ?? null;
+  const recipe =
+    recipes.find((option) => option.id === selection.workflowRecipeId) ?? null;
   return { projectType, recipe };
 }
 
@@ -147,12 +160,18 @@ function settleProjectType(
   listChanged: boolean,
 ): { projectTypeId: string; recipeCandidate: string } {
   if (!listChanged) {
-    return { projectTypeId: draft.projectTypeId, recipeCandidate: draft.workflowRecipeId };
+    return {
+      projectTypeId: draft.projectTypeId,
+      recipeCandidate: draft.workflowRecipeId,
+    };
   }
 
   const projectTypeId = keepOrFirst(types, draft.projectTypeId);
   const dropped = projectTypeId !== draft.projectTypeId;
-  return { projectTypeId, recipeCandidate: dropped ? "" : draft.workflowRecipeId };
+  return {
+    projectTypeId,
+    recipeCandidate: dropped ? '' : draft.workflowRecipeId,
+  };
 }
 
 /**
@@ -168,19 +187,29 @@ function settleSelection(
   draft: Selection,
 ): OptionsState {
   const newCatalog = catalog !== previous.catalog;
-  const repoShapeId = newCatalog ? keepOrFirst(enabledShapesOf(catalog), draft.repoShapeId) : draft.repoShapeId;
+  const repoShapeId = newCatalog
+    ? keepOrFirst(enabledShapesOf(catalog), draft.repoShapeId)
+    : draft.repoShapeId;
   const types = typesForShape(catalog, repoShapeId);
-  const typesChanged = newCatalog || repoShapeId !== previous.selection.repoShapeId;
-  const { projectTypeId, recipeCandidate } = settleProjectType(types, draft, typesChanged);
-  const projectType = types.find((option) => option.id === projectTypeId) ?? null;
+  const typesChanged =
+    newCatalog || repoShapeId !== previous.selection.repoShapeId;
+  const { projectTypeId, recipeCandidate } = settleProjectType(
+    types,
+    draft,
+    typesChanged,
+  );
+  const projectType =
+    types.find((option) => option.id === projectTypeId) ?? null;
   const before = resolveSelection(previous.catalog, previous.selection);
   const recipes = recipesForProject(projectType, catalog.recipes);
   const recipesChanged = newCatalog || projectType !== before.projectType;
   const workflowRecipeId = recipesChanged
     ? pickRecipe(projectType, recipes, recipeCandidate)
     : draft.workflowRecipeId;
-  const recipe = recipes.find((option) => option.id === workflowRecipeId) ?? null;
-  const testsChanged = projectType !== before.projectType || recipe !== before.recipe;
+  const recipe =
+    recipes.find((option) => option.id === workflowRecipeId) ?? null;
+  const testsChanged =
+    projectType !== before.projectType || recipe !== before.recipe;
   return {
     catalog,
     selection: {
@@ -200,9 +229,14 @@ function settleSelection(
 export function useProjectOptionsCatalog() {
   const [options, setOptions] = useState<OptionsState>(initialOptions);
   const [loadingProjectOptions, setLoadingProjectOptions] = useState(false);
-  const [projectOptionsError, setProjectOptionsError] = useState<string | null>(null);
+  const [projectOptionsError, setProjectOptionsError] = useState<string | null>(
+    null,
+  );
   const { catalog, selection } = options;
-  const { repoShapeId: selectedRepoShapeId, projectTypeId: selectedProjectTypeId } = selection;
+  const {
+    repoShapeId: selectedRepoShapeId,
+    projectTypeId: selectedProjectTypeId,
+  } = selection;
   const { workflowRecipeId: selectedWorkflowRecipeId, tests } = selection;
 
   useEffect(() => {
@@ -218,14 +252,20 @@ export function useProjectOptionsCatalog() {
           return;
         }
 
-        setOptions((current) => settleSelection(current, response, current.selection));
+        setOptions((current) =>
+          settleSelection(current, response, current.selection),
+        );
       } catch {
         if (!active) {
           return;
         }
 
-        setOptions((current) => settleSelection(current, emptyCatalog, current.selection));
-        setProjectOptionsError("Unable to load create project options right now.");
+        setOptions((current) =>
+          settleSelection(current, emptyCatalog, current.selection),
+        );
+        setProjectOptionsError(
+          'Unable to load create project options right now.',
+        );
       } finally {
         if (active) {
           setLoadingProjectOptions(false);
@@ -243,7 +283,10 @@ export function useProjectOptionsCatalog() {
   const enabledRepoShapes = useMemo(() => enabledShapesOf(catalog), [catalog]);
 
   const selectedRepoShape = useMemo<RepoShapeOption | null>(() => {
-    return enabledRepoShapes.find((shape) => shape.id === selectedRepoShapeId) ?? null;
+    return (
+      enabledRepoShapes.find((shape) => shape.id === selectedRepoShapeId) ??
+      null
+    );
   }, [enabledRepoShapes, selectedRepoShapeId]);
 
   const projectTypesForShape = useMemo(
@@ -252,7 +295,11 @@ export function useProjectOptionsCatalog() {
   );
 
   const selectedProjectType = useMemo<ProjectTypeOption | null>(() => {
-    return projectTypesForShape.find((projectType) => projectType.id === selectedProjectTypeId) ?? null;
+    return (
+      projectTypesForShape.find(
+        (projectType) => projectType.id === selectedProjectTypeId,
+      ) ?? null
+    );
   }, [projectTypesForShape, selectedProjectTypeId]);
 
   const recipesForSelectedProject = useMemo(
@@ -262,20 +309,27 @@ export function useProjectOptionsCatalog() {
 
   const selectedWorkflowRecipe = useMemo<WorkflowRecipeOption | null>(() => {
     return (
-      recipesForSelectedProject.find((recipe) => recipe.id === selectedWorkflowRecipeId) ?? null
+      recipesForSelectedProject.find(
+        (recipe) => recipe.id === selectedWorkflowRecipeId,
+      ) ?? null
     );
   }, [recipesForSelectedProject, selectedWorkflowRecipeId]);
 
   /** Applies one pick, then settles the picks that depend on it. */
-  const pick = useCallback((change: Partial<Omit<Selection, "tests">>) => {
+  const pick = useCallback((change: Partial<Omit<Selection, 'tests'>>) => {
     setOptions((current) =>
-      settleSelection(current, current.catalog, { ...current.selection, ...change }),
+      settleSelection(current, current.catalog, {
+        ...current.selection,
+        ...change,
+      }),
     );
   }, []);
 
   const setSelectedRepoShapeId = useCallback(
     (repoShapeId: string) => {
-      const target = catalog.repoShapes.find((shape) => shape.id === repoShapeId);
+      const target = catalog.repoShapes.find(
+        (shape) => shape.id === repoShapeId,
+      );
       if (target?.enabled) {
         pick({ repoShapeId });
       }
@@ -295,7 +349,10 @@ export function useProjectOptionsCatalog() {
 
   const toggleTestOption = useCallback(
     (key: MvpProjectOptionKey) => {
-      if (!selectedWorkflowRecipe || selectedWorkflowRecipe.supportedOptions[key] === false) {
+      if (
+        !selectedWorkflowRecipe ||
+        selectedWorkflowRecipe.supportedOptions[key] === false
+      ) {
         return;
       }
 
@@ -303,7 +360,10 @@ export function useProjectOptionsCatalog() {
         ...current,
         selection: {
           ...current.selection,
-          tests: { ...current.selection.tests, [key]: !current.selection.tests[key] },
+          tests: {
+            ...current.selection.tests,
+            [key]: !current.selection.tests[key],
+          },
         },
       }));
     },
@@ -320,15 +380,15 @@ export function useProjectOptionsCatalog() {
     }));
   }, [selectedWorkflowRecipe, tests]);
 
-  const isMicroservicesShape = selectedRepoShapeId === "microservices";
-  const isMultiRepoShape = selectedRepoShapeId === "multi";
+  const isMicroservicesShape = selectedRepoShapeId === 'microservices';
+  const isMultiRepoShape = selectedRepoShapeId === 'multi';
 
   const backendProjectTypes = useMemo(
     () =>
       projectTypesForShape.filter((projectType) =>
         projectType.kind
-          ? projectType.kind === "backend"
-          : ["nestjs", "nodejs"].includes(projectType.id),
+          ? projectType.kind === 'backend'
+          : ['nestjs', 'nodejs'].includes(projectType.id),
       ),
     [projectTypesForShape],
   );
@@ -337,8 +397,8 @@ export function useProjectOptionsCatalog() {
     () =>
       projectTypesForShape.filter((projectType) =>
         projectType.kind
-          ? projectType.kind === "frontend"
-          : ["nextjs", "react"].includes(projectType.id),
+          ? projectType.kind === 'frontend'
+          : ['nextjs', 'react'].includes(projectType.id),
       ),
     [projectTypesForShape],
   );
@@ -374,6 +434,9 @@ export function useProjectOptionsCatalog() {
   };
 }
 
-export type ProjectOptionsCatalogState = ReturnType<typeof useProjectOptionsCatalog>;
+export type ProjectOptionsCatalogState = ReturnType<
+  typeof useProjectOptionsCatalog
+>;
 export type CreateProjectTests = Record<MvpProjectOptionKey, boolean>;
-export type CreateProjectTestInput = Record<MvpProjectOptionKey, boolean> | ProjectOptionSet;
+export type CreateProjectTestInput =
+  Record<MvpProjectOptionKey, boolean> | ProjectOptionSet;

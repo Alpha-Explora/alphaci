@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import "./checklist-items.css";
+import './checklist-items.css';
 
-import type { QaChecklistItem } from "../../model/checklist-types";
-import { needsTestIdentifier } from "../../model/checklist-rules";
-import { PersonaBadge, VerificationBadge } from "./checklist-badges";
+import type { QaChecklistItem } from '../../model/checklist-types';
+import { needsTestIdentifier } from '../../model/checklist-rules';
+import { PersonaBadge, VerificationBadge } from './checklist-badges';
 
 function positionLabel(index: number): string {
-  return String(index + 1).padStart(2, "0");
+  return String(index + 1).padStart(2, '0');
 }
 
 /**
@@ -19,7 +19,7 @@ function positionLabel(index: number): string {
  */
 export function ChecklistItemList({
   items,
-  emptyMessage = "This checklist has no items yet.",
+  emptyMessage = 'This checklist has no items yet.',
 }: Readonly<{
   items: ReadonlyArray<QaChecklistItem>;
   emptyMessage?: string;
@@ -45,7 +45,8 @@ export function ChecklistItemList({
             ) : null}
             <div className="qa-item__verify">
               <VerificationBadge type={item.verificationType} />
-              {needsTestIdentifier(item.verificationType) && item.testIdentifier ? (
+              {needsTestIdentifier(item.verificationType) &&
+              item.testIdentifier ? (
                 <code className="qa-item__test">{item.testIdentifier}</code>
               ) : null}
             </div>

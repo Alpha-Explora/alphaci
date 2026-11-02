@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { motion, useReducedMotion } from "framer-motion";
-import { PROMOTION_BRANCHES } from "@/shared/api/pipeline-branches";
+import { motion, useReducedMotion } from 'framer-motion';
+import { PROMOTION_BRANCHES } from '@/shared/api/pipeline-branches';
 
 /* ── Stage motif icons (shared visual language with the /runs pipeline) ──── */
 
@@ -65,23 +65,23 @@ function PackageMotif() {
 
 const GATE_STAGES = [
   {
-    key: "access",
-    label: "Access",
+    key: 'access',
+    label: 'Access',
     description:
-      "Confirms the pipeline can reach the repository and required secrets exist.",
+      'Confirms the pipeline can reach the repository and required secrets exist.',
     Icon: AccessMotif,
   },
   {
-    key: "quality",
-    label: "Quality",
+    key: 'quality',
+    label: 'Quality',
     description:
-      "Runs lint, type checks, unit tests, coverage, and security scans.",
+      'Runs lint, type checks, unit tests, coverage, and security scans.',
     Icon: QualityMotif,
   },
   {
-    key: "package",
-    label: "Package",
-    description: "Builds and ships the artifact to its deploy target.",
+    key: 'package',
+    label: 'Package',
+    description: 'Builds and ships the artifact to its deploy target.',
     Icon: PackageMotif,
   },
 ] as const;
@@ -90,7 +90,7 @@ const GATE_STAGES = [
 // show only the tiers above the working branch.
 const PROMOTION_RUNGS = PROMOTION_BRANCHES;
 
-export type FlowExplainerVariant = "full" | "compact";
+export type FlowExplainerVariant = 'full' | 'compact';
 
 interface FlowExplainerProps {
   /**
@@ -114,14 +114,14 @@ interface FlowExplainerProps {
  * what each stage *does*.
  */
 export function FlowExplainer({
-  variant = "full",
-  heading = "How ALPHACI works",
+  variant = 'full',
+  heading = 'How ALPHACI works',
   className,
 }: FlowExplainerProps) {
   const reduced = useReducedMotion();
 
   return (
-    <div className={["flow-explainer", className].filter(Boolean).join(" ")}>
+    <div className={['flow-explainer', className].filter(Boolean).join(' ')}>
       {heading ? <p className="flow-explainer__heading">{heading}</p> : null}
 
       {/* Gated stage row */}
@@ -147,7 +147,7 @@ export function FlowExplainer({
                 <stage.Icon />
               </span>
               <span className="flow-explainer__stage-label">{stage.label}</span>
-              {variant === "full" ? (
+              {variant === 'full' ? (
                 <span className="flow-explainer__stage-desc">
                   {stage.description}
                 </span>
@@ -160,7 +160,7 @@ export function FlowExplainer({
         ))}
       </div>
 
-      {variant === "full" ? (
+      {variant === 'full' ? (
         <>
           {/* Promotion ladder */}
           <div

@@ -1,75 +1,103 @@
-"use client";
+'use client';
 
-import "./evidence.css";
+import './evidence.css';
 
-import { useRef, type ClipboardEvent } from "react";
+import { useRef, type ClipboardEvent } from 'react';
 
-import type { ProjectQaRunItem } from "../../model/project-run-types";
+import type { ProjectQaRunItem } from '../../model/project-run-types';
 import {
   evidenceAlt,
   evidenceCountLabel,
   MAX_CAPTION_LENGTH,
   MAX_EVIDENCE_PER_ITEM,
-} from "../../model/qa-attachment-rules";
-import type { QaAttachment } from "../../model/qa-attachment-types";
-import { agoLabel } from "../../model/qa-run-rules";
-import { usePreviewCaptureTarget } from "../view-models/preview-capture-target";
-import { useItemEvidenceViewModel, type ItemEvidenceViewModel } from "../view-models/use-item-evidence-view-model";
-import type { RunEvidenceViewModel } from "../view-models/use-run-evidence-view-model";
-import { EvidenceLightbox } from "./evidence-lightbox";
-import { CameraIcon, ImageIcon, TrashIcon, UploadIcon } from "./studio-icons";
+} from '../../model/qa-attachment-rules';
+import type { QaAttachment } from '../../model/qa-attachment-types';
+import { agoLabel } from '../../model/qa-run-rules';
+import { usePreviewCaptureTarget } from '../view-models/preview-capture-target';
+import {
+  useItemEvidenceViewModel,
+  type ItemEvidenceViewModel,
+} from '../view-models/use-item-evidence-view-model';
+import type { RunEvidenceViewModel } from '../view-models/use-run-evidence-view-model';
+import { EvidenceLightbox } from './evidence-lightbox';
+import { CameraIcon, ImageIcon, TrashIcon, UploadIcon } from './studio-icons';
 
-const ACCEPT = "image/png,image/jpeg,image/webp";
+const ACCEPT = 'image/png,image/jpeg,image/webp';
 
 const AT_LIMIT = `This item holds ${String(MAX_EVIDENCE_PER_ITEM)} screenshots, the most it can. Delete one to add another.`;
 
 const CAPTURE_HINT =
-  "Your browser asks which tab to share: pick this one. Only the preview is kept, and sharing stops at once.";
+  'Your browser asks which tab to share: pick this one. Only the preview is kept, and sharing stops at once.';
 
 function Byline({ attachment }: Readonly<{ attachment: QaAttachment }>) {
   const ago = agoLabel(attachment.createdAt);
-  const who = attachment.createdByLogin ? `@${attachment.createdByLogin}` : null;
-  const text = [who, ago].filter(Boolean).join(" · ");
+  const who = attachment.createdByLogin
+    ? `@${attachment.createdByLogin}`
+    : null;
+  const text = [who, ago].filter(Boolean).join(' · ');
   return text ? <span className="qa-evidence__by">{text}</span> : null;
 }
 
 /** "Delete" asks first, inline: Delete / Keep, never a browser confirm. */
-function DeleteControl({ vm, attachment }: Readonly<{ vm: ItemEvidenceViewModel; attachment: QaAttachment }>) {
+function DeleteControl({
+  vm,
+  attachment,
+}: Readonly<{ vm: ItemEvidenceViewModel; attachment: QaAttachment }>) {
   if (!vm.canDelete(attachment)) return null;
   if (vm.confirmingDeleteId !== attachment.id) {
     return (
       <button
         type="button"
         className="qa-evidence__icon-button"
-        aria-label={`Delete screenshot${attachment.caption ? `: ${attachment.caption}` : ""}`}
+        aria-label={`Delete screenshot${attachment.caption ? `: ${attachment.caption}` : ''}`}
         title="Delete screenshot"
-        disabled={vm.status === "saving" || vm.status === "deleting"}
+        disabled={vm.status === 'saving' || vm.status === 'deleting'}
         onClick={() => vm.askDelete(attachment.id)}
       >
         <TrashIcon />
       </button>
     );
   }
-  const deleting = vm.status === "deleting";
+  const deleting = vm.status === 'deleting';
   return (
-    <span className="qa-evidence__confirm" role="group" aria-label="Delete this screenshot?">
+    <span
+      className="qa-evidence__confirm"
+      role="group"
+      aria-label="Delete this screenshot?"
+    >
       <span className="qa-evidence__confirm-text">Delete?</span>
-      <button type="button" className="qa-evidence__chip qa-evidence__chip--danger" disabled={deleting} onClick={() => void vm.confirmDelete()}>
-        {deleting ? "Deleting…" : "Delete"}
+      <button
+        type="button"
+        className="qa-evidence__chip qa-evidence__chip--danger"
+        disabled={deleting}
+        onClick={() => void vm.confirmDelete()}
+      >
+        {deleting ? 'Deleting…' : 'Delete'}
       </button>
-      <button type="button" className="qa-evidence__chip" disabled={deleting} onClick={vm.cancelDelete}>
+      <button
+        type="button"
+        className="qa-evidence__chip"
+        disabled={deleting}
+        onClick={vm.cancelDelete}
+      >
         Keep
       </button>
     </span>
   );
 }
 
-function Thumbnails({ vm, item }: Readonly<{ vm: ItemEvidenceViewModel; item: ProjectQaRunItem }>) {
+function Thumbnails({
+  vm,
+  item,
+}: Readonly<{ vm: ItemEvidenceViewModel; item: ProjectQaRunItem }>) {
   if (!vm.attachments) {
     return vm.count > 0 ? (
       <div className="qa-evidence__thumbs" aria-hidden="true">
         {Array.from({ length: Math.min(vm.count, 5) }, (_, index) => (
-          <span key={index} className="hier-skeleton qa-evidence__thumb-skeleton" />
+          <span
+            key={index}
+            className="hier-skeleton qa-evidence__thumb-skeleton"
+          />
         ))}
       </div>
     ) : null;
@@ -90,13 +118,22 @@ function Thumbnails({ vm, item }: Readonly<{ vm: ItemEvidenceViewModel; item: Pr
               {attachment.url ? (
                 // A signed, short-lived URL from the backend: next/image cannot optimise it.
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={attachment.url} alt={alt} loading="lazy" onError={vm.imageFailed} />
+                <img
+                  src={attachment.url}
+                  alt={alt}
+                  loading="lazy"
+                  onError={vm.imageFailed}
+                />
               ) : (
                 <ImageIcon />
               )}
             </button>
             <div className="qa-evidence__meta">
-              {attachment.caption ? <span className="qa-evidence__caption">{attachment.caption}</span> : null}
+              {attachment.caption ? (
+                <span className="qa-evidence__caption">
+                  {attachment.caption}
+                </span>
+              ) : null}
               <Byline attachment={attachment} />
             </div>
             <DeleteControl vm={vm} attachment={attachment} />
@@ -111,16 +148,26 @@ function Thumbnails({ vm, item }: Readonly<{ vm: ItemEvidenceViewModel; item: Pr
 function AddControls({ vm }: Readonly<{ vm: ItemEvidenceViewModel }>) {
   const fileRef = useRef<HTMLInputElement>(null);
   if (!vm.canAdd || vm.draft) return null;
-  const preparing = vm.status === "preparing";
+  const preparing = vm.status === 'preparing';
   return (
     <div className="qa-evidence__add">
       {vm.canCapture ? (
-        <button type="button" className="qa-evidence__action" disabled={preparing} onClick={() => void vm.capture()}>
+        <button
+          type="button"
+          className="qa-evidence__action"
+          disabled={preparing}
+          onClick={() => void vm.capture()}
+        >
           <CameraIcon />
           Capture
         </button>
       ) : null}
-      <button type="button" className="qa-evidence__action" disabled={preparing} onClick={() => fileRef.current?.click()}>
+      <button
+        type="button"
+        className="qa-evidence__action"
+        disabled={preparing}
+        onClick={() => fileRef.current?.click()}
+      >
         <UploadIcon />
         Upload
       </button>
@@ -133,7 +180,7 @@ function AddControls({ vm }: Readonly<{ vm: ItemEvidenceViewModel }>) {
         aria-hidden="true"
         onChange={(event) => {
           vm.choose(event.target.files?.[0]);
-          event.target.value = "";
+          event.target.value = '';
         }}
       />
       <span className="qa-evidence__paste">
@@ -149,10 +196,13 @@ function AddControls({ vm }: Readonly<{ vm: ItemEvidenceViewModel }>) {
 }
 
 /** The image waiting for its caption and Save. */
-function DraftComposer({ vm, item }: Readonly<{ vm: ItemEvidenceViewModel; item: ProjectQaRunItem }>) {
+function DraftComposer({
+  vm,
+  item,
+}: Readonly<{ vm: ItemEvidenceViewModel; item: ProjectQaRunItem }>) {
   const draft = vm.draft;
   if (!draft) return null;
-  const saving = vm.status === "saving";
+  const saving = vm.status === 'saving';
   return (
     <form
       className="qa-evidence__draft"
@@ -164,7 +214,11 @@ function DraftComposer({ vm, item }: Readonly<{ vm: ItemEvidenceViewModel; item:
     >
       {/* A local object URL of the compressed image. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="qa-evidence__draft-image" src={draft.previewUrl} alt={`New screenshot of ${item.title}`} />
+      <img
+        className="qa-evidence__draft-image"
+        src={draft.previewUrl}
+        alt={`New screenshot of ${item.title}`}
+      />
       <div className="qa-evidence__draft-fields">
         <label className="hier-field qa-editor-field">
           <span className="hier-field-label">Caption (optional)</span>
@@ -179,9 +233,14 @@ function DraftComposer({ vm, item }: Readonly<{ vm: ItemEvidenceViewModel; item:
         </label>
         <div className="qa-evidence__draft-actions">
           <button type="submit" className="primary-button" disabled={saving}>
-            {saving ? "Saving…" : "Save screenshot"}
+            {saving ? 'Saving…' : 'Save screenshot'}
           </button>
-          <button type="button" className="ghost-button" disabled={saving} onClick={vm.discard}>
+          <button
+            type="button"
+            className="ghost-button"
+            disabled={saving}
+            onClick={vm.discard}
+          >
             Discard
           </button>
           {saving ? (
@@ -200,7 +259,11 @@ function EvidenceError({ vm }: Readonly<{ vm: ItemEvidenceViewModel }>) {
   return (
     <div className="qa-inline-alert" role="alert">
       <p>{vm.error}</p>
-      <button type="button" className="qa-text-button" onClick={vm.dismissError}>
+      <button
+        type="button"
+        className="qa-text-button"
+        onClick={vm.dismissError}
+      >
         Dismiss
       </button>
     </div>
@@ -208,8 +271,11 @@ function EvidenceError({ vm }: Readonly<{ vm: ItemEvidenceViewModel }>) {
 }
 
 /** The read error of the run's whole list, shown once per item that has screenshots. */
-function ListError({ evidence, count }: Readonly<{ evidence: RunEvidenceViewModel; count: number }>) {
-  if (evidence.status !== "error" || count === 0) return null;
+function ListError({
+  evidence,
+  count,
+}: Readonly<{ evidence: RunEvidenceViewModel; count: number }>) {
+  if (evidence.status !== 'error' || count === 0) return null;
   return (
     <div className="qa-inline-alert" role="alert">
       <p>{evidence.error}</p>
@@ -233,7 +299,10 @@ function CaptureHint({ vm }: Readonly<{ vm: ItemEvidenceViewModel }>) {
   return <p className="qa-evidence__hint">{CAPTURE_HINT}</p>;
 }
 
-function Lightbox({ vm, item }: Readonly<{ vm: ItemEvidenceViewModel; item: ProjectQaRunItem }>) {
+function Lightbox({
+  vm,
+  item,
+}: Readonly<{ vm: ItemEvidenceViewModel; item: ProjectQaRunItem }>) {
   if (vm.lightboxIndex === null || !vm.attachments) return null;
   return (
     <EvidenceLightbox
@@ -251,7 +320,11 @@ function EvidenceBody({
   vm,
   item,
   evidence,
-}: Readonly<{ vm: ItemEvidenceViewModel; item: ProjectQaRunItem; evidence: RunEvidenceViewModel }>) {
+}: Readonly<{
+  vm: ItemEvidenceViewModel;
+  item: ProjectQaRunItem;
+  evidence: RunEvidenceViewModel;
+}>) {
   return (
     <section
       className="qa-evidence"
@@ -265,11 +338,16 @@ function EvidenceBody({
           Evidence
         </span>
         {vm.count > 0 ? (
-          <span className="qa-evidence__count" aria-label={evidenceCountLabel(vm.count)}>
+          <span
+            className="qa-evidence__count"
+            aria-label={evidenceCountLabel(vm.count)}
+          >
             {vm.count}
           </span>
         ) : null}
-        {evidence.open ? null : <span className="qa-evidence__frozen">Frozen at sign-off</span>}
+        {evidence.open ? null : (
+          <span className="qa-evidence__frozen">Frozen at sign-off</span>
+        )}
       </div>
       <Thumbnails vm={vm} item={item} />
       <ListError evidence={evidence} count={vm.count} />
@@ -289,10 +367,13 @@ function EvidenceBody({
  * Studio preview), Paste and Upload. Hidden on a server without screenshots,
  * and when there is nothing to show and nothing this viewer may add.
  */
-export function ItemEvidence({ item, evidence }: Readonly<{ item: ProjectQaRunItem; evidence: RunEvidenceViewModel }>) {
+export function ItemEvidence({
+  item,
+  evidence,
+}: Readonly<{ item: ProjectQaRunItem; evidence: RunEvidenceViewModel }>) {
   const captureTarget = usePreviewCaptureTarget();
   const vm = useItemEvidenceViewModel({ item, evidence, captureTarget });
-  if (evidence.status === "hidden") return null;
+  if (evidence.status === 'hidden') return null;
   if (!vm.canAdd && !vm.atLimit && vm.count === 0 && !vm.draft) return null;
   return <EvidenceBody vm={vm} item={item} evidence={evidence} />;
 }

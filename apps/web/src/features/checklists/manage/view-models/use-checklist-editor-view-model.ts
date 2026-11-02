@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from 'react';
 
-import { checklistsRepository } from "../../data/checklists-repository";
+import { checklistsRepository } from '../../data/checklists-repository';
 import {
   blankItemDraft,
   checklistErrorMessage,
@@ -17,14 +17,14 @@ import {
   toDetailsInput,
   toItemInputs,
   validateChecklistDraft,
-} from "../../model/checklist-rules";
+} from '../../model/checklist-rules';
 import type {
   ChecklistDraft,
   ChecklistDraftValidation,
   ChecklistItemDraft,
   ChecklistsStatus,
   QaChecklist,
-} from "../../model/checklist-types";
+} from '../../model/checklist-types';
 
 export interface ChecklistEditorViewModel {
   /** "loading" while a save is in flight; "error" after one failed. */
@@ -41,13 +41,16 @@ export interface ChecklistEditorViewModel {
   setName: (value: string) => void;
   setDescription: (value: string) => void;
   addItem: () => void;
-  updateItem: (key: string, patch: Partial<Omit<ChecklistItemDraft, "key">>) => void;
+  updateItem: (
+    key: string,
+    patch: Partial<Omit<ChecklistItemDraft, 'key'>>,
+  ) => void;
   moveItem: (index: number, delta: number) => void;
   removeItem: (key: string) => void;
   save: () => Promise<void>;
 }
 
-const SAVE_ERROR = "The checklist could not be saved. Try again in a moment.";
+const SAVE_ERROR = 'The checklist could not be saved. Try again in a moment.';
 const QUIET_VALIDATION: ChecklistDraftValidation = {
   valid: true,
   nameError: null,
@@ -84,7 +87,10 @@ async function saveExisting(
   return current;
 }
 
-function createChecklist(workspaceId: string, draft: ChecklistDraft): Promise<QaChecklist> {
+function createChecklist(
+  workspaceId: string,
+  draft: ChecklistDraft,
+): Promise<QaChecklist> {
   return checklistsRepository.create(workspaceId, {
     ...toDetailsInput(draft),
     items: toItemInputs(draft.items),
@@ -102,8 +108,10 @@ export function useChecklistEditorViewModel(options: {
   onSaved: (checklist: QaChecklist) => void;
 }): ChecklistEditorViewModel {
   const { workspaceId, checklist, onSaved } = options;
-  const [draft, setDraft] = useState<ChecklistDraft>(() => draftFromChecklist(checklist));
-  const [status, setStatus] = useState<ChecklistsStatus>("ready");
+  const [draft, setDraft] = useState<ChecklistDraft>(() =>
+    draftFromChecklist(checklist),
+  );
+  const [status, setStatus] = useState<ChecklistsStatus>('ready');
   const [error, setError] = useState<string | null>(null);
   const [stale, setStale] = useState(false);
   const [attempted, setAttempted] = useState(false);
@@ -114,24 +122,26 @@ export function useChecklistEditorViewModel(options: {
 
   const fullValidation = useMemo(() => validateChecklistDraft(draft), [draft]);
 
-  function patchItems(update: (items: ChecklistItemDraft[]) => ChecklistItemDraft[]) {
+  function patchItems(
+    update: (items: ChecklistItemDraft[]) => ChecklistItemDraft[],
+  ) {
     setDraft((current) => ({ ...current, items: update(current.items) }));
   }
 
   async function save() {
     setAttempted(true);
-    if (!fullValidation.valid || status === "loading") return;
-    setStatus("loading");
+    if (!fullValidation.valid || status === 'loading') return;
+    setStatus('loading');
     setError(null);
     setStale(false);
     try {
       const saved = base
         ? await saveExisting(base, draft, setBase)
         : await createChecklist(workspaceId, draft);
-      setStatus("ready");
+      setStatus('ready');
       onSaved(saved);
     } catch (cause) {
-      setStatus("error");
+      setStatus('error');
       setError(checklistErrorMessage(cause, SAVE_ERROR));
       setStale(isStaleConflict(cause));
     }
@@ -145,16 +155,19 @@ export function useChecklistEditorViewModel(options: {
     draft,
     validation: attempted ? fullValidation : QUIET_VALIDATION,
     dirty: isDraftDirty(draft, base),
-    saving: status === "loading",
+    saving: status === 'loading',
     setName: (value) => setDraft((current) => ({ ...current, name: value })),
-    setDescription: (value) => setDraft((current) => ({ ...current, description: value })),
+    setDescription: (value) =>
+      setDraft((current) => ({ ...current, description: value })),
     addItem: () => {
       keyRef.current += 1;
       const item = blankItemDraft(`new-${String(keyRef.current)}`);
       patchItems((items) => [...items, item]);
     },
-    updateItem: (key, patch) => patchItems((items) => patchItemByKey(items, key, patch)),
-    moveItem: (index, delta) => patchItems((items) => moveDraftItem(items, index, delta)),
+    updateItem: (key, patch) =>
+      patchItems((items) => patchItemByKey(items, key, patch)),
+    moveItem: (index, delta) =>
+      patchItems((items) => moveDraftItem(items, index, delta)),
     removeItem: (key) => patchItems((items) => removeItemByKey(items, key)),
     save,
   };

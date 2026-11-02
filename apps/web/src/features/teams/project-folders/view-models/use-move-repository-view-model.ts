@@ -1,13 +1,16 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { projectFoldersRepository } from "../data/project-folders-repository";
-import { isConflict, moveErrorMessage } from "../model/project-folder-rules";
-import type { FolderRepository, ProjectFolder } from "../model/project-folder-types";
+import { projectFoldersRepository } from '../data/project-folders-repository';
+import { isConflict, moveErrorMessage } from '../model/project-folder-rules';
+import type {
+  FolderRepository,
+  ProjectFolder,
+} from '../model/project-folder-types';
 
 /** "saving" while the move is in flight, "archiving" while an emptied Project is archived. */
-export type MoveRepositoryStatus = "idle" | "saving" | "archiving" | "error";
+export type MoveRepositoryStatus = 'idle' | 'saving' | 'archiving' | 'error';
 
 /** What the explorer tells the lead once a move lands. */
 export interface MoveNotice {
@@ -32,8 +35,11 @@ export interface MoveRepositoryViewModel {
   dismissNotice: () => void;
 }
 
-function movedText(repository: FolderRepository, target: ProjectFolder | undefined): string {
-  return `Moved ${repository.name} to ${target?.name ?? "the other Project"}.`;
+function movedText(
+  repository: FolderRepository,
+  target: ProjectFolder | undefined,
+): string {
+  return `Moved ${repository.name} to ${target?.name ?? 'the other Project'}.`;
 }
 
 /**
@@ -49,29 +55,38 @@ export function useMoveRepositoryViewModel(options: {
   const { onChanged } = options;
   const [repository, setRepository] = useState<FolderRepository | null>(null);
   const [source, setSource] = useState<ProjectFolder | null>(null);
-  const [targetId, setTargetId] = useState("");
-  const [status, setStatus] = useState<MoveRepositoryStatus>("idle");
+  const [targetId, setTargetId] = useState('');
+  const [status, setStatus] = useState<MoveRepositoryStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<MoveNotice | null>(null);
 
   async function submit(targets: ReadonlyArray<ProjectFolder>) {
-    if (!repository || !source || !targetId || status === "saving") return;
-    setStatus("saving");
+    if (!repository || !source || !targetId || status === 'saving') return;
+    setStatus('saving');
     setError(null);
     try {
-      const outcome = await projectFoldersRepository.moveRepository(repository.repositoryId, targetId);
-      const target = targets.find((folder) => folder.deliveryProjectId === targetId);
+      const outcome = await projectFoldersRepository.moveRepository(
+        repository.repositoryId,
+        targetId,
+      );
+      const target = targets.find(
+        (folder) => folder.deliveryProjectId === targetId,
+      );
       setNotice({
         text: movedText(repository, target),
         emptied: outcome.sourceDeliveryProjectEmpty
-          ? { deliveryProjectId: outcome.sourceDeliveryProjectId ?? source.deliveryProjectId, name: source.name }
+          ? {
+              deliveryProjectId:
+                outcome.sourceDeliveryProjectId ?? source.deliveryProjectId,
+              name: source.name,
+            }
           : null,
       });
-      setStatus("idle");
+      setStatus('idle');
       setRepository(null);
       onChanged();
     } catch (cause) {
-      setStatus("error");
+      setStatus('error');
       setError(moveErrorMessage(cause));
       if (isConflict(cause)) onChanged();
     }
@@ -79,16 +94,19 @@ export function useMoveRepositoryViewModel(options: {
 
   async function archiveEmptied() {
     const emptied = notice?.emptied;
-    if (!emptied || status === "archiving") return;
-    setStatus("archiving");
+    if (!emptied || status === 'archiving') return;
+    setStatus('archiving');
     try {
       await projectFoldersRepository.archive(emptied.deliveryProjectId);
       setNotice({ text: `Archived ${emptied.name}.`, emptied: null });
-      setStatus("idle");
+      setStatus('idle');
       onChanged();
     } catch {
-      setStatus("error");
-      setNotice({ text: `${emptied.name} could not be archived. Try again in a moment.`, emptied });
+      setStatus('error');
+      setNotice({
+        text: `${emptied.name} could not be archived. Try again in a moment.`,
+        emptied,
+      });
     }
   }
 
@@ -102,12 +120,12 @@ export function useMoveRepositoryViewModel(options: {
     openFor: (next, from) => {
       setRepository(next);
       setSource(from);
-      setTargetId("");
+      setTargetId('');
       setError(null);
-      setStatus("idle");
+      setStatus('idle');
     },
     close: () => {
-      if (status !== "saving") setRepository(null);
+      if (status !== 'saving') setRepository(null);
     },
     setTargetId,
     submit,

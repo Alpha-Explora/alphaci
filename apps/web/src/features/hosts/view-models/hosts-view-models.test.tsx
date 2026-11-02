@@ -1,30 +1,30 @@
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { useHostsViewModel } from "./use-hosts-view-model";
-import { useHostAssignmentViewModel } from "./use-host-assignment-view-model";
-import type { MachineAssignment, ReadinessCheck } from "../model/host-types";
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { useHostsViewModel } from './use-hosts-view-model';
+import { useHostAssignmentViewModel } from './use-host-assignment-view-model';
+import type { MachineAssignment, ReadinessCheck } from '../model/host-types';
 import {
   AssignmentSummary,
   type AssignmentVm,
-} from "../views/host-assignment-form";
-import { createHostEnrollment, listHosts } from "../data/hosts-api";
-import { downloadBlob } from "@/shared/browser/download-blob";
-import { ApiError } from "@/shared/api/request";
+} from '../views/host-assignment-form';
+import { createHostEnrollment, listHosts } from '../data/hosts-api';
+import { downloadBlob } from '@/shared/browser/download-blob';
+import { ApiError } from '@/shared/api/request';
 import {
   assignHost,
   getAssignment,
   getAssignmentDefaults,
   getReadiness,
-} from "../data/assignments-api";
-jest.mock("@/shared/browser/download-blob", () => ({
+} from '../data/assignments-api';
+jest.mock('@/shared/browser/download-blob', () => ({
   downloadBlob: jest.fn(),
 }));
-jest.mock("../data/hosts-api", () => ({
+jest.mock('../data/hosts-api', () => ({
   listHosts: jest.fn(),
   createHostEnrollment: jest.fn(),
   revokeHost: jest.fn(),
 }));
-jest.mock("../data/assignments-api", () => ({
+jest.mock('../data/assignments-api', () => ({
   assignHost: jest.fn(),
   getAssignment: jest.fn(),
   getAssignmentDefaults: jest.fn(),
@@ -38,7 +38,7 @@ function probe<T>(hook: () => T) {
     snapshot = hook();
     return null;
   }
-  root = createRoot(document.createElement("div"));
+  root = createRoot(document.createElement('div'));
   act(() => root.render(<Probe />));
   return () => snapshot!;
 }
@@ -53,37 +53,35 @@ beforeEach(() => {
   jest.mocked(listHosts).mockResolvedValue([]);
   jest.mocked(getAssignment).mockResolvedValue(null);
   jest.mocked(getReadiness).mockResolvedValue({ checks: [] });
-  jest
-    .mocked(getAssignmentDefaults)
-    .mockRejectedValue(new Error("Not found"));
+  jest.mocked(getAssignmentDefaults).mockRejectedValue(new Error('Not found'));
 });
 afterEach(() => {
   act(() => root?.unmount());
   jest.useRealTimers();
 });
 const receipt = {
-  apiUrl: "https://api.example.com",
-  id: "e",
-  code: "private-code",
+  apiUrl: 'https://api.example.com',
+  id: 'e',
+  code: 'private-code',
   expiresAt: new Date(Date.now() + 600_000).toISOString(),
   installer: {
-    version: "0.2.0",
-    url: "https://api.example/installer",
-    sha256: "a".repeat(64),
+    version: '0.2.0',
+    url: 'https://api.example/installer',
+    sha256: 'a'.repeat(64),
   },
 };
-it("allows only one pending enrollment and keeps its code in the mounted workspace", async () => {
+it('allows only one pending enrollment and keeps its code in the mounted workspace', async () => {
   let resolve!: (value: typeof receipt) => void;
   jest.mocked(createHostEnrollment).mockReturnValue(
     new Promise((done) => {
       resolve = done;
     }),
   );
-  const seen = probe(() => useHostsViewModel("workspace", true));
+  const seen = probe(() => useHostsViewModel('workspace', true));
   await settle();
   let operation: Promise<void>;
   act(() => {
-    seen().setName("Host");
+    seen().setName('Host');
   });
   act(() => {
     operation = seen().enroll();
@@ -94,35 +92,39 @@ it("allows only one pending enrollment and keeps its code in the mounted workspa
     resolve(receipt);
     await operation!;
   });
-  expect(seen().receipt?.code).toBe("private-code");
+  expect(seen().receipt?.code).toBe('private-code');
   act(() => seen().dismiss());
   expect(seen().receipt).toBeNull();
 });
-it("does not let a viewer enroll", async () => {
-  const seen = probe(() => useHostsViewModel("workspace", false));
+it('does not let a viewer enroll', async () => {
+  const seen = probe(() => useHostsViewModel('workspace', false));
   await settle();
   await act(() => seen().enroll());
   expect(createHostEnrollment).not.toHaveBeenCalled();
 });
-it("explains how to resolve the public HTTPS enrollment prerequisite", async () => {
-  jest.mocked(createHostEnrollment).mockRejectedValue(new ApiError(
-    "Configure the public HTTPS API address first.", 503,
-  ));
-  const seen = probe(() => useHostsViewModel("workspace", true));
+it('explains how to resolve the public HTTPS enrollment prerequisite', async () => {
+  jest
+    .mocked(createHostEnrollment)
+    .mockRejectedValue(
+      new ApiError('Configure the public HTTPS API address first.', 503),
+    );
+  const seen = probe(() => useHostsViewModel('workspace', true));
   await settle();
   await act(() => seen().enroll());
-  expect(seen().error).toBe("Host setup isn’t ready. Ask your administrator to configure AlphaCI’s public HTTPS address, then try again.");
+  expect(seen().error).toBe(
+    'Host setup isn’t ready. Ask your administrator to configure AlphaCI’s public HTTPS address, then try again.',
+  );
   expect(seen().receipt).toBeNull();
   expect(seen().busy).toBe(false);
 });
-it("does not publish an enrollment response after leaving the workspace", async () => {
+it('does not publish an enrollment response after leaving the workspace', async () => {
   let resolve!: (value: typeof receipt) => void;
   jest.mocked(createHostEnrollment).mockReturnValue(
     new Promise((done) => {
       resolve = done;
     }),
   );
-  const seen = probe(() => useHostsViewModel("old-workspace", true));
+  const seen = probe(() => useHostsViewModel('old-workspace', true));
   await settle();
   let operation: Promise<void>;
   act(() => {
@@ -135,60 +137,60 @@ it("does not publish an enrollment response after leaving the workspace", async 
   });
   expect(seen().receipt).toBeNull();
 });
-it("expires the displayed code from the server expiration timestamp", async () => {
+it('expires the displayed code from the server expiration timestamp', async () => {
   jest.useFakeTimers();
   jest.mocked(createHostEnrollment).mockResolvedValue({
     ...receipt,
     expiresAt: new Date(Date.now() + 1000).toISOString(),
   });
-  const seen = probe(() => useHostsViewModel("workspace", true));
+  const seen = probe(() => useHostsViewModel('workspace', true));
   await settle();
   await act(() => seen().enroll());
   expect(seen().expired).toBe(false);
   await act(async () => jest.advanceTimersByTime(10_000));
   expect(seen().expired).toBe(true);
 });
-it("saves an install file named for the machine, and refuses a code it cannot write", async () => {
+it('saves an install file named for the machine, and refuses a code it cannot write', async () => {
   jest.mocked(createHostEnrollment).mockResolvedValue({
     ...receipt,
-    code: "Qz9_-".repeat(8) + "Qz9",
+    code: 'Qz9_-'.repeat(8) + 'Qz9',
   });
-  const seen = probe(() => useHostsViewModel("workspace", true));
+  const seen = probe(() => useHostsViewModel('workspace', true));
   await settle();
   act(() => {
-    seen().setName("Office server");
-    seen().setPlatform("ubuntu");
+    seen().setName('Office server');
+    seen().setPlatform('ubuntu');
   });
   await act(() => seen().enroll());
   expect(seen().canDownloadInstallFile).toBe(true);
   act(() => seen().downloadInstallFile());
   expect(downloadBlob).toHaveBeenCalledWith(
-    "alphaci-install-office-server.sh",
+    'alphaci-install-office-server.sh',
     expect.any(Blob),
   );
 
   jest.mocked(createHostEnrollment).mockResolvedValue(receipt);
   act(() => seen().dismiss());
   act(() => seen().startAdding());
-  act(() => seen().setName("Second"));
+  act(() => seen().setName('Second'));
   await act(() => seen().enroll());
   jest.mocked(downloadBlob).mockClear();
   act(() => seen().downloadInstallFile());
   expect(downloadBlob).not.toHaveBeenCalled();
-  expect(seen().error).toBe("Invalid enrollment code.");
+  expect(seen().error).toBe('Invalid enrollment code.');
 });
 
-it("offers no install file for an installer older than 0.2.0", async () => {
+it('offers no install file for an installer older than 0.2.0', async () => {
   jest.mocked(createHostEnrollment).mockResolvedValue({
     ...receipt,
-    code: "Qz9_-".repeat(8) + "Qz9",
-    installer: { ...receipt.installer, version: "0.1.9" },
+    code: 'Qz9_-'.repeat(8) + 'Qz9',
+    installer: { ...receipt.installer, version: '0.1.9' },
   });
-  const seen = probe(() => useHostsViewModel("workspace", true));
+  const seen = probe(() => useHostsViewModel('workspace', true));
   await settle();
   act(() => {
-    seen().setName("Old server");
-    seen().setPlatform("ubuntu");
+    seen().setName('Old server');
+    seen().setPlatform('ubuntu');
   });
   await act(() => seen().enroll());
   expect(seen().canDownloadInstallFile).toBe(false);
@@ -198,18 +200,18 @@ it("offers no install file for an installer older than 0.2.0", async () => {
 });
 
 const options = {
-  projectId: "project",
-  environmentId: "env",
-  workspaceId: "workspace",
-  slots: ["frontend"] as const,
+  projectId: 'project',
+  environmentId: 'env',
+  workspaceId: 'workspace',
+  slots: ['frontend'] as const,
   production: false,
   canManage: true,
 };
-it("reuses an assignment request after a network failure without creating another project", async () => {
-  jest.mocked(assignHost).mockRejectedValue(new Error("Network failure"));
+it('reuses an assignment request after a network failure without creating another project', async () => {
+  jest.mocked(assignHost).mockRejectedValue(new Error('Network failure'));
   const seen = probe(() => useHostAssignmentViewModel(options));
   await settle();
-  act(() => seen().setSelected("machine"));
+  act(() => seen().setSelected('machine'));
   await act(() => seen().assign());
   await act(() => seen().assign());
   expect(assignHost).toHaveBeenCalledTimes(2);
@@ -222,157 +224,161 @@ it("reuses an assignment request after a network failure without creating anothe
 });
 const connected = (id: string) => ({
   id,
-  workspaceId: "workspace",
+  workspaceId: 'workspace',
   name: id,
-  platform: "ubuntu" as const,
-  agentVersion: "0.1.0",
+  platform: 'ubuntu' as const,
+  agentVersion: '0.1.0',
   lastSeenAt: new Date().toISOString(),
-  status: "connected" as const,
+  status: 'connected' as const,
   checks: [],
 });
-it("assigns the only connected machine without a choice or host ports", async () => {
+it('assigns the only connected machine without a choice or host ports', async () => {
   jest
     .mocked(listHosts)
     .mockResolvedValue([
-      connected("only"),
-      { ...connected("old"), status: "offline" },
+      connected('only'),
+      { ...connected('old'), status: 'offline' },
     ]);
   jest.mocked(assignHost).mockResolvedValue({
-    id: "a",
-    machineId: "only",
-    projectId: "project",
-    environmentId: "env",
+    id: 'a',
+    machineId: 'only',
+    projectId: 'project',
+    environmentId: 'env',
     revision: 1,
     config: {
-      ports: [{ slot: "frontend", hostPort: 8080, containerPort: 3000 }],
-      health: [{ slot: "frontend", path: "/" }],
-      ingress: { mode: "direct", publicUrl: null },
+      ports: [{ slot: 'frontend', hostPort: 8080, containerPort: 3000 }],
+      health: [{ slot: 'frontend', path: '/' }],
+      ingress: { mode: 'direct', publicUrl: null },
     },
     tunnel: null,
   });
   const seen = probe(() => useHostAssignmentViewModel(options));
   await settle();
   expect(seen().choices).toHaveLength(1);
-  expect(seen().automatic?.id).toBe("only");
+  expect(seen().automatic?.id).toBe('only');
   expect(seen().canAssign).toBe(true);
   await act(() => seen().assign());
   const sent = jest.mocked(assignHost).mock.calls[0]?.[2];
-  expect(sent).not.toHaveProperty("machineId");
+  expect(sent).not.toHaveProperty('machineId');
   expect(sent?.config.ports).toEqual([
-    { slot: "frontend", containerPort: 3000 },
+    { slot: 'frontend', containerPort: 3000 },
   ]);
 });
 it("pre-fills the form with the backend's defaults for the project's app", async () => {
   jest.mocked(getAssignmentDefaults).mockResolvedValue({
-    ports: [{ slot: "backend", containerPort: 8080 }],
-    health: [{ slot: "backend", path: "/health" }],
+    ports: [{ slot: 'backend', containerPort: 8080 }],
+    health: [{ slot: 'backend', path: '/health' }],
   });
   const seen = probe(() =>
-    useHostAssignmentViewModel({ ...options, slots: ["backend"] }),
+    useHostAssignmentViewModel({ ...options, slots: ['backend'] }),
   );
   // Before the defaults arrive, and if they never do, the fallback stands.
-  expect(seen().config.ports).toEqual([{ slot: "backend", containerPort: 4000 }]);
+  expect(seen().config.ports).toEqual([
+    { slot: 'backend', containerPort: 4000 },
+  ]);
   await settle();
-  expect(getAssignmentDefaults).toHaveBeenCalledWith("project", "env");
+  expect(getAssignmentDefaults).toHaveBeenCalledWith('project', 'env');
   expect(seen().config).toEqual({
-    ports: [{ slot: "backend", containerPort: 8080 }],
-    health: [{ slot: "backend", path: "/health" }],
-    ingress: { mode: "direct", publicUrl: null },
+    ports: [{ slot: 'backend', containerPort: 8080 }],
+    health: [{ slot: 'backend', path: '/health' }],
+    ingress: { mode: 'direct', publicUrl: null },
   });
 });
 it("keeps the stored assignment's ports over the defaults", async () => {
   jest.mocked(getAssignmentDefaults).mockResolvedValue({
-    ports: [{ slot: "frontend", containerPort: 8080 }],
-    health: [{ slot: "frontend", path: "/" }],
+    ports: [{ slot: 'frontend', containerPort: 8080 }],
+    health: [{ slot: 'frontend', path: '/' }],
   });
   jest.mocked(getAssignment).mockResolvedValue({
-    id: "a",
-    machineId: "m",
-    projectId: "project",
-    environmentId: "env",
+    id: 'a',
+    machineId: 'm',
+    projectId: 'project',
+    environmentId: 'env',
     revision: 1,
     config: {
-      ports: [{ slot: "frontend", hostPort: 8081, containerPort: 5173 }],
-      health: [{ slot: "frontend", path: "/ready" }],
-      ingress: { mode: "direct", publicUrl: null },
+      ports: [{ slot: 'frontend', hostPort: 8081, containerPort: 5173 }],
+      health: [{ slot: 'frontend', path: '/ready' }],
+      ingress: { mode: 'direct', publicUrl: null },
     },
     tunnel: null,
   });
   const seen = probe(() => useHostAssignmentViewModel(options));
   await settle();
-  expect(seen().config.ports).toEqual([{ slot: "frontend", containerPort: 5173 }]);
-  expect(seen().config.health).toEqual([{ slot: "frontend", path: "/ready" }]);
+  expect(seen().config.ports).toEqual([
+    { slot: 'frontend', containerPort: 5173 },
+  ]);
+  expect(seen().config.health).toEqual([{ slot: 'frontend', path: '/ready' }]);
 });
-it("requires a choice when several machines are connected", async () => {
-  jest.mocked(listHosts).mockResolvedValue([connected("a"), connected("b")]);
+it('requires a choice when several machines are connected', async () => {
+  jest.mocked(listHosts).mockResolvedValue([connected('a'), connected('b')]);
   const seen = probe(() => useHostAssignmentViewModel(options));
   await settle();
   expect(seen().canAssign).toBe(false);
-  act(() => seen().setSelected("b"));
+  act(() => seen().setSelected('b'));
   await act(() => seen().assign());
-  expect(jest.mocked(assignHost).mock.calls[0]?.[2].machineId).toBe("b");
+  expect(jest.mocked(assignHost).mock.calls[0]?.[2].machineId).toBe('b');
 });
-it("shows legacy bindings and invalidates replacement confirmation after edits", async () => {
+it('shows legacy bindings and invalidates replacement confirmation after edits', async () => {
   jest.mocked(getAssignment).mockResolvedValue({
-    id: "legacy",
+    id: 'legacy',
     machineId: null,
     config: null,
-    name: "Legacy",
-    projectId: "project",
-    environmentId: "env",
+    name: 'Legacy',
+    projectId: 'project',
+    environmentId: 'env',
     revision: 0,
   });
   const seen = probe(() => useHostAssignmentViewModel(options));
   await settle();
-  act(() => seen().setSelected("machine"));
+  act(() => seen().setSelected('machine'));
   await act(() => seen().assign());
-  expect(seen().confirmation).toBe("replace");
+  expect(seen().confirmation).toBe('replace');
   expect(assignHost).not.toHaveBeenCalled();
-  act(() => seen().setSelected("other"));
+  act(() => seen().setSelected('other'));
   expect(seen().confirmation).toBeNull();
   await act(() => seen().assign());
   expect(assignHost).not.toHaveBeenCalled();
 });
 
 const tunnelAssignment: MachineAssignment = {
-  id: "a",
-  machineId: "only",
-  projectId: "project",
-  environmentId: "env",
+  id: 'a',
+  machineId: 'only',
+  projectId: 'project',
+  environmentId: 'env',
   revision: 1,
   config: {
-    ports: [{ slot: "frontend", hostPort: 8080, containerPort: 3000 }],
-    health: [{ slot: "frontend", path: "/" }],
-    ingress: { mode: "tunnel", publicUrl: null },
+    ports: [{ slot: 'frontend', hostPort: 8080, containerPort: 3000 }],
+    health: [{ slot: 'frontend', path: '/' }],
+    ingress: { mode: 'tunnel', publicUrl: null },
   },
   tunnel: {
-    status: "waiting",
+    status: 'waiting',
     publicUrl: null,
-    message: "Waiting for the machine to report its address",
+    message: 'Waiting for the machine to report its address',
     reportedAt: null,
   },
 };
 const reportedTunnel: MachineAssignment = {
   ...tunnelAssignment,
   tunnel: {
-    status: "running",
-    publicUrl: "https://quick-words.trycloudflare.com",
-    message: "The tunnel is running.",
-    reportedAt: "2026-10-16T00:00:00Z",
+    status: 'running',
+    publicUrl: 'https://quick-words.trycloudflare.com',
+    message: 'The tunnel is running.',
+    reportedAt: '2026-10-16T00:00:00Z',
   },
 };
 const directAssignment: MachineAssignment = {
   ...tunnelAssignment,
   config: {
     ...tunnelAssignment.config,
-    ingress: { mode: "direct", publicUrl: null },
+    ingress: { mode: 'direct', publicUrl: null },
   },
   tunnel: null,
 };
 const passedCheck: ReadinessCheck = {
-  id: "ingress",
-  status: "passed",
-  message: "The HTTPS address answers.",
+  id: 'ingress',
+  status: 'passed',
+  message: 'The HTTPS address answers.',
 };
 /** Lets the promise chains behind a timer tick settle inside act. */
 async function flushPromises() {
@@ -382,30 +388,30 @@ async function flushPromises() {
 }
 /** Renders the Hosting summary for a view-model and returns its text. */
 function renderSummary(vm: AssignmentVm) {
-  const host = document.createElement("div");
+  const host = document.createElement('div');
   const summaryRoot = createRoot(host);
   act(() => summaryRoot.render(<AssignmentSummary vm={vm} />));
   return {
-    text: host.textContent ?? "",
+    text: host.textContent ?? '',
     unmount: () => act(() => summaryRoot.unmount()),
   };
 }
-describe("tunnel refresh on the assignment timer", () => {
+describe('tunnel refresh on the assignment timer', () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    jest.mocked(listHosts).mockResolvedValue([connected("only")]);
+    jest.mocked(listHosts).mockResolvedValue([connected('only')]);
   });
-  it("picks up the tunnel report and readiness without touching an unsaved edit", async () => {
+  it('picks up the tunnel report and readiness without touching an unsaved edit', async () => {
     jest.mocked(getAssignment).mockResolvedValue(tunnelAssignment);
     jest.mocked(getReadiness).mockResolvedValue({ checks: [] });
     const seen = probe(() => useHostAssignmentViewModel(options));
     await flushPromises();
-    expect(seen().current).toMatchObject({ tunnel: { status: "waiting" } });
+    expect(seen().current).toMatchObject({ tunnel: { status: 'waiting' } });
 
-    act(() => seen().port("frontend", "3100"));
-    act(() => seen().health("frontend", "/ready"));
+    act(() => seen().port('frontend', '3100'));
+    act(() => seen().health('frontend', '/ready'));
     await act(() => seen().assign());
-    expect(seen().confirmation).toBe("replace");
+    expect(seen().confirmation).toBe('replace');
 
     jest.mocked(getAssignment).mockResolvedValue(reportedTunnel);
     jest.mocked(getReadiness).mockResolvedValue({ checks: [passedCheck] });
@@ -416,22 +422,22 @@ describe("tunnel refresh on the assignment timer", () => {
 
     expect(getAssignment).toHaveBeenCalledTimes(2);
     expect(seen().current).toMatchObject({
-      id: "a",
+      id: 'a',
       tunnel: {
-        status: "running",
-        publicUrl: "https://quick-words.trycloudflare.com",
+        status: 'running',
+        publicUrl: 'https://quick-words.trycloudflare.com',
       },
     });
     expect(seen().checks).toEqual([passedCheck]);
     expect(seen().config.ports).toEqual([
-      { slot: "frontend", containerPort: 3100 },
+      { slot: 'frontend', containerPort: 3100 },
     ]);
     expect(seen().config.health).toEqual([
-      { slot: "frontend", path: "/ready" },
+      { slot: 'frontend', path: '/ready' },
     ]);
-    expect(seen().confirmation).toBe("replace");
+    expect(seen().confirmation).toBe('replace');
   });
-  it("makes no assignment or readiness request while the assignment is not in tunnel mode", async () => {
+  it('makes no assignment or readiness request while the assignment is not in tunnel mode', async () => {
     jest.mocked(getAssignment).mockResolvedValue(directAssignment);
     jest.mocked(getReadiness).mockResolvedValue({ checks: [] });
     probe(() => useHostAssignmentViewModel(options));
@@ -445,7 +451,7 @@ describe("tunnel refresh on the assignment timer", () => {
     expect(getAssignment).toHaveBeenCalledTimes(1);
     expect(getReadiness).toHaveBeenCalledTimes(1);
   });
-  it("makes no tunnel request without a current assignment", async () => {
+  it('makes no tunnel request without a current assignment', async () => {
     jest.mocked(getAssignment).mockResolvedValue(null);
     probe(() => useHostAssignmentViewModel(options));
     await flushPromises();
@@ -456,15 +462,15 @@ describe("tunnel refresh on the assignment timer", () => {
     expect(getAssignment).toHaveBeenCalledTimes(1);
     expect(getReadiness).toHaveBeenCalledTimes(1);
   });
-  it("keeps the last tunnel report and checks when a refresh fails", async () => {
+  it('keeps the last tunnel report and checks when a refresh fails', async () => {
     jest.mocked(getAssignment).mockResolvedValue(reportedTunnel);
     jest.mocked(getReadiness).mockResolvedValue({ checks: [passedCheck] });
     const seen = probe(() => useHostAssignmentViewModel(options));
     await flushPromises();
 
-    jest.mocked(getAssignment).mockRejectedValue(new Error("Network failure"));
+    jest.mocked(getAssignment).mockRejectedValue(new Error('Network failure'));
     jest.mocked(getReadiness).mockResolvedValue({
-      checks: [{ id: "ingress", status: "failed", message: "Not answering." }],
+      checks: [{ id: 'ingress', status: 'failed', message: 'Not answering.' }],
     });
     await act(async () => {
       jest.advanceTimersByTime(20_000);
@@ -474,51 +480,51 @@ describe("tunnel refresh on the assignment timer", () => {
     expect(getAssignment).toHaveBeenCalledTimes(2);
     expect(seen().current).toMatchObject({
       tunnel: {
-        status: "running",
-        publicUrl: "https://quick-words.trycloudflare.com",
+        status: 'running',
+        publicUrl: 'https://quick-words.trycloudflare.com',
       },
     });
     expect(seen().checks).toEqual([passedCheck]);
     expect(seen().error).toBeNull();
   });
-  it("follows the server when the assignment is replaced, and keeps an unsaved edit", async () => {
+  it('follows the server when the assignment is replaced, and keeps an unsaved edit', async () => {
     jest.mocked(getAssignment).mockResolvedValue(reportedTunnel);
     jest.mocked(getReadiness).mockResolvedValue({ checks: [passedCheck] });
     const seen = probe(() => useHostAssignmentViewModel(options));
     await flushPromises();
-    act(() => seen().port("frontend", "3100"));
+    act(() => seen().port('frontend', '3100'));
 
     // Someone else replaced the assignment: a new id, its tunnel not yet reported.
     jest
       .mocked(getAssignment)
-      .mockResolvedValue({ ...tunnelAssignment, id: "b", revision: 2 });
+      .mockResolvedValue({ ...tunnelAssignment, id: 'b', revision: 2 });
     await act(async () => {
       jest.advanceTimersByTime(20_000);
     });
     await flushPromises();
 
     expect(seen().current).toMatchObject({
-      id: "b",
+      id: 'b',
       revision: 2,
-      tunnel: { status: "waiting", publicUrl: null },
+      tunnel: { status: 'waiting', publicUrl: null },
     });
     expect(seen().config.ports).toEqual([
-      { slot: "frontend", containerPort: 3100 },
+      { slot: 'frontend', containerPort: 3100 },
     ]);
     const summary = renderSummary(seen());
-    expect(summary.text).not.toContain("quick-words.trycloudflare.com");
+    expect(summary.text).not.toContain('quick-words.trycloudflare.com');
     expect(summary.text).toContain(
-      "Waiting for the machine to report its address",
+      'Waiting for the machine to report its address',
     );
     summary.unmount();
   });
-  it("falls back to no machine when the server has no assignment, and keeps an unsaved edit", async () => {
+  it('falls back to no machine when the server has no assignment, and keeps an unsaved edit', async () => {
     jest.mocked(getAssignment).mockResolvedValue(reportedTunnel);
     jest.mocked(getReadiness).mockResolvedValue({ checks: [passedCheck] });
     const seen = probe(() => useHostAssignmentViewModel(options));
     await flushPromises();
-    act(() => seen().port("frontend", "3100"));
-    act(() => seen().health("frontend", "/ready"));
+    act(() => seen().port('frontend', '3100'));
+    act(() => seen().health('frontend', '/ready'));
 
     jest.mocked(getAssignment).mockResolvedValue(null);
     await act(async () => {
@@ -528,42 +534,42 @@ describe("tunnel refresh on the assignment timer", () => {
 
     expect(seen().current).toBeNull();
     expect(seen().config.ports).toEqual([
-      { slot: "frontend", containerPort: 3100 },
+      { slot: 'frontend', containerPort: 3100 },
     ]);
     expect(seen().config.health).toEqual([
-      { slot: "frontend", path: "/ready" },
+      { slot: 'frontend', path: '/ready' },
     ]);
     const summary = renderSummary(seen());
-    expect(summary.text).toContain("No machine assigned");
-    expect(summary.text).not.toContain("quick-words.trycloudflare.com");
+    expect(summary.text).toContain('No machine assigned');
+    expect(summary.text).not.toContain('quick-words.trycloudflare.com');
     summary.unmount();
   });
-  it("does not send a replacement confirmed against an assignment the server has since replaced", async () => {
+  it('does not send a replacement confirmed against an assignment the server has since replaced', async () => {
     jest.mocked(getAssignment).mockResolvedValue(tunnelAssignment);
     jest.mocked(getReadiness).mockResolvedValue({ checks: [] });
     const seen = probe(() => useHostAssignmentViewModel(options));
     await flushPromises();
     await act(() => seen().assign());
-    expect(seen().confirmation).toBe("replace");
+    expect(seen().confirmation).toBe('replace');
 
     jest
       .mocked(getAssignment)
-      .mockResolvedValue({ ...tunnelAssignment, id: "b", revision: 2 });
+      .mockResolvedValue({ ...tunnelAssignment, id: 'b', revision: 2 });
     await act(async () => {
       jest.advanceTimersByTime(20_000);
     });
     await flushPromises();
-    expect(seen().confirmation).toBe("replace");
+    expect(seen().confirmation).toBe('replace');
 
     await act(() => seen().assign());
     expect(assignHost).not.toHaveBeenCalled();
     expect(seen().confirmation).toBeNull();
     expect(seen().error).toMatch(/changed on the server/);
   });
-  it("does not put back an assignment that a save replaced while a refresh was in flight", async () => {
+  it('does not put back an assignment that a save replaced while a refresh was in flight', async () => {
     const replaced: MachineAssignment = {
       ...tunnelAssignment,
-      id: "b",
+      id: 'b',
       revision: 2,
     };
     let answerRefresh!: (value: MachineAssignment) => void;
@@ -587,12 +593,12 @@ describe("tunnel refresh on the assignment timer", () => {
     await act(() => seen().assign());
     await act(() => seen().assign());
     await flushPromises();
-    expect(seen().current).toMatchObject({ id: "b" });
+    expect(seen().current).toMatchObject({ id: 'b' });
 
     await act(async () => {
       answerRefresh(tunnelAssignment);
     });
     await flushPromises();
-    expect(seen().current).toMatchObject({ id: "b" });
+    expect(seen().current).toMatchObject({ id: 'b' });
   });
 });

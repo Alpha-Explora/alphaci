@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { adminRepository } from "../../data/admin-repository";
-import type { AdminStatus, AdminUsersPage } from "../../model/admin-types";
+import { adminRepository } from '../../data/admin-repository';
+import type { AdminStatus, AdminUsersPage } from '../../model/admin-types';
 
 export interface AdminUsersViewModel {
   page: AdminUsersPage | null;
@@ -21,10 +21,10 @@ export interface AdminUsersViewModel {
 /** ViewModel for the admin user list. */
 export function useAdminUsersViewModel(): AdminUsersViewModel {
   const [page, setPage] = useState<AdminUsersPage | null>(null);
-  const [status, setStatus] = useState<AdminStatus>("loading");
+  const [status, setStatus] = useState<AdminStatus>('loading');
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [applied, setApplied] = useState("");
+  const [search, setSearch] = useState('');
+  const [applied, setApplied] = useState('');
 
   const [nonce, setNonce] = useState(0);
   // Bumped per request so a slow earlier search cannot overwrite a newer one.
@@ -44,12 +44,12 @@ export function useAdminUsersViewModel(): AdminUsersViewModel {
         if (!active || id !== req.current) return;
         setPage(next);
         setError(null);
-        setStatus("ready");
+        setStatus('ready');
       })
       .catch(() => {
         if (!active || id !== req.current) return;
-        setError("Could not load users.");
-        setStatus("error");
+        setError('Could not load users.');
+        setStatus('error');
       });
 
     return () => {
@@ -64,11 +64,11 @@ export function useAdminUsersViewModel(): AdminUsersViewModel {
     search,
     setSearch,
     submitSearch: () => {
-      setStatus("loading");
+      setStatus('loading');
       setApplied(search.trim());
     },
     retry: () => {
-      setStatus("loading");
+      setStatus('loading');
       setNonce((n) => n + 1);
     },
   };

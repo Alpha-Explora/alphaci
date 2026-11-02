@@ -1,5 +1,4 @@
-"use client";
-
+'use client';
 
 /* Icons and the two layout primitives the settings sections are built from.
  * Presentation only — no data, no state beyond what a control needs. */
@@ -176,18 +175,18 @@ export function HoverField({
     <div className="hover-field">
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "0.2rem",
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '0.2rem',
         }}
       >
         <span
           style={{
-            fontSize: "0.68rem",
-            color: "var(--text-muted)",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
+            fontSize: '0.68rem',
+            color: 'var(--text-muted)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
           }}
         >
           {label}
@@ -198,9 +197,9 @@ export function HoverField({
       </div>
       <span
         style={{
-          fontSize: "0.88rem",
+          fontSize: '0.88rem',
           fontWeight: 600,
-          color: "var(--text-primary)",
+          color: 'var(--text-primary)',
         }}
       >
         {value}
@@ -226,26 +225,26 @@ export function SettingsSection({
 }) {
   return (
     <div
-      className={`settings-card${danger ? " settings-card--danger" : ""}`}
+      className={`settings-card${danger ? ' settings-card--danger' : ''}`}
       style={{ transitionDelay: `${index * 40}ms` }}
     >
       {/* Top accent line instead of a heavy header block */}
       <div
         aria-hidden="true"
-        className={`settings-card-accent${danger ? " settings-card-accent--danger" : ""}`}
+        className={`settings-card-accent${danger ? ' settings-card-accent--danger' : ''}`}
       />
 
       {/* Section header row — lightweight */}
       <div
-        className={`settings-card-header${danger ? " settings-card-header--danger" : ""}`}
+        className={`settings-card-header${danger ? ' settings-card-header--danger' : ''}`}
       >
         <span
-          className={`settings-card-icon${danger ? " settings-card-icon--danger" : ""}`}
+          className={`settings-card-icon${danger ? ' settings-card-icon--danger' : ''}`}
         >
           {icon}
         </span>
         <span
-          className={`settings-card-title${danger ? " settings-card-title--danger" : ""}`}
+          className={`settings-card-title${danger ? ' settings-card-title--danger' : ''}`}
         >
           {title}
         </span>

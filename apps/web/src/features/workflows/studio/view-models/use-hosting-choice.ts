@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 import {
   DEFAULT_HOSTING_CHOICE,
@@ -10,9 +10,12 @@ import {
   type HostingChoice,
   type HostingOption,
   type ServiceLayout,
-} from "../model/hosting-choice-rules";
-import type { OnpremHosting } from "../model/onprem-hosting-rules";
-import type { HostSlot, SlotRuntimes } from "../model/setup-host-assignment-rules";
+} from '../model/hosting-choice-rules';
+import type { OnpremHosting } from '../model/onprem-hosting-rules';
+import type {
+  HostSlot,
+  SlotRuntimes,
+} from '../model/setup-host-assignment-rules';
 
 export interface HostingChoiceState {
   /** The choice that applies (a pick that is no longer offered falls back to the default). */
@@ -36,11 +39,14 @@ export interface HostingChoiceState {
 export function useHostingChoice(input: {
   onprem: OnpremHosting;
   layout: ServiceLayout;
-  selectedProjectKind: "frontend" | "backend";
+  selectedProjectKind: 'frontend' | 'backend';
   onpremRuntimes: SlotRuntimes;
 }): HostingChoiceState {
   const [picked, setPicked] = useState<HostingChoice>(DEFAULT_HOSTING_CHOICE);
-  const options = hostingOptions({ onprem: input.onprem, layout: input.layout });
+  const options = hostingOptions({
+    onprem: input.onprem,
+    layout: input.layout,
+  });
   return {
     choice: effectiveHostingChoice(picked, options),
     options,

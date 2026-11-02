@@ -6,12 +6,12 @@
  * globals.css. Extracted one surface at a time; see src/features/README.md.
  */
 
-[data-theme="light"] .flow-bg {
+[data-theme='light'] .flow-bg {
   opacity: 0.18;
 }
 
 /* ── Pipeline dots ───────────────────────────────────────────── */
-[data-theme="light"] .pipeline-dot {
+[data-theme='light'] .pipeline-dot {
   background: rgba(0, 0, 0, 0.12);
   border-color: rgba(0, 0, 0, 0.2);
 }
@@ -83,7 +83,6 @@
 
 /* pending keeps the muted base .pipeline-dot look */
 
-
 @media (prefers-reduced-motion: reduce) {
   .pipeline-dot--running {
     animation: none;
@@ -97,7 +96,6 @@
 }
 
 @media (max-width: 640px) {
-
   .workflow-surface {
     overflow-x: hidden;
   }
@@ -179,7 +177,7 @@
       rgba(88, 166, 255, 0.12),
       transparent 68%
     );
-  content: "";
+  content: '';
   opacity: 0.72;
   animation: pipeline-loader-wave 12s ease-in-out infinite alternate;
 }
@@ -533,15 +531,15 @@
     transparent 1px
   );
   background-size: 100% 48px;
-  content: "";
+  content: '';
   mask-image: linear-gradient(to bottom, black, transparent 70%);
 }
 
-[data-theme="light"] .flow-bg--calm {
+[data-theme='light'] .flow-bg--calm {
   background: #f2f2f5 !important;
 }
 
-[data-theme="light"] .flow-bg__calm-surface {
+[data-theme='light'] .flow-bg__calm-surface {
   background:
     radial-gradient(
       circle at 82% -8%,
@@ -746,7 +744,7 @@
 
 .create-repo-btn:hover::after,
 .generate-workflow-hint:hover::after {
-  content: " █";
+  content: ' █';
   font-family: ui-monospace, monospace;
   font-size: 0.82em;
   animation: cursor-blink 0.9s step-end infinite;
@@ -851,7 +849,7 @@
   border-left: 1px solid var(--border-soft);
 }
 
-.cp-mode-btn[aria-pressed="true"] {
+.cp-mode-btn[aria-pressed='true'] {
   background: rgba(88, 166, 255, 0.1);
   color: var(--brand);
 }

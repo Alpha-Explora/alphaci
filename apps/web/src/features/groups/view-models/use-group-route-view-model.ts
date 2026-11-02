@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useParams } from "next/navigation";
+import { useParams } from 'next/navigation';
 
 /**
  * Route adapter for the group domain: owns the useParams call so views don't
@@ -24,5 +24,8 @@ export function useGroupSystemRouteViewModel() {
 
 export function useGroupDeliveryProjectRouteViewModel() {
   const params = useParams<{ groupId: string; deliveryProjectId: string }>();
-  return { groupId: params.groupId, deliveryProjectId: params.deliveryProjectId };
+  return {
+    groupId: params.groupId,
+    deliveryProjectId: params.deliveryProjectId,
+  };
 }

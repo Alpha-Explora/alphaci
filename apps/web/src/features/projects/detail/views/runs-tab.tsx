@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import type { ProvisionedProject } from "@/features/projects";
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
-import { PipelineRunsTab } from "./workspace/pipeline-runs-tab";
-import { CiRunsList } from "./ci-runs-list";
+import type { ProvisionedProject } from '@/features/projects';
+import type { ProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
+import { PipelineRunsTab } from './workspace/pipeline-runs-tab';
+import { CiRunsList } from './ci-runs-list';
 
 /**
  * The Pipeline tab's Runs view (once the Pipeline runs tab): the live run list
@@ -17,7 +17,7 @@ export function RunsTab({
   vm: ProjectDetailTabsViewModel;
 }>) {
   return (
-    <div style={{ display: "grid", gap: "1.25rem" }}>
+    <div style={{ display: 'grid', gap: '1.25rem' }}>
       <PipelineRunsTab projectId={project.id} appRole={vm.appRole} />
       <ReportedResults project={project} vm={vm} />
     </div>
@@ -50,7 +50,7 @@ function ReportedResultsBody({
   response,
 }: Readonly<{
   error: string | null;
-  response: ProjectDetailTabsViewModel["ciRuns"];
+  response: ProjectDetailTabsViewModel['ciRuns'];
 }>) {
   if (error) {
     return (

@@ -1,7 +1,13 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
   authErrorStatus,
@@ -10,14 +16,14 @@ import {
   useAuthSessionViewModel,
   warmupBackend,
   getAuthenticatedRedirectPath,
-} from "@/features/auth/session";
-import { getApiBaseUrl } from "@/shared/api/request";
+} from '@/features/auth/session';
+import { getApiBaseUrl } from '@/shared/api/request';
 
-import { toSafeNextPath } from "../model/login-rules";
-import { canUseDevQuickLogin } from "../model/dev-quick-login";
+import { toSafeNextPath } from '../model/login-rules';
+import { canUseDevQuickLogin } from '../model/dev-quick-login';
 
 export interface OAuthLoginViewModel {
-  status: ReturnType<typeof useAuthSessionViewModel>["status"];
+  status: ReturnType<typeof useAuthSessionViewModel>['status'];
   isWarming: boolean;
   githubLoginHref: string;
   handleLogin: (event: React.MouseEvent<HTMLAnchorElement>) => Promise<void>;
@@ -42,7 +48,7 @@ function useBrowserOrigin(): string | null {
 }
 
 export function useOAuthLoginViewModel(
-  mode: "login" | "signup",
+  mode: 'login' | 'signup',
 ): OAuthLoginViewModel {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -53,14 +59,14 @@ export function useOAuthLoginViewModel(
   const browserOrigin = useBrowserOrigin();
 
   const nextPath = useMemo(
-    () => toSafeNextPath(searchParams.get("next")),
+    () => toSafeNextPath(searchParams.get('next')),
     [searchParams],
   );
   const githubCallbackReturnTo = useMemo(() => {
     const callbackPath = new URLSearchParams({
       intent: mode,
       next: nextPath,
-      provider: "github",
+      provider: 'github',
     });
     const relativeCallbackPath = `/auth/callback?${callbackPath.toString()}`;
     return browserOrigin
@@ -84,7 +90,7 @@ export function useOAuthLoginViewModel(
   });
 
   useEffect(() => {
-    if (status !== "signed-in") return;
+    if (status !== 'signed-in') return;
     const redirectPath = getAuthenticatedRedirectPath(session, nextPath);
     if (redirectPath) router.replace(redirectPath);
   }, [nextPath, router, session, status]);
@@ -117,8 +123,8 @@ export function useOAuthLoginViewModel(
       const statusCode = authErrorStatus(cause);
       setQuickLoginError(
         statusCode === 404
-          ? "Quick login is not enabled for this local environment."
-          : "Unable to start the local development session.",
+          ? 'Quick login is not enabled for this local environment.'
+          : 'Unable to start the local development session.',
       );
     } finally {
       setIsQuickLoggingIn(false);

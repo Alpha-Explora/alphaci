@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useBranchPreviewsViewModel } from "../view-models/use-branch-previews-view-model";
-import { BranchPreviewsView } from "./branch-previews-view";
+import { useBranchPreviewsViewModel } from '../view-models/use-branch-previews-view-model';
+import { BranchPreviewsView } from './branch-previews-view';
 
 /**
  * Connected panel: owns the ViewModel so a host surface can drop previews in
@@ -32,7 +32,7 @@ export function BranchPreviewsPanel({
       previews={previews}
       status={status}
       error={error}
-      {...(typeof limit === "number" ? { limit } : {})}
+      {...(typeof limit === 'number' ? { limit } : {})}
       {...(moreHref ? { moreHref } : {})}
     />
   );

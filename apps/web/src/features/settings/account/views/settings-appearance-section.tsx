@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { ThemeToggle } from "@/shared/layout/theme-toggle";
+import { ThemeToggle } from '@/shared/layout/theme-toggle';
 
-import { AppearanceIcon, SettingsSection } from "./settings-chrome";
+import { AppearanceIcon, SettingsSection } from './settings-chrome';
 
 export function SettingsAppearanceSection() {
   return (

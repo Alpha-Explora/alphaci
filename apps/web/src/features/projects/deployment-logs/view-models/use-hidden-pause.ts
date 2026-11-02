@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 /** How long the tab must stay hidden before the live tail is given up. */
 export const HIDDEN_PAUSE_MS = 30_000;
@@ -23,7 +23,7 @@ export function useHiddenPause(delayMs: number = HIDDEN_PAUSE_MS): boolean {
       timer = setTimeout(() => setPaused(true), delayMs);
     }
     function onChange() {
-      if (document.visibilityState === "hidden") {
+      if (document.visibilityState === 'hidden') {
         arm();
         return;
       }
@@ -31,11 +31,11 @@ export function useHiddenPause(delayMs: number = HIDDEN_PAUSE_MS): boolean {
       setPaused(false);
     }
     // Mounted into a background tab: the clock starts now.
-    if (document.visibilityState === "hidden") arm();
-    document.addEventListener("visibilitychange", onChange);
+    if (document.visibilityState === 'hidden') arm();
+    document.addEventListener('visibilitychange', onChange);
     return () => {
       clearTimeout(timer);
-      document.removeEventListener("visibilitychange", onChange);
+      document.removeEventListener('visibilitychange', onChange);
     };
   }, [delayMs]);
 

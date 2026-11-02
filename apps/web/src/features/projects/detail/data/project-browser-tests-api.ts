@@ -1,6 +1,9 @@
-import { request } from "@/shared/api/request";
+import { request } from '@/shared/api/request';
 
-import type { BrowserTestsAdded, BrowserTestsStatus } from "../model/browser-test-rules";
+import type {
+  BrowserTestsAdded,
+  BrowserTestsStatus,
+} from '../model/browser-test-rules';
 
 /**
  * "Add browser tests": whether the dev branch has ALPHACI's starter Playwright
@@ -20,5 +23,7 @@ export function getProjectBrowserTests(projectId: string) {
 
 /** Opens the pull request into dev. No body: the server decides what is missing. */
 export function addProjectBrowserTests(projectId: string) {
-  return request<BrowserTestsAdded>(browserTestsUrl(projectId), { method: "POST" });
+  return request<BrowserTestsAdded>(browserTestsUrl(projectId), {
+    method: 'POST',
+  });
 }

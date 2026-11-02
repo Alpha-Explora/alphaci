@@ -1,9 +1,12 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { useProjectChecklistsViewModel } from "../../project";
-import type { ChecklistsStatus, QaChecklist } from "../../model/checklist-types";
+import { useProjectChecklistsViewModel } from '../../project';
+import type {
+  ChecklistsStatus,
+  QaChecklist,
+} from '../../model/checklist-types';
 
 export interface StudioChecklistsViewModel {
   status: ChecklistsStatus;

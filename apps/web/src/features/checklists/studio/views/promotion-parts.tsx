@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import "./promotion.css";
+import './promotion.css';
 
-import { FormDialog } from "@/features/groups/workspace";
+import { FormDialog } from '@/features/groups/workspace';
 
-import { VerdictPill } from "../../items";
-import { projectMergeConfirmText } from "../../model/iteration-rules";
-import { headChangeMessage, headLabel } from "../../model/project-run-rules";
+import { VerdictPill } from '../../items';
+import { projectMergeConfirmText } from '../../model/iteration-rules';
+import { headChangeMessage, headLabel } from '../../model/project-run-rules';
 import {
   approvedCountLabel,
   blockingReasons,
@@ -15,13 +15,16 @@ import {
   projectReasons,
   promotionChecklistState,
   promotionRunState,
-} from "../../model/qa-promotion-rules";
-import type { QaPromotionChecklist, QaPromotionStatus } from "../../model/qa-promotion-types";
-import { shortSha } from "../../model/qa-run-rules";
-import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
-import { useShowRepositories } from "../view-models/repository-visibility";
-import { PullRequestRef } from "./promotion-outcome";
-import { CheckIcon, MergeIcon } from "./studio-icons";
+} from '../../model/qa-promotion-rules';
+import type {
+  QaPromotionChecklist,
+  QaPromotionStatus,
+} from '../../model/qa-promotion-types';
+import { shortSha } from '../../model/qa-run-rules';
+import type { QaPromotionViewModel } from '../view-models/use-qa-promotion-view-model';
+import { useShowRepositories } from '../view-models/repository-visibility';
+import { PullRequestRef } from './promotion-outcome';
+import { CheckIcon, MergeIcon } from './studio-icons';
 
 /* The pieces of "Ready for production", shared by the studio's tab-bar chip
  * (its popover, Merge to main and the merge confirmation) and the project
@@ -55,24 +58,40 @@ function ProjectGate({ data }: Readonly<{ data: QaPromotionStatus }>) {
       <ul className="qa-promo__rows" aria-label="QA testing">
         <li className="qa-promo__row" data-tone={state.tone}>
           <span className="qa-promo__tick" aria-hidden="true">
-            {state.approved ? <CheckIcon /> : <span className="qa-promo__dot" />}
+            {state.approved ? (
+              <CheckIcon />
+            ) : (
+              <span className="qa-promo__dot" />
+            )}
           </span>
           <span className="qa-promo__row-text">
-            <span className="qa-promo__name">{data.deliveryProject?.name ?? "Project"} QA testing</span>
+            <span className="qa-promo__name">
+              {data.deliveryProject?.name ?? 'Project'} QA testing
+            </span>
             <span className="qa-promo__state">{state.label}</span>
           </span>
-          {data.run?.verdict ? <VerdictPill verdict={data.run.verdict} /> : null}
+          {data.run?.verdict ? (
+            <VerdictPill verdict={data.run.verdict} />
+          ) : null}
         </li>
         {(showRepositories ? data.repositories : []).map((head) => {
           const change = data.run ? headChangeMessage(head) : null;
           return (
-            <li key={head.projectId} className="qa-promo__row" data-tone={change ? "warning" : "neutral"}>
+            <li
+              key={head.projectId}
+              className="qa-promo__row"
+              data-tone={change ? 'warning' : 'neutral'}
+            >
               <span className="qa-promo__tick" aria-hidden="true">
                 <span className="qa-promo__dot" />
               </span>
               <span className="qa-promo__row-text">
-                <span className="qa-promo__name">{headLabel(head.repoFullName, head.currentSha)}</span>
-                <span className="qa-promo__state">{change ?? "Covered by the run"}</span>
+                <span className="qa-promo__name">
+                  {headLabel(head.repoFullName, head.currentSha)}
+                </span>
+                <span className="qa-promo__state">
+                  {change ?? 'Covered by the run'}
+                </span>
               </span>
             </li>
           );
@@ -82,9 +101,14 @@ function ProjectGate({ data }: Readonly<{ data: QaPromotionStatus }>) {
   );
 }
 
-function Blocking({ data, id }: Readonly<{ data: QaPromotionStatus; id?: string }>) {
+function Blocking({
+  data,
+  id,
+}: Readonly<{ data: QaPromotionStatus; id?: string }>) {
   const showRepositories = useShowRepositories();
-  const reasons = showRepositories ? blockingReasons(data) : projectReasons(blockingReasons(data));
+  const reasons = showRepositories
+    ? blockingReasons(data)
+    : projectReasons(blockingReasons(data));
   if (reasons.length === 0) return null;
   return (
     <div className="qa-promo__reasons" id={id}>
@@ -99,14 +123,21 @@ function Blocking({ data, id }: Readonly<{ data: QaPromotionStatus; id?: string 
 }
 
 /** The PR number for everyone, and who merges for those who cannot. Nothing once delivered. */
-function CardFoot({ vm, data }: Readonly<{ vm: QaPromotionViewModel; data: QaPromotionStatus }>) {
+function CardFoot({
+  vm,
+  data,
+}: Readonly<{ vm: QaPromotionViewModel; data: QaPromotionStatus }>) {
   const showRepositories = useShowRepositories();
   if (data.iterationDelivered) return null;
   return (
     <div className="qa-promo__foot">
-      {showRepositories && data.pullRequest ? <PullRequestRef label={`Promotion PR #${data.pullRequest.number}`} /> : null}
+      {showRepositories && data.pullRequest ? (
+        <PullRequestRef label={`Promotion PR #${data.pullRequest.number}`} />
+      ) : null}
       {showRepositories && !data.pullRequest ? (
-        <span className="qa-promo__muted">No promotion pull request is open yet.</span>
+        <span className="qa-promo__muted">
+          No promotion pull request is open yet.
+        </span>
       ) : null}
       {vm.canMerge ? null : (
         <span className="qa-promo__muted">
@@ -124,19 +155,27 @@ function CardFoot({ vm, data }: Readonly<{ vm: QaPromotionViewModel; data: QaPro
  * (or, on an older backend, each shared checklist), what blocks the merge,
  * and the pull request with who merges it.
  */
-export function PromotionDetails({ vm, data }: Readonly<{ vm: QaPromotionViewModel; data: QaPromotionStatus }>) {
+export function PromotionDetails({
+  vm,
+  data,
+}: Readonly<{ vm: QaPromotionViewModel; data: QaPromotionStatus }>) {
   return (
     <>
-      {data.scope === "project" ? <ProjectGate data={data} /> : null}
+      {data.scope === 'project' ? <ProjectGate data={data} /> : null}
       {/* The deprecated per-checklist list: only an older backend's gate. */}
       {!data.scope && data.checklists.length > 0 ? (
-        <ul className="qa-promo__rows" aria-label="Shared checklists on this commit">
+        <ul
+          className="qa-promo__rows"
+          aria-label="Shared checklists on this commit"
+        >
           {data.checklists.map((entry) => (
             <ChecklistRow key={entry.id} entry={entry} />
           ))}
         </ul>
       ) : null}
-      {data.iterationDelivered ? <p className="qa-promo__delivered">{deliveredNote(data)}</p> : null}
+      {data.iterationDelivered ? (
+        <p className="qa-promo__delivered">{deliveredNote(data)}</p>
+      ) : null}
       <Blocking data={data} />
       <CardFoot vm={vm} data={data} />
     </>
@@ -144,19 +183,22 @@ export function PromotionDetails({ vm, data }: Readonly<{ vm: QaPromotionViewMod
 }
 
 /** "Merge to main", for Team leads and Admins the server allows; disabled with its reason. */
-export function MergeButton({ vm, whyId }: Readonly<{ vm: QaPromotionViewModel; whyId: string }>) {
+export function MergeButton({
+  vm,
+  whyId,
+}: Readonly<{ vm: QaPromotionViewModel; whyId: string }>) {
   if (!vm.canMerge) return null;
-  const busy = vm.mergeState === "merging";
+  const busy = vm.mergeState === 'merging';
   return (
     <button
       type="button"
       className="primary-button qa-promo__merge"
-      disabled={Boolean(vm.disabledReason) || vm.mergeState !== "idle"}
+      disabled={Boolean(vm.disabledReason) || vm.mergeState !== 'idle'}
       aria-describedby={vm.disabledReason ? whyId : undefined}
       onClick={vm.openConfirm}
     >
       <MergeIcon />
-      {busy ? "Merging…" : "Merge to main"}
+      {busy ? 'Merging…' : 'Merge to main'}
     </button>
   );
 }
@@ -166,19 +208,31 @@ export function MergeDialog({
   vm,
   data,
   projectName,
-}: Readonly<{ vm: QaPromotionViewModel; data: QaPromotionStatus; projectName: string }>) {
+}: Readonly<{
+  vm: QaPromotionViewModel;
+  data: QaPromotionStatus;
+  projectName: string;
+}>) {
   const showRepositories = useShowRepositories();
   if (!vm.canMerge) return null;
   const pr = data.pullRequest;
   return (
     <FormDialog
-      open={vm.mergeState !== "idle"}
+      open={vm.mergeState !== 'idle'}
       onClose={vm.cancelConfirm}
       portal
-      title={showRepositories ? `Merge ${data.qaBranch} into ${data.targetBranch}?` : `Merge ${projectName} into main?`}
-      description={showRepositories ? mergeConfirmText(data, projectName) : projectMergeConfirmText(projectName)}
+      title={
+        showRepositories
+          ? `Merge ${data.qaBranch} into ${data.targetBranch}?`
+          : `Merge ${projectName} into main?`
+      }
+      description={
+        showRepositories
+          ? mergeConfirmText(data, projectName)
+          : projectMergeConfirmText(projectName)
+      }
       submitLabel="Merge to main"
-      submitting={vm.mergeState === "merging"}
+      submitting={vm.mergeState === 'merging'}
       error={vm.dialogError}
       onSubmit={() => void vm.confirmMerge()}
     >
@@ -199,7 +253,11 @@ export function MergeDialog({
             </div>
             <div>
               <dt>Pull request</dt>
-              <dd>{pr ? `#${pr.number}` : `A new ${data.qaBranch} → ${data.targetBranch} pull request`}</dd>
+              <dd>
+                {pr
+                  ? `#${pr.number}`
+                  : `A new ${data.qaBranch} → ${data.targetBranch} pull request`}
+              </dd>
             </div>
           </>
         ) : null}
@@ -209,8 +267,8 @@ export function MergeDialog({
         </div>
       </dl>
       <p className="qa-promo-confirm__note">
-        GitHub&apos;s branch rules still apply: if {data.targetBranch} needs an approving review, GitHub refuses the
-        merge and ALPHACI shows its reason.
+        GitHub&apos;s branch rules still apply: if {data.targetBranch} needs an
+        approving review, GitHub refuses the merge and ALPHACI shows its reason.
       </p>
     </FormDialog>
   );

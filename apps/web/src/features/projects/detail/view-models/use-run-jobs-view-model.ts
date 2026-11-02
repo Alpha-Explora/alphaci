@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   getProjectJobLog,
   getProjectRunJobs,
   type JobLogResponse,
   type RunJob,
-} from "../data/project-workspace-api";
-import type { ProjectStatus } from "../../model/projects-types";
-import { RUNS_POLL_MS } from "./use-pipeline-runs-view-model";
+} from '../data/project-workspace-api';
+import type { ProjectStatus } from '../../model/projects-types';
+import { RUNS_POLL_MS } from './use-pipeline-runs-view-model';
 
 /* Re-exported so the views name these shapes without reaching into `data/`. */
 export type { JobLogResponse, RunJob };
@@ -48,21 +48,21 @@ export function useRunJobsViewModel(options: {
   const { projectId, runId, isRunning } = options;
   const [open, setOpen] = useState(false);
   const [jobs, setJobs] = useState<RunJob[] | null>(null);
-  const [status, setStatus] = useState<ProjectStatus>("ready");
+  const [status, setStatus] = useState<ProjectStatus>('ready');
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(
     (showSpinner: boolean) => {
-      if (showSpinner) setStatus("loading");
+      if (showSpinner) setStatus('loading');
       return getProjectRunJobs(projectId, runId)
         .then((result) => {
           setJobs(result);
           setError(null);
-          setStatus("ready");
+          setStatus('ready');
         })
         .catch(() => {
-          setError("The jobs for this run could not be read.");
-          setStatus("error");
+          setError('The jobs for this run could not be read.');
+          setStatus('error');
         });
     },
     [projectId, runId],
@@ -77,7 +77,7 @@ export function useRunJobsViewModel(options: {
   const toggle = useCallback(() => {
     const next = !open;
     setOpen(next);
-    if (next && jobs === null && status !== "loading") void load(true);
+    if (next && jobs === null && status !== 'loading') void load(true);
   }, [open, jobs, status, load]);
 
   const retry = useCallback(() => void load(true), [load]);
@@ -110,27 +110,27 @@ export function useJobLogViewModel(options: {
   const { projectId, jobId, ready = true } = options;
   const [open, setOpen] = useState(false);
   const [log, setLog] = useState<JobLogResponse | null>(null);
-  const [status, setStatus] = useState<ProjectStatus>("ready");
+  const [status, setStatus] = useState<ProjectStatus>('ready');
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    setStatus("loading");
+    setStatus('loading');
     return getProjectJobLog(projectId, jobId)
       .then((result) => {
         setLog(result);
         setError(null);
-        setStatus("ready");
+        setStatus('ready');
       })
       .catch(() => {
-        setError("The log for this job could not be read.");
-        setStatus("error");
+        setError('The log for this job could not be read.');
+        setStatus('error');
       });
   }, [projectId, jobId]);
 
   const toggle = useCallback(() => {
     const next = !open;
     setOpen(next);
-    if (next && ready && log === null && status !== "loading") void load();
+    if (next && ready && log === null && status !== 'loading') void load();
   }, [open, ready, log, status, load]);
 
   const retry = useCallback(() => void load(), [load]);

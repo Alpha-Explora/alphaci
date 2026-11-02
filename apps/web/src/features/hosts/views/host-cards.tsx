@@ -1,23 +1,23 @@
-"use client";
-import { useState } from "react";
+'use client';
+import { useState } from 'react';
 import type {
   EnrollmentReceipt,
   HostPlatform,
   MachineSummary,
   PlatformGuide,
-} from "../model/host-types";
+} from '../model/host-types';
 import {
   PLATFORM_GUIDES,
   countdownLabel,
   hostConnectionLabel,
   hostStatusTone,
   lastSeenLabel,
-} from "../model/host-types";
-import { enrollmentInstructions } from "../model/enrollment-instructions";
-import type { useHostsViewModel } from "../view-models/use-hosts-view-model";
+} from '../model/host-types';
+import { enrollmentInstructions } from '../model/enrollment-instructions';
+import type { useHostsViewModel } from '../view-models/use-hosts-view-model';
 type HostsVm = ReturnType<typeof useHostsViewModel>;
 
-const PLATFORMS: HostPlatform[] = ["windows", "ubuntu"];
+const PLATFORMS: HostPlatform[] = ['windows', 'ubuntu'];
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
@@ -25,7 +25,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
     <button
       type="button"
       className="hosts-copy"
-      aria-label={copied ? "Copied" : `Copy ${label}`}
+      aria-label={copied ? 'Copied' : `Copy ${label}`}
       onClick={() => {
         void navigator.clipboard?.writeText(value).then(() => {
           setCopied(true);
@@ -33,27 +33,27 @@ function CopyButton({ value, label }: { value: string; label: string }) {
         });
       }}
     >
-      {copied ? "Copied" : "Copy"}
+      {copied ? 'Copied' : 'Copy'}
     </button>
   );
 }
 
 function Steps({ current }: { current: 1 | 2 | 3 | 4 }) {
-  const steps = ["Name the machine", "Run the installer", "Machine connects"];
+  const steps = ['Name the machine', 'Run the installer', 'Machine connects'];
   return (
     <ol className="hosts-steps" aria-label="Add host progress">
       {steps.map((label, index) => {
         const step = index + 1;
         const state =
-          step < current ? "done" : step === current ? "current" : "todo";
+          step < current ? 'done' : step === current ? 'current' : 'todo';
         return (
           <li
             key={label}
             className={`hosts-steps__item hosts-steps__item--${state}`}
-            aria-current={state === "current" ? "step" : undefined}
+            aria-current={state === 'current' ? 'step' : undefined}
           >
             <span className="hosts-steps__dot" aria-hidden="true">
-              {state === "done" ? "✓" : step}
+              {state === 'done' ? '✓' : step}
             </span>
             {label}
           </li>
@@ -99,7 +99,7 @@ export function AddHostForm({ vm }: { vm: HostsVm }) {
             return (
               <label
                 key={id}
-                className={`hosts-platform${vm.platform === id ? " hosts-platform--selected" : ""}`}
+                className={`hosts-platform${vm.platform === id ? ' hosts-platform--selected' : ''}`}
               >
                 <input
                   type="radio"
@@ -121,7 +121,7 @@ export function AddHostForm({ vm }: { vm: HostsVm }) {
           disabled={vm.busy || !vm.name.trim()}
           type="submit"
         >
-          {vm.busy ? "Creating…" : "Continue"}
+          {vm.busy ? 'Creating…' : 'Continue'}
         </button>
         <button className="ghost-button" type="button" onClick={vm.closeAdding}>
           Cancel
@@ -137,14 +137,14 @@ function DownloadOption({ vm, guide }: { vm: HostsVm; guide: PlatformGuide }) {
     <div className="hosts-option">
       <div className="hosts-option__text">
         <p className="hosts-option__title">
-          Download the installer{" "}
+          Download the installer{' '}
           <span className="hosts-option__badge">Recommended</span>
         </p>
         <p className="hosts-muted">{guide.fileRunIn}</p>
         <p className="hosts-option__note">
           The one-time code is inside the file, and the file deletes itself
           after a successful install.
-          {guide.fileCopyNote ? ` ${guide.fileCopyNote}` : ""}
+          {guide.fileCopyNote ? ` ${guide.fileCopyNote}` : ''}
         </p>
       </div>
       <button
@@ -231,7 +231,7 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
   if (!receipt || !enrolled || !progress) return null;
   const guide = PLATFORM_GUIDES[enrolled.platform];
 
-  if (progress === "connected")
+  if (progress === 'connected')
     return (
       <section className="hosts-panel hosts-panel--success" role="status">
         <Steps current={4} />
@@ -249,7 +249,7 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
       </section>
     );
 
-  if (progress === "expired")
+  if (progress === 'expired')
     return (
       <section className="hosts-panel" role="status">
         <h3 className="hosts-panel__title">The enrollment code expired</h3>
@@ -287,7 +287,7 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
           Install AlphaCI on {enrolled.name}
         </h3>
         <span className="hosts-expiry">
-          Code expires in{" "}
+          Code expires in{' '}
           <strong>{countdownLabel(receipt.expiresAt, vm.now)}</strong>
         </span>
       </header>
@@ -325,14 +325,13 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
           ) : null}
           <li>
             {vm.canDownloadInstallFile
-              ? "The install file and the command check"
-              : "The command checks"}{" "}
-            the download against SHA-256{" "}
-            <code>{receipt.installer.sha256}</code> before running anything.
-            Installer {receipt.installer.version}:{" "}
+              ? 'The install file and the command check'
+              : 'The command checks'}{' '}
+            the download against SHA-256 <code>{receipt.installer.sha256}</code>{' '}
+            before running anything. Installer {receipt.installer.version}:{' '}
             <a href={receipt.installer.url}>download the archive</a>.
           </li>
-          {enrolled.platform === "windows" ? (
+          {enrolled.platform === 'windows' ? (
             <li>
               The host opens the port of each environment assigned to it to your
               local network, and closes it when the environment is unassigned. A
@@ -341,8 +340,10 @@ export function EnrollmentCard({ vm }: { vm: HostsVm }) {
           ) : null}
           <li>
             If the installer reports a missing prerequisite, fix it and run the
-            same{" "}
-            {vm.canDownloadInstallFile ? "file again, or the same command" : "command"}{" "}
+            same{' '}
+            {vm.canDownloadInstallFile
+              ? 'file again, or the same command'
+              : 'command'}{' '}
             with this code.
           </li>
         </ul>
@@ -367,7 +368,7 @@ export function HostCard({
   canManage: boolean;
 }) {
   const label = hostConnectionLabel(host, vm.now);
-  const failed = host.checks.filter((check) => check.status === "failed");
+  const failed = host.checks.filter((check) => check.status === 'failed');
   return (
     <article className="hosts-card">
       <header className="hosts-card__head">
@@ -375,7 +376,7 @@ export function HostCard({
           <h3 className="hosts-card__name">{host.name}</h3>
           <p className="hosts-card__meta">
             {PLATFORM_GUIDES[host.platform].label}
-            {host.agentVersion ? ` · Agent ${host.agentVersion}` : ""} ·{" "}
+            {host.agentVersion ? ` · Agent ${host.agentVersion}` : ''} ·{' '}
             {lastSeenLabel(host.lastSeenAt, vm.now)}
           </p>
         </div>
@@ -396,16 +397,16 @@ function HostGuidance({
 }: {
   host: MachineSummary;
   label: string;
-  failed: MachineSummary["checks"];
+  failed: MachineSummary['checks'];
 }) {
-  if (host.status === "enrollment_pending")
+  if (host.status === 'enrollment_pending')
     return (
       <p className="hosts-muted">
         Waiting for the installer to run on this machine. Lost the code? Add the
         host again; unused codes expire on their own.
       </p>
     );
-  if (host.status === "revoked")
+  if (host.status === 'revoked')
     return (
       <p className="hosts-muted">
         This machine can no longer receive deployments.
@@ -422,7 +423,7 @@ function HostGuidance({
         </ul>
       </div>
     );
-  if (label === "Offline")
+  if (label === 'Offline')
     return (
       <p className="hosts-muted">
         No check-in for a while. Make sure the machine is on and connected to
@@ -433,23 +434,23 @@ function HostGuidance({
     <p className="hosts-muted">
       {host.checks.length
         ? `All ${host.checks.length} readiness checks passed. `
-        : ""}
+        : ''}
       Assign environments to it from a project’s Hosting tab.
     </p>
   );
 }
 
 function HostActions({ host, vm }: { host: MachineSummary; vm: HostsVm }) {
-  if (host.status === "enrollment_pending" || host.status === "revoked")
+  if (host.status === 'enrollment_pending' || host.status === 'revoked')
     return null;
   const confirming = vm.confirmation?.endsWith(host.id);
   return (
     <div className="hosts-card__actions">
       {confirming ? (
         <p className="hosts-muted">
-          {vm.confirmation?.startsWith("revoke")
-            ? "The machine stops receiving deployments. Running apps and data stay on it."
-            : "You’ll get a new code to run on the machine; the old credential stops working. Environment assignments stay as they are."}
+          {vm.confirmation?.startsWith('revoke')
+            ? 'The machine stops receiving deployments. Running apps and data stay on it.'
+            : 'You’ll get a new code to run on the machine; the old credential stops working. Environment assignments stay as they are.'}
         </p>
       ) : null}
       <div className="hosts-card__buttons">
@@ -459,8 +460,8 @@ function HostActions({ host, vm }: { host: MachineSummary; vm: HostsVm }) {
           onClick={() => void vm.enroll(host)}
         >
           {vm.confirmation === `replace:${host.id}`
-            ? "Confirm new credential"
-            : "Replace credential"}
+            ? 'Confirm new credential'
+            : 'Replace credential'}
         </button>
         <button
           className="ghost-button hosts-danger"
@@ -468,8 +469,8 @@ function HostActions({ host, vm }: { host: MachineSummary; vm: HostsVm }) {
           onClick={() => void vm.revoke(host)}
         >
           {vm.confirmation === `revoke:${host.id}`
-            ? "Confirm revoke"
-            : "Revoke access"}
+            ? 'Confirm revoke'
+            : 'Revoke access'}
         </button>
         {confirming ? (
           <button className="ghost-button" onClick={vm.cancel}>

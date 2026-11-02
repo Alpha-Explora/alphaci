@@ -1,1 +1,1 @@
-export { NotificationsInboxView as default } from "@/features/notifications/inbox";
+export { NotificationsInboxView as default } from '@/features/notifications/inbox';

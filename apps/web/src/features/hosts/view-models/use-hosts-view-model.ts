@@ -1,31 +1,31 @@
-"use client";
-import { useEffect, useRef, useState } from "react";
-import { ApiError } from "@/shared/api/request";
-import { downloadBlob } from "@/shared/browser/download-blob";
-import { createHostEnrollment, listHosts, revokeHost } from "../data/hosts-api";
+'use client';
+import { useEffect, useRef, useState } from 'react';
+import { ApiError } from '@/shared/api/request';
+import { downloadBlob } from '@/shared/browser/download-blob';
+import { createHostEnrollment, listHosts, revokeHost } from '../data/hosts-api';
 import {
   enrollmentInstallFile,
   installFileSupported,
-} from "../model/enrollment-install-file";
+} from '../model/enrollment-install-file';
 import {
   enrollmentProgress,
   type EnrollmentReceipt,
   type HostPlatform,
   type MachineSummary,
-} from "../model/host-types";
+} from '../model/host-types';
 export function useHostsViewModel(
   workspaceId: string,
   canManage: boolean,
   enabled = true,
 ) {
   const [hosts, setHosts] = useState<MachineSummary[]>([]),
-    [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+    [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null),
     [receipt, setReceipt] = useState<EnrollmentReceipt | null>(null);
   const [busy, setBusy] = useState(false),
     [confirmation, setConfirmation] = useState<string | null>(null);
-  const [name, setName] = useState(""),
-    [platform, setPlatform] = useState<HostPlatform>("windows");
+  const [name, setName] = useState(''),
+    [platform, setPlatform] = useState<HostPlatform>('windows');
   const [adding, setAdding] = useState(false),
     [enrolled, setEnrolled] = useState<{
       name: string;
@@ -39,7 +39,7 @@ export function useHostsViewModel(
       : null;
   // While a fresh code waits for its machine, check in faster so the page
   // flips to "connected" moments after the installer finishes.
-  const waiting = progress === "waiting";
+  const waiting = progress === 'waiting';
   const pending = useRef(false),
     scope = useRef<string | null>(workspaceId);
   useEffect(() => {
@@ -62,14 +62,14 @@ export function useHostsViewModel(
         .then((items) => {
           if (active) {
             setHosts(items);
-            setStatus("ready");
+            setStatus('ready');
           }
         })
         .catch((cause: unknown) => {
           if (active) {
-            setStatus("error");
+            setStatus('error');
             setError(
-              cause instanceof Error ? cause.message : "Unable to load hosts.",
+              cause instanceof Error ? cause.message : 'Unable to load hosts.',
             );
           }
         });
@@ -108,7 +108,7 @@ export function useHostsViewModel(
         setReceipt(result);
         setEnrolled(target);
         setAdding(false);
-        setName("");
+        setName('');
         setConfirmation(null);
         setReload((value) => value + 1);
       }
@@ -130,7 +130,11 @@ export function useHostsViewModel(
   }
   /** Saves the install file for the enrollment on screen. The code goes only into that file. */
   function downloadInstallFile() {
-    if (!receipt || !enrolled || !installFileSupported(receipt.installer.version))
+    if (
+      !receipt ||
+      !enrolled ||
+      !installFileSupported(receipt.installer.version)
+    )
       return;
     try {
       const file = enrollmentInstallFile(
@@ -144,7 +148,9 @@ export function useHostsViewModel(
       );
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Could not build the install file.",
+        cause instanceof Error
+          ? cause.message
+          : 'Could not build the install file.',
       );
     }
   }
@@ -157,10 +163,13 @@ export function useHostsViewModel(
     } catch (cause) {
       if (scope.current === workspaceId)
         setError(
-          cause instanceof ApiError && cause.status === 503 &&
-          cause.message === "Configure the public HTTPS API address first."
-            ? "Host setup isn’t ready. Ask your administrator to configure AlphaCI’s public HTTPS address, then try again."
-            : cause instanceof Error ? cause.message : "Host operation failed. Try again in a moment.",
+          cause instanceof ApiError &&
+            cause.status === 503 &&
+            cause.message === 'Configure the public HTTPS API address first.'
+            ? 'Host setup isn’t ready. Ask your administrator to configure AlphaCI’s public HTTPS address, then try again.'
+            : cause instanceof Error
+              ? cause.message
+              : 'Host operation failed. Try again in a moment.',
         );
     } finally {
       pending.current = false;
@@ -182,7 +191,7 @@ export function useHostsViewModel(
     platform,
     setPlatform,
     now,
-    expired: progress === "expired",
+    expired: progress === 'expired',
     enroll,
     revoke,
     downloadInstallFile,

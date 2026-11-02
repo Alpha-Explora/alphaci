@@ -1,8 +1,8 @@
-import { deleteAccount } from "@/features/auth/session";
-import { getMyWorkspaces, getWorkspaceMembers } from "@/features/workspace";
-import type { WorkspaceMemberSummary } from "@/shared/api/contracts";
+import { deleteAccount } from '@/features/auth/session';
+import { getMyWorkspaces, getWorkspaceMembers } from '@/features/workspace';
+import type { WorkspaceMemberSummary } from '@/shared/api/contracts';
 
-import type { WorkspacesMeResponse } from "../model/settings-types";
+import type { WorkspacesMeResponse } from '../model/settings-types';
 
 /* The only place in this domain that performs I/O. View-models call these;
  * views never do. */

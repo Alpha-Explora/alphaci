@@ -1,28 +1,35 @@
-"use client";
+'use client';
 
-import "./team-pages.css";
+import './team-pages.css';
 
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState, type ReactNode } from "react";
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState, type ReactNode } from 'react';
 
-import { FlowBackground } from "@/shared/layout/flow-background";
-import { PipelineLoader } from "@/shared/layout/pipeline-loader";
+import { FlowBackground } from '@/shared/layout/flow-background';
+import { PipelineLoader } from '@/shared/layout/pipeline-loader';
 import {
   AppNav,
   WorkspaceProvider,
   canCreateWorkspace,
   useWorkspaceSelection,
-} from "@/features/workspace/selection";
-import { isGuest, useAuthSession, type AuthSession } from "@/features/auth/session";
+} from '@/features/workspace/selection';
+import {
+  isGuest,
+  useAuthSession,
+  type AuthSession,
+} from '@/features/auth/session';
 
-import { parseTeamsDeepLink, type TeamsDeepLink } from "../../model/teams-rules";
-import type { Team } from "../../model/teams-types";
+import {
+  parseTeamsDeepLink,
+  type TeamsDeepLink,
+} from '../../model/teams-rules';
+import type { Team } from '../../model/teams-types';
 import {
   useSelectedTeamViewModel,
   type SelectedTeamViewModel,
-} from "../view-models/use-selected-team-view-model";
-import { TeamsEmptyState } from "./teams-empty-state";
+} from '../view-models/use-selected-team-view-model';
+import { TeamsEmptyState } from './teams-empty-state';
 
 /** What a team page gets to draw with, once its team has resolved. */
 export interface TeamPageContext {
@@ -88,10 +95,18 @@ function TeamPageRoute({
 }: Readonly<TeamPageShellProps>) {
   const router = useRouter();
   const search = useSearchParams();
-  const { status, session, error: sessionError, refresh, signOut, isSigningOut } =
-    useAuthSession();
+  const {
+    status,
+    session,
+    error: sessionError,
+    refresh,
+    signOut,
+    isSigningOut,
+  } = useAuthSession();
   // Read once on arrival: the link says what to open first, not what stays open.
-  const [deepLink] = useState(() => parseTeamsDeepLink(search?.toString() ?? ""));
+  const [deepLink] = useState(() =>
+    parseTeamsDeepLink(search?.toString() ?? ''),
+  );
   const [redirectTo] = useState(() => redirect?.(deepLink) ?? null);
   const loginHref = `/login?next=${path}`;
 
@@ -100,17 +115,18 @@ function TeamPageRoute({
   }, [redirectTo, router]);
 
   useEffect(() => {
-    if (status === "signed-out" && !redirectTo) router.replace(loginHref);
+    if (status === 'signed-out' && !redirectTo) router.replace(loginHref);
   }, [loginHref, redirectTo, router, status]);
 
   async function handleLogout() {
     await signOut();
-    router.push("/");
+    router.push('/');
   }
 
-  if (redirectTo || status === "loading") return <PipelineLoader label={loadingLabel} />;
+  if (redirectTo || status === 'loading')
+    return <PipelineLoader label={loadingLabel} />;
 
-  if (status === "error") {
+  if (status === 'error') {
     return (
       <main className="dash-shell">
         <FlowBackground />
@@ -121,7 +137,7 @@ function TeamPageRoute({
               We could not verify your session. Please retry or sign in again.
             </p>
             {sessionError ? (
-              <p className="error-text" style={{ fontSize: "0.82rem" }}>
+              <p className="error-text" style={{ fontSize: '0.82rem' }}>
                 {sessionError}
               </p>
             ) : null}
@@ -143,7 +159,7 @@ function TeamPageRoute({
     );
   }
 
-  if (status === "signed-out") return null;
+  if (status === 'signed-out') return null;
 
   return (
     <WorkspaceProvider initialWorkspaceId={deepLink.workspaceId}>
@@ -154,7 +170,7 @@ function TeamPageRoute({
         loadProjects={loadProjects}
         onLogout={() => void handleLogout()}
         isLoggingOut={isSigningOut}
-        enabled={status === "signed-in"}
+        enabled={status === 'signed-in'}
       >
         {children}
       </TeamPageContent>
@@ -186,11 +202,11 @@ function TeamPageContent({
   const { setSelectedWorkspaceId } = useWorkspaceSelection();
 
   let body: ReactNode;
-  if (vm.status === "loading") {
+  if (vm.status === 'loading') {
     body = (
       <div
         className="skeleton-card glass-panel"
-        style={{ minHeight: "18rem", animation: "state-pulse 1.5s infinite" }}
+        style={{ minHeight: '18rem', animation: 'state-pulse 1.5s infinite' }}
       />
     );
   } else if (vm.team) {

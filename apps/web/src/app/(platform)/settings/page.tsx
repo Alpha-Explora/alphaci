@@ -1,1 +1,1 @@
-export { SettingsView as default } from "@/features/settings/account";
+export { SettingsView as default } from '@/features/settings/account';

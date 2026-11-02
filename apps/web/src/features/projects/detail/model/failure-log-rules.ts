@@ -11,7 +11,8 @@
  * Structural input types, so the rules hold for both shapes.
  */
 
-export type LogUnavailableReason = "no-failed-job" | "log-expired" | "log-no-access";
+export type LogUnavailableReason =
+  'no-failed-job' | 'log-expired' | 'log-no-access';
 
 /** One failed job, as the rules read it. */
 export interface FailureEntry {
@@ -20,7 +21,7 @@ export interface FailureEntry {
   stepName?: string;
   lines: readonly string[];
   truncated: boolean;
-  reason?: "log-expired" | "log-no-access";
+  reason?: 'log-expired' | 'log-no-access';
   hint?: string;
 }
 
@@ -44,12 +45,13 @@ export interface ReadableFailureLog {
  * Empty means there is no job to show — see `logUnavailableMessage`.
  */
 export function failureEntries(log: ReadableFailureLog): FailureEntry[] {
-  if (Array.isArray(log.failures) && log.failures.length > 0) return [...log.failures];
+  if (Array.isArray(log.failures) && log.failures.length > 0)
+    return [...log.failures];
   if (!log.available || !log.lines || log.lines.length === 0) return [];
   return [
     {
       jobId: log.jobId,
-      jobName: log.jobName ?? "Failed job",
+      jobName: log.jobName ?? 'Failed job',
       stepName: log.stepName,
       lines: log.lines,
       truncated: log.truncated === true,
@@ -59,10 +61,12 @@ export function failureEntries(log: ReadableFailureLog): FailureEntry[] {
 }
 
 /** "+2 more failed jobs" past the backend's cap; null when nothing was left out. */
-export function omittedFailuresLabel(log: Pick<ReadableFailureLog, "omittedFailures">): string | null {
+export function omittedFailuresLabel(
+  log: Pick<ReadableFailureLog, 'omittedFailures'>,
+): string | null {
   const count = log.omittedFailures;
-  if (typeof count !== "number" || count <= 0) return null;
-  return `+${String(count)} more failed ${count === 1 ? "job" : "jobs"}`;
+  if (typeof count !== 'number' || count <= 0) return null;
+  return `+${String(count)} more failed ${count === 1 ? 'job' : 'jobs'}`;
 }
 
 /** The failed job with this id, for a job row's inline preview. */
@@ -74,11 +78,11 @@ export function failureForJob(
 }
 
 const UNAVAILABLE: Record<LogUnavailableReason, string> = {
-  "log-expired": "This log has expired (GitHub keeps logs for 90 days).",
-  "log-no-access":
+  'log-expired': 'This log has expired (GitHub keeps logs for 90 days).',
+  'log-no-access':
     "ALPHACI can't read this log: its GitHub connection has no access to Actions logs for this repository. Ask an admin to check the GitHub App's Actions permission.",
-  "no-failed-job":
-    "No job in this run reported a failure, which usually means the workflow was rejected before any job started.",
+  'no-failed-job':
+    'No job in this run reported a failure, which usually means the workflow was rejected before any job started.',
 };
 
 /**
@@ -87,8 +91,10 @@ const UNAVAILABLE: Record<LogUnavailableReason, string> = {
  * backend sends no reason with an unreadable job log, and it only ever meant
  * expiry.
  */
-export function logUnavailableMessage(reason: LogUnavailableReason | undefined): string {
-  return UNAVAILABLE[reason ?? "log-expired"];
+export function logUnavailableMessage(
+  reason: LogUnavailableReason | undefined,
+): string {
+  return UNAVAILABLE[reason ?? 'log-expired'];
 }
 
 /**
@@ -97,21 +103,22 @@ export function logUnavailableMessage(reason: LogUnavailableReason | undefined):
  * "ALPHACI has no access to Actions logs" for every running job.
  */
 export function jobLogReady(jobStatus: string): boolean {
-  return jobStatus === "completed";
+  return jobStatus === 'completed';
 }
 
 /** Why an unfinished job has no log yet, for the job's log panel. */
 export function jobLogPendingMessage(jobStatus: string): string {
-  const state = jobStatus === "in_progress" ? "is still running" : "has not started yet";
+  const state =
+    jobStatus === 'in_progress' ? 'is still running' : 'has not started yet';
   return `GitHub only provides a job's log once the job finishes, and this job ${state}. It appears here when the job is done.`;
 }
 
-const ERROR_MARKER = "##[error]";
+const ERROR_MARKER = '##[error]';
 const EXIT_CODE_ONLY = /^Process completed with exit code \d+\.?$/;
 const PREVIEW_LINES = 3;
 
 function stripMarker(line: string): string {
-  return line.replace(ERROR_MARKER, "").trim();
+  return line.replace(ERROR_MARKER, '').trim();
 }
 
 /**
@@ -126,13 +133,15 @@ export function failurePreview(lines: readonly string[]): string[] {
   const errors = lines
     .filter((line) => line.includes(ERROR_MARKER))
     .map(stripMarker)
-    .filter((line) => line !== "" && !EXIT_CODE_ONLY.test(line));
+    .filter((line) => line !== '' && !EXIT_CODE_ONLY.test(line));
   if (errors.length > 0) return errors.slice(-PREVIEW_LINES);
 
-  const lastMarker = lines.map((line) => line.includes(ERROR_MARKER)).lastIndexOf(true);
+  const lastMarker = lines
+    .map((line) => line.includes(ERROR_MARKER))
+    .lastIndexOf(true);
   const before = (lastMarker === -1 ? lines : lines.slice(0, lastMarker))
     .map((line) => line.trim())
-    .filter((line) => line !== "");
+    .filter((line) => line !== '');
   if (before.length > 0) return before.slice(-PREVIEW_LINES);
-  return lastMarker === -1 ? [] : [stripMarker(lines[lastMarker] ?? "")];
+  return lastMarker === -1 ? [] : [stripMarker(lines[lastMarker] ?? '')];
 }

@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { projectFoldersRepository } from "@/features/teams/project-folders";
+import { projectFoldersRepository } from '@/features/teams/project-folders';
 
 import {
   projectChoiceOptions,
   type ProjectChoiceOption,
-} from "../model/create-target-rules";
+} from '../model/create-target-rules';
 
-export type TeamProjectOptionsStatus = "idle" | "loading" | "ready" | "error";
+export type TeamProjectOptionsStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 export interface TeamProjectOptions {
   /** idle: not asked for (no team yet, or the caller need not choose). */
@@ -37,7 +37,9 @@ export function useTeamProjectOptions(options: {
   enabled: boolean;
 }): TeamProjectOptions {
   const { groupId, enabled } = options;
-  const [loaded, setLoaded] = useState<Loaded<ProjectChoiceOption[]> | null>(null);
+  const [loaded, setLoaded] = useState<Loaded<ProjectChoiceOption[]> | null>(
+    null,
+  );
   const [failed, setFailed] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
   const request = useRef(0);
@@ -63,7 +65,12 @@ export function useTeamProjectOptions(options: {
     setNonce((n) => n + 1);
   }, []);
 
-  if (!enabled || !groupId) return { status: "idle", options: [], retry };
-  if (loaded && loaded.groupId === groupId) return { status: "ready", options: loaded.value, retry };
-  return { status: failed === groupId ? "error" : "loading", options: [], retry };
+  if (!enabled || !groupId) return { status: 'idle', options: [], retry };
+  if (loaded && loaded.groupId === groupId)
+    return { status: 'ready', options: loaded.value, retry };
+  return {
+    status: failed === groupId ? 'error' : 'loading',
+    options: [],
+    retry,
+  };
 }

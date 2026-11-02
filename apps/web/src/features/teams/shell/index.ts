@@ -7,9 +7,9 @@ export {
   type TeamPageContext,
   type TeamPageHeading,
   type TeamPageShellProps,
-} from "./views/team-page-shell";
-export { TeamsEmptyState } from "./views/teams-empty-state";
+} from './views/team-page-shell';
+export { TeamsEmptyState } from './views/teams-empty-state';
 export {
   useSelectedTeamViewModel,
   type SelectedTeamViewModel,
-} from "./view-models/use-selected-team-view-model";
+} from './view-models/use-selected-team-view-model';

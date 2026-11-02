@@ -1,15 +1,15 @@
-import { ApiError } from "@/shared/api/request";
+import { ApiError } from '@/shared/api/request';
 import {
   isMembershipNotification,
   isQaLiveAlert,
-} from "../model/notifications-rules";
+} from '../model/notifications-rules';
 import type {
   NotificationItem,
   NotificationsResponse,
   NotificationsStatus,
-} from "../model/notifications-types";
-import { notificationsRepository } from "./notifications-repository";
-import { openNotificationsStream } from "./notifications-stream";
+} from '../model/notifications-types';
+import { notificationsRepository } from './notifications-repository';
+import { openNotificationsStream } from './notifications-stream';
 
 export const NOTIFICATIONS_POLL_MS = 30_000;
 export interface NotificationFeedState {
@@ -21,7 +21,7 @@ export interface NotificationFeedState {
 }
 export const EMPTY_NOTIFICATION_FEED: NotificationFeedState = {
   response: null,
-  status: "idle",
+  status: 'idle',
   error: null,
   alerts: [],
   workspaceRevision: 0,
@@ -32,11 +32,11 @@ const feeds = new Map<string, NotificationFeed>();
 function remembered(userId: string): Set<string> {
   try {
     const value: unknown = JSON.parse(
-      localStorage.getItem(`alphaci.notifications.popped.${userId}`) ?? "[]",
+      localStorage.getItem(`alphaci.notifications.popped.${userId}`) ?? '[]',
     );
     return new Set(
       Array.isArray(value)
-        ? value.filter((id): id is string => typeof id === "string")
+        ? value.filter((id): id is string => typeof id === 'string')
         : [],
     );
   } catch {
@@ -105,7 +105,7 @@ class NotificationFeed {
             : item,
         ),
       },
-      status: "ready",
+      status: 'ready',
       error: null,
       alerts: response.enabled
         ? [
@@ -151,12 +151,12 @@ class NotificationFeed {
     }
     this.emit({
       ...this.state,
-      status: this.state.response ? "ready" : "error",
-      error: "Notifications are unavailable right now.",
+      status: this.state.response ? 'ready' : 'error',
+      error: 'Notifications are unavailable right now.',
     });
   }
   private readonly focus = () => {
-    if (document.visibilityState !== "hidden") void this.refresh();
+    if (document.visibilityState !== 'hidden') void this.refresh();
   };
   start(): void {
     this.running = true;
@@ -174,11 +174,11 @@ class NotificationFeed {
       },
     });
     this.timer = setInterval(() => {
-      if (!this.connected && document.visibilityState === "visible")
+      if (!this.connected && document.visibilityState === 'visible')
         void this.refresh();
     }, NOTIFICATIONS_POLL_MS);
-    window.addEventListener("focus", this.focus);
-    document.addEventListener("visibilitychange", this.focus);
+    window.addEventListener('focus', this.focus);
+    document.addEventListener('visibilitychange', this.focus);
   }
   stop(): void {
     this.running = false;
@@ -187,8 +187,8 @@ class NotificationFeed {
     this.stream = null;
     this.connected = false;
     clearInterval(this.timer);
-    window.removeEventListener("focus", this.focus);
-    document.removeEventListener("visibilitychange", this.focus);
+    window.removeEventListener('focus', this.focus);
+    document.removeEventListener('visibilitychange', this.focus);
   }
   reset(): void {
     this.stop();

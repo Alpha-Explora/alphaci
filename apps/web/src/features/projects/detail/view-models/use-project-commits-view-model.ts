@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { projectsRepository } from "../../data/projects-repository";
-import type { ProjectStatus } from "../../model/projects-types";
+import { projectsRepository } from '../../data/projects-repository';
+import type { ProjectStatus } from '../../model/projects-types';
 import {
   appendCommitsPage,
   branchOptions,
@@ -11,8 +11,12 @@ import {
   normalizeCommitsPage,
   type CommitRow,
   type CommitsPage,
-} from "../model/commit-list-rules";
-import { githubReadFailure, needsGithubSignIn, type GithubReadFailure } from "../model/github-read-failure";
+} from '../model/commit-list-rules';
+import {
+  githubReadFailure,
+  needsGithubSignIn,
+  type GithubReadFailure,
+} from '../model/github-read-failure';
 
 export interface ProjectCommitsViewModel {
   status: ProjectStatus;
@@ -49,18 +53,24 @@ interface FailedState {
   failure: GithubReadFailure;
 }
 
-const EMPTY_PAGE: CommitsPage = { branch: null, branches: [], items: [], next: null };
+const EMPTY_PAGE: CommitsPage = {
+  branch: null,
+  branches: [],
+  items: [],
+  next: null,
+};
 
 function readFailure(cause: unknown, projectId: string): GithubReadFailure {
   return githubReadFailure(cause, {
     projectId,
     subject: "show this repository's commits",
-    notFound: "This repository is not available to you, or it no longer exists.",
-    fallback: "Commits could not be read from GitHub.",
+    notFound:
+      'This repository is not available to you, or it no longer exists.',
+    fallback: 'Commits could not be read from GitHub.',
   });
 }
 
-const LOAD_MORE_ERROR = "Unable to load older commits. Try again in a moment.";
+const LOAD_MORE_ERROR = 'Unable to load older commits. Try again in a moment.';
 
 /** The page of commits before `before`, stamped with when it was read. */
 async function readOlderCommits(
@@ -76,14 +86,22 @@ async function readOlderCommits(
   return { page: normalizeCommitsPage(response), readAt: Date.now() };
 }
 
-function queryKey(projectId: string, branch: string | null, attempt: number): string {
+function queryKey(
+  projectId: string,
+  branch: string | null,
+  attempt: number,
+): string {
   return JSON.stringify([projectId, branch, attempt]);
 }
 
-function statusFor(key: string, loaded: LoadedState | null, failed: FailedState | null): ProjectStatus {
-  if (loaded?.key === key) return "ready";
-  if (failed?.key === key) return "error";
-  return "loading";
+function statusFor(
+  key: string,
+  loaded: LoadedState | null,
+  failed: FailedState | null,
+): ProjectStatus {
+  if (loaded?.key === key) return 'ready';
+  if (failed?.key === key) return 'error';
+  return 'loading';
 }
 
 interface DerivedCommits {
@@ -106,12 +124,12 @@ function deriveCommits(input: {
 }): DerivedCommits {
   const { key, projectId, chosenBranch, loaded, failed } = input;
   const status = statusFor(key, loaded, failed);
-  const page = status === "ready" && loaded ? loaded.page : EMPTY_PAGE;
+  const page = status === 'ready' && loaded ? loaded.page : EMPTY_PAGE;
   const sameProject = loaded !== null && loaded.projectId === projectId;
   return {
     status,
     page,
-    failure: status === "error" && failed ? failed.failure : null,
+    failure: status === 'error' && failed ? failed.failure : null,
     branch: page.branch ?? chosenBranch,
     knownBranches: sameProject ? loaded.page.branches : [],
     readAt: loaded ? loaded.readAt : 0,
@@ -134,7 +152,9 @@ export function useProjectCommitsViewModel(options: {
   initialBranch?: string | null;
 }): ProjectCommitsViewModel {
   const { projectId } = options;
-  const [chosenBranch, setChosenBranch] = useState<string | null>(options.initialBranch ?? null);
+  const [chosenBranch, setChosenBranch] = useState<string | null>(
+    options.initialBranch ?? null,
+  );
   const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState<LoadedState | null>(null);
   const [failed, setFailed] = useState<FailedState | null>(null);
@@ -151,7 +171,12 @@ export function useProjectCommitsViewModel(options: {
       .commits(projectId, { branch: chosenBranch, limit: COMMITS_PAGE_SIZE })
       .then((response) => {
         if (id !== req.current) return;
-        setLoaded({ key, projectId, page: normalizeCommitsPage(response), readAt: Date.now() });
+        setLoaded({
+          key,
+          projectId,
+          page: normalizeCommitsPage(response),
+          readAt: Date.now(),
+        });
       })
       .catch((cause: unknown) => {
         if (id !== req.current) return;
@@ -159,13 +184,14 @@ export function useProjectCommitsViewModel(options: {
       });
   }, [projectId, chosenBranch, key]);
 
-  const { status, page, failure, branch, knownBranches, readAt } = deriveCommits({
-    key,
-    projectId,
-    chosenBranch,
-    loaded,
-    failed,
-  });
+  const { status, page, failure, branch, knownBranches, readAt } =
+    deriveCommits({
+      key,
+      projectId,
+      chosenBranch,
+      loaded,
+      failed,
+    });
 
   function selectBranch(next: string) {
     if (!next || next === branch) return;
@@ -184,12 +210,22 @@ export function useProjectCommitsViewModel(options: {
     setLoadingMore(true);
     setLoadMoreError(null);
     try {
-      const { page: more, readAt } = await readOlderCommits(projectId, branch, page.next);
+      const { page: more, readAt } = await readOlderCommits(
+        projectId,
+        branch,
+        page.next,
+      );
       setLoaded((current) =>
-        current?.key === askedKey ? { ...current, page: appendCommitsPage(current.page, more), readAt } : current,
+        current?.key === askedKey
+          ? { ...current, page: appendCommitsPage(current.page, more), readAt }
+          : current,
       );
     } catch (cause) {
-      setLoadMoreError(needsGithubSignIn(cause) ? readFailure(cause, projectId).message : LOAD_MORE_ERROR);
+      setLoadMoreError(
+        needsGithubSignIn(cause)
+          ? readFailure(cause, projectId).message
+          : LOAD_MORE_ERROR,
+      );
     } finally {
       setLoadingMore(false);
     }

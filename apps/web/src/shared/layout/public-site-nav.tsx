@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import Image from 'next/image';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 interface PublicSiteNavProps {
-  active?: "features" | "guide" | "pricing";
+  active?: 'features' | 'guide' | 'pricing';
   fixed?: boolean;
   showActions?: boolean;
 }
@@ -25,18 +25,18 @@ export function PublicSiteNav({
     }
 
     updateScrolled();
-    window.addEventListener("scroll", updateScrolled, { passive: true });
-    return () => window.removeEventListener("scroll", updateScrolled);
+    window.addEventListener('scroll', updateScrolled, { passive: true });
+    return () => window.removeEventListener('scroll', updateScrolled);
   }, [fixed]);
 
   const className = [
-    "public-site-nav",
-    fixed ? "public-site-nav--fixed" : "",
-    fixed && scrolled ? "public-site-nav--scrolled" : "",
-    !showActions ? "public-site-nav--no-actions" : "",
+    'public-site-nav',
+    fixed ? 'public-site-nav--fixed' : '',
+    fixed && scrolled ? 'public-site-nav--scrolled' : '',
+    !showActions ? 'public-site-nav--no-actions' : '',
   ]
     .filter(Boolean)
-    .join(" ");
+    .join(' ');
 
   return (
     <header className={className} data-active-section={active ?? undefined}>
@@ -50,11 +50,11 @@ export function PublicSiteNav({
           unoptimized
           className="public-site-brand-image"
           style={{
-            display: "block",
+            display: 'block',
             height: 44,
-            width: "auto",
-            maxWidth: "100%",
-            objectFit: "contain",
+            width: 'auto',
+            maxWidth: '100%',
+            objectFit: 'contain',
           }}
         />
       </Link>

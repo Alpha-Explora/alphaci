@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
   authErrorStatus,
@@ -12,8 +12,8 @@ import {
   isAuthApiError,
   restoreAccount,
   startFreshAccount,
-} from "@/features/auth/session";
-import type { PendingAccount } from "@/features/auth/session";
+} from '@/features/auth/session';
+import type { PendingAccount } from '@/features/auth/session';
 
 import {
   providerDisplayName,
@@ -22,17 +22,17 @@ import {
   toSafeProvider,
   type CallbackState,
   type OAuthProvider,
-} from "../model/callback-rules";
+} from '../model/callback-rules';
 
 export interface AuthCallbackViewModel {
   status: CallbackState;
   state: CallbackState;
   message: string;
   authStatus: string;
-  intent: "login" | "signup";
+  intent: 'login' | 'signup';
   nextPath: string;
   provider: OAuthProvider;
-  providerName: "GitHub" | "Google";
+  providerName: 'GitHub' | 'Google';
   orgLogin: string | null;
   pendingAccount: PendingAccount | null;
   pendingSessionExpired: boolean;
@@ -42,32 +42,40 @@ export interface AuthCallbackViewModel {
 }
 
 const failedStatuses = new Set([
-  "failed",
-  "invalid_state",
-  "unavailable",
-  "not_authorized",
-  "org_verification_failed",
+  'failed',
+  'invalid_state',
+  'unavailable',
+  'not_authorized',
+  'org_verification_failed',
 ]);
 
 export function useAuthCallbackViewModel(): AuthCallbackViewModel {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const authStatus = searchParams.get("auth") ?? "success";
-  const intent = searchParams.get("intent") === "signup" ? "signup" : "login";
-  const nextPath = toSafeNextPath(searchParams.get("next"));
-  const provider = toSafeProvider(searchParams.get("provider"));
+  const authStatus = searchParams.get('auth') ?? 'success';
+  const intent = searchParams.get('intent') === 'signup' ? 'signup' : 'login';
+  const nextPath = toSafeNextPath(searchParams.get('next'));
+  const provider = toSafeProvider(searchParams.get('provider'));
   const providerName = providerDisplayName(provider);
-  const orgLogin = searchParams.get("org");
+  const orgLogin = searchParams.get('org');
   const [state, setState] = useState<CallbackState>(() =>
-    failedStatuses.has(authStatus) ? "failed" : "checking",
+    failedStatuses.has(authStatus) ? 'failed' : 'checking',
   );
-  const [message, setMessage] = useState(() => statusMessage(authStatus, provider));
-  const [pendingAccount, setPendingAccount] = useState<PendingAccount | null>(null);
+  const [message, setMessage] = useState(() =>
+    statusMessage(authStatus, provider),
+  );
+  const [pendingAccount, setPendingAccount] = useState<PendingAccount | null>(
+    null,
+  );
   const [pendingSessionExpired, setPendingSessionExpired] = useState(false);
   const disposedRef = useRef(false);
 
   const retryLoginHref = useMemo(() => {
-    const callbackPath = new URLSearchParams({ intent, next: nextPath, provider });
+    const callbackPath = new URLSearchParams({
+      intent,
+      next: nextPath,
+      provider,
+    });
     return createGitHubLoginUrl(`/auth/callback?${callbackPath.toString()}`);
   }, [intent, nextPath, provider]);
 
@@ -83,18 +91,18 @@ export function useAuthCallbackViewModel(): AuthCallbackViewModel {
       return;
     }
 
-    if (authStatus === "archived_choice") {
+    if (authStatus === 'archived_choice') {
       void getPendingAccount()
         .then((data) => {
           if (disposedRef.current) return;
           if (!data.pending) setPendingSessionExpired(true);
           else setPendingAccount(data);
-          setState("archived_choice");
+          setState('archived_choice');
         })
         .catch(() => {
           if (disposedRef.current) return;
           setPendingSessionExpired(true);
-          setState("archived_choice");
+          setState('archived_choice');
         });
       return;
     }
@@ -103,8 +111,10 @@ export function useAuthCallbackViewModel(): AuthCallbackViewModel {
       .then((session) => {
         if (disposedRef.current) return;
         if (!session.authenticated) {
-          setState("failed");
-          setMessage(`Sign in did not complete. Please connect your ${providerName} account again.`);
+          setState('failed');
+          setMessage(
+            `Sign in did not complete. Please connect your ${providerName} account again.`,
+          );
           return;
         }
         const redirectPath = getAuthenticatedRedirectPath(session, nextPath);
@@ -112,12 +122,19 @@ export function useAuthCallbackViewModel(): AuthCallbackViewModel {
       })
       .catch((error: unknown) => {
         if (disposedRef.current) return;
-        setState("failed");
-        if (isAuthApiError(error) && (authErrorStatus(error) === 401 || authErrorStatus(error) === 403)) {
-          setMessage(`Sign in did not complete. Please connect your ${providerName} account again.`);
+        setState('failed');
+        if (
+          isAuthApiError(error) &&
+          (authErrorStatus(error) === 401 || authErrorStatus(error) === 403)
+        ) {
+          setMessage(
+            `Sign in did not complete. Please connect your ${providerName} account again.`,
+          );
           return;
         }
-        setMessage("We could not complete your sign in flow. Please retry in a moment.");
+        setMessage(
+          'We could not complete your sign in flow. Please retry in a moment.',
+        );
       });
   }, [authStatus, nextPath, providerName, router]);
 

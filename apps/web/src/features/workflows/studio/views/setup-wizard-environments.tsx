@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
 import {
   environmentPathLine,
   environmentsCaption,
   type HostingChoice,
   type ServiceLayout,
-} from "../model/hosting-choice-rules";
-import type { EnvironmentDraft } from "../model/project-environments-rules";
+} from '../model/hosting-choice-rules';
+import type { EnvironmentDraft } from '../model/project-environments-rules';
 
 /**
  * The project's environments, read-only: the fixed dev, uat, main path in
@@ -17,7 +17,7 @@ import type { EnvironmentDraft } from "../model/project-environments-rules";
 export function EnvironmentsPath({
   choice,
   environments,
-  layout = "single",
+  layout = 'single',
 }: Readonly<{
   choice: HostingChoice;
   environments: readonly EnvironmentDraft[];
@@ -33,7 +33,10 @@ export function EnvironmentsPath({
       <h4 className="wizard-field__label" id="wizard-environments-title">
         Environments
       </h4>
-      <ol className="wizard-environments__path" aria-label={environmentPathLine(environments)}>
+      <ol
+        className="wizard-environments__path"
+        aria-label={environmentPathLine(environments)}
+      >
         {environments.map((environment, index) => (
           <li className="wizard-environments__stop" key={environment.slug}>
             <span className="wizard-environments__pill">
@@ -48,7 +51,9 @@ export function EnvironmentsPath({
           </li>
         ))}
       </ol>
-      <p className="wizard-field__hint">{environmentsCaption(choice, layout)}</p>
+      <p className="wizard-field__hint">
+        {environmentsCaption(choice, layout)}
+      </p>
     </section>
   );
 }

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { catalogTypeLabel } from "../model/setup-tab-rules";
-import type { CreateProjectFormState } from "../view-models/use-create-project-form";
-import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
+import { catalogTypeLabel } from '../model/setup-tab-rules';
+import type { CreateProjectFormState } from '../view-models/use-create-project-form';
+import type { ProjectOptionsCatalogState } from '../view-models/use-project-options-catalog';
 
 function CatalogBadge({ label }: Readonly<{ label?: string }>) {
   if (!label) {
@@ -23,19 +23,38 @@ export function SetupTabHeader({
   /** False when the page around the form already names it. */
   showTitle?: boolean;
 }>) {
-  const title = isExistingMode ? "Add CI/CD to Existing Repo" : "Create Project";
-  const dualShape = projectCatalog.isMicroservicesShape || projectCatalog.isMultiRepoShape;
+  const title = isExistingMode
+    ? 'Add CI/CD to Existing Repo'
+    : 'Create Project';
+  const dualShape =
+    projectCatalog.isMicroservicesShape || projectCatalog.isMultiRepoShape;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
-      {showTitle ? <h2 style={{ margin: 0, fontSize: "1.5rem" }}>{title}</h2> : null}
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        marginBottom: '1.25rem',
+        flexWrap: 'wrap',
+      }}
+    >
+      {showTitle ? (
+        <h2 style={{ margin: 0, fontSize: '1.5rem' }}>{title}</h2>
+      ) : null}
       {dualShape ? (
         <>
           <CatalogBadge
-            label={catalogTypeLabel(projectCatalog.backendProjectTypes, form.backendProjectTypeId)}
+            label={catalogTypeLabel(
+              projectCatalog.backendProjectTypes,
+              form.backendProjectTypeId,
+            )}
           />
           <CatalogBadge
-            label={catalogTypeLabel(projectCatalog.frontendProjectTypes, form.frontendProjectTypeId)}
+            label={catalogTypeLabel(
+              projectCatalog.frontendProjectTypes,
+              form.frontendProjectTypeId,
+            )}
           />
         </>
       ) : (
@@ -45,12 +64,20 @@ export function SetupTabHeader({
   );
 }
 
-export function CatalogLoadingNotice({ loading }: Readonly<{ loading: boolean }>) {
+export function CatalogLoadingNotice({
+  loading,
+}: Readonly<{ loading: boolean }>) {
   if (!loading) {
     return null;
   }
   return (
-    <p style={{ color: "var(--text-muted)", fontSize: "0.84rem", margin: "0 0 1rem" }}>
+    <p
+      style={{
+        color: 'var(--text-muted)',
+        fontSize: '0.84rem',
+        margin: '0 0 1rem',
+      }}
+    >
       Loading project catalog…
     </p>
   );

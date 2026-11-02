@@ -1,26 +1,26 @@
-"use client";
+'use client';
 
-import "./environment-operations.css";
+import './environment-operations.css';
 
-import { useState } from "react";
-import { HostAssignmentPanel } from "@/features/hosts";
+import { useState } from 'react';
+import { HostAssignmentPanel } from '@/features/hosts';
 
 import type {
   AppRole,
   DeploymentTarget,
   EnvTargetSlot,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 import {
   deploymentStatusLabel,
   shortCommit,
   shortDigest,
   type EnvironmentDeploymentEntry,
   type EnvironmentRow,
-} from "../model/environment-operations";
+} from '../model/environment-operations';
 import {
   useEnvironmentOperationsViewModel,
   type EnvironmentOperationsViewModel,
-} from "../view-models/use-environment-operations-view-model";
+} from '../view-models/use-environment-operations-view-model';
 
 /**
  * Each project environment in promotion order: where it deploys, what it
@@ -45,10 +45,10 @@ export function EnvironmentOperationsPanel({
     appRole,
     onTargetCreated,
   });
-  if (vm.status === "loading") {
+  if (vm.status === 'loading') {
     return <p className="env-empty-state">Loading environments...</p>;
   }
-  if (vm.status === "error") {
+  if (vm.status === 'error') {
     return <p className="error-text">{vm.loadError}</p>;
   }
   // Projects on the legacy branch path have no environments to show.
@@ -79,7 +79,7 @@ export function EnvironmentOperationsPanel({
                 workspaceId &&
                 row.targets.every(
                   (target) =>
-                    target.slot === "frontend" || target.slot === "backend",
+                    target.slot === 'frontend' || target.slot === 'backend',
                 ) ? (
                   <HostAssignmentPanel
                     key={row.environment.id}
@@ -87,9 +87,9 @@ export function EnvironmentOperationsPanel({
                     environmentId={row.environment.id}
                     workspaceId={workspaceId}
                     slots={row.targets.map(
-                      (target) => target.slot as "frontend" | "backend",
+                      (target) => target.slot as 'frontend' | 'backend',
                     )}
-                    production={row.environment.role === "production"}
+                    production={row.environment.role === 'production'}
                     canManage={vm.canManageHosts}
                   />
                 ) : null
@@ -114,7 +114,7 @@ function EnvironmentCard({
   host: React.ReactNode;
 }>) {
   const { environment } = row;
-  const production = environment.role === "production";
+  const production = environment.role === 'production';
   return (
     <article aria-label={environment.displayName} className="envops-card">
       <header className="envops-card__head">
@@ -125,9 +125,9 @@ function EnvironmentCard({
           <h5 className="envops-card__name">{environment.displayName}</h5>
           <p className="envops-card__meta">
             <span
-              className={`envops-chip${production ? " envops-chip--prod" : ""}`}
+              className={`envops-chip${production ? ' envops-chip--prod' : ''}`}
             >
-              {production ? "Production" : environment.slug}
+              {production ? 'Production' : environment.slug}
             </span>
             <span className="envops-chip envops-chip--branch">
               ⎇ {environment.sourceBranch}
@@ -189,7 +189,7 @@ function EnvironmentTargets({ row }: Readonly<{ row: EnvironmentRow }>) {
           <span className="envops-target__provider">
             {target.providerLabel}
           </span>
-          {target.status === "active" ? null : (
+          {target.status === 'active' ? null : (
             <span className="envops-muted">({target.status})</span>
           )}
           {target.publicUrl ? (
@@ -226,7 +226,7 @@ function CurrentRelease({
       )}
       {inFlight ? (
         <p className="envops-release__line">
-          {deploymentStatusLabel(inFlight.deployment.status)}{" "}
+          {deploymentStatusLabel(inFlight.deployment.status)}{' '}
           <code>{shortCommit(inFlight.release.commitSha)}</code>
         </p>
       ) : null}
@@ -245,9 +245,9 @@ function ReleaseIdentity({
         <span
           key={artifact.slot}
           className="envops-muted"
-          title={artifact.image + "@" + artifact.digest}
+          title={artifact.image + '@' + artifact.digest}
         >
-          {" · "}
+          {' · '}
           {artifact.slot} <code>{shortDigest(artifact.digest)}</code>
         </span>
       ))}
@@ -260,25 +260,25 @@ function PromotionControl({
   vm,
 }: Readonly<{ row: EnvironmentRow; vm: EnvironmentOperationsViewModel }>) {
   const { promotion, environment } = row;
-  if (promotion.kind === "automatic") {
+  if (promotion.kind === 'automatic') {
     return (
       <p className="envops-note">
-        Deploys automatically on every push to{" "}
+        Deploys automatically on every push to{' '}
         <code>{environment.sourceBranch}</code>.
       </p>
     );
   }
-  if (promotion.kind === "unavailable") {
+  if (promotion.kind === 'unavailable') {
     return (
       <p className="envops-note">Nothing to promote yet: {promotion.reason}</p>
     );
   }
-  if (!vm.canPromote(environment.role === "production")) {
+  if (!vm.canPromote(environment.role === 'production')) {
     return (
       <p className="envops-note">
-        {environment.role === "production"
-          ? "Only product owners and admins can promote to production."
-          : "This role cannot promote releases."}
+        {environment.role === 'production'
+          ? 'Only product owners and admins can promote to production.'
+          : 'This role cannot promote releases.'}
       </p>
     );
   }
@@ -286,19 +286,19 @@ function PromotionControl({
   return (
     <div className="envops-actions">
       <button
-        className={confirming ? "primary-button" : "ghost-button"}
+        className={confirming ? 'primary-button' : 'ghost-button'}
         disabled={vm.busyEnvironmentId !== null}
         onClick={() => void vm.promote(row)}
         type="button"
       >
         {confirming
-          ? "Confirm: deploy " +
+          ? 'Confirm: deploy ' +
             shortCommit(promotion.release.commitSha) +
-            " to " +
+            ' to ' +
             environment.displayName
-          : "Promote " +
+          : 'Promote ' +
             shortCommit(promotion.release.commitSha) +
-            " from " +
+            ' from ' +
             promotion.from.displayName}
       </button>
       {confirming ? (
@@ -321,8 +321,8 @@ function EnvironmentMessageLine({
   if (vm.message?.environmentId !== environmentId) return null;
   return (
     <p
-      className={vm.message.tone === "error" ? "error-text" : "envops-note"}
-      role={vm.message.tone === "error" ? "alert" : "status"}
+      className={vm.message.tone === 'error' ? 'error-text' : 'envops-note'}
+      role={vm.message.tone === 'error' ? 'alert' : 'status'}
     >
       {vm.message.text}
     </p>
@@ -342,7 +342,7 @@ function AdvancedHostTools({
   const showTargets =
     vm.hostsEnabled &&
     vm.canManageHosts &&
-    row.targets.every((target) => target.provider === "onprem-compose");
+    row.targets.every((target) => target.provider === 'onprem-compose');
   const tokenOnScreen = vm.hostToken?.environmentId === row.environment.id;
   if (!showRegistration && !showTargets) return null;
   return (
@@ -360,7 +360,7 @@ function HostRegistration({
   row,
   vm,
 }: Readonly<{ row: EnvironmentRow; vm: EnvironmentOperationsViewModel }>) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState('');
   const environmentId = row.environment.id;
   if (vm.hostToken?.environmentId === environmentId) {
     return (
@@ -407,9 +407,9 @@ function OnpremTargetSetup({
   row,
   vm,
 }: Readonly<{ row: EnvironmentRow; vm: EnvironmentOperationsViewModel }>) {
-  const [slot, setSlot] = useState<EnvTargetSlot>("standalone");
-  const [name, setName] = useState("");
-  const slots: EnvTargetSlot[] = ["backend", "frontend", "standalone"];
+  const [slot, setSlot] = useState<EnvTargetSlot>('standalone');
+  const [name, setName] = useState('');
+  const slots: EnvTargetSlot[] = ['backend', 'frontend', 'standalone'];
   const available = slots.filter(
     (candidate) => !row.targets.some((target) => target.slot === candidate),
   );
@@ -467,11 +467,11 @@ function DeploymentHistory({
       <ul>
         {entries.map(({ deployment, release }) => (
           <li key={deployment.id}>
-            <code>{shortCommit(release.commitSha)}</code>{" "}
-            {deploymentStatusLabel(deployment.status)} ·{" "}
-            {deployment.trigger === "automatic" ? "on push" : "promoted"} ·{" "}
+            <code>{shortCommit(release.commitSha)}</code>{' '}
+            {deploymentStatusLabel(deployment.status)} ·{' '}
+            {deployment.trigger === 'automatic' ? 'on push' : 'promoted'} ·{' '}
             {new Date(deployment.updatedAt).toLocaleString()}
-            {deployment.detail ? " · " + deployment.detail : ""}
+            {deployment.detail ? ' · ' + deployment.detail : ''}
           </li>
         ))}
       </ul>

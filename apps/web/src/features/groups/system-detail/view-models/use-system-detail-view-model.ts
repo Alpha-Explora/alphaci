@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { useApiResource } from "@/features/groups";
-import { useAuthSession } from "@/features/auth/session";
+import { useApiResource } from '@/features/groups';
+import { useAuthSession } from '@/features/auth/session';
 
-import { groupsRepository } from "../../data/groups-repository";
-import { canCreateProjectFolder } from "../../model/creation-role-rules";
-import { isGroupManagerRole } from "../../model/groups-rules";
+import { groupsRepository } from '../../data/groups-repository';
+import { canCreateProjectFolder } from '../../model/creation-role-rules';
+import { isGroupManagerRole } from '../../model/groups-rules';
 import type {
   DeliveryProject,
   GroupSummary,
   HierarchySystem,
-} from "../../model/groups-types";
+} from '../../model/groups-types';
 
 export interface SystemDetailViewModel {
   /** Null while loading, or when the group could not be read. */
   group: GroupSummary | null;
   system: HierarchySystem | null;
   /** The system's own load state: it gates the whole surface. */
-  status: ReturnType<typeof useApiResource<HierarchySystem>>["state"];
+  status: ReturnType<typeof useApiResource<HierarchySystem>>['state'];
   reload: () => void;
   deliveryProjects: DeliveryProject[];
   deliveryProjectsStatus: ReturnType<
     typeof useApiResource<DeliveryProject[]>
-  >["state"];
+  >['state'];
   reloadDeliveryProjects: () => void;
   /**
    * Whether the caller may create a delivery project (a Project) here: a
@@ -73,7 +73,8 @@ export function useSystemDetailViewModel(
     deliveryProjectsStatus: projectsResource.state,
     reloadDeliveryProjects: projectsResource.reload,
     canManage:
-      isGroupManagerRole(groupResource.data?.role) && canCreateProjectFolder(session?.appRole),
+      isGroupManagerRole(groupResource.data?.role) &&
+      canCreateProjectFolder(session?.appRole),
     dialogOpen,
     setDialogOpen,
     prependDeliveryProject: (project) =>

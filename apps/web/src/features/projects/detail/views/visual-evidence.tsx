@@ -1,24 +1,29 @@
-"use client";
+'use client';
 
-import "./visual-evidence.css";
+import './visual-evidence.css';
 
 import {
   EVIDENCE_ERROR_TEXT,
   IMAGE_CAPTIONS,
   NO_EVIDENCE_TEXT,
   STATUS_WORDS,
-} from "../model/visual-evidence-rules";
-import type { VisualSnapshot } from "../model/visual-check-types";
-import { useVisualEvidenceViewModel } from "../view-models/use-visual-evidence-view-model";
+} from '../model/visual-evidence-rules';
+import type { VisualSnapshot } from '../model/visual-check-types';
+import { useVisualEvidenceViewModel } from '../view-models/use-visual-evidence-view-model';
 
-const KINDS = ["baselineUrl", "actualUrl", "diffUrl"] as const;
+const KINDS = ['baselineUrl', 'actualUrl', 'diffUrl'] as const;
 
-function SnapshotRow({ snapshot, onImage }: Readonly<{ snapshot: VisualSnapshot; onImage: () => void }>) {
+function SnapshotRow({
+  snapshot,
+  onImage,
+}: Readonly<{ snapshot: VisualSnapshot; onImage: () => void }>) {
   return (
     <li className="vis-ev__snapshot">
       <p className="vis-ev__name">
         <code>{snapshot.name}</code>
-        <span className={`vis-ev__status vis-ev__status--${snapshot.status}`}>{STATUS_WORDS[snapshot.status]}</span>
+        <span className={`vis-ev__status vis-ev__status--${snapshot.status}`}>
+          {STATUS_WORDS[snapshot.status]}
+        </span>
       </p>
       <div className="vis-ev__images">
         {KINDS.map((kind) => {
@@ -28,7 +33,12 @@ function SnapshotRow({ snapshot, onImage }: Readonly<{ snapshot: VisualSnapshot;
             <figure key={kind} className="vis-ev__figure">
               {/* A plain <img>: the bytes come with the session cookie, and next/image would proxy them. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt={`${IMAGE_CAPTIONS[kind]}: ${snapshot.name}`} onLoad={onImage} onError={onImage} />
+              <img
+                src={url}
+                alt={`${IMAGE_CAPTIONS[kind]}: ${snapshot.name}`}
+                onLoad={onImage}
+                onError={onImage}
+              />
               <figcaption>{IMAGE_CAPTIONS[kind]}</figcaption>
             </figure>
           );
@@ -55,8 +65,12 @@ export function VisualEvidence({
   onSettled?: () => void;
 }>) {
   const view = useVisualEvidenceViewModel({ projectId, headSha, onSettled });
-  if (view.status === "loading") return <p className="vis-ev__note">Reading the screenshots…</p>;
-  if (view.status === "error") return <p className="vis-ev__note vis-ev__note--error">{EVIDENCE_ERROR_TEXT}</p>;
+  if (view.status === 'loading')
+    return <p className="vis-ev__note">Reading the screenshots…</p>;
+  if (view.status === 'error')
+    return (
+      <p className="vis-ev__note vis-ev__note--error">{EVIDENCE_ERROR_TEXT}</p>
+    );
   const { evidence } = view;
   if (!evidence) return <p className="vis-ev__note">{NO_EVIDENCE_TEXT}</p>;
   return (
@@ -66,13 +80,17 @@ export function VisualEvidence({
       {evidence.shown.length > 0 ? (
         <ul className="vis-ev__list">
           {evidence.shown.map((snapshot) => (
-            <SnapshotRow key={snapshot.name} snapshot={snapshot} onImage={view.imageSettled} />
+            <SnapshotRow
+              key={snapshot.name}
+              snapshot={snapshot}
+              onImage={view.imageSettled}
+            />
           ))}
         </ul>
       ) : null}
       {evidence.matched.length > 0 ? (
         <p className="vis-ev__matched">
-          <strong>Unchanged:</strong> {evidence.matched.join(", ")}
+          <strong>Unchanged:</strong> {evidence.matched.join(', ')}
         </p>
       ) : null}
     </div>

@@ -4,11 +4,14 @@
  * the same thing, so colour and shape are never the only signal.
  */
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
-import type { VerdictTone } from "../../model/pipeline-run-card-rules";
+import type { VerdictTone } from '../../model/pipeline-run-card-rules';
 
-function Glyph({ children, size = 16 }: Readonly<{ children: ReactNode; size?: number }>) {
+function Glyph({
+  children,
+  size = 16,
+}: Readonly<{ children: ReactNode; size?: number }>) {
   return (
     <svg
       aria-hidden="true"
@@ -67,25 +70,25 @@ export function InfoIcon() {
 /** One glyph per verdict tone, so a stage reads without its colour. */
 export function VerdictIcon({ tone }: Readonly<{ tone: VerdictTone }>) {
   switch (tone) {
-    case "success":
+    case 'success':
       return (
         <Glyph size={14}>
           <path d="m3.5 8.4 2.9 2.8 6.1-6.4" />
         </Glyph>
       );
-    case "danger":
+    case 'danger':
       return (
         <Glyph size={14}>
           <path d="m4.5 4.5 7 7M11.5 4.5l-7 7" />
         </Glyph>
       );
-    case "warning":
+    case 'warning':
       return (
         <Glyph size={14}>
           <path d="M8 4v4.6M8 11.4v.1" />
         </Glyph>
       );
-    case "running":
+    case 'running':
       return (
         <Glyph size={14}>
           <circle cx="8" cy="8" r="2.4" fill="currentColor" stroke="none" />

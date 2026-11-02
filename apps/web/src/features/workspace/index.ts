@@ -4,5 +4,5 @@ export type {
   WorkspaceRole,
   WorkspaceSummary,
   WorkspacesMeResponse,
-} from "./selection/model/workspace-types";
-export * from "./selection/data/workspaces-api";
+} from './selection/model/workspace-types';
+export * from './selection/data/workspaces-api';

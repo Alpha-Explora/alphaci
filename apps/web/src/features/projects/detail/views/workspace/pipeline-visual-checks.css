@@ -86,7 +86,7 @@
   cursor: not-allowed;
 }
 
-.pipe-approve[aria-busy="true"] {
+.pipe-approve[aria-busy='true'] {
   cursor: progress;
 }
 
@@ -135,7 +135,7 @@
   cursor: not-allowed;
 }
 
-.pipe-download[aria-busy="true"] {
+.pipe-download[aria-busy='true'] {
   cursor: progress;
 }
 

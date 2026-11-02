@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import type { ReactNode } from "react";
+import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import {
   countLabel,
@@ -9,15 +9,15 @@ import {
   runStatusBadge,
   signedOffLine,
   verdictBadge,
-} from "../../model/home-label-rules";
-import { homeBlockState } from "../../model/home-layout-rules";
+} from '../../model/home-label-rules';
+import { homeBlockState } from '../../model/home-layout-rules';
 import type {
   AttentionRow,
   LegacyRunRow,
   OpenRunRow,
   ProductionView,
   ReadyForProductionRow,
-} from "../../model/home-persona-types";
+} from '../../model/home-persona-types';
 import {
   EmptyLine,
   HomeBlock,
@@ -27,7 +27,7 @@ import {
   InlineLink,
   StatusDot,
   type BlockContext,
-} from "./persona-blocks";
+} from './persona-blocks';
 
 /* ── Product owner: "What can ship, and what's stuck?" ──────────────────── */
 
@@ -42,7 +42,9 @@ function ReadyLink({ row }: Readonly<{ row: ReadyForProductionRow }>) {
           {signedOffLine(row)} · {mergedLabel(row)}
         </small>
       </span>
-      <span className={`team-status-badge team-status-badge--${badge.tone}`}>{badge.label}</span>
+      <span className={`team-status-badge team-status-badge--${badge.tone}`}>
+        {badge.label}
+      </span>
       <span className="dashboard-row-arrow" aria-hidden="true">
         →
       </span>
@@ -52,10 +54,10 @@ function ReadyLink({ row }: Readonly<{ row: ReadyForProductionRow }>) {
 
 function openRunDetail(row: OpenRunRow): string {
   const parts = [
-    row.failed ? countLabel(row.failed, "failed", "failed") : null,
-    row.blocked ? countLabel(row.blocked, "blocked", "blocked") : null,
+    row.failed ? countLabel(row.failed, 'failed', 'failed') : null,
+    row.blocked ? countLabel(row.blocked, 'blocked', 'blocked') : null,
   ].filter(Boolean);
-  return parts.length ? parts.join(" · ") : "Nothing failed or blocked so far";
+  return parts.length ? parts.join(' · ') : 'Nothing failed or blocked so far';
 }
 
 function OpenRunLink({ row }: Readonly<{ row: OpenRunRow }>) {
@@ -76,13 +78,19 @@ function LegacyRunLink({ row }: Readonly<{ row: LegacyRunRow }>) {
         <strong>{row.name}</strong>
         <small>QA testing {badge.label.toLowerCase()}</small>
       </span>
-      <span className={`team-status-badge team-status-badge--${badge.tone}`}>{badge.label}</span>
+      <span className={`team-status-badge team-status-badge--${badge.tone}`}>
+        {badge.label}
+      </span>
     </Link>
   );
 }
 
-function ReadyList({ production, reduced }: Readonly<{ production: ProductionView; reduced: boolean | null }>) {
-  if (!production.ready.length) return <EmptyLine>Nothing is signed off and waiting to ship.</EmptyLine>;
+function ReadyList({
+  production,
+  reduced,
+}: Readonly<{ production: ProductionView; reduced: boolean | null }>) {
+  if (!production.ready.length)
+    return <EmptyLine>Nothing is signed off and waiting to ship.</EmptyLine>;
   return (
     <HomeRowList label="Projects ready for production" reduced={reduced}>
       {production.ready.map((row) => (
@@ -94,7 +102,9 @@ function ReadyList({ production, reduced }: Readonly<{ production: ProductionVie
   );
 }
 
-function StillVerifying({ production }: Readonly<{ production: ProductionView }>) {
+function StillVerifying({
+  production,
+}: Readonly<{ production: ProductionView }>) {
   if (!production.open.length) return null;
   return (
     <div className="home-quiet-group">
@@ -110,8 +120,12 @@ function StillVerifying({ production }: Readonly<{ production: ProductionView }>
   );
 }
 
-function LegacyList({ production, reduced }: Readonly<{ production: ProductionView; reduced: boolean | null }>) {
-  if (!production.legacy.length) return <EmptyLine>No Project is in QA testing yet.</EmptyLine>;
+function LegacyList({
+  production,
+  reduced,
+}: Readonly<{ production: ProductionView; reduced: boolean | null }>) {
+  if (!production.legacy.length)
+    return <EmptyLine>No Project is in QA testing yet.</EmptyLine>;
   return (
     <HomeRowList label="Projects in QA testing" reduced={reduced}>
       {production.legacy.map((row) => (
@@ -123,8 +137,12 @@ function LegacyList({ production, reduced }: Readonly<{ production: ProductionVi
   );
 }
 
-function ProductionBody({ production, reduced }: Readonly<{ production: ProductionView; reduced: boolean | null }>) {
-  if (production.mode === "legacy") return <LegacyList production={production} reduced={reduced} />;
+function ProductionBody({
+  production,
+  reduced,
+}: Readonly<{ production: ProductionView; reduced: boolean | null }>) {
+  if (production.mode === 'legacy')
+    return <LegacyList production={production} reduced={reduced} />;
   return (
     <>
       <ReadyList production={production} reduced={reduced} />
@@ -144,12 +162,14 @@ export function readyForProductionBlock(ctx: BlockContext): ReactNode {
       id="ready-for-production"
       kicker="READY FOR PRODUCTION"
       title="Signed off by QA"
-      state={homeBlockState("ready-for-production", ctx.states)}
+      state={homeBlockState('ready-for-production', ctx.states)}
       reduced={ctx.reduced}
       order={ctx.order}
     >
       <ProductionBody production={ctx.data.production} reduced={ctx.reduced} />
-      <p className="home-block-foot">Final checks and the merge to main run in PO Studio.</p>
+      <p className="home-block-foot">
+        Final checks and the merge to main run in PO Studio.
+      </p>
     </HomeBlock>
   );
 }
@@ -160,7 +180,7 @@ function AttentionLink({ row }: Readonly<{ row: AttentionRow }>) {
       <StatusDot tone="warn" />
       <span className="team-project-copy">
         <strong>{row.name}</strong>
-        <small>{row.reasons.join(" · ")}</small>
+        <small>{row.reasons.join(' · ')}</small>
       </span>
       <span className="dashboard-row-arrow" aria-hidden="true">
         →
@@ -178,7 +198,7 @@ export function needsAttentionBlock(ctx: BlockContext): ReactNode {
       id="needs-attention"
       kicker="PROJECTS NEEDING ATTENTION"
       action={href ? <InlineLink href={href}>Create project</InlineLink> : null}
-      state={homeBlockState("needs-attention", ctx.states)}
+      state={homeBlockState('needs-attention', ctx.states)}
       slotClass={ctx.slotClass}
     >
       {data.needsAttention.length ? (

@@ -2,7 +2,7 @@
  * no fetch. The view-model calls buildPersonaDashboard; the views render
  * what it returns. */
 
-import { createRepositoryHref } from "@/features/teams/project-folders";
+import { createRepositoryHref } from '@/features/teams/project-folders';
 
 import {
   failedOrBlockedCount,
@@ -17,14 +17,14 @@ import {
   sumOver,
   verificationRows,
   defectTotals,
-} from "./home-qa-rules";
+} from './home-qa-rules';
 import {
   foldersInScope,
   homeLinkContext,
   homeScopeFor,
   qaProjectsInScope,
   scopeFallbackLine,
-} from "./home-persona-rules";
+} from './home-persona-rules';
 import type {
   HomeLayout,
   HomeMetric,
@@ -32,8 +32,8 @@ import type {
   HomeScope,
   PersonaDashboard,
   ProductionView,
-} from "./home-persona-types";
-import { computeRunStats, newProjectHref } from "./home-rules";
+} from './home-persona-types';
+import { computeRunStats, newProjectHref } from './home-rules';
 import {
   branchHealth,
   failingBranchCount,
@@ -43,7 +43,7 @@ import {
   runsInScope,
   uatAutomationRows,
   uatRuns,
-} from "./home-run-rules";
+} from './home-run-rules';
 import type {
   ProjectFolder,
   ProjectFoldersSnapshot,
@@ -52,11 +52,11 @@ import type {
   RunStats,
   TeamQaOverview,
   TeamQaProject,
-} from "./home-types";
-import { myWorkProjects, needsAttentionRows } from "./home-work-rules";
+} from './home-types';
+import { myWorkProjects, needsAttentionRows } from './home-work-rules';
 
-const PROJECTS_HREF = "/workflows?tab=current";
-const RUNS_HREF = "/runs";
+const PROJECTS_HREF = '/workflows?tab=current';
+const RUNS_HREF = '/runs';
 
 /* ── Metrics ────────────────────────────────────────────────────────────── */
 
@@ -73,14 +73,22 @@ export interface HomeFacts {
   failingBranches: number;
 }
 
-type MetricValue = Omit<HomeMetric, "id">;
+type MetricValue = Omit<HomeMetric, 'id'>;
 
-function metric(label: string, value: number | null, href: string | null = null, suffix = ""): MetricValue {
+function metric(
+  label: string,
+  value: number | null,
+  href: string | null = null,
+  suffix = '',
+): MetricValue {
   return { label, value, suffix, href };
 }
 
 /** A sum over the scoped Projects of the overview; null when it was not read. */
-function qaSum(facts: HomeFacts, pick: (project: TeamQaProject) => number): number | null {
+function qaSum(
+  facts: HomeFacts,
+  pick: (project: TeamQaProject) => number,
+): number | null {
   return facts.overview ? sumOver(facts.scopedQa, pick) : null;
 }
 
@@ -88,30 +96,49 @@ function repositoryCount(folders: ReadonlyArray<ProjectFolder>): number {
   return folders.reduce((sum, folder) => sum + folder.repositories.length, 0);
 }
 
-const isOpen = (project: TeamQaProject) => (projectRunStatus(project) === "open" ? 1 : 0);
+const isOpen = (project: TeamQaProject) =>
+  projectRunStatus(project) === 'open' ? 1 : 0;
 
-const METRICS: Readonly<Record<HomeMetricId, (facts: HomeFacts) => MetricValue>> = {
-  "scope-projects": (f) =>
-    metric(f.scope.mode === "mine" ? "My Projects" : "Team Projects", f.scope.projectIds.length, PROJECTS_HREF),
-  repositories: (f) => metric("Repositories", repositoryCount(f.scopedFolders), PROJECTS_HREF),
-  returned: (f) => metric("Returned by QA", qaSum(f, returnedCount)),
-  "in-progress": (f) => metric("In progress", qaSum(f, inProgressCount)),
-  running: (f) => metric("Running", f.runStats.running, RUNS_HREF),
-  "failing-runs": (f) => metric("Failing runs", f.runStats.failures, RUNS_HREF),
-  "success-rate": (f) => metric("Success rate", f.runStats.successRate, RUNS_HREF, "%"),
-  "in-verification": (f) => metric("In verification", qaSum(f, isOpen)),
-  "pending-items": (f) => metric("Pending items", qaSum(f, pendingCount)),
-  "failed-or-blocked": (f) => metric("Failed or blocked", qaSum(f, failedOrBlockedCount)),
-  "ready-for-retest": (f) => metric("Ready for re-test", readyForRetestTotal(f.overview, f.scopedQa)),
-  "uat-pass-rate": (f) => metric("UAT pass rate", f.uatStats.successRate, RUNS_HREF, "%"),
-  projects: (f) => metric("Projects", f.scope.projectIds.length, PROJECTS_HREF),
-  "awaiting-promotion": (f) =>
-    metric("Awaiting promotion", f.production.mode === "full" ? f.production.ready.length : null),
-  "need-attention": (f) => metric("Need attention", f.attention),
-  "failing-branches": (f) => metric("Failing branches", f.failingBranches, RUNS_HREF),
+const METRICS: Readonly<
+  Record<HomeMetricId, (facts: HomeFacts) => MetricValue>
+> = {
+  'scope-projects': (f) =>
+    metric(
+      f.scope.mode === 'mine' ? 'My Projects' : 'Team Projects',
+      f.scope.projectIds.length,
+      PROJECTS_HREF,
+    ),
+  repositories: (f) =>
+    metric('Repositories', repositoryCount(f.scopedFolders), PROJECTS_HREF),
+  returned: (f) => metric('Returned by QA', qaSum(f, returnedCount)),
+  'in-progress': (f) => metric('In progress', qaSum(f, inProgressCount)),
+  running: (f) => metric('Running', f.runStats.running, RUNS_HREF),
+  'failing-runs': (f) => metric('Failing runs', f.runStats.failures, RUNS_HREF),
+  'success-rate': (f) =>
+    metric('Success rate', f.runStats.successRate, RUNS_HREF, '%'),
+  'in-verification': (f) => metric('In verification', qaSum(f, isOpen)),
+  'pending-items': (f) => metric('Pending items', qaSum(f, pendingCount)),
+  'failed-or-blocked': (f) =>
+    metric('Failed or blocked', qaSum(f, failedOrBlockedCount)),
+  'ready-for-retest': (f) =>
+    metric('Ready for re-test', readyForRetestTotal(f.overview, f.scopedQa)),
+  'uat-pass-rate': (f) =>
+    metric('UAT pass rate', f.uatStats.successRate, RUNS_HREF, '%'),
+  projects: (f) => metric('Projects', f.scope.projectIds.length, PROJECTS_HREF),
+  'awaiting-promotion': (f) =>
+    metric(
+      'Awaiting promotion',
+      f.production.mode === 'full' ? f.production.ready.length : null,
+    ),
+  'need-attention': (f) => metric('Need attention', f.attention),
+  'failing-branches': (f) =>
+    metric('Failing branches', f.failingBranches, RUNS_HREF),
 };
 
-export function homeMetrics(ids: ReadonlyArray<HomeMetricId>, facts: HomeFacts): HomeMetric[] {
+export function homeMetrics(
+  ids: ReadonlyArray<HomeMetricId>,
+  facts: HomeFacts,
+): HomeMetric[] {
   return ids.map((id) => ({ id, ...METRICS[id](facts) }));
 }
 
@@ -133,7 +160,10 @@ export function addRepositoryHref(
 }
 
 /** "Create project" on Projects needing attention, unless the server says no. */
-export function createProjectHref(snapshot: ProjectFoldersSnapshot | null, groupId: string | null): string | null {
+export function createProjectHref(
+  snapshot: ProjectFoldersSnapshot | null,
+  groupId: string | null,
+): string | null {
   if (snapshot?.canCreateProject === false) return null;
   return newProjectHref(groupId);
 }
@@ -151,10 +181,12 @@ export interface PersonaDashboardInput {
   projects: ReadonlyArray<ProvisionedProject>;
 }
 
-export function buildPersonaDashboard(input: PersonaDashboardInput): PersonaDashboard {
+export function buildPersonaDashboard(
+  input: PersonaDashboardInput,
+): PersonaDashboard {
   const { layout, overview } = input;
   const folders = input.folders?.folders ?? [];
-  const links = homeLinkContext(input.groupId ?? "", folders);
+  const links = homeLinkContext(input.groupId ?? '', folders);
   const scope = homeScopeFor({ persona: layout.persona, folders, overview });
   const scopedFolders = foldersInScope(folders, scope);
   const scopedQa = qaProjectsInScope(overview, scope);
@@ -162,7 +194,12 @@ export function buildPersonaDashboard(input: PersonaDashboardInput): PersonaDash
   const ids = repoProjectIds(folders, input.projects);
   const health = branchHealth(scopedRuns, scopedFolders, ids);
   const production = productionView(overview, links);
-  const needsAttention = needsAttentionRows(folders, overview, layout.qa, links);
+  const needsAttention = needsAttentionRows(
+    folders,
+    overview,
+    layout.qa,
+    links,
+  );
   const runStats = computeRunStats(scopedRuns);
   const facts: HomeFacts = {
     scope,
@@ -179,10 +216,18 @@ export function buildPersonaDashboard(input: PersonaDashboardInput): PersonaDash
     scope,
     fallbackLine: scopeFallbackLine(layout.persona, scope),
     metrics: homeMetrics(layout.metrics, facts),
-    runs: layout.persona === "developer" ? runsFailuresFirst(scopedRuns) : scopedRuns,
+    runs:
+      layout.persona === 'developer'
+        ? runsFailuresFirst(scopedRuns)
+        : scopedRuns,
     runStats,
     returned: returnedRows(scopedQa, links),
-    myWork: myWorkProjects(scopedFolders, latestRunByRepo(scopedRuns), links, overview),
+    myWork: myWorkProjects(
+      scopedFolders,
+      latestRunByRepo(scopedRuns),
+      links,
+      overview,
+    ),
     addRepositoryHref: addRepositoryHref(input.folders, scope, input.groupId),
     verification: verificationRows(scopedQa, links),
     uatAutomation: uatAutomationRows(input.teamRuns, ids),

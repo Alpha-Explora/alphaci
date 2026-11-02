@@ -1,11 +1,14 @@
-"use client";
+'use client';
 
-import type { FormEvent } from "react";
+import type { FormEvent } from 'react';
 
-import type { QaChecklist } from "../../model/checklist-types";
-import { CHECKLIST_NAME_MAX, itemCountLabel } from "../../model/checklist-rules";
-import { useChecklistEditorViewModel } from "../view-models/use-checklist-editor-view-model";
-import { ChecklistItemsEditor } from "./checklist-items-editor";
+import type { QaChecklist } from '../../model/checklist-types';
+import {
+  CHECKLIST_NAME_MAX,
+  itemCountLabel,
+} from '../../model/checklist-rules';
+import { useChecklistEditorViewModel } from '../view-models/use-checklist-editor-view-model';
+import { ChecklistItemsEditor } from './checklist-items-editor';
 
 function SaveError({
   error,
@@ -17,7 +20,11 @@ function SaveError({
     <div className="qa-save-error" role="alert">
       <p>{error}</p>
       {stale ? (
-        <button type="button" className="ghost-button group-section-action" onClick={onReload}>
+        <button
+          type="button"
+          className="ghost-button group-section-action"
+          onClick={onReload}
+        >
           Reload checklist
         </button>
       ) : null}
@@ -26,8 +33,8 @@ function SaveError({
 }
 
 function submitLabel(saving: boolean, isNew: boolean): string {
-  if (saving) return "Saving…";
-  return isNew ? "Create checklist" : "Save changes";
+  if (saving) return 'Saving…';
+  return isNew ? 'Create checklist' : 'Save changes';
 }
 
 function EditorFooter({
@@ -35,13 +42,22 @@ function EditorFooter({
   isNew,
   dirty,
   onCancel,
-}: Readonly<{ saving: boolean; isNew: boolean; dirty: boolean; onCancel: () => void }>) {
+}: Readonly<{
+  saving: boolean;
+  isNew: boolean;
+  dirty: boolean;
+  onCancel: () => void;
+}>) {
   // A new checklist can always be submitted — validation explains what is
   // missing. An edit with nothing changed has nothing to save.
   const blocked = saving || (!isNew && !dirty);
   return (
     <div className="qa-editor__footer">
-      <button type="submit" className="primary-button group-section-action" disabled={blocked}>
+      <button
+        type="submit"
+        className="primary-button group-section-action"
+        disabled={blocked}
+      >
         {submitLabel(saving, isNew)}
       </button>
       <button
@@ -52,7 +68,9 @@ function EditorFooter({
       >
         Cancel
       </button>
-      {dirty && !saving ? <span className="qa-editor__dirty">Unsaved changes</span> : null}
+      {dirty && !saving ? (
+        <span className="qa-editor__dirty">Unsaved changes</span>
+      ) : null}
     </div>
   );
 }
@@ -101,7 +119,9 @@ function DetailsFields({
           placeholder="When to run it and what it protects (optional)"
           onChange={(event) => onDescription(event.target.value)}
         />
-        <span className="hier-field-hint">Plain text. Line breaks are kept.</span>
+        <span className="hier-field-hint">
+          Plain text. Line breaks are kept.
+        </span>
       </label>
     </div>
   );
@@ -135,10 +155,12 @@ export function ChecklistEditor({
   return (
     <form className="qa-editor" onSubmit={handleSubmit} noValidate>
       <div className="qa-editor__head">
-        <h4 className="qa-detail__title">{vm.isNew ? "New checklist" : "Edit checklist"}</h4>
+        <h4 className="qa-detail__title">
+          {vm.isNew ? 'New checklist' : 'Edit checklist'}
+        </h4>
         <p className="qa-detail__meta">
           {vm.isNew
-            ? "Name it after the moment it guards — a release, a migration, a payment change."
+            ? 'Name it after the moment it guards — a release, a migration, a payment change.'
             : `Version ${checklist?.version ?? 1} · saving creates the next version`}
         </p>
       </div>
@@ -161,7 +183,7 @@ export function ChecklistEditor({
           <span className="hier-field-hint">
             {draft.items.length > 0
               ? `${itemCountLabel(draft.items.length)}, worked through in this order`
-              : "Order is the order people work through them"}
+              : 'Order is the order people work through them'}
           </span>
         </div>
         <ChecklistItemsEditor

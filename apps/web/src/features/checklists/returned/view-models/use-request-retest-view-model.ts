@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { qaRunsRepository } from "../../data/qa-runs-repository";
-import { qaActionError } from "../../model/qa-run-rules";
-import type { QaActionError, QaRun } from "../../model/qa-run-types";
+import { qaRunsRepository } from '../../data/qa-runs-repository';
+import { qaActionError } from '../../model/qa-run-rules';
+import type { QaActionError, QaRun } from '../../model/qa-run-types';
 
 /** Which item the form is for: the run it sits on and its id. */
 export interface RetestTarget {
@@ -14,7 +14,7 @@ export interface RetestTarget {
 
 export interface RequestRetestViewModel {
   /** The form's state for the open item: closed, being written, or being sent. */
-  status: "closed" | "editing" | "submitting";
+  status: 'closed' | 'editing' | 'submitting';
   /** The item the note form is open on, as `runId:itemId`. */
   openKey: string | null;
   note: string;
@@ -25,7 +25,8 @@ export interface RequestRetestViewModel {
   submit: (target: RetestTarget) => Promise<void>;
 }
 
-const RETEST_ERROR = "The re-test could not be requested. Try again in a moment.";
+const RETEST_ERROR =
+  'The re-test could not be requested. Try again in a moment.';
 
 export function retestKey(target: RetestTarget): string {
   return `${target.runId}:${target.itemId}`;
@@ -43,13 +44,13 @@ export function useRequestRetestViewModel(options: {
 }): RequestRetestViewModel {
   const { projectId, onDone } = options;
   const [openKey, setOpenKey] = useState<string | null>(null);
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<QaActionError | null>(null);
 
   function open(target: RetestTarget) {
     setOpenKey(retestKey(target));
-    setNote("");
+    setNote('');
     setError(null);
   }
 
@@ -66,7 +67,7 @@ export function useRequestRetestViewModel(options: {
         note.trim() || null,
       );
       setOpenKey(null);
-      setNote("");
+      setNote('');
       onDone(run);
     } catch (cause) {
       setError(qaActionError(cause, RETEST_ERROR));
@@ -75,9 +76,9 @@ export function useRequestRetestViewModel(options: {
     }
   }
 
-  function formStatus(): RequestRetestViewModel["status"] {
-    if (submitting) return "submitting";
-    return openKey ? "editing" : "closed";
+  function formStatus(): RequestRetestViewModel['status'] {
+    if (submitting) return 'submitting';
+    return openKey ? 'editing' : 'closed';
   }
 
   return {

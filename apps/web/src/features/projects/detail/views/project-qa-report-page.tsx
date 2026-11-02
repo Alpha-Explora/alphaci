@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { ProjectQaReportView } from "@/features/checklists/report";
+import { ProjectQaReportView } from '@/features/checklists/report';
 
-import { VisualEvidence } from "./visual-evidence";
+import { VisualEvidence } from './visual-evidence';
 
 /**
  * The printable Project QA report with its screenshots. The report is the
@@ -13,7 +13,11 @@ export function ProjectQaReportPage() {
   return (
     <ProjectQaReportView
       renderEvidence={(repository, { onSettled }) => (
-        <VisualEvidence projectId={repository.projectId} headSha={repository.headSha} onSettled={onSettled} />
+        <VisualEvidence
+          projectId={repository.projectId}
+          headSha={repository.headSha}
+          onSettled={onSettled}
+        />
       )}
     />
   );

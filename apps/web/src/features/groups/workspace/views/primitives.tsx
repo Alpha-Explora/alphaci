@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import "./hierarchy.css";
+import './hierarchy.css';
 
-import Link from "next/link";
+import Link from 'next/link';
 import {
   useEffect,
   useId,
@@ -10,11 +10,11 @@ import {
   useSyncExternalStore,
   type FormEvent,
   type ReactNode,
-} from "react";
-import { createPortal } from "react-dom";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+} from 'react';
+import { createPortal } from 'react-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
-import type { ResourceState } from "@/features/groups";
+import type { ResourceState } from '@/features/groups';
 
 const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
 
@@ -32,7 +32,11 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
         {items.map((item, index) => (
           <span
             key={`${item.label}-${index}`}
-            style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+            }}
           >
             {index > 0 && (
               <span className="hier-breadcrumb-sep" aria-hidden="true">
@@ -94,7 +98,7 @@ export function SectionHeader({
     <div className="hier-section-head">
       <div className="hier-section-head-left">
         <h2 className="hier-section-title">{title}</h2>
-        {typeof count === "number" && (
+        {typeof count === 'number' && (
           <span className="hier-count-chip">{count}</span>
         )}
       </div>
@@ -110,13 +114,13 @@ export function GroupSubNav({
   active,
 }: {
   groupId: string;
-  active: "overview" | "members" | "systems" | "activity";
+  active: 'overview' | 'members' | 'systems' | 'activity';
 }) {
   const tabs: { key: typeof active; label: string; href: string }[] = [
-    { key: "overview", label: "Overview", href: `/groups/${groupId}` },
-    { key: "members", label: "Members", href: `/groups/${groupId}/members` },
-    { key: "systems", label: "Projects", href: `/groups/${groupId}/systems` },
-    { key: "activity", label: "Activity", href: `/groups/${groupId}/activity` },
+    { key: 'overview', label: 'Overview', href: `/groups/${groupId}` },
+    { key: 'members', label: 'Members', href: `/groups/${groupId}/members` },
+    { key: 'systems', label: 'Projects', href: `/groups/${groupId}/systems` },
+    { key: 'activity', label: 'Activity', href: `/groups/${groupId}/activity` },
   ];
   return (
     <nav className="hier-subnav" aria-label="Group sections">
@@ -125,7 +129,7 @@ export function GroupSubNav({
           key={tab.key}
           href={tab.href}
           className="hier-subnav-link"
-          aria-current={tab.key === active ? "page" : undefined}
+          aria-current={tab.key === active ? 'page' : undefined}
         >
           {tab.label}
         </Link>
@@ -138,7 +142,17 @@ export function GroupSubNav({
 
 function InfoIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <circle cx="12" cy="12" r="10" />
       <line x1="12" y1="16" x2="12" y2="12" />
       <line x1="12" y1="8" x2="12.01" y2="8" />
@@ -148,7 +162,17 @@ function InfoIcon() {
 
 function LockIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <rect x="3" y="11" width="18" height="11" rx="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
@@ -156,17 +180,37 @@ function LockIcon() {
 }
 
 const STATE_DEFAULTS = {
-  empty: { title: "Nothing here yet", message: "There's nothing to show in this view right now." },
-  forbidden: { title: "You don't have access", message: "Your role in this group doesn't allow you to view this. Ask a group lead if you need access." },
-  notfound: { title: "Not found", message: "This item doesn't exist, or you don't have access to it." },
-  error: { title: "Something went wrong", message: "We couldn't load this view. Please try again." },
+  empty: {
+    title: 'Nothing here yet',
+    message: "There's nothing to show in this view right now.",
+  },
+  forbidden: {
+    title: "You don't have access",
+    message:
+      "Your role in this group doesn't allow you to view this. Ask a group lead if you need access.",
+  },
+  notfound: {
+    title: 'Not found',
+    message: "This item doesn't exist, or you don't have access to it.",
+  },
+  error: {
+    title: 'Something went wrong',
+    message: "We couldn't load this view. Please try again.",
+  },
 } as const;
 
 export function LoadingRows({ rows = 3 }: { rows?: number }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }} aria-hidden="true">
+    <div
+      style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+      aria-hidden="true"
+    >
       {Array.from({ length: rows }).map((_, index) => (
-        <div key={index} className="hier-skeleton" style={{ height: "4.5rem" }} />
+        <div
+          key={index}
+          className="hier-skeleton"
+          style={{ height: '4.5rem' }}
+        />
       ))}
     </div>
   );
@@ -179,29 +223,40 @@ export function StateView({
   action,
   onRetry,
 }: {
-  variant: Exclude<ResourceState, "ready" | "loading">;
+  variant: Exclude<ResourceState, 'ready' | 'loading'>;
   title?: string;
   message?: string;
   action?: ReactNode;
   onRetry?: () => void;
 }) {
   const defaults = STATE_DEFAULTS[variant];
-  const conf = { title: title ?? defaults.title, message: message ?? defaults.message };
-  const useLock = variant === "forbidden";
-  const danger = variant === "error";
+  const conf = {
+    title: title ?? defaults.title,
+    message: message ?? defaults.message,
+  };
+  const useLock = variant === 'forbidden';
+  const danger = variant === 'error';
 
   return (
-    <div className="hier-state" role={variant === "error" ? "alert" : undefined}>
+    <div
+      className="hier-state"
+      role={variant === 'error' ? 'alert' : undefined}
+    >
       <span
-        className={`hier-state-icon${danger ? " hier-state-icon--danger" : ""}`}
+        className={`hier-state-icon${danger ? ' hier-state-icon--danger' : ''}`}
         aria-hidden="true"
       >
         {useLock ? <LockIcon /> : <InfoIcon />}
       </span>
       <h2 className="hier-state-title">{conf.title}</h2>
       <p className="hier-state-text">{conf.message}</p>
-      {onRetry && variant === "error" && (
-        <button className="ghost-button" type="button" onClick={onRetry} style={{ marginTop: "0.4rem" }}>
+      {onRetry && variant === 'error' && (
+        <button
+          className="ghost-button"
+          type="button"
+          onClick={onRetry}
+          style={{ marginTop: '0.4rem' }}
+        >
           Try again
         </button>
       )}
@@ -236,32 +291,53 @@ export function ResourceBoundary({
   notFoundMessage?: string;
   forbiddenMessage?: string;
 }) {
-  if (state === "loading") return <>{loading ?? <LoadingRows />}</>;
-  if (state === "empty")
+  if (state === 'loading') return <>{loading ?? <LoadingRows />}</>;
+  if (state === 'empty')
     return (
-      <StateView variant="empty" title={emptyTitle} message={emptyMessage} action={emptyAction} />
+      <StateView
+        variant="empty"
+        title={emptyTitle}
+        message={emptyMessage}
+        action={emptyAction}
+      />
     );
-  if (state === "forbidden")
+  if (state === 'forbidden')
     return <StateView variant="forbidden" message={forbiddenMessage} />;
-  if (state === "notfound")
-    return <StateView variant="notfound" title={notFoundTitle} message={notFoundMessage} />;
-  if (state === "error") return <StateView variant="error" onRetry={onRetry} />;
+  if (state === 'notfound')
+    return (
+      <StateView
+        variant="notfound"
+        title={notFoundTitle}
+        message={notFoundMessage}
+      />
+    );
+  if (state === 'error') return <StateView variant="error" onRetry={onRetry} />;
   return null;
 }
 
 /* ── Dialog ───────────────────────────────────────────────────────────────── */
 
-function dialogClasses(size: "default" | "wide"): { backdrop: string; panel: string } {
-  return size === "wide"
-    ? { backdrop: "hier-dialog-backdrop hier-dialog-backdrop--wide", panel: "hier-dialog hier-dialog--wide" }
-    : { backdrop: "hier-dialog-backdrop", panel: "hier-dialog" };
+function dialogClasses(size: 'default' | 'wide'): {
+  backdrop: string;
+  panel: string;
+} {
+  return size === 'wide'
+    ? {
+        backdrop: 'hier-dialog-backdrop hier-dialog-backdrop--wide',
+        panel: 'hier-dialog hier-dialog--wide',
+      }
+    : { backdrop: 'hier-dialog-backdrop', panel: 'hier-dialog' };
 }
 
 const noSubscription = () => () => undefined;
 
 /** False on the server and while hydrating, true once mounted in a browser. */
 function useIsClient(): boolean {
-  return useSyncExternalStore(noSubscription, () => true, () => false);
+  return useSyncExternalStore(
+    noSubscription,
+    () => true,
+    () => false,
+  );
 }
 
 /**
@@ -270,12 +346,26 @@ function useIsClient(): boolean {
  * "fixed" sheet would centre on that panel and slide under the app header
  * at small heights. The default card stays where it always was.
  */
-function DialogLayer({ portal, children }: { portal: boolean; children: ReactNode }) {
+function DialogLayer({
+  portal,
+  children,
+}: {
+  portal: boolean;
+  children: ReactNode;
+}) {
   const client = useIsClient();
-  return portal && client ? createPortal(children, document.body) : <>{children}</>;
+  return portal && client ? (
+    createPortal(children, document.body)
+  ) : (
+    <>{children}</>
+  );
 }
 
-function describedById(describedBy: string | undefined, description: string | undefined, descId: string) {
+function describedById(
+  describedBy: string | undefined,
+  description: string | undefined,
+  descId: string,
+) {
   if (describedBy) return describedBy;
   return description ? descId : undefined;
 }
@@ -285,7 +375,7 @@ function describedById(describedBy: string | undefined, description: string | un
  * "wide": a landscape sheet, min(1100px, 94vw), whose header and footer stay
  * pinned while only the body scrolls (a full-screen sheet on phones).
  */
-export type DialogSize = "default" | "wide";
+export type DialogSize = 'default' | 'wide';
 
 export function Dialog({
   open,
@@ -293,7 +383,7 @@ export function Dialog({
   title,
   description,
   describedBy,
-  size = "default",
+  size = 'default',
   portal = false,
   children,
 }: {
@@ -339,66 +429,66 @@ export function Dialog({
       // (a side list of tabs can come before the field to type in).
       const panel = panelRef.current;
       const focusable =
-        panel?.querySelector<HTMLElement>("[data-autofocus]") ??
-        panel?.querySelector<HTMLElement>("input, select, textarea, button");
+        panel?.querySelector<HTMLElement>('[data-autofocus]') ??
+        panel?.querySelector<HTMLElement>('input, select, textarea, button');
       focusable?.focus();
     }, 0);
 
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         event.stopPropagation();
         onCloseRef.current();
       }
     }
-    document.addEventListener("keydown", onKey);
+    document.addEventListener('keydown', onKey);
     return () => {
       window.clearTimeout(timer);
-      document.removeEventListener("keydown", onKey);
+      document.removeEventListener('keydown', onKey);
       restoreFocusRef.current?.focus?.();
     };
   }, [open]);
 
   return (
-    <DialogLayer portal={portal || size === "wide"}>
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className={classes.backdrop}
-          initial={reduced ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={reduced ? undefined : { opacity: 0 }}
-          transition={{ duration: 0.12 }}
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) onClose();
-          }}
-        >
+    <DialogLayer portal={portal || size === 'wide'}>
+      <AnimatePresence>
+        {open && (
           <motion.div
-            ref={panelRef}
-            className={classes.panel}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            aria-describedby={describedById(describedBy, description, descId)}
-            /* Opacity and a short lift only, both compositor-friendly: no
-               scale, which re-rasterised the panel and its large shadow. */
-            initial={reduced ? false : { opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={reduced ? undefined : { opacity: 0, y: 6 }}
-            transition={{ duration: 0.14, ease: EASE_OUT }}
+            className={classes.backdrop}
+            initial={reduced ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={reduced ? undefined : { opacity: 0 }}
+            transition={{ duration: 0.12 }}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) onClose();
+            }}
           >
-            <h2 className="hier-dialog-title" id={titleId}>
-              {title}
-            </h2>
-            {description && (
-              <p className="hier-dialog-desc" id={descId}>
-                {description}
-              </p>
-            )}
-            {children}
+            <motion.div
+              ref={panelRef}
+              className={classes.panel}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+              aria-describedby={describedById(describedBy, description, descId)}
+              /* Opacity and a short lift only, both compositor-friendly: no
+               scale, which re-rasterised the panel and its large shadow. */
+              initial={reduced ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduced ? undefined : { opacity: 0, y: 6 }}
+              transition={{ duration: 0.14, ease: EASE_OUT }}
+            >
+              <h2 className="hier-dialog-title" id={titleId}>
+                {title}
+              </h2>
+              {description && (
+                <p className="hier-dialog-desc" id={descId}>
+                  {description}
+                </p>
+              )}
+              {children}
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
     </DialogLayer>
   );
 }
@@ -419,7 +509,11 @@ function FormDialogFooter({
   return (
     <>
       {error && (
-        <p className="error-text" role="alert" style={{ margin: "0.4rem 0 0", fontSize: "0.8rem" }}>
+        <p
+          className="error-text"
+          role="alert"
+          style={{ margin: '0.4rem 0 0', fontSize: '0.8rem' }}
+        >
           {error}
         </p>
       )}
@@ -437,7 +531,7 @@ function FormDialogFooter({
           className="primary-button"
           disabled={submitting || !canSubmit}
         >
-          {submitting ? "Working…" : submitLabel}
+          {submitting ? 'Working…' : submitLabel}
         </button>
       </div>
     </>
@@ -459,7 +553,7 @@ export function FormDialog({
   submitting,
   error,
   canSubmit = true,
-  size = "default",
+  size = 'default',
   portal = false,
   onSubmit,
   children,
@@ -492,9 +586,15 @@ export function FormDialog({
       onClose={onClose}
     />
   );
-  if (size !== "wide") {
+  if (size !== 'wide') {
     return (
-      <Dialog open={open} onClose={onClose} title={title} description={description} portal={portal}>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        title={title}
+        description={description}
+        portal={portal}
+      >
         <form onSubmit={handleSubmit} noValidate>
           {children}
           {footer}
@@ -538,7 +638,7 @@ export function Avatar({
   name?: string | null;
   avatarUrl?: string | null;
 }) {
-  const initial = (name ?? login ?? "U").slice(0, 1).toUpperCase();
+  const initial = (name ?? login ?? 'U').slice(0, 1).toUpperCase();
   return (
     <span className="hier-avatar" aria-hidden="true">
       {avatarUrl ? (

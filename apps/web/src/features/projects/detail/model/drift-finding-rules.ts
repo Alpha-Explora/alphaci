@@ -3,19 +3,19 @@ import type {
   ProjectDriftFinding,
   ProjectDriftRepairAction,
   ProjectDriftRepairResponse,
-} from "@/shared/api/contracts";
-import { canManageProjectLifecycle } from "./project-detail-tab-rules";
+} from '@/shared/api/contracts';
+import { canManageProjectLifecycle } from './project-detail-tab-rules';
 
 /**
  * Plain-language titles for the finding kinds this panel explains. A kind not
  * listed shows its code, which is how every kind read before.
  */
 const TITLES = new Map<string, string>([
-  ["ci_api_url_stale", "CI points at an old AlphaCI address"],
+  ['ci_api_url_stale', 'CI points at an old AlphaCI address'],
 ]);
 
 export function driftFindingTitle(
-  finding: Pick<ProjectDriftFinding, "code">,
+  finding: Pick<ProjectDriftFinding, 'code'>,
 ): string {
   return TITLES.get(finding.code) ?? finding.code;
 }
@@ -25,17 +25,17 @@ export function driftFindingTitle(
  * accepts are listed; a finding without one is shown without a button.
  */
 const REPAIRS = new Map<string, ProjectDriftRepairAction>([
-  ["ci_api_url_stale", "repair_ci_api_url"],
+  ['ci_api_url_stale', 'repair_ci_api_url'],
 ]);
 
 export function driftRepairActionFor(
-  finding: Pick<ProjectDriftFinding, "code">,
+  finding: Pick<ProjectDriftFinding, 'code'>,
 ): ProjectDriftRepairAction | null {
   return REPAIRS.get(finding.code) ?? null;
 }
 
 export const DRIFT_REPAIR_LEAD_ONLY_MESSAGE =
-  "A product owner or an admin applies this repair.";
+  'A product owner or an admin applies this repair.';
 
 /** The backend's gate for drift repairs: the same roles that manage the project. */
 export function canRunDriftRepair(
@@ -46,14 +46,14 @@ export function canRunDriftRepair(
 
 /** Affected files as `branch: path`, one per line, for the finding's details. */
 export function driftAffectedFiles(
-  finding: Pick<ProjectDriftFinding, "details">,
+  finding: Pick<ProjectDriftFinding, 'details'>,
 ): string[] {
-  const files = finding.details["files"];
+  const files = finding.details['files'];
   if (!Array.isArray(files)) return [];
   return files.flatMap((file: unknown) => {
-    if (typeof file !== "object" || file === null) return [];
+    if (typeof file !== 'object' || file === null) return [];
     const { branch, path } = file as { branch?: unknown; path?: unknown };
-    return typeof branch === "string" && typeof path === "string"
+    return typeof branch === 'string' && typeof path === 'string'
       ? [`${branch}: ${path}`]
       : [];
   });
@@ -65,12 +65,14 @@ export function driftAffectedFiles(
  * the end of `pullRequestUrl`. The GitHub address itself is never linked.
  */
 export function driftPullRequestNumber(
-  response: Pick<ProjectDriftRepairResponse, "result">,
+  response: Pick<ProjectDriftRepairResponse, 'result'>,
 ): number | null {
-  const number = response.result?.["pullRequestNumber"];
-  if (typeof number === "number" && Number.isInteger(number) && number > 0) return number;
-  const url = response.result?.["pullRequestUrl"];
-  const match = typeof url === "string" ? /\/pull\/(\d+)(?:[/?#]|$)/.exec(url) : null;
+  const number = response.result?.['pullRequestNumber'];
+  if (typeof number === 'number' && Number.isInteger(number) && number > 0)
+    return number;
+  const url = response.result?.['pullRequestUrl'];
+  const match =
+    typeof url === 'string' ? /\/pull\/(\d+)(?:[/?#]|$)/.exec(url) : null;
   return match ? Number(match[1]) : null;
 }
 
@@ -81,10 +83,10 @@ export function driftPullRequestNumber(
  */
 export function driftRepairMessage(message: string): string {
   return message
-    .replace(/:?\s*https?:\/\/(?:www\.)?github\.com\/\S*/gi, "")
-    .replace(/\s+([.,;])/g, "$1")
+    .replace(/:?\s*https?:\/\/(?:www\.)?github\.com\/\S*/gi, '')
+    .replace(/\s+([.,;])/g, '$1')
     .trim()
-    .replace(/([^.!?])$/, "$1.");
+    .replace(/([^.!?])$/, '$1.');
 }
 
 /**
@@ -92,8 +94,8 @@ export function driftRepairMessage(message: string): string {
  * Null for a finding raised before the base was recorded.
  */
 export function driftRepairBaseBranch(
-  finding: Pick<ProjectDriftFinding, "details">,
+  finding: Pick<ProjectDriftFinding, 'details'>,
 ): string | null {
-  const base = finding.details["baseBranch"];
-  return typeof base === "string" && base.length > 0 ? base : null;
+  const base = finding.details['baseBranch'];
+  return typeof base === 'string' && base.length > 0 ? base : null;
 }

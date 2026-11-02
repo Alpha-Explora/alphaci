@@ -1,6 +1,6 @@
-import { request } from "@/shared/api/request";
+import { request } from '@/shared/api/request';
 
-import type { DeploymentProviderAvailability } from "../model/onprem-hosting-rules";
+import type { DeploymentProviderAvailability } from '../model/onprem-hosting-rules';
 
 /**
  * `GET /deployment-providers`, for the create wizard's on-prem choice.
@@ -12,9 +12,9 @@ import type { DeploymentProviderAvailability } from "../model/onprem-hosting-rul
  */
 export const deploymentProvidersRepository = {
   async list(): Promise<DeploymentProviderAvailability[]> {
-    const response = await request<{ providers?: DeploymentProviderAvailability[] }>(
-      "/deployment-providers",
-    );
+    const response = await request<{
+      providers?: DeploymentProviderAvailability[];
+    }>('/deployment-providers');
     return Array.isArray(response?.providers) ? response.providers : [];
   },
 };

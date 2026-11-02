@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { useApiResource } from "@/features/groups";
+import { useApiResource } from '@/features/groups';
 
-import { groupsRepository } from "../../data/groups-repository";
+import { groupsRepository } from '../../data/groups-repository';
 import type {
   RepositoryAccessStatus,
   RepositoryAccessStatusResponse,
   RepositoryAssignment,
-} from "../../model/groups-types";
+} from '../../model/groups-types';
 
 export interface RepositoryAccessViewModel {
   assignments: RepositoryAssignment[];
   accessStatus: RepositoryAccessStatus[];
   /** Combined: the tab needs both resources before it can render. */
-  status: ReturnType<typeof useApiResource<RepositoryAssignment[]>>["state"];
+  status: ReturnType<typeof useApiResource<RepositoryAssignment[]>>['state'];
   reload: () => void;
   assignOpen: boolean;
   setAssignOpen: (open: boolean) => void;
@@ -52,9 +52,9 @@ export function useRepositoryAccessViewModel(
   // Either resource still loading means the tab is not ready; an assignments
   // failure is the one the tab surfaces, as before.
   const status =
-    assignmentsResource.state === "loading" ||
-    accessResource.state === "loading"
-      ? "loading"
+    assignmentsResource.state === 'loading' ||
+    accessResource.state === 'loading'
+      ? 'loading'
       : assignmentsResource.state;
 
   return {

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 import {
   canFramePreview,
@@ -8,8 +8,11 @@ import {
   previewFrameSandbox,
   previewUnavailableReason,
   type ProjectBranchPreview,
-} from "@/features/projects";
-import { useBranchPreviewsViewModel, useDashboardOrigin } from "@/features/projects/previews";
+} from '@/features/projects';
+import {
+  useBranchPreviewsViewModel,
+  useDashboardOrigin,
+} from '@/features/projects/previews';
 
 import {
   chromeSize,
@@ -30,16 +33,20 @@ import {
   type DevicePresetId,
   type Resolution,
   type StudioEnvironment,
-} from "../../model/qa-studio-rules";
-import { useCopyLink, type CopyLinkStatus } from "./use-copy-link";
-import { usePaneSize } from "./use-pane-size";
-import { useStudioFullScreen, type StudioFullScreenState } from "./use-studio-full-screen";
-import { useStudioPanel, type StudioPanelState } from "./use-studio-panel";
-import { useStudioResolution } from "./use-studio-resolution";
+} from '../../model/qa-studio-rules';
+import { useCopyLink, type CopyLinkStatus } from './use-copy-link';
+import { usePaneSize } from './use-pane-size';
+import {
+  useStudioFullScreen,
+  type StudioFullScreenState,
+} from './use-studio-full-screen';
+import { useStudioPanel, type StudioPanelState } from './use-studio-panel';
+import { useStudioResolution } from './use-studio-resolution';
 
-export interface StudioViewportViewModel extends StudioFullScreenState, StudioPanelState {
+export interface StudioViewportViewModel
+  extends StudioFullScreenState, StudioPanelState {
   /** The previews request: loading until the environments are known. */
-  status: "loading" | "ready" | "error";
+  status: 'loading' | 'ready' | 'error';
   error: string | null;
   /** Set when a host could not be reached, so an empty list is not read as "nothing deployed". */
   providerError: string | null;
@@ -114,9 +121,14 @@ const NO_FRAME: FrameState = {
 };
 
 /** Everything the frame needs, from the chosen preview: it always opens the environment's root. */
-function frameState(preview: ProjectBranchPreview | null, origin: string | null): FrameState {
+function frameState(
+  preview: ProjectBranchPreview | null,
+  origin: string | null,
+): FrameState {
   if (!preview) return NO_FRAME;
-  const pageUrl = preview.previewUrl ? previewPageUrl(preview.previewUrl, "/") : null;
+  const pageUrl = preview.previewUrl
+    ? previewPageUrl(preview.previewUrl, '/')
+    : null;
   const canFrame = pageUrl !== null && canFramePreview(preview);
   return {
     pageUrl,
@@ -127,8 +139,12 @@ function frameState(preview: ProjectBranchPreview | null, origin: string | null)
   };
 }
 
-function frameKeyOf(environment: StudioEnvironment | null, pageUrl: string | null, nonce: number): string {
-  return `${environment?.key ?? "none"}|${pageUrl ?? ""}|${String(nonce)}`;
+function frameKeyOf(
+  environment: StudioEnvironment | null,
+  pageUrl: string | null,
+  nonce: number,
+): string {
+  return `${environment?.key ?? 'none'}|${pageUrl ?? ''}|${String(nonce)}`;
 }
 
 /**
@@ -146,15 +162,15 @@ export function useStudioViewportViewModel(options: {
   projectId: string;
   enabled: boolean;
   /** Whose panel preference to read: QA Studio's or PO Studio's. */
-  studio?: "qa" | "po";
+  studio?: 'qa' | 'po';
 }): StudioViewportViewModel {
   const previews = useBranchPreviewsViewModel(options);
   const origin = useDashboardOrigin();
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [deviceId, setDeviceId] = useState<DevicePresetId>("desktop");
-  const [orientation, setOrientation] = useState<DeviceOrientation>("portrait");
+  const [deviceId, setDeviceId] = useState<DevicePresetId>('desktop');
+  const [orientation, setOrientation] = useState<DeviceOrientation>('portrait');
   const fullScreen = useStudioFullScreen();
-  const panel = useStudioPanel(options.studio ?? "qa");
+  const panel = useStudioPanel(options.studio ?? 'qa');
   const [nonce, setNonce] = useState(0);
 
   const environments = studioEnvironments(previews.previews);
@@ -162,17 +178,29 @@ export function useStudioViewportViewModel(options: {
   const preview = environment?.preview ?? null;
   const frame = frameState(preview, origin);
   const device = devicePreset(deviceId);
-  const { resolution, chooseResolution, chooseCustomResolution } = useStudioResolution(deviceId);
+  const { resolution, chooseResolution, chooseCustomResolution } =
+    useStudioResolution(deviceId);
   const copy = useCopyLink(frame.pageUrl);
   // Measured here, not in the preview, so the toolbar (in the tab row) can say how far the page is shrunk.
   const stage = usePaneSize<HTMLDivElement>();
   const dimensions = resolveDeviceDimensions(device, orientation, resolution);
   const chrome = chromeSize(frameChrome(device.frame, dimensions.orientation));
-  const scale = fitDeviceScale(dimensions.width, dimensions.height, stage.width, stage.height, chrome.width, chrome.height);
+  const scale = fitDeviceScale(
+    dimensions.width,
+    dimensions.height,
+    stage.width,
+    stage.height,
+    chrome.width,
+    chrome.height,
+  );
 
   function setResolution(value: string) {
     // "Custom…" starts from the size in view, so choosing it never jumps the frame.
-    chooseResolution(value === CUSTOM_RESOLUTION_OPTION ? customResolutionChoice(resolution.width, resolution.height) : value);
+    chooseResolution(
+      value === CUSTOM_RESOLUTION_OPTION
+        ? customResolutionChoice(resolution.width, resolution.height)
+        : value,
+    );
   }
 
   return {
@@ -195,7 +223,10 @@ export function useStudioViewportViewModel(options: {
     scaleLabel: scaleLabel(scale),
     canRotate: device.rotatable,
     rotate: () => {
-      if (device.rotatable) setOrientation((value) => (value === "portrait" ? "landscape" : "portrait"));
+      if (device.rotatable)
+        setOrientation((value) =>
+          value === 'portrait' ? 'landscape' : 'portrait',
+        );
     },
     ...frame,
     copyLink: copy.copy,

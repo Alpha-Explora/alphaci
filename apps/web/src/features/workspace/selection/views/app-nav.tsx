@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import Image from "next/image";
-import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import Link from 'next/link';
+import Image from 'next/image';
+import { useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
-import type { AuthSession } from "@/features/auth/session";
-import { QaAlertToasts } from "@/features/notifications/summary";
+import type { AuthSession } from '@/features/auth/session';
+import { QaAlertToasts } from '@/features/notifications/summary';
 
 import {
   APP_ROLE_BADGE_LABELS,
@@ -16,10 +16,10 @@ import {
   sessionAppRole,
   type SidebarMainItem,
   type WorkspaceAppRole,
-} from "../model/workspace-types";
-import { useAppNavViewModel } from "../view-models/use-app-nav-view-model";
-import { useSidebarPin } from "../view-models/use-sidebar-pin";
-import { WorkspaceSwitcher } from "./workspace-switcher";
+} from '../model/workspace-types';
+import { useAppNavViewModel } from '../view-models/use-app-nav-view-model';
+import { useSidebarPin } from '../view-models/use-sidebar-pin';
+import { WorkspaceSwitcher } from './workspace-switcher';
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
@@ -217,7 +217,18 @@ function SidebarPanelIcon({ pinned }: Readonly<{ pinned: boolean }>) {
     >
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <line x1="9" y1="4" x2="9" y2="20" />
-      {pinned ? <rect x="3" y="4" width="6" height="16" rx="2" fill="currentColor" stroke="none" opacity="0.35" /> : null}
+      {pinned ? (
+        <rect
+          x="3"
+          y="4"
+          width="6"
+          height="16"
+          rx="2"
+          fill="currentColor"
+          stroke="none"
+          opacity="0.35"
+        />
+      ) : null}
     </svg>
   );
 }
@@ -278,8 +289,8 @@ function SidebarNavItem({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`sidebar-nav-item${isActive ? " sidebar-nav-item--active" : ""}`}
-      aria-current={isActive ? "page" : undefined}
+      className={`sidebar-nav-item${isActive ? ' sidebar-nav-item--active' : ''}`}
+      aria-current={isActive ? 'page' : undefined}
     >
       {isActive && (
         <motion.span
@@ -288,7 +299,7 @@ function SidebarNavItem({
           transition={
             reduced
               ? { duration: 0 }
-              : { type: "spring", stiffness: 420, damping: 36 }
+              : { type: 'spring', stiffness: 420, damping: 36 }
           }
           aria-hidden="true"
         />
@@ -306,7 +317,7 @@ function SidebarNavItem({
             className="sidebar-nav-count"
             aria-label={`${badgeCount} unread`}
           >
-            {badgeCount > 99 ? "99+" : badgeCount}
+            {badgeCount > 99 ? '99+' : badgeCount}
           </span>
         </>
       ) : null}
@@ -321,7 +332,9 @@ function SidebarNavItem({
    the rail is closed — it has no room for it, and the role is not urgent
    enough to earn an icon-only affordance. */
 
-function SidebarRoleBadge({ appRole }: Readonly<{ appRole: WorkspaceAppRole }>) {
+function SidebarRoleBadge({
+  appRole,
+}: Readonly<{ appRole: WorkspaceAppRole }>) {
   return (
     <span className={`sidebar-role-badge sidebar-role-badge--${appRole}`}>
       {APP_ROLE_BADGE_LABELS[appRole]}
@@ -351,7 +364,10 @@ function SidebarDivider() {
  * so a screen reader hears the state rather than a label that flips under the
  * cursor; the tooltip says what a press will do.
  */
-function SidebarPinToggle({ pinned, onToggle }: Readonly<{ pinned: boolean; onToggle: () => void }>) {
+function SidebarPinToggle({
+  pinned,
+  onToggle,
+}: Readonly<{ pinned: boolean; onToggle: () => void }>) {
   return (
     <div className="sidebar-toggle-row">
       <button
@@ -359,7 +375,7 @@ function SidebarPinToggle({ pinned, onToggle }: Readonly<{ pinned: boolean; onTo
         className="sidebar-nav-item app-sidebar-toggle"
         aria-label="Keep sidebar open"
         aria-pressed={pinned}
-        title={pinned ? "Collapse sidebar" : "Keep sidebar open"}
+        title={pinned ? 'Collapse sidebar' : 'Keep sidebar open'}
         onClick={onToggle}
       >
         <span className="sidebar-nav-item-icon">
@@ -382,15 +398,19 @@ export function AppNav({
   onWorkspaceSwitch,
 }: Readonly<AppNavProps>) {
   const isPlatformAdmin = isPlatformAdminUser(guest, session);
-  const { pathname, workspaces: workspaceVm, notifications, mainItems } =
-    useAppNavViewModel({
-      guest,
-      userId: !isLoggingOut && session?.authenticated ? session.user.id : null,
-      isPlatformAdmin,
-      appRole: session?.appRole ?? null,
-      platformRole: session?.platformRole ?? null,
-      pageWorkspaceId,
-    });
+  const {
+    pathname,
+    workspaces: workspaceVm,
+    notifications,
+    mainItems,
+  } = useAppNavViewModel({
+    guest,
+    userId: !isLoggingOut && session?.authenticated ? session.user.id : null,
+    isPlatformAdmin,
+    appRole: session?.appRole ?? null,
+    platformRole: session?.platformRole ?? null,
+    pageWorkspaceId,
+  });
   // Cleared on pointerleave. Clicking a nav link navigates but does NOT move
   // the mouse, so the rail stays hovered — and an expanded rail is a column of
   // panel sitting on top of the page you just asked for. Suppressing hover
@@ -424,13 +444,26 @@ export function AppNav({
           It starts to the right of the closed rail rather than spanning the
           full width, so the rail keeps its own brand mark and the expanded
           rail paints over this bar rather than beside it. */}
-      <AppHeader guest={guest} session={session} appRole={appRole} avatarInitial={avatarInitial}
-        workspaces={workspaceVm.workspaces} otherTeams={workspaceVm.otherTeams}
+      <AppHeader
+        guest={guest}
+        session={session}
+        appRole={appRole}
+        avatarInitial={avatarInitial}
+        workspaces={workspaceVm.workspaces}
+        otherTeams={workspaceVm.otherTeams}
         workspaceStatus={workspaceVm.status}
-        loadWorkspaces={loadWorkspaces} onWorkspaceSwitch={onWorkspaceSwitch}
-        onLogout={onLogout} isLoggingOut={isLoggingOut} />
-      <AppSidebar pathname={pathname} guest={guest} mainItems={mainItems} reduced={reduced}
-        isPlatformAdmin={isPlatformAdmin} unreadCount={notifications.unreadCount}
+        loadWorkspaces={loadWorkspaces}
+        onWorkspaceSwitch={onWorkspaceSwitch}
+        onLogout={onLogout}
+        isLoggingOut={isLoggingOut}
+      />
+      <AppSidebar
+        pathname={pathname}
+        guest={guest}
+        mainItems={mainItems}
+        reduced={reduced}
+        isPlatformAdmin={isPlatformAdmin}
+        unreadCount={notifications.unreadCount}
         hoverSuppressed={hoverSuppressed}
         pinned={sidebarPinned}
         onTogglePinned={() => {
@@ -440,26 +473,64 @@ export function AppNav({
           toggleSidebarPinned();
         }}
         onNavigate={() => setHoverSuppressed(true)}
-        onPointerLeave={() => setHoverSuppressed(false)} />
+        onPointerLeave={() => setHoverSuppressed(false)}
+      />
       {/* QA's refusals pop up here for the Developers who fix them. */}
-      <QaAlertToasts alerts={notifications.alerts} onDismiss={notifications.dismissAlert} onOpen={notifications.openAlert} />
+      <QaAlertToasts
+        alerts={notifications.alerts}
+        onDismiss={notifications.dismissAlert}
+        onOpen={notifications.openAlert}
+      />
     </>
   );
 }
 
-function AppHeader({ guest, session, appRole, avatarInitial, workspaces, otherTeams, workspaceStatus, loadWorkspaces, onWorkspaceSwitch, onLogout, isLoggingOut }: Readonly<{
-  guest: boolean; session: AuthSession | null; appRole: WorkspaceAppRole; avatarInitial: string;
-  workspaces: Parameters<typeof WorkspaceSwitcher>[0]["workspaces"];
-  otherTeams: NonNullable<Parameters<typeof WorkspaceSwitcher>[0]["otherTeams"]>;
-  workspaceStatus: NonNullable<Parameters<typeof WorkspaceSwitcher>[0]["status"]>;
-  loadWorkspaces: () => void; onWorkspaceSwitch?: (workspaceId: string) => void;
-  onLogout: () => void; isLoggingOut: boolean;
+function AppHeader({
+  guest,
+  session,
+  appRole,
+  avatarInitial,
+  workspaces,
+  otherTeams,
+  workspaceStatus,
+  loadWorkspaces,
+  onWorkspaceSwitch,
+  onLogout,
+  isLoggingOut,
+}: Readonly<{
+  guest: boolean;
+  session: AuthSession | null;
+  appRole: WorkspaceAppRole;
+  avatarInitial: string;
+  workspaces: Parameters<typeof WorkspaceSwitcher>[0]['workspaces'];
+  otherTeams: NonNullable<
+    Parameters<typeof WorkspaceSwitcher>[0]['otherTeams']
+  >;
+  workspaceStatus: NonNullable<
+    Parameters<typeof WorkspaceSwitcher>[0]['status']
+  >;
+  loadWorkspaces: () => void;
+  onWorkspaceSwitch?: (workspaceId: string) => void;
+  onLogout: () => void;
+  isLoggingOut: boolean;
 }>) {
   return (
     <header className="app-header">
       <div className="app-header-left">
-        <Link href="/home" className="app-header-brand" aria-label="ALPHACI — home">
-          <Image src="/brand-logo.png" alt="ALPHACI" width={138} height={46} unoptimized priority className="app-header-brand-image" />
+        <Link
+          href="/home"
+          className="app-header-brand"
+          aria-label="ALPHACI — home"
+        >
+          <Image
+            src="/brand-logo.png"
+            alt="ALPHACI"
+            width={138}
+            height={46}
+            unoptimized
+            priority
+            className="app-header-brand-image"
+          />
         </Link>
         {!guest && (
           <WorkspaceSwitcher
@@ -473,62 +544,182 @@ function AppHeader({ guest, session, appRole, avatarInitial, workspaces, otherTe
           />
         )}
       </div>
-      <HeaderActions guest={guest} session={session} appRole={appRole} avatarInitial={avatarInitial}
-        onLogout={onLogout} isLoggingOut={isLoggingOut} />
+      <HeaderActions
+        guest={guest}
+        session={session}
+        appRole={appRole}
+        avatarInitial={avatarInitial}
+        onLogout={onLogout}
+        isLoggingOut={isLoggingOut}
+      />
     </header>
   );
 }
 
-function HeaderActions({ guest, session, appRole, avatarInitial, onLogout, isLoggingOut }: Readonly<{
-  guest: boolean; session: AuthSession | null; appRole: WorkspaceAppRole; avatarInitial: string;
-  onLogout: () => void; isLoggingOut: boolean;
+function HeaderActions({
+  guest,
+  session,
+  appRole,
+  avatarInitial,
+  onLogout,
+  isLoggingOut,
+}: Readonly<{
+  guest: boolean;
+  session: AuthSession | null;
+  appRole: WorkspaceAppRole;
+  avatarInitial: string;
+  onLogout: () => void;
+  isLoggingOut: boolean;
 }>) {
   if (guest) {
-    return <div className="app-header-right"><Link className="ghost-button app-header-btn" href="/login">Log in</Link><Link className="primary-button app-header-btn" href="/signup">Sign up</Link></div>;
+    return (
+      <div className="app-header-right">
+        <Link className="ghost-button app-header-btn" href="/login">
+          Log in
+        </Link>
+        <Link className="primary-button app-header-btn" href="/signup">
+          Sign up
+        </Link>
+      </div>
+    );
   }
   return (
     <div className="app-header-right">
-      <div className="app-header-identity"><span className="app-header-login">{session?.user.login ?? "user"}</span><SidebarRoleBadge appRole={appRole} /></div>
+      <div className="app-header-identity">
+        <span className="app-header-login">
+          {session?.user.login ?? 'user'}
+        </span>
+        <SidebarRoleBadge appRole={appRole} />
+      </div>
       <HeaderAvatar session={session} avatarInitial={avatarInitial} />
-      <button type="button" onClick={onLogout} disabled={isLoggingOut} className="app-header-signout">
-        {isLoggingOut ? <span className="sidebar-signout-spinner" aria-hidden="true" /> : <SignOutIcon size={14} />}
-        <span>{isLoggingOut ? "Signing out…" : "Sign out"}</span>
+      <button
+        type="button"
+        onClick={onLogout}
+        disabled={isLoggingOut}
+        className="app-header-signout"
+      >
+        {isLoggingOut ? (
+          <span className="sidebar-signout-spinner" aria-hidden="true" />
+        ) : (
+          <SignOutIcon size={14} />
+        )}
+        <span>{isLoggingOut ? 'Signing out…' : 'Sign out'}</span>
       </button>
     </div>
   );
 }
 
-function HeaderAvatar({ session, avatarInitial }: Readonly<{ session: AuthSession | null; avatarInitial: string }>) {
+function HeaderAvatar({
+  session,
+  avatarInitial,
+}: Readonly<{ session: AuthSession | null; avatarInitial: string }>) {
   return (
     <span className="app-header-avatar-ring">
-      {session?.user.avatarUrl ? <Image src={session.user.avatarUrl} alt={session.user.name ?? session.user.login} width={32} height={32} className="app-header-avatar" unoptimized /> : <span className="app-header-avatar-fallback" aria-hidden="true">{avatarInitial}</span>}
+      {session?.user.avatarUrl ? (
+        <Image
+          src={session.user.avatarUrl}
+          alt={session.user.name ?? session.user.login}
+          width={32}
+          height={32}
+          className="app-header-avatar"
+          unoptimized
+        />
+      ) : (
+        <span className="app-header-avatar-fallback" aria-hidden="true">
+          {avatarInitial}
+        </span>
+      )}
     </span>
   );
 }
 
 /** Everything but the badge, per Main entry. */
-const MAIN_ITEMS: Record<SidebarMainItem, {
-  href: string;
-  label: string;
-  icon: SidebarNavItemProps["icon"];
-  isActive: (pathname: string) => boolean;
-}> = {
-  home: { href: "/home", label: "Home", icon: DashboardIcon, isActive: (p) => p === "/home" },
-  projects: { href: "/workflows", label: "Projects", icon: WorkflowsIcon, isActive: (p) => p === "/workflows" },
-  teams: { href: "/teams", label: "Teams", icon: TeamsIcon, isActive: (p) => p === "/teams" || p.startsWith("/groups") },
-  hosts: { href: "/hosts", label: "Hosts", icon: WorkflowsIcon, isActive: (p) => p === "/hosts" },
-  checklists: { href: "/checklists", label: "Checklists", icon: ChecklistsIcon, isActive: (p) => p === "/checklists" },
-  activity: { href: "/activity", label: "Activity", icon: ActivityIcon, isActive: (p) => p === "/activity" },
-  inbox: { href: "/inbox", label: "Inbox", icon: InboxIcon, isActive: (p) => p === "/inbox" },
+const MAIN_ITEMS: Record<
+  SidebarMainItem,
+  {
+    href: string;
+    label: string;
+    icon: SidebarNavItemProps['icon'];
+    isActive: (pathname: string) => boolean;
+  }
+> = {
+  home: {
+    href: '/home',
+    label: 'Home',
+    icon: DashboardIcon,
+    isActive: (p) => p === '/home',
+  },
+  projects: {
+    href: '/workflows',
+    label: 'Projects',
+    icon: WorkflowsIcon,
+    isActive: (p) => p === '/workflows',
+  },
+  teams: {
+    href: '/teams',
+    label: 'Teams',
+    icon: TeamsIcon,
+    isActive: (p) => p === '/teams' || p.startsWith('/groups'),
+  },
+  hosts: {
+    href: '/hosts',
+    label: 'Hosts',
+    icon: WorkflowsIcon,
+    isActive: (p) => p === '/hosts',
+  },
+  checklists: {
+    href: '/checklists',
+    label: 'Checklists',
+    icon: ChecklistsIcon,
+    isActive: (p) => p === '/checklists',
+  },
+  activity: {
+    href: '/activity',
+    label: 'Activity',
+    icon: ActivityIcon,
+    isActive: (p) => p === '/activity',
+  },
+  inbox: {
+    href: '/inbox',
+    label: 'Inbox',
+    icon: InboxIcon,
+    isActive: (p) => p === '/inbox',
+  },
 };
 
-function AppSidebar({ pathname, guest, mainItems, reduced, isPlatformAdmin, unreadCount, hoverSuppressed, pinned, onTogglePinned, onNavigate, onPointerLeave }: Readonly<{
-  pathname: string; guest: boolean; mainItems: readonly SidebarMainItem[]; reduced: boolean; isPlatformAdmin: boolean; unreadCount: number;
-  hoverSuppressed: boolean; pinned: boolean; onTogglePinned: () => void; onNavigate: () => void; onPointerLeave: () => void;
+function AppSidebar({
+  pathname,
+  guest,
+  mainItems,
+  reduced,
+  isPlatformAdmin,
+  unreadCount,
+  hoverSuppressed,
+  pinned,
+  onTogglePinned,
+  onNavigate,
+  onPointerLeave,
+}: Readonly<{
+  pathname: string;
+  guest: boolean;
+  mainItems: readonly SidebarMainItem[];
+  reduced: boolean;
+  isPlatformAdmin: boolean;
+  unreadCount: number;
+  hoverSuppressed: boolean;
+  pinned: boolean;
+  onTogglePinned: () => void;
+  onNavigate: () => void;
+  onPointerLeave: () => void;
 }>) {
   const hasAccountItems = !guest || isPlatformAdmin;
   return (
-    <aside className="app-sidebar" data-hover-suppressed={hoverSuppressed ? "true" : "false"} onPointerLeave={onPointerLeave} aria-label="Primary navigation">
+    <aside
+      className="app-sidebar"
+      data-hover-suppressed={hoverSuppressed ? 'true' : 'false'}
+      onPointerLeave={onPointerLeave}
+      aria-label="Primary navigation"
+    >
       <div className="sidebar-edge-gradient" aria-hidden="true" />
       <SidebarPinToggle pinned={pinned} onToggle={onTogglePinned} />
       <nav className="sidebar-nav" aria-label="Primary">
@@ -543,13 +734,31 @@ function AppSidebar({ pathname, guest, mainItems, reduced, isPlatformAdmin, unre
               isActive={item.isActive(pathname)}
               reduced={reduced}
               onNavigate={onNavigate}
-              badgeCount={id === "inbox" ? unreadCount : 0}
+              badgeCount={id === 'inbox' ? unreadCount : 0}
             />
           );
         })}
         {hasAccountItems ? <SidebarDivider /> : null}
-        {!guest && <SidebarNavItem href="/settings" label="Settings" icon={SettingsIcon} isActive={pathname === "/settings"} reduced={reduced} onNavigate={onNavigate} />}
-        {isPlatformAdmin && <SidebarNavItem href="/admin" label="Admin" icon={AdminIcon} isActive={pathname.startsWith("/admin")} reduced={reduced} onNavigate={onNavigate} />}
+        {!guest && (
+          <SidebarNavItem
+            href="/settings"
+            label="Settings"
+            icon={SettingsIcon}
+            isActive={pathname === '/settings'}
+            reduced={reduced}
+            onNavigate={onNavigate}
+          />
+        )}
+        {isPlatformAdmin && (
+          <SidebarNavItem
+            href="/admin"
+            label="Admin"
+            icon={AdminIcon}
+            isActive={pathname.startsWith('/admin')}
+            reduced={reduced}
+            onNavigate={onNavigate}
+          />
+        )}
       </nav>
     </aside>
   );

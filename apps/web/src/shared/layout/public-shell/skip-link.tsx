@@ -1,4 +1,4 @@
-import type { AnchorHTMLAttributes, ReactNode } from "react";
+import type { AnchorHTMLAttributes, ReactNode } from 'react';
 
 export interface SkipLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   children?: ReactNode;
@@ -6,12 +6,12 @@ export interface SkipLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 }
 
 export function SkipLink({
-  children = "Skip to main content",
+  children = 'Skip to main content',
   className,
-  href = "#main",
+  href = '#main',
   ...props
 }: Readonly<SkipLinkProps>) {
-  const classNames = ["skip-link", className ?? ""].filter(Boolean).join(" ");
+  const classNames = ['skip-link', className ?? ''].filter(Boolean).join(' ');
 
   return (
     <a className={classNames} href={href} {...props}>
@@ -19,4 +19,3 @@ export function SkipLink({
     </a>
   );
 }
-

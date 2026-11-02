@@ -1,20 +1,24 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useState } from "react";
+import Link from 'next/link';
+import { useState } from 'react';
 
-import { useGroupRouteViewModel } from "@/features/groups";
-import { GroupStatusBadge, HierarchyPageShell, RoleBadge } from "@/features/groups/workspace";
+import { useGroupRouteViewModel } from '@/features/groups';
+import {
+  GroupStatusBadge,
+  HierarchyPageShell,
+  RoleBadge,
+} from '@/features/groups/workspace';
 import {
   Breadcrumb,
   FormDialog,
   GroupSubNav,
   PageHeader,
   ResourceBoundary,
-} from "@/features/groups/workspace";
+} from '@/features/groups/workspace';
 
-import type { GroupSummary } from "../../model/groups-types";
-import { useGroupDetailViewModel } from "../view-models/use-group-detail-view-model";
+import type { GroupSummary } from '../../model/groups-types';
+import { useGroupDetailViewModel } from '../view-models/use-group-detail-view-model';
 
 /**
  * Edit dialog. It owns only its form fields — the write itself is `onSave`, so
@@ -35,7 +39,7 @@ function EditGroupDialog({
   }) => Promise<string | null>;
 }>) {
   const [name, setName] = useState(group.name);
-  const [description, setDescription] = useState(group.description ?? "");
+  const [description, setDescription] = useState(group.description ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,7 +116,7 @@ function NavCard({
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
-          style={{ color: "var(--text-muted)" }}
+          style={{ color: 'var(--text-muted)' }}
         >
           <line x1="5" y1="12" x2="19" y2="12" />
           <polyline points="12 5 19 12 12 19" />
@@ -126,11 +130,14 @@ function NavCard({
 function GroupOverview({ groupId }: Readonly<{ groupId: string }>) {
   const vm = useGroupDetailViewModel(groupId);
 
-  if (vm.status !== "ready" || !vm.group) {
+  if (vm.status !== 'ready' || !vm.group) {
     return (
       <>
         <Breadcrumb
-          items={[{ label: "Projects", href: "/workflows" }, { label: "Group" }]}
+          items={[
+            { label: 'Projects', href: '/workflows' },
+            { label: 'Group' },
+          ]}
         />
         <ResourceBoundary
           state={vm.status}
@@ -148,7 +155,7 @@ function GroupOverview({ groupId }: Readonly<{ groupId: string }>) {
     <>
       <Breadcrumb
         items={[
-          { label: "Projects", href: "/workflows" },
+          { label: 'Projects', href: '/workflows' },
           { label: group.name },
         ]}
       />
@@ -158,10 +165,10 @@ function GroupOverview({ groupId }: Readonly<{ groupId: string }>) {
         actions={
           <div
             style={{
-              display: "flex",
-              gap: "0.6rem",
-              alignItems: "center",
-              flexWrap: "wrap",
+              display: 'flex',
+              gap: '0.6rem',
+              alignItems: 'center',
+              flexWrap: 'wrap',
             }}
           >
             <GroupStatusBadge status={group.status} />
@@ -177,14 +184,14 @@ function GroupOverview({ groupId }: Readonly<{ groupId: string }>) {
             )}
             {/* Archive is top-tier ('admin', label "Lead") / platform-admin per plan
                 §2.4; this wire value is unrelated to identity.platform_admins. */}
-            {group.role === "admin" && (
+            {group.role === 'admin' && (
               <button
                 type="button"
                 className="hier-btn-sm"
                 onClick={() => void vm.toggleArchive()}
                 disabled={vm.busy}
               >
-                {group.status === "archived" ? "Reopen" : "Archive"}
+                {group.status === 'archived' ? 'Reopen' : 'Archive'}
               </button>
             )}
           </div>
@@ -193,7 +200,7 @@ function GroupOverview({ groupId }: Readonly<{ groupId: string }>) {
 
       <GroupSubNav groupId={group.id} active="overview" />
 
-      <div className="hier-stat-row" style={{ marginBottom: "1.25rem" }}>
+      <div className="hier-stat-row" style={{ marginBottom: '1.25rem' }}>
         <div className="hier-stat">
           <span className="hier-stat-num">{group.memberCount}</span>
           <span className="hier-stat-label">Members</span>
@@ -205,7 +212,7 @@ function GroupOverview({ groupId }: Readonly<{ groupId: string }>) {
         <div className="hier-stat">
           <span
             className="hier-stat-num"
-            style={{ textTransform: "capitalize", fontSize: "1.1rem" }}
+            style={{ textTransform: 'capitalize', fontSize: '1.1rem' }}
           >
             {group.status}
           </span>
@@ -213,7 +220,7 @@ function GroupOverview({ groupId }: Readonly<{ groupId: string }>) {
         </div>
       </div>
 
-      <div className="hier-card-grid" style={{ marginBottom: "1.25rem" }}>
+      <div className="hier-card-grid" style={{ marginBottom: '1.25rem' }}>
         <NavCard
           href={`/groups/${group.id}/members`}
           title="Members"

@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import "./audit-tab.css";
+import './audit-tab.css';
 
-import { useId, useState } from "react";
+import { useId, useState } from 'react';
 
-import type { ProvisionedProject } from "@/features/projects";
-import { FilterMenu } from "@/shared/ui/filter-menu";
+import type { ProvisionedProject } from '@/features/projects';
+import { FilterMenu } from '@/shared/ui/filter-menu';
 import {
   AUDIT_FILTERS,
   auditAbsoluteTime,
@@ -17,9 +17,9 @@ import {
   auditSyncLine,
   pushCommitsToggleLabel,
   type AuditRow,
-} from "../model/audit-event-rules";
-import type { ProjectAuditViewModel } from "../view-models/use-project-audit-view-model";
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
+} from '../model/audit-event-rules';
+import type { ProjectAuditViewModel } from '../view-models/use-project-audit-view-model';
+import type { ProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
 
 /**
  * The repository's Audit trail, newest first: what happened, who did it and
@@ -39,7 +39,7 @@ export function AuditTab({
       <h2 className="audit-trail__title" id="audit-trail-title">
         Audit trail
       </h2>
-      {vm.audit.status === "ready" ? <AuditToolbar audit={vm.audit} /> : null}
+      {vm.audit.status === 'ready' ? <AuditToolbar audit={vm.audit} /> : null}
       <AuditBody audit={vm.audit} />
     </section>
   );
@@ -62,7 +62,10 @@ function AuditToolbar({ audit }: Readonly<{ audit: ProjectAuditViewModel }>) {
 function SyncLine({
   audit,
   line,
-}: Readonly<{ audit: ProjectAuditViewModel; line: NonNullable<ReturnType<typeof auditSyncLine>> }>) {
+}: Readonly<{
+  audit: ProjectAuditViewModel;
+  line: NonNullable<ReturnType<typeof auditSyncLine>>;
+}>) {
   return (
     <div className="audit-trail__sync" data-tone={line.tone}>
       <span className="audit-trail__sync-dot" aria-hidden="true" />
@@ -82,7 +85,7 @@ function SyncLine({
           {audit.syncError}
           {audit.syncSignInHref ? (
             <>
-              {" "}
+              {' '}
               <a href={audit.syncSignInHref}>Sign in again</a>
             </>
           ) : null}
@@ -93,25 +96,36 @@ function SyncLine({
 }
 
 function AuditBody({ audit }: Readonly<{ audit: ProjectAuditViewModel }>) {
-  if (audit.status === "error") {
+  if (audit.status === 'error') {
     return (
       <p className="error-text" role="alert" style={{ margin: 0 }}>
         {audit.error}
       </p>
     );
   }
-  if (audit.status === "loading") {
+  if (audit.status === 'loading') {
     return (
-      <ul className="audit-trail__list" aria-busy="true" aria-label="Loading audit events">
+      <ul
+        className="audit-trail__list"
+        aria-busy="true"
+        aria-label="Loading audit events"
+      >
         {[0, 1, 2].map((key) => (
-          <li key={key} className="audit-trail__row audit-trail__row--skeleton" aria-hidden="true" />
+          <li
+            key={key}
+            className="audit-trail__row audit-trail__row--skeleton"
+            aria-hidden="true"
+          />
         ))}
       </ul>
     );
   }
   if (audit.rows.length === 0) {
     return (
-      <p className="audit-trail__empty" data-recording={audit.recording ? "on" : "off"}>
+      <p
+        className="audit-trail__empty"
+        data-recording={audit.recording ? 'on' : 'off'}
+      >
         {auditEmptyMessage(audit.recording)}
       </p>
     );
@@ -119,7 +133,9 @@ function AuditBody({ audit }: Readonly<{ audit: ProjectAuditViewModel }>) {
   return (
     <>
       {audit.filteredRows.length === 0 ? (
-        <p className="audit-trail__empty">{auditFilterEmptyMessage(audit.filter)}</p>
+        <p className="audit-trail__empty">
+          {auditFilterEmptyMessage(audit.filter)}
+        </p>
       ) : (
         <ol className="audit-trail__list">
           {audit.filteredRows.map((row) => (
@@ -146,24 +162,39 @@ function SourceFilters({ audit }: Readonly<{ audit: ProjectAuditViewModel }>) {
   );
 }
 
-function AuditEventRow({ row, readAt }: Readonly<{ row: AuditRow; readAt: number }>) {
+function AuditEventRow({
+  row,
+  readAt,
+}: Readonly<{ row: AuditRow; readAt: number }>) {
   return (
-    <li className="audit-trail__row" data-event={row.eventCode} data-scope={row.scope}>
+    <li
+      className="audit-trail__row"
+      data-event={row.eventCode}
+      data-scope={row.scope}
+    >
       <span className="audit-trail__dot" aria-hidden="true" />
       <div className="audit-trail__body">
         <p className="audit-trail__label">
           {row.label}
           <ScopeTag row={row} />
           {row.restored ? (
-            <span className="audit-trail__tag audit-trail__tag--quiet" title="Recovered after it was first missed">
+            <span
+              className="audit-trail__tag audit-trail__tag--quiet"
+              title="Recovered after it was first missed"
+            >
               Restored
             </span>
           ) : null}
         </p>
-        {row.detail ? <p className="audit-trail__detail">{row.detail}</p> : null}
+        {row.detail ? (
+          <p className="audit-trail__detail">{row.detail}</p>
+        ) : null}
         <p className="audit-trail__meta">
           <span className="audit-trail__actor">{row.actor}</span>
-          <time dateTime={row.createdAt} title={auditAbsoluteTime(row.createdAt)}>
+          <time
+            dateTime={row.createdAt}
+            title={auditAbsoluteTime(row.createdAt)}
+          >
             {auditRelativeTime(row.createdAt, readAt)}
           </time>
         </p>
@@ -174,16 +205,22 @@ function AuditEventRow({ row, readAt }: Readonly<{ row: AuditRow; readAt: number
 }
 
 function ScopeTag({ row }: Readonly<{ row: AuditRow }>) {
-  if (row.scope === "project") {
+  if (row.scope === 'project') {
     return (
-      <span className="audit-trail__tag" title="Recorded on the Project this repository belongs to">
+      <span
+        className="audit-trail__tag"
+        title="Recorded on the Project this repository belongs to"
+      >
         Project
       </span>
     );
   }
-  if (row.scope === "github") {
+  if (row.scope === 'github') {
     return (
-      <span className="audit-trail__tag audit-trail__tag--github" title="Read from GitHub, not done in ALPHACI">
+      <span
+        className="audit-trail__tag audit-trail__tag--github"
+        title="Read from GitHub, not done in ALPHACI"
+      >
         GitHub
       </span>
     );

@@ -1,17 +1,18 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { qaRunsRepository } from "../../data/qa-runs-repository";
-import { lockLegacyRun, qaActionError } from "../../model/qa-run-rules";
+import { qaRunsRepository } from '../../data/qa-runs-repository';
+import { lockLegacyRun, qaActionError } from '../../model/qa-run-rules';
 import type {
   QaActionError,
   QaCommitSource,
   QaCurrentRunResponse,
   QaRun,
-} from "../../model/qa-run-types";
+} from '../../model/qa-run-types';
 
-export type QaRunViewStatus = "idle" | "loading" | "error" | "ready" | "starting";
+export type QaRunViewStatus =
+  'idle' | 'loading' | 'error' | 'ready' | 'starting';
 
 export interface QaRunViewModel {
   /**
@@ -40,18 +41,19 @@ interface LoadResult {
   error: string | null;
 }
 
-const LOAD_ERROR = "The QA run for this branch could not be loaded. Try again in a moment.";
-const START_ERROR = "The QA run could not be started. Try again in a moment.";
+const LOAD_ERROR =
+  'The QA run for this branch could not be loaded. Try again in a moment.';
+const START_ERROR = 'The QA run could not be started. Try again in a moment.';
 
 function viewStatus(
   lookupReady: boolean,
   current: LoadResult | null,
   starting: boolean,
 ): QaRunViewStatus {
-  if (!lookupReady) return "idle";
-  if (starting) return "starting";
-  if (!current) return "loading";
-  return current.error ? "error" : "ready";
+  if (!lookupReady) return 'idle';
+  if (starting) return 'starting';
+  if (!current) return 'loading';
+  return current.error ? 'error' : 'ready';
 }
 
 /** The commit under test: what the branch resolves to, else the run's own. */
@@ -95,10 +97,13 @@ export function useQaRunViewModel(options: {
   const [nonce, setNonce] = useState(0);
   const [result, setResult] = useState<LoadResult | null>(null);
   const [starting, setStarting] = useState(false);
-  const [startError, setStartError] = useState<{ key: string; error: QaActionError } | null>(null);
+  const [startError, setStartError] = useState<{
+    key: string;
+    error: QaActionError;
+  } | null>(null);
   const requestRef = useRef(0);
   const lookupReady = enabled && Boolean(projectId && branch && checklistId);
-  const lookupKey = `${projectId}|${branch ?? ""}|${checklistId ?? ""}`;
+  const lookupKey = `${projectId}|${branch ?? ''}|${checklistId ?? ''}`;
   const key = `${lookupKey}|${String(nonce)}`;
 
   useEffect(() => {
@@ -108,10 +113,12 @@ export function useQaRunViewModel(options: {
     qaRunsRepository
       .current(projectId, { branch, checklistId })
       .then((data) => {
-        if (requestId === requestRef.current) setResult({ key, data, error: null });
+        if (requestId === requestRef.current)
+          setResult({ key, data, error: null });
       })
       .catch(() => {
-        if (requestId === requestRef.current) setResult({ key, data: null, error: LOAD_ERROR });
+        if (requestId === requestRef.current)
+          setResult({ key, data: null, error: LOAD_ERROR });
       });
   }, [lookupReady, projectId, branch, checklistId, key]);
 
@@ -124,14 +131,20 @@ export function useQaRunViewModel(options: {
     setStarting(true);
     setStartError(null);
     try {
-      const run = await qaRunsRepository.create(projectId, { checklistId, branch });
+      const run = await qaRunsRepository.create(projectId, {
+        checklistId,
+        branch,
+      });
       setResult({
         key,
         error: null,
         data: { commitSha: run.commitSha, commitSource: run.commitSource, run },
       });
     } catch (cause) {
-      setStartError({ key: startKey, error: qaActionError(cause, START_ERROR) });
+      setStartError({
+        key: startKey,
+        error: qaActionError(cause, START_ERROR),
+      });
     } finally {
       setStarting(false);
     }

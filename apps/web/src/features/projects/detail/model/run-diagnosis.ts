@@ -36,44 +36,44 @@ export interface RunDiagnosisInput {
  * Only called when a run reported zero jobs; a run with jobs explains itself.
  */
 export function diagnoseRunWithoutJobs(run: RunDiagnosisInput): RunDiagnosis {
-  if (run.status !== "completed") {
+  if (run.status !== 'completed') {
     return {
-      title: "No jobs yet",
+      title: 'No jobs yet',
       message:
-        "This run has not started its jobs. They appear here once GitHub schedules them.",
+        'This run has not started its jobs. They appear here once GitHub schedules them.',
       isFailure: false,
     };
   }
 
-  if (run.conclusion === "cancelled") {
+  if (run.conclusion === 'cancelled') {
     return {
-      title: "Cancelled before starting",
-      message: "This run was cancelled before any job began.",
+      title: 'Cancelled before starting',
+      message: 'This run was cancelled before any job began.',
       isFailure: false,
     };
   }
 
-  if (run.conclusion === "skipped") {
+  if (run.conclusion === 'skipped') {
     return {
-      title: "Skipped",
+      title: 'Skipped',
       message:
-        "Every job in this run was skipped, usually because no branch condition matched.",
+        'Every job in this run was skipped, usually because no branch condition matched.',
       isFailure: false,
     };
   }
 
-  if (run.conclusion === "failure" || run.conclusion === "startup_failure") {
+  if (run.conclusion === 'failure' || run.conclusion === 'startup_failure') {
     return {
-      title: "The workflow was rejected before it ran",
+      title: 'The workflow was rejected before it ran',
       message:
-        "This run finished without starting a single job, which means GitHub refused the workflow file itself. The usual causes are a referenced workflow it cannot resolve, a secret the called workflow does not declare, or invalid YAML. Nothing ran, so there are no logs to show here; a team lead should check the workflow file.",
+        'This run finished without starting a single job, which means GitHub refused the workflow file itself. The usual causes are a referenced workflow it cannot resolve, a secret the called workflow does not declare, or invalid YAML. Nothing ran, so there are no logs to show here; a team lead should check the workflow file.',
       isFailure: true,
     };
   }
 
   return {
-    title: "No jobs",
-    message: "This run recorded no jobs.",
+    title: 'No jobs',
+    message: 'This run recorded no jobs.',
     isFailure: false,
   };
 }

@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
-import type { QaScope } from "@/features/checklists";
-import { QaStudioPanel } from "@/features/checklists/studio";
-import type { ProvisionedProject } from "@/features/projects";
+import type { QaScope } from '@/features/checklists';
+import { QaStudioPanel } from '@/features/checklists/studio';
+import type { ProvisionedProject } from '@/features/projects';
 
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
-import { studioChecksRenderer } from "./studio-repository-checks";
+import type { ProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
+import { studioChecksRenderer } from './studio-repository-checks';
 
 /**
  * The QA Studio tab. The studio belongs to the checklists domain; this file

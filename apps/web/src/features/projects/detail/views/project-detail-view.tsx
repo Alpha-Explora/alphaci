@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState, type ReactNode } from 'react';
 
-import { AppNav, WorkspaceProvider } from "@/features/workspace/selection";
-import { teamProjectsHref } from "@/features/workflows";
-import { FlowBackground } from "@/shared/layout/flow-background";
-import { PipelineLoader } from "@/shared/layout/pipeline-loader";
-import type { AppRole } from "@/shared/api/contracts";
-import { ProjectDetailTabs } from "./project-detail-tabs";
-import { RunsSkeleton } from "@/features/runs/list";
-import { useAuthSession } from "@/features/auth/session";
-import { isGuest } from "@/features/auth/session";
+import { AppNav, WorkspaceProvider } from '@/features/workspace/selection';
+import { teamProjectsHref } from '@/features/workflows';
+import { FlowBackground } from '@/shared/layout/flow-background';
+import { PipelineLoader } from '@/shared/layout/pipeline-loader';
+import type { AppRole } from '@/shared/api/contracts';
+import { ProjectDetailTabs } from './project-detail-tabs';
+import { RunsSkeleton } from '@/features/runs/list';
+import { useAuthSession } from '@/features/auth/session';
+import { isGuest } from '@/features/auth/session';
 
 import {
   isExternalRepo,
@@ -20,14 +20,14 @@ import {
   overviewProject,
   projectRepoFullName,
   routeProjectId,
-} from "../../model/projects-rules";
-import { canManageProjectLifecycle } from "../model/project-detail-tab-rules";
-import { useProjectDetailViewModel } from "../view-models/use-project-detail-view-model";
+} from '../../model/projects-rules';
+import { canManageProjectLifecycle } from '../model/project-detail-tab-rules';
+import { useProjectDetailViewModel } from '../view-models/use-project-detail-view-model';
 import {
   useProjectFolderViewModel,
   type ProjectFolderViewModel,
-} from "../view-models/use-project-folder-view-model";
-import { ProjectDangerZone } from "./project-danger-zone";
+} from '../view-models/use-project-folder-view-model';
+import { ProjectDangerZone } from './project-danger-zone';
 
 function ProjectSessionError({
   sessionError,
@@ -48,16 +48,12 @@ function ProjectSessionError({
             We could not verify your session. Please retry or sign in again.
           </p>
           {sessionError ? (
-            <p className="error-text" style={{ fontSize: "0.82rem" }}>
+            <p className="error-text" style={{ fontSize: '0.82rem' }}>
               {sessionError}
             </p>
           ) : null}
           <div className="hero-actions">
-            <button
-              className="primary-button"
-              type="button"
-              onClick={onRetry}
-            >
+            <button className="primary-button" type="button" onClick={onRetry}>
               Retry
             </button>
             <Link
@@ -77,13 +73,13 @@ function ProjectGuestPrompt({ projectId }: Readonly<{ projectId: string }>) {
   return (
     <div
       className="glass-panel"
-      style={{ textAlign: "center", padding: "3rem 1.5rem" }}
+      style={{ textAlign: 'center', padding: '3rem 1.5rem' }}
     >
       <p
         style={{
-          color: "var(--text-secondary)",
-          marginBottom: "1.25rem",
-          fontSize: "0.9rem",
+          color: 'var(--text-secondary)',
+          marginBottom: '1.25rem',
+          fontSize: '0.9rem',
         }}
       >
         Sign in to see this project&apos;s hosting and workflow activity.
@@ -91,7 +87,7 @@ function ProjectGuestPrompt({ projectId }: Readonly<{ projectId: string }>) {
       <Link
         className="primary-button"
         href={`/login?next=/projects/${encodeURIComponent(projectId)}`}
-        style={{ padding: "0.65rem 1.5rem", fontSize: "0.9rem" }}
+        style={{ padding: '0.65rem 1.5rem', fontSize: '0.9rem' }}
       >
         Sign in
       </Link>
@@ -111,15 +107,15 @@ function ProjectOverviewError({
       <div className="runs-error-body">
         <p>{overviewError}</p>
       </div>
-      <div style={{ display: "flex", gap: "0.6rem" }}>
+      <div style={{ display: 'flex', gap: '0.6rem' }}>
         <button
           type="button"
           className="ghost-button"
           onClick={onRetry}
           style={{
-            padding: "0.35rem 1rem",
-            fontSize: "0.82rem",
-            minHeight: "2rem",
+            padding: '0.35rem 1rem',
+            fontSize: '0.82rem',
+            minHeight: '2rem',
           }}
         >
           Retry
@@ -128,9 +124,9 @@ function ProjectOverviewError({
           className="ghost-button"
           href="/workflows"
           style={{
-            padding: "0.35rem 1rem",
-            fontSize: "0.82rem",
-            minHeight: "2rem",
+            padding: '0.35rem 1rem',
+            fontSize: '0.82rem',
+            minHeight: '2rem',
           }}
         >
           All projects
@@ -159,9 +155,11 @@ function ProjectDetailBody({
   loadingOverview: boolean;
   overviewError: string | null;
   logoutMessage: string | null;
-  project: NonNullable<
-    ReturnType<typeof useProjectDetailViewModel>["overview"]
-  >["project"] | null;
+  project:
+    | NonNullable<
+        ReturnType<typeof useProjectDetailViewModel>['overview']
+      >['project']
+    | null;
   enforcedOrg: string | undefined;
   dangerZone: ReactNode;
   appRole: AppRole | undefined;
@@ -201,7 +199,7 @@ function ProjectDetailBody({
   return (
     <>
       {logoutNotice}
-      <div style={{ display: "grid", gap: "1.5rem" }}>
+      <div style={{ display: 'grid', gap: '1.5rem' }}>
         {project ? (
           <ProjectDetailTabs
             project={project}
@@ -243,14 +241,14 @@ export function ProjectDetailView() {
   });
 
   const overviewError = vm.error;
-  const loadingOverview = vm.status === "loading";
+  const loadingOverview = vm.status === 'loading';
   const enforcedOrg = vm.enforcedOrg;
   const loadOverview = vm.reload;
   const project = overviewProject(vm.overview);
   const repoFullName = projectRepoFullName(project);
 
   useEffect(() => {
-    if (status === "signed-out") {
+    if (status === 'signed-out') {
       router.push(`/login?next=/projects/${encodeURIComponent(projectId)}`);
     }
   }, [projectId, router, status]);
@@ -259,20 +257,20 @@ export function ProjectDetailView() {
     setLogoutMessage(null);
     try {
       await signOut();
-      router.push("/");
+      router.push('/');
     } catch {
-      setLogoutMessage("Sign out failed. Please retry, or use the Home link.");
+      setLogoutMessage('Sign out failed. Please retry, or use the Home link.');
     }
   }
 
   async function handleDeleteProject() {
-    if (await vm.disconnect()) router.push("/home");
+    if (await vm.disconnect()) router.push('/home');
   }
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return <PipelineLoader label="Loading project" />;
   }
-  if (status === "error") {
+  if (status === 'error') {
     return (
       <ProjectSessionError
         sessionError={sessionError}
@@ -281,7 +279,7 @@ export function ProjectDetailView() {
       />
     );
   }
-  if (status === "signed-out") return null;
+  if (status === 'signed-out') return null;
 
   // Danger Zone (disconnect/delete) is admin/lead only — the backend's
   // `PROJECT_ROLE_FORBIDDEN` allow-list. Built only for a viewer who can use
@@ -308,7 +306,7 @@ export function ProjectDetailView() {
       <main
         className="dash-shell"
         suppressHydrationWarning
-        style={{ overflowX: "hidden" }}
+        style={{ overflowX: 'hidden' }}
       >
         <a href="#main-content" className="skip-link">
           Skip to main content
@@ -320,7 +318,9 @@ export function ProjectDetailView() {
           onLogout={() => void handleLogout()}
           isLoggingOut={isLoggingOut}
           pageWorkspaceId={project?.workspaceId}
-          onWorkspaceSwitch={(workspaceId) => router.push(teamProjectsHref(workspaceId))}
+          onWorkspaceSwitch={(workspaceId) =>
+            router.push(teamProjectsHref(workspaceId))
+          }
         />
 
         <div id="main-content" className="dash-page-content project-page-shell">

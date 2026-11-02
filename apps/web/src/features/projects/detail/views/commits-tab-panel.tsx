@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import type { ProvisionedProject } from "@/features/projects";
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
-import { CommitsSection } from "./workspace/commits-section";
+import type { ProvisionedProject } from '@/features/projects';
+import type { ProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
+import { CommitsSection } from './workspace/commits-section';
 
 /**
  * A branch's commit history, newest first. The tab's one selector picks the
@@ -25,11 +25,15 @@ export function CommitsTabPanel({
       className="ws-panel"
     >
       <CommitsSection
-        key={vm.commitsBranch ?? ""}
+        key={vm.commitsBranch ?? ''}
         projectId={project.id}
         initialBranch={vm.commitsBranch}
-        onOpenPullRequest={vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined}
-        onBrowseCommit={vm.visibleTabs.includes("code") ? vm.openCodeAt : undefined}
+        onOpenPullRequest={
+          vm.visibleTabs.includes('pulls') ? vm.openPullRequest : undefined
+        }
+        onBrowseCommit={
+          vm.visibleTabs.includes('code') ? vm.openCodeAt : undefined
+        }
       />
     </div>
   );

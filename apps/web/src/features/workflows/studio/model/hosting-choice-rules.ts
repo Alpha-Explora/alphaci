@@ -18,50 +18,50 @@ import type {
   DeploymentProvisioningTargetRequest,
   EnvTargetSlot,
   ServiceRuntimeContract,
-} from "@/shared/api/contracts";
-import { multiRepoRepositoryNames } from "./create-project-payload";
-import { providerLabel } from "./deployment-provisioning-rules";
+} from '@/shared/api/contracts';
+import { multiRepoRepositoryNames } from './create-project-payload';
+import { providerLabel } from './deployment-provisioning-rules';
 import {
   ALL_ONPREM_DELIVERY_NOTICE,
   runEveryEnvironmentOnprem,
   type OnpremHosting,
-} from "./onprem-hosting-rules";
-import type { EnvironmentDraft } from "./project-environments-rules";
+} from './onprem-hosting-rules';
+import type { EnvironmentDraft } from './project-environments-rules';
 import {
   fitHostAssignments,
   type HostSlot,
   type SlotRuntimes,
-} from "./setup-host-assignment-rules";
+} from './setup-host-assignment-rules';
 import {
   defaultProjectName,
   inferSingleProjectKind,
   projectKindToSlot,
-} from "./setup-tab-rules";
-import { toSlug } from "./workflow-studio-rules";
+} from './setup-tab-rules';
+import { toSlug } from './workflow-studio-rules';
 
-export type HostingChoice = "hosted" | "onprem" | "none";
+export type HostingChoice = 'hosted' | 'onprem' | 'none';
 
-export const DEFAULT_HOSTING_CHOICE: HostingChoice = "hosted";
+export const DEFAULT_HOSTING_CHOICE: HostingChoice = 'hosted';
 
 export const HOSTING_LABELS: Record<HostingChoice, string> = {
-  hosted: "Vercel / Render",
-  onprem: "On-prem host",
-  none: "None — CI only",
+  hosted: 'Vercel / Render',
+  onprem: 'On-prem host',
+  none: 'None — CI only',
 };
 
 /** The line under the choice, for the option that is selected. */
 export const HOSTING_DESCRIPTIONS: Record<HostingChoice, string> = {
   hosted:
-    "ALPHACI creates the Render service or Vercel project on its own accounts and deploys it from the pipeline.",
+    'ALPHACI creates the Render service or Vercel project on its own accounts and deploys it from the pipeline.',
   onprem: ALL_ONPREM_DELIVERY_NOTICE,
-  none: "Only the repository and its CI workflow are created. Nothing is deployed.",
+  none: 'Only the repository and its CI workflow are created. Nothing is deployed.',
 };
 
 /**
  * How the project's code is laid out: one application, two services in one
  * repository (microservices), or two repositories (multi-repo).
  */
-export type ServiceLayout = "single" | "microservices" | "multiRepo";
+export type ServiceLayout = 'single' | 'microservices' | 'multiRepo';
 
 export const ONPREM_MICROSERVICES_REASON =
   "On-prem isn't available yet for two services in one repository. Use two repositories, or Vercel / Render.";
@@ -90,10 +90,10 @@ export function hostingOptions(input: {
   onprem: OnpremHosting;
   layout: ServiceLayout;
 }): HostingOption[] {
-  const options: HostingOption[] = [option("hosted")];
+  const options: HostingOption[] = [option('hosted')];
   const onprem = onpremOption(input.onprem, input.layout);
   if (onprem) options.push(onprem);
-  options.push(option("none"));
+  options.push(option('none'));
   return options;
 }
 
@@ -101,15 +101,22 @@ function option(value: HostingChoice): HostingOption {
   return { value, label: HOSTING_LABELS[value], disabled: false };
 }
 
-function onpremOption(onprem: OnpremHosting, layout: ServiceLayout): HostingOption | null {
-  if (onprem.status === "hidden") return null;
-  if (onprem.status === "disabled") {
-    return { ...option("onprem"), disabled: true, reason: onprem.reason };
+function onpremOption(
+  onprem: OnpremHosting,
+  layout: ServiceLayout,
+): HostingOption | null {
+  if (onprem.status === 'hidden') return null;
+  if (onprem.status === 'disabled') {
+    return { ...option('onprem'), disabled: true, reason: onprem.reason };
   }
-  if (layout === "microservices") {
-    return { ...option("onprem"), disabled: true, reason: ONPREM_MICROSERVICES_REASON };
+  if (layout === 'microservices') {
+    return {
+      ...option('onprem'),
+      disabled: true,
+      reason: ONPREM_MICROSERVICES_REASON,
+    };
   }
-  return option("onprem");
+  return option('onprem');
 }
 
 /**
@@ -119,12 +126,15 @@ function onpremOption(onprem: OnpremHosting, layout: ServiceLayout): HostingOpti
  */
 export function onpremSlotsForLayout(
   layout: ServiceLayout,
-  selectedProjectKind: "frontend" | "backend",
+  selectedProjectKind: 'frontend' | 'backend',
 ): HostSlot[] {
-  return layout === "single" ? [selectedProjectKind] : ["backend", "frontend"];
+  return layout === 'single' ? [selectedProjectKind] : ['backend', 'frontend'];
 }
 
-type WithServiceRuntime = { id: string; serviceRuntime?: ServiceRuntimeContract };
+type WithServiceRuntime = {
+  id: string;
+  serviceRuntime?: ServiceRuntimeContract;
+};
 
 /**
  * Each on-prem slot's container port and health path, from the catalog's
@@ -139,9 +149,10 @@ export function onpremSlotRuntimes(input: {
   backendProjectTypeId: string;
   frontendProjectTypeId: string;
 }): SlotRuntimes {
-  const byId = (id: string) => input.projectTypes.find((type) => type.id === id);
+  const byId = (id: string) =>
+    input.projectTypes.find((type) => type.id === id);
   const types =
-    input.layout === "single"
+    input.layout === 'single'
       ? [input.selectedProjectType]
       : [byId(input.backendProjectTypeId), byId(input.frontendProjectTypeId)];
   const runtimes: SlotRuntimes = {};
@@ -195,7 +206,7 @@ export function hostingCreateFields(input: {
   /** Each slot's app, for a slot an assignment does not cover yet. */
   onpremRuntimes?: SlotRuntimes;
 }): HostingCreateFields {
-  if (input.choice === "onprem") {
+  if (input.choice === 'onprem') {
     return {
       // Every host assignment covers exactly these slots, even one picked
       // before the repository shape changed.
@@ -207,7 +218,7 @@ export function hostingCreateFields(input: {
       onpremSlots: input.onpremSlots,
     };
   }
-  if (input.choice === "none") {
+  if (input.choice === 'none') {
     return { deploymentProvisioning: CI_ONLY_PROVISIONING };
   }
   return { deploymentProvisioning: input.hostedProvisioning };
@@ -222,7 +233,9 @@ export function renderVariablesBlockingFor(input: {
   provisioningOffered: boolean;
   missing: boolean;
 }): boolean {
-  return input.choice === "hosted" && input.provisioningOffered && input.missing;
+  return (
+    input.choice === 'hosted' && input.provisioningOffered && input.missing
+  );
 }
 
 /**
@@ -234,12 +247,12 @@ export function renderVariablesBlockingFor(input: {
 export function wizardShape(catalog: {
   isMicroservicesShape: boolean;
   isMultiRepoShape: boolean;
-  selectedProjectType: { kind?: "frontend" | "backend" } | null | undefined;
+  selectedProjectType: { kind?: 'frontend' | 'backend' } | null | undefined;
   selectedProjectTypeId: string;
 }): {
   layout: ServiceLayout;
   isDualShape: boolean;
-  selectedProjectKind: "frontend" | "backend";
+  selectedProjectKind: 'frontend' | 'backend';
 } {
   return {
     layout: serviceLayout(catalog),
@@ -255,8 +268,8 @@ function serviceLayout(catalog: {
   isMicroservicesShape: boolean;
   isMultiRepoShape: boolean;
 }): ServiceLayout {
-  if (catalog.isMicroservicesShape) return "microservices";
-  return catalog.isMultiRepoShape ? "multiRepo" : "single";
+  if (catalog.isMicroservicesShape) return 'microservices';
+  return catalog.isMultiRepoShape ? 'multiRepo' : 'single';
 }
 
 /** One default hosted target: its slot and the name it starts with. */
@@ -275,60 +288,79 @@ export function hostedTargetSeeds(input: {
   repoName: string;
   backendServiceName: string;
   frontendServiceName: string;
-  selectedProjectKind: "frontend" | "backend";
+  selectedProjectKind: 'frontend' | 'backend';
 }): HostedTargetSeed[] {
   if (input.isDualShape) {
     return [
       {
-        slot: "backend",
-        projectName: defaultProjectName(input.backendServiceName, input.repoName, "backend"),
+        slot: 'backend',
+        projectName: defaultProjectName(
+          input.backendServiceName,
+          input.repoName,
+          'backend',
+        ),
       },
       {
-        slot: "frontend",
-        projectName: defaultProjectName(input.frontendServiceName, input.repoName, "frontend"),
+        slot: 'frontend',
+        projectName: defaultProjectName(
+          input.frontendServiceName,
+          input.repoName,
+          'frontend',
+        ),
       },
     ];
   }
   return [
-    { slot: projectKindToSlot(input.selectedProjectKind), projectName: toSlug(input.repoName) },
+    {
+      slot: projectKindToSlot(input.selectedProjectKind),
+      projectName: toSlug(input.repoName),
+    },
   ];
 }
 
 /** The environment ids in promotion order: "dev → uat → main". */
-export function environmentPathLine(environments: readonly EnvironmentDraft[]): string {
-  return environments.map(({ slug }) => slug).join(" → ");
+export function environmentPathLine(
+  environments: readonly EnvironmentDraft[],
+): string {
+  return environments.map(({ slug }) => slug).join(' → ');
 }
 
 const ONPREM_PROMOTION_SENTENCE =
-  "Test deploys on every push to dev; UAT and Production receive a release only through promotion.";
+  'Test deploys on every push to dev; UAT and Production receive a release only through promotion.';
 
 /** What the read-only environments line says under each choice. */
 export function environmentsCaption(
   choice: HostingChoice,
-  layout: ServiceLayout = "single",
+  layout: ServiceLayout = 'single',
 ): string {
-  if (choice === "onprem" && layout === "multiRepo") {
-    return "Both repositories deploy to your on-prem host in each environment. " + ONPREM_PROMOTION_SENTENCE;
+  if (choice === 'onprem' && layout === 'multiRepo') {
+    return (
+      'Both repositories deploy to your on-prem host in each environment. ' +
+      ONPREM_PROMOTION_SENTENCE
+    );
   }
-  if (choice === "onprem") {
-    return "Each runs on your on-prem host. " + ONPREM_PROMOTION_SENTENCE;
+  if (choice === 'onprem') {
+    return 'Each runs on your on-prem host. ' + ONPREM_PROMOTION_SENTENCE;
   }
-  if (choice === "none") {
-    return "The branches are created and the CI workflow runs on them. Nothing is deployed.";
+  if (choice === 'none') {
+    return 'The branches are created and the CI workflow runs on them. Nothing is deployed.';
   }
   // Today's managed pipeline hosts only uat and main (HOSTED_BRANCHES); dev
   // runs the checks and is never deployed.
-  return "dev runs the checks on every push; uat and main are deployed when changes are promoted.";
+  return 'dev runs the checks on every push; uat and main are deployed when changes are promoted.';
 }
 
 /** "Backend repo · orders-be", "Frontend repo · orders-fe". */
 function onpremRepositoryLines(repoName: string): string[] {
-  const names = multiRepoRepositoryNames(repoName || "repository-name");
-  return [`Backend repo · ${names.backend}`, `Frontend repo · ${names.frontend}`];
+  const names = multiRepoRepositoryNames(repoName || 'repository-name');
+  return [
+    `Backend repo · ${names.backend}`,
+    `Frontend repo · ${names.frontend}`,
+  ];
 }
 
 function hostedTargetLine(target: DeploymentProvisioningTargetRequest): string {
-  const name = target.projectName?.trim() || "unnamed";
+  const name = target.projectName?.trim() || 'unnamed';
   return `${providerLabel(target.provider)} · ${name} (${target.slot})`;
 }
 
@@ -343,14 +375,22 @@ export function hostingReviewLines(input: {
   layout?: ServiceLayout;
   repoName?: string;
 }): { heading: string; details: string[] } {
-  if (input.choice === "onprem") {
+  if (input.choice === 'onprem') {
     return {
-      heading: "On-prem host — " + input.environments.map(({ slug }) => slug).join(", "),
-      details: input.layout === "multiRepo" ? onpremRepositoryLines(input.repoName ?? "") : [],
+      heading:
+        'On-prem host — ' +
+        input.environments.map(({ slug }) => slug).join(', '),
+      details:
+        input.layout === 'multiRepo'
+          ? onpremRepositoryLines(input.repoName ?? '')
+          : [],
     };
   }
-  if (input.choice === "none") {
-    return { heading: "None — CI workflow only", details: [] };
+  if (input.choice === 'none') {
+    return { heading: 'None — CI workflow only', details: [] };
   }
-  return { heading: HOSTING_LABELS.hosted, details: input.hostedTargets.map(hostedTargetLine) };
+  return {
+    heading: HOSTING_LABELS.hosted,
+    details: input.hostedTargets.map(hostedTargetLine),
+  };
 }

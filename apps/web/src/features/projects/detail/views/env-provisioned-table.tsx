@@ -1,11 +1,8 @@
-"use client";
+'use client';
 
-import type { DeploymentTarget, EnvVarMetadata } from "@/features/projects";
-import { cleanUserMessage } from "@/features/workflows";
-import {
-  scopeLabel,
-  targetOptionLabel,
-} from "../model/env-panel-rules";
+import type { DeploymentTarget, EnvVarMetadata } from '@/features/projects';
+import { cleanUserMessage } from '@/features/workflows';
+import { scopeLabel, targetOptionLabel } from '../model/env-panel-rules';
 
 export function EnvProvisionedTable({
   confirmDeleteId,
@@ -25,13 +22,13 @@ export function EnvProvisionedTable({
 }: Readonly<{
   confirmDeleteId: string | null;
   filterEnvironment: string;
-  filterStatus: "all" | EnvVarMetadata["status"];
+  filterStatus: 'all' | EnvVarMetadata['status'];
   filterTargetId: string;
   filteredMetadata: EnvVarMetadata[];
   metadata: EnvVarMetadata[];
   onDelete: (item: EnvVarMetadata) => void;
   onFilterEnvironmentChange: (value: string) => void;
-  onFilterStatusChange: (value: "all" | EnvVarMetadata["status"]) => void;
+  onFilterStatusChange: (value: 'all' | EnvVarMetadata['status']) => void;
   onFilterTargetChange: (value: string) => void;
   onReProvision: (item: EnvVarMetadata) => void;
   onStartAdd: () => void;
@@ -90,10 +87,10 @@ function EnvMetadataFilters({
   targets,
 }: Readonly<{
   filterEnvironment: string;
-  filterStatus: "all" | EnvVarMetadata["status"];
+  filterStatus: 'all' | EnvVarMetadata['status'];
   filterTargetId: string;
   onFilterEnvironmentChange: (value: string) => void;
-  onFilterStatusChange: (value: "all" | EnvVarMetadata["status"]) => void;
+  onFilterStatusChange: (value: 'all' | EnvVarMetadata['status']) => void;
   onFilterTargetChange: (value: string) => void;
   presentScopes: Array<{ value: string; label: string }>;
   targets: DeploymentTarget[];
@@ -129,7 +126,7 @@ function EnvMetadataFilters({
         value={filterStatus}
         onChange={(event) =>
           onFilterStatusChange(
-            event.target.value as "all" | EnvVarMetadata["status"],
+            event.target.value as 'all' | EnvVarMetadata['status'],
           )
         }
       >
@@ -157,7 +154,7 @@ function EnvMetadataRow({
       <span>{item.key}</span>
       <span>
         {scopeLabel(item)} - {item.status}
-        {item.errorSummary ? ` - ${cleanUserMessage(item.errorSummary)}` : ""}
+        {item.errorSummary ? ` - ${cleanUserMessage(item.errorSummary)}` : ''}
       </span>
       <span className="env-metadata-actions">
         <button
@@ -172,7 +169,7 @@ function EnvMetadataRow({
           type="button"
           onClick={() => onDelete(item)}
         >
-          {confirmDeleteId === item.id ? "Confirm delete" : "Delete"}
+          {confirmDeleteId === item.id ? 'Confirm delete' : 'Delete'}
         </button>
       </span>
     </div>

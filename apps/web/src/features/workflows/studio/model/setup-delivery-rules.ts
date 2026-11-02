@@ -6,17 +6,17 @@
  * Delivery step, where they are fixed, so the user never reaches Create with a
  * machine the create request would refuse.
  */
-import type { UsageLimitItem } from "@/shared/api/contracts";
-import { RENDER_VARIABLES_MISSING_MESSAGE } from "./create-target-rules";
-import type { HostingChoice } from "./hosting-choice-rules";
-import { runEveryEnvironmentOnprem } from "./onprem-hosting-rules";
-import type { EnvironmentDraft } from "./project-environments-rules";
-import { setupHostAssignmentProblems } from "./setup-host-assignment-rules";
-import { isProjectQuotaReached } from "./setup-tab-rules";
-import { formatQuotaStatus } from "./workflow-studio-rules";
+import type { UsageLimitItem } from '@/shared/api/contracts';
+import { RENDER_VARIABLES_MISSING_MESSAGE } from './create-target-rules';
+import type { HostingChoice } from './hosting-choice-rules';
+import { runEveryEnvironmentOnprem } from './onprem-hosting-rules';
+import type { EnvironmentDraft } from './project-environments-rules';
+import { setupHostAssignmentProblems } from './setup-host-assignment-rules';
+import { isProjectQuotaReached } from './setup-tab-rules';
+import { formatQuotaStatus } from './workflow-studio-rules';
 
 export const TEAM_CHOICE_MISSING_MESSAGE =
-  "Choose the team this project belongs to.";
+  'Choose the team this project belongs to.';
 
 /**
  * Each environment's on-prem host problem, in promotion order, or null. Only
@@ -31,7 +31,7 @@ export function deliveryHostProblems(input: {
   /** Whether the machine rows are on screen (at least one healthy machine). */
   machineRowsShown: boolean;
 }): (string | null)[] {
-  if (input.choice !== "onprem" || !input.machineRowsShown) {
+  if (input.choice !== 'onprem' || !input.machineRowsShown) {
     return input.environments.map(() => null);
   }
   return setupHostAssignmentProblems(
@@ -73,7 +73,7 @@ export function createBlockerReason(input: {
   if (input.projectBlocker) return input.projectBlocker;
   const quota = input.projectQuota;
   if (quota && isProjectQuotaReached(quota)) {
-    return "Project quota: " + formatQuotaStatus(quota);
+    return 'Project quota: ' + formatQuotaStatus(quota);
   }
   return null;
 }

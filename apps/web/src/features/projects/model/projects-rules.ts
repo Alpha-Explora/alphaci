@@ -1,17 +1,17 @@
 /* Pure rules for the project detail surface. No React, no Next, no fetch. */
-import { ApiError } from "@/shared/api/request";
+import { ApiError } from '@/shared/api/request';
 
 import type {
   ProjectBranchPreview,
   ProjectBranchPreviewSurface,
   ProjectPreviewsResponse,
-} from "./projects-types";
+} from './projects-types';
 
 /** Status-badge variant for a provisioned project. */
 export function projectStatusVariant(status: string): string {
-  if (status === "provisioned") return "provisioned";
-  if (status === "provisioning" || status === "pending") return "provisioning";
-  return "failed";
+  if (status === 'provisioned') return 'provisioned';
+  if (status === 'provisioning' || status === 'pending') return 'provisioning';
+  return 'failed';
 }
 
 /**
@@ -25,7 +25,9 @@ export function isExternalRepo(
   enforcedOrg?: string,
 ): boolean {
   if (!enforcedOrg) return false;
-  return repoFullName.split("/")[0]?.toLowerCase() !== enforcedOrg.toLowerCase();
+  return (
+    repoFullName.split('/')[0]?.toLowerCase() !== enforcedOrg.toLowerCase()
+  );
 }
 
 /**
@@ -37,15 +39,15 @@ export function isExternalRepo(
  */
 export function toOverviewError(cause: unknown): string {
   if (cause instanceof ApiError && cause.status === 404) {
-    return "This project could not be found. It may have been disconnected.";
+    return 'This project could not be found. It may have been disconnected.';
   }
-  return "Could not load this project. Please retry.";
+  return 'Could not load this project. Please retry.';
 }
 
 export function routeProjectId(
   params: { projectId?: string } | null | undefined,
 ): string {
-  return params?.projectId ?? "";
+  return params?.projectId ?? '';
 }
 
 export function overviewProject<T>(
@@ -61,39 +63,36 @@ export function projectRepoFullName(
 }
 
 export function isSignedInMember(status: string, guest: boolean): boolean {
-  return status === "signed-in" && !guest;
+  return status === 'signed-in' && !guest;
 }
 
 /* ── Branch previews ──────────────────────────────────────────────────────── */
 
-export type PreviewStatusTone = "ok" | "pending" | "danger";
+export type PreviewStatusTone = 'ok' | 'pending' | 'danger';
 
-const PREVIEW_STATUS_LABELS: Record<
-  ProjectBranchPreview["status"],
-  string
-> = {
-  queued: "Queued",
-  building: "Building",
-  ready: "Live",
-  failed: "Failed",
-  canceled: "Canceled",
-  superseded: "Replaced",
-  unknown: "Unknown",
-  not_deployed: "Not deployed yet",
+const PREVIEW_STATUS_LABELS: Record<ProjectBranchPreview['status'], string> = {
+  queued: 'Queued',
+  building: 'Building',
+  ready: 'Live',
+  failed: 'Failed',
+  canceled: 'Canceled',
+  superseded: 'Replaced',
+  unknown: 'Unknown',
+  not_deployed: 'Not deployed yet',
 };
 
 export function previewStatusLabel(
-  status: ProjectBranchPreview["status"],
+  status: ProjectBranchPreview['status'],
 ): string {
   return PREVIEW_STATUS_LABELS[status];
 }
 
 export function previewStatusTone(
-  status: ProjectBranchPreview["status"],
+  status: ProjectBranchPreview['status'],
 ): PreviewStatusTone {
-  if (status === "failed" || status === "canceled") return "danger";
-  if (status === "ready") return "ok";
-  return "pending";
+  if (status === 'failed' || status === 'canceled') return 'danger';
+  if (status === 'ready') return 'ok';
+  return 'pending';
 }
 
 /**
@@ -106,7 +105,7 @@ export function previewStatusTone(
 export function canFramePreview(preview: ProjectBranchPreview): boolean {
   return (
     preview.embeddable === true &&
-    preview.status === "ready" &&
+    preview.status === 'ready' &&
     Boolean(preview.previewUrl)
   );
 }
@@ -125,23 +124,23 @@ export function previewUnavailableReason(
    * has been released to it - so the reader is told what will fill it rather
    * than shown an error for something that has not gone wrong.
    */
-  if (preview.status === "not_deployed") {
+  if (preview.status === 'not_deployed') {
     return preview.previewUrl
       ? `Nothing has been deployed here yet. The first release to ${preview.branch} appears at this address.`
       : `Nothing has been deployed here yet. The first release to ${preview.branch} appears here.`;
   }
-  if (preview.status === "queued" || preview.status === "building") {
-    return "This branch is still deploying. The preview appears once it is live.";
+  if (preview.status === 'queued' || preview.status === 'building') {
+    return 'This branch is still deploying. The preview appears once it is live.';
   }
-  if (preview.status === "failed" || preview.status === "canceled") {
-    return "The last deployment for this branch did not finish, so there is nothing to preview yet.";
+  if (preview.status === 'failed' || preview.status === 'canceled') {
+    return 'The last deployment for this branch did not finish, so there is nothing to preview yet.';
   }
   if (!preview.previewUrl) {
-    return "This deployment did not report a URL to preview.";
+    return 'This deployment did not report a URL to preview.';
   }
   return (
     preview.embedBlockedReason ??
-    "This deployment cannot be shown inline. Open it in a new tab to view it."
+    'This deployment cannot be shown inline. Open it in a new tab to view it.'
   );
 }
 
@@ -159,7 +158,7 @@ export function shortCommitSha(commitSha: string | null): string | null {
  * The strict sandbox: what every framed deployment gets at minimum, and all it
  * gets when its origin cannot be told apart from the dashboard's.
  */
-export const PREVIEW_FRAME_SANDBOX = "allow-scripts allow-forms allow-popups";
+export const PREVIEW_FRAME_SANDBOX = 'allow-scripts allow-forms allow-popups';
 
 /**
  * The sandbox for one framed deployment, given the dashboard's own origin.
@@ -184,7 +183,7 @@ export function previewFrameSandbox(
   } catch {
     return PREVIEW_FRAME_SANDBOX;
   }
-  const isWeb = frame.protocol === "https:" || frame.protocol === "http:";
+  const isWeb = frame.protocol === 'https:' || frame.protocol === 'http:';
   if (!isWeb || frame.origin === dashboardOrigin) return PREVIEW_FRAME_SANDBOX;
   return `${PREVIEW_FRAME_SANDBOX} allow-same-origin`;
 }
@@ -203,10 +202,13 @@ export type OverviewPreviews = {
 };
 
 /** The branches besides main that get an environment card when their service shows logs. */
-const ENVIRONMENT_CARD_BRANCHES = new Set(["uat"]);
+const ENVIRONMENT_CARD_BRANCHES = new Set(['uat']);
 
 function isEnvironmentCard(preview: ProjectBranchPreview): boolean {
-  return previewSurface(preview) === "logs" && ENVIRONMENT_CARD_BRANCHES.has(preview.branch.toLowerCase());
+  return (
+    previewSurface(preview) === 'logs' &&
+    ENVIRONMENT_CARD_BRANCHES.has(preview.branch.toLowerCase())
+  );
 }
 
 /**
@@ -243,19 +245,27 @@ export function splitOverviewPreviews(
 }
 
 /** "Production Deployment", "UAT Deployment": a card's title, from its environment. */
-export function deploymentCardTitle(preview: Pick<ProjectBranchPreview, "isProduction" | "branch">): string {
+export function deploymentCardTitle(
+  preview: Pick<ProjectBranchPreview, 'isProduction' | 'branch'>,
+): string {
   return `${environmentName(preview)} Deployment`;
 }
 
 /** "Production", "UAT", "Staging": an environment's name, as its tab and card say it. */
-export function environmentName(preview: Pick<ProjectBranchPreview, "isProduction" | "branch">): string {
-  if (preview.isProduction) return "Production";
+export function environmentName(
+  preview: Pick<ProjectBranchPreview, 'isProduction' | 'branch'>,
+): string {
+  if (preview.isProduction) return 'Production';
   const branch = preview.branch.trim();
-  return branch.length <= 3 ? branch.toUpperCase() : `${branch.slice(0, 1).toUpperCase()}${branch.slice(1)}`;
+  return branch.length <= 3
+    ? branch.toUpperCase()
+    : `${branch.slice(0, 1).toUpperCase()}${branch.slice(1)}`;
 }
 
 /** "main · live": the line under an environment tab's name. */
-export function environmentTabLine(preview: Pick<ProjectBranchPreview, "branch" | "status">): string {
+export function environmentTabLine(
+  preview: Pick<ProjectBranchPreview, 'branch' | 'status'>,
+): string {
   return `${preview.branch} · ${previewStatusLabel(preview.status).toLowerCase()}`;
 }
 
@@ -267,10 +277,14 @@ const TAB_STEPS: Readonly<Record<string, number>> = {
 };
 
 /** WAI-ARIA tabs: the tab a key moves to from `index`, wrapping; null for any other key. */
-export function nextTabIndex(key: string, index: number, count: number): number | null {
+export function nextTabIndex(
+  key: string,
+  index: number,
+  count: number,
+): number | null {
   if (count <= 0) return null;
-  if (key === "Home") return 0;
-  if (key === "End") return count - 1;
+  if (key === 'Home') return 0;
+  if (key === 'End') return count - 1;
   const step = TAB_STEPS[key];
   if (step === undefined) return null;
   return (index + step + count) % count;
@@ -291,7 +305,7 @@ export function displayHost(url: string): string {
  */
 export function deployedAgo(iso: string, now: number = Date.now()): string {
   const minutes = Math.floor((now - new Date(iso).getTime()) / 60_000);
-  if (minutes < 1) return "just now";
+  if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
@@ -300,10 +314,10 @@ export function deployedAgo(iso: string, now: number = Date.now()): string {
 
 /** "2h ago by tone", "2h ago", or what to say when nothing has deployed. */
 export function createdLabel(
-  preview: Pick<ProjectBranchPreview, "createdAt" | "createdBy">,
+  preview: Pick<ProjectBranchPreview, 'createdAt' | 'createdBy'>,
   now: number = Date.now(),
 ): string {
-  if (!preview.createdAt) return "Nothing deployed yet";
+  if (!preview.createdAt) return 'Nothing deployed yet';
   const ago = deployedAgo(preview.createdAt, now);
   return preview.createdBy ? `${ago} by ${preview.createdBy}` : ago;
 }
@@ -313,10 +327,10 @@ export function createdLabel(
  * descriptor labels. Providers are plugins, so this list is not exhaustive.
  */
 const KNOWN_PROVIDER_LABELS: Readonly<Record<string, string>> = {
-  vercel: "Vercel",
-  render: "Render",
-  gcp: "Google Cloud Platform",
-  "onprem-compose": "On-prem host (Docker Compose)",
+  vercel: 'Vercel',
+  render: 'Render',
+  gcp: 'Google Cloud Platform',
+  'onprem-compose': 'On-prem host (Docker Compose)',
 };
 
 /**
@@ -325,13 +339,13 @@ const KNOWN_PROVIDER_LABELS: Readonly<Record<string, string>> = {
  * provider's name.
  */
 export function previewProviderLabel(
-  provider: ProjectBranchPreview["provider"],
+  provider: ProjectBranchPreview['provider'],
 ): string {
   const known = KNOWN_PROVIDER_LABELS[provider];
   if (known) return known;
   const words = provider.split(/[-_\s]+/).filter(Boolean);
-  if (words.length === 0) return "Hosting provider";
-  return words.map((word) => word[0].toUpperCase() + word.slice(1)).join(" ");
+  if (words.length === 0) return 'Hosting provider';
+  return words.map((word) => word[0].toUpperCase() + word.slice(1)).join(' ');
 }
 
 /**
@@ -339,7 +353,7 @@ export function previewProviderLabel(
  * `previewProviderLabel` when a backend predates the field or sends it empty.
  */
 export function previewHostLabel(
-  preview: Pick<ProjectBranchPreview, "provider" | "providerLabel">,
+  preview: Pick<ProjectBranchPreview, 'provider' | 'providerLabel'>,
 ): string {
   return preview.providerLabel || previewProviderLabel(preview.provider);
 }
@@ -350,14 +364,14 @@ export function previewHostLabel(
  * the page, which is all it could show before.
  */
 export function previewSurface(
-  preview: Pick<ProjectBranchPreview, "surface">,
+  preview: Pick<ProjectBranchPreview, 'surface'>,
 ): ProjectBranchPreviewSurface {
-  return preview.surface === "logs" ? "logs" : "page";
+  return preview.surface === 'logs' ? 'logs' : 'page';
 }
 
 /* ── Custom domains ───────────────────────────────────────────────────────── */
 
-export type DomainStatusTone = "ok" | "pending" | "danger";
+export type DomainStatusTone = 'ok' | 'pending' | 'danger';
 
 /**
  * What a domain's state means to the reader.
@@ -372,15 +386,15 @@ export function domainStatus(domain: {
   lastErrorSafeMessage: string | null;
 }): { label: string; tone: DomainStatusTone } {
   if (!domain.verified) {
-    return { label: "Pending verification", tone: "pending" };
+    return { label: 'Pending verification', tone: 'pending' };
   }
   if (domain.misconfigured === true) {
-    return { label: "DNS not pointed here", tone: "danger" };
+    return { label: 'DNS not pointed here', tone: 'danger' };
   }
   if (domain.misconfigured === null) {
-    return { label: "Verified", tone: "pending" };
+    return { label: 'Verified', tone: 'pending' };
   }
-  return { label: "Live", tone: "ok" };
+  return { label: 'Live', tone: 'ok' };
 }
 
 /** What the reader should do next, or null when nothing is required. */
@@ -390,18 +404,18 @@ export function domainNextStep(domain: {
   verification: Array<{ type: string; domain: string; value: string }>;
 }): string | null {
   if (!domain.verified && domain.verification.length > 0) {
-    return "Add the record below at your DNS provider, then check again.";
+    return 'Add the record below at your DNS provider, then check again.';
   }
   if (!domain.verified) {
-    return "Waiting on the provider to confirm ownership. Check again shortly.";
+    return 'Waiting on the provider to confirm ownership. Check again shortly.';
   }
   if (domain.misconfigured === true) {
-    return "Ownership is confirmed, but DNS still points elsewhere. Update the record, then check again.";
+    return 'Ownership is confirmed, but DNS still points elsewhere. Update the record, then check again.';
   }
   return null;
 }
 
 /** Label for which branch a hostname serves. */
 export function domainScopeLabel(gitBranch: string | null): string {
-  return gitBranch ? `branch: ${gitBranch}` : "production";
+  return gitBranch ? `branch: ${gitBranch}` : 'production';
 }

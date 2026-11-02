@@ -32,15 +32,15 @@
   animation: qa-alert-in 180ms ease-out;
 }
 
-.qa-alert[data-event="qa.item.blocked"] {
+.qa-alert[data-event='qa.item.blocked'] {
   --qa-alert-tone: var(--accent-rose);
 }
 
-.qa-alert[data-event="qa.item.returned_to_dev"] {
+.qa-alert[data-event='qa.item.returned_to_dev'] {
   --qa-alert-tone: var(--warning);
 }
 
-.qa-alert[data-event="hierarchy.group.member_added"] {
+.qa-alert[data-event='hierarchy.group.member_added'] {
   --qa-alert-tone: var(--brand);
 }
 

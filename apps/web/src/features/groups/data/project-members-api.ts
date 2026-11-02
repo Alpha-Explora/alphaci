@@ -12,8 +12,8 @@ import type {
   ProjectMemberChangeResponse,
   ProjectMembersResponse,
   ProjectMembersSyncResponse,
-} from "@/features/groups/data/hierarchy-contracts";
-import { request } from "@/shared/api/request";
+} from '@/features/groups/data/hierarchy-contracts';
+import { request } from '@/shared/api/request';
 
 const enc = encodeURIComponent;
 
@@ -33,7 +33,7 @@ export function addProjectMember(
   userId: string,
 ): Promise<ProjectMemberChangeResponse> {
   return request<ProjectMemberChangeResponse>(membersPath(deliveryProjectId), {
-    method: "POST",
+    method: 'POST',
     body: JSON.stringify({ userId }),
   });
 }
@@ -44,7 +44,7 @@ export function removeProjectMember(
 ): Promise<ProjectMemberChangeResponse> {
   return request<ProjectMemberChangeResponse>(
     `${membersPath(deliveryProjectId)}/${enc(memberUserId)}`,
-    { method: "DELETE" },
+    { method: 'DELETE' },
   );
 }
 
@@ -54,6 +54,6 @@ export function syncProjectMembers(
 ): Promise<ProjectMembersSyncResponse> {
   return request<ProjectMembersSyncResponse>(
     `${membersPath(deliveryProjectId)}/sync`,
-    { method: "POST" },
+    { method: 'POST' },
   );
 }

@@ -1,7 +1,7 @@
 import type {
   QaChecklist,
   QaChecklistItem,
-} from "../../../../src/features/checklists/model/checklist-types";
+} from '../../../../src/features/checklists/model/checklist-types';
 
 export function checklistItem(
   position: number,
@@ -12,8 +12,8 @@ export function checklistItem(
     position,
     title: `Check ${position + 1}`,
     description: null,
-    targetPersona: "all",
-    verificationType: "manual",
+    targetPersona: 'all',
+    verificationType: 'manual',
     testIdentifier: null,
     ...overrides,
   };
@@ -21,25 +21,25 @@ export function checklistItem(
 
 export function checklist(overrides: Partial<QaChecklist> = {}): QaChecklist {
   return {
-    id: "cl-1",
-    workspaceId: "ws-1",
-    name: "Release smoke test",
-    description: "Before every promotion.",
+    id: 'cl-1',
+    workspaceId: 'ws-1',
+    name: 'Release smoke test',
+    description: 'Before every promotion.',
     version: 3,
     archivedAt: null,
-    createdBy: "user-1",
-    createdAt: "2026-09-01T00:00:00.000Z",
-    updatedAt: "2026-09-20T00:00:00.000Z",
+    createdBy: 'user-1',
+    createdAt: '2026-09-01T00:00:00.000Z',
+    updatedAt: '2026-09-20T00:00:00.000Z',
     items: [
       checklistItem(0, {
-        title: "Checkout works",
-        targetPersona: "qa",
-        verificationType: "playwright",
-        testIdentifier: "e2e/checkout.spec.ts",
+        title: 'Checkout works',
+        targetPersona: 'qa',
+        verificationType: 'playwright',
+        testIdentifier: 'e2e/checkout.spec.ts',
       }),
-      checklistItem(1, { title: "Totals add up", targetPersona: "developer" }),
+      checklistItem(1, { title: 'Totals add up', targetPersona: 'developer' }),
     ],
-    sharedProjectIds: ["project-1"],
+    sharedProjectIds: ['project-1'],
     ...overrides,
   };
 }

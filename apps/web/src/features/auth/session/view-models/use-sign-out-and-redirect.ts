@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 
-import { useAuthSessionViewModel } from "./use-auth-session-view-model";
+import { useAuthSessionViewModel } from './use-auth-session-view-model';
 
 /**
  * Sign out and return to the landing route.
@@ -18,7 +18,7 @@ export function useSignOutAndRedirect() {
 
   const signOutAndRedirect = useCallback(async () => {
     await signOut();
-    router.push("/");
+    router.push('/');
   }, [signOut, router]);
 
   return { signOutAndRedirect, isSigningOut };

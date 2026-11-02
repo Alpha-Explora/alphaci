@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-import { CreateGroupDialog } from "@/features/groups/create";
+import { CreateGroupDialog } from '@/features/groups/create';
 import {
   APP_ROLE_BADGE_LABELS,
   canCreateWorkspace,
@@ -12,19 +12,24 @@ import {
   type WorkspaceAppRole,
   type WorkspaceSummary,
   type WorkspacesMeResponse,
-} from "../model/workspace-types";
-import type { WorkspaceSelectionStatus } from "../view-models/use-workspace-selection-view-model";
-import { PlusIcon, WorkspacePicker } from "./workspace-picker";
-import { useWorkspaceSelection } from "./workspace-selection-context";
+} from '../model/workspace-types';
+import type { WorkspaceSelectionStatus } from '../view-models/use-workspace-selection-view-model';
+import { PlusIcon, WorkspacePicker } from './workspace-picker';
+import { useWorkspaceSelection } from './workspace-selection-context';
 
 const NO_OTHER_TEAMS: readonly WorkspaceSummary[] = [];
 
 function findCurrentWorkspace(
-  items: WorkspacesMeResponse["items"],
+  items: WorkspacesMeResponse['items'],
   selectedWorkspaceId: string | null,
-  selectedWorkspace: WorkspacesMeResponse["items"][number] | null,
+  selectedWorkspace: WorkspacesMeResponse['items'][number] | null,
 ) {
-  return items.find((workspace) => workspace.id === selectedWorkspaceId) ?? selectedWorkspace ?? items[0] ?? null;
+  return (
+    items.find((workspace) => workspace.id === selectedWorkspaceId) ??
+    selectedWorkspace ??
+    items[0] ??
+    null
+  );
 }
 
 function SwitcherRetryNotice({
@@ -60,7 +65,7 @@ function NoTeamNotice({
     <div className="team-switcher team-switcher--notice" role="status">
       <span>No team yet — ask an admin to add you to one</span>
       <span className="team-switcher-role-hint">
-        Signed in as {APP_ROLE_BADGE_LABELS[appRole ?? "member"]}
+        Signed in as {APP_ROLE_BADGE_LABELS[appRole ?? 'member']}
       </span>
       {onRetry ? (
         <button type="button" className="inline-link" onClick={onRetry}>
@@ -79,7 +84,9 @@ function createdWorkspaceHandler(
   return (group: { id: string }) => {
     setSelectedWorkspaceId(group.id);
     onWorkspaceCreated?.(group.id);
-    navigate(`/workflows?${new URLSearchParams({ group: group.id, created: "workspace" })}`);
+    navigate(
+      `/workflows?${new URLSearchParams({ group: group.id, created: 'workspace' })}`,
+    );
   };
 }
 
@@ -126,7 +133,7 @@ function PickerWithCreate({
   onCreated,
   onSwitch,
 }: Readonly<{
-  items: WorkspacesMeResponse["items"];
+  items: WorkspacesMeResponse['items'];
   otherTeams: readonly WorkspaceSummary[];
   current: WorkspaceSummary | null;
   canCreate: boolean;
@@ -178,7 +185,7 @@ export function WorkspaceSwitcher({
   workspaces,
   otherTeams = NO_OTHER_TEAMS,
   appRole,
-  status = "ready",
+  status = 'ready',
   onRetry,
   onWorkspaceCreated,
   onSwitch,
@@ -215,11 +222,24 @@ export function WorkspaceSwitcher({
   const items = workspaces?.items ?? [];
   const selectable = selectableWorkspaces(workspaces, otherTeams);
   const canCreate = canCreateWorkspace(appRole);
-  const current = findCurrentWorkspace(selectable, selectedWorkspaceId, selectedWorkspace);
-  const onCreated = createdWorkspaceHandler(setSelectedWorkspaceId, router.push, onWorkspaceCreated);
-  const kind = workspaceSwitcherKind(status, workspaces, selectable.length, canCreate);
+  const current = findCurrentWorkspace(
+    selectable,
+    selectedWorkspaceId,
+    selectedWorkspace,
+  );
+  const onCreated = createdWorkspaceHandler(
+    setSelectedWorkspaceId,
+    router.push,
+    onWorkspaceCreated,
+  );
+  const kind = workspaceSwitcherKind(
+    status,
+    workspaces,
+    selectable.length,
+    canCreate,
+  );
 
-  if (kind === "error") {
+  if (kind === 'error') {
     return (
       <SwitcherRetryNotice
         message="Workspaces unavailable"
@@ -228,10 +248,11 @@ export function WorkspaceSwitcher({
       />
     );
   }
-  if (kind === "disabled") return null;
-  if (kind === "loading") return <SwitcherLoadingNotice />;
-  if (kind === "no-team") return <NoTeamNotice appRole={appRole} onRetry={onRetry} />;
-  if (kind === "create") {
+  if (kind === 'disabled') return null;
+  if (kind === 'loading') return <SwitcherLoadingNotice />;
+  if (kind === 'no-team')
+    return <NoTeamNotice appRole={appRole} onRetry={onRetry} />;
+  if (kind === 'create') {
     return (
       <EmptyWorkspaceCreate
         createOpen={createOpen}

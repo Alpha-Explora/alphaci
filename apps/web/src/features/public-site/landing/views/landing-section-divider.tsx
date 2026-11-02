@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 
 /* Written out literally at both call sites below rather than hoisted into a
    const — Tailwind's JIT scans source text for complete class strings, so an
@@ -25,7 +25,9 @@ interface LandingSectionDividerProps {
    (percentages on transforms resolve against the element's own box, so the
    track has to be full-width for the maths to match), but stays on the
    compositor. */
-export function LandingSectionDivider({ reduced = false }: Readonly<LandingSectionDividerProps>) {
+export function LandingSectionDivider({
+  reduced = false,
+}: Readonly<LandingSectionDividerProps>) {
   if (reduced) {
     return (
       <hr
@@ -37,19 +39,23 @@ export function LandingSectionDivider({ reduced = false }: Readonly<LandingSecti
   }
 
   return (
-    <div className="relative h-px w-full overflow-visible" data-landing-section-divider="true" aria-hidden="true">
+    <div
+      className="relative h-px w-full overflow-visible"
+      data-landing-section-divider="true"
+      aria-hidden="true"
+    >
       <motion.div
         className="absolute inset-0 origin-center bg-[linear-gradient(90deg,transparent_0%,var(--border-brand)_30%,rgba(0,208,132,0.3)_60%,transparent_100%)]"
         initial={{ scaleX: 0.1, opacity: 0 }}
         whileInView={{ scaleX: 1, opacity: 1 }}
-        viewport={{ once: true, margin: "0px 0px -18% 0px" }}
+        viewport={{ once: true, margin: '0px 0px -18% 0px' }}
         transition={{ duration: 0.7, ease: EASE }}
       />
       <motion.div
         className="absolute inset-0"
-        initial={{ x: "-10%", opacity: 0 }}
-        whileInView={{ x: "110%", opacity: 1 }}
-        viewport={{ once: true, margin: "0px 0px -18% 0px" }}
+        initial={{ x: '-10%', opacity: 0 }}
+        whileInView={{ x: '110%', opacity: 1 }}
+        viewport={{ once: true, margin: '0px 0px -18% 0px' }}
         transition={{ duration: 0.7, ease: EASE }}
       >
         <span className="absolute left-0 top-1/2 size-[5px] -translate-y-1/2 rounded-full bg-[var(--brand)] shadow-[0_0_14px_color-mix(in_srgb,var(--brand)_80%,transparent),0_0_28px_rgba(52,211,153,0.4)]" />
@@ -57,5 +63,3 @@ export function LandingSectionDivider({ reduced = false }: Readonly<LandingSecti
     </div>
   );
 }
-
-

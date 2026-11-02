@@ -1,39 +1,44 @@
-import { act, useEffect } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act, useEffect } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 
-import { useOnboardingTour } from "../../src/features/workflows/studio/view-models/use-onboarding-tour";
-import type { AuthMeResponse } from "../../src/shared/api/contracts";
+import { useOnboardingTour } from '../../src/features/workflows/studio/view-models/use-onboarding-tour';
+import type { AuthMeResponse } from '../../src/shared/api/contracts';
 
 /* ── Mocks ───────────────────────────────────────────────────────────────── */
 
 // Prevent the auth API from making real network calls.
-jest.mock("../../src/features/auth/session/data/auth-api", () => ({
-  completeOnboarding: jest.fn().mockResolvedValue({ ok: true, onboardingCompleted: true }),
+jest.mock('../../src/features/auth/session/data/auth-api', () => ({
+  completeOnboarding: jest
+    .fn()
+    .mockResolvedValue({ ok: true, onboardingCompleted: true }),
 }));
 
 // Mock driver.js CSS import (jsdom cannot process it).
-jest.mock("driver.js/dist/driver.css", () => ({}), { virtual: true });
+jest.mock('driver.js/dist/driver.css', () => ({}), { virtual: true });
 
 // Mock the tour builder so tests are not blocked on DOM element lookups.
 const mockDrive = jest.fn();
 const mockDestroy = jest.fn();
 let capturedOnDestroyed: (() => void) | undefined;
 
-jest.mock("../../src/features/workflows/studio/views/tours/create-project-tour", () => ({
-  createProjectTour: jest.fn((callbacks: { onFinished: () => void }) => {
-    // Capture the onDestroyed callback so tests can fire it manually.
-    capturedOnDestroyed = callbacks.onFinished;
-    return { drive: mockDrive, destroy: mockDestroy };
+jest.mock(
+  '../../src/features/workflows/studio/views/tours/create-project-tour',
+  () => ({
+    createProjectTour: jest.fn((callbacks: { onFinished: () => void }) => {
+      // Capture the onDestroyed callback so tests can fire it manually.
+      capturedOnDestroyed = callbacks.onFinished;
+      return { drive: mockDrive, destroy: mockDestroy };
+    }),
+    getProjectTourSteps: jest.fn(() => []),
   }),
-  getProjectTourSteps: jest.fn(() => []),
-}));
+);
 
 // Mock next/navigation so the hook's useSearchParams() resolves in jsdom.
 // `mockTourParam` is mutated per-test to simulate the ?tour=1 replay deep-link.
 let mockTourParam: string | null = null;
-jest.mock("next/navigation", () => ({
+jest.mock('next/navigation', () => ({
   useSearchParams: () => ({
-    get: (key: string) => (key === "tour" ? mockTourParam : null),
+    get: (key: string) => (key === 'tour' ? mockTourParam : null),
   }),
 }));
 
@@ -43,15 +48,15 @@ function makeSession(onboardingCompleted: boolean): AuthMeResponse {
   return {
     authenticated: true,
     user: {
-      id: "u1",
-      login: "tone",
+      id: 'u1',
+      login: 'tone',
       onboardingCompleted,
     },
     subscription: {
-      plan: "pro",
-      status: "active",
-      provider: "mock",
-      updatedAt: "2026-01-01T00:00:00.000Z",
+      plan: 'pro',
+      status: 'active',
+      provider: 'mock',
+      updatedAt: '2026-01-01T00:00:00.000Z',
     },
   };
 }
@@ -91,12 +96,12 @@ async function waitForCondition(condition: () => boolean, attempts = 30) {
     if (condition()) return;
     await flushMicrotasks();
   }
-  throw new Error("Condition not met");
+  throw new Error('Condition not met');
 }
 
 /* ── Tests ───────────────────────────────────────────────────────────────── */
 
-describe("useOnboardingTour", () => {
+describe('useOnboardingTour', () => {
   let container: HTMLDivElement;
   let root: Root;
 
@@ -111,14 +116,16 @@ describe("useOnboardingTour", () => {
     // fires on a macrotask timer that microtask-flushing won't advance, so run
     // it synchronously for deterministic assertions.
     jest
-      .spyOn(globalThis, "requestAnimationFrame")
+      .spyOn(globalThis, 'requestAnimationFrame')
       .mockImplementation((cb: FrameRequestCallback): number => {
         cb(0);
         return 0;
       });
-    jest.spyOn(globalThis, "cancelAnimationFrame").mockImplementation(() => undefined);
+    jest
+      .spyOn(globalThis, 'cancelAnimationFrame')
+      .mockImplementation(() => undefined);
 
-    container = document.createElement("div");
+    container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
   });
@@ -137,7 +144,7 @@ describe("useOnboardingTour", () => {
     await waitForCondition(() => latestSnapshot !== null);
   }
 
-  it("does not auto-launch when guest=true", async () => {
+  it('does not auto-launch when guest=true', async () => {
     await mount({
       session: makeSession(false),
       guest: true,
@@ -149,7 +156,7 @@ describe("useOnboardingTour", () => {
     expect(mockDrive).not.toHaveBeenCalled();
   });
 
-  it("does not auto-launch when onboardingCompleted=true", async () => {
+  it('does not auto-launch when onboardingCompleted=true', async () => {
     await mount({
       session: makeSession(true),
       guest: false,
@@ -161,7 +168,7 @@ describe("useOnboardingTour", () => {
     expect(mockDrive).not.toHaveBeenCalled();
   });
 
-  it("does not auto-launch when session is null", async () => {
+  it('does not auto-launch when session is null', async () => {
     await mount({
       session: null,
       guest: false,
@@ -173,7 +180,7 @@ describe("useOnboardingTour", () => {
     expect(mockDrive).not.toHaveBeenCalled();
   });
 
-  it("does not auto-launch when the setup tab is not active", async () => {
+  it('does not auto-launch when the setup tab is not active', async () => {
     await mount({
       session: makeSession(false),
       guest: false,
@@ -185,7 +192,7 @@ describe("useOnboardingTour", () => {
     expect(mockDrive).not.toHaveBeenCalled();
   });
 
-  it("exposes startTour which drives the tour", async () => {
+  it('exposes startTour which drives the tour', async () => {
     await mount({
       session: makeSession(true),
       guest: false,
@@ -201,7 +208,7 @@ describe("useOnboardingTour", () => {
     expect(mockDrive).toHaveBeenCalledTimes(1);
   });
 
-  it("sets tourDone to true once onFinished fires", async () => {
+  it('sets tourDone to true once onFinished fires', async () => {
     await mount({
       session: makeSession(true),
       guest: false,
@@ -223,7 +230,7 @@ describe("useOnboardingTour", () => {
     expect(latestSnapshot?.tourDone).toBe(true);
   });
 
-  it("returns tourDone=false initially", async () => {
+  it('returns tourDone=false initially', async () => {
     await mount({
       session: makeSession(true),
       guest: false,
@@ -234,8 +241,8 @@ describe("useOnboardingTour", () => {
     expect(latestSnapshot?.tourDone).toBe(false);
   });
 
-  it("auto-launches via ?tour=1 even when onboardingCompleted=true", async () => {
-    mockTourParam = "1";
+  it('auto-launches via ?tour=1 even when onboardingCompleted=true', async () => {
+    mockTourParam = '1';
     await mount({
       session: makeSession(true),
       guest: false,
@@ -247,8 +254,8 @@ describe("useOnboardingTour", () => {
     expect(mockDrive).toHaveBeenCalled();
   });
 
-  it("does not replay via ?tour=1 for a guest", async () => {
-    mockTourParam = "1";
+  it('does not replay via ?tour=1 for a guest', async () => {
+    mockTourParam = '1';
     await mount({
       session: null,
       guest: true,
@@ -260,7 +267,7 @@ describe("useOnboardingTour", () => {
     expect(mockDrive).not.toHaveBeenCalled();
   });
 
-  it("auto-launches once when every condition is satisfied", async () => {
+  it('auto-launches once when every condition is satisfied', async () => {
     await mount({
       session: makeSession(false),
       guest: false,
@@ -272,7 +279,7 @@ describe("useOnboardingTour", () => {
     expect(mockDrive).toHaveBeenCalledTimes(1);
   });
 
-  it("destroys the previous driver instance when startTour is called again", async () => {
+  it('destroys the previous driver instance when startTour is called again', async () => {
     await mount({
       session: makeSession(true),
       guest: false,

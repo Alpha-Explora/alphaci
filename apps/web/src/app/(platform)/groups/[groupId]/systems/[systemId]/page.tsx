@@ -1,1 +1,1 @@
-export { SystemDetailView as default } from "@/features/groups/system-detail";
+export { SystemDetailView as default } from '@/features/groups/system-detail';

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from 'react';
 import {
   EMPTY_NOTIFICATION_FEED,
   notificationsFeed,
-} from "../../data/notifications-feed";
+} from '../../data/notifications-feed';
 
 export function useNotificationFeed(userId: string | null) {
   return useSyncExternalStore(

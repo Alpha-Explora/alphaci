@@ -1,6 +1,12 @@
-"use client";
+'use client';
 
-import { useId, useState, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import {
+  useId,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+  type Ref,
+} from 'react';
 
 import {
   CUSTOM_RESOLUTION_LIMITS,
@@ -11,11 +17,11 @@ import {
   validateCustomResolution,
   viewportLabel,
   type DevicePresetId,
-} from "../../model/qa-studio-rules";
-import { commitSourceLabel } from "../../model/qa-run-rules";
-import type { QaCommitSource } from "../../model/qa-run-types";
-import type { CopyLinkStatus } from "../view-models/use-copy-link";
-import type { StudioViewportViewModel } from "../view-models/use-studio-viewport-view-model";
+} from '../../model/qa-studio-rules';
+import { commitSourceLabel } from '../../model/qa-run-rules';
+import type { QaCommitSource } from '../../model/qa-run-types';
+import type { CopyLinkStatus } from '../view-models/use-copy-link';
+import type { StudioViewportViewModel } from '../view-models/use-studio-viewport-view-model';
 import {
   CheckIcon,
   CollapseIcon,
@@ -28,7 +34,7 @@ import {
   RotateIcon,
   TabletIcon,
   WarningIcon,
-} from "./studio-icons";
+} from './studio-icons';
 
 const DEVICE_ICONS: Record<DevicePresetId, () => ReactNode> = {
   desktop: DesktopIcon,
@@ -44,8 +50,8 @@ const COPY_LINK_ICONS: Record<CopyLinkStatus, () => ReactNode> = {
 };
 
 const COPY_LINK_TITLES: Record<CopyLinkStatus, string> = {
-  idle: "Copy link to share",
-  copied: "Copied",
+  idle: 'Copy link to share',
+  copied: 'Copied',
   failed: "Couldn't copy",
 };
 
@@ -62,7 +68,7 @@ function EnvironmentPicker({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
       className="hier-select qa-toolbar__select qa-toolbar__env"
       aria-label="Environment"
       title="Environment under test"
-      value={vm.environment?.key ?? ""}
+      value={vm.environment?.key ?? ''}
       onChange={(event) => vm.selectEnvironment(event.target.value)}
     >
       {vm.environments.map((env) => (
@@ -77,7 +83,11 @@ function EnvironmentPicker({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
 /** Desktop / Tablet / Mobile as icons: the name is the accessible name and the tooltip. */
 function DeviceSwitch({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   return (
-    <div className="qa-device-switch" role="radiogroup" aria-label="Device class">
+    <div
+      className="qa-device-switch"
+      role="radiogroup"
+      aria-label="Device class"
+    >
       {DEVICE_PRESETS.map((preset) => {
         const Icon = DEVICE_ICONS[preset.id];
         const selected = vm.device.id === preset.id;
@@ -89,7 +99,7 @@ function DeviceSwitch({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
             aria-checked={selected}
             aria-label={preset.label}
             title={preset.label}
-            className={`qa-device-switch__option${selected ? " qa-device-switch__option--on" : ""}`}
+            className={`qa-device-switch__option${selected ? ' qa-device-switch__option--on' : ''}`}
             onClick={() => vm.setDevice(preset.id)}
           >
             <Icon />
@@ -124,24 +134,28 @@ function CustomResolution({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   }
 
   function applyOnEnter(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== "Enter") return;
+    if (event.key !== 'Enter') return;
     event.preventDefault();
     apply();
   }
 
   const shared = {
-    className: `qa-resolution__input${error ? " qa-resolution__input--invalid" : ""}`,
-    type: "number",
-    inputMode: "numeric",
-    "aria-invalid": error ? true : undefined,
-    "aria-describedby": error ? errorId : undefined,
+    className: `qa-resolution__input${error ? ' qa-resolution__input--invalid' : ''}`,
+    type: 'number',
+    inputMode: 'numeric',
+    'aria-invalid': error ? true : undefined,
+    'aria-describedby': error ? errorId : undefined,
     onBlur: apply,
     onKeyDown: applyOnEnter,
   } as const;
 
   return (
     <>
-      <div className="qa-resolution__custom" role="group" aria-label="Custom resolution">
+      <div
+        className="qa-resolution__custom"
+        role="group"
+        aria-label="Custom resolution"
+      >
         <input
           {...shared}
           aria-label="Width in pixels"
@@ -161,7 +175,11 @@ function CustomResolution({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
         />
       </div>
       {error ? (
-        <p className="qa-form-error qa-toolbar__error qa-resolution__error" id={errorId} role="alert">
+        <p
+          className="qa-form-error qa-toolbar__error qa-resolution__error"
+          id={errorId}
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
@@ -204,7 +222,7 @@ function ResolutionPicker({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
  */
 function RotateButton({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
   if (!vm.canRotate) return null;
-  const next = vm.orientation === "portrait" ? "landscape" : "portrait";
+  const next = vm.orientation === 'portrait' ? 'landscape' : 'portrait';
   return (
     <button
       type="button"
@@ -239,8 +257,10 @@ function ScaleBadge({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
  * commit under test is the branch head, NOT what is deployed, so what they see
  * may not be what they are signing off. A deployed commit says nothing here.
  */
-function CommitSourceWarning({ commitSource }: Readonly<{ commitSource: QaCommitSource | null }>) {
-  if (commitSource !== "branch_head") return null;
+function CommitSourceWarning({
+  commitSource,
+}: Readonly<{ commitSource: QaCommitSource | null }>) {
+  if (commitSource !== 'branch_head') return null;
   return (
     <span className="qa-commit-warning">
       <WarningIcon />
@@ -271,7 +291,7 @@ function CopyLinkButton({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
         <Icon />
       </button>
       <span className="sr-only" role="status">
-        {status === "idle" ? "" : COPY_LINK_TITLES[status]}
+        {status === 'idle' ? '' : COPY_LINK_TITLES[status]}
       </span>
     </>
   );
@@ -280,7 +300,10 @@ function CopyLinkButton({ vm }: Readonly<{ vm: StudioViewportViewModel }>) {
 function FrameActions({
   vm,
   fullScreenRef,
-}: Readonly<{ vm: StudioViewportViewModel; fullScreenRef?: Ref<HTMLButtonElement> }>) {
+}: Readonly<{
+  vm: StudioViewportViewModel;
+  fullScreenRef?: Ref<HTMLButtonElement>;
+}>) {
   return (
     <div className="qa-toolbar__actions">
       <button
@@ -313,7 +336,7 @@ function FrameActions({
         onClick={vm.toggleFullScreen}
         aria-pressed={vm.isFullScreen}
         aria-label="Full screen"
-        title={vm.isFullScreen ? "Exit full screen (Esc)" : "Full screen"}
+        title={vm.isFullScreen ? 'Exit full screen (Esc)' : 'Full screen'}
       >
         {vm.isFullScreen ? <CollapseIcon /> : <ExpandIcon />}
       </button>
@@ -326,7 +349,7 @@ function FrameActions({
  * tab row (docked). `studio`: a slim bar across the top of the studio itself —
  * in full screen, where the tab row is covered, and wherever no tab row hosts it.
  */
-export type StudioToolbarPlacement = "tab-row" | "studio";
+export type StudioToolbarPlacement = 'tab-row' | 'studio';
 
 /**
  * The studio's controls, one row: at what size (device class, resolution,
@@ -339,16 +362,24 @@ export function StudioToolbar({
   vm,
   commit,
   fullScreenRef,
-  placement = "studio",
+  placement = 'studio',
 }: Readonly<{
   vm: StudioViewportViewModel;
-  commit: { commitSha: string | null; commitSource: QaCommitSource | null } | null;
+  commit: {
+    commitSha: string | null;
+    commitSource: QaCommitSource | null;
+  } | null;
   /** The Full screen toggle, so focus can return to it when the drawer's Dock button disappears. */
   fullScreenRef?: Ref<HTMLButtonElement>;
   placement?: StudioToolbarPlacement;
 }>) {
   return (
-    <div className="qa-toolbar" data-placement={placement} role="group" aria-label="Preview controls">
+    <div
+      className="qa-toolbar"
+      data-placement={placement}
+      role="group"
+      aria-label="Preview controls"
+    >
       <div className="qa-toolbar__row">
         <EnvironmentPicker vm={vm} />
         <DeviceSwitch vm={vm} />

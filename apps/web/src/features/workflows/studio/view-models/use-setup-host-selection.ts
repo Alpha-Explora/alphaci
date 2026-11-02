@@ -1,7 +1,7 @@
-"use client";
-import { useEffect, useState } from "react";
-import { listHosts, type MachineSummary } from "@/features/hosts";
-import { useWorkspaceSelection } from "@/features/workspace/selection";
+'use client';
+import { useEffect, useState } from 'react';
+import { listHosts, type MachineSummary } from '@/features/hosts';
+import { useWorkspaceSelection } from '@/features/workspace/selection';
 /**
  * The machines the Delivery step's on-prem rows choose from. Nothing is
  * requested unless `enabled`, so a wizard that is not on-prem makes no host
@@ -26,8 +26,8 @@ export function useSetupHostSelection({ enabled }: { enabled: boolean }) {
             workspaceId: selectedWorkspaceId,
             hosts: hosts.filter(
               (host) =>
-                host.status !== "revoked" &&
-                host.status !== "enrollment_pending",
+                host.status !== 'revoked' &&
+                host.status !== 'enrollment_pending',
             ),
           });
         }
@@ -35,7 +35,7 @@ export function useSetupHostSelection({ enabled }: { enabled: boolean }) {
       .catch(() => {
         if (active)
           setError(
-            "Host inventory is unavailable. You can assign a host from Hosting after creation.",
+            'Host inventory is unavailable. You can assign a host from Hosting after creation.',
           );
       });
     return () => {
@@ -45,7 +45,9 @@ export function useSetupHostSelection({ enabled }: { enabled: boolean }) {
   return {
     workspaceId: selectedWorkspaceId,
     hosts:
-      enabled && loaded?.workspaceId === selectedWorkspaceId ? loaded.hosts : [],
+      enabled && loaded?.workspaceId === selectedWorkspaceId
+        ? loaded.hosts
+        : [],
     error,
     refresh: () => setRevision((value) => value + 1),
   };

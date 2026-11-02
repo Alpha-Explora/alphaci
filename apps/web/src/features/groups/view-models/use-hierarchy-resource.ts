@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { ApiError } from "@/shared/api/request";
+import { ApiError } from '@/shared/api/request';
 
 /**
  * Load state for any hierarchy resource. 403 and 404 are first-class UI states
@@ -10,12 +10,7 @@ import { ApiError } from "@/shared/api/request";
  * error dumps.
  */
 export type ResourceState =
-  | "loading"
-  | "ready"
-  | "empty"
-  | "forbidden"
-  | "notfound"
-  | "error";
+  'loading' | 'ready' | 'empty' | 'forbidden' | 'notfound' | 'error';
 
 export interface UseApiResourceResult<T> {
   data: T | null;
@@ -28,24 +23,32 @@ export interface UseApiResourceResult<T> {
 /** How the newest request ended, kept with the request it answered. */
 interface Outcome {
   key: string;
-  state: Exclude<ResourceState, "loading">;
+  state: Exclude<ResourceState, 'loading'>;
   error: string | null;
 }
 
 function failureOutcome(key: string, cause: unknown): Outcome {
   if (cause instanceof ApiError) {
-    if (cause.status === 404) return { key, state: "notfound", error: null };
-    if (cause.status === 403) return { key, state: "forbidden", error: null };
-    return { key, state: "error", error: cause.message };
+    if (cause.status === 404) return { key, state: 'notfound', error: null };
+    if (cause.status === 403) return { key, state: 'forbidden', error: null };
+    return { key, state: 'error', error: cause.message };
   }
-  return { key, state: "error", error: "Something went wrong loading this view." };
+  return {
+    key,
+    state: 'error',
+    error: 'Something went wrong loading this view.',
+  };
 }
 
 /**
  * The outcome to show. While disabled nothing is asked for, so the last
  * outcome stays; otherwise an outcome for another request reads as loading.
  */
-function shownOutcome(enabled: boolean, outcome: Outcome | null, key: string): Outcome | null {
+function shownOutcome(
+  enabled: boolean,
+  outcome: Outcome | null,
+  key: string,
+): Outcome | null {
   if (!enabled) return outcome;
   return outcome?.key === key ? outcome : null;
 }
@@ -89,10 +92,11 @@ export function useApiResource<T>(
         if (requestId !== requestRef.current) return;
         setDataState(result);
         const empty = latest.current.emptyWhen?.(result) ?? false;
-        setOutcome({ key, state: empty ? "empty" : "ready", error: null });
+        setOutcome({ key, state: empty ? 'empty' : 'ready', error: null });
       })
       .catch((cause: unknown) => {
-        if (requestId === requestRef.current) setOutcome(failureOutcome(key, cause));
+        if (requestId === requestRef.current)
+          setOutcome(failureOutcome(key, cause));
       });
   }, [enabled, key]);
 
@@ -100,17 +104,14 @@ export function useApiResource<T>(
     if (enabled) setNonce((value) => value + 1);
   }, [enabled]);
 
-  const setData = useCallback(
-    (updater: (current: T | null) => T | null) => {
-      setDataState((current) => updater(current));
-    },
-    [],
-  );
+  const setData = useCallback((updater: (current: T | null) => T | null) => {
+    setDataState((current) => updater(current));
+  }, []);
 
   const shown = shownOutcome(enabled, outcome, key);
   return {
     data,
-    state: shown ? shown.state : "loading",
+    state: shown ? shown.state : 'loading',
     error: shown ? shown.error : null,
     reload,
     setData,
@@ -121,8 +122,8 @@ export function useApiResource<T>(
 export function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(ms / 60000);
-  if (Number.isNaN(minutes)) return "";
-  if (minutes < 1) return "just now";
+  if (Number.isNaN(minutes)) return '';
+  if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;

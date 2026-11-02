@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useNotificationsPreferencesViewModel } from "../view-models/use-notifications-preferences-view-model";
+import { useNotificationsPreferencesViewModel } from '../view-models/use-notifications-preferences-view-model';
 
 export function NotificationsPreferencesView() {
   /* View only — state and persistence live in the ViewModel. */
@@ -27,15 +27,13 @@ export function NotificationsPreferencesView() {
       <label
         className={`notification-preferences-card ${
           preferences.inAppEnabled
-            ? "notification-preferences-card--enabled"
-            : ""
+            ? 'notification-preferences-card--enabled'
+            : ''
         }`}
       >
         <span className="notification-preferences-copy">
           <span className="notification-preferences-kicker">Live inbox</span>
-          <strong>
-            In-app notifications
-          </strong>
+          <strong>In-app notifications</strong>
           <span>
             Show workflow PRs, project updates, and account events in the
             product notification center.
@@ -51,17 +49,11 @@ export function NotificationsPreferencesView() {
           <span aria-hidden="true" />
         </span>
       </label>
-      <label
-        className="notification-preferences-card notification-preferences-card--disabled"
-      >
+      <label className="notification-preferences-card notification-preferences-card--disabled">
         <span className="notification-preferences-copy">
           <span className="notification-preferences-kicker">Digest</span>
-          <strong>
-            Email notifications
-          </strong>
-          <span>
-            Reserved for workflow digests and failed-run summaries.
-          </span>
+          <strong>Email notifications</strong>
+          <span>Reserved for workflow digests and failed-run summaries.</span>
         </span>
         <span className="notification-preferences-state">Soon</span>
       </label>

@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
+import { useMemo, useState } from 'react';
 
-import { useApiResource } from "@/features/groups";
+import { useApiResource } from '@/features/groups';
 
-import { groupsRepository } from "../../data/groups-repository";
+import { groupsRepository } from '../../data/groups-repository';
 import type {
   GroupActivityItem,
   GroupActivityQuery,
   GroupActivityResponse,
-} from "../../model/groups-types";
+} from '../../model/groups-types';
 
 export interface GroupActivityViewModel {
   filters: GroupActivityQuery;
   setFilters: (filters: GroupActivityQuery) => void;
   /** First page plus everything paged in after it. */
   items: GroupActivityItem[];
-  status: ReturnType<typeof useApiResource<GroupActivityResponse>>["state"];
+  status: ReturnType<typeof useApiResource<GroupActivityResponse>>['state'];
   reload: () => void;
   /** Null when there is nothing more to page. */
   cursor: string | null;
@@ -74,7 +74,10 @@ export function useGroupActivityViewModel(
       });
       setLaterPages((current) => ({
         firstPage,
-        items: [...(current?.firstPage === firstPage ? current.items : []), ...next.items],
+        items: [
+          ...(current?.firstPage === firstPage ? current.items : []),
+          ...next.items,
+        ],
         cursor: next.nextCursor,
       }));
     } finally {

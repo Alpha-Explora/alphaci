@@ -1,1 +1,1 @@
-export { HostsPage as default } from "@/features/hosts";
+export { HostsPage as default } from '@/features/hosts';

@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore } from 'react';
 
 import {
   SIDEBAR_PINNED_ATTRIBUTE,
   SIDEBAR_PINNED_KEY,
   sidebarPinnedFrom,
   storedSidebarPinned,
-} from "../model/sidebar-pin";
+} from '../model/sidebar-pin';
 
 const listeners = new Set<() => void>();
 
@@ -25,7 +25,8 @@ function readPinned(): boolean {
 
 /** The stylesheet reads the pin from <html>, so the page's gutter follows it too. */
 function applyPinned(pinned: boolean): void {
-  if (pinned) document.documentElement.setAttribute(SIDEBAR_PINNED_ATTRIBUTE, "true");
+  if (pinned)
+    document.documentElement.setAttribute(SIDEBAR_PINNED_ATTRIBUTE, 'true');
   else document.documentElement.removeAttribute(SIDEBAR_PINNED_ATTRIBUTE);
 }
 
@@ -42,10 +43,10 @@ function onStorage(event: StorageEvent): void {
 
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
-  if (listeners.size === 1) window.addEventListener("storage", onStorage);
+  if (listeners.size === 1) window.addEventListener('storage', onStorage);
   return () => {
     listeners.delete(listener);
-    if (listeners.size === 0) window.removeEventListener("storage", onStorage);
+    if (listeners.size === 0) window.removeEventListener('storage', onStorage);
   };
 }
 
@@ -63,7 +64,10 @@ export function useSidebarPin(): [boolean, () => void] {
   function toggle() {
     const next = !readPinned();
     try {
-      window.localStorage.setItem(SIDEBAR_PINNED_KEY, storedSidebarPinned(next));
+      window.localStorage.setItem(
+        SIDEBAR_PINNED_KEY,
+        storedSidebarPinned(next),
+      );
       unsaved = null;
     } catch {
       // Not remembered across visits; the pin still applies for this page.

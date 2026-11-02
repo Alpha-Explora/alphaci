@@ -1,6 +1,12 @@
-"use client";
+'use client';
 
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import {
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+} from 'react';
 
 import {
   clampRailWidth,
@@ -10,8 +16,8 @@ import {
   RAIL_WIDTH_STEP,
   railWidthMax,
   studioRailWidthKey,
-} from "../../model/qa-studio-rules";
-import { useRememberedChoice } from "./use-remembered-flag";
+} from '../../model/qa-studio-rules';
+import { useRememberedChoice } from './use-remembered-flag';
 
 export interface RailResizeHandleProps {
   onPointerDown: (event: PointerEvent<HTMLElement>) => void;
@@ -20,8 +26,8 @@ export interface RailResizeHandleProps {
   onPointerCancel: (event: PointerEvent<HTMLElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
   onDoubleClick: () => void;
-  "aria-valuenow": number;
-  "aria-valuemin": number;
+  'aria-valuenow': number;
+  'aria-valuemin': number;
 }
 
 export interface RailWidthViewModel {
@@ -43,12 +49,12 @@ interface Drag {
 
 /** The room the studio's panes give the rail, read from the handle's place in the page. */
 function availableFor(element: HTMLElement): number {
-  const panes = element.closest(".qa-studio__panes");
+  const panes = element.closest('.qa-studio__panes');
   return railWidthMax(panes ? panes.clientWidth : window.innerWidth);
 }
 
 function currentWidth(element: HTMLElement, fallback: number): number {
-  const rail = element.closest(".qa-rail");
+  const rail = element.closest('.qa-rail');
   const measured = rail?.getBoundingClientRect().width ?? 0;
   return measured > 0 ? measured : fallback;
 }
@@ -60,14 +66,20 @@ function currentWidth(element: HTMLElement, fallback: number): number {
  * same in steps; a double-click goes back to the default. The width is
  * remembered per studio in this browser.
  */
-export function useRailWidth(studio: "qa" | "po"): RailWidthViewModel {
-  const [stored, remember] = useRememberedChoice<string>(studioRailWidthKey(studio), (raw) => raw ?? "");
+export function useRailWidth(studio: 'qa' | 'po'): RailWidthViewModel {
+  const [stored, remember] = useRememberedChoice<string>(
+    studioRailWidthKey(studio),
+    (raw) => raw ?? '',
+  );
   const [live, setLive] = useState<number | null>(null);
   const drag = useRef<Drag | null>(null);
   const width = live ?? parseRailWidth(stored);
 
   function widthAt(event: PointerEvent<HTMLElement>, current: Drag): number {
-    return clampRailWidth(current.startWidth + current.startX - event.clientX, current.max);
+    return clampRailWidth(
+      current.startWidth + current.startX - event.clientX,
+      current.max,
+    );
   }
 
   function finish(event: PointerEvent<HTMLElement>, keep: boolean) {
@@ -84,7 +96,10 @@ export function useRailWidth(studio: "qa" | "po"): RailWidthViewModel {
   return {
     width,
     resizing: live !== null,
-    style: width === null ? undefined : ({ "--qa-rail-width": `${String(width)}px` } as CSSProperties),
+    style:
+      width === null
+        ? undefined
+        : ({ '--qa-rail-width': `${String(width)}px` } as CSSProperties),
     handle: {
       onPointerDown: (event) => {
         if (event.button !== 0) return;
@@ -95,7 +110,12 @@ export function useRailWidth(studio: "qa" | "po"): RailWidthViewModel {
         // an unpinned panel open for the whole drag.
         element.focus({ preventScroll: true });
         const startWidth = currentWidth(element, width ?? RAIL_WIDTH_DEFAULT);
-        drag.current = { pointerId: event.pointerId, startX: event.clientX, startWidth, max: availableFor(element) };
+        drag.current = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startWidth,
+          max: availableFor(element),
+        };
         element.setPointerCapture?.(event.pointerId);
         setLive(clampRailWidth(startWidth, drag.current.max));
       },
@@ -121,9 +141,9 @@ export function useRailWidth(studio: "qa" | "po"): RailWidthViewModel {
         event.preventDefault();
         remember(String(clampRailWidth(target, max)));
       },
-      onDoubleClick: () => remember(""),
-      "aria-valuenow": Math.round(width ?? RAIL_WIDTH_DEFAULT),
-      "aria-valuemin": RAIL_WIDTH_MIN,
+      onDoubleClick: () => remember(''),
+      'aria-valuenow': Math.round(width ?? RAIL_WIDTH_DEFAULT),
+      'aria-valuemin': RAIL_WIDTH_MIN,
     },
   };
 }

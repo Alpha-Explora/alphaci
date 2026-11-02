@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { studioRailPinnedKey } from "../../model/qa-studio-rules";
-import { useRememberedFlag } from "./use-remembered-flag";
+import { studioRailPinnedKey } from '../../model/qa-studio-rules';
+import { useRememberedFlag } from './use-remembered-flag';
 
 export interface StudioPanelState {
   /**
@@ -28,8 +28,11 @@ export interface StudioPanelState {
  * remembered per viewer and per studio in this browser; a first visit is
  * unpinned, like the app's left rail.
  */
-export function useStudioPanel(studio: "qa" | "po"): StudioPanelState {
-  const [isRailPinned, togglePinned] = useRememberedFlag(studioRailPinnedKey(studio), false);
+export function useStudioPanel(studio: 'qa' | 'po'): StudioPanelState {
+  const [isRailPinned, togglePinned] = useRememberedFlag(
+    studioRailPinnedKey(studio),
+    false,
+  );
   const [railHoverSuppressed, setSuppressed] = useState(false);
 
   return {

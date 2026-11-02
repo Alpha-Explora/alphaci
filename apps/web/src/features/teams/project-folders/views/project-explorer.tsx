@@ -1,32 +1,41 @@
-"use client";
+'use client';
 
-import "./project-folders.css";
+import './project-folders.css';
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
-import { createRepositoryHref, moveTargets } from "../model/project-folder-rules";
+import {
+  createRepositoryHref,
+  moveTargets,
+} from '../model/project-folder-rules';
 import {
   useCreateProjectFolderViewModel,
   type CreateProjectFolderViewModel,
-} from "../view-models/use-create-project-folder-view-model";
+} from '../view-models/use-create-project-folder-view-model';
 import {
   useDeleteProjectViewModel,
   type DeleteProjectViewModel,
-} from "../view-models/use-delete-project-view-model";
+} from '../view-models/use-delete-project-view-model';
 import {
   useMoveRepositoryViewModel,
   type MoveRepositoryViewModel,
-} from "../view-models/use-move-repository-view-model";
+} from '../view-models/use-move-repository-view-model';
 import {
   useProjectFoldersViewModel,
   type ProjectFoldersViewModel,
-} from "../view-models/use-project-folders-view-model";
-import { DeleteProjectDialog, MoveRepositoryDialog, NewProjectDialog } from "./project-folder-dialogs";
-import { ProjectFolderDetail } from "./project-folder-detail";
-import { CloseIcon } from "./project-folder-icons";
-import { ProjectFolderList } from "./project-folder-list";
+} from '../view-models/use-project-folders-view-model';
+import {
+  DeleteProjectDialog,
+  MoveRepositoryDialog,
+  NewProjectDialog,
+} from './project-folder-dialogs';
+import { ProjectFolderDetail } from './project-folder-detail';
+import { CloseIcon } from './project-folder-icons';
+import { ProjectFolderList } from './project-folder-list';
 
-function DeleteNoticeBanner({ del }: Readonly<{ del: DeleteProjectViewModel }>) {
+function DeleteNoticeBanner({
+  del,
+}: Readonly<{ del: DeleteProjectViewModel }>) {
   if (!del.notice) return null;
   return (
     <div className="pf-notice" role="status">
@@ -53,16 +62,20 @@ function MoveNoticeBanner({
     <div className="pf-notice" role="status">
       <p className="pf-notice__text">
         {notice.text}
-        {notice.emptied ? ` ${notice.emptied.name} has no repositories now.` : ""}
+        {notice.emptied
+          ? ` ${notice.emptied.name} has no repositories now.`
+          : ''}
       </p>
       {notice.emptied && canManage ? (
         <button
           type="button"
           className="ghost-button"
-          disabled={move.status === "archiving"}
+          disabled={move.status === 'archiving'}
           onClick={() => void move.archiveEmptied()}
         >
-          {move.status === "archiving" ? "Archiving…" : `Archive ${notice.emptied.name}`}
+          {move.status === 'archiving'
+            ? 'Archiving…'
+            : `Archive ${notice.emptied.name}`}
         </button>
       ) : null}
       <button
@@ -89,9 +102,15 @@ function MoveNoticeBanner({
 export function ProjectExplorer({
   vm,
   create,
-}: Readonly<{ vm: ProjectFoldersViewModel; create: CreateProjectFolderViewModel }>) {
+}: Readonly<{
+  vm: ProjectFoldersViewModel;
+  create: CreateProjectFolderViewModel;
+}>) {
   const move = useMoveRepositoryViewModel({ onChanged: vm.reload });
-  const del = useDeleteProjectViewModel({ onDeleted: vm.closeFolder, onChanged: vm.reload });
+  const del = useDeleteProjectViewModel({
+    onDeleted: vm.closeFolder,
+    onChanged: vm.reload,
+  });
   const folder = vm.selected;
 
   return (
@@ -108,7 +127,7 @@ export function ProjectExplorer({
       ) : (
         <ProjectFolderList vm={vm} onCreate={create.openDialog} />
       )}
-      {vm.status === "ready" && vm.error ? (
+      {vm.status === 'ready' && vm.error ? (
         <p className="error-text pf-inline-error" role="alert">
           {vm.error}
         </p>
@@ -116,7 +135,11 @@ export function ProjectExplorer({
       <NewProjectDialog vm={create} teamName={vm.groupName} />
       <MoveRepositoryDialog
         vm={move}
-        targets={move.source ? moveTargets(vm.folders, move.source.deliveryProjectId) : []}
+        targets={
+          move.source
+            ? moveTargets(vm.folders, move.source.deliveryProjectId)
+            : []
+        }
       />
       <DeleteProjectDialog vm={del} />
     </div>
@@ -168,7 +191,12 @@ export function ProjectExplorerHost({
   openNewProjectOnArrival?: boolean;
   children: (explorer: ProjectExplorerSlot) => ReactNode;
 }>) {
-  const vm = useProjectFoldersViewModel({ groupId, groupName, qaChecklistsEnabled, initialFolderId });
+  const vm = useProjectFoldersViewModel({
+    groupId,
+    groupName,
+    qaChecklistsEnabled,
+    initialFolderId,
+  });
   const create = useCreateProjectFolderViewModel({
     groupId: vm.groupId,
     onCreated: vm.reload,
@@ -177,7 +205,9 @@ export function ProjectExplorerHost({
   });
   const actions: ProjectExplorerActions = {
     createEmptyProject: vm.canCreateProject ? create.openDialog : null,
-    addRepositoryHref: vm.canCreateUnfiledRepository ? createRepositoryHref(vm.groupId) : null,
+    addRepositoryHref: vm.canCreateUnfiledRepository
+      ? createRepositoryHref(vm.groupId)
+      : null,
   };
   return (
     <>

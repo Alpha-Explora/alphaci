@@ -11,7 +11,7 @@
  * it starts at the first `@@` — so none is expected here.
  */
 
-export type DiffLineKind = "hunk" | "context" | "add" | "del" | "note";
+export type DiffLineKind = 'hunk' | 'context' | 'add' | 'del' | 'note';
 
 /**
  * One changed file, as far as a diff renderer needs it. Both a pull request's
@@ -46,16 +46,16 @@ export function parseUnifiedDiff(patch: string): DiffLine[] {
   let oldLine = 0;
   let newLine = 0;
 
-  for (const raw of patch.split("\n")) {
+  for (const raw of patch.split('\n')) {
     const hunk = HUNK_HEADER.exec(raw);
     if (hunk) {
       oldLine = Number(hunk[1]);
       newLine = Number(hunk[2]);
       lines.push({
-        kind: "hunk",
+        kind: 'hunk',
         // The section heading (usually the enclosing function) is the useful
         // part; the ranges are already expressed by the line numbers.
-        text: (hunk[3] ?? "").trim(),
+        text: (hunk[3] ?? '').trim(),
         oldNumber: null,
         newNumber: null,
       });
@@ -65,24 +65,24 @@ export function parseUnifiedDiff(patch: string): DiffLine[] {
     const marker = raw.charAt(0);
     const text = raw.slice(1);
 
-    if (marker === "+") {
-      lines.push({ kind: "add", text, oldNumber: null, newNumber: newLine });
+    if (marker === '+') {
+      lines.push({ kind: 'add', text, oldNumber: null, newNumber: newLine });
       newLine += 1;
-    } else if (marker === "-") {
-      lines.push({ kind: "del", text, oldNumber: oldLine, newNumber: null });
+    } else if (marker === '-') {
+      lines.push({ kind: 'del', text, oldNumber: oldLine, newNumber: null });
       oldLine += 1;
-    } else if (marker === "\\") {
+    } else if (marker === '\\') {
       // "\ No newline at end of file" describes the line above it; it is not
       // a line of either file and must not advance either counter.
       lines.push({
-        kind: "note",
+        kind: 'note',
         text: raw.slice(2),
         oldNumber: null,
         newNumber: null,
       });
-    } else if (marker === " ") {
+    } else if (marker === ' ') {
       lines.push({
-        kind: "context",
+        kind: 'context',
         text,
         oldNumber: oldLine,
         newNumber: newLine,

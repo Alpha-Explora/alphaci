@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import type { PreviewCaptureTarget } from "./preview-capture-target";
+import type { PreviewCaptureTarget } from './preview-capture-target';
 
 /** Two frames: the transparent panel is painted before anything is grabbed. */
 function afterPaint(): Promise<void> {
@@ -21,7 +21,10 @@ function afterPaint(): Promise<void> {
  * One object for the studio's lifetime: the iframe takes it as its ref and
  * the run column reads it from context.
  */
-export function useStudioCaptureTarget(): { target: PreviewCaptureTarget; capturing: boolean } {
+export function useStudioCaptureTarget(): {
+  target: PreviewCaptureTarget;
+  capturing: boolean;
+} {
   const [capturing, setCapturing] = useState(false);
   const [target] = useState<PreviewCaptureTarget>(() => ({
     current: null,

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from 'react';
 
 import {
   Avatar,
@@ -9,10 +9,14 @@ import {
   LoadingRows,
   ResourceBoundary,
   SectionHeader,
-} from "@/features/groups/workspace";
+} from '@/features/groups/workspace';
 
-import "./project-members.css";
-import type { DeliveryProjectMember, DeliveryProjectMemberKind, GroupMember } from "../../model/groups-types";
+import './project-members.css';
+import type {
+  DeliveryProjectMember,
+  DeliveryProjectMemberKind,
+  GroupMember,
+} from '../../model/groups-types';
 import {
   candidateKind,
   DEVELOPER_ACCESS_NOTE,
@@ -23,8 +27,8 @@ import {
   QA_ACCESS_NOTE,
   RESYNC_NOTE,
   STUB_SYNC_NOTE,
-} from "../../model/project-members-rules";
-import type { ProjectMembersViewModel } from "../view-models/use-project-members-view-model";
+} from '../../model/project-members-rules';
+import type { ProjectMembersViewModel } from '../view-models/use-project-members-view-model';
 
 type PanelProps = Readonly<{ vm: ProjectMembersViewModel }>;
 
@@ -35,13 +39,18 @@ type PanelProps = Readonly<{ vm: ProjectMembersViewModel }>;
  */
 export function ProjectMembersPanel({ vm }: PanelProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
-  useScrollIntoViewWhenLinked(sectionRef, vm.visible && vm.status === "ready");
+  useScrollIntoViewWhenLinked(sectionRef, vm.visible && vm.status === 'ready');
   if (!vm.visible) return null;
   return (
-    <section id={PROJECT_MEMBERS_ANCHOR} ref={sectionRef} className="project-members" aria-label="Project members">
+    <section
+      id={PROJECT_MEMBERS_ANCHOR}
+      ref={sectionRef}
+      className="project-members"
+      aria-label="Project members"
+    >
       <SectionHeader
         title="Project members"
-        count={vm.status === "ready" ? vm.members.length : undefined}
+        count={vm.status === 'ready' ? vm.members.length : undefined}
         actions={<PanelActions vm={vm} />}
       />
       <AccessExplainer syncLive={vm.syncLive} />
@@ -59,12 +68,16 @@ export function ProjectMembersPanel({ vm }: PanelProps) {
  * after the page's own data, so the browser's jump to the anchor finds
  * nothing. Once per mount, so a reload after an add does not scroll again.
  */
-function useScrollIntoViewWhenLinked(ref: RefObject<HTMLElement | null>, ready: boolean) {
+function useScrollIntoViewWhenLinked(
+  ref: RefObject<HTMLElement | null>,
+  ready: boolean,
+) {
   const done = useRef(false);
   useEffect(() => {
     if (!ready || done.current) return;
     done.current = true;
-    if (opensOnProjectMembers(window.location.hash)) ref.current?.scrollIntoView?.({ block: "start" });
+    if (opensOnProjectMembers(window.location.hash))
+      ref.current?.scrollIntoView?.({ block: 'start' });
   }, [ready, ref]);
 }
 
@@ -79,19 +92,28 @@ function PanelActions({ vm }: PanelProps) {
           disabled={vm.busy !== null}
           title={RESYNC_NOTE}
         >
-          {vm.busy === "sync" ? "Re-syncing…" : "Re-sync GitHub access"}
+          {vm.busy === 'sync' ? 'Re-syncing…' : 'Re-sync GitHub access'}
         </button>
       ) : null}
-      <button type="button" className="hier-btn-sm project-members__add" onClick={vm.openAdd} disabled={vm.busy !== null}>
+      <button
+        type="button"
+        className="hier-btn-sm project-members__add"
+        onClick={vm.openAdd}
+        disabled={vm.busy !== null}
+      >
         Add member
       </button>
     </div>
   );
 }
 
-export function KindBadge({ kind }: Readonly<{ kind: DeliveryProjectMemberKind }>) {
+export function KindBadge({
+  kind,
+}: Readonly<{ kind: DeliveryProjectMemberKind }>) {
   return (
-    <span className={`hier-badge project-members__kind project-members__kind--${kind}`}>
+    <span
+      className={`hier-badge project-members__kind project-members__kind--${kind}`}
+    >
       {MEMBER_KIND_LABELS[kind]}
     </span>
   );
@@ -115,7 +137,10 @@ function AccessExplainer({ syncLive }: Readonly<{ syncLive: boolean }>) {
   );
 }
 
-function Feedback({ notice, error }: Readonly<{ notice: string | null; error: string | null }>) {
+function Feedback({
+  notice,
+  error,
+}: Readonly<{ notice: string | null; error: string | null }>) {
   if (error) {
     return (
       <p className="error-text project-members__feedback" role="alert">
@@ -124,15 +149,18 @@ function Feedback({ notice, error }: Readonly<{ notice: string | null; error: st
     );
   }
   return notice ? (
-    <p className="project-members__feedback project-members__notice" role="status">
+    <p
+      className="project-members__feedback project-members__notice"
+      role="status"
+    >
       {notice}
     </p>
   ) : null;
 }
 
 function MemberList({ vm }: PanelProps) {
-  if (vm.status === "loading") return <LoadingRows rows={2} />;
-  if (vm.status !== "ready") {
+  if (vm.status === 'loading') return <LoadingRows rows={2} />;
+  if (vm.status !== 'ready') {
     return (
       <ResourceBoundary
         state={vm.status}
@@ -151,12 +179,19 @@ function MemberList({ vm }: PanelProps) {
   );
 }
 
-function MemberRow({ member, vm }: Readonly<{ member: DeliveryProjectMember; vm: ProjectMembersViewModel }>) {
+function MemberRow({
+  member,
+  vm,
+}: Readonly<{ member: DeliveryProjectMember; vm: ProjectMembersViewModel }>) {
   const name = memberDisplayName(member);
   return (
     <div className="hier-row">
       <div className="hier-row-identity">
-        <Avatar login={member.login} name={member.name} avatarUrl={member.avatarUrl} />
+        <Avatar
+          login={member.login}
+          name={member.name}
+          avatarUrl={member.avatarUrl}
+        />
         <div className="hier-row-name">
           <strong>{name}</strong>
           {member.login ? <span>@{member.login}</span> : null}
@@ -185,17 +220,24 @@ function candidateLabel(member: GroupMember): string {
 }
 
 function candidatePlaceholder(vm: ProjectMembersViewModel): string {
-  if (vm.candidatesStatus === "loading") return "Loading team members…";
-  if (vm.candidatesStatus === "error") return "Team members could not be loaded";
-  return vm.candidates.length > 0 ? "Select a team member" : "Everyone eligible is already in this Project";
+  if (vm.candidatesStatus === 'loading') return 'Loading team members…';
+  if (vm.candidatesStatus === 'error')
+    return 'Team members could not be loaded';
+  return vm.candidates.length > 0
+    ? 'Select a team member'
+    : 'Everyone eligible is already in this Project';
 }
 
 function selectedKindNote(vm: ProjectMembersViewModel): string {
-  const selected = vm.candidates.find((member) => member.userId === vm.selectedUserId);
+  const selected = vm.candidates.find(
+    (member) => member.userId === vm.selectedUserId,
+  );
   const kind = selected ? candidateKind(selected) : null;
-  if (kind === "qa") return QA_ACCESS_NOTE;
-  if (kind === "developer") {
-    return vm.syncLive ? DEVELOPER_ACCESS_NOTE : `${DEVELOPER_ACCESS_NOTE} ${STUB_SYNC_NOTE}`;
+  if (kind === 'qa') return QA_ACCESS_NOTE;
+  if (kind === 'developer') {
+    return vm.syncLive
+      ? DEVELOPER_ACCESS_NOTE
+      : `${DEVELOPER_ACCESS_NOTE} ${STUB_SYNC_NOTE}`;
   }
   return "Developers and QA Team of this Project's team can be added. Their kind comes from their role.";
 }
@@ -208,9 +250,9 @@ function AddMemberDialog({ vm }: PanelProps) {
       title="Add member"
       description="Add a Developer or QA Team member of this Project's team."
       submitLabel="Add member"
-      submitting={vm.busy === "add"}
+      submitting={vm.busy === 'add'}
       error={vm.addError}
-      canSubmit={vm.selectedUserId !== ""}
+      canSubmit={vm.selectedUserId !== ''}
       onSubmit={() => void vm.add()}
     >
       <div className="hier-field project-members-dialog">
@@ -222,7 +264,9 @@ function AddMemberDialog({ vm }: PanelProps) {
           className="hier-select"
           value={vm.selectedUserId}
           onChange={(event) => vm.setSelectedUserId(event.target.value)}
-          disabled={vm.candidatesStatus !== "ready" || vm.candidates.length === 0}
+          disabled={
+            vm.candidatesStatus !== 'ready' || vm.candidates.length === 0
+          }
         >
           <option value="">{candidatePlaceholder(vm)}</option>
           {vm.candidates.map((member) => (
@@ -237,11 +281,15 @@ function AddMemberDialog({ vm }: PanelProps) {
   );
 }
 
-function removalEffect(member: DeliveryProjectMember, syncLive: boolean): string {
-  if (member.memberKind === "qa") return "They leave this Project's QA. Nothing changes on GitHub.";
+function removalEffect(
+  member: DeliveryProjectMember,
+  syncLive: boolean,
+): string {
+  if (member.memberKind === 'qa')
+    return "They leave this Project's QA. Nothing changes on GitHub.";
   return syncLive
-    ? "ALPHACI removes their GitHub Write on the repositories created in this Project."
-    : "Live GitHub sync is off, so no GitHub access was granted and nothing changes on GitHub.";
+    ? 'ALPHACI removes their GitHub Write on the repositories created in this Project.'
+    : 'Live GitHub sync is off, so no GitHub access was granted and nothing changes on GitHub.';
 }
 
 function RemoveMemberDialog({ vm }: PanelProps) {
@@ -250,20 +298,25 @@ function RemoveMemberDialog({ vm }: PanelProps) {
     <Dialog
       open={member !== null}
       onClose={vm.cancelRemove}
-      title={member ? `Remove ${memberDisplayName(member)}?` : "Remove member?"}
+      title={member ? `Remove ${memberDisplayName(member)}?` : 'Remove member?'}
       description={member ? removalEffect(member, vm.syncLive) : undefined}
     >
       <div className="hier-dialog-actions project-members__confirm">
-        <button type="button" className="ghost-button" onClick={vm.cancelRemove} disabled={vm.busy === "remove"}>
+        <button
+          type="button"
+          className="ghost-button"
+          onClick={vm.cancelRemove}
+          disabled={vm.busy === 'remove'}
+        >
           Cancel
         </button>
         <button
           type="button"
           className="hier-btn-danger"
           onClick={() => void vm.confirmRemove()}
-          disabled={vm.busy === "remove"}
+          disabled={vm.busy === 'remove'}
         >
-          {vm.busy === "remove" ? "Removing…" : "Remove"}
+          {vm.busy === 'remove' ? 'Removing…' : 'Remove'}
         </button>
       </div>
     </Dialog>

@@ -1,4 +1,4 @@
-import { request } from "@/shared/api/request";
+import { request } from '@/shared/api/request';
 
 import type {
   CreateQaChecklistInput,
@@ -6,7 +6,7 @@ import type {
   QaChecklistItemInput,
   QaChecklistListResponse,
   UpdateQaChecklistInput,
-} from "../model/checklist-types";
+} from '../model/checklist-types';
 
 /* The only place in the checklists domain that performs I/O. View-models call
  * this; views never do. Every write that edits a checklist carries the version
@@ -26,30 +26,41 @@ export const checklistsRepository = {
     workspaceId: string,
     options: { includeArchived?: boolean } = {},
   ): Promise<QaChecklistListResponse> {
-    const includeArchived = options.includeArchived === true ? "true" : "false";
+    const includeArchived = options.includeArchived === true ? 'true' : 'false';
     return request<QaChecklistListResponse>(
       `/workspaces/${id(workspaceId)}/qa-checklists?includeArchived=${includeArchived}`,
     );
   },
 
   listForProject(projectId: string): Promise<QaChecklistListResponse> {
-    return request<QaChecklistListResponse>(`/projects/${id(projectId)}/qa-checklists`);
+    return request<QaChecklistListResponse>(
+      `/projects/${id(projectId)}/qa-checklists`,
+    );
   },
 
   get(checklistId: string): Promise<QaChecklist> {
     return request<QaChecklist>(`/qa-checklists/${id(checklistId)}`);
   },
 
-  create(workspaceId: string, input: CreateQaChecklistInput): Promise<QaChecklist> {
-    return request<QaChecklist>(`/workspaces/${id(workspaceId)}/qa-checklists`, {
-      method: "POST",
-      ...jsonBody(input),
-    });
+  create(
+    workspaceId: string,
+    input: CreateQaChecklistInput,
+  ): Promise<QaChecklist> {
+    return request<QaChecklist>(
+      `/workspaces/${id(workspaceId)}/qa-checklists`,
+      {
+        method: 'POST',
+        ...jsonBody(input),
+      },
+    );
   },
 
-  update(checklistId: string, input: UpdateQaChecklistInput): Promise<QaChecklist> {
+  update(
+    checklistId: string,
+    input: UpdateQaChecklistInput,
+  ): Promise<QaChecklist> {
     return request<QaChecklist>(`/qa-checklists/${id(checklistId)}`, {
-      method: "PATCH",
+      method: 'PATCH',
       ...jsonBody(input),
     });
   },
@@ -60,20 +71,20 @@ export const checklistsRepository = {
     items: QaChecklistItemInput[],
   ): Promise<QaChecklist> {
     return request<QaChecklist>(`/qa-checklists/${id(checklistId)}/items`, {
-      method: "PUT",
+      method: 'PUT',
       ...jsonBody({ expectedVersion, items }),
     });
   },
 
   archive(checklistId: string): Promise<QaChecklist> {
     return request<QaChecklist>(`/qa-checklists/${id(checklistId)}/archive`, {
-      method: "POST",
+      method: 'POST',
     });
   },
 
   share(checklistId: string, projectIds: string[]): Promise<QaChecklist> {
     return request<QaChecklist>(`/qa-checklists/${id(checklistId)}/projects`, {
-      method: "PUT",
+      method: 'PUT',
       ...jsonBody({ projectIds }),
     });
   },
@@ -88,7 +99,7 @@ export const checklistsRepository = {
     change: { add?: string[]; remove?: string[] },
   ): Promise<QaChecklist> {
     return request<QaChecklist>(`/qa-checklists/${id(checklistId)}/projects`, {
-      method: "PATCH",
+      method: 'PATCH',
       ...jsonBody(change),
     });
   },

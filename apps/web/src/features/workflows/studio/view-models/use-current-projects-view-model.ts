@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
-import { getGroups, type GroupSummary } from "@/features/groups";
-import { useWorkspaceSelection } from "@/features/workspace/selection";
+import { getGroups, type GroupSummary } from '@/features/groups';
+import { useWorkspaceSelection } from '@/features/workspace/selection';
 
 import {
   headerTeam,
   linkedProjectFolderId,
   nextNewProjectTeam,
   readProjectsDeepLink,
-} from "../model/current-projects-rules";
+} from '../model/current-projects-rules';
 
-export type CurrentProjectsStatus = "loading" | "ready" | "error";
+export type CurrentProjectsStatus = 'loading' | 'ready' | 'error';
 
-export const GROUPS_LOAD_ERROR = "Could not load teams.";
+export const GROUPS_LOAD_ERROR = 'Could not load teams.';
 
 interface GroupsResult {
   workspaceId: string | null;
@@ -27,8 +27,8 @@ function statusOf(
   loadingProjects: boolean,
   result: GroupsResult | null,
 ): CurrentProjectsStatus {
-  if (loadingProjects || result === null) return "loading";
-  return result.failed ? "error" : "ready";
+  if (loadingProjects || result === null) return 'loading';
+  return result.failed ? 'error' : 'ready';
 }
 
 /**
@@ -42,7 +42,9 @@ function statusOf(
  * they are not in, merged into the header picker), which is what supplies the
  * team record the explorer needs.
  */
-export function useCurrentProjectsViewModel(options: { loadingProjects: boolean }) {
+export function useCurrentProjectsViewModel(options: {
+  loadingProjects: boolean;
+}) {
   const { loadingProjects } = options;
   const [result, setResult] = useState<GroupsResult | null>(null);
   const [loadKey, setLoadKey] = useState(0);
@@ -59,18 +61,27 @@ export function useCurrentProjectsViewModel(options: { loadingProjects: boolean 
     getGroups()
       .then((items) => {
         if (id !== requests.current) return;
-        setResult({ workspaceId: selectedWorkspaceId, groups: items, failed: false });
+        setResult({
+          workspaceId: selectedWorkspaceId,
+          groups: items,
+          failed: false,
+        });
       })
       .catch(() => {
         if (id !== requests.current) return;
-        setResult({ workspaceId: selectedWorkspaceId, groups: [], failed: true });
+        setResult({
+          workspaceId: selectedWorkspaceId,
+          groups: [],
+          failed: true,
+        });
       });
     return () => {
       requests.current++;
     };
   }, [loadKey, selectedWorkspaceId]);
 
-  const currentResult = result?.workspaceId === selectedWorkspaceId ? result : null;
+  const currentResult =
+    result?.workspaceId === selectedWorkspaceId ? result : null;
   const groups = currentResult?.groups ?? null;
 
   const team = useMemo(
@@ -80,9 +91,9 @@ export function useCurrentProjectsViewModel(options: { loadingProjects: boolean 
 
   // `?new=project` opens the New Project dialog once, on the first team the
   // page shows. Derived while rendering (state from a changing input).
-  const [newProjectTeam, setNewProjectTeam] = useState<string | null | undefined>(() =>
-    link.opensNewProject ? undefined : null,
-  );
+  const [newProjectTeam, setNewProjectTeam] = useState<
+    string | null | undefined
+  >(() => (link.opensNewProject ? undefined : null));
   const nextTeam = nextNewProjectTeam(newProjectTeam, team?.id ?? null);
   if (nextTeam !== newProjectTeam) setNewProjectTeam(nextTeam);
 
@@ -103,4 +114,6 @@ export function useCurrentProjectsViewModel(options: { loadingProjects: boolean 
   };
 }
 
-export type CurrentProjectsViewModel = ReturnType<typeof useCurrentProjectsViewModel>;
+export type CurrentProjectsViewModel = ReturnType<
+  typeof useCurrentProjectsViewModel
+>;

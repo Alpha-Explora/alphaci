@@ -7,9 +7,10 @@
  * passed only once every one of its test cases is passed or not applicable.
  * (Backend: ADR-0014, amendment 10.) */
 
-import type { QaActor } from "./qa-run-types";
+import type { QaActor } from './qa-run-types';
 
-export type TestCaseStatus = "pending" | "passed" | "failed" | "blocked" | "not_applicable";
+export type TestCaseStatus =
+  'pending' | 'passed' | 'failed' | 'blocked' | 'not_applicable';
 
 /** One test case as tested in a run. */
 export interface RunTestCase {
@@ -84,15 +85,33 @@ export interface TestCaseInput {
  * stay controlled. `itemId` is the run item the form sits under.
  */
 export type TestCaseForm =
-  | { mode: "add-category"; itemId: string; name: string }
-  | { mode: "rename-category"; itemId: string; categoryId: string; rowVersion: number; name: string }
-  | { mode: "add-case"; itemId: string; categoryId: string; title: string; expectedResult: string }
+  | { mode: 'add-category'; itemId: string; name: string }
   | {
-      mode: "edit-case";
+      mode: 'rename-category';
+      itemId: string;
+      categoryId: string;
+      rowVersion: number;
+      name: string;
+    }
+  | {
+      mode: 'add-case';
+      itemId: string;
+      categoryId: string;
+      title: string;
+      expectedResult: string;
+    }
+  | {
+      mode: 'edit-case';
       itemId: string;
       testCaseId: string;
       rowVersion: number;
       title: string;
       expectedResult: string;
     }
-  | { mode: "note"; itemId: string; runTestCaseId: string; rowVersion: number; notes: string };
+  | {
+      mode: 'note';
+      itemId: string;
+      runTestCaseId: string;
+      rowVersion: number;
+      notes: string;
+    };

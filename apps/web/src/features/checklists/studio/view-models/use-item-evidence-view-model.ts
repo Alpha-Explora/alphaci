@@ -1,11 +1,18 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { captureElement, imageFromFile, supportsScreenCapture } from "../../data/evidence-capture-repository";
-import { qaAttachmentsRepository } from "../../data/qa-attachments-repository";
-import { evidenceFileName, firstImageIndex } from "../../model/evidence-image-rules";
-import type { ProjectQaRunItem } from "../../model/project-run-types";
+import {
+  captureElement,
+  imageFromFile,
+  supportsScreenCapture,
+} from '../../data/evidence-capture-repository';
+import { qaAttachmentsRepository } from '../../data/qa-attachments-repository';
+import {
+  evidenceFileName,
+  firstImageIndex,
+} from '../../model/evidence-image-rules';
+import type { ProjectQaRunItem } from '../../model/project-run-types';
 import {
   attachmentErrorMessage,
   canDeleteEvidence,
@@ -15,21 +22,26 @@ import {
   evidenceAtLimit,
   evidenceCount,
   stepIndex,
-} from "../../model/qa-attachment-rules";
-import type { EvidenceImage, EvidenceUploadInput, QaAttachment } from "../../model/qa-attachment-types";
-import { errorCode } from "../../model/wire-readers";
-import type { PreviewCaptureTarget } from "./preview-capture-target";
-import { useRememberedFlag } from "./use-remembered-flag";
-import type { RunEvidenceViewModel } from "./use-run-evidence-view-model";
+} from '../../model/qa-attachment-rules';
+import type {
+  EvidenceImage,
+  EvidenceUploadInput,
+  QaAttachment,
+} from '../../model/qa-attachment-types';
+import { errorCode } from '../../model/wire-readers';
+import type { PreviewCaptureTarget } from './preview-capture-target';
+import { useRememberedFlag } from './use-remembered-flag';
+import type { RunEvidenceViewModel } from './use-run-evidence-view-model';
 
 /**
  * `preparing` while an image is captured, decoded and compressed; `draft`
  * once it waits for its caption and Save; `saving` / `deleting` while the
  * write is in flight.
  */
-export type ItemEvidenceStatus = "idle" | "preparing" | "draft" | "saving" | "deleting";
+export type ItemEvidenceStatus =
+  'idle' | 'preparing' | 'draft' | 'saving' | 'deleting';
 
-export type EvidenceSource = EvidenceUploadInput["source"];
+export type EvidenceSource = EvidenceUploadInput['source'];
 
 export interface EvidenceDraft {
   image: EvidenceImage;
@@ -79,15 +91,22 @@ export interface ItemEvidenceViewModel {
   dismissError: () => void;
 }
 
-const PREPARE_ERROR = "The image could not be read. Try another screenshot.";
-const SAVE_ERROR = "The screenshot could not be saved. Try again in a moment.";
-const DELETE_ERROR = "The screenshot could not be deleted. Try again in a moment.";
+const PREPARE_ERROR = 'The image could not be read. Try another screenshot.';
+const SAVE_ERROR = 'The screenshot could not be saved. Try again in a moment.';
+const DELETE_ERROR =
+  'The screenshot could not be deleted. Try again in a moment.';
 
 /** Codes after which the run's own list is out of date (someone else added, or the run froze). */
-const RELOAD_CODES: ReadonlySet<string> = new Set(["QA_ATTACHMENT_LIMIT", "QA_RUN_SIGNED_OFF"]);
+const RELOAD_CODES: ReadonlySet<string> = new Set([
+  'QA_ATTACHMENT_LIMIT',
+  'QA_RUN_SIGNED_OFF',
+]);
 
 /** The draft's preview URL, revoked whenever the draft is replaced or the item unmounts. */
-function useDraft(): [EvidenceDraft | null, (next: EvidenceDraft | null) => void] {
+function useDraft(): [
+  EvidenceDraft | null,
+  (next: EvidenceDraft | null) => void,
+] {
   const [draft, setDraftState] = useState<EvidenceDraft | null>(null);
   const current = useRef<EvidenceDraft | null>(null);
   useEffect(
@@ -97,7 +116,8 @@ function useDraft(): [EvidenceDraft | null, (next: EvidenceDraft | null) => void
     [],
   );
   function setDraft(next: EvidenceDraft | null) {
-    if (current.current && current.current !== next) URL.revokeObjectURL(current.current.previewUrl);
+    if (current.current && current.current !== next)
+      URL.revokeObjectURL(current.current.previewUrl);
     current.current = next;
     setDraftState(next);
   }
@@ -105,7 +125,7 @@ function useDraft(): [EvidenceDraft | null, (next: EvidenceDraft | null) => void
 }
 
 function isBusy(status: ItemEvidenceStatus): boolean {
-  return status === "preparing" || status === "saving" || status === "deleting";
+  return status === 'preparing' || status === 'saving' || status === 'deleting';
 }
 
 /** The lightbox's image, while it still exists (a delete can remove the last one). */
@@ -129,29 +149,34 @@ export function useItemEvidenceViewModel(options: {
   const { item, evidence, captureTarget } = options;
   const attachments = evidence.forItem(item.id);
   const count = evidenceCount(attachments, item.attachmentCount);
-  const [status, setStatus] = useState<ItemEvidenceStatus>("idle");
+  const [status, setStatus] = useState<ItemEvidenceStatus>('idle');
   const [draft, setDraft] = useDraft();
-  const [caption, setCaption] = useState("");
+  const [caption, setCaption] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
+    null,
+  );
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [hintSeen, toggleHintSeen] = useRememberedFlag("alphaci.qa.evidence.capture-hint-seen", false);
+  const [hintSeen, toggleHintSeen] = useRememberedFlag(
+    'alphaci.qa.evidence.capture-hint-seen',
+    false,
+  );
   const canAdd = evidence.canAdd && !evidenceAtLimit(count);
   const busy = isBusy(status);
 
   function adopt(image: EvidenceImage, source: EvidenceSource) {
     setDraft({ image, previewUrl: URL.createObjectURL(image.blob), source });
-    setStatus("draft");
+    setStatus('draft');
   }
 
   function failPreparing(message: string | null) {
     setError(message);
-    setStatus(draft ? "draft" : "idle");
+    setStatus(draft ? 'draft' : 'idle');
   }
 
   async function prepare(file: Blob, source: EvidenceSource) {
     if (!canAdd || busy) return;
-    setStatus("preparing");
+    setStatus('preparing');
     setError(null);
     try {
       adopt(await imageFromFile(file), source);
@@ -164,12 +189,12 @@ export function useItemEvidenceViewModel(options: {
     const frame = captureTarget?.current;
     if (!frame || !canAdd || busy) return;
     if (!hintSeen) toggleHintSeen();
-    setStatus("preparing");
+    setStatus('preparing');
     setError(null);
     try {
       const grab = () => captureElement(frame);
       const hiding = captureTarget?.whileCapturing;
-      adopt(await (hiding ? hiding(grab) : grab()), "capture");
+      adopt(await (hiding ? hiding(grab) : grab()), 'capture');
     } catch (cause) {
       failPreparing(captureErrorMessage(cause));
     }
@@ -177,31 +202,36 @@ export function useItemEvidenceViewModel(options: {
 
   function clearDraft() {
     setDraft(null);
-    setCaption("");
-    setStatus("idle");
+    setCaption('');
+    setStatus('idle');
   }
 
   async function save() {
-    if (!draft || status !== "draft") return;
+    if (!draft || status !== 'draft') return;
     const invalid = captionError(caption);
     if (invalid) {
       setError(invalid);
       return;
     }
-    setStatus("saving");
+    setStatus('saving');
     setError(null);
     try {
-      const saved = await qaAttachmentsRepository.upload(evidence.deliveryProjectId, evidence.runId, item.id, {
-        file: draft.image.blob,
-        fileName: evidenceFileName(draft.image.type, new Date()),
-        caption: captionPayload(caption),
-        source: draft.source,
-      });
+      const saved = await qaAttachmentsRepository.upload(
+        evidence.deliveryProjectId,
+        evidence.runId,
+        item.id,
+        {
+          file: draft.image.blob,
+          fileName: evidenceFileName(draft.image.type, new Date()),
+          caption: captionPayload(caption),
+          source: draft.source,
+        },
+      );
       evidence.added(saved);
       clearDraft();
     } catch (cause) {
       setError(attachmentErrorMessage(cause, SAVE_ERROR));
-      setStatus("draft");
+      setStatus('draft');
       if (RELOAD_CODES.has(errorCode(cause))) evidence.reload();
     }
   }
@@ -209,10 +239,14 @@ export function useItemEvidenceViewModel(options: {
   async function confirmDelete() {
     const id = confirmingDeleteId;
     if (!id || busy) return;
-    setStatus("deleting");
+    setStatus('deleting');
     setError(null);
     try {
-      await qaAttachmentsRepository.remove(evidence.deliveryProjectId, evidence.runId, id);
+      await qaAttachmentsRepository.remove(
+        evidence.deliveryProjectId,
+        evidence.runId,
+        id,
+      );
       evidence.removed(id);
       setLightboxIndex(null);
     } catch (cause) {
@@ -220,7 +254,7 @@ export function useItemEvidenceViewModel(options: {
       if (RELOAD_CODES.has(errorCode(cause))) evidence.reload();
     } finally {
       setConfirmingDeleteId(null);
-      setStatus(draft ? "draft" : "idle");
+      setStatus(draft ? 'draft' : 'idle');
     }
   }
 
@@ -239,16 +273,19 @@ export function useItemEvidenceViewModel(options: {
     error,
     confirmingDeleteId,
     lightboxIndex: shownIndex(lightboxIndex, length),
-    canDelete: (attachment) => canDeleteEvidence(attachment, { status: evidence.open ? "open" : "signed_off" }),
+    canDelete: (attachment) =>
+      canDeleteEvidence(attachment, {
+        status: evidence.open ? 'open' : 'signed_off',
+      }),
     capture,
     paste: (files) => {
       const index = firstImageIndex(files.map((file) => file.type));
       if (index < 0 || !canAdd) return false;
-      void prepare(files[index], "paste");
+      void prepare(files[index], 'paste');
       return true;
     },
     choose: (file) => {
-      if (file) void prepare(file, "upload");
+      if (file) void prepare(file, 'upload');
     },
     setCaption,
     save,
@@ -267,7 +304,10 @@ export function useItemEvidenceViewModel(options: {
       setLightboxIndex(index);
     },
     closeLightbox: () => setLightboxIndex(null),
-    step: (delta) => setLightboxIndex((current) => (current === null ? current : stepIndex(current, delta, length))),
+    step: (delta) =>
+      setLightboxIndex((current) =>
+        current === null ? current : stepIndex(current, delta, length),
+      ),
     imageFailed: evidence.refreshIfExpired,
     dismissError: () => setError(null),
   };

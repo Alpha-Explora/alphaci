@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
 export interface StudioFullScreenState {
   /** The studio covers the viewport (in the page, not the browser's Fullscreen API). */
@@ -16,8 +16,10 @@ export interface StudioFullScreenState {
  * Escape nobody else wanted acts. Checked when the key is pressed, because a
  * dialog can open and close while the studio stays as it is.
  */
-export function escapeIsUnclaimed(event: Pick<KeyboardEvent, "key" | "defaultPrevented">): boolean {
-  if (event.key !== "Escape" || event.defaultPrevented) return false;
+export function escapeIsUnclaimed(
+  event: Pick<KeyboardEvent, 'key' | 'defaultPrevented'>,
+): boolean {
+  if (event.key !== 'Escape' || event.defaultPrevented) return false;
   return document.querySelector('[role="dialog"]') === null;
 }
 
@@ -30,13 +32,13 @@ function useFullScreenEffects(isFullScreen: boolean, exit: () => void) {
     if (!isFullScreen) return;
     const body = document.body;
     const previousOverflow = body.style.overflow;
-    body.style.overflow = "hidden";
+    body.style.overflow = 'hidden';
     function onKeyDown(event: KeyboardEvent) {
       if (escapeIsUnclaimed(event)) exit();
     }
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener('keydown', onKeyDown);
       body.style.overflow = previousOverflow;
     };
   }, [isFullScreen, exit]);

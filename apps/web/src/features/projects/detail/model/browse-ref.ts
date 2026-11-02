@@ -8,7 +8,7 @@
  * branch; the default branch is the last resort when the list is empty.
  */
 
-import { WORKING_BRANCH } from "@/shared/api/pipeline-branches";
+import { WORKING_BRANCH } from '@/shared/api/pipeline-branches';
 
 export function browseRefFor(
   branches: readonly string[],

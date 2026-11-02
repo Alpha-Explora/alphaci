@@ -1,14 +1,14 @@
-import Link from "next/link";
+import Link from 'next/link';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
 import {
   projectDashboardHref,
   repoChipOpens,
   repoDisplayName,
   repoRoleLabel,
-} from "../model/project-folder-rules";
-import type { RepoRole } from "../model/project-folder-types";
+} from '../model/project-folder-rules';
+import type { RepoRole } from '../model/project-folder-types';
 
 /**
  * One repository as a compact chip: its role, then its short name. Linked
@@ -30,7 +30,7 @@ export function RepoChip({
   appRole: AppRole | null | undefined;
 }>) {
   const label = repoDisplayName({ name, repoFullName });
-  const roleLabel = role ? repoRoleLabel(role) : "Not linked";
+  const roleLabel = role ? repoRoleLabel(role) : 'Not linked';
   const body = (
     <>
       <span className="pf-chip__role">{roleLabel}</span>
@@ -39,7 +39,10 @@ export function RepoChip({
   );
   if (!projectId) {
     return (
-      <span className="pf-chip pf-chip--unlinked" title={`${label} is not linked to an AlphaCI project yet`}>
+      <span
+        className="pf-chip pf-chip--unlinked"
+        title={`${label} is not linked to an AlphaCI project yet`}
+      >
         {body}
       </span>
     );

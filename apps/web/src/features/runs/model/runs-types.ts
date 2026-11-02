@@ -13,12 +13,12 @@ export type {
   StageId,
   StageReport,
   StageStatus,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 
-import type { RunGroup, RunOverallStatus } from "@/shared/api/contracts";
+import type { RunGroup, RunOverallStatus } from '@/shared/api/contracts';
 
 /** Lifecycle of the runs list, as the view-model reports it. */
-export type RunsStatus = "idle" | "loading" | "ready" | "error";
+export type RunsStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 /** Runs for one repository, newest first, with its most recent run hoisted. */
 export interface ProjectRunGroup {

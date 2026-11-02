@@ -1,13 +1,11 @@
-import Image from "next/image";
+import Image from 'next/image';
 
-import type { useAuthSession } from "@/features/auth/session";
+import type { useAuthSession } from '@/features/auth/session';
 
-type SettingsSession = ReturnType<typeof useAuthSession>["session"];
+type SettingsSession = ReturnType<typeof useAuthSession>['session'];
 
-export function settingsAvatarInitial(
-  session: SettingsSession,
-): string {
-  return (session?.user.name ?? session?.user.login ?? "U")
+export function settingsAvatarInitial(session: SettingsSession): string {
+  return (session?.user.name ?? session?.user.login ?? 'U')
     .slice(0, 1)
     .toUpperCase();
 }
@@ -29,9 +27,9 @@ export function SettingsUserAvatar({
         width={size}
         height={size}
         style={{
-          borderRadius: "50%",
-          display: "block",
-          border: "2px solid var(--bg-base)",
+          borderRadius: '50%',
+          display: 'block',
+          border: '2px solid var(--bg-base)',
         }}
         unoptimized
       />
@@ -44,15 +42,15 @@ export function SettingsUserAvatar({
       style={{
         width: `${size}px`,
         height: `${size}px`,
-        borderRadius: "50%",
-        background: "var(--bg-elevated)",
-        color: "var(--brand)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        borderRadius: '50%',
+        background: 'var(--bg-elevated)',
+        color: 'var(--brand)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         fontSize,
         fontWeight: 700,
-        border: "2px solid var(--bg-base)",
+        border: '2px solid var(--bg-base)',
       }}
     >
       {settingsAvatarInitial(session)}

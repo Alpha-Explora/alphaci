@@ -1,18 +1,20 @@
-"use client";
+'use client';
 
-
-
-import { AddMemberDialog, HierarchyPageShell, MemberTable } from "@/features/groups/workspace";
+import {
+  AddMemberDialog,
+  HierarchyPageShell,
+  MemberTable,
+} from '@/features/groups/workspace';
 import {
   Breadcrumb,
   GroupSubNav,
   LoadingRows,
   PageHeader,
   ResourceBoundary,
-} from "@/features/groups/workspace";
-import type { AuthMeResponse, GroupSummary } from "../../model/groups-types";
-import { useGroupRouteViewModel, useGroupViewModel } from "@/features/groups";
-import { useGroupMembersViewModel } from "../view-models/use-group-members-view-model";
+} from '@/features/groups/workspace';
+import type { AuthMeResponse, GroupSummary } from '../../model/groups-types';
+import { useGroupRouteViewModel, useGroupViewModel } from '@/features/groups';
+import { useGroupMembersViewModel } from '../view-models/use-group-members-view-model';
 
 function MembersInner({
   group,
@@ -24,26 +26,26 @@ function MembersInner({
     <>
       <Breadcrumb
         items={[
-          { label: "Projects", href: "/workflows" },
+          { label: 'Projects', href: '/workflows' },
           { label: group.name, href: `/groups/${group.id}` },
-          { label: "Members" },
+          { label: 'Members' },
         ]}
       />
       <PageHeader
         title="Members"
         subtitle={
           vm.canManage
-            ? "Add and remove members. Someone you add is a member immediately. Roles are managed in the Admin Console, and removing a member automatically reviews their repository access."
-            : "People who belong to this group."
+            ? 'Add and remove members. Someone you add is a member immediately. Roles are managed in the Admin Console, and removing a member automatically reviews their repository access.'
+            : 'People who belong to this group.'
         }
       />
       <GroupSubNav groupId={group.id} active="members" />
 
-      {vm.status === "loading" ? (
+      {vm.status === 'loading' ? (
         <LoadingRows rows={4} />
-      ) : vm.status === "error" ||
-        vm.status === "forbidden" ||
-        vm.status === "notfound" ? (
+      ) : vm.status === 'error' ||
+        vm.status === 'forbidden' ||
+        vm.status === 'notfound' ? (
         <ResourceBoundary state={vm.status} onRetry={vm.reload} />
       ) : (
         <MemberTable
@@ -82,13 +84,13 @@ function MembersResolver({ session }: Readonly<{ session: AuthMeResponse }>) {
   const { groupId } = useGroupRouteViewModel();
   const vm = useGroupViewModel(groupId);
 
-  if (vm.status !== "ready" || !vm.group) {
+  if (vm.status !== 'ready' || !vm.group) {
     return (
       <>
         <Breadcrumb
           items={[
-            { label: "Projects", href: "/workflows" },
-            { label: "Members" },
+            { label: 'Projects', href: '/workflows' },
+            { label: 'Members' },
           ]}
         />
         <ResourceBoundary

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   createContext,
@@ -8,9 +8,12 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
+} from 'react';
 
-import type { WorkspaceSummary, WorkspacesMeResponse } from "../model/workspace-types";
+import type {
+  WorkspaceSummary,
+  WorkspacesMeResponse,
+} from '../model/workspace-types';
 
 interface WorkspaceSelectionContextValue {
   selectedWorkspaceId: string | null;
@@ -43,19 +46,21 @@ interface WorkspaceSelectionContextValue {
   registerWorkspaceRefresh: (refresh: () => void) => void;
 }
 
-const STORAGE_KEY = "flowci.workspaceId";
+const STORAGE_KEY = 'flowci.workspaceId';
 const NO_OTHERS: WorkspaceSummary[] = [];
 
-const WorkspaceSelectionContext = createContext<WorkspaceSelectionContextValue>({
-  selectedWorkspaceId: null,
-  selectedWorkspace: null,
-  workspaces: null,
-  otherWorkspaces: NO_OTHERS,
-  setSelectedWorkspaceId: () => undefined,
-  setWorkspaces: () => undefined,
-  refreshWorkspaces: () => undefined,
-  registerWorkspaceRefresh: () => undefined,
-});
+const WorkspaceSelectionContext = createContext<WorkspaceSelectionContextValue>(
+  {
+    selectedWorkspaceId: null,
+    selectedWorkspace: null,
+    workspaces: null,
+    otherWorkspaces: NO_OTHERS,
+    setSelectedWorkspaceId: () => undefined,
+    setWorkspaces: () => undefined,
+    refreshWorkspaces: () => undefined,
+    registerWorkspaceRefresh: () => undefined,
+  },
+);
 
 export function WorkspaceProvider({
   children,
@@ -69,12 +74,16 @@ export function WorkspaceProvider({
    */
   initialWorkspaceId?: string | null;
 }) {
-  const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState<string | null>(() => {
-    if (typeof window === "undefined") return initialWorkspaceId;
+  const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState<
+    string | null
+  >(() => {
+    if (typeof window === 'undefined') return initialWorkspaceId;
     return initialWorkspaceId ?? window.localStorage.getItem(STORAGE_KEY);
   });
-  const [workspaces, setWorkspacesState] = useState<WorkspacesMeResponse | null>(null);
-  const [otherWorkspaces, setOtherWorkspaces] = useState<WorkspaceSummary[]>(NO_OTHERS);
+  const [workspaces, setWorkspacesState] =
+    useState<WorkspacesMeResponse | null>(null);
+  const [otherWorkspaces, setOtherWorkspaces] =
+    useState<WorkspaceSummary[]>(NO_OTHERS);
   // Mirrors otherWorkspaces for setWorkspaces, which must validate the
   // selection against the lists it is about to publish, synchronously.
   const othersRef = useRef<WorkspaceSummary[]>(NO_OTHERS);
@@ -103,7 +112,10 @@ export function WorkspaceProvider({
   }, []);
 
   const setWorkspaces = useCallback(
-    (nextWorkspaces: WorkspacesMeResponse | null, nextOthers?: WorkspaceSummary[]) => {
+    (
+      nextWorkspaces: WorkspacesMeResponse | null,
+      nextOthers?: WorkspaceSummary[],
+    ) => {
       const others = nextOthers ?? othersRef.current;
       othersRef.current = others;
       setWorkspacesState(nextWorkspaces);
@@ -118,7 +130,7 @@ export function WorkspaceProvider({
         const exists = current
           ? selectable.some((workspace) => workspace.id === current)
           : false;
-        const nextId = exists ? current : selectable[0]?.id ?? null;
+        const nextId = exists ? current : (selectable[0]?.id ?? null);
         if (nextId) {
           window.localStorage.setItem(STORAGE_KEY, nextId);
         }
@@ -131,7 +143,10 @@ export function WorkspaceProvider({
   const selectedWorkspace = useMemo(() => {
     const selectable = [...(workspaces?.items ?? []), ...otherWorkspaces];
     if (selectedWorkspaceId) {
-      return selectable.find((workspace) => workspace.id === selectedWorkspaceId) ?? null;
+      return (
+        selectable.find((workspace) => workspace.id === selectedWorkspaceId) ??
+        null
+      );
     }
     return selectable[0] ?? null;
   }, [otherWorkspaces, selectedWorkspaceId, workspaces]);

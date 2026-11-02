@@ -1,4 +1,4 @@
-import { request } from "@/shared/api/request";
+import { request } from '@/shared/api/request';
 
 /**
  * The read-only GitHub views behind a project's Code, Pull requests and
@@ -30,7 +30,7 @@ export interface ProjectBranchesResponse {
   canCreateBranch: boolean;
 }
 
-export type RepoEntryType = "file" | "dir" | "symlink" | "submodule";
+export type RepoEntryType = 'file' | 'dir' | 'symlink' | 'submodule';
 
 export interface RepoContentEntry {
   name: string;
@@ -112,7 +112,7 @@ export interface RunJob {
  * people to act: nobody can bring back an expired log, an admin can fix access.
  * Absent from a backend older than #150, which only ever said "expired".
  */
-export type ProjectLogUnavailableReason = "log-expired" | "log-no-access";
+export type ProjectLogUnavailableReason = 'log-expired' | 'log-no-access';
 
 export interface JobLogResponse {
   available: boolean;
@@ -124,7 +124,7 @@ export interface JobLogResponse {
 export interface PullRequestSummary {
   number: number;
   title: string;
-  state: "open" | "closed";
+  state: 'open' | 'closed';
   draft: boolean;
   merged: boolean;
   htmlUrl: string;
@@ -164,7 +164,7 @@ export function getProjectBranches(projectId: string) {
 export function createProjectBranch(projectId: string, branchName: string) {
   return request<{ branchName: string; sourceBranch: string }>(
     `${base(projectId)}/branches`,
-    { method: "POST", body: JSON.stringify({ branchName }) },
+    { method: 'POST', body: JSON.stringify({ branchName }) },
   );
 }
 
@@ -174,9 +174,9 @@ export function getProjectFiles(
   params: { path?: string; ref?: string | null } = {},
 ) {
   const query = new URLSearchParams();
-  if (params.path) query.set("path", params.path);
-  if (params.ref) query.set("ref", params.ref);
-  const suffix = query.toString() ? `?${query.toString()}` : "";
+  if (params.path) query.set('path', params.path);
+  if (params.ref) query.set('ref', params.ref);
+  const suffix = query.toString() ? `?${query.toString()}` : '';
   return request<RepoContentListing>(`${base(projectId)}/files${suffix}`);
 }
 
@@ -210,7 +210,7 @@ export function getProjectFileCommits(
   params: { path: string; ref: string },
 ) {
   const query = new URLSearchParams({ ref: params.ref });
-  if (params.path) query.set("path", params.path);
+  if (params.path) query.set('path', params.path);
   return request<RepoFileCommits>(
     `${base(projectId)}/files/commits?${query.toString()}`,
   );
@@ -221,7 +221,7 @@ export function getProjectWorkflowRuns(
   projectId: string,
   branch?: string | null,
 ) {
-  const suffix = branch ? `?branch=${enc(branch)}` : "";
+  const suffix = branch ? `?branch=${enc(branch)}` : '';
   return request<ProjectWorkflowRunsResponse>(
     `${base(projectId)}/runs${suffix}`,
   );
@@ -239,7 +239,7 @@ export function getProjectJobLog(projectId: string, jobId: number) {
 
 export function getProjectPullRequests(
   projectId: string,
-  state: "open" | "closed" | "all" = "all",
+  state: 'open' | 'closed' | 'all' = 'all',
 ) {
   return request<ProjectPullRequestsResponse>(
     `${base(projectId)}/pull-requests?state=${state}`,
@@ -286,7 +286,7 @@ export interface ProjectRunFailureEntry {
  */
 export interface RunFailureLogResponse {
   available: boolean;
-  reason?: "no-failed-job" | ProjectLogUnavailableReason;
+  reason?: 'no-failed-job' | ProjectLogUnavailableReason;
   jobId?: number;
   jobName?: string;
   stepName?: string;
@@ -335,7 +335,7 @@ export interface PullRequestCheck {
   completedAt: string | null;
   id?: number | null;
   /** A check run (Actions or an app) or a commit status such as `alphaci/quality`. */
-  kind?: "check-run" | "status";
+  kind?: 'check-run' | 'status';
   workflowName?: string | null;
   /** The event that triggered the workflow: `pull_request`, `push`, ... */
   event?: string | null;
@@ -392,11 +392,11 @@ export function getProjectPullRequestDetail(
 export function mergeProjectPullRequest(
   projectId: string,
   pullNumber: number,
-  method: "merge" | "squash" | "rebase" = "merge",
+  method: 'merge' | 'squash' | 'rebase' = 'merge',
 ) {
   return request<PullRequestMergeResponse>(
     `${base(projectId)}/pull-requests/${pullNumber}/merge`,
-    { method: "POST", body: JSON.stringify({ method }) },
+    { method: 'POST', body: JSON.stringify({ method }) },
   );
 }
 
@@ -416,7 +416,7 @@ export interface ComparisonCommit {
  * `behind` both mean there is nothing to merge.
  */
 export interface BranchComparison {
-  status: "ahead" | "behind" | "diverged" | "identical";
+  status: 'ahead' | 'behind' | 'diverged' | 'identical';
   aheadBy: number;
   behindBy: number;
   totalCommits: number;
@@ -474,6 +474,6 @@ export function createProjectPullRequest(
 ) {
   return request<CreatePullRequestResponse>(
     `${workspaceUrl(projectId)}/pull-requests`,
-    { method: "POST", body: JSON.stringify(input) },
+    { method: 'POST', body: JSON.stringify(input) },
   );
 }

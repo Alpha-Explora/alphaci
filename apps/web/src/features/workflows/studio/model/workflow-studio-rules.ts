@@ -2,81 +2,84 @@ import type {
   CatalogTemplate,
   CategorySummary,
   SetupProjectRequest,
-} from "@/shared/api/contracts";
-import type { ApiError } from "@/shared/api/request";
-import { apiErrorMessage, serverErrorMessage } from "@/shared/api/error-message";
+} from '@/shared/api/contracts';
+import type { ApiError } from '@/shared/api/request';
+import {
+  apiErrorMessage,
+  serverErrorMessage,
+} from '@/shared/api/error-message';
 
 /** The /workflows page shows one of two views: the projects (default) or the create form. */
-export type WorkflowView = "setup" | "current";
+export type WorkflowView = 'setup' | 'current';
 
 /** The query string with `tab` removed and every other param kept. */
 export function searchWithoutTab(search: string): string {
   const params = new URLSearchParams(search);
-  params.delete("tab");
+  params.delete('tab');
   return params.toString();
 }
 
 export const enhancementLabels: Array<{
-  key: NonNullable<SetupProjectRequest["enhancements"]>[number];
+  key: NonNullable<SetupProjectRequest['enhancements']>[number];
   label: string;
   description: string;
 }> = [
   {
-    key: "strictProductionApproval",
-    label: "Strict production approval",
-    description: "Require multi-step production approvals before release",
+    key: 'strictProductionApproval',
+    label: 'Strict production approval',
+    description: 'Require multi-step production approvals before release',
   },
   {
-    key: "enableUatApproval",
-    label: "Enable UAT approval",
-    description: "Add dedicated QA/UAT gates before production",
+    key: 'enableUatApproval',
+    label: 'Enable UAT approval',
+    description: 'Add dedicated QA/UAT gates before production',
   },
   {
-    key: "disablePlaywright",
-    label: "Disable Playwright",
-    description: "Skip browser E2E checks in generated workflow",
+    key: 'disablePlaywright',
+    label: 'Disable Playwright',
+    description: 'Skip browser E2E checks in generated workflow',
   },
   {
-    key: "disableK6",
-    label: "Disable k6",
-    description: "Disable synthetic load smoke tests",
+    key: 'disableK6',
+    label: 'Disable k6',
+    description: 'Disable synthetic load smoke tests',
   },
 ];
 
 export function statusBannerVariant(
   message: string,
-): "error" | "success" | "info" {
+): 'error' | 'success' | 'info' {
   const lower = message.toLowerCase();
-  if (lower.includes("fail") || lower.includes("error")) return "error";
+  if (lower.includes('fail') || lower.includes('error')) return 'error';
   if (
-    lower.includes("generat") ||
-    lower.includes("copied") ||
-    lower.includes("download") ||
-    lower.includes("completed") ||
-    lower.includes("linked")
+    lower.includes('generat') ||
+    lower.includes('copied') ||
+    lower.includes('download') ||
+    lower.includes('completed') ||
+    lower.includes('linked')
   )
-    return "success";
-  return "info";
+    return 'success';
+  return 'info';
 }
 
 export function toSlug(value: string): string {
   return value
     .toLowerCase()
-    .replaceAll(/[^a-z0-9\s-]/g, "")
+    .replaceAll(/[^a-z0-9\s-]/g, '')
     .trim()
-    .replaceAll(/\s+/g, "-")
-    .replaceAll(/-+/g, "-");
+    .replaceAll(/\s+/g, '-')
+    .replaceAll(/-+/g, '-');
 }
 
 export function toSourcePath(path: string): string {
   if (!path) {
-    return "cicd-workflow/workflow-templates";
+    return 'cicd-workflow/workflow-templates';
   }
 
-  const normalized = path.replaceAll("\\", "/");
+  const normalized = path.replaceAll('\\', '/');
   const lower = normalized.toLowerCase();
 
-  for (const marker of ["/workflow-core/", "/cicd-workflow/"]) {
+  for (const marker of ['/workflow-core/', '/cicd-workflow/']) {
     const repoIndex = lower.lastIndexOf(marker);
     if (repoIndex >= 0) {
       const relative = normalized.slice(repoIndex + marker.length);
@@ -84,12 +87,12 @@ export function toSourcePath(path: string): string {
     }
   }
 
-  const trimmed = normalized.replace(/^\/+/, "");
-  if (trimmed.startsWith("workflow-core/")) {
-    return `cicd-workflow/${trimmed.slice("workflow-core/".length)}`;
+  const trimmed = normalized.replace(/^\/+/, '');
+  if (trimmed.startsWith('workflow-core/')) {
+    return `cicd-workflow/${trimmed.slice('workflow-core/'.length)}`;
   }
 
-  if (trimmed.startsWith("cicd-workflow/")) {
+  if (trimmed.startsWith('cicd-workflow/')) {
     return trimmed;
   }
 
@@ -137,12 +140,12 @@ export function categoryFallbacks(
 export function formatDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return "Unknown date";
+    return 'Unknown date';
   }
 
-  return new Intl.DateTimeFormat("en-PH", {
-    dateStyle: "medium",
-    timeStyle: "short",
+  return new Intl.DateTimeFormat('en-PH', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
   }).format(date);
 }
 
@@ -151,24 +154,24 @@ export function formatQuotaStatus(input: {
   limit: number;
   upgradeRequired: boolean;
 }): string {
-  if (input.limit <= 0) return "Unavailable";
+  if (input.limit <= 0) return 'Unavailable';
   const remaining = Math.max(0, input.limit - input.current);
   if (remaining === 0) {
     return input.upgradeRequired
-      ? "Limit reached. Upgrade to continue."
-      : "Limit reached.";
+      ? 'Limit reached. Upgrade to continue.'
+      : 'Limit reached.';
   }
   return `${remaining} remaining`;
 }
 
 export function formatApiError(error: unknown, fallback: string): string {
-  if (!error || typeof error !== "object") return fallback;
+  if (!error || typeof error !== 'object') return fallback;
   const status = (error as Partial<ApiError>).status;
   if (requiresGenericError(status)) {
     return apiErrorMessage(status);
   }
   if (isQuotaError(error)) {
-    return "Quota reached. Upgrade your plan or remove unused resources.";
+    return 'Quota reached. Upgrade your plan or remove unused resources.';
   }
 
   const details = (error as ApiError)?.details;
@@ -176,18 +179,30 @@ export function formatApiError(error: unknown, fallback: string): string {
   const message = studioErrorMessage(details);
   if (message) return `${fallback}: ${message}`;
 
-  return typeof status === "number" ? apiErrorMessage(status) : fallback;
+  return typeof status === 'number' ? apiErrorMessage(status) : fallback;
 }
 
 function requiresGenericError(status: unknown): status is number {
-  return typeof status === "number" && (status === 0 || status === 401 || status === 429 || (status >= 500 && status !== 503));
+  return (
+    typeof status === 'number' &&
+    (status === 0 ||
+      status === 401 ||
+      status === 429 ||
+      (status >= 500 && status !== 503))
+  );
 }
 
 function studioErrorMessage(details: unknown): string | undefined {
-  if (typeof details !== "object" || details === null || !("message" in details)) return;
+  if (
+    typeof details !== 'object' ||
+    details === null ||
+    !('message' in details)
+  )
+    return;
   const message = details.message;
-  if (Array.isArray(message)) return message.map(cleanUserMessage).join(", ");
-  if (typeof message === "string" && message.trim()) return cleanUserMessage(message);
+  if (Array.isArray(message)) return message.map(cleanUserMessage).join(', ');
+  if (typeof message === 'string' && message.trim())
+    return cleanUserMessage(message);
 }
 
 export function cleanUserMessage(value: unknown): string {
@@ -199,7 +214,10 @@ export function cleanUserMessage(value: unknown): string {
     parseGenericServerMessage(message);
   if (knownMessage) return knownMessage;
 
-  return serverErrorMessage(400, { message: stripNoisyApiPayload(message) }) ?? apiErrorMessage(500);
+  return (
+    serverErrorMessage(400, { message: stripNoisyApiPayload(message) }) ??
+    apiErrorMessage(500)
+  );
 }
 
 function parseRenderProvisioningMessage(message: string): string | null {
@@ -208,17 +226,17 @@ function parseRenderProvisioningMessage(message: string): string | null {
       message,
     )
   ) {
-    return "Render billing is not configured for this workspace or the selected plan requires payment.";
+    return 'Render billing is not configured for this workspace or the selected plan requires payment.';
   }
 
   if (/A Render service with this name already exists/i.test(message)) {
-    return "A Render service with this name already exists. Choose a different service name or attach the existing service.";
+    return 'A Render service with this name already exists. Choose a different service name or attach the existing service.';
   }
 
   if (
     /Render API key is invalid|missing required workspace access/i.test(message)
   ) {
-    return "The Render API key cannot access the selected workspace.";
+    return 'The Render API key cannot access the selected workspace.';
   }
 
   if (
@@ -226,11 +244,11 @@ function parseRenderProvisioningMessage(message: string): string | null {
       message,
     )
   ) {
-    return "Render service was created, but ALPHACI could not install the deployment secrets.";
+    return 'Render service was created, but ALPHACI could not install the deployment secrets.';
   }
 
   if (/image pull|registry|GHCR/i.test(message)) {
-    return "Render could not pull the deployment image. Check registry access and retry.";
+    return 'Render could not pull the deployment image. Check registry access and retry.';
   }
 
   return null;
@@ -238,10 +256,10 @@ function parseRenderProvisioningMessage(message: string): string | null {
 
 function parseDuplicateRepositoryMessage(message: string): string | null {
   if (
-    message.includes("name already exists on this account") ||
-    message.includes("Repository already exists or name is invalid")
+    message.includes('name already exists on this account') ||
+    message.includes('Repository already exists or name is invalid')
   ) {
-    return "A repository with this name already exists on this GitHub account. Choose another repository name and try again.";
+    return 'A repository with this name already exists on this GitHub account. Choose another repository name and try again.';
   }
 
   return null;
@@ -249,21 +267,21 @@ function parseDuplicateRepositoryMessage(message: string): string | null {
 
 function parseProviderIntegrationMessage(message: string): string | null {
   if (
-    message.includes("install the GitHub integration") ||
-    message.includes("Install GitHub App")
+    message.includes('install the GitHub integration') ||
+    message.includes('Install GitHub App')
   ) {
-    return "Vercel cannot access this GitHub repository yet. Install or update the Vercel GitHub integration for the repository owner, then retry.";
+    return 'Vercel cannot access this GitHub repository yet. Install or update the Vercel GitHub integration for the repository owner, then retry.';
   }
 
   if (
-    message.includes("invalid_root_directory") ||
-    message.includes("Root Directory must be a relative path")
+    message.includes('invalid_root_directory') ||
+    message.includes('Root Directory must be a relative path')
   ) {
     return 'The root directory must be a relative path, for example "frontend". Do not use "./" or "../".';
   }
 
-  if (message.includes("Missing team access")) {
-    return "The configured Vercel token does not have access to the selected team or project.";
+  if (message.includes('Missing team access')) {
+    return 'The configured Vercel token does not have access to the selected team or project.';
   }
 
   return null;
@@ -271,26 +289,26 @@ function parseProviderIntegrationMessage(message: string): string | null {
 
 function parseGenericServerMessage(message: string): string | null {
   if (
-    message.includes("quota_exceeded") ||
+    message.includes('quota_exceeded') ||
     /Usage quota exceeded/i.test(message) ||
-    message.includes("Request failed with status 402")
+    message.includes('Request failed with status 402')
   ) {
-    return "Quota reached. Upgrade your plan or remove unused resources.";
+    return 'Quota reached. Upgrade your plan or remove unused resources.';
   }
 
   if (
-    message === "Internal Server Error" ||
-    message.includes("Request failed with status 500")
+    message === 'Internal Server Error' ||
+    message.includes('Request failed with status 500')
   ) {
-    return "Something went wrong while processing the request. Try again in a moment. If it keeps happening, contact your administrator.";
+    return 'Something went wrong while processing the request. Try again in a moment. If it keeps happening, contact your administrator.';
   }
 
-  if (message.includes("Request failed with status 401")) {
-    return "Your session has expired. Sign in again and retry.";
+  if (message.includes('Request failed with status 401')) {
+    return 'Your session has expired. Sign in again and retry.';
   }
 
-  if (message.includes("Request failed with status 403")) {
-    return "You do not have access to perform this action.";
+  if (message.includes('Request failed with status 403')) {
+    return 'You do not have access to perform this action.';
   }
 
   return null;
@@ -304,11 +322,11 @@ function isQuotaError(error: unknown): boolean {
   const apiError = error as Partial<ApiError>;
   const details = apiError.details;
 
-  if (typeof details === "string") {
-    return details.includes("quota_exceeded");
+  if (typeof details === 'string') {
+    return details.includes('quota_exceeded');
   }
 
-  if (typeof details === "object" && details !== null) {
+  if (typeof details === 'object' && details !== null) {
     const record = details as {
       code?: unknown;
       message?: unknown;
@@ -317,13 +335,13 @@ function isQuotaError(error: unknown): boolean {
     };
 
     // The backend quota guard (BadRequestException) carries these fields.
-    if (record.code === "quota_exceeded") return true;
-    if (typeof record.limitCode === "string") return true;
-    if (typeof record.upgradeRequired === "boolean") return true;
+    if (record.code === 'quota_exceeded') return true;
+    if (typeof record.limitCode === 'string') return true;
+    if (typeof record.upgradeRequired === 'boolean') return true;
 
-    if (typeof record.message === "string") {
+    if (typeof record.message === 'string') {
       return (
-        record.message.includes("quota_exceeded") ||
+        record.message.includes('quota_exceeded') ||
         /quota/i.test(record.message)
       );
     }
@@ -334,24 +352,29 @@ function isQuotaError(error: unknown): boolean {
 
 function stripNoisyApiPayload(message: string): string {
   return message
-    .replaceAll(/https:\/\/docs\.github\.com\/[^\s"'}]+/g, "GitHub API docs")
-    .replaceAll(/"documentation_url":"[^"]+",?/g, "")
-    .replaceAll(/"status":"?\d+"?,?/g, "")
-    .replaceAll(/\s+/g, " ")
+    .replaceAll(/https:\/\/docs\.github\.com\/[^\s"'}]+/g, 'GitHub API docs')
+    .replaceAll(/"documentation_url":"[^"]+",?/g, '')
+    .replaceAll(/"status":"?\d+"?,?/g, '')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
-export function studioSessionFields(session: {
-  user: { login?: string; onboardingCompleted?: boolean };
-  subscription: { plan?: string };
-} | null | undefined): {
+export function studioSessionFields(
+  session:
+    | {
+        user: { login?: string; onboardingCompleted?: boolean };
+        subscription: { plan?: string };
+      }
+    | null
+    | undefined,
+): {
   login: string;
   plan: string;
   onboardingCompleted: boolean | undefined;
 } {
   return {
-    login: session?.user.login ?? "builder",
-    plan: session?.subscription.plan ?? "pro",
+    login: session?.user.login ?? 'builder',
+    plan: session?.subscription.plan ?? 'pro',
     onboardingCompleted: session?.user.onboardingCompleted,
   };
 }

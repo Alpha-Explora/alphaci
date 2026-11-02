@@ -1,1 +1,1 @@
-export { ProjectQaReportPage as default } from "@/features/projects/detail";
+export { ProjectQaReportPage as default } from '@/features/projects/detail';

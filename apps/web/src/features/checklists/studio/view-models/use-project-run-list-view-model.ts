@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 import {
   groupOffsets,
@@ -10,8 +10,12 @@ import {
   runFilterCounts,
   visibleRunFilters,
   type RunFilter,
-} from "../../model/project-run-rules";
-import type { ProjectQaRun, ProjectQaRunItem, ProjectRunGroup } from "../../model/project-run-types";
+} from '../../model/project-run-rules';
+import type {
+  ProjectQaRun,
+  ProjectQaRunItem,
+  ProjectRunGroup,
+} from '../../model/project-run-types';
 
 export interface ProjectRunListGroup extends ProjectRunGroup {
   /** Where the group's numbering starts, so items count 01, 02… across the whole run. */
@@ -22,7 +26,7 @@ export interface ProjectRunListGroup extends ProjectRunGroup {
 }
 
 /** `empty`: nothing to draw under the chosen filter (or a run with no items). */
-export type ProjectRunListStatus = "ready" | "empty";
+export type ProjectRunListStatus = 'ready' | 'empty';
 
 export interface ProjectRunListViewModel {
   status: ProjectRunListStatus;
@@ -44,10 +48,14 @@ export interface ProjectRunListViewModel {
  * the list to the items the tester asked for, and hiding them again behind a
  * collapsed heading would defeat it.
  */
-export function useProjectRunListViewModel(run: ProjectQaRun): ProjectRunListViewModel {
+export function useProjectRunListViewModel(
+  run: ProjectQaRun,
+): ProjectRunListViewModel {
   const all = groupRunItems(run.items);
-  const [filter, setFilter] = useState<RunFilter>("all");
-  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => initialExpandedGroups(all));
+  const [filter, setFilter] = useState<RunFilter>('all');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
+    initialExpandedGroups(all),
+  );
 
   const counts = runFilterCounts(run.items);
   const offsets = groupOffsets(all);
@@ -57,17 +65,21 @@ export function useProjectRunListViewModel(run: ProjectQaRun): ProjectRunListVie
       offset: offsets[index],
       shown: group.items.filter((item) => itemMatchesRunFilter(item, filter)),
       // A requirement added since the list opened has nothing recorded yet: expanded.
-      expanded: filter !== "all" || (expanded[group.key] ?? true),
+      expanded: filter !== 'all' || (expanded[group.key] ?? true),
     }))
-    .filter((group) => filter === "all" || group.shown.length > 0);
+    .filter((group) => filter === 'all' || group.shown.length > 0);
 
   return {
-    status: groups.length === 0 ? "empty" : "ready",
+    status: groups.length === 0 ? 'empty' : 'ready',
     filter,
     filters: visibleRunFilters(counts, filter),
     counts,
     setFilter,
     groups,
-    toggleGroup: (key) => setExpanded((current) => ({ ...current, [key]: !(current[key] ?? true) })),
+    toggleGroup: (key) =>
+      setExpanded((current) => ({
+        ...current,
+        [key]: !(current[key] ?? true),
+      })),
   };
 }

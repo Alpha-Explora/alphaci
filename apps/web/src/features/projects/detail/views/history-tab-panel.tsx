@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { REPOSITORY_SCOPE, type QaScope } from "@/features/checklists";
-import { IterationHistoryPanel } from "@/features/checklists/history";
-import type { ProvisionedProject } from "@/features/projects";
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
+import { REPOSITORY_SCOPE, type QaScope } from '@/features/checklists';
+import { IterationHistoryPanel } from '@/features/checklists/history';
+import type { ProvisionedProject } from '@/features/projects';
+import type { ProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
 
 /**
  * The Release tab: the versions of the Project this repository is filed
@@ -27,7 +27,7 @@ export function HistoryTabPanel({
       aria-labelledby="project-detail-tab-history"
       className="qa-project-panel"
     >
-      {qaScope.kind === "project" ? (
+      {qaScope.kind === 'project' ? (
         <IterationHistoryPanel
           deliveryProjectId={qaScope.deliveryProjectId}
           projectName={qaScope.projectName}
@@ -38,9 +38,9 @@ export function HistoryTabPanel({
         <div className="qa-panel-state">
           <h3 className="qa-panel-state__title">No versions here</h3>
           <p className="qa-panel-state__text">
-            {qaScope.kind === "pending"
-              ? "Reading which Project this repository belongs to…"
-              : "Versions belong to a Project. This repository is not filed under one, so it has no release history."}
+            {qaScope.kind === 'pending'
+              ? 'Reading which Project this repository belongs to…'
+              : 'Versions belong to a Project. This repository is not filed under one, so it has no release history.'}
           </p>
         </div>
       )}

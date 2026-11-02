@@ -1,15 +1,19 @@
-"use client";
+'use client';
 
-import "./promotion.css";
+import './promotion.css';
 
-import { useId } from "react";
+import { useId } from 'react';
 
-import { approvedCountLabel, promotionRoute, promotionTitle } from "../../model/qa-promotion-rules";
-import type { QaPromotionStatus } from "../../model/qa-promotion-types";
-import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
-import { useDisclosure } from "../view-models/use-remembered-flag";
-import { PromotionDetails } from "./promotion-parts";
-import { ChevronDownIcon, MergeIcon } from "./studio-icons";
+import {
+  approvedCountLabel,
+  promotionRoute,
+  promotionTitle,
+} from '../../model/qa-promotion-rules';
+import type { QaPromotionStatus } from '../../model/qa-promotion-types';
+import type { QaPromotionViewModel } from '../view-models/use-qa-promotion-view-model';
+import { useDisclosure } from '../view-models/use-remembered-flag';
+import { PromotionDetails } from './promotion-parts';
+import { ChevronDownIcon, MergeIcon } from './studio-icons';
 
 type CardProps = Readonly<{ vm: QaPromotionViewModel }>;
 
@@ -18,7 +22,12 @@ function CardHead({
   collapsed,
   onToggle,
   bodyId,
-}: Readonly<{ data: QaPromotionStatus; collapsed: boolean; onToggle: () => void; bodyId: string }>) {
+}: Readonly<{
+  data: QaPromotionStatus;
+  collapsed: boolean;
+  onToggle: () => void;
+  bodyId: string;
+}>) {
   return (
     <div className="qa-promo__head">
       <button
@@ -45,12 +54,15 @@ function CardHead({
 }
 
 /** The card's tone: delivered, ready, or not ready. */
-function readyState(data: QaPromotionStatus): "delivered" | "true" | "false" {
-  if (data.iterationDelivered) return "delivered";
-  return data.eligible ? "true" : "false";
+function readyState(data: QaPromotionStatus): 'delivered' | 'true' | 'false' {
+  if (data.iterationDelivered) return 'delivered';
+  return data.eligible ? 'true' : 'false';
 }
 
-function ReadyCard({ vm, data }: Readonly<{ vm: QaPromotionViewModel; data: QaPromotionStatus }>) {
+function ReadyCard({
+  vm,
+  data,
+}: Readonly<{ vm: QaPromotionViewModel; data: QaPromotionStatus }>) {
   // Folded to its head, which already answers "ready or not"; unfolding is
   // for this visit only.
   const [open, toggle] = useDisclosure();
@@ -60,10 +72,15 @@ function ReadyCard({ vm, data }: Readonly<{ vm: QaPromotionViewModel; data: QaPr
       className="qa-promo"
       aria-label="Production readiness"
       data-ready={readyState(data)}
-      data-collapsed={open ? "false" : "true"}
+      data-collapsed={open ? 'false' : 'true'}
       aria-busy={vm.refreshing}
     >
-      <CardHead data={data} collapsed={!open} onToggle={toggle} bodyId={bodyId} />
+      <CardHead
+        data={data}
+        collapsed={!open}
+        onToggle={toggle}
+        bodyId={bodyId}
+      />
       <div id={bodyId} className="qa-promo__body" hidden={!open}>
         <PromotionDetails vm={vm} data={data} />
       </div>
@@ -77,9 +94,12 @@ function ReadyCard({ vm, data }: Readonly<{ vm: QaPromotionViewModel; data: QaPr
  * PO Studio, from the status chip in their run column's tab bar.
  */
 export function PromotionCard({ vm }: CardProps) {
-  if (vm.status === "unavailable") return null;
-  if (vm.status === "loading") return <div className="hier-skeleton qa-promo-skeleton" aria-hidden="true" />;
-  if (vm.status === "error" || !vm.data) {
+  if (vm.status === 'unavailable') return null;
+  if (vm.status === 'loading')
+    return (
+      <div className="hier-skeleton qa-promo-skeleton" aria-hidden="true" />
+    );
+  if (vm.status === 'error' || !vm.data) {
     return (
       <div className="qa-promo-error" role="alert">
         <p>{vm.error}</p>

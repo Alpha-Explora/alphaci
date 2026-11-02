@@ -1,5 +1,5 @@
-import Image from "next/image";
-import Link from "next/link";
+import Image from 'next/image';
+import Link from 'next/link';
 
 // Read once when the module loads, not on every render: render must be pure.
 const COPYRIGHT_YEAR = new Date().getFullYear();
@@ -29,20 +29,33 @@ export function SiteFooter() {
         </div>
 
         <div className="flex flex-col gap-4">
-          <h2 className="mb-2 text-[var(--text-primary)] font-semibold">Explore</h2>
-          <Link className="text-[0.9rem] transition-colors hover:text-[var(--brand)]" href="/signup">
+          <h2 className="mb-2 text-[var(--text-primary)] font-semibold">
+            Explore
+          </h2>
+          <Link
+            className="text-[0.9rem] transition-colors hover:text-[var(--brand)]"
+            href="/signup"
+          >
             Start free
           </Link>
-          <Link className="text-[0.9rem] transition-colors hover:text-[var(--brand)]" href="/guide">
+          <Link
+            className="text-[0.9rem] transition-colors hover:text-[var(--brand)]"
+            href="/guide"
+          >
             Guide
           </Link>
-          <Link className="text-[0.9rem] transition-colors hover:text-[var(--brand)]" href="/login">
+          <Link
+            className="text-[0.9rem] transition-colors hover:text-[var(--brand)]"
+            href="/login"
+          >
             Log in
           </Link>
         </div>
 
         <div className="flex flex-col gap-4">
-          <h2 className="mb-2 text-[var(--text-primary)] font-semibold">Contact</h2>
+          <h2 className="mb-2 text-[var(--text-primary)] font-semibold">
+            Contact
+          </h2>
           <a
             className="text-[0.9rem] transition-colors hover:text-[var(--brand)]"
             href="mailto:inquire.alphaci@alphaexplora.com"
@@ -67,4 +80,3 @@ export function SiteFooter() {
     </footer>
   );
 }
-

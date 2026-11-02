@@ -14,17 +14,26 @@ const isVercelPreview = /\.vercel\.app(?:\/|$)/i.test(baseUrl);
 const configuredStatuses = (__ENV.EXPECTED_STATUSES || '')
   .split(/[|,]/)
   .map((value: string) => Number(value.trim()))
-  .filter((value: number) => Number.isInteger(value) && value >= 100 && value <= 599);
+  .filter(
+    (value: number) => Number.isInteger(value) && value >= 100 && value <= 599,
+  );
 
 const configuredSingleStatus = Number((__ENV.EXPECTED_STATUS || '').trim());
-const hasSingleStatus = Number.isInteger(configuredSingleStatus) && configuredSingleStatus >= 100 && configuredSingleStatus <= 599;
+const hasSingleStatus =
+  Number.isInteger(configuredSingleStatus) &&
+  configuredSingleStatus >= 100 &&
+  configuredSingleStatus <= 599;
 
 let allowedStatusCodes = configuredStatuses;
 if (allowedStatusCodes.length === 0 && hasSingleStatus) {
   allowedStatusCodes = [configuredSingleStatus];
 }
 
-if (isVercelPreview && (allowedStatusCodes.length === 0 || (allowedStatusCodes.length === 1 && allowedStatusCodes[0] === 200))) {
+if (
+  isVercelPreview &&
+  (allowedStatusCodes.length === 0 ||
+    (allowedStatusCodes.length === 1 && allowedStatusCodes[0] === 200))
+) {
   allowedStatusCodes = [200, 401, 403];
 }
 
@@ -74,10 +83,10 @@ function smoke() {
     });
 
     const checks = {
-      [`${path} status is ${statusLabel}`]:
-        (result: SmokeResponse) => allowedStatusCodes.includes(result.status),
-      [`${path} response time < ${maxDurationMs}ms`]:
-        (result: SmokeResponse) => result.timings.duration < maxDurationMs,
+      [`${path} status is ${statusLabel}`]: (result: SmokeResponse) =>
+        allowedStatusCodes.includes(result.status),
+      [`${path} response time < ${maxDurationMs}ms`]: (result: SmokeResponse) =>
+        result.timings.duration < maxDurationMs,
     };
 
     if (expectedText?.length) {

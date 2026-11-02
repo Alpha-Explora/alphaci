@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { useAuthSession } from "@/features/auth/session";
+import { useAuthSession } from '@/features/auth/session';
 import {
   getGroupMembers,
   isGroupManagerRole,
   useApiResource,
   type GroupMember,
   type ResourceState,
-} from "@/features/groups";
+} from '@/features/groups';
 
-import type { Team } from "../../model/teams-types";
+import type { Team } from '../../model/teams-types';
 
 export interface TeamMembersViewModel {
   status: ResourceState;
@@ -42,14 +42,17 @@ export function useTeamMembersViewModel(options: {
   const { team, onMembershipChanged } = options;
   const { session } = useAuthSession();
   const [addOpen, setAddOpen] = useState(false);
-  const resource = useApiResource<GroupMember[]>(() => getGroupMembers(team.id), [team.id]);
+  const resource = useApiResource<GroupMember[]>(
+    () => getGroupMembers(team.id),
+    [team.id],
+  );
 
   return {
     status: resource.state,
     members: resource.data ?? [],
     reload: resource.reload,
     canManage: isGroupManagerRole(team.role),
-    currentUserId: session?.user.id ?? "",
+    currentUserId: session?.user.id ?? '',
     addOpen,
     openAdd: () => setAddOpen(true),
     closeAdd: () => setAddOpen(false),

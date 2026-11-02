@@ -1,39 +1,39 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 import {
   AppNav,
   canOpenTeamActivity,
   useWorkspaceSelection,
-} from "@/features/workspace/selection";
-import { FlowBackground } from "@/shared/layout/flow-background";
-import { WelcomeModal } from "./welcome-modal";
-import type { useAuthSession } from "@/features/auth/session";
-import { isGuest } from "@/features/auth/session";
+} from '@/features/workspace/selection';
+import { FlowBackground } from '@/shared/layout/flow-background';
+import { WelcomeModal } from './welcome-modal';
+import type { useAuthSession } from '@/features/auth/session';
+import { isGuest } from '@/features/auth/session';
 
 import {
   dashboardOverviewBusy,
   dashboardWelcomeName,
   firstDashboardError,
   shouldShowWelcomeModal,
-} from "../../model/home-rules";
-import { dashboardShortcutHref } from "../../model/home-layout-rules";
-import { homeRoleBadge } from "../../model/home-persona-rules";
-import type { HomeShortcutId } from "../../model/home-persona-types";
+} from '../../model/home-rules';
+import { dashboardShortcutHref } from '../../model/home-layout-rules';
+import { homeRoleBadge } from '../../model/home-persona-rules';
+import type { HomeShortcutId } from '../../model/home-persona-types';
 import {
   useHomeDashboardViewModel,
   type HomeDashboardViewModel,
-} from "../view-models/use-home-dashboard-view-model";
-import { DashboardWorkspaceOverview } from "./workspace-overview";
-import { isEditableShortcutTarget } from "./dashboard-shortcuts";
-import { PersonaOverview } from "./persona-overview";
+} from '../view-models/use-home-dashboard-view-model';
+import { DashboardWorkspaceOverview } from './workspace-overview';
+import { isEditableShortcutTarget } from './dashboard-shortcuts';
+import { PersonaOverview } from './persona-overview';
 import {
   DashboardLoadErrors,
   GuestPreviewBanner,
   HomeDashboardHeader,
-} from "./home-dashboard-header";
+} from './home-dashboard-header';
 
 /**
  * The home dashboard itself.
@@ -52,7 +52,7 @@ export function HomeDashboardContent({
   sessionError,
   logoutMessage,
 }: Readonly<{
-  session: ReturnType<typeof useAuthSession>["session"];
+  session: ReturnType<typeof useAuthSession>['session'];
   onLogout: () => void;
   isLoggingOut: boolean;
   prefersReducedMotion: boolean | null;
@@ -80,18 +80,18 @@ export function HomeDashboardContent({
   const welcomeDismissed = vm.welcomeDismissed;
   const handleWelcomeDismiss = vm.dismissWelcome;
   const history = vm.history.data;
-  const historyLoading = vm.history.status === "loading";
+  const historyLoading = vm.history.status === 'loading';
   const historyError = vm.history.error;
   const projects = vm.projects.data;
-  const projectsLoading = vm.projects.status === "loading";
+  const projectsLoading = vm.projects.status === 'loading';
   const projectsError = vm.projects.error;
   const recentRuns = vm.teamRuns;
-  const runsLoading = vm.runs.status === "loading";
+  const runsLoading = vm.runs.status === 'loading';
   const currentGroup = vm.workspace.data.group;
   const portfolio = vm.workspace.data.portfolio;
   const assignments = vm.workspace.data.assignments;
   const activity = vm.workspace.data.activity;
-  const workspaceOverviewLoading = vm.workspace.status === "loading";
+  const workspaceOverviewLoading = vm.workspace.status === 'loading';
   const workspaceOverviewError = vm.workspace.error;
   const refreshDashboard = vm.reload;
   const loadError = firstDashboardError(
@@ -119,7 +119,7 @@ export function HomeDashboardContent({
     <main
       className="dash-shell dashboard-shell dashboard-shell--fit"
       suppressHydrationWarning
-      style={{ overflowX: "hidden" }}
+      style={{ overflowX: 'hidden' }}
     >
       <a href="#main-content" className="skip-link">
         Skip to main content
@@ -153,7 +153,7 @@ export function HomeDashboardContent({
           roleBadge={homeRoleBadge(appRole)}
         />
 
-        {layout.persona === "team" ? (
+        {layout.persona === 'team' ? (
           <DashboardWorkspaceOverview
             group={currentGroup}
             portfolio={portfolio}
@@ -194,20 +194,27 @@ function RoleHomeOverview({
 }
 
 /** The role's keyboard shortcuts (N, W, R; the QA Team has no N), off while typing. */
-function useDashboardShortcuts(shortcuts: ReadonlyArray<HomeShortcutId>, groupId: string | null) {
+function useDashboardShortcuts(
+  shortcuts: ReadonlyArray<HomeShortcutId>,
+  groupId: string | null,
+) {
   const router = useRouter();
   useEffect(() => {
     function handleDashboardShortcut(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (isEditableShortcutTarget(event.target)) return;
-      const href = dashboardShortcutHref(event.key.toLowerCase(), shortcuts, groupId);
+      const href = dashboardShortcutHref(
+        event.key.toLowerCase(),
+        shortcuts,
+        groupId,
+      );
       if (!href) return;
       event.preventDefault();
       router.push(href);
     }
 
-    window.addEventListener("keydown", handleDashboardShortcut);
-    return () => window.removeEventListener("keydown", handleDashboardShortcut);
+    window.addEventListener('keydown', handleDashboardShortcut);
+    return () => window.removeEventListener('keydown', handleDashboardShortcut);
   }, [router, shortcuts, groupId]);
 }
 

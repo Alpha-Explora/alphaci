@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
 import type {
   GroupActivityItem,
   GroupActivityQuery,
   GroupActivityType,
-} from "@/features/groups";
-import { timeAgo } from "@/features/groups";
+} from '@/features/groups';
+import { timeAgo } from '@/features/groups';
 
 const ACTIVITY_TYPES: { value: GroupActivityType; label: string }[] = [
-  { value: "membership", label: "Membership" },
-  { value: "assignment", label: "Assignment" },
-  { value: "configuration", label: "Configuration" },
-  { value: "github", label: "GitHub" },
+  { value: 'membership', label: 'Membership' },
+  { value: 'assignment', label: 'Assignment' },
+  { value: 'configuration', label: 'Configuration' },
+  { value: 'github', label: 'GitHub' },
 ];
 
 /**
@@ -38,7 +38,7 @@ export function ActivityFilters({
         <select
           id="activity-type"
           className="hier-select"
-          value={value.activityType ?? ""}
+          value={value.activityType ?? ''}
           onChange={(event) =>
             patch({
               activityType:
@@ -62,7 +62,7 @@ export function ActivityFilters({
           id="activity-from"
           type="date"
           className="hier-input"
-          value={value.dateFrom ?? ""}
+          value={value.dateFrom ?? ''}
           onChange={(event) =>
             patch({ dateFrom: event.target.value || undefined })
           }
@@ -76,7 +76,7 @@ export function ActivityFilters({
           id="activity-to"
           type="date"
           className="hier-input"
-          value={value.dateTo ?? ""}
+          value={value.dateTo ?? ''}
           onChange={(event) =>
             patch({ dateTo: event.target.value || undefined })
           }
@@ -94,13 +94,13 @@ export function ActivityFilters({
   );
 }
 
-const TARGET_TONE: Record<GroupActivityItem["targetType"], string> = {
-  group: "var(--accent-indigo)",
-  system: "var(--accent-violet)",
-  delivery_project: "var(--accent-teal)",
-  repository: "var(--brand)",
-  assignment: "var(--accent-amber)",
-  configuration: "var(--accent-purple)",
+const TARGET_TONE: Record<GroupActivityItem['targetType'], string> = {
+  group: 'var(--accent-indigo)',
+  system: 'var(--accent-violet)',
+  delivery_project: 'var(--accent-teal)',
+  repository: 'var(--brand)',
+  assignment: 'var(--accent-amber)',
+  configuration: 'var(--accent-purple)',
 };
 
 export function ActivityFeed({ items }: { items: GroupActivityItem[] }) {
@@ -122,8 +122,8 @@ export function ActivityFeed({ items }: { items: GroupActivityItem[] }) {
               <span aria-hidden="true">·</span>
               <span>{timeAgo(item.createdAt)}</span>
               <span aria-hidden="true">·</span>
-              <span style={{ textTransform: "capitalize" }}>
-                {item.targetType.replace(/_/g, " ")}
+              <span style={{ textTransform: 'capitalize' }}>
+                {item.targetType.replace(/_/g, ' ')}
               </span>
             </div>
           </div>

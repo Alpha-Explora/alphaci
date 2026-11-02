@@ -1,15 +1,20 @@
-"use client";
+'use client';
 
-import "./create-project-menu.css";
+import './create-project-menu.css';
 
-import Link from "next/link";
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import Link from 'next/link';
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 
-import { nextMenuIndex } from "../model/current-projects-rules";
-import { FolderPlusIcon, MoreIcon, PlusIcon, RepoPlusIcon } from "./studio-icons";
+import { nextMenuIndex } from '../model/current-projects-rules';
+import {
+  FolderPlusIcon,
+  MoreIcon,
+  PlusIcon,
+  RepoPlusIcon,
+} from './studio-icons';
 
 interface MenuItem {
-  id: "empty-project" | "add-repository";
+  id: 'empty-project' | 'add-repository';
   label: string;
   hint: string;
   /** A button item runs this; a link item navigates to `href`. */
@@ -33,17 +38,17 @@ function menuItems({
   const items: MenuItem[] = [];
   if (onCreateEmptyProject) {
     items.push({
-      id: "empty-project",
-      label: "Empty project",
-      hint: "A Project with no repositories yet",
+      id: 'empty-project',
+      label: 'Empty project',
+      hint: 'A Project with no repositories yet',
       onSelect: onCreateEmptyProject,
     });
   }
   if (addRepositoryHref) {
     items.push({
-      id: "add-repository",
-      label: "Add repository",
-      hint: "One repository, filed in this team",
+      id: 'add-repository',
+      label: 'Add repository',
+      hint: 'One repository, filed in this team',
       href: addRepositoryHref,
     });
   }
@@ -63,7 +68,9 @@ function menuItems({
  * item and ArrowUp on the last; arrows wrap, Home/End jump; Escape closes it
  * and hands focus back to the trigger; Tab or a click outside closes it.
  */
-export function CreateProjectActions(props: Readonly<CreateProjectActionsProps>) {
+export function CreateProjectActions(
+  props: Readonly<CreateProjectActionsProps>,
+) {
   const items = menuItems(props);
   if (!props.onCreateProject && items.length === 0) return null;
   return (
@@ -107,8 +114,8 @@ function CreateMoreMenu({ items }: Readonly<{ items: MenuItem[] }>) {
         setActiveIndex(-1);
       }
     }
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [open]);
 
   function openAt(index: number) {
@@ -123,30 +130,34 @@ function CreateMoreMenu({ items }: Readonly<{ items: MenuItem[] }>) {
   }
 
   function onTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
-    if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+    if (
+      event.key === 'ArrowDown' ||
+      event.key === 'Enter' ||
+      event.key === ' '
+    ) {
       event.preventDefault();
       openAt(0);
-    } else if (event.key === "ArrowUp") {
+    } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       openAt(items.length - 1);
-    } else if (event.key === "Escape" && open) {
+    } else if (event.key === 'Escape' && open) {
       event.preventDefault();
       close(true);
     }
   }
 
   function onMenuKeyDown(event: KeyboardEvent<HTMLUListElement>) {
-    if (event.key === "Escape") {
+    if (event.key === 'Escape') {
       event.preventDefault();
       close(true);
       return;
     }
-    if (event.key === "Tab") {
+    if (event.key === 'Tab') {
       close(false);
       return;
     }
     // Space activates a menu item; a link would otherwise scroll the page.
-    if (event.key === " " && items[activeIndex]?.href) {
+    if (event.key === ' ' && items[activeIndex]?.href) {
       event.preventDefault();
       itemRefs.current[activeIndex]?.click();
       return;
@@ -223,7 +234,7 @@ function CreateMenuItem({
   const body = (
     <>
       <span className="create-menu-icon">
-        {item.id === "empty-project" ? <FolderPlusIcon /> : <RepoPlusIcon />}
+        {item.id === 'empty-project' ? <FolderPlusIcon /> : <RepoPlusIcon />}
       </span>
       <span className="create-menu-text">
         <span className="create-menu-label">{item.label}</span>
@@ -231,7 +242,7 @@ function CreateMenuItem({
       </span>
     </>
   );
-  const className = `create-menu-item${active ? " is-active" : ""}`;
+  const className = `create-menu-item${active ? ' is-active' : ''}`;
   if (item.href) {
     return (
       <Link

@@ -1,11 +1,11 @@
-import type { WorkspaceSummary } from "./workspace-types";
+import type { WorkspaceSummary } from './workspace-types';
 
 /** The one heading over the picker's list of teams. */
-export const OWN_TEAMS_HEADING = "Your teams";
+export const OWN_TEAMS_HEADING = 'Your teams';
 
 /** One run of options in the header picker, with its heading. */
 export interface SwitcherOptionGroup {
-  key: "own";
+  key: 'own';
   label: string;
   options: readonly WorkspaceSummary[];
 }
@@ -21,10 +21,14 @@ export function switcherOptionGroups(
 ): SwitcherOptionGroup[] {
   const options = [...own, ...other].sort(
     (a, b) =>
-      a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true }) ||
-      a.id.localeCompare(b.id),
+      a.name.localeCompare(b.name, undefined, {
+        sensitivity: 'base',
+        numeric: true,
+      }) || a.id.localeCompare(b.id),
   );
-  return options.length > 0 ? [{ key: "own", label: OWN_TEAMS_HEADING, options }] : [];
+  return options.length > 0
+    ? [{ key: 'own', label: OWN_TEAMS_HEADING, options }]
+    : [];
 }
 
 /**
@@ -41,12 +45,15 @@ export function switcherOptionGroups(
 export function pageWorkspaceToSelect(input: {
   pageWorkspaceId: string | null | undefined;
   appliedFor: string | null;
-  members: { items: readonly Pick<WorkspaceSummary, "id">[] } | null;
-  others: readonly Pick<WorkspaceSummary, "id">[];
+  members: { items: readonly Pick<WorkspaceSummary, 'id'>[] } | null;
+  others: readonly Pick<WorkspaceSummary, 'id'>[];
 }): string | null {
   const { pageWorkspaceId, appliedFor, members, others } = input;
-  if (!pageWorkspaceId || !members || pageWorkspaceId === appliedFor) return null;
-  const listed = [...members.items, ...others].some((team) => team.id === pageWorkspaceId);
+  if (!pageWorkspaceId || !members || pageWorkspaceId === appliedFor)
+    return null;
+  const listed = [...members.items, ...others].some(
+    (team) => team.id === pageWorkspaceId,
+  );
   return listed ? pageWorkspaceId : null;
 }
 
@@ -66,7 +73,7 @@ export function flattenSwitcherOptions(
  * listed.
  */
 export function openingSwitcherIndex(
-  options: readonly Pick<WorkspaceSummary, "id">[],
+  options: readonly Pick<WorkspaceSummary, 'id'>[],
   currentId: string | null,
 ): number {
   const index = options.findIndex((option) => option.id === currentId);
@@ -77,16 +84,20 @@ export function openingSwitcherIndex(
  * Where a key moves the active stop, among `count` teams, or null when the
  * key does not move it. Arrows wrap; Home and End jump to the ends.
  */
-export function nextSwitcherIndex(key: string, index: number, count: number): number | null {
+export function nextSwitcherIndex(
+  key: string,
+  index: number,
+  count: number,
+): number | null {
   if (count <= 0) return null;
   switch (key) {
-    case "ArrowDown":
+    case 'ArrowDown':
       return index < 0 || index >= count - 1 ? 0 : index + 1;
-    case "ArrowUp":
+    case 'ArrowUp':
       return index <= 0 ? count - 1 : index - 1;
-    case "Home":
+    case 'Home':
       return 0;
-    case "End":
+    case 'End':
       return count - 1;
     default:
       return null;
@@ -94,7 +105,7 @@ export function nextSwitcherIndex(key: string, index: number, count: number): nu
 }
 
 /** What Tab does inside the open panel: hop to the "+" button, back to the list, or leave. */
-export type PanelTabAction = "to-create" | "to-list" | "close";
+export type PanelTabAction = 'to-create' | 'to-list' | 'close';
 
 /**
  * Tab goes list -> "+" button (when offered) -> out of the panel, which closes
@@ -105,8 +116,8 @@ export function panelTabAction(
   onCreateButton: boolean,
   canCreate: boolean,
 ): PanelTabAction {
-  if (onCreateButton) return shiftKey ? "to-list" : "close";
-  return !shiftKey && canCreate ? "to-create" : "close";
+  if (onCreateButton) return shiftKey ? 'to-list' : 'close';
+  return !shiftKey && canCreate ? 'to-create' : 'close';
 }
 
 /**
@@ -122,7 +133,8 @@ export function switcherPanelShift(
   margin = 8,
 ): number {
   let shift = 0;
-  if (panelRight > viewportWidth - margin) shift = viewportWidth - margin - panelRight;
+  if (panelRight > viewportWidth - margin)
+    shift = viewportWidth - margin - panelRight;
   if (panelLeft + shift < margin) shift = margin - panelLeft;
   return Math.round(shift);
 }

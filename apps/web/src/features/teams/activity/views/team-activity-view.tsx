@@ -1,10 +1,11 @@
-"use client";
+'use client';
 
-import { GroupActivitySection } from "@/features/groups/activity";
-import { TeamPageShell, type TeamPageHeading } from "@/features/teams/shell";
+import { GroupActivitySection } from '@/features/groups/activity';
+import { TeamPageShell, type TeamPageHeading } from '@/features/teams/shell';
 
 const HEADING: TeamPageHeading = {
-  title: (team) => (team ? `Activity & audit · ${team.name}` : "Activity & audit"),
+  title: (team) =>
+    team ? `Activity & audit · ${team.name}` : 'Activity & audit',
 };
 
 /**
@@ -16,9 +17,16 @@ const HEADING: TeamPageHeading = {
  */
 export function TeamActivityView() {
   return (
-    <TeamPageShell loadingLabel="Loading activity" path="/activity" heading={HEADING}>
+    <TeamPageShell
+      loadingLabel="Loading activity"
+      path="/activity"
+      heading={HEADING}
+    >
       {({ team }) => (
-        <section className="glass-panel team-detail-surface" aria-labelledby="team-activity-title">
+        <section
+          className="glass-panel team-detail-surface"
+          aria-labelledby="team-activity-title"
+        >
           <div className="group-section-head">
             <h2 className="group-section-title" id="team-activity-title">
               Activity &amp; audit

@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
+import { useMemo } from 'react';
 
 import {
   parseUnifiedDiff,
   type DiffFile,
   type DiffLine,
-} from "../../model/unified-diff";
+} from '../../model/unified-diff';
 
 /*
  * Files start collapsed past these sizes. A comparison can carry hundreds of
@@ -16,20 +16,20 @@ import {
 const OPEN_FILE_LIMIT = 20;
 const OPEN_CHANGE_LIMIT = 400;
 
-const MARKER: Record<DiffLine["kind"], string> = {
-  add: "+",
-  del: "−",
-  context: " ",
-  hunk: "",
-  note: "",
+const MARKER: Record<DiffLine['kind'], string> = {
+  add: '+',
+  del: '−',
+  context: ' ',
+  hunk: '',
+  note: '',
 };
 
-const SPOKEN: Record<DiffLine["kind"], string> = {
-  add: "added",
-  del: "removed",
-  context: "",
-  hunk: "",
-  note: "",
+const SPOKEN: Record<DiffLine['kind'], string> = {
+  add: 'added',
+  del: 'removed',
+  context: '',
+  hunk: '',
+  note: '',
 };
 
 /**
@@ -92,7 +92,7 @@ function DiffFileBlock({
           </span>
           <span className="ws-file-row__name">{file.filename}</span>
           <span className="ws-file-row__counts">
-            <span className="ws-add">+{file.additions}</span>{" "}
+            <span className="ws-add">+{file.additions}</span>{' '}
             <span className="ws-del">−{file.deletions}</span>
           </span>
         </summary>
@@ -108,8 +108,8 @@ function DiffFileBlock({
           </div>
         ) : (
           <p className="ws-hint">
-            Diff not shown — this file is binary, or the change is too large
-            to display.
+            Diff not shown — this file is binary, or the change is too large to
+            display.
           </p>
         )}
       </details>
@@ -118,13 +118,13 @@ function DiffFileBlock({
 }
 
 function DiffRow({ line }: Readonly<{ line: DiffLine }>) {
-  if (line.kind === "hunk" || line.kind === "note") {
+  if (line.kind === 'hunk' || line.kind === 'note') {
     return (
       <tr className={`ws-diffline ws-diffline--${line.kind}`}>
         <td className="ws-diffline__num" aria-hidden="true" />
         <td className="ws-diffline__num" aria-hidden="true" />
         <td className="ws-diffline__code" colSpan={2}>
-          {line.kind === "hunk" ? `@@ ${line.text}` : line.text}
+          {line.kind === 'hunk' ? `@@ ${line.text}` : line.text}
         </td>
       </tr>
     );
@@ -132,8 +132,8 @@ function DiffRow({ line }: Readonly<{ line: DiffLine }>) {
 
   return (
     <tr className={`ws-diffline ws-diffline--${line.kind}`}>
-      <td className="ws-diffline__num">{line.oldNumber ?? ""}</td>
-      <td className="ws-diffline__num">{line.newNumber ?? ""}</td>
+      <td className="ws-diffline__num">{line.oldNumber ?? ''}</td>
+      <td className="ws-diffline__num">{line.newNumber ?? ''}</td>
       {/* The marker is announced so a screen reader user hears which side a
           line is on; colour alone would say nothing to them. */}
       <td className="ws-diffline__marker">

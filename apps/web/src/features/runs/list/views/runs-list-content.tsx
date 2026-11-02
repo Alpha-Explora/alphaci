@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import Link from 'next/link';
+import { AnimatePresence, motion } from 'framer-motion';
 
-import { AppNav } from "@/features/workspace/selection";
-import { FlowBackground } from "@/shared/layout/flow-background";
-import type { useAuthSession } from "@/features/auth/session";
+import { AppNav } from '@/features/workspace/selection';
+import { FlowBackground } from '@/shared/layout/flow-background';
+import type { useAuthSession } from '@/features/auth/session';
 
-import { useRunsListViewModel } from "../view-models/use-runs-list-view-model";
-import { ProjectGroupSection } from "./project-group-section";
-import { RunsEmptyState } from "./runs-empty-state";
-import { RunsErrorState } from "./runs-error-state";
-import { RunsSkeleton } from "./runs-skeleton";
-import { RunsSummaryStrip } from "./runs-summary-strip";
+import { useRunsListViewModel } from '../view-models/use-runs-list-view-model';
+import { ProjectGroupSection } from './project-group-section';
+import { RunsEmptyState } from './runs-empty-state';
+import { RunsErrorState } from './runs-error-state';
+import { RunsSkeleton } from './runs-skeleton';
+import { RunsSummaryStrip } from './runs-summary-strip';
 
 const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
 
@@ -41,7 +41,7 @@ export function RunsListContent({
   prefersReducedMotion,
 }: Readonly<{
   guest: boolean;
-  session: ReturnType<typeof useAuthSession>["session"];
+  session: ReturnType<typeof useAuthSession>['session'];
   onLogout: () => void;
   isLoggingOut: boolean;
   prefersReducedMotion: boolean | null;
@@ -53,7 +53,7 @@ export function RunsListContent({
     <main
       className="dash-shell"
       suppressHydrationWarning
-      style={{ overflowX: "hidden" }}
+      style={{ overflowX: 'hidden' }}
     >
       <a href="#main-content" className="skip-link">
         Skip to main content
@@ -92,14 +92,14 @@ function GuestBanner() {
         <Link
           className="primary-button"
           href="/signup"
-          style={{ padding: "0.4rem 1rem", fontSize: "0.82rem" }}
+          style={{ padding: '0.4rem 1rem', fontSize: '0.82rem' }}
         >
           Sign up free
         </Link>
         <Link
           className="ghost-button"
           href="/login"
-          style={{ padding: "0.4rem 0.9rem", fontSize: "0.82rem" }}
+          style={{ padding: '0.4rem 0.9rem', fontSize: '0.82rem' }}
         >
           Log in
         </Link>
@@ -129,7 +129,7 @@ function RunsPageHeader({
           <h1 className="workflow-page-title">
             {vm.repoFullName
               ? `Commits for ${vm.visibleRepoName}`
-              : "All Workflow Commits"}
+              : 'All Workflow Commits'}
           </h1>
           <div className="workflow-page-studio-badge">
             <span className="workflow-studio-led" aria-hidden="true" />
@@ -140,13 +140,13 @@ function RunsPageHeader({
           <Link
             href="/runs"
             style={{
-              fontSize: "0.78rem",
-              color: "var(--text-muted)",
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.25rem",
-              marginTop: "0.3rem",
+              fontSize: '0.78rem',
+              color: 'var(--text-muted)',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              marginTop: '0.3rem',
             }}
           >
             <svg
@@ -176,18 +176,18 @@ function GuestGate({ reduced }: Readonly<{ reduced: boolean }>) {
     <motion.div
       custom={2}
       variants={sectionVariants}
-      initial={reduced ? false : "hidden"}
+      initial={reduced ? false : 'hidden'}
       animate="visible"
     >
       <div
         className="glass-panel"
-        style={{ textAlign: "center", padding: "3rem 1.5rem" }}
+        style={{ textAlign: 'center', padding: '3rem 1.5rem' }}
       >
         <p
           style={{
-            color: "var(--text-secondary)",
-            marginBottom: "1.25rem",
-            fontSize: "0.9rem",
+            color: 'var(--text-secondary)',
+            marginBottom: '1.25rem',
+            fontSize: '0.9rem',
           }}
         >
           Sign in to see your pipeline run history.
@@ -195,7 +195,7 @@ function GuestGate({ reduced }: Readonly<{ reduced: boolean }>) {
         <Link
           className="primary-button"
           href="/login?next=/runs"
-          style={{ padding: "0.65rem 1.5rem", fontSize: "0.9rem" }}
+          style={{ padding: '0.65rem 1.5rem', fontSize: '0.9rem' }}
         >
           Sign in
         </Link>
@@ -237,7 +237,7 @@ function RunsSection({
       aria-live="polite"
       custom={2}
       variants={sectionVariants}
-      initial={reduced ? false : "hidden"}
+      initial={reduced ? false : 'hidden'}
       animate="visible"
     >
       <AnimatePresence mode="wait">
@@ -251,7 +251,7 @@ function RunsState({
   vm,
   reduced,
 }: Readonly<{ vm: RunsListViewModel; reduced: boolean }>) {
-  if (vm.status === "loading")
+  if (vm.status === 'loading')
     return (
       <FadeState stateKey="skeleton">
         <RunsSkeleton />
@@ -291,11 +291,11 @@ function RunsToolbar({ vm }: Readonly<{ vm: RunsListViewModel }>) {
     <div className="runs-list-toolbar">
       <div>
         <span>Commit history</span>
-        <strong>{vm.repoFullName ?? "All connected repositories"}</strong>
+        <strong>{vm.repoFullName ?? 'All connected repositories'}</strong>
       </div>
       <p>
-        {vm.runs.length} {vm.runs.length === 1 ? "commit" : "commits"} in{" "}
-        {vm.grouped.length} {vm.grouped.length === 1 ? "project" : "projects"}
+        {vm.runs.length} {vm.runs.length === 1 ? 'commit' : 'commits'} in{' '}
+        {vm.grouped.length} {vm.grouped.length === 1 ? 'project' : 'projects'}
       </p>
     </div>
   );

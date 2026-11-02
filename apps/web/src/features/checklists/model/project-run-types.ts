@@ -9,10 +9,16 @@
  * The `…Wire` shapes mirror docs/design/project-requirements.md, sections 2.4
  * and 2.5. Views read only the normalised shapes below. */
 
-import type { ChecklistVerificationType } from "./checklist-types";
-import type { IterationRef } from "./iteration-types";
-import type { QaAttachmentRef, QaRunAttachmentSettings } from "./qa-attachment-types";
-import type { QaAutomatedItemResult, QaRunAutomationResult } from "./qa-automation-types";
+import type { ChecklistVerificationType } from './checklist-types';
+import type { IterationRef } from './iteration-types';
+import type {
+  QaAttachmentRef,
+  QaRunAttachmentSettings,
+} from './qa-attachment-types';
+import type {
+  QaAutomatedItemResult,
+  QaRunAutomationResult,
+} from './qa-automation-types';
 import type {
   QaActor,
   QaDefectSeverity,
@@ -21,12 +27,16 @@ import type {
   QaRunStatus,
   QaRunSummaryCounts,
   QaSignoff,
-} from "./qa-run-types";
-import type { RequirementItem, RequirementKind, RequirementProgress } from "./requirement-types";
-import type { RunTestCategory } from "./test-case-types";
+} from './qa-run-types';
+import type {
+  RequirementItem,
+  RequirementKind,
+  RequirementProgress,
+} from './requirement-types';
+import type { RunTestCategory } from './test-case-types';
 
 /** Verification never uses `in_progress` on a Project run. */
-export type VerificationStatus = Exclude<QaRunItemStatus, "in_progress">;
+export type VerificationStatus = Exclude<QaRunItemStatus, 'in_progress'>;
 
 /* ── Wire shapes ────────────────────────────────────────────────────────── */
 
@@ -128,7 +138,7 @@ export interface ProjectQaRunItem {
 }
 
 export interface ProjectQaRunItemAcceptance {
-  status: "pending" | "passed";
+  status: 'pending' | 'passed';
   acceptedBy: QaActor | null;
   acceptedAt: string | null;
 }
@@ -244,7 +254,7 @@ export interface SetVerificationInput {
 
 /** PATCH .../items/:itemId/acceptance: the Product owner's decision on one item of a signed-off run. */
 export interface PoAcceptanceInput {
-  decision: "passed" | "failed";
+  decision: 'passed' | 'failed';
   expectedRowVersion: number;
   /** Required to fail: what is wrong, for the Developers. */
   notes?: string;
@@ -261,7 +271,7 @@ export interface ProjectRunGroup {
 
 /* ── My QA items (project-wide) ─────────────────────────────────────────── */
 
-export type MyItemsBucket = "returned" | "inProgress" | "todo" | "readyForQa";
+export type MyItemsBucket = 'returned' | 'inProgress' | 'todo' | 'readyForQa';
 
 export interface ProjectFeedItem {
   requirement: { id: string; name: string; kind: RequirementKind };

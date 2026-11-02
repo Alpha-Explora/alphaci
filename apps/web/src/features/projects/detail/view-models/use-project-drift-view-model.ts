@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type {
   ProjectDriftRepairAction,
   ProjectDriftRepairResponse,
   ProjectDriftResponse,
-} from "@/shared/api/contracts";
-import { projectsRepository } from "../../data/projects-repository";
-import { apiErrorReason } from "../model/api-error-reason";
+} from '@/shared/api/contracts';
+import { projectsRepository } from '../../data/projects-repository';
+import { apiErrorReason } from '../model/api-error-reason';
 
 /** `loading` until the stored findings arrive; `checking` while a check or repair runs. */
-export type ProjectDriftStatus = "loading" | "idle" | "checking";
+export type ProjectDriftStatus = 'loading' | 'idle' | 'checking';
 
 export interface ProjectDriftViewModel {
   response: ProjectDriftResponse | null;
@@ -34,7 +34,7 @@ interface DriftState {
   projectId: string;
   response: ProjectDriftResponse | null;
   error: string | null;
-  status: Exclude<ProjectDriftStatus, "loading">;
+  status: Exclude<ProjectDriftStatus, 'loading'>;
 }
 
 /**
@@ -55,12 +55,12 @@ export function useProjectDriftViewModel(
     projectsRepository.drift(projectId).then(
       (next) => {
         if (request !== latest.current) return;
-        setState({ projectId, response: next, error: null, status: "idle" });
+        setState({ projectId, response: next, error: null, status: 'idle' });
       },
       (caught: unknown) => {
         if (request !== latest.current) return;
-        const error = apiErrorReason(caught, "Unable to load health findings.");
-        setState({ projectId, response: null, error, status: "idle" });
+        const error = apiErrorReason(caught, 'Unable to load health findings.');
+        setState({ projectId, response: null, error, status: 'idle' });
       },
     );
   }, [projectId]);
@@ -74,16 +74,21 @@ export function useProjectDriftViewModel(
       projectId,
       response: shown(previous),
       error: null,
-      status: "checking",
+      status: 'checking',
     }));
     try {
       const next = await projectsRepository.runDrift(projectId);
       if (request !== latest.current) return;
-      setState({ projectId, response: next, error: null, status: "idle" });
+      setState({ projectId, response: next, error: null, status: 'idle' });
     } catch (caught) {
       if (request !== latest.current) return;
-      const error = apiErrorReason(caught, "Unable to run the health checks.");
-      setState((previous) => ({ projectId, response: shown(previous), error, status: "idle" }));
+      const error = apiErrorReason(caught, 'Unable to run the health checks.');
+      setState((previous) => ({
+        projectId,
+        response: shown(previous),
+        error,
+        status: 'idle',
+      }));
     }
   }, [projectId]);
 
@@ -103,7 +108,7 @@ export function useProjectDriftViewModel(
   return {
     response: current?.response ?? null,
     error: current?.error ?? null,
-    status: current?.status ?? "loading",
+    status: current?.status ?? 'loading',
     check,
     repair,
   };

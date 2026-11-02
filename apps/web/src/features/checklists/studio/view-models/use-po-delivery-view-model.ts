@@ -1,32 +1,38 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
-import { iterationsRepository } from "../../data/iterations-repository";
+import { iterationsRepository } from '../../data/iterations-repository';
 import {
   useCurrentIterationViewModel,
   useStartIterationViewModel,
   type CurrentIterationViewModel,
   type StartIterationViewModel,
-} from "../../iteration";
+} from '../../iteration';
 import {
   canOfferMergeAll,
   mergeAllError,
   mergeAllErrorRefreshes,
   pendingRepositories,
-} from "../../model/iteration-rules";
-import type { CoveredRepository, MergeAllError, MergeAllResult } from "../../model/iteration-types";
-import { qaSignInHref } from "../../model/qa-automation-rules";
-import type { QaPromotionStatus } from "../../model/qa-promotion-types";
-import type { QaPromotionViewModel } from "./use-qa-promotion-view-model";
+} from '../../model/iteration-rules';
+import type {
+  CoveredRepository,
+  MergeAllError,
+  MergeAllResult,
+} from '../../model/iteration-types';
+import { qaSignInHref } from '../../model/qa-automation-rules';
+import type { QaPromotionStatus } from '../../model/qa-promotion-types';
+import type { QaPromotionViewModel } from './use-qa-promotion-view-model';
 
 /** Merge all repositories: nothing, the confirmation open, or the request in flight. */
-export type MergeAllState = "idle" | "confirming" | "merging";
+export type MergeAllState = 'idle' | 'confirming' | 'merging';
 
 /** How the last Merge all ended, shown until dismissed. */
-export type MergeAllOutcome = { kind: "result"; result: MergeAllResult } | { kind: "error"; error: MergeAllError };
+export type MergeAllOutcome =
+  | { kind: 'result'; result: MergeAllResult }
+  | { kind: 'error'; error: MergeAllError };
 
 export interface PoDeliveryViewModel {
   /** The Project's current iteration: stored delivery state per repository. */
@@ -59,7 +65,14 @@ export interface PoDeliveryViewModel {
  */
 function promotionWatch(data: QaPromotionStatus | null): string | null {
   if (!data) return null;
-  return [data.iterationDelivered, data.repositoryDelivered, data.eligible, data.headSha].map(String).join("|");
+  return [
+    data.iterationDelivered,
+    data.repositoryDelivered,
+    data.eligible,
+    data.headSha,
+  ]
+    .map(String)
+    .join('|');
 }
 
 /**
@@ -87,7 +100,7 @@ export function usePoDeliveryViewModel(options: {
     enabled,
     watch: promotionWatch(promotion.data),
   });
-  const [mergeState, setMergeState] = useState<MergeAllState>("idle");
+  const [mergeState, setMergeState] = useState<MergeAllState>('idle');
   const [viaDialog, setViaDialog] = useState(false);
   const [dialogError, setDialogError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<MergeAllOutcome | null>(null);
@@ -97,7 +110,7 @@ export function usePoDeliveryViewModel(options: {
   // A start re-reads the iteration and the QA run itself (the Project's
   // epoch); the promotion status is this studio's own, so it is asked here.
   const start = useStartIterationViewModel({
-    deliveryProjectId: deliveryProjectId ?? "",
+    deliveryProjectId: deliveryProjectId ?? '',
     current,
     appRole,
     onStarted: promotion.reload,
@@ -111,23 +124,23 @@ export function usePoDeliveryViewModel(options: {
   async function run(fromDialog: boolean) {
     if (!deliveryProjectId) return;
     setViaDialog(fromDialog);
-    setMergeState("merging");
+    setMergeState('merging');
     setDialogError(null);
     try {
       const result = await iterationsRepository.mergeAll(deliveryProjectId);
-      setOutcome({ kind: "result", result });
-      setMergeState("idle");
+      setOutcome({ kind: 'result', result });
+      setMergeState('idle');
       setViaDialog(false);
       refresh();
     } catch (cause) {
       const error = mergeAllError(cause);
-      if (fromDialog && error.kind === "failed") {
+      if (fromDialog && error.kind === 'failed') {
         setDialogError(error.message);
-        setMergeState("confirming");
+        setMergeState('confirming');
         return;
       }
-      setOutcome({ kind: "error", error });
-      setMergeState("idle");
+      setOutcome({ kind: 'error', error });
+      setMergeState('idle');
       setViaDialog(false);
       if (mergeAllErrorRefreshes(error)) refresh();
     }
@@ -139,27 +152,28 @@ export function usePoDeliveryViewModel(options: {
     canMergeAll: offer,
     pending,
     mergeState,
-    dialogOpen: mergeState === "confirming" || (mergeState === "merging" && viaDialog),
+    dialogOpen:
+      mergeState === 'confirming' || (mergeState === 'merging' && viaDialog),
     dialogError,
     outcome,
     signInHref: qaSignInHref(projectId),
     openConfirm: () => {
-      if (!offer || mergeState !== "idle") return;
+      if (!offer || mergeState !== 'idle') return;
       setDialogError(null);
       setOutcome(null);
-      setMergeState("confirming");
+      setMergeState('confirming');
     },
     cancelConfirm: () => {
-      if (mergeState === "merging") return;
-      setMergeState("idle");
+      if (mergeState === 'merging') return;
+      setMergeState('idle');
       setDialogError(null);
     },
     confirmMergeAll: async () => {
-      if (!offer || mergeState !== "confirming") return;
+      if (!offer || mergeState !== 'confirming') return;
       await run(true);
     },
     retry: async () => {
-      if (mergeState !== "idle") return;
+      if (mergeState !== 'idle') return;
       await run(false);
     },
     dismissOutcome: () => setOutcome(null),

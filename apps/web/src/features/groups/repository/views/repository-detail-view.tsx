@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import { useGroupRepositoryRouteViewModel } from "@/features/groups";
+import { useGroupRepositoryRouteViewModel } from '@/features/groups';
 import {
   AssignDeveloperDialog,
   AssignmentPanel,
   ConfigurationPanel,
   HierarchyPageShell,
   RepositoryStatusBadge,
-} from "@/features/groups/workspace";
+} from '@/features/groups/workspace';
 import {
   Breadcrumb,
   LoadingRows,
   PageHeader,
   ResourceBoundary,
-} from "@/features/groups/workspace";
+} from '@/features/groups/workspace';
 
-import { useRepositoryAccessViewModel } from "../view-models/use-repository-access-view-model";
+import { useRepositoryAccessViewModel } from '../view-models/use-repository-access-view-model';
 import {
   useRepositoryDetailViewModel,
   type RepoTab,
-} from "../view-models/use-repository-detail-view-model";
-import { groupDisplayName } from "../../model/groups-rules";
-import type { ResourceState } from "@/features/groups";
-import type { HierarchyRepository } from "@/features/groups";
+} from '../view-models/use-repository-detail-view-model';
+import { groupDisplayName } from '../../model/groups-rules';
+import type { ResourceState } from '@/features/groups';
+import type { HierarchyRepository } from '@/features/groups';
 
 function RepositoryDetailNotReady({
   state,
@@ -32,8 +32,8 @@ function RepositoryDetailNotReady({
     <>
       <Breadcrumb
         items={[
-          { label: "Projects", href: "/workflows" },
-          { label: "Repository" },
+          { label: 'Projects', href: '/workflows' },
+          { label: 'Repository' },
         ]}
       />
       <ResourceBoundary
@@ -52,10 +52,10 @@ function RepositoryHeaderActions({
   return (
     <div
       style={{
-        display: "flex",
-        gap: "0.6rem",
-        alignItems: "center",
-        flexWrap: "wrap",
+        display: 'flex',
+        gap: '0.6rem',
+        alignItems: 'center',
+        flexWrap: 'wrap',
       }}
     >
       <RepositoryStatusBadge status={repository.status} />
@@ -87,22 +87,22 @@ function RepositorySections({
           <button
             type="button"
             className="hier-subnav-link"
-            aria-current={tab === "access" ? "page" : undefined}
-            onClick={() => onTab("access")}
+            aria-current={tab === 'access' ? 'page' : undefined}
+            onClick={() => onTab('access')}
           >
             Member access
           </button>
           <button
             type="button"
             className="hier-subnav-link"
-            aria-current={tab === "configuration" ? "page" : undefined}
-            onClick={() => onTab("configuration")}
+            aria-current={tab === 'configuration' ? 'page' : undefined}
+            onClick={() => onTab('configuration')}
           >
             Configuration
           </button>
         </nav>
       ) : null}
-      {tab === "access" ? (
+      {tab === 'access' ? (
         <AccessTab
           groupId={groupId}
           repositoryId={repositoryId}
@@ -141,13 +141,13 @@ function AccessTab({
     );
   }
 
-  if (vm.status === "loading") {
+  if (vm.status === 'loading') {
     return <LoadingRows rows={3} />;
   }
   if (
-    vm.status === "error" ||
-    vm.status === "forbidden" ||
-    vm.status === "notfound"
+    vm.status === 'error' ||
+    vm.status === 'forbidden' ||
+    vm.status === 'notfound'
   ) {
     return <ResourceBoundary state={vm.status} onRetry={vm.reload} />;
   }
@@ -193,7 +193,7 @@ function RepositoryDetail({
 }: Readonly<{ groupId: string; repositoryId: string }>) {
   const vm = useRepositoryDetailViewModel(groupId, repositoryId);
 
-  if (vm.status !== "ready" || !vm.repository) {
+  if (vm.status !== 'ready' || !vm.repository) {
     return <RepositoryDetailNotReady state={vm.status} onRetry={vm.reload} />;
   }
 
@@ -203,12 +203,12 @@ function RepositoryDetail({
     <>
       <Breadcrumb
         items={[
-          { label: "Projects", href: "/workflows" },
+          { label: 'Projects', href: '/workflows' },
           {
             label: groupDisplayName(vm.group),
             href: `/groups/${groupId}`,
           },
-          { label: "Projects", href: `/groups/${groupId}/systems` },
+          { label: 'Projects', href: `/groups/${groupId}/systems` },
           { label: repository.name },
         ]}
       />
@@ -235,12 +235,7 @@ export function RepositoryDetailView() {
   const { groupId, repositoryId } = useGroupRepositoryRouteViewModel();
   return (
     <HierarchyPageShell>
-      {() => (
-        <RepositoryDetail
-          groupId={groupId}
-          repositoryId={repositoryId}
-        />
-      )}
+      {() => <RepositoryDetail groupId={groupId} repositoryId={repositoryId} />}
     </HierarchyPageShell>
   );
 }

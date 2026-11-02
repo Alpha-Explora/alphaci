@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import Link from "next/link";
+import Link from 'next/link';
 
-import { HierarchyPageShell } from "@/features/groups/workspace";
+import { HierarchyPageShell } from '@/features/groups/workspace';
 import {
   Breadcrumb,
   GroupSubNav,
@@ -10,12 +10,12 @@ import {
   PageHeader,
   ResourceBoundary,
   SectionHeader,
-} from "@/features/groups/workspace";
+} from '@/features/groups/workspace';
 
-import { projectStatusVariant, repoShortName } from "../../model/groups-rules";
-import type { GroupSummary } from "../../model/groups-types";
-import { useGroupRouteViewModel, useGroupViewModel } from "@/features/groups";
-import { useGroupProjectsViewModel } from "../view-models/use-group-projects-view-model";
+import { projectStatusVariant, repoShortName } from '../../model/groups-rules';
+import type { GroupSummary } from '../../model/groups-types';
+import { useGroupRouteViewModel, useGroupViewModel } from '@/features/groups';
+import { useGroupProjectsViewModel } from '../view-models/use-group-projects-view-model';
 
 function ProjectsInner({ group }: Readonly<{ group: GroupSummary }>) {
   const vm = useGroupProjectsViewModel(group.id);
@@ -32,9 +32,9 @@ function ProjectsInner({ group }: Readonly<{ group: GroupSummary }>) {
     <>
       <Breadcrumb
         items={[
-          { label: "Projects", href: "/workflows" },
+          { label: 'Projects', href: '/workflows' },
           { label: group.name, href: `/groups/${group.id}` },
-          { label: "Projects" },
+          { label: 'Projects' },
         ]}
       />
       <PageHeader
@@ -44,7 +44,7 @@ function ProjectsInner({ group }: Readonly<{ group: GroupSummary }>) {
       />
       <GroupSubNav groupId={group.id} active="systems" />
 
-      {vm.status === "ready" ? (
+      {vm.status === 'ready' ? (
         <>
           <SectionHeader title="Projects" count={vm.projects.length} />
           <div className="hier-card-grid">
@@ -72,7 +72,7 @@ function ProjectsInner({ group }: Readonly<{ group: GroupSummary }>) {
             ))}
           </div>
         </>
-      ) : vm.status === "loading" ? (
+      ) : vm.status === 'loading' ? (
         <LoadingRows rows={3} />
       ) : (
         <ResourceBoundary
@@ -81,7 +81,7 @@ function ProjectsInner({ group }: Readonly<{ group: GroupSummary }>) {
           emptyTitle="No projects yet"
           emptyMessage={
             vm.canManage
-              ? "Create a Project, then Developers add its repositories."
+              ? 'Create a Project, then Developers add its repositories.'
               : "You don't have access to any projects in this group yet."
           }
           emptyAction={createButton}
@@ -95,13 +95,13 @@ function ProjectsResolver() {
   const { groupId } = useGroupRouteViewModel();
   const vm = useGroupViewModel(groupId);
 
-  if (vm.status !== "ready" || !vm.group) {
+  if (vm.status !== 'ready' || !vm.group) {
     return (
       <>
         <Breadcrumb
           items={[
-            { label: "Projects", href: "/workflows" },
-            { label: "Projects" },
+            { label: 'Projects', href: '/workflows' },
+            { label: 'Projects' },
           ]}
         />
         <ResourceBoundary

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 /** The clock, re-read once a minute: enough for "quiet for 20 minutes". */
 export function useMinuteClock(): number {

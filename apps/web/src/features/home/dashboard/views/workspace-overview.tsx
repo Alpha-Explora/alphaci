@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { motion } from "framer-motion";
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 
-import { SIDEBAR_SHOWS_ACTIVITY } from "@/features/workspace/selection";
+import { SIDEBAR_SHOWS_ACTIVITY } from '@/features/workspace/selection';
 
 import {
   RUN_STAGE_LABELS,
@@ -17,7 +17,7 @@ import {
   syncingAccessAssignments,
   timeAgo,
   workspacePortfolioCounts,
-} from "../../model/home-rules";
+} from '../../model/home-rules';
 import type {
   DeliveryPortfolioNode,
   GroupActivityItem,
@@ -27,18 +27,22 @@ import type {
   RunGroup,
   RunStats,
   WorkspaceAttentionItem,
-} from "../../model/home-types";
-import type { HomeShortcutId } from "../../model/home-persona-types";
-import { repoProjectIds } from "../../model/home-run-rules";
-import { KeyboardShortcuts } from "./dashboard-chrome";
-import { GetStartedJourney } from "./get-started-journey";
-import { sectionVariants } from "./motion";
-import { PipelineActivity } from "./pipeline-activity";
-import { useCountUp } from "./count-up";
+} from '../../model/home-types';
+import type { HomeShortcutId } from '../../model/home-persona-types';
+import { repoProjectIds } from '../../model/home-run-rules';
+import { KeyboardShortcuts } from './dashboard-chrome';
+import { GetStartedJourney } from './get-started-journey';
+import { sectionVariants } from './motion';
+import { PipelineActivity } from './pipeline-activity';
+import { useCountUp } from './count-up';
 
 /** A dash until the value is known; then the (counting) figure and its suffix. */
-function metricText(known: number | null, shown: number | null, suffix: string): string {
-  if (known === null) return "—";
+function metricText(
+  known: number | null,
+  shown: number | null,
+  suffix: string,
+): string {
+  if (known === null) return '—';
   return `${shown ?? known}${suffix}`;
 }
 
@@ -65,7 +69,7 @@ export function DashboardMetric({
   const content = (
     <>
       <span className="metric-cell-num">
-        {metricText(known, reduced ? known : animatedValue, suffix ?? "")}
+        {metricText(known, reduced ? known : animatedValue, suffix ?? '')}
       </span>
       <span className="metric-cell-label">{label}</span>
     </>
@@ -107,15 +111,48 @@ function WorkspaceMetricsRail({
       aria-label="Workspace metrics"
       custom={1}
       variants={sectionVariants}
-      initial={reduced ? false : "hidden"}
+      initial={reduced ? false : 'hidden'}
       animate="visible"
     >
-      <DashboardMetric value={projects.length} label="Projects" loading={loading} reduced={reduced} href="/workflows?tab=current" />
-      <DashboardMetric value={group?.systemCount ?? 0} label="Systems" loading={groupLoading} reduced={reduced} />
-      <DashboardMetric value={deliveryProjectCount} label="Team projects" loading={groupLoading} reduced={reduced} />
-      <DashboardMetric value={repositoryCount} label="Repositories" loading={groupLoading} reduced={reduced} />
-      <DashboardMetric value={workflowHistoryCount} label="Workflow files" loading={loading} reduced={reduced} href="/workflows?tab=current" />
-      <DashboardMetric value={runs.length} label="Recent runs" loading={loading} reduced={reduced} href="/runs" />
+      <DashboardMetric
+        value={projects.length}
+        label="Projects"
+        loading={loading}
+        reduced={reduced}
+        href="/workflows?tab=current"
+      />
+      <DashboardMetric
+        value={group?.systemCount ?? 0}
+        label="Systems"
+        loading={groupLoading}
+        reduced={reduced}
+      />
+      <DashboardMetric
+        value={deliveryProjectCount}
+        label="Team projects"
+        loading={groupLoading}
+        reduced={reduced}
+      />
+      <DashboardMetric
+        value={repositoryCount}
+        label="Repositories"
+        loading={groupLoading}
+        reduced={reduced}
+      />
+      <DashboardMetric
+        value={workflowHistoryCount}
+        label="Workflow files"
+        loading={loading}
+        reduced={reduced}
+        href="/workflows?tab=current"
+      />
+      <DashboardMetric
+        value={runs.length}
+        label="Recent runs"
+        loading={loading}
+        reduced={reduced}
+        href="/runs"
+      />
     </motion.section>
   );
 }
@@ -130,10 +167,20 @@ export function TeamProjectsList({
   loading: boolean;
 }>) {
   return (
-    <section className="side-rail-block side-rail-block--grow" aria-label="Team projects">
+    <section
+      className="side-rail-block side-rail-block--grow"
+      aria-label="Team projects"
+    >
       <div className="side-rail-head">
         <p className="dashboard-section-kicker">TEAM PROJECTS</p>
-        <Link href={group ? `/groups/${group.id}/systems` : "/workflows?tab=current"} className="dashboard-inline-link">All <span aria-hidden="true">→</span></Link>
+        <Link
+          href={
+            group ? `/groups/${group.id}/systems` : '/workflows?tab=current'
+          }
+          className="dashboard-inline-link"
+        >
+          All <span aria-hidden="true">→</span>
+        </Link>
       </div>
       <div className="side-rail-scroll">
         {loading ? (
@@ -150,15 +197,24 @@ function TeamProjectsBody({
   projects,
 }: Readonly<{ projects: ProvisionedProject[] }>) {
   if (!projects.length) {
-    return <p className="dashboard-empty">No projects in this workspace yet.</p>;
+    return (
+      <p className="dashboard-empty">No projects in this workspace yet.</p>
+    );
   }
   return (
     <div className="team-projects-list">
       {projects.slice(0, 4).map((project) => {
         const tone = projectTone(project.status);
         return (
-          <Link key={project.id} href="/workflows?tab=current" className="team-project-row">
-            <span className={`team-status-dot team-status-dot--${tone}`} aria-hidden="true" />
+          <Link
+            key={project.id}
+            href="/workflows?tab=current"
+            className="team-project-row"
+          >
+            <span
+              className={`team-status-dot team-status-dot--${tone}`}
+              aria-hidden="true"
+            />
             <span className="team-project-copy">
               <strong>{shortRepoName(project.repoFullName)}</strong>
               <small>{project.serviceName}</small>
@@ -181,21 +237,26 @@ export function QualityCard({
   loading: boolean;
 }>) {
   const streakClass =
-    runStats.failureStreak > 0 ? " quality-stat-value--danger" : "";
+    runStats.failureStreak > 0 ? ' quality-stat-value--danger' : '';
   return (
-    <section className="side-rail-block side-rail-block--divided" aria-label="Quality">
+    <section
+      className="side-rail-block side-rail-block--divided"
+      aria-label="Quality"
+    >
       <p className="dashboard-section-kicker side-rail-kicker">QUALITY</p>
       <div className="quality-card">
         <div className="quality-stat">
           <span className="quality-stat-label">Scanning stage</span>
           <span className="quality-stat-value">
-            {runStats.worstStage ? RUN_STAGE_LABELS[runStats.worstStage.stage] : "None"}
+            {runStats.worstStage
+              ? RUN_STAGE_LABELS[runStats.worstStage.stage]
+              : 'None'}
           </span>
         </div>
         <div className="quality-stat">
           <span className="quality-stat-label">Failure streak</span>
           <span className={`quality-stat-value${streakClass}`}>
-            {loading ? "—" : runStats.failureStreak}
+            {loading ? '—' : runStats.failureStreak}
           </span>
         </div>
       </div>
@@ -214,10 +275,22 @@ function ActivityRail({
   canOpenActivity: boolean;
 }>) {
   return (
-    <section className="side-rail-block side-rail-block--divided side-rail-block--grow" aria-labelledby="recent-activity-title">
+    <section
+      className="side-rail-block side-rail-block--divided side-rail-block--grow"
+      aria-labelledby="recent-activity-title"
+    >
       <div className="side-rail-head">
-        <p className="dashboard-section-kicker" id="recent-activity-title">ACTIVITY</p>
-        {group && canOpenActivity ? <Link href={`/groups/${group.id}/activity`} className="dashboard-inline-link">Open <span aria-hidden="true">→</span></Link> : null}
+        <p className="dashboard-section-kicker" id="recent-activity-title">
+          ACTIVITY
+        </p>
+        {group && canOpenActivity ? (
+          <Link
+            href={`/groups/${group.id}/activity`}
+            className="dashboard-inline-link"
+          >
+            Open <span aria-hidden="true">→</span>
+          </Link>
+        ) : null}
       </div>
       <div className="side-rail-scroll">
         {activity.length ? (
@@ -225,12 +298,19 @@ function ActivityRail({
             {activity.slice(0, 8).map((item) => (
               <div className="dashboard-activity-row" key={item.id}>
                 <span className="dashboard-activity-dot" aria-hidden="true" />
-                <span><strong>{item.message}</strong><small>{item.actorLabel} · {timeAgo(item.createdAt)}</small></span>
+                <span>
+                  <strong>{item.message}</strong>
+                  <small>
+                    {item.actorLabel} · {timeAgo(item.createdAt)}
+                  </small>
+                </span>
               </div>
             ))}
           </div>
         ) : (
-          <p className="dashboard-empty">No recent activity in this workspace.</p>
+          <p className="dashboard-empty">
+            No recent activity in this workspace.
+          </p>
         )}
       </div>
     </section>
@@ -295,13 +375,21 @@ function WorkspacePopulatedOverview({
           className="dashboard-side-col"
           custom={4}
           variants={sectionVariants}
-          initial={reduced ? false : "hidden"}
+          initial={reduced ? false : 'hidden'}
           animate="visible"
         >
-          <TeamProjectsList group={group} projects={projects} loading={loading} />
+          <TeamProjectsList
+            group={group}
+            projects={projects}
+            loading={loading}
+          />
           <QualityCard runStats={runStats} loading={loading} />
           {showActivity ? (
-            <ActivityRail group={group} activity={activity} canOpenActivity={canOpenActivity} />
+            <ActivityRail
+              group={group}
+              activity={activity}
+              canOpenActivity={canOpenActivity}
+            />
           ) : null}
         </motion.aside>
       </div>
@@ -359,7 +447,9 @@ export function DashboardWorkspaceOverview({
     deliveryProjectCount,
   });
   const runStats = computeRunStats(runs);
-  const flowClass = empty ? "dashboard-flow dashboard-flow--empty" : "dashboard-flow";
+  const flowClass = empty
+    ? 'dashboard-flow dashboard-flow--empty'
+    : 'dashboard-flow';
 
   if (empty) {
     return (

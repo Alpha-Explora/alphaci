@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { projectsRepository } from "../../data/projects-repository";
-import { toOverviewError } from "../../model/projects-rules";
-import { workspacePermissionErrorMessage } from "../model/workspace-permission-errors";
+import { projectsRepository } from '../../data/projects-repository';
+import { toOverviewError } from '../../model/projects-rules';
+import { workspacePermissionErrorMessage } from '../model/workspace-permission-errors';
 import type {
   ProjectOverviewResponse,
   ProjectStatus,
-} from "../../model/projects-types";
+} from '../../model/projects-types';
 
 export interface ProjectDetailViewModel {
   overview: ProjectOverviewResponse | null;
@@ -49,8 +49,10 @@ export function useProjectDetailViewModel(options: {
 }): ProjectDetailViewModel {
   const { projectId, enabled } = options;
 
-  const [overview, setOverview] = useState<ProjectOverviewResponse | null>(null);
-  const [status, setStatus] = useState<ProjectStatus>("loading");
+  const [overview, setOverview] = useState<ProjectOverviewResponse | null>(
+    null,
+  );
+  const [status, setStatus] = useState<ProjectStatus>('loading');
   const [error, setError] = useState<string | null>(null);
   const [enforcedOrg, setEnforcedOrg] = useState<string | undefined>(undefined);
   const [nonce, setNonce] = useState(0);
@@ -62,7 +64,7 @@ export function useProjectDetailViewModel(options: {
   const [deleteProviderResourcesOptIn, setDeleteProviderResourcesOptIn] =
     useState(false);
   const [deleteSonarProjectOptIn, setDeleteSonarProjectOptIn] = useState(false);
-  const [confirmRepoNameInput, setConfirmRepoNameInput] = useState("");
+  const [confirmRepoNameInput, setConfirmRepoNameInput] = useState('');
 
   const req = useRef(0);
 
@@ -79,12 +81,12 @@ export function useProjectDetailViewModel(options: {
         if (!active || id !== req.current) return;
         setOverview(response);
         setError(null);
-        setStatus("ready");
+        setStatus('ready');
       })
       .catch((cause: unknown) => {
         if (!active || id !== req.current) return;
         setError(toOverviewError(cause));
-        setStatus("error");
+        setStatus('error');
       });
 
     return () => {
@@ -143,7 +145,7 @@ export function useProjectDetailViewModel(options: {
       setDeleteError(
         workspacePermissionErrorMessage(
           error,
-          "The project could not be deleted. Please try again.",
+          'The project could not be deleted. Please try again.',
         ),
       );
       setIsDeleting(false);
@@ -156,7 +158,7 @@ export function useProjectDetailViewModel(options: {
     status,
     error,
     reload: () => {
-      setStatus("loading");
+      setStatus('loading');
       setNonce((n) => n + 1);
     },
     enforcedOrg,

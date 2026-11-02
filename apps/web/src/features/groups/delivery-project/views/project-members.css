@@ -90,8 +90,10 @@
 
 /* The global .primary-button / .ghost-button are hero-scale; these dialogs
    size their own actions (three classes beat the global rule). */
-.hier-dialog:has(.project-members-dialog, .project-members__confirm) .primary-button,
-.hier-dialog:has(.project-members-dialog, .project-members__confirm) .ghost-button,
+.hier-dialog:has(.project-members-dialog, .project-members__confirm)
+  .primary-button,
+.hier-dialog:has(.project-members-dialog, .project-members__confirm)
+  .ghost-button,
 .hier-dialog:has(.project-members__confirm) .hier-btn-danger {
   min-height: 2.25rem;
   padding: 0.45rem 1rem;
@@ -101,6 +103,7 @@
   letter-spacing: 0;
 }
 
-.hier-dialog:has(.project-members-dialog, .project-members__confirm) .ghost-button {
+.hier-dialog:has(.project-members-dialog, .project-members__confirm)
+  .ghost-button {
   border-color: var(--border-control);
 }

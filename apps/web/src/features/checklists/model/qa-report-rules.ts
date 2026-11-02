@@ -6,33 +6,44 @@
  * derived from those same two integers so the sentence can never contradict
  * itself (see `percentFloor`). */
 
-import type { QaDefectSeverity, QaRunItem, QaRunItemStatus, QaRunStatus, QaCommitSource, QaVerdict } from "./qa-run-types";
-import type { QaReport, QaReportSignoffEntry, QaReportSummary } from "./qa-report-types";
-import { severityLabel, verdictLabel, type QaTone } from "./qa-run-rules";
+import type {
+  QaDefectSeverity,
+  QaRunItem,
+  QaRunItemStatus,
+  QaRunStatus,
+  QaCommitSource,
+  QaVerdict,
+} from './qa-run-types';
+import type {
+  QaReport,
+  QaReportSignoffEntry,
+  QaReportSummary,
+} from './qa-report-types';
+import { severityLabel, verdictLabel, type QaTone } from './qa-run-rules';
 
 /* ── Labels ─────────────────────────────────────────────────────────────── */
 
 export function reportSeverityLabel(severity: QaDefectSeverity | null): string {
-  return severity ? severityLabel(severity) : "Unrated";
+  return severity ? severityLabel(severity) : 'Unrated';
 }
 
 export function reportVerdictLabel(verdict: QaVerdict | null): string {
-  return verdict ? verdictLabel(verdict) : "Not signed off";
+  return verdict ? verdictLabel(verdict) : 'Not signed off';
 }
 
 const VERDICT_TONES: Record<QaVerdict, QaTone> = {
-  APPROVED: "success",
-  CONDITIONAL: "warning",
-  REJECTED: "danger",
+  APPROVED: 'success',
+  CONDITIONAL: 'warning',
+  REJECTED: 'danger',
 };
 
 export function reportVerdictTone(verdict: QaVerdict | null): QaTone {
-  return verdict ? VERDICT_TONES[verdict] ?? "neutral" : "neutral";
+  return verdict ? (VERDICT_TONES[verdict] ?? 'neutral') : 'neutral';
 }
 
 const RUN_STATUS_LABELS: Record<QaRunStatus, string> = {
-  open: "Open",
-  signed_off: "Signed off",
+  open: 'Open',
+  signed_off: 'Signed off',
 };
 
 export function runStatusLabel(status: QaRunStatus): string {
@@ -40,28 +51,35 @@ export function runStatusLabel(status: QaRunStatus): string {
 }
 
 const COMMIT_SOURCE_LABELS: Record<QaCommitSource, string> = {
-  deployment: "Deployed",
-  branch_head: "Branch head",
+  deployment: 'Deployed',
+  branch_head: 'Branch head',
 };
 
 /** "Deployed" when the tested commit is what the host serves, else "Branch head". */
-export function commitSourceShortLabel(source: QaCommitSource | null | undefined): string {
-  return source ? COMMIT_SOURCE_LABELS[source] ?? source : "";
+export function commitSourceShortLabel(
+  source: QaCommitSource | null | undefined,
+): string {
+  return source ? (COMMIT_SOURCE_LABELS[source] ?? source) : '';
 }
 
-export function actorLabel(actor: { login: string } | null | undefined): string {
-  return actor?.login ? `@${actor.login}` : "Unknown";
+export function actorLabel(
+  actor: { login: string } | null | undefined,
+): string {
+  return actor?.login ? `@${actor.login}` : 'Unknown';
 }
 
 /** The frozen/live note under the report header. */
 export function reportStateLabel(frozen: boolean): string {
-  return frozen ? "Frozen at sign-off" : "Live — not signed off";
+  return frozen ? 'Frozen at sign-off' : 'Live — not signed off';
 }
 
 /* ── Dates ──────────────────────────────────────────────────────────────── */
 
-function part(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes): string {
-  return parts.find((entry) => entry.type === type)?.value ?? "";
+function part(
+  parts: Intl.DateTimeFormatPart[],
+  type: Intl.DateTimeFormatPartTypes,
+): string {
+  return parts.find((entry) => entry.type === type)?.value ?? '';
 }
 
 /**
@@ -69,22 +87,25 @@ function part(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTyp
  * every locale, with the zone spelled out because a PDF outlives the screen it
  * was made on. `timeZone` is a parameter so the rule stays testable.
  */
-export function formatReportDate(iso: string | null | undefined, timeZone?: string): string {
+export function formatReportDate(
+  iso: string | null | undefined,
+  timeZone?: string,
+): string {
   const at = iso ? Date.parse(iso) : Number.NaN;
-  if (Number.isNaN(at)) return "—";
-  const parts = new Intl.DateTimeFormat("en-US", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
+  if (Number.isNaN(at)) return '—';
+  const parts = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
     timeZone,
-    timeZoneName: "short",
+    timeZoneName: 'short',
   }).formatToParts(new Date(at));
-  const date = `${part(parts, "year")}-${part(parts, "month")}-${part(parts, "day")}`;
-  const time = `${part(parts, "hour")}:${part(parts, "minute")}`;
-  return `${date} ${time} ${part(parts, "timeZoneName")}`.trim();
+  const date = `${part(parts, 'year')}-${part(parts, 'month')}-${part(parts, 'day')}`;
+  const time = `${part(parts, 'hour')}:${part(parts, 'minute')}`;
+  return `${date} ${time} ${part(parts, 'timeZoneName')}`.trim();
 }
 
 /* ── Completion ─────────────────────────────────────────────────────────── */
@@ -95,31 +116,45 @@ export function formatReportDate(iso: string | null | undefined, timeZone?: stri
  * point 29 / 100 * 100 is 28.999…, which would floor to 28.
  */
 export function percentFloor(part: number, total: number): number {
-  if (!Number.isFinite(part) || !Number.isFinite(total) || total <= 0 || part <= 0) return 0;
-  return Math.min(100, Math.floor((Math.trunc(part) * 100) / Math.trunc(total)));
+  if (
+    !Number.isFinite(part) ||
+    !Number.isFinite(total) ||
+    total <= 0 ||
+    part <= 0
+  )
+    return 0;
+  return Math.min(
+    100,
+    Math.floor((Math.trunc(part) * 100) / Math.trunc(total)),
+  );
 }
 
 /** "3 / 5 passed (60%)". */
-export function completionLabel(summary: Pick<QaReportSummary, "passed" | "totalItems">): string {
+export function completionLabel(
+  summary: Pick<QaReportSummary, 'passed' | 'totalItems'>,
+): string {
   const percent = percentFloor(summary.passed, summary.totalItems);
   return `${summary.passed} / ${summary.totalItems} passed (${percent}%)`;
 }
 
-const SUMMARY_FIELDS: ReadonlyArray<[QaRunItemStatus, keyof QaReportSummary]> = [
-  ["passed", "passed"],
-  ["failed", "failed"],
-  ["blocked", "blocked"],
-  ["returned_to_dev", "returnedToDev"],
-  ["in_progress", "inProgress"],
-  ["pending", "pending"],
-];
+const SUMMARY_FIELDS: ReadonlyArray<[QaRunItemStatus, keyof QaReportSummary]> =
+  [
+    ['passed', 'passed'],
+    ['failed', 'failed'],
+    ['blocked', 'blocked'],
+    ['returned_to_dev', 'returnedToDev'],
+    ['in_progress', 'inProgress'],
+    ['pending', 'pending'],
+  ];
 
 /** Each status's count from the summary, in bar order, zero counts dropped. */
 export function summaryBreakdown(
   summary: QaReportSummary,
 ): Array<{ status: QaRunItemStatus; count: number }> {
-  return SUMMARY_FIELDS.map(([status, field]) => ({ status, count: Number(summary[field]) || 0 }))
-    .filter((entry) => entry.count > 0);
+  return SUMMARY_FIELDS.map(([status, field]) => ({
+    status,
+    count: Number(summary[field]) || 0,
+  })).filter((entry) => entry.count > 0);
 }
 
 /* ── Items and sign-offs ────────────────────────────────────────────────── */
@@ -148,17 +183,17 @@ export function previousSignoffs(
  * "-" collapse, and leading dots/dashes go (no hidden or flag-like names).
  */
 export function sanitizeFilenamePart(value: string | null | undefined): string {
-  const cleaned = (value ?? "")
-    .replace(/[^A-Za-z0-9._-]+/g, "-")
-    .replace(/-{2,}/g, "-")
-    .replace(/^[.-]+/, "")
-    .replace(/-$/, "");
-  return cleaned || "unknown";
+  const cleaned = (value ?? '')
+    .replace(/[^A-Za-z0-9._-]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^[.-]+/, '')
+    .replace(/-$/, '');
+  return cleaned || 'unknown';
 }
 
 /** The repository's own name: the last segment of "owner/repo". */
 function repoName(repoFullName: string): string {
-  return repoFullName.split("/").pop() || repoFullName;
+  return repoFullName.split('/').pop() || repoFullName;
 }
 
 /**
@@ -166,9 +201,13 @@ function repoName(repoFullName: string): string {
  * Content-Disposition name (repo name, not owner/repo) so a report downloads
  * under one name whichever side produced it.
  */
-export function reportBaseName(report: Pick<QaReport, "project" | "run">): string {
+export function reportBaseName(
+  report: Pick<QaReport, 'project' | 'run'>,
+): string {
   const repo = sanitizeFilenamePart(
-    report.project.repoFullName ? repoName(report.project.repoFullName) : report.project.name,
+    report.project.repoFullName
+      ? repoName(report.project.repoFullName)
+      : report.project.name,
   );
   const branch = sanitizeFilenamePart(report.run.branch);
   const sha = sanitizeFilenamePart(report.run.commitSha?.slice(0, 7));
@@ -176,14 +215,18 @@ export function reportBaseName(report: Pick<QaReport, "project" | "run">): strin
 }
 
 export function reportFilename(
-  report: Pick<QaReport, "project" | "run">,
-  extension: "json" | "md" | "pdf" | "xlsx",
+  report: Pick<QaReport, 'project' | 'run'>,
+  extension: 'json' | 'md' | 'pdf' | 'xlsx',
 ): string {
   return `${reportBaseName(report)}.${extension}`;
 }
 
 /** The printable report page. `print` asks it to open the print dialog once. */
-export function reportPageHref(projectId: string, runId: string, options: { print?: boolean } = {}): string {
+export function reportPageHref(
+  projectId: string,
+  runId: string,
+  options: { print?: boolean } = {},
+): string {
   const path = `/projects/${encodeURIComponent(projectId)}/qa/report/${encodeURIComponent(runId)}`;
   return options.print ? `${path}?print=1` : path;
 }
@@ -196,9 +239,9 @@ export function qaStudioHref(projectId: string): string {
 /* ── Errors ─────────────────────────────────────────────────────────────── */
 
 function errorStatus(cause: unknown): number | null {
-  if (typeof cause !== "object" || cause === null) return null;
+  if (typeof cause !== 'object' || cause === null) return null;
   const status = (cause as { status?: unknown }).status;
-  return typeof status === "number" ? status : null;
+  return typeof status === 'number' ? status : null;
 }
 
 export interface QaReportErrorCopy {
@@ -213,34 +256,42 @@ export function reportErrorCopy(cause: unknown): QaReportErrorCopy {
   const status = errorStatus(cause);
   if (status === 404) {
     return {
-      title: "This report is not available",
-      text: "The QA run may have been removed, or you no longer have access to its project.",
+      title: 'This report is not available',
+      text: 'The QA run may have been removed, or you no longer have access to its project.',
       signIn: false,
     };
   }
   if (status === 401) {
-    return { title: "Sign in to view this report", text: "Your session has ended.", signIn: true };
+    return {
+      title: 'Sign in to view this report',
+      text: 'Your session has ended.',
+      signIn: true,
+    };
   }
   return {
-    title: "The report did not load",
-    text: "Something went wrong while building it. Try again in a moment.",
+    title: 'The report did not load',
+    text: 'Something went wrong while building it. Try again in a moment.',
     signIn: false,
   };
 }
 
 /** The Excel report's media type, as the server sends it. */
-export const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+export const XLSX_TYPE =
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 /** What went wrong with an export action, phrased for the person who clicked it. */
 export function exportErrorMessage(
-  action: "copy-fetch" | "copy-clipboard" | "download" | "download-excel",
+  action: 'copy-fetch' | 'copy-clipboard' | 'download' | 'download-excel',
   cause: unknown,
 ): string {
-  if (errorStatus(cause) === 404) return "This run's report is not available any more. Reload the run.";
-  if (action === "copy-clipboard") {
-    return "Your browser blocked clipboard access, so nothing was copied. Allow clipboard access for this site, or use Download JSON.";
+  if (errorStatus(cause) === 404)
+    return "This run's report is not available any more. Reload the run.";
+  if (action === 'copy-clipboard') {
+    return 'Your browser blocked clipboard access, so nothing was copied. Allow clipboard access for this site, or use Download JSON.';
   }
-  if (action === "copy-fetch") return "The Markdown report could not be fetched. Try again in a moment.";
-  if (action === "download-excel") return "The Excel report could not be downloaded. Try again in a moment.";
-  return "The JSON report could not be downloaded. Try again in a moment.";
+  if (action === 'copy-fetch')
+    return 'The Markdown report could not be fetched. Try again in a moment.';
+  if (action === 'download-excel')
+    return 'The Excel report could not be downloaded. Try again in a moment.';
+  return 'The JSON report could not be downloaded. Try again in a moment.';
 }

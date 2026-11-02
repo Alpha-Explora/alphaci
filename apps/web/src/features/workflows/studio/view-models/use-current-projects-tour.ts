@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * use-current-projects-tour.ts
@@ -19,14 +19,14 @@
  * The tour is also exposed via `startTour()` for the manual "Show guide" button.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
-import type { AuthMeResponse } from "@/shared/api/contracts";
-import { completeOnboarding } from "@/features/auth/session";
+import type { AuthMeResponse } from '@/shared/api/contracts';
+import { completeOnboarding } from '@/features/auth/session';
 
 // Lazy-import the tour builder so driver.js is never bundled on the server.
-type TourModule = typeof import("../views/tours/current-projects-tour");
+type TourModule = typeof import('../views/tours/current-projects-tour');
 
 interface UseCurrentProjectsTourOptions {
   /**
@@ -69,12 +69,14 @@ export function useCurrentProjectsTour({
   const [tourDone, setTourDone] = useState(false);
 
   // Stable reference to the current driver instance so we can destroy on unmount.
-  const driverRef = useRef<ReturnType<TourModule["createCurrentProjectsTour"]> | null>(null);
+  const driverRef = useRef<ReturnType<
+    TourModule['createCurrentProjectsTour']
+  > | null>(null);
 
   // Read ?tour=2 from the URL — set by the "Show guide" button on the Current tab.
   // Uses "2" to avoid collision with the setup tour's "?tour=1" param.
   const searchParams = useSearchParams();
-  const tourParamActive = searchParams.get("tour") === "2";
+  const tourParamActive = searchParams.get('tour') === '2';
 
   const resolvedOnboardingCompleted =
     onboardingCompleted ?? session?.user?.onboardingCompleted ?? true;
@@ -89,13 +91,13 @@ export function useCurrentProjectsTour({
 
   /** Loads the tour module if not yet loaded and starts the driver. */
   const startTour = useCallback(async () => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
 
     // Dynamically import driver.js CSS on first use.
-    await import("driver.js/dist/driver.css");
+    await import('driver.js/dist/driver.css');
 
     if (!moduleRef.current) {
-      moduleRef.current = await import("../views/tours/current-projects-tour");
+      moduleRef.current = await import('../views/tours/current-projects-tour');
     }
 
     // Destroy any existing instance before creating a new one.
@@ -134,7 +136,13 @@ export function useCurrentProjectsTour({
     });
 
     return () => cancelAnimationFrame(rafId);
-  }, [guest, session, resolvedOnboardingCompleted, isCurrentTabActive, startTour]);
+  }, [
+    guest,
+    session,
+    resolvedOnboardingCompleted,
+    isCurrentTabActive,
+    startTour,
+  ]);
 
   // Explicit replay via ?tour=2 — fires for both new and existing users.
   // Runs independently of launchedRef so it always triggers when the

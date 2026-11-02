@@ -93,9 +93,12 @@ request. When two ranges must differ on purpose, add the dependency to
   enforce with the same settings) and keeps its own plugins, categories, env,
   overrides and the rules only it runs; `eslint-plugin-oxlint` follows
   `extends`, so ESLint turns the shared rules off too. Move a setting there
-  only when both apps agree on it. Prettier is the API's alone
-  (`apps/api/.prettierrc`); the web app does not use it. A change under
-  `packages/config` marks both apps affected in CI.
+  only when both apps agree on it. A change under `packages/config` marks
+  both apps affected in CI.
+- **Prettier formats both apps** with the root `.prettierrc`, as its own
+  check, not an ESLint rule: `npm run format` writes, `npm run format:check`
+  fails CI on unformatted files (it runs in each app's lint job).
+  `.prettierignore` lists generated and vendored files.
 
 `allowScripts` in the root `package.json` lists which install scripts npm may
 run.

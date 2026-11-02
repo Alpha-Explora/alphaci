@@ -7,11 +7,11 @@ export type {
   AppRole,
   FeedbackRecord,
   FeedbackStatus,
-} from "./model/admin-types";
+} from './model/admin-types';
 
 export {
   FEEDBACK_STATUS_FILTERS,
   NEXT_FEEDBACK_STATUS,
   ROLE_ORDER,
   describeRoleError,
-} from "./model/admin-rules";
+} from './model/admin-rules';

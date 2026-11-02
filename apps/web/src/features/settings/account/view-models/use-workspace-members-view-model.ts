@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import type { WorkspaceMemberSummary } from "@/shared/api/contracts";
+import type { WorkspaceMemberSummary } from '@/shared/api/contracts';
 
-import { settingsRepository } from "../../data/settings-repository";
+import { settingsRepository } from '../../data/settings-repository';
 
 export interface WorkspaceMembersViewModel {
-  status: "loading" | "ready" | "error";
+  status: 'loading' | 'ready' | 'error';
   members: WorkspaceMemberSummary[];
   /** Safe to render. Never an API detail. */
   error: string | null;
@@ -28,7 +28,9 @@ interface Loaded {
  * derived rather than reset by an effect, and a request counter stops a slow
  * first response overwriting a fast second one.
  */
-export function useWorkspaceMembersViewModel(workspaceId: string): WorkspaceMembersViewModel {
+export function useWorkspaceMembersViewModel(
+  workspaceId: string,
+): WorkspaceMembersViewModel {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const request = useRef(0);
 
@@ -38,21 +40,23 @@ export function useWorkspaceMembersViewModel(workspaceId: string): WorkspaceMemb
     settingsRepository
       .workspaceMembers(workspaceId)
       .then((members) => {
-        if (id === request.current) setLoaded({ workspaceId, members, error: null });
+        if (id === request.current)
+          setLoaded({ workspaceId, members, error: null });
       })
       .catch(() => {
         if (id === request.current) {
           setLoaded({
             workspaceId,
             members: null,
-            error: "Workspace members are unavailable right now.",
+            error: 'Workspace members are unavailable right now.',
           });
         }
       });
   }, [workspaceId]);
 
   const current = loaded && loaded.workspaceId === workspaceId ? loaded : null;
-  if (!current) return { status: "loading", members: [], error: null };
-  if (current.error) return { status: "error", members: [], error: current.error };
-  return { status: "ready", members: current.members ?? [], error: null };
+  if (!current) return { status: 'loading', members: [], error: null };
+  if (current.error)
+    return { status: 'error', members: [], error: current.error };
+  return { status: 'ready', members: current.members ?? [], error: null };
 }

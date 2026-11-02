@@ -10,13 +10,13 @@
  */
 
 const mockRedirect = jest.fn((path: string) => {
-  throw new Error("REDIRECT:" + path);
+  throw new Error('REDIRECT:' + path);
 });
-jest.mock("next/navigation", () => ({
+jest.mock('next/navigation', () => ({
   redirect: (path: string) => mockRedirect(path),
 }));
 
-jest.mock("@/features/public-site", () => ({
+jest.mock('@/features/public-site', () => ({
   __esModule: true,
   default: () => null,
 }));
@@ -24,10 +24,10 @@ jest.mock("@/features/public-site", () => ({
 type RootPage = () => unknown;
 
 const COMPOSITION_KEYS = [
-  "NEXT_PUBLIC_ALPHACI_EDITION",
-  "ALPHACI_EDITION",
-  "NEXT_PUBLIC_ALPHACI_BUILD_PROFILE",
-  "ALPHACI_BUILD_PROFILE",
+  'NEXT_PUBLIC_ALPHACI_EDITION',
+  'ALPHACI_EDITION',
+  'NEXT_PUBLIC_ALPHACI_BUILD_PROFILE',
+  'ALPHACI_BUILD_PROFILE',
 ] as const;
 
 const originalEnv = { ...process.env };
@@ -38,37 +38,37 @@ function loadRootPage(env: Record<string, string>): RootPage {
   for (const key of COMPOSITION_KEYS) delete process.env[key];
   Object.assign(process.env, env);
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return (require("@/app/page") as { default: RootPage }).default;
+  return (require('@/app/page') as { default: RootPage }).default;
 }
 
 afterAll(() => {
   process.env = { ...originalEnv };
 });
 
-describe("root route edition gate", () => {
-  it("serves the marketing landing on the SaaS edition", () => {
-    const RootPage = loadRootPage({ NEXT_PUBLIC_ALPHACI_EDITION: "saas" });
+describe('root route edition gate', () => {
+  it('serves the marketing landing on the SaaS edition', () => {
+    const RootPage = loadRootPage({ NEXT_PUBLIC_ALPHACI_EDITION: 'saas' });
 
     expect(RootPage()).toBeTruthy();
     expect(mockRedirect).not.toHaveBeenCalled();
   });
 
   it.each([
-    ["edu", { NEXT_PUBLIC_ALPHACI_EDITION: "edu" }],
+    ['edu', { NEXT_PUBLIC_ALPHACI_EDITION: 'edu' }],
     [
-      "edu on the hosted profile it shares with saas",
+      'edu on the hosted profile it shares with saas',
       {
-        NEXT_PUBLIC_ALPHACI_EDITION: "edu",
-        NEXT_PUBLIC_ALPHACI_BUILD_PROFILE: "hosted",
+        NEXT_PUBLIC_ALPHACI_EDITION: 'edu',
+        NEXT_PUBLIC_ALPHACI_BUILD_PROFILE: 'hosted',
       },
     ],
-    ["enterprise", { NEXT_PUBLIC_ALPHACI_EDITION: "enterprise" }],
-    ["an unset edition", {}],
-    ["an unrecognised edition", { NEXT_PUBLIC_ALPHACI_EDITION: "marketing" }],
-  ])("redirects to /login for %s", (_label, env) => {
+    ['enterprise', { NEXT_PUBLIC_ALPHACI_EDITION: 'enterprise' }],
+    ['an unset edition', {}],
+    ['an unrecognised edition', { NEXT_PUBLIC_ALPHACI_EDITION: 'marketing' }],
+  ])('redirects to /login for %s', (_label, env) => {
     const RootPage = loadRootPage(env);
 
-    expect(() => RootPage()).toThrow("REDIRECT:/login");
-    expect(mockRedirect).toHaveBeenCalledWith("/login");
+    expect(() => RootPage()).toThrow('REDIRECT:/login');
+    expect(mockRedirect).toHaveBeenCalledWith('/login');
   });
 });

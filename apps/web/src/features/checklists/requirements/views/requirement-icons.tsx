@@ -1,7 +1,10 @@
 /* Decorative icons for the requirements views. Each is aria-hidden: the
  * button or heading beside it always says the same thing in words. */
 
-function Glyph({ children, size = 14 }: Readonly<{ children: React.ReactNode; size?: number }>) {
+function Glyph({
+  children,
+  size = 14,
+}: Readonly<{ children: React.ReactNode; size?: number }>) {
   return (
     <svg
       aria-hidden="true"

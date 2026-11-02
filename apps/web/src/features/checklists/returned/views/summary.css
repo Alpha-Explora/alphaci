@@ -58,12 +58,13 @@
 
 /* Returned is the one that needs the developer: the same amber as the card's
    edge, and only while there is something returned. */
-.qa-summary__chip[data-bucket="returned"]:not([data-empty]) {
+.qa-summary__chip[data-bucket='returned']:not([data-empty]) {
   border-color: var(--border-amber);
   background: var(--accent-amber-light);
 }
 
-.qa-summary__chip[data-bucket="returned"]:not([data-empty]) .qa-summary__chip-count {
+.qa-summary__chip[data-bucket='returned']:not([data-empty])
+  .qa-summary__chip-count {
   color: var(--warning);
 }
 

@@ -1,5 +1,8 @@
-import type { CapabilitiesResponse, EnvOwnershipMode } from "@/shared/api/contracts";
-import { PUBLIC_SITE_ENABLED } from "@/shared/composition/build-profile";
+import type {
+  CapabilitiesResponse,
+  EnvOwnershipMode,
+} from '@/shared/api/contracts';
+import { PUBLIC_SITE_ENABLED } from '@/shared/composition/build-profile';
 
 export type CapabilityViewFlags = {
   envProvisioningEnabled: boolean;
@@ -20,14 +23,14 @@ export type CapabilityViewFlags = {
   notificationsEnabled: boolean;
   publicSiteEnabled: boolean;
   hierarchyEnabled: boolean;
-  hierarchyGithubSyncMode: "stub" | "live";
+  hierarchyGithubSyncMode: 'stub' | 'live';
   qaChecklistsEnabled: boolean;
 };
 
 const DISABLED_CAPABILITY_FLAGS: CapabilityViewFlags = {
   envProvisioningEnabled: false,
   clientCompositionEnabled: false,
-  deploymentOwnershipMode: "flowci_managed",
+  deploymentOwnershipMode: 'flowci_managed',
   projectSyncSnapshotsEnabled: false,
   workflowSettingsPreviewEnabled: false,
   workflowUpdatePrEnabled: false,
@@ -43,7 +46,7 @@ const DISABLED_CAPABILITY_FLAGS: CapabilityViewFlags = {
   notificationsEnabled: false,
   publicSiteEnabled: false,
   hierarchyEnabled: false,
-  hierarchyGithubSyncMode: "stub",
+  hierarchyGithubSyncMode: 'stub',
   qaChecklistsEnabled: false,
 };
 
@@ -51,14 +54,16 @@ function optionalEnabled(flag: { enabled: boolean } | undefined): boolean {
   return flag?.enabled === true;
 }
 
-function ownershipMode(modes: EnvOwnershipMode[] | undefined): EnvOwnershipMode {
-  return modes?.[0] === "byo" ? "byo" : "flowci_managed";
+function ownershipMode(
+  modes: EnvOwnershipMode[] | undefined,
+): EnvOwnershipMode {
+  return modes?.[0] === 'byo' ? 'byo' : 'flowci_managed';
 }
 
 function hierarchySyncMode(
-  hierarchy: CapabilitiesResponse["hierarchy"],
-): "stub" | "live" {
-  return hierarchy?.githubSyncMode ?? "stub";
+  hierarchy: CapabilitiesResponse['hierarchy'],
+): 'stub' | 'live' {
+  return hierarchy?.githubSyncMode ?? 'stub';
 }
 
 export function capabilityViewFlags(
@@ -71,13 +76,19 @@ export function capabilityViewFlags(
   return {
     envProvisioningEnabled: optionalEnabled(capabilities.envProvisioning),
     clientCompositionEnabled:
-      capabilityKeys.includes("runtime.client-composition") &&
+      capabilityKeys.includes('runtime.client-composition') &&
       capabilities.clientComposition?.enabled === true,
     deploymentOwnershipMode: ownershipMode(capabilities.envProvisioning?.modes),
-    projectSyncSnapshotsEnabled: optionalEnabled(capabilities.projectSyncSnapshots),
-    workflowSettingsPreviewEnabled: optionalEnabled(capabilities.workflowSettingsPreview),
+    projectSyncSnapshotsEnabled: optionalEnabled(
+      capabilities.projectSyncSnapshots,
+    ),
+    workflowSettingsPreviewEnabled: optionalEnabled(
+      capabilities.workflowSettingsPreview,
+    ),
     workflowUpdatePrEnabled: optionalEnabled(capabilities.workflowUpdatePr),
-    projectTargetManagementEnabled: optionalEnabled(capabilities.projectTargetManagement),
+    projectTargetManagementEnabled: optionalEnabled(
+      capabilities.projectTargetManagement,
+    ),
     ciRunTrackingEnabled: optionalEnabled(capabilities.ciRunTracking),
     deploymentHistoryEnabled: optionalEnabled(capabilities.deploymentHistory),
     previewDeploymentsEnabled: optionalEnabled(capabilities.previewDeployments),
@@ -100,12 +111,12 @@ export function capabilityViewFlags(
  * answered (`pending`), and a capability reported off (or a failed probe,
  * which hides optional features) renders its off state instead (`disabled`).
  */
-export type CapabilityAvailability = "pending" | "enabled" | "disabled";
+export type CapabilityAvailability = 'pending' | 'enabled' | 'disabled';
 
 export function capabilityAvailability(
-  status: "loading" | "ready" | "error",
+  status: 'loading' | 'ready' | 'error',
   enabled: boolean,
 ): CapabilityAvailability {
-  if (status === "loading") return "pending";
-  return enabled ? "enabled" : "disabled";
+  if (status === 'loading') return 'pending';
+  return enabled ? 'enabled' : 'disabled';
 }

@@ -8,17 +8,17 @@
  * repository exists; the backend stays the authority.
  */
 
-export type EnvironmentDraftRole = "production" | "non_production";
+export type EnvironmentDraftRole = 'production' | 'non_production';
 
 /** Where an environment runs. Absent means managed hosting, today's default. */
-export type EnvironmentRunsOn = "managed" | "onprem";
+export type EnvironmentRunsOn = 'managed' | 'onprem';
 
 export interface EnvironmentDraft {
   hostAssignment?: {
     /** Omitted: the workspace's only connected machine. */
     machineId?: string;
     requestId: string;
-    config: import("@/shared/api/contracts").OnpremAssignmentRequestConfig;
+    config: import('@/shared/api/contracts').OnpremAssignmentRequestConfig;
   };
   slug: string;
   displayName: string;
@@ -34,22 +34,22 @@ export interface EnvironmentDraft {
 /** The editable starting point: test and UAT, then production. */
 export const ENVIRONMENT_TEMPLATE: readonly EnvironmentDraft[] = [
   {
-    slug: "dev",
-    displayName: "Test",
-    sourceBranch: "dev",
-    role: "non_production",
+    slug: 'dev',
+    displayName: 'Test',
+    sourceBranch: 'dev',
+    role: 'non_production',
   },
   {
-    slug: "uat",
-    displayName: "UAT",
-    sourceBranch: "uat",
-    role: "non_production",
+    slug: 'uat',
+    displayName: 'UAT',
+    sourceBranch: 'uat',
+    role: 'non_production',
   },
   {
-    slug: "main",
-    displayName: "Production",
-    sourceBranch: "main",
-    role: "production",
+    slug: 'main',
+    displayName: 'Production',
+    sourceBranch: 'main',
+    role: 'production',
   },
 ];
 
@@ -59,35 +59,35 @@ const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export function environmentsProblem(
   environments: readonly EnvironmentDraft[],
 ): string | null {
-  if (environments.length === 0) return "Add at least one environment.";
+  if (environments.length === 0) return 'Add at least one environment.';
   const slugs = new Set<string>();
   for (const environment of environments) {
     const problem = environmentProblem(environment);
     if (problem) return problem;
     if (slugs.has(environment.slug)) {
-      return "Two environments are named " + environment.slug + ".";
+      return 'Two environments are named ' + environment.slug + '.';
     }
     slugs.add(environment.slug);
   }
-  const production = environments.filter(({ role }) => role === "production");
+  const production = environments.filter(({ role }) => role === 'production');
   return production.length === 1
     ? null
-    : "Mark exactly one environment as production.";
+    : 'Mark exactly one environment as production.';
 }
 
 function environmentProblem(environment: EnvironmentDraft): string | null {
   if (!SLUG.test(environment.slug)) {
     return (
-      "Environment ID " +
-      (environment.slug || "(empty)") +
-      " must be lowercase letters, digits, and single hyphens."
+      'Environment ID ' +
+      (environment.slug || '(empty)') +
+      ' must be lowercase letters, digits, and single hyphens.'
     );
   }
   if (!environment.displayName.trim()) {
-    return "Environment " + environment.slug + " needs a display name.";
+    return 'Environment ' + environment.slug + ' needs a display name.';
   }
   if (!environment.sourceBranch.trim()) {
-    return "Environment " + environment.slug + " needs a source branch.";
+    return 'Environment ' + environment.slug + ' needs a source branch.';
   }
   return null;
 }
@@ -108,7 +108,7 @@ export function environmentBranches(
 export function updateEnvironment(
   environments: readonly EnvironmentDraft[],
   index: number,
-  change: Partial<Omit<EnvironmentDraft, "role">>,
+  change: Partial<Omit<EnvironmentDraft, 'role'>>,
 ): EnvironmentDraft[] {
   return environments.map((environment, position) =>
     position === index ? { ...environment, ...change } : environment,
@@ -122,7 +122,7 @@ export function makeProduction(
 ): EnvironmentDraft[] {
   return environments.map((environment, position) => ({
     ...environment,
-    role: position === index ? "production" : "non_production",
+    role: position === index ? 'production' : 'non_production',
   }));
 }
 
@@ -153,15 +153,15 @@ export function addEnvironment(
   environments: readonly EnvironmentDraft[],
 ): EnvironmentDraft[] {
   const productionIndex = environments.findIndex(
-    ({ role }) => role === "production",
+    ({ role }) => role === 'production',
   );
   const at = productionIndex === -1 ? environments.length : productionIndex;
   const slug = unusedSlug(environments);
   const added: EnvironmentDraft = {
     slug,
-    displayName: "Stage " + slug.replace(/^stage-?/, ""),
-    sourceBranch: environments[at - 1]?.sourceBranch ?? "dev",
-    role: "non_production",
+    displayName: 'Stage ' + slug.replace(/^stage-?/, ''),
+    sourceBranch: environments[at - 1]?.sourceBranch ?? 'dev',
+    role: 'non_production',
   };
   return [...environments.slice(0, at), added, ...environments.slice(at)];
 }
@@ -169,6 +169,6 @@ export function addEnvironment(
 function unusedSlug(environments: readonly EnvironmentDraft[]): string {
   const taken = new Set(environments.map(({ slug }) => slug));
   let number = 1;
-  while (taken.has("stage-" + String(number))) number += 1;
-  return "stage-" + String(number);
+  while (taken.has('stage-' + String(number))) number += 1;
+  return 'stage-' + String(number);
 }

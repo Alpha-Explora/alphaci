@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { AnimatePresence, motion } from "framer-motion";
-import type { CSSProperties } from "react";
-import { useId, useMemo, useState } from "react";
-import type { RunGroup } from "../../model/runs-types";
+import { AnimatePresence, motion } from 'framer-motion';
+import type { CSSProperties } from 'react';
+import { useId, useMemo, useState } from 'react';
+import type { RunGroup } from '../../model/runs-types';
 import {
   runStatusColors,
   relativeTime,
   shortSha,
-} from "../../model/runs-presentation";
-import { RunPipeline } from "./run-pipeline";
+} from '../../model/runs-presentation';
+import { RunPipeline } from './run-pipeline';
 
 interface RunCardProps {
   run: RunGroup;
@@ -18,9 +18,9 @@ interface RunCardProps {
 }
 
 function summarizeFailures(run: RunGroup) {
-  const failedStages = run.stages.filter((stage) => stage.status === "failure");
+  const failedStages = run.stages.filter((stage) => stage.status === 'failure');
   const errors = failedStages.flatMap((stage) =>
-    stage.friendlyMessages.filter((message) => message.severity === "error"),
+    stage.friendlyMessages.filter((message) => message.severity === 'error'),
   );
   return {
     failedStageCount: failedStages.length,
@@ -41,15 +41,15 @@ export function RunCard({ run, index, reduced }: RunCardProps) {
 
   return (
     <motion.article
-      className={`runs-run-card runs-run-card--commit${isExpanded ? " runs-run-card--expanded" : ""}`}
+      className={`runs-run-card runs-run-card--commit${isExpanded ? ' runs-run-card--expanded' : ''}`}
       aria-label={`Commit ${visibleCommit}: ${run.overallStatus}`}
       initial={reduced ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, ease: [0.25, 0, 0, 1], delay }}
       style={
         {
-          "--run-accent": colors.ring,
-          "--run-glow": colors.glow,
+          '--run-accent': colors.ring,
+          '--run-glow': colors.glow,
         } as CSSProperties
       }
     >
@@ -81,7 +81,7 @@ export function RunCard({ run, index, reduced }: RunCardProps) {
         />
 
         <span className="runs-commit-open" aria-hidden="true">
-          <span>{isExpanded ? "Hide workflow" : "View workflow"}</span>
+          <span>{isExpanded ? 'Hide workflow' : 'View workflow'}</span>
           <svg
             width="14"
             height="14"
@@ -171,25 +171,25 @@ function CommitHealth({
   hasErrors: boolean;
   summary: FailureSummary;
   colors: StatusColors;
-  status: RunGroup["overallStatus"];
+  status: RunGroup['overallStatus'];
 }>) {
   if (hasErrors)
     return (
       <span className="runs-commit-health runs-commit-health--error">
         <strong>
-          {summary.errorCount || summary.failedStageCount}{" "}
-          {summary.errorCount === 1 ? "error" : "errors"}
+          {summary.errorCount || summary.failedStageCount}{' '}
+          {summary.errorCount === 1 ? 'error' : 'errors'}
         </strong>
-        <span>{summary.firstError ?? "A workflow stage failed"}</span>
+        <span>{summary.firstError ?? 'A workflow stage failed'}</span>
       </span>
     );
   return (
     <span className="runs-commit-health">
       <strong>{colors.label}</strong>
       <span>
-        {status === "running"
-          ? "Workflow is still running"
-          : "No errors reported"}
+        {status === 'running'
+          ? 'Workflow is still running'
+          : 'No errors reported'}
       </span>
     </span>
   );
@@ -211,7 +211,7 @@ function WorkflowDetails({
       id={id}
       className="runs-workflow-details"
       initial={reduced ? false : { opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
+      animate={{ opacity: 1, height: 'auto' }}
       exit={reduced ? undefined : { opacity: 0, height: 0 }}
       transition={{ duration: 0.24, ease: [0.25, 0, 0, 1] }}
     >

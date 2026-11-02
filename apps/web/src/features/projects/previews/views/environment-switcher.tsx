@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useRef, type KeyboardEvent } from "react";
+import { useRef, type KeyboardEvent } from 'react';
 
 import {
   environmentName,
@@ -8,11 +8,11 @@ import {
   nextTabIndex,
   previewKey,
   previewStatusTone,
-} from "../../model/projects-rules";
-import type { ProjectBranchPreview } from "../../model/projects-types";
+} from '../../model/projects-rules';
+import type { ProjectBranchPreview } from '../../model/projects-types';
 
 export function environmentTabId(idPrefix: string, key: string): string {
-  return `${idPrefix}-tab-${key.replace(/[^A-Za-z0-9_-]/g, "-")}`;
+  return `${idPrefix}-tab-${key.replace(/[^A-Za-z0-9_-]/g, '-')}`;
 }
 
 /**
@@ -73,7 +73,9 @@ export function EnvironmentSwitcher({
               />
               {environmentName(preview)}
             </span>
-            <span className="deploy-envs__line">{environmentTabLine(preview)}</span>
+            <span className="deploy-envs__line">
+              {environmentTabLine(preview)}
+            </span>
           </button>
         );
       })}

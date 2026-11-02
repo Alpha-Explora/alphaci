@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
 import type {
   DeploymentTarget,
   EnvEnvironment,
   UpdateDeploymentTargetRequest,
-} from "@/features/projects";
+} from '@/features/projects';
 import {
   hostingProviderLabel,
   saveMetadataLabel,
-} from "../model/project-detail-tab-rules";
+} from '../model/project-detail-tab-rules';
 
 /**
  * The service's build settings, edited inline under the Hosting tab's service
@@ -36,11 +36,11 @@ export function DeploymentTargetEditor({
     <div
       className="env-card deployment-target-editor"
       data-testid="target-edit-drawer"
-      style={{ gap: "0.85rem" }}
+      style={{ gap: '0.85rem' }}
     >
       <div>
         <h4 style={{ margin: 0 }}>Edit deployment target</h4>
-        <p className="env-empty-state" style={{ margin: "0.25rem 0 0" }}>
+        <p className="env-empty-state" style={{ margin: '0.25rem 0 0' }}>
           Metadata edits only. Provider resources and secrets are unchanged.
         </p>
       </div>
@@ -49,7 +49,7 @@ export function DeploymentTargetEditor({
           <span>Display name</span>
           <input
             aria-label="Target display name"
-            value={editValues.providerProjectName ?? ""}
+            value={editValues.providerProjectName ?? ''}
             onChange={(event) =>
               onChange({
                 ...editValues,
@@ -66,7 +66,7 @@ export function DeploymentTargetEditor({
           <span>Branch</span>
           <input
             aria-label="Target branch"
-            value={editValues.branchName ?? ""}
+            value={editValues.branchName ?? ''}
             onChange={(event) =>
               onChange({ ...editValues, branchName: event.target.value })
             }
@@ -76,7 +76,7 @@ export function DeploymentTargetEditor({
           <span>Root directory</span>
           <input
             aria-label="Target root directory"
-            value={editValues.rootDirectory ?? ""}
+            value={editValues.rootDirectory ?? ''}
             onChange={(event) =>
               onChange({ ...editValues, rootDirectory: event.target.value })
             }
@@ -86,7 +86,7 @@ export function DeploymentTargetEditor({
           <span>Build command</span>
           <input
             aria-label="Target build command"
-            value={editValues.buildCommand ?? ""}
+            value={editValues.buildCommand ?? ''}
             onChange={(event) =>
               onChange({ ...editValues, buildCommand: event.target.value })
             }
@@ -96,7 +96,7 @@ export function DeploymentTargetEditor({
           <span>Start command</span>
           <input
             aria-label="Target start command"
-            value={editValues.startCommand ?? ""}
+            value={editValues.startCommand ?? ''}
             onChange={(event) =>
               onChange({ ...editValues, startCommand: event.target.value })
             }
@@ -104,7 +104,7 @@ export function DeploymentTargetEditor({
         </label>
         <RenderEnvironmentField
           provider={editingTarget.provider}
-          value={editValues.renderEnvironmentName ?? ""}
+          value={editValues.renderEnvironmentName ?? ''}
           onChange={(value) =>
             onChange({
               ...editValues,
@@ -115,10 +115,10 @@ export function DeploymentTargetEditor({
       </div>
       <div
         style={{
-          display: "flex",
-          gap: "0.5rem",
-          justifyContent: "flex-end",
-          flexWrap: "wrap",
+          display: 'flex',
+          gap: '0.5rem',
+          justifyContent: 'flex-end',
+          flexWrap: 'wrap',
         }}
       >
         <button className="ghost-button" type="button" onClick={onCancel}>
@@ -142,11 +142,11 @@ function RenderEnvironmentField({
   value,
   onChange,
 }: Readonly<{
-  provider: DeploymentTarget["provider"];
+  provider: DeploymentTarget['provider'];
   value: string;
   onChange: (value: EnvEnvironment | null) => void;
 }>) {
-  if (provider !== "render") return null;
+  if (provider !== 'render') return null;
   return (
     <label className="deployment-target-editor__field deployment-target-editor__field--environment">
       <span>Provider environment</span>

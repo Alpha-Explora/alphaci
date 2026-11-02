@@ -1,26 +1,23 @@
-"use client";
+'use client';
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from 'framer-motion';
 
-import { AppNav } from "@/features/workspace/selection";
-import { FlowBackground } from "@/shared/layout/flow-background";
-import type { useAuthSession } from "@/features/auth/session";
-import { useCapabilities } from "@/features/capabilities/current";
-import { isGuest } from "@/features/auth/session";
+import { AppNav } from '@/features/workspace/selection';
+import { FlowBackground } from '@/shared/layout/flow-background';
+import type { useAuthSession } from '@/features/auth/session';
+import { useCapabilities } from '@/features/capabilities/current';
+import { isGuest } from '@/features/auth/session';
 
-import type { SettingsSection as SectionId } from "../../model/settings-types";
-import { useSettingsViewModel } from "../view-models/use-settings-view-model";
-import { SettingsAccountSection } from "./settings-account-section";
-import { SettingsAppearanceSection } from "./settings-appearance-section";
-import { SettingsConnectionsSection } from "./settings-connections-section";
-import { SettingsDangerSection } from "./settings-danger-section";
-import { SettingsGuideSection } from "./settings-guide-section";
-import { SettingsTeamSection } from "./settings-team-section";
-import {
-  settingsContentStyle,
-  settingsLayoutStyle,
-} from "./settings-layout";
-import { SettingsSidebar } from "./settings-sidebar";
+import type { SettingsSection as SectionId } from '../../model/settings-types';
+import { useSettingsViewModel } from '../view-models/use-settings-view-model';
+import { SettingsAccountSection } from './settings-account-section';
+import { SettingsAppearanceSection } from './settings-appearance-section';
+import { SettingsConnectionsSection } from './settings-connections-section';
+import { SettingsDangerSection } from './settings-danger-section';
+import { SettingsGuideSection } from './settings-guide-section';
+import { SettingsTeamSection } from './settings-team-section';
+import { settingsContentStyle, settingsLayoutStyle } from './settings-layout';
+import { SettingsSidebar } from './settings-sidebar';
 
 const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
 
@@ -45,7 +42,7 @@ export function SettingsContent({
   onDeleted,
   initialSection,
 }: Readonly<{
-  session: ReturnType<typeof useAuthSession>["session"];
+  session: ReturnType<typeof useAuthSession>['session'];
   onLogout: () => void;
   isLoggingOut: boolean;
   logoutMessage: string | null;
@@ -55,11 +52,8 @@ export function SettingsContent({
   /** The section a `?tab=` link asked for, read once on arrival. */
   initialSection?: SectionId;
 }>) {
-  const {
-    capabilities,
-    clientCompositionEnabled,
-    workspacesEnabled,
-  } = useCapabilities();
+  const { capabilities, clientCompositionEnabled, workspacesEnabled } =
+    useCapabilities();
   const vm = useSettingsViewModel({
     workspacesEnabled,
     initialSection,
@@ -109,13 +103,13 @@ export function SettingsContent({
             <motion.div
               key={activeSection}
               variants={prefersReducedMotion ? undefined : sectionVariants}
-              initial={prefersReducedMotion ? false : "hidden"}
+              initial={prefersReducedMotion ? false : 'hidden'}
               animate="visible"
               exit="exit"
               style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.25rem",
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.25rem',
               }}
             >
               <SettingsSectionSwitch
@@ -128,7 +122,7 @@ export function SettingsContent({
                 workspacesError={vm.workspacesError}
                 clientComposition={
                   clientCompositionEnabled
-                    ? capabilities?.clientComposition ?? null
+                    ? (capabilities?.clientComposition ?? null)
                     : null
                 }
                 onLogout={onLogout}
@@ -141,14 +135,14 @@ export function SettingsContent({
                 onBeginArchive={() => {
                   vm.setShowDeleteConfirm(true);
                   vm.clearDeleteMessage();
-                  vm.setDeleteConfirmInput("");
+                  vm.setDeleteConfirmInput('');
                 }}
                 onChangeConfirmInput={vm.setDeleteConfirmInput}
                 onConfirmArchive={() => void handleDeleteAccount()}
                 onCancelArchive={() => {
                   vm.setShowDeleteConfirm(false);
                   vm.clearDeleteMessage();
-                  vm.setDeleteConfirmInput("");
+                  vm.setDeleteConfirmInput('');
                 }}
               />
             </motion.div>
@@ -163,12 +157,13 @@ function SettingsSectionSwitch(
   props: Readonly<{
     activeSection: SectionId;
     teamName: string | null;
-    session: ReturnType<typeof useAuthSession>["session"];
+    session: ReturnType<typeof useAuthSession>['session'];
     prefersReducedMotion: boolean | null;
     workspacesEnabled: boolean;
-    workspaces: ReturnType<typeof useSettingsViewModel>["workspaces"];
+    workspaces: ReturnType<typeof useSettingsViewModel>['workspaces'];
     workspacesError: string | null;
-    clientComposition: import("@/shared/api/contracts").ClientCompositionInfo | null;
+    clientComposition:
+      import('@/shared/api/contracts').ClientCompositionInfo | null;
     onLogout: () => void;
     isLoggingOut: boolean;
     logoutMessage: string | null;
@@ -182,7 +177,7 @@ function SettingsSectionSwitch(
     onCancelArchive: () => void;
   }>,
 ) {
-  if (props.activeSection === "account") {
+  if (props.activeSection === 'account') {
     return (
       <SettingsAccountSection
         session={props.session}
@@ -194,19 +189,19 @@ function SettingsSectionSwitch(
       />
     );
   }
-  if (props.activeSection === "team") {
+  if (props.activeSection === 'team') {
     return <SettingsTeamSection teamName={props.teamName} />;
   }
-  if (props.activeSection === "appearance") {
+  if (props.activeSection === 'appearance') {
     return <SettingsAppearanceSection />;
   }
-  if (props.activeSection === "connections") {
+  if (props.activeSection === 'connections') {
     return <SettingsConnectionsSection />;
   }
-  if (props.activeSection === "guide") {
+  if (props.activeSection === 'guide') {
     return <SettingsGuideSection />;
   }
-  if (props.activeSection === "danger") {
+  if (props.activeSection === 'danger') {
     return (
       <SettingsDangerSection
         session={props.session}

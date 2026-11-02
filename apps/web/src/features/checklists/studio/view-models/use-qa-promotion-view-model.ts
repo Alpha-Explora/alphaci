@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
-import { qaRunsRepository } from "../../data/qa-runs-repository";
-import { qaSignInHref } from "../../model/qa-automation-rules";
+import { qaRunsRepository } from '../../data/qa-runs-repository';
+import { qaSignInHref } from '../../model/qa-automation-rules';
 import {
   canOfferMerge,
   mergeDisabledReason,
@@ -14,25 +14,26 @@ import {
   normalizePromotionMerge,
   normalizePromotionStatus,
   promotionMergeError,
-} from "../../model/qa-promotion-rules";
+} from '../../model/qa-promotion-rules';
 import type {
   QaPromotionMergeError,
   QaPromotionMergeResult,
   QaPromotionStatus,
-} from "../../model/qa-promotion-types";
-import { errorStatus } from "../../model/wire-readers";
+} from '../../model/qa-promotion-types';
+import { errorStatus } from '../../model/wire-readers';
 
 /** `unavailable`: this backend has no promotion route (404), so there is no card. */
-export type QaPromotionLoadStatus = "loading" | "ready" | "error" | "unavailable";
+export type QaPromotionLoadStatus =
+  'loading' | 'ready' | 'error' | 'unavailable';
 
 /** The merge flow: nothing, the confirmation open, or the request in flight. */
-export type QaPromotionMergeState = "idle" | "confirming" | "merging";
+export type QaPromotionMergeState = 'idle' | 'confirming' | 'merging';
 
 /** How the last merge ended, shown in the card until dismissed. */
 export type QaPromotionOutcome =
-  | { kind: "merged"; result: QaPromotionMergeResult; headSha: string | null }
-  | { kind: "refused"; result: QaPromotionMergeResult }
-  | { kind: "error"; error: QaPromotionMergeError };
+  | { kind: 'merged'; result: QaPromotionMergeResult; headSha: string | null }
+  | { kind: 'refused'; result: QaPromotionMergeResult }
+  | { kind: 'error'; error: QaPromotionMergeError };
 
 export interface QaPromotionViewModel {
   status: QaPromotionLoadStatus;
@@ -68,24 +69,37 @@ interface LoadResult {
   unavailable: boolean;
 }
 
-const LOAD_ERROR = "Production readiness could not be loaded. Try again in a moment.";
+const LOAD_ERROR =
+  'Production readiness could not be loaded. Try again in a moment.';
 
 function loadStatus(result: LoadResult | null): QaPromotionLoadStatus {
-  if (!result) return "loading";
-  if (result.unavailable) return "unavailable";
-  return result.data ? "ready" : "error";
+  if (!result) return 'loading';
+  if (result.unavailable) return 'unavailable';
+  return result.data ? 'ready' : 'error';
 }
 
-function failedLoad(key: string, nonce: number, cause: unknown, previous: LoadResult | null): LoadResult {
-  if (errorStatus(cause) === 404) return { key, nonce, data: null, error: null, unavailable: true };
+function failedLoad(
+  key: string,
+  nonce: number,
+  cause: unknown,
+  previous: LoadResult | null,
+): LoadResult {
+  if (errorStatus(cause) === 404)
+    return { key, nonce, data: null, error: null, unavailable: true };
   // A failed refresh keeps what was on screen; only a first load shows the error.
   const kept = previous?.key === key ? previous.data : null;
-  return { key, nonce, data: kept, error: kept ? null : LOAD_ERROR, unavailable: false };
+  return {
+    key,
+    nonce,
+    data: kept,
+    error: kept ? null : LOAD_ERROR,
+    unavailable: false,
+  };
 }
 
 /** The uat commit the last successful merge promoted, so it is not offered twice. */
 function mergedHead(outcome: QaPromotionOutcome | null): string | null {
-  return outcome?.kind === "merged" ? outcome.headSha : null;
+  return outcome?.kind === 'merged' ? outcome.headSha : null;
 }
 
 /** Whether to offer the button, and why it is disabled — from the status on screen. */
@@ -95,7 +109,10 @@ function mergeOffer(
   outcome: QaPromotionOutcome | null,
 ): { offer: boolean; disabledReason: string | null } {
   if (!data) return { offer: false, disabledReason: null };
-  return { offer: canOfferMerge(data, appRole), disabledReason: mergeDisabledReason(data, mergedHead(outcome)) };
+  return {
+    offer: canOfferMerge(data, appRole),
+    disabledReason: mergeDisabledReason(data, mergedHead(outcome)),
+  };
 }
 
 /**
@@ -128,7 +145,7 @@ export function useQaPromotionViewModel(options: {
   const { projectId, enabled, appRole, watch } = options;
   const [nonce, setNonce] = useState(0);
   const [result, setResult] = useState<LoadResult | null>(null);
-  const [mergeState, setMergeState] = useState<QaPromotionMergeState>("idle");
+  const [mergeState, setMergeState] = useState<QaPromotionMergeState>('idle');
   const [dialogError, setDialogError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<QaPromotionOutcome | null>(null);
   const requestRef = useRef(0);
@@ -145,7 +162,13 @@ export function useQaPromotionViewModel(options: {
       .promotion(projectId)
       .then((wire) => {
         if (requestId !== requestRef.current) return;
-        setResult({ key, nonce, data: normalizePromotionStatus(wire), error: null, unavailable: false });
+        setResult({
+          key,
+          nonce,
+          data: normalizePromotionStatus(wire),
+          error: null,
+          unavailable: false,
+        });
       })
       .catch((cause: unknown) => {
         if (requestId !== requestRef.current) return;
@@ -158,38 +181,45 @@ export function useQaPromotionViewModel(options: {
   const { offer, disabledReason } = mergeOffer(data, appRole, outcome);
 
   function openConfirm() {
-    if (!offer || disabledReason || mergeState !== "idle") return;
+    if (!offer || disabledReason || mergeState !== 'idle') return;
     setDialogError(null);
-    setMergeState("confirming");
+    setMergeState('confirming');
   }
 
   function settle(next: QaPromotionOutcome, refresh: boolean) {
     setOutcome(next);
-    setMergeState("idle");
+    setMergeState('idle');
     if (refresh) reload();
   }
 
   async function confirmMerge() {
-    if (!offer || disabledReason || mergeState !== "confirming") return;
+    if (!offer || disabledReason || mergeState !== 'confirming') return;
     const headSha = data?.headSha ?? null;
-    setMergeState("merging");
+    setMergeState('merging');
     setDialogError(null);
     try {
-      const merged = normalizePromotionMerge(await qaRunsRepository.mergePromotion(projectId));
-      settle(merged.merged ? { kind: "merged", result: merged, headSha } : { kind: "refused", result: merged }, true);
+      const merged = normalizePromotionMerge(
+        await qaRunsRepository.mergePromotion(projectId),
+      );
+      settle(
+        merged.merged
+          ? { kind: 'merged', result: merged, headSha }
+          : { kind: 'refused', result: merged },
+        true,
+      );
     } catch (cause) {
       const error = promotionMergeError(cause);
       if (!mergeErrorClosesDialog(error)) {
         setDialogError(error.message);
-        setMergeState("confirming");
+        setMergeState('confirming');
         return;
       }
-      settle({ kind: "error", error }, mergeErrorRefreshesStatus(error));
+      settle({ kind: 'error', error }, mergeErrorRefreshesStatus(error));
     }
   }
 
   return {
-    status: enabled ? loadStatus(current) : "unavailable",
+    status: enabled ? loadStatus(current) : 'unavailable',
     data,
     error: current?.error ?? null,
     refreshing: Boolean(current && current.nonce !== nonce),
@@ -201,8 +231,8 @@ export function useQaPromotionViewModel(options: {
     signInHref: qaSignInHref(projectId),
     openConfirm,
     cancelConfirm: () => {
-      if (mergeState === "merging") return;
-      setMergeState("idle");
+      if (mergeState === 'merging') return;
+      setMergeState('idle');
       setDialogError(null);
     },
     confirmMerge,

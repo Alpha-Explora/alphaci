@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-import { secondsUntil } from "../model/log-rate-limit";
+import { secondsUntil } from '../model/log-rate-limit';
 
 /**
  * Whole seconds until `until` (epoch ms), ticking once a second. Null in, null

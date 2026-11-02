@@ -41,7 +41,7 @@
   background: var(--bg-soft);
 }
 
-.qa-auto-toggle[aria-expanded="true"] .qa-auto-badge {
+.qa-auto-toggle[aria-expanded='true'] .qa-auto-badge {
   border-style: solid;
   background: var(--bg-soft);
 }
@@ -278,7 +278,7 @@
   background: var(--brand);
 }
 
-.qa-auto__pulse[data-watching="true"] {
+.qa-auto__pulse[data-watching='true'] {
   animation: qa-auto-beacon 1.6s ease-out infinite;
 }
 
@@ -444,7 +444,7 @@
   transition: transform 160ms ease-out;
 }
 
-.qa-auto-stage__toggle[aria-expanded="true"] .qa-glyph {
+.qa-auto-stage__toggle[aria-expanded='true'] .qa-glyph {
   transform: rotate(180deg);
 }
 
@@ -604,7 +604,7 @@
   .qa-auto-detail,
   .qa-auto-failures,
   .qa-auto-stage__fill,
-  .qa-auto__pulse[data-watching="true"] {
+  .qa-auto__pulse[data-watching='true'] {
     animation: none;
   }
 

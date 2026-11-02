@@ -14,13 +14,13 @@
  * shapes below, so a missing field degrades to "unknown" or "read-only",
  * never to a crash or to a permission the server did not give. */
 
-import type { ChecklistVerificationType } from "./checklist-types";
-import type { QaActor } from "./qa-run-types";
-import type { TestCategoryDefinition } from "./test-case-types";
+import type { ChecklistVerificationType } from './checklist-types';
+import type { QaActor } from './qa-run-types';
+import type { TestCategoryDefinition } from './test-case-types';
 
-export type RequirementKind = "functional" | "system";
+export type RequirementKind = 'functional' | 'system';
 
-export type RequirementProgress = "todo" | "in_progress" | "done";
+export type RequirementProgress = 'todo' | 'in_progress' | 'done';
 
 export interface ProgressCounts {
   todo: number;
@@ -147,7 +147,7 @@ export interface CreateRequirementInput {
 }
 
 /** One requirement of a batch create: the single create's body, minus the kind. */
-export type BatchRequirementInput = Omit<CreateRequirementInput, "kind">;
+export type BatchRequirementInput = Omit<CreateRequirementInput, 'kind'>;
 
 /** POST /delivery-projects/:dpId/requirements/batch — 1 to 20, all of one kind, all or nothing. */
 export interface CreateRequirementBatchInput {
@@ -204,4 +204,4 @@ export interface RequirementItemDraft {
   testIdentifier: string;
 }
 
-export type RequirementsStatus = "loading" | "ready" | "error" | "unavailable";
+export type RequirementsStatus = 'loading' | 'ready' | 'error' | 'unavailable';

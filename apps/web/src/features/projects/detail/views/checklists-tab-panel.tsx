@@ -1,14 +1,18 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
-import { checklistsTabShowsMyItems, REPOSITORY_SCOPE, type QaScope } from "@/features/checklists";
-import { ProjectChecklistsPanel } from "@/features/checklists/project";
-import { ProjectQaWorkspace } from "@/features/checklists/requirements";
-import { MyQaItemsCard } from "@/features/checklists/returned";
-import type { ProvisionedProject } from "@/features/projects";
-import { checklistsTabCarriesProjectQa } from "../model/project-detail-tab-rules";
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
+import {
+  checklistsTabShowsMyItems,
+  REPOSITORY_SCOPE,
+  type QaScope,
+} from '@/features/checklists';
+import { ProjectChecklistsPanel } from '@/features/checklists/project';
+import { ProjectQaWorkspace } from '@/features/checklists/requirements';
+import { MyQaItemsCard } from '@/features/checklists/returned';
+import type { ProvisionedProject } from '@/features/projects';
+import { checklistsTabCarriesProjectQa } from '../model/project-detail-tab-rules';
+import type { ProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
 
 /**
  * The Checklists tab. Checklists belong to the checklists domain; this file
@@ -36,7 +40,10 @@ export function ChecklistsTabPanel({
   dangerZone?: ReactNode;
   qaScope?: QaScope;
 }>) {
-  if (qaScope.kind === "project" && checklistsTabCarriesProjectQa(qaScope.kind)) {
+  if (
+    qaScope.kind === 'project' &&
+    checklistsTabCarriesProjectQa(qaScope.kind)
+  ) {
     return (
       <div
         role="tabpanel"
@@ -49,7 +56,11 @@ export function ChecklistsTabPanel({
           projectName={qaScope.projectName}
           appRole={vm.appRole}
           enabled={vm.qaChecklistsEnabled}
-          onOpenHistory={vm.visibleTabs.includes("history") ? () => vm.setTab("history") : undefined}
+          onOpenHistory={
+            vm.visibleTabs.includes('history')
+              ? () => vm.setTab('history')
+              : undefined
+          }
         />
       </div>
     );

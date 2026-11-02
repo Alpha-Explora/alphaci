@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useCapabilities } from "@/features/capabilities";
-import { useWorkspaceSelection } from "@/features/workspace/selection";
+import { useCapabilities } from '@/features/capabilities';
+import { useWorkspaceSelection } from '@/features/workspace/selection';
 
-import { homeRepository } from "../../data/home-repository";
-import { homeLayoutFor } from "../../model/home-layout-rules";
-import { buildPersonaDashboard } from "../../model/home-persona-dashboard";
+import { homeRepository } from '../../data/home-repository';
+import { homeLayoutFor } from '../../model/home-layout-rules';
+import { buildPersonaDashboard } from '../../model/home-persona-dashboard';
 import type {
   HomeLayout,
   HomeSectionStates,
   PersonaDashboard,
-} from "../../model/home-persona-types";
-import { computeRunStats, runsForTeam } from "../../model/home-rules";
+} from '../../model/home-persona-types';
+import { computeRunStats, runsForTeam } from '../../model/home-rules';
 import type {
   AppRole,
   DeliveryPortfolioNode,
@@ -27,7 +27,7 @@ import type {
   SectionStatus,
   TeamQaOverview,
   WorkflowHistoryItem,
-} from "../../model/home-types";
+} from '../../model/home-types';
 
 /** One independently-loaded dashboard section. */
 interface Section<T> {
@@ -44,7 +44,8 @@ type WorkspaceData = {
   activity: GroupActivityItem[];
 };
 
-type SectionKey = "history" | "projects" | "runs" | "workspace" | "folders" | "qaOverview";
+type SectionKey =
+  'history' | 'projects' | 'runs' | 'workspace' | 'folders' | 'qaOverview';
 
 export interface HomeDashboardViewModel {
   /** The role's Home: what it shows and what it reads. */
@@ -82,27 +83,35 @@ export interface HomeDashboardViewModel {
   dismissWelcome: () => void;
 }
 
-const EMPTY_WORKSPACE: WorkspaceData = { group: null, portfolio: [], assignments: [], activity: [] };
+const EMPTY_WORKSPACE: WorkspaceData = {
+  group: null,
+  portfolio: [],
+  assignments: [],
+  activity: [],
+};
 
 const ERRORS = {
-  history: "Could not load workflow history.",
-  projects: "Could not load projects.",
-  workspace: "Some group information could not be loaded. You can still review your projects and runs.",
+  history: 'Could not load workflow history.',
+  projects: 'Could not load projects.',
+  workspace:
+    'Some group information could not be loaded. You can still review your projects and runs.',
   folders: "Could not load this team's Projects.",
-  qaOverview: "Could not load QA progress for this team.",
+  qaOverview: 'Could not load QA progress for this team.',
 } as const;
 
 function loadingSection<T>(data: T): Section<T> {
-  return { data, status: "loading", error: null };
+  return { data, status: 'loading', error: null };
 }
 
 function readySection<T>(data: T): Section<T> {
-  return { data, status: "ready", error: null };
+  return { data, status: 'ready', error: null };
 }
 
 /** A section with no error copy (runs) reports ready-and-empty: the page stays usable. */
 function failedSection<T>(empty: T, error: string | null): Section<T> {
-  return error === null ? readySection(empty) : { data: empty, status: "error", error };
+  return error === null
+    ? readySection(empty)
+    : { data: empty, status: 'error', error };
 }
 
 /* What a section reads as when the layout does not read it: settled and
@@ -119,7 +128,10 @@ const SKIPPED = {
  * one counter per section, so a slow workspace walk cannot discard a newer
  * projects response, and vice versa.
  */
-function sectionLoader(counters: Record<SectionKey, number>, isActive: () => boolean) {
+function sectionLoader(
+  counters: Record<SectionKey, number>,
+  isActive: () => boolean,
+) {
   return function load<T>(
     key: SectionKey,
     read: Promise<T>,
@@ -165,25 +177,39 @@ export function useHomeDashboardViewModel(options: {
   const capabilities = useCapabilities();
   // Until the capabilities are known, lay out as if QA were on (what most
   // teams have) and read nothing that depends on it.
-  const layoutSettled = capabilities.status !== "loading";
-  const qaChecklistsEnabled = !layoutSettled || capabilities.qaChecklistsEnabled;
+  const layoutSettled = capabilities.status !== 'loading';
+  const qaChecklistsEnabled =
+    !layoutSettled || capabilities.qaChecklistsEnabled;
   const layout = useMemo(
     () => homeLayoutFor({ appRole, qaChecklistsEnabled }),
     [appRole, qaChecklistsEnabled],
   );
   const { needs } = layout;
 
-  const [history, setHistory] = useState(loadingSection<WorkflowHistoryItem[]>([]));
-  const [projects, setProjects] = useState(loadingSection<ProvisionedProject[]>([]));
+  const [history, setHistory] = useState(
+    loadingSection<WorkflowHistoryItem[]>([]),
+  );
+  const [projects, setProjects] = useState(
+    loadingSection<ProvisionedProject[]>([]),
+  );
   const [runs, setRuns] = useState(loadingSection<RunGroup[]>([]));
   const [workspace, setWorkspace] = useState(loadingSection(EMPTY_WORKSPACE));
-  const [folders, setFolders] = useState(loadingSection<ProjectFoldersSnapshot | null>(null));
-  const [qaOverview, setQaOverview] = useState(loadingSection<TeamQaOverview | null>(null));
+  const [folders, setFolders] = useState(
+    loadingSection<ProjectFoldersSnapshot | null>(null),
+  );
+  const [qaOverview, setQaOverview] = useState(
+    loadingSection<TeamQaOverview | null>(null),
+  );
 
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [nonce, setNonce] = useState(0);
   const req = useRef<Record<SectionKey, number>>({
-    history: 0, projects: 0, runs: 0, workspace: 0, folders: 0, qaOverview: 0,
+    history: 0,
+    projects: 0,
+    runs: 0,
+    workspace: 0,
+    folders: 0,
+    qaOverview: 0,
   });
 
   // Every Home reads the team's projects and runs.
@@ -191,8 +217,20 @@ export function useHomeDashboardViewModel(options: {
     if (!enabled) return;
     let active = true;
     const load = sectionLoader(req.current, () => active);
-    load("projects", homeRepository.projects(selectedWorkspaceId), setProjects, [], ERRORS.projects);
-    load("runs", homeRepository.recentRuns(selectedWorkspaceId), setRuns, [], null);
+    load(
+      'projects',
+      homeRepository.projects(selectedWorkspaceId),
+      setProjects,
+      [],
+      ERRORS.projects,
+    );
+    load(
+      'runs',
+      homeRepository.recentRuns(selectedWorkspaceId),
+      setRuns,
+      [],
+      null,
+    );
     return () => {
       active = false;
     };
@@ -204,13 +242,39 @@ export function useHomeDashboardViewModel(options: {
     let active = true;
     const load = sectionLoader(req.current, () => active);
     const ws = selectedWorkspaceId;
-    if (needs.history) load("history", homeRepository.workflowHistory(), setHistory, [], ERRORS.history);
+    if (needs.history)
+      load(
+        'history',
+        homeRepository.workflowHistory(),
+        setHistory,
+        [],
+        ERRORS.history,
+      );
     if (needs.workspace) {
-      load("workspace", homeRepository.workspaceOverview(ws), setWorkspace, EMPTY_WORKSPACE, ERRORS.workspace);
+      load(
+        'workspace',
+        homeRepository.workspaceOverview(ws),
+        setWorkspace,
+        EMPTY_WORKSPACE,
+        ERRORS.workspace,
+      );
     }
-    if (needs.folders && ws) load("folders", homeRepository.projectFolders(ws), setFolders, null, ERRORS.folders);
+    if (needs.folders && ws)
+      load(
+        'folders',
+        homeRepository.projectFolders(ws),
+        setFolders,
+        null,
+        ERRORS.folders,
+      );
     if (needs.qaOverview && ws) {
-      load("qaOverview", homeRepository.teamQaOverview(ws), setQaOverview, null, ERRORS.qaOverview);
+      load(
+        'qaOverview',
+        homeRepository.teamQaOverview(ws),
+        setQaOverview,
+        null,
+        ERRORS.qaOverview,
+      );
     }
     return () => {
       active = false;
@@ -229,11 +293,13 @@ export function useHomeDashboardViewModel(options: {
   const hasWorkspace = Boolean(selectedWorkspaceId);
   const historySection = needs.history ? history : SKIPPED.history;
   const workspaceSection = needs.workspace ? workspace : SKIPPED.workspace;
-  const foldersSection = needs.folders && hasWorkspace ? folders : SKIPPED.folders;
-  const qaSection = needs.qaOverview && hasWorkspace ? qaOverview : SKIPPED.qaOverview;
+  const foldersSection =
+    needs.folders && hasWorkspace ? folders : SKIPPED.folders;
+  const qaSection =
+    needs.qaOverview && hasWorkspace ? qaOverview : SKIPPED.qaOverview;
 
   const teamRuns = useMemo(
-    () => runsForTeam(runs.data, projects.data, projects.status === "ready"),
+    () => runsForTeam(runs.data, projects.data, projects.status === 'ready'),
     [runs.data, projects.data, projects.status],
   );
   const runStats = useMemo(() => computeRunStats(teamRuns), [teamRuns]);
@@ -247,7 +313,14 @@ export function useHomeDashboardViewModel(options: {
         teamRuns,
         projects: projects.data,
       }),
-    [layout, selectedWorkspaceId, foldersSection.data, qaSection.data, teamRuns, projects.data],
+    [
+      layout,
+      selectedWorkspaceId,
+      foldersSection.data,
+      qaSection.data,
+      teamRuns,
+      projects.data,
+    ],
   );
   const sections: HomeSectionStates = {
     projects: sectionState(projects),

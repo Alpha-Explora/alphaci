@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from 'next/image';
 
 export function PipelineLogo({ size = 28 }: Readonly<{ size?: number }>) {
   return (
@@ -13,4 +13,3 @@ export function PipelineLogo({ size = 28 }: Readonly<{ size?: number }>) {
     />
   );
 }
-

@@ -14,11 +14,14 @@ const RATE_LIMIT_REASON = /\b429\b|rate[\s_-]?limit/i;
 
 /** An older backend reports a 429 as `unavailable` with the raw body as the reason. */
 export function isRateLimitReason(reason: string | null | undefined): boolean {
-  return typeof reason === "string" && RATE_LIMIT_REASON.test(reason);
+  return typeof reason === 'string' && RATE_LIMIT_REASON.test(reason);
 }
 
 /** The instant (epoch ms) the cooldown ends, from now and the backend's wait. */
-export function cooldownEnd(now: number, retryAfterMs: number | undefined): number {
+export function cooldownEnd(
+  now: number,
+  retryAfterMs: number | undefined,
+): number {
   return now + (retryAfterMs ?? DEFAULT_RETRY_AFTER_MS);
 }
 
@@ -29,10 +32,10 @@ export function secondsUntil(until: number, now: number): number {
 
 /** "Render is limiting log reads · retrying in 42s". */
 export function rateLimitNotice(label: string, seconds: number): string {
-  const wait = seconds > 0 ? `retrying in ${String(seconds)}s` : "retrying now";
+  const wait = seconds > 0 ? `retrying in ${String(seconds)}s` : 'retrying now';
   return `${label} is limiting log reads · ${wait}`;
 }
 
 /** What an older backend's raw 429 body becomes. */
 export const LEGACY_RATE_LIMIT_TEXT =
-  "The host is rate-limiting log reads right now. Retry in a minute.";
+  'The host is rate-limiting log reads right now. Retry in a minute.';

@@ -1,17 +1,17 @@
-"use client";
-import "./hosts.css";
-import { TeamPageShell } from "@/features/teams/shell";
-import { useCapabilities } from "@/features/capabilities/current";
-import { canManageHosts } from "../model/host-types";
-import { useHostsViewModel } from "../view-models/use-hosts-view-model";
-import { useHostAvailability } from "../view-models/use-host-availability";
-import { AddHostForm, EnrollmentCard, HostCard } from "./host-cards";
+'use client';
+import './hosts.css';
+import { TeamPageShell } from '@/features/teams/shell';
+import { useCapabilities } from '@/features/capabilities/current';
+import { canManageHosts } from '../model/host-types';
+import { useHostsViewModel } from '../view-models/use-hosts-view-model';
+import { useHostAvailability } from '../view-models/use-host-availability';
+import { AddHostForm, EnrollmentCard, HostCard } from './host-cards';
 export function HostsPage() {
   return (
     <TeamPageShell
       loadingLabel="Loading hosts"
       path="/hosts"
-      heading={{ title: (team) => (team ? `Hosts · ${team.name}` : "Hosts") }}
+      heading={{ title: (team) => (team ? `Hosts · ${team.name}` : 'Hosts') }}
     >
       {({ team, session }) => (
         <WorkspaceHosts
@@ -36,11 +36,11 @@ function WorkspaceHosts({
   const vm = useHostsViewModel(
     workspaceId,
     canManage,
-    availability === "enabled",
+    availability === 'enabled',
   );
-  if (capabilityStatus === "loading" || availability === "loading")
+  if (capabilityStatus === 'loading' || availability === 'loading')
     return <p role="status">Loading host capability…</p>;
-  if (availability !== "enabled")
+  if (availability !== 'enabled')
     return <p>On-prem hosting is unavailable for this deployment.</p>;
   return <HostsContent vm={vm} canManage={canManage} />;
 }
@@ -72,7 +72,7 @@ function HostsContent({ vm, canManage }: { vm: HostsVm; canManage: boolean }) {
         vm={vm}
         hosts={hosts}
         canManage={canManage}
-        showEmpty={vm.status === "ready" && !flowOpen}
+        showEmpty={vm.status === 'ready' && !flowOpen}
       />
     </section>
   );
@@ -106,11 +106,11 @@ function HostList({
   showEmpty,
 }: {
   vm: HostsVm;
-  hosts: HostsVm["hosts"];
+  hosts: HostsVm['hosts'];
   canManage: boolean;
   showEmpty: boolean;
 }) {
-  if (vm.status === "loading")
+  if (vm.status === 'loading')
     return (
       <p role="status" className="hosts-muted">
         Loading machines…

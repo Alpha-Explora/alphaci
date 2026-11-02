@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 
-import { HelpTip } from "@/shared/ui/help-tip";
+import { HelpTip } from '@/shared/ui/help-tip';
 import type {
   DeploymentTarget,
   ProvisionedProject,
   WorkflowFileMetadata,
   WorkflowSettings,
   WorkflowSettingsPreviewResponse,
-} from "@/features/projects";
-import { isPullRequestRole } from "../model/pull-request-compose-rules";
-import { useBrowserTestsViewModel } from "../view-models/use-browser-tests-view-model";
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
-import { BrowserTestsCard } from "./workspace/pipeline-browser-tests-card";
-import { WorkflowStageList } from "./workflow-stage-list";
+} from '@/features/projects';
+import { isPullRequestRole } from '../model/pull-request-compose-rules';
+import { useBrowserTestsViewModel } from '../view-models/use-browser-tests-view-model';
+import type { ProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
+import { BrowserTestsCard } from './workspace/pipeline-browser-tests-card';
+import { WorkflowStageList } from './workflow-stage-list';
 import {
   COVERAGE_THRESHOLD_OPTIONS,
   WORKFLOW_CHECK_OPTIONS,
@@ -25,7 +25,7 @@ import {
   UPDATE_PR_TARGET_NOTE,
   previewDiffBadgeClass,
   previewWorkflowLabel,
-} from "../model/project-detail-tab-rules";
+} from '../model/project-detail-tab-rules';
 
 /**
  * What the Verify stage runs in the browser: the starter checks ALPHACI adds,
@@ -33,12 +33,17 @@ import {
  * so it sits with the workflow it configures (not over the run history). A
  * backend repository gets nothing.
  */
-function BrowserTestsSection({ project, vm }: Readonly<{ project: ProvisionedProject; vm: ProjectDetailTabsViewModel }>) {
+function BrowserTestsSection({
+  project,
+  vm,
+}: Readonly<{ project: ProvisionedProject; vm: ProjectDetailTabsViewModel }>) {
   const view = useBrowserTestsViewModel({ projectId: project.id });
   return (
     <BrowserTestsCard
       view={view}
-      onOpenPullRequest={vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined}
+      onOpenPullRequest={
+        vm.visibleTabs.includes('pulls') ? vm.openPullRequest : undefined
+      }
       workflowAccess={vm.workflowUpdateAccess}
       inConfiguration
     />
@@ -56,9 +61,9 @@ export function WorkflowTab({
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.85rem",
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.85rem',
       }}
     >
       <WorkflowSettingsPanel
@@ -69,7 +74,9 @@ export function WorkflowTab({
         canCreateUpdatePr={isPullRequestRole(vm.appRole)}
         // The update PR opens in the Pull requests tab; a role without it just
         // sees the number.
-        onOpenPullRequest={vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined}
+        onOpenPullRequest={
+          vm.visibleTabs.includes('pulls') ? vm.openPullRequest : undefined
+        }
       />
       <BrowserTestsSection project={project} vm={vm} />
       <WorkflowFiles files={vm.workflowFiles} />
@@ -84,16 +91,12 @@ function workflowSettingsVisible(vm: ProjectDetailTabsViewModel): boolean {
   );
 }
 
-function WorkflowFiles({
-  files,
-}: Readonly<{ files: WorkflowFileMetadata[] }>) {
+function WorkflowFiles({ files }: Readonly<{ files: WorkflowFileMetadata[] }>) {
   if (files.length) {
     return <WorkflowStageList files={files} />;
   }
   return (
-    <p className="env-empty-state">
-      No workflow file metadata is tracked yet.
-    </p>
+    <p className="env-empty-state">No workflow file metadata is tracked yet.</p>
   );
 }
 
@@ -107,7 +110,7 @@ function WorkflowSettingsPanel({
 }: Readonly<{
   enabled: boolean;
   targets: DeploymentTarget[];
-  workflow: ProjectDetailTabsViewModel["workflow"];
+  workflow: ProjectDetailTabsViewModel['workflow'];
   workflowUpdatePrEnabled: boolean;
   canCreateUpdatePr: boolean;
   onOpenPullRequest?: (pullRequestNumber: number) => void;
@@ -117,10 +120,10 @@ function WorkflowSettingsPanel({
     <div
       className="glass-panel"
       style={{
-        padding: "1rem",
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.85rem",
+        padding: '1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.85rem',
       }}
     >
       <WorkflowSettingsHeader workflow={workflow} />
@@ -142,24 +145,24 @@ function WorkflowSettingsPanel({
 
 function WorkflowSettingsHeader({
   workflow,
-}: Readonly<{ workflow: ProjectDetailTabsViewModel["workflow"] }>) {
+}: Readonly<{ workflow: ProjectDetailTabsViewModel['workflow'] }>) {
   return (
     <div
       style={{
-        display: "flex",
-        justifyContent: "space-between",
-        gap: "0.75rem",
-        alignItems: "center",
-        flexWrap: "wrap",
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: '0.75rem',
+        alignItems: 'center',
+        flexWrap: 'wrap',
       }}
     >
       <div>
-        <h4 style={{ margin: 0, fontSize: "0.95rem" }}>Workflow settings</h4>
+        <h4 style={{ margin: 0, fontSize: '0.95rem' }}>Workflow settings</h4>
         <p
           style={{
-            margin: "0.25rem 0 0",
-            color: "var(--text-secondary)",
-            fontSize: "0.78rem",
+            margin: '0.25rem 0 0',
+            color: 'var(--text-secondary)',
+            fontSize: '0.78rem',
           }}
         >
           Preview only
@@ -171,9 +174,9 @@ function WorkflowSettingsHeader({
         disabled={!workflow.settings || workflow.previewing}
         onClick={() => void workflow.previewNow()}
         style={{
-          minHeight: "2rem",
-          padding: "0.35rem 0.85rem",
-          fontSize: "0.78rem",
+          minHeight: '2rem',
+          padding: '0.35rem 0.85rem',
+          fontSize: '0.78rem',
         }}
       >
         {previewWorkflowLabel(workflow.previewing)}
@@ -184,11 +187,9 @@ function WorkflowSettingsHeader({
 
 function WorkflowSettingsFields({
   workflow,
-}: Readonly<{ workflow: ProjectDetailTabsViewModel["workflow"] }>) {
+}: Readonly<{ workflow: ProjectDetailTabsViewModel['workflow'] }>) {
   if (!workflow.settings) {
-    return (
-      <p className="env-empty-state">Loading workflow settings...</p>
-    );
+    return <p className="env-empty-state">Loading workflow settings...</p>;
   }
 
   const settings = workflow.settings;
@@ -263,13 +264,9 @@ function CoverageThresholdField({
   );
 }
 
-function CurrentCoverageOption({
-  threshold,
-}: Readonly<{ threshold: number }>) {
+function CurrentCoverageOption({ threshold }: Readonly<{ threshold: number }>) {
   if (coverageHasPreset(threshold)) return null;
-  return (
-    <option value={String(threshold)}>{threshold}% (current)</option>
-  );
+  return <option value={String(threshold)}>{threshold}% (current)</option>;
 }
 
 function CentralWorkflowRefField({
@@ -317,9 +314,7 @@ function CentralWorkflowRefOptions({
 }>) {
   if (!tags) {
     return (
-      <option value={current}>
-        {tagsError ? current : "Loading tags..."}
-      </option>
+      <option value={current}>{tagsError ? current : 'Loading tags...'}</option>
     );
   }
   return (
@@ -339,14 +334,12 @@ function CurrentCentralRefOption({
   tags,
 }: Readonly<{ current: string; tags: string[] }>) {
   if (centralRefIsListed(tags, current)) return null;
-  return (
-    <option value={current}>{current} (current)</option>
-  );
+  return <option value={current}>{current} (current)</option>;
 }
 
 function WorkflowChecksField({
   workflow,
-}: Readonly<{ workflow: ProjectDetailTabsViewModel["workflow"] }>) {
+}: Readonly<{ workflow: ProjectDetailTabsViewModel['workflow'] }>) {
   if (!workflow.settings) return null;
   const settings = workflow.settings;
   return (
@@ -354,8 +347,8 @@ function WorkflowChecksField({
       <span
         className="input-label"
         style={{
-          display: "block",
-          marginBottom: "0.5rem",
+          display: 'block',
+          marginBottom: '0.5rem',
         }}
       >
         Workflow checks
@@ -364,7 +357,7 @@ function WorkflowChecksField({
         className="enhancement-chips"
         aria-label="Workflow checks"
         role="group"
-        style={{ gap: "0.5rem", flexWrap: "wrap" }}
+        style={{ gap: '0.5rem', flexWrap: 'wrap' }}
       >
         {WORKFLOW_CHECK_OPTIONS.map((check) => (
           <WorkflowCheckChip
@@ -395,11 +388,11 @@ function WorkflowCheckChip({
 }>) {
   return (
     <motion.label
-      className={`enhancement-chip-label-premium${checked ? " enhancement-chip-label--active" : ""}`}
+      className={`enhancement-chip-label-premium${checked ? ' enhancement-chip-label--active' : ''}`}
       htmlFor={`workflow-check-${check.key}`}
       whileTap={{ scale: 0.95 }}
       transition={{
-        type: "spring",
+        type: 'spring',
         stiffness: 500,
         damping: 20,
       }}
@@ -423,8 +416,8 @@ function WorkflowDeployMappings({
     <div>
       <h4
         style={{
-          margin: "0 0 0.5rem",
-          fontSize: "0.85rem",
+          margin: '0 0 0.5rem',
+          fontSize: '0.85rem',
         }}
       >
         Deploy target mappings
@@ -438,9 +431,7 @@ function WorkflowDeployMappingsBody({
   targets,
 }: Readonly<{ targets: DeploymentTarget[] }>) {
   if (!targets.length) {
-    return (
-      <p className="env-empty-state">No deployment target mappings.</p>
-    );
+    return <p className="env-empty-state">No deployment target mappings.</p>;
   }
   return (
     <div className="env-metadata-list">
@@ -466,8 +457,8 @@ function WorkflowError({
       <p
         className="error-text"
         style={{
-          margin: "0.3rem 0 0",
-          fontSize: "0.72rem",
+          margin: '0.3rem 0 0',
+          fontSize: '0.72rem',
         }}
       >
         {message}
@@ -508,7 +499,7 @@ function WorkflowPreviewResult({
   onOpenPullRequest,
 }: Readonly<{
   preview: WorkflowSettingsPreviewResponse | null;
-  workflow: ProjectDetailTabsViewModel["workflow"];
+  workflow: ProjectDetailTabsViewModel['workflow'];
   workflowUpdatePrEnabled: boolean;
   canCreateUpdatePr: boolean;
   onOpenPullRequest?: (pullRequestNumber: number) => void;
@@ -543,7 +534,7 @@ function CreateUpdatePrRow({
   canCreate,
   onOpenPullRequest,
 }: Readonly<{
-  workflow: ProjectDetailTabsViewModel["workflow"];
+  workflow: ProjectDetailTabsViewModel['workflow'];
   enabled: boolean;
   canCreate: boolean;
   onOpenPullRequest?: (pullRequestNumber: number) => void;
@@ -555,10 +546,10 @@ function CreateUpdatePrRow({
   return (
     <div
       style={{
-        display: "flex",
-        gap: "0.75rem",
-        alignItems: "center",
-        flexWrap: "wrap",
+        display: 'flex',
+        gap: '0.75rem',
+        alignItems: 'center',
+        flexWrap: 'wrap',
       }}
     >
       <button
@@ -567,14 +558,14 @@ function CreateUpdatePrRow({
         disabled={workflow.creatingPr}
         onClick={() => void workflow.createPr()}
         style={{
-          minHeight: "2rem",
-          padding: "0.35rem 0.85rem",
-          fontSize: "0.78rem",
+          minHeight: '2rem',
+          padding: '0.35rem 0.85rem',
+          fontSize: '0.78rem',
         }}
       >
         {createUpdatePrLabel(workflow.creatingPr)}
       </button>
-      <span style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>
+      <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
         {UPDATE_PR_TARGET_NOTE}
       </span>
       <WorkflowPrLink
@@ -592,11 +583,18 @@ function CreateUpdatePrRow({
 function WorkflowPrLink({
   number,
   onOpen,
-}: Readonly<{ number: number | null; onOpen?: (pullRequestNumber: number) => void }>) {
+}: Readonly<{
+  number: number | null;
+  onOpen?: (pullRequestNumber: number) => void;
+}>) {
   if (number === null) return null;
   const label = `Pull request #${String(number)}`;
   if (!onOpen) {
-    return <span style={{ color: "var(--text-secondary)", fontSize: "0.78rem" }}>{label}</span>;
+    return (
+      <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
+        {label}
+      </span>
+    );
   }
   return (
     <button
@@ -604,9 +602,9 @@ function WorkflowPrLink({
       type="button"
       onClick={() => onOpen(number)}
       style={{
-        minHeight: "2rem",
-        padding: "0.35rem 0.85rem",
-        fontSize: "0.78rem",
+        minHeight: '2rem',
+        padding: '0.35rem 0.85rem',
+        fontSize: '0.78rem',
       }}
     >
       {label}

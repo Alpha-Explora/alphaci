@@ -1,21 +1,21 @@
 export interface ReadinessCheck {
   id: string;
-  status: "passed" | "failed" | "unverified";
+  status: 'passed' | 'failed' | 'unverified';
   message: string;
 }
 export interface MachineSummary {
   id: string;
   workspaceId: string;
   name: string;
-  platform: "windows" | "ubuntu";
+  platform: 'windows' | 'ubuntu';
   agentVersion: string | null;
   lastSeenAt: string | null;
   status:
-    | "enrollment_pending"
-    | "connected"
-    | "prerequisites_failed"
-    | "offline"
-    | "revoked";
+    | 'enrollment_pending'
+    | 'connected'
+    | 'prerequisites_failed'
+    | 'offline'
+    | 'revoked';
   checks: ReadinessCheck[];
 }
 export interface EnrollmentReceipt {
@@ -28,10 +28,10 @@ export interface EnrollmentReceipt {
   installer: { version: string; url: string; sha256: string };
 }
 export type AssignmentConfig =
-  import("@/shared/api/contracts").OnpremAssignmentConfig;
+  import('@/shared/api/contracts').OnpremAssignmentConfig;
 export type AssignmentRequestConfig =
-  import("@/shared/api/contracts").OnpremAssignmentRequestConfig;
-export type TunnelReport = import("@/shared/api/contracts").TunnelReport;
+  import('@/shared/api/contracts').OnpremAssignmentRequestConfig;
+export type TunnelReport = import('@/shared/api/contracts').TunnelReport;
 export interface MachineAssignment {
   id: string;
   machineId: string;
@@ -57,39 +57,42 @@ export function hostConnectionLabel(
   host: MachineSummary,
   now = Date.now(),
 ): string {
-  if (host.status === "revoked") return "Revoked";
-  if (host.status === "enrollment_pending") return "Awaiting enrollment";
+  if (host.status === 'revoked') return 'Revoked';
+  if (host.status === 'enrollment_pending') return 'Awaiting enrollment';
   if (!host.lastSeenAt || now - Date.parse(host.lastSeenAt) > 90_000)
-    return "Offline";
-  return host.status === "prerequisites_failed"
-    ? "Prerequisites failed"
-    : "Connected";
+    return 'Offline';
+  return host.status === 'prerequisites_failed'
+    ? 'Prerequisites failed'
+    : 'Connected';
 }
 /** Machines AlphaCI assigns to: enrolled, checking in, not revoked. */
 export function healthyHosts(hosts: readonly MachineSummary[]) {
   return hosts.filter(
     (host) =>
-      host.status === "connected" || host.status === "prerequisites_failed",
+      host.status === 'connected' || host.status === 'prerequisites_failed',
   );
 }
 /**
  * The container port and health path per slot an assignment starts from: the
  * backend's defaults for the environment, from the app AlphaCI scaffolded.
  */
-export type AssignmentDefaults = Pick<AssignmentRequestConfig, "ports" | "health">;
+export type AssignmentDefaults = Pick<
+  AssignmentRequestConfig,
+  'ports' | 'health'
+>;
 /**
  * Used only until, or when, the backend's defaults cannot be read (an older
  * backend). The same fallback the backend gives a project with no scaffold.
  */
 export function fallbackAssignmentDefaults(
-  slots: ReadonlyArray<"frontend" | "backend">,
+  slots: ReadonlyArray<'frontend' | 'backend'>,
 ): AssignmentDefaults {
   return {
     ports: slots.map((slot) => ({
       slot,
-      containerPort: slot === "frontend" ? 3000 : 4000,
+      containerPort: slot === 'frontend' ? 3000 : 4000,
     })),
-    health: slots.map((slot) => ({ slot, path: "/" })),
+    health: slots.map((slot) => ({ slot, path: '/' })),
   };
 }
 /** The request part of a stored config: everything except host ports. */
@@ -106,52 +109,51 @@ export function requestedConfig(
 }
 /** Shown while the machine has not reported a tunnel address and said nothing else. */
 export const TUNNEL_WAITING_MESSAGE =
-  "Waiting for the machine to report its address";
+  'Waiting for the machine to report its address';
 /** Where an assignment's environment is reached, as the summary shows it. */
 export type ReachedAt =
-  | { kind: "link"; href: string }
-  | { kind: "text"; text: string };
+  { kind: 'link'; href: string } | { kind: 'text'; text: string };
 export function reachedAt(
   config: AssignmentConfig,
   tunnel: TunnelReport | null,
 ): ReachedAt {
   const { ingress } = config;
-  if (ingress.mode === "configured" && ingress.publicUrl)
-    return { kind: "link", href: ingress.publicUrl };
-  if (ingress.mode === "tunnel") {
-    if (tunnel?.publicUrl) return { kind: "link", href: tunnel.publicUrl };
+  if (ingress.mode === 'configured' && ingress.publicUrl)
+    return { kind: 'link', href: ingress.publicUrl };
+  if (ingress.mode === 'tunnel') {
+    if (tunnel?.publicUrl) return { kind: 'link', href: tunnel.publicUrl };
     return {
-      kind: "text",
+      kind: 'text',
       text: tunnel?.message.trim() || TUNNEL_WAITING_MESSAGE,
     };
   }
-  return { kind: "text", text: "host port on the local network" };
+  return { kind: 'text', text: 'host port on the local network' };
 }
 export function canManageHosts(
   appRole: string | undefined,
   workspaceRole: string | null | undefined,
 ) {
   return (
-    (appRole === "admin" || appRole === "member") &&
+    (appRole === 'admin' || appRole === 'member') &&
     Boolean(workspaceRole) &&
-    workspaceRole !== "viewer"
+    workspaceRole !== 'viewer'
   );
 }
-export type HostPlatform = MachineSummary["platform"];
-export type HostTone = "success" | "danger" | "amber" | "muted" | "brand";
+export type HostPlatform = MachineSummary['platform'];
+export type HostTone = 'success' | 'danger' | 'amber' | 'muted' | 'brand';
 export function hostStatusTone(label: string): HostTone {
-  if (label === "Connected") return "success";
-  if (label === "Prerequisites failed") return "danger";
-  if (label === "Awaiting enrollment") return "brand";
-  if (label === "Offline") return "amber";
-  return "muted";
+  if (label === 'Connected') return 'success';
+  if (label === 'Prerequisites failed') return 'danger';
+  if (label === 'Awaiting enrollment') return 'brand';
+  if (label === 'Offline') return 'amber';
+  return 'muted';
 }
 /**
  * Where a freshly issued enrollment stands. The pending row carries the
  * enrollment's id; once the installer consumes the code that row disappears
  * and a machine row (new id, same name) takes its place.
  */
-export type EnrollmentProgress = "waiting" | "connected" | "expired";
+export type EnrollmentProgress = 'waiting' | 'connected' | 'expired';
 export function enrollmentProgress(
   receipt: { id: string; expiresAt: string },
   name: string,
@@ -159,17 +161,17 @@ export function enrollmentProgress(
   now = Date.now(),
 ): EnrollmentProgress {
   const stillPending = hosts.some(
-    (host) => host.id === receipt.id && host.status === "enrollment_pending",
+    (host) => host.id === receipt.id && host.status === 'enrollment_pending',
   );
   const machine = hosts.some(
     (host) =>
       host.name === name &&
-      host.status !== "enrollment_pending" &&
-      host.status !== "revoked",
+      host.status !== 'enrollment_pending' &&
+      host.status !== 'revoked',
   );
-  if (!stillPending && machine) return "connected";
-  if (Date.parse(receipt.expiresAt) <= now) return "expired";
-  return "waiting";
+  if (!stillPending && machine) return 'connected';
+  if (Date.parse(receipt.expiresAt) <= now) return 'expired';
+  return 'waiting';
 }
 export interface PlatformGuide {
   label: string;
@@ -186,42 +188,42 @@ export interface PlatformGuide {
 }
 export const PLATFORM_GUIDES: Record<HostPlatform, PlatformGuide> = {
   windows: {
-    label: "Windows",
-    summary: "Windows 10/11 or Server with Ubuntu on WSL2",
+    label: 'Windows',
+    summary: 'Windows 10/11 or Server with Ubuntu on WSL2',
     prerequisites: [
-      "Ubuntu in WSL2 with systemd",
-      "Docker running inside Ubuntu",
-      "Administrator access",
+      'Ubuntu in WSL2 with systemd',
+      'Docker running inside Ubuntu',
+      'Administrator access',
     ],
     runIn:
-      "Paste it into PowerShell opened as Administrator, signed in as the account that owns Ubuntu.",
+      'Paste it into PowerShell opened as Administrator, signed in as the account that owns Ubuntu.',
     fileRunIn:
-      "Double-click it on the machine, signed in as the account that owns Ubuntu. It asks for administrator permission itself.",
+      'Double-click it on the machine, signed in as the account that owns Ubuntu. It asks for administrator permission itself.',
     missingPrerequisite:
       "The installer doesn't install Ubuntu or WSL2. If either is missing it stops and says so.",
   },
   ubuntu: {
-    label: "Ubuntu",
-    summary: "Ubuntu server, VM, or desktop",
+    label: 'Ubuntu',
+    summary: 'Ubuntu server, VM, or desktop',
     prerequisites: [
-      "Ubuntu 22.04 or newer with systemd",
-      "Docker Engine and Docker Compose",
-      "A user that can run sudo",
+      'Ubuntu 22.04 or newer with systemd',
+      'Docker Engine and Docker Compose',
+      'A user that can run sudo',
     ],
-    runIn: "Open a terminal on the machine and paste it.",
+    runIn: 'Open a terminal on the machine and paste it.',
     fileRunIn:
-      "Run it on the machine with bash as your normal user. It asks for sudo itself.",
+      'Run it on the machine with bash as your normal user. It asks for sudo itself.',
     fileCopyNote:
-      "Copying it from another computer? Keep the code private: chmod 600 the file, then copy it with scp -p.",
+      'Copying it from another computer? Keep the code private: chmod 600 the file, then copy it with scp -p.',
   },
 };
 export function lastSeenLabel(lastSeenAt: string | null, now = Date.now()) {
-  if (!lastSeenAt) return "Never connected";
+  if (!lastSeenAt) return 'Never connected';
   const seconds = Math.max(
     0,
     Math.round((now - Date.parse(lastSeenAt)) / 1000),
   );
-  if (seconds < 60) return "Seen just now";
+  if (seconds < 60) return 'Seen just now';
   const minutes = Math.round(seconds / 60);
   if (minutes < 60) return `Seen ${minutes} min ago`;
   const hours = Math.round(minutes / 60);
@@ -230,5 +232,5 @@ export function lastSeenLabel(lastSeenAt: string | null, now = Date.now()) {
 }
 export function countdownLabel(expiresAt: string, now = Date.now()) {
   const seconds = Math.max(0, Math.floor((Date.parse(expiresAt) - now) / 1000));
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }

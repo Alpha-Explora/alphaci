@@ -1,13 +1,13 @@
-import type { DeploymentProvisioningRequest } from "../../../../../../src/shared/api/contracts";
-import { buildCreateProjectPayload } from "../../../../../../src/features/workflows/studio/model/create-project-payload";
+import type { DeploymentProvisioningRequest } from '../../../../../../src/shared/api/contracts';
+import { buildCreateProjectPayload } from '../../../../../../src/features/workflows/studio/model/create-project-payload';
 import {
   runEveryEnvironmentOnprem,
   setEnvironmentRunsOn,
-} from "../../../../../../src/features/workflows/studio/model/onprem-hosting-rules";
+} from '../../../../../../src/features/workflows/studio/model/onprem-hosting-rules';
 import {
   ENVIRONMENT_TEMPLATE,
   type EnvironmentDraft,
-} from "../../../../../../src/features/workflows/studio/model/project-environments-rules";
+} from '../../../../../../src/features/workflows/studio/model/project-environments-rules';
 
 /**
  * The create request with each environment's "Runs on":
@@ -20,18 +20,18 @@ const hostedBackend: DeploymentProvisioningRequest = {
   enabled: true,
   targets: [
     {
-      slot: "backend",
-      provider: "render",
-      ownershipMode: "flowci_managed",
-      projectName: "ledger",
-      branchName: "uat",
-      rootDirectory: ".",
-      buildCommand: "npm ci && npm run build",
-      startCommand: "npm run start:prod",
-      renderDeployMethod: "native_git",
-      renderServiceType: "web_service",
-      renderRuntime: "docker",
-      renderInstanceType: "free",
+      slot: 'backend',
+      provider: 'render',
+      ownershipMode: 'flowci_managed',
+      projectName: 'ledger',
+      branchName: 'uat',
+      rootDirectory: '.',
+      buildCommand: 'npm ci && npm run build',
+      startCommand: 'npm run start:prod',
+      renderDeployMethod: 'native_git',
+      renderServiceType: 'web_service',
+      renderRuntime: 'docker',
+      renderInstanceType: 'free',
       env: [],
     },
   ],
@@ -39,35 +39,57 @@ const hostedBackend: DeploymentProvisioningRequest = {
 
 /** A single-repository .NET API, as the wizard hands it to the builder. */
 const input = {
-  projectName: "Ledger",
-  repoName: "ledger",
-  visibility: "private" as const,
-  serviceName: "ledger",
-  servicePath: ".",
-  nodeVersion: "24",
-  coverageThreshold: "80",
-  outputFileName: "ci.yml",
-  backendProjectTypeId: "nestjs",
-  backendWorkflowRecipeId: "standard",
-  backendServiceName: "",
-  backendServicePath: "backend/",
-  frontendProjectTypeId: "nextjs",
-  frontendWorkflowRecipeId: "standard",
-  frontendServiceName: "",
-  frontendServicePath: "frontend/",
+  projectName: 'Ledger',
+  repoName: 'ledger',
+  visibility: 'private' as const,
+  serviceName: 'ledger',
+  servicePath: '.',
+  nodeVersion: '24',
+  coverageThreshold: '80',
+  outputFileName: 'ci.yml',
+  backendProjectTypeId: 'nestjs',
+  backendWorkflowRecipeId: 'standard',
+  backendServiceName: '',
+  backendServicePath: 'backend/',
+  frontendProjectTypeId: 'nextjs',
+  frontendWorkflowRecipeId: 'standard',
+  frontendServiceName: '',
+  frontendServicePath: 'frontend/',
   isMicroservicesShape: false,
   isMultiRepoShape: false,
-  repoShapeId: "standalone",
-  projectTypeId: "dotnet",
-  workflowRecipeId: "standard",
-  tests: { lint: true, unit: true, build: true, coverage: true, security: true, docker: true },
+  repoShapeId: 'standalone',
+  projectTypeId: 'dotnet',
+  workflowRecipeId: 'standard',
+  tests: {
+    lint: true,
+    unit: true,
+    build: true,
+    coverage: true,
+    security: true,
+    docker: true,
+  },
   deploymentProvisioning: hostedBackend,
 };
 
 const sentEnvironments = [
-  { slug: "dev", displayName: "Test", sourceBranch: "dev", role: "non_production" },
-  { slug: "uat", displayName: "UAT", sourceBranch: "uat", role: "non_production" },
-  { slug: "main", displayName: "Production", sourceBranch: "main", role: "production" },
+  {
+    slug: 'dev',
+    displayName: 'Test',
+    sourceBranch: 'dev',
+    role: 'non_production',
+  },
+  {
+    slug: 'uat',
+    displayName: 'UAT',
+    sourceBranch: 'uat',
+    role: 'non_production',
+  },
+  {
+    slug: 'main',
+    displayName: 'Production',
+    sourceBranch: 'main',
+    role: 'production',
+  },
 ];
 
 function payloadOf(result: ReturnType<typeof buildCreateProjectPayload>) {
@@ -75,21 +97,21 @@ function payloadOf(result: ReturnType<typeof buildCreateProjectPayload>) {
   return result.payload;
 }
 
-describe("buildCreateProjectPayload with on-prem environments", () => {
-  it("sends only on-prem targets when every environment runs on-prem", () => {
+describe('buildCreateProjectPayload with on-prem environments', () => {
+  it('sends only on-prem targets when every environment runs on-prem', () => {
     const payload = payloadOf(
       buildCreateProjectPayload({
         ...input,
         environments: runEveryEnvironmentOnprem(ENVIRONMENT_TEMPLATE),
-        onpremSlots: ["backend"],
+        onpremSlots: ['backend'],
       }),
     );
     expect(payload.deploymentProvisioning).toEqual({
       enabled: true,
-      targets: ["dev", "uat", "main"].map((environmentSlug) => ({
-        slot: "backend",
-        provider: "onprem-compose",
-        ownershipMode: "byo",
+      targets: ['dev', 'uat', 'main'].map((environmentSlug) => ({
+        slot: 'backend',
+        provider: 'onprem-compose',
+        ownershipMode: 'byo',
         environmentSlug,
       })),
     });
@@ -101,8 +123,8 @@ describe("buildCreateProjectPayload with on-prem environments", () => {
     const payload = payloadOf(
       buildCreateProjectPayload({
         ...input,
-        environments: setEnvironmentRunsOn(ENVIRONMENT_TEMPLATE, 2, "onprem"),
-        onpremSlots: ["backend"],
+        environments: setEnvironmentRunsOn(ENVIRONMENT_TEMPLATE, 2, 'onprem'),
+        onpremSlots: ['backend'],
       }),
     );
     expect(payload.deploymentProvisioning).toEqual({
@@ -110,10 +132,10 @@ describe("buildCreateProjectPayload with on-prem environments", () => {
       targets: [
         hostedBackend.targets[0],
         {
-          slot: "backend",
-          provider: "onprem-compose",
-          ownershipMode: "byo",
-          environmentSlug: "main",
+          slot: 'backend',
+          provider: 'onprem-compose',
+          ownershipMode: 'byo',
+          environmentSlug: 'main',
         },
       ],
     });
@@ -124,16 +146,25 @@ describe("buildCreateProjectPayload with on-prem environments", () => {
     const managedRows: EnvironmentDraft[] = setEnvironmentRunsOn(
       ENVIRONMENT_TEMPLATE,
       0,
-      "managed",
+      'managed',
     );
     const today = JSON.stringify(
-      payloadOf(buildCreateProjectPayload({ ...input, environments: ENVIRONMENT_TEMPLATE })),
+      payloadOf(
+        buildCreateProjectPayload({
+          ...input,
+          environments: ENVIRONMENT_TEMPLATE,
+        }),
+      ),
     );
     for (const environments of [ENVIRONMENT_TEMPLATE, managedRows]) {
       expect(
         JSON.stringify(
           payloadOf(
-            buildCreateProjectPayload({ ...input, environments, onpremSlots: ["backend"] }),
+            buildCreateProjectPayload({
+              ...input,
+              environments,
+              onpremSlots: ['backend'],
+            }),
           ),
         ),
       ).toBe(today);
@@ -141,26 +172,29 @@ describe("buildCreateProjectPayload with on-prem environments", () => {
     // ...and today's request, written out, so a change to the builder itself shows here.
     expect(today).toBe(
       JSON.stringify({
-        projectName: "Ledger",
-        repoName: "ledger",
-        visibility: "private",
-        repoShape: "standalone",
-        nodeVersion: "24",
+        projectName: 'Ledger',
+        repoName: 'ledger',
+        visibility: 'private',
+        repoShape: 'standalone',
+        nodeVersion: '24',
         coverageThreshold: 80,
         tests: input.tests,
-        outputFileName: "ci.yml",
+        outputFileName: 'ci.yml',
         deploymentProvisioning: hostedBackend,
-        projectTypeId: "dotnet",
-        workflowRecipeId: "standard",
-        serviceName: "ledger",
-        servicePath: ".",
+        projectTypeId: 'dotnet',
+        workflowRecipeId: 'standard',
+        serviceName: 'ledger',
+        servicePath: '.',
         environments: sentEnvironments,
       }),
     );
   });
 
-  it("ignores Runs on when the deployment does not offer on-prem", () => {
-    const withoutOnprem = { ...input, environments: runEveryEnvironmentOnprem(ENVIRONMENT_TEMPLATE) };
+  it('ignores Runs on when the deployment does not offer on-prem', () => {
+    const withoutOnprem = {
+      ...input,
+      environments: runEveryEnvironmentOnprem(ENVIRONMENT_TEMPLATE),
+    };
     const payload = payloadOf(buildCreateProjectPayload(withoutOnprem));
     expect(payload.deploymentProvisioning).toBe(hostedBackend);
     expect(payload.environments).toEqual(sentEnvironments);
@@ -171,28 +205,28 @@ describe("buildCreateProjectPayload with on-prem environments", () => {
       buildCreateProjectPayload({
         ...input,
         isMultiRepoShape: true,
-        repoShapeId: "multi",
+        repoShapeId: 'multi',
         deploymentProvisioning: undefined,
         environments: runEveryEnvironmentOnprem(ENVIRONMENT_TEMPLATE),
-        onpremSlots: ["backend", "frontend"],
+        onpremSlots: ['backend', 'frontend'],
       }),
     );
     expect(payload.environments).toEqual(sentEnvironments);
     expect(payload.deploymentProvisioning?.targets).toHaveLength(6);
     expect(payload.deploymentProvisioning).toEqual({
       enabled: true,
-      targets: ["dev", "uat", "main"].flatMap((environmentSlug) =>
-        ["backend", "frontend"].map((slot) => ({
+      targets: ['dev', 'uat', 'main'].flatMap((environmentSlug) =>
+        ['backend', 'frontend'].map((slot) => ({
           slot,
-          provider: "onprem-compose",
-          ownershipMode: "byo",
+          provider: 'onprem-compose',
+          ownershipMode: 'byo',
           environmentSlug,
         })),
       ),
     });
     expect(payload.multiRepoConfig).toMatchObject({
-      backend: { serviceName: "ledger-backend" },
-      frontend: { serviceName: "ledger-frontend" },
+      backend: { serviceName: 'ledger-backend' },
+      frontend: { serviceName: 'ledger-frontend' },
     });
   });
 
@@ -200,34 +234,40 @@ describe("buildCreateProjectPayload with on-prem environments", () => {
     const result = buildCreateProjectPayload({
       ...input,
       isMultiRepoShape: true,
-      repoShapeId: "multi",
-      environments: runEveryEnvironmentOnprem(ENVIRONMENT_TEMPLATE).map((environment) => ({
-        ...environment,
-        role: "non_production" as const,
-      })),
-      onpremSlots: ["backend", "frontend"],
+      repoShapeId: 'multi',
+      environments: runEveryEnvironmentOnprem(ENVIRONMENT_TEMPLATE).map(
+        (environment) => ({
+          ...environment,
+          role: 'non_production' as const,
+        }),
+      ),
+      onpremSlots: ['backend', 'frontend'],
     });
     expect(result.ok).toBe(false);
   });
 
   it("keeps two repositories' hosted request unchanged", () => {
     const payload = payloadOf(
-      buildCreateProjectPayload({ ...input, isMultiRepoShape: true, repoShapeId: "multi" }),
+      buildCreateProjectPayload({
+        ...input,
+        isMultiRepoShape: true,
+        repoShapeId: 'multi',
+      }),
     );
     expect(payload.deploymentProvisioning).toBe(hostedBackend);
-    expect("environments" in payload).toBe(false);
+    expect('environments' in payload).toBe(false);
   });
 
-  it("sends nothing new for two services in one repository", () => {
+  it('sends nothing new for two services in one repository', () => {
     const payload = payloadOf(
       buildCreateProjectPayload({
         ...input,
         isMicroservicesShape: true,
         environments: runEveryEnvironmentOnprem(ENVIRONMENT_TEMPLATE),
-        onpremSlots: ["backend"],
+        onpremSlots: ['backend'],
       }),
     );
     expect(payload.deploymentProvisioning).toBe(hostedBackend);
-    expect("environments" in payload).toBe(false);
+    expect('environments' in payload).toBe(false);
   });
 });

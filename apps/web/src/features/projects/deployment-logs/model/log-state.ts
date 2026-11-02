@@ -4,9 +4,9 @@ import type {
   LogCursor,
   LogFilterKey,
   LogSource,
-} from "./deployment-logs-types";
-import { EMPTY_LOG_BUFFER, mergeLogPage, type LogBuffer } from "./log-buffer";
-import { cooldownEnd } from "./log-rate-limit";
+} from './deployment-logs-types';
+import { EMPTY_LOG_BUFFER, mergeLogPage, type LogBuffer } from './log-buffer';
+import { cooldownEnd } from './log-rate-limit';
 
 /**
  * The logs ViewModel's state and its transitions, kept out of the hook so each
@@ -37,7 +37,7 @@ export interface LogState {
   filters: LogFilterKey[] | null;
   /** Display string. Never an API object. */
   error: string | null;
-  older: "idle" | "loading";
+  older: 'idle' | 'loading';
 }
 
 export function initialLogState(key: string): LogState {
@@ -52,7 +52,7 @@ export function initialLogState(key: string): LogState {
     rateLimitedUntil: null,
     filters: null,
     error: null,
-    older: "idle",
+    older: 'idle',
   };
 }
 
@@ -62,7 +62,7 @@ export function stateFor(state: LogState, key: string): LogState {
 }
 
 function sourceFields(source: LogSource, reason: string | undefined) {
-  return { source, reason: source === "live" ? null : (reason ?? null) };
+  return { source, reason: source === 'live' ? null : (reason ?? null) };
 }
 
 /**
@@ -79,7 +79,7 @@ export function applySnapshot(
   now: number = Date.now(),
 ): LogState {
   const current = stateFor(state, key);
-  const merged = mergeLogPage(current.buffer, page.logs, "newer");
+  const merged = mergeLogPage(current.buffer, page.logs, 'newer');
   const seed = !current.received;
   return {
     ...current,
@@ -91,7 +91,9 @@ export function applySnapshot(
     filters: page.filters,
     // A legacy-mode rate-limit frame is an empty snapshot: the merge above
     // kept every line, and only the cooldown notice changes.
-    rateLimitedUntil: page.rateLimited ? cooldownEnd(now, page.retryAfterMs) : null,
+    rateLimitedUntil: page.rateLimited
+      ? cooldownEnd(now, page.retryAfterMs)
+      : null,
     error: null,
   };
 }
@@ -109,7 +111,7 @@ export function applyAppend(
 ): LogState {
   if (state.key !== key) return state;
   const buffer = state.buffer.atLive
-    ? mergeLogPage(state.buffer, logs, "newer")
+    ? mergeLogPage(state.buffer, logs, 'newer')
     : state.buffer;
   return {
     ...state,
@@ -127,7 +129,7 @@ export function applyGapPage(
   logs: readonly DeploymentLogLine[],
 ): LogState {
   if (state.key !== key) return state;
-  return { ...state, buffer: mergeLogPage(state.buffer, logs, "newer") };
+  return { ...state, buffer: mergeLogPage(state.buffer, logs, 'newer') };
 }
 
 export function applyStatus(
@@ -150,16 +152,23 @@ export function applyRateLimited(
   retryAfterMs: number | undefined,
   now: number,
 ): LogState {
-  return { ...stateFor(state, key), rateLimitedUntil: cooldownEnd(now, retryAfterMs) };
+  return {
+    ...stateFor(state, key),
+    rateLimitedUntil: cooldownEnd(now, retryAfterMs),
+  };
 }
 
-export function applyError(state: LogState, key: string, error: string): LogState {
-  return { ...stateFor(state, key), error, older: "idle" };
+export function applyError(
+  state: LogState,
+  key: string,
+  error: string,
+): LogState {
+  return { ...stateFor(state, key), error, older: 'idle' };
 }
 
 export function applyOlderLoading(state: LogState, key: string): LogState {
   if (state.key !== key) return state;
-  return { ...state, older: "loading", error: null };
+  return { ...state, older: 'loading', error: null };
 }
 
 /**
@@ -172,12 +181,12 @@ export function applyOlderPage(
   page: DeploymentLogsResponse,
 ): LogState {
   if (state.key !== key) return state;
-  const merged = mergeLogPage(state.buffer, page.logs, "older");
+  const merged = mergeLogPage(state.buffer, page.logs, 'older');
   return {
     ...state,
     buffer: { ...merged, trimmedOldest: false },
     next: page.next,
     hasMore: page.hasMore,
-    older: "idle",
+    older: 'idle',
   };
 }

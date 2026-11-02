@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
+import { useMemo, useState } from 'react';
 
-import { useBranchPreviewsViewModel } from "@/features/projects/previews";
-import { withPreviewCommitMessages } from "../../model/deploy-facts-rules";
-import type { ProjectStatus } from "../../model/projects-types";
+import { useBranchPreviewsViewModel } from '@/features/projects/previews';
+import { withPreviewCommitMessages } from '../../model/deploy-facts-rules';
+import type { ProjectStatus } from '../../model/projects-types';
 import type {
   DeploymentTarget,
   EnvVarMetadata,
   ProjectBranchPreview,
   ProjectDeploymentHistoryItem,
   ProjectDeploymentsResponse,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 import {
   deploysForEnvironment,
   deriveHostingEnvironments,
@@ -22,7 +22,7 @@ import {
   type EnvironmentDeploys,
   type HostingEnvironment,
   type HostingEnvironmentKind,
-} from "../model/hosting-environment-rules";
+} from '../model/hosting-environment-rules';
 
 export interface HostingTabViewModel {
   /** The branch previews read, which colours the environment switcher. */
@@ -69,22 +69,49 @@ export function useHostingTabViewModel(options: {
   /** The service to open on (the Overview's "Full logs" asked for it). */
   initialTargetId: string | null;
 }): HostingTabViewModel {
-  const { projectId, targets, metadata, deployments, deploymentsError, reloadDeployments, previewsEnabled } = options;
-  const [targetId, setTargetId] = useState<string | null>(options.initialTargetId);
-  const [kind, setKind] = useState<HostingEnvironmentKind>("production");
-  const [askedPreviewBranch, setAskedPreviewBranch] = useState<string | null>(null);
-  const branchPreviews = useBranchPreviewsViewModel({ projectId, enabled: previewsEnabled });
+  const {
+    projectId,
+    targets,
+    metadata,
+    deployments,
+    deploymentsError,
+    reloadDeployments,
+    previewsEnabled,
+  } = options;
+  const [targetId, setTargetId] = useState<string | null>(
+    options.initialTargetId,
+  );
+  const [kind, setKind] = useState<HostingEnvironmentKind>('production');
+  const [askedPreviewBranch, setAskedPreviewBranch] = useState<string | null>(
+    null,
+  );
+  const branchPreviews = useBranchPreviewsViewModel({
+    projectId,
+    enabled: previewsEnabled,
+  });
 
   const target = targets.find((item) => item.id === targetId) ?? targets[0];
-  const previews = previewsEnabled ? (branchPreviews.previews?.branches ?? null) : null;
+  const previews = previewsEnabled
+    ? (branchPreviews.previews?.branches ?? null)
+    : null;
   // Messages the host did not send (a Render image deploy) come from the branch previews' lookup.
   const history = useMemo(
     () => withPreviewCommitMessages(deployments?.deployments ?? [], previews),
     [deployments, previews],
   );
-  const siblings = useMemo(() => targets.filter((item) => item.slot === target.slot), [target.slot, targets]);
+  const siblings = useMemo(
+    () => targets.filter((item) => item.slot === target.slot),
+    [target.slot, targets],
+  );
   const environments = useMemo(
-    () => deriveHostingEnvironments({ target, siblings, previews, metadata, deployments: history }),
+    () =>
+      deriveHostingEnvironments({
+        target,
+        siblings,
+        previews,
+        metadata,
+        deployments: history,
+      }),
     [history, metadata, previews, siblings, target],
   );
   const environment = selectEnvironment(environments, kind);
@@ -102,7 +129,10 @@ export function useHostingTabViewModel(options: {
     environments,
     environment,
     selectEnvironment: setKind,
-    previewBranch: resolvePreviewBranch(environment.previewBranches, askedPreviewBranch),
+    previewBranch: resolvePreviewBranch(
+      environment.previewBranches,
+      askedPreviewBranch,
+    ),
     selectPreviewBranch: setAskedPreviewBranch,
     previews,
     notice: hostingNotice({

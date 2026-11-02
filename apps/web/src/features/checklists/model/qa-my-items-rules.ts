@@ -6,9 +6,15 @@
  * `items` from qa-returned-items, a newer one may add fields, and a partial
  * row must degrade to "read-only", never to a control the server refuses. */
 
-import type { ChecklistTargetPersona, ChecklistVerificationType } from "./checklist-types";
-import { TARGET_PERSONA_OPTIONS, VERIFICATION_TYPE_OPTIONS } from "./checklist-rules";
-import { commitLabel, QA_ITEM_STATUSES, QA_SEVERITIES } from "./qa-run-rules";
+import type {
+  ChecklistTargetPersona,
+  ChecklistVerificationType,
+} from './checklist-types';
+import {
+  TARGET_PERSONA_OPTIONS,
+  VERIFICATION_TYPE_OPTIONS,
+} from './checklist-rules';
+import { commitLabel, QA_ITEM_STATUSES, QA_SEVERITIES } from './qa-run-rules';
 import type {
   QaActor,
   QaFixRequest,
@@ -16,13 +22,13 @@ import type {
   QaReturnedItem,
   QaRun,
   QaRunItem,
-} from "./qa-run-types";
-import { oneOf, record, records, text, type Loose } from "./wire-readers";
+} from './qa-run-types';
+import { oneOf, record, records, text, type Loose } from './wire-readers';
 
-const PERSONAS: ReadonlyArray<ChecklistTargetPersona> = TARGET_PERSONA_OPTIONS.map((option) => option.value);
-const VERIFICATION_TYPES: ReadonlyArray<ChecklistVerificationType> = VERIFICATION_TYPE_OPTIONS.map(
-  (option) => option.value,
-);
+const PERSONAS: ReadonlyArray<ChecklistTargetPersona> =
+  TARGET_PERSONA_OPTIONS.map((option) => option.value);
+const VERIFICATION_TYPES: ReadonlyArray<ChecklistVerificationType> =
+  VERIFICATION_TYPE_OPTIONS.map((option) => option.value);
 
 /* ── Reading the response ────────────────────────────────────────────────── */
 
@@ -43,11 +49,13 @@ function fixRequestFrom(value: unknown): QaFixRequest | null {
 
 /** A row version the server can compare, or null (then the item is read-only). */
 function rowVersionFrom(value: unknown): number | null {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0
+    ? value
+    : null;
 }
 
 function positionFrom(value: unknown): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
 
 /** What was recorded against the item. */
@@ -74,8 +82,9 @@ function itemFrom(raw: Loose, runId: string): QaRunItem | null {
     position: positionFrom(raw.position),
     title,
     description: text(raw.description),
-    targetPersona: oneOf(raw.targetPersona, PERSONAS) ?? "all",
-    verificationType: oneOf(raw.verificationType, VERIFICATION_TYPES) ?? "manual",
+    targetPersona: oneOf(raw.targetPersona, PERSONAS) ?? 'all',
+    verificationType:
+      oneOf(raw.verificationType, VERIFICATION_TYPES) ?? 'manual',
     testIdentifier: text(raw.testIdentifier),
     status,
     ...recordedFrom(raw),
@@ -94,9 +103,9 @@ function entryFrom(raw: Loose): QaReturnedItem | null {
   if (!item) return null;
   return {
     runId,
-    branch: text(raw.branch) ?? "",
-    commitSha: text(raw.commitSha) ?? "",
-    checklistName: text(raw.checklistName) ?? "Checklist",
+    branch: text(raw.branch) ?? '',
+    commitSha: text(raw.commitSha) ?? '',
+    checklistName: text(raw.checklistName) ?? 'Checklist',
     item,
   };
 }
@@ -110,7 +119,10 @@ function entriesFrom(value: unknown): QaReturnedItem[] {
 /** Any input to the card's two lists. Absent lists are empty; broken rows are dropped. */
 export function normalizeMyQaItems(value: unknown): QaMyItemsResponse {
   const raw = record(value) ?? {};
-  return { returned: entriesFrom(raw.returned), developerItems: entriesFrom(raw.developerItems) };
+  return {
+    returned: entriesFrom(raw.returned),
+    developerItems: entriesFrom(raw.developerItems),
+  };
 }
 
 /** The older qa-returned-items reply, in the same shape (no developer items). */
@@ -136,8 +148,14 @@ function patchEntries(entries: QaReturnedItem[], run: QaRun): QaReturnedItem[] {
  * Fold the run a PATCH returned into both lists, so the row shows the
  * server's state (status, new rowVersion) at once, without a reload.
  */
-export function applyRunToMyItems(data: QaMyItemsResponse, run: QaRun): QaMyItemsResponse {
-  return { returned: patchEntries(data.returned, run), developerItems: patchEntries(data.developerItems, run) };
+export function applyRunToMyItems(
+  data: QaMyItemsResponse,
+  run: QaRun,
+): QaMyItemsResponse {
+  return {
+    returned: patchEntries(data.returned, run),
+    developerItems: patchEntries(data.developerItems, run),
+  };
 }
 
 /* ── What a developer may do from the Overview ───────────────────────────── */
@@ -148,9 +166,11 @@ export function applyRunToMyItems(data: QaMyItemsResponse, run: QaRun): QaMyItem
  * "Returned to dev" is never offered here: returning is QA's call, made in QA
  * Studio.
  */
-export function developerItemRun(entry: Pick<QaReturnedItem, "item">): Pick<QaRun, "status" | "permissions"> {
+export function developerItemRun(
+  entry: Pick<QaReturnedItem, 'item'>,
+): Pick<QaRun, 'status' | 'permissions'> {
   return {
-    status: "open",
+    status: 'open',
     permissions: {
       canUpdateItems: entry.item.canUpdate,
       canReturnToDev: false,
@@ -161,7 +181,9 @@ export function developerItemRun(entry: Pick<QaReturnedItem, "item">): Pick<QaRu
   };
 }
 
-export function myItemKey(entry: Pick<QaReturnedItem, "runId" | "item">): string {
+export function myItemKey(
+  entry: Pick<QaReturnedItem, 'runId' | 'item'>,
+): string {
   return `${entry.runId}:${entry.item.id}`;
 }
 
@@ -173,11 +195,17 @@ export interface MyItemsCommitGroup {
 }
 
 /** Developer items grouped by the commit they are checked on, in first-seen order. */
-export function groupByCommit(entries: ReadonlyArray<QaReturnedItem>): MyItemsCommitGroup[] {
+export function groupByCommit(
+  entries: ReadonlyArray<QaReturnedItem>,
+): MyItemsCommitGroup[] {
   const groups = new Map<string, MyItemsCommitGroup>();
   for (const entry of entries) {
     const key = `${entry.branch}@${entry.commitSha}`;
-    const group = groups.get(key) ?? { key, label: commitLabel(entry.branch, entry.commitSha), entries: [] };
+    const group = groups.get(key) ?? {
+      key,
+      label: commitLabel(entry.branch, entry.commitSha),
+      entries: [],
+    };
     group.entries.push(entry);
     groups.set(key, group);
   }

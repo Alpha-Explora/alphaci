@@ -1,11 +1,15 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useId } from "react";
+import Link from 'next/link';
+import { useId } from 'react';
 
-import { ProjectQaWorkspace } from "@/features/checklists/requirements";
-import { canManageProjectMembers, projectMembersHref, projectStatusVariant } from "@/features/groups";
-import type { AppRole } from "@/shared/api/contracts";
+import { ProjectQaWorkspace } from '@/features/checklists/requirements';
+import {
+  canManageProjectMembers,
+  projectMembersHref,
+  projectStatusVariant,
+} from '@/features/groups';
+import type { AppRole } from '@/shared/api/contracts';
 
 import {
   FEATURES_REQUIRED_NOTE,
@@ -17,12 +21,19 @@ import {
   studioLinkFor,
   verifyProjectId,
   type FolderFeatureGate,
-} from "../model/project-folder-rules";
-import type { FolderRepository, ProjectFolder } from "../model/project-folder-types";
-import type { ProjectFoldersViewModel } from "../view-models/use-project-folders-view-model";
-import { AddRepositoryAction, FeatureNudge, FeaturesRequiredNote } from "./feature-gate";
-import { BackIcon, PeopleIcon, StudioIcon } from "./project-folder-icons";
-import { RepoChip } from "./repo-chip";
+} from '../model/project-folder-rules';
+import type {
+  FolderRepository,
+  ProjectFolder,
+} from '../model/project-folder-types';
+import type { ProjectFoldersViewModel } from '../view-models/use-project-folders-view-model';
+import {
+  AddRepositoryAction,
+  FeatureNudge,
+  FeaturesRequiredNote,
+} from './feature-gate';
+import { BackIcon, PeopleIcon, StudioIcon } from './project-folder-icons';
+import { RepoChip } from './repo-chip';
 
 /**
  * The viewer's studio (Verify in QA Studio for the QA Team and admins, Open
@@ -36,13 +47,18 @@ function DetailActions({
   folder,
   gate,
   noteId,
-}: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder; gate: FolderFeatureGate; noteId: string }>) {
+}: Readonly<{
+  vm: ProjectFoldersViewModel;
+  folder: ProjectFolder;
+  gate: FolderFeatureGate;
+  noteId: string;
+}>) {
   const verifyId = vm.canVerifyInQaStudio ? verifyProjectId(folder) : null;
   const studio = verifyId ? studioLinkFor(vm.appRole, verifyId) : null;
   const membersHref = canManageProjectMembers(vm.appRole)
     ? projectMembersHref(vm.groupId, folder.deliveryProjectId)
     : null;
-  if (!studio && !membersHref && gate.addRepository === "hidden") return null;
+  if (!studio && !membersHref && gate.addRepository === 'hidden') return null;
   return (
     <div className="pf-detail__actions">
       {studio ? (
@@ -73,8 +89,19 @@ function FeatureGateBanner({
   folder,
   gate,
   noteId,
-}: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder; gate: FolderFeatureGate; noteId: string }>) {
-  if (gate.addRepository === "blocked") return <FeaturesRequiredNote id={noteId} className="pf-gate-note pf-gate-note--banner" />;
+}: Readonly<{
+  vm: ProjectFoldersViewModel;
+  folder: ProjectFolder;
+  gate: FolderFeatureGate;
+  noteId: string;
+}>) {
+  if (gate.addRepository === 'blocked')
+    return (
+      <FeaturesRequiredNote
+        id={noteId}
+        className="pf-gate-note pf-gate-note--banner"
+      />
+    );
   if (!gate.featureNudge) return null;
   return (
     <FeatureNudge
@@ -90,7 +117,12 @@ function RepositoryRow({
   appRole,
   canMove,
   onMove,
-}: Readonly<{ repo: FolderRepository; appRole: AppRole | null; canMove: boolean; onMove: () => void }>) {
+}: Readonly<{
+  repo: FolderRepository;
+  appRole: AppRole | null;
+  canMove: boolean;
+  onMove: () => void;
+}>) {
   return (
     <li className="pf-repo">
       <div className="pf-repo__main">
@@ -101,11 +133,15 @@ function RepositoryRow({
           projectId={repo.project?.id ?? null}
           appRole={appRole}
         />
-        {repo.repoFullName ? <code className="pf-repo__full">{repo.repoFullName}</code> : null}
+        {repo.repoFullName ? (
+          <code className="pf-repo__full">{repo.repoFullName}</code>
+        ) : null}
       </div>
       <div className="pf-repo__aside">
         {repo.project ? (
-          <span className={`project-status-badge ${projectStatusVariant(repo.project.status)}`}>
+          <span
+            className={`project-status-badge ${projectStatusVariant(repo.project.status)}`}
+          >
             {repo.project.status}
           </span>
         ) : (
@@ -130,12 +166,20 @@ function EmptyRepositories({
   vm,
   folder,
   gate,
-}: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder; gate: FolderFeatureGate }>) {
+}: Readonly<{
+  vm: ProjectFoldersViewModel;
+  folder: ProjectFolder;
+  gate: FolderFeatureGate;
+}>) {
   const noteId = useId();
-  const blocked = gate.addRepository === "blocked";
+  const blocked = gate.addRepository === 'blocked';
   return (
     <div className="pf-empty-folder">
-      <p id={noteId}>{blocked ? FEATURES_REQUIRED_NOTE : emptyRepositoriesCopy(vm.canCreateRepository)}</p>
+      <p id={noteId}>
+        {blocked
+          ? FEATURES_REQUIRED_NOTE
+          : emptyRepositoriesCopy(vm.canCreateRepository)}
+      </p>
       <AddRepositoryAction
         state={gate.addRepository}
         href={createRepositoryHref(vm.groupId, folder.deliveryProjectId)}
@@ -155,7 +199,8 @@ function ProjectQaSection({
   folder,
 }: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder }>) {
   if (!vm.qaChecklistsEnabled) return null;
-  if (!showsProjectQaWorkspace(vm.appRole, folder.repositories.length)) return null;
+  if (!showsProjectQaWorkspace(vm.appRole, folder.repositories.length))
+    return null;
   return (
     <section className="pf-detail__block" aria-labelledby="pf-qa-title">
       <h4 className="pf-subhead" id="pf-qa-title">
@@ -166,9 +211,13 @@ function ProjectQaSection({
         projectName={folder.name}
         appRole={vm.appRole}
         newFeatureRequest={
-          vm.newFeatureRequest?.deliveryProjectId === folder.deliveryProjectId ? vm.newFeatureRequest.nonce : 0
+          vm.newFeatureRequest?.deliveryProjectId === folder.deliveryProjectId
+            ? vm.newFeatureRequest.nonce
+            : 0
         }
-        onFeatureCount={(count) => vm.noteFeatureCount(folder.deliveryProjectId, count)}
+        onFeatureCount={(count) =>
+          vm.noteFeatureCount(folder.deliveryProjectId, count)
+        }
       />
     </section>
   );
@@ -179,13 +228,17 @@ function ProjectFolderDangerZone({
   onDelete,
 }: Readonly<{ folder: ProjectFolder; onDelete: () => void }>) {
   return (
-    <section className="pf-detail__block pf-danger" aria-labelledby="pf-danger-title">
+    <section
+      className="pf-detail__block pf-danger"
+      aria-labelledby="pf-danger-title"
+    >
       <h4 className="pf-subhead" id="pf-danger-title">
         Danger zone
       </h4>
       <div className="pf-danger__row">
         <p className="pf-note">
-          Delete {folder.name} and every repository inside it. This cannot be undone.
+          Delete {folder.name} and every repository inside it. This cannot be
+          undone.
         </p>
         <button type="button" className="pf-delete-submit" onClick={onDelete}>
           Delete Project
@@ -252,7 +305,9 @@ export function ProjectFolderDetail({
 
       <ProjectQaSection vm={vm} folder={folder} />
 
-      {vm.canManage ? <ProjectFolderDangerZone folder={folder} onDelete={onDelete} /> : null}
+      {vm.canManage ? (
+        <ProjectFolderDangerZone folder={folder} onDelete={onDelete} />
+      ) : null}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import type {
   DeploymentProvisioningEnvSet,
@@ -7,7 +7,7 @@ import type {
   EnvLane,
   EnvOwnershipMode,
   ProviderConnection,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 import {
   defaultProjectPlaceholder,
   envVarsForDisplay,
@@ -25,7 +25,7 @@ import {
   updateEnvVar,
   updateTargetAt,
   variableLaneLabel,
-} from "../model/deployment-provisioning-rules";
+} from '../model/deployment-provisioning-rules';
 
 interface DeploymentTargetCardProps {
   onChange: (value: DeploymentProvisioningRequest) => void;
@@ -66,16 +66,16 @@ export function DeploymentTargetCard({
   return (
     <section
       className={[
-        "env-provisioning-section",
-        "deployment-target-section",
-        "wizard-target",
+        'env-provisioning-section',
+        'deployment-target-section',
+        'wizard-target',
         `deployment-target-section--${target.provider}`,
-      ].join(" ")}
+      ].join(' ')}
       aria-label={`${targetTitle(target)} on ${providerLabel(target.provider)}`}
     >
       <DeploymentTargetHeader ownershipMode={ownershipMode} target={target} />
       <div className="wizard-target__grid">
-        {target.ownershipMode === "byo" ? (
+        {target.ownershipMode === 'byo' ? (
           <ProviderConnectionField
             {...edit}
             connections={providerConnections.filter(
@@ -85,7 +85,9 @@ export function DeploymentTargetCard({
           />
         ) : null}
         <NameField {...edit} repoShape={repoShape} />
-        {target.provider === "render" ? <RenderPlacementFields {...edit} /> : null}
+        {target.provider === 'render' ? (
+          <RenderPlacementFields {...edit} />
+        ) : null}
       </div>
       <TargetVariables {...edit} />
     </section>
@@ -95,18 +97,24 @@ export function DeploymentTargetCard({
 function DeploymentTargetHeader({
   ownershipMode,
   target,
-}: Readonly<{ ownershipMode: EnvOwnershipMode; target: DeploymentProvisioningTargetRequest }>) {
+}: Readonly<{
+  ownershipMode: EnvOwnershipMode;
+  target: DeploymentProvisioningTargetRequest;
+}>) {
   const ownership =
-    ownershipMode === "flowci_managed"
-      ? "Centralized on ALPHACI"
+    ownershipMode === 'flowci_managed'
+      ? 'Centralized on ALPHACI'
       : `Your ${providerLabel(target.provider)} account`;
   return (
     <div className="wizard-target__header">
       <span
-        className={["deployment-target-icon", `deployment-target-icon--${target.provider}`].join(" ")}
+        className={[
+          'deployment-target-icon',
+          `deployment-target-icon--${target.provider}`,
+        ].join(' ')}
         aria-hidden="true"
       >
-        {target.provider === "vercel" ? "V" : "R"}
+        {target.provider === 'vercel' ? 'V' : 'R'}
       </span>
       <div className="wizard-target__heading">
         <h4>{targetTitle(target)}</h4>
@@ -115,7 +123,9 @@ function DeploymentTargetHeader({
         </p>
       </div>
       <span className="deployment-target-role">{targetKindLabel(target)}</span>
-      <p className="wizard-field__hint wizard-target__about">{ownershipDescription(target)}</p>
+      <p className="wizard-field__hint wizard-target__about">
+        {ownershipDescription(target)}
+      </p>
     </div>
   );
 }
@@ -127,17 +137,23 @@ function ProviderConnectionField({
   target,
   targetIndex,
   value,
-}: Readonly<TargetEditProps & { connections: ProviderConnection[]; loading: boolean }>) {
-  const selected = target.providerConnectionId ?? connections[0]?.id ?? "";
+}: Readonly<
+  TargetEditProps & { connections: ProviderConnection[]; loading: boolean }
+>) {
+  const selected = target.providerConnectionId ?? connections[0]?.id ?? '';
   return (
     <label className="wizard-field wizard-field--full">
       <span className="wizard-field__label">Provider connection</span>
       <select
-        aria-label={targetFieldAriaLabel("Provider connection", targetIndex)}
+        aria-label={targetFieldAriaLabel('Provider connection', targetIndex)}
         value={selected}
         disabled={loading || connections.length === 0}
         onChange={(event) =>
-          onChange(updateTargetAt(value, targetIndex, { providerConnectionId: event.target.value }))
+          onChange(
+            updateTargetAt(value, targetIndex, {
+              providerConnectionId: event.target.value,
+            }),
+          )
         }
       >
         {connections.length ? (
@@ -165,10 +181,14 @@ function NameField({
     <label className="wizard-field wizard-field--full">
       <span className="wizard-field__label">{targetNameLabel(target)}</span>
       <input
-        aria-label={targetFieldAriaLabel("Provider project name", targetIndex)}
-        value={target.projectName ?? ""}
+        aria-label={targetFieldAriaLabel('Provider project name', targetIndex)}
+        value={target.projectName ?? ''}
         onChange={(event) =>
-          onChange(updateTargetAt(value, targetIndex, { projectName: event.target.value }))
+          onChange(
+            updateTargetAt(value, targetIndex, {
+              projectName: event.target.value,
+            }),
+          )
         }
         placeholder={defaultProjectPlaceholder(repoShape, target)}
         autoComplete="off"
@@ -178,16 +198,25 @@ function NameField({
   );
 }
 
-function RenderPlacementFields({ onChange, target, targetIndex, value }: Readonly<TargetEditProps>) {
+function RenderPlacementFields({
+  onChange,
+  target,
+  targetIndex,
+  value,
+}: Readonly<TargetEditProps>) {
   return (
     <>
       <label className="wizard-field">
         <span className="wizard-field__label">Region</span>
         <input
-          aria-label={targetFieldAriaLabel("Render region", targetIndex)}
-          value={target.renderRegion ?? "singapore"}
+          aria-label={targetFieldAriaLabel('Render region', targetIndex)}
+          value={target.renderRegion ?? 'singapore'}
           onChange={(event) =>
-            onChange(updateTargetAt(value, targetIndex, { renderRegion: event.target.value }))
+            onChange(
+              updateTargetAt(value, targetIndex, {
+                renderRegion: event.target.value,
+              }),
+            )
           }
           autoComplete="off"
         />
@@ -195,15 +224,23 @@ function RenderPlacementFields({ onChange, target, targetIndex, value }: Readonl
       <div className="wizard-field">
         <span className="wizard-field__label">Instance</span>
         <span className="wizard-field__static">
-          {readonlyValueLabel(target.renderInstanceType ?? "free")} web service
+          {readonlyValueLabel(target.renderInstanceType ?? 'free')} web service
         </span>
       </div>
     </>
   );
 }
 
-function TargetVariables({ onChange, target, targetIndex, value }: Readonly<TargetEditProps>) {
-  const envSet: DeploymentProvisioningEnvSet = target.env?.[0] ?? { lane: "preview", vars: [] };
+function TargetVariables({
+  onChange,
+  target,
+  targetIndex,
+  value,
+}: Readonly<TargetEditProps>) {
+  const envSet: DeploymentProvisioningEnvSet = target.env?.[0] ?? {
+    lane: 'preview',
+    vars: [],
+  };
   const vars = envVarsForDisplay(envSet);
   const setEnv = (next: DeploymentProvisioningEnvSet) =>
     onChange(updateTargetAt(value, targetIndex, updateEnvSet(target, next)));
@@ -213,16 +250,21 @@ function TargetVariables({ onChange, target, targetIndex, value }: Readonly<Targ
         <div className="wizard-target__variables-title">
           <strong>Target variables</strong>
           <p className="wizard-field__hint">
-            Values are sent during setup and are not stored by ALPHACI. They override
-            shared defaults with the same key.
+            Values are sent during setup and are not stored by ALPHACI. They
+            override shared defaults with the same key.
           </p>
         </div>
         <label className="wizard-target__lane">
           <span className="wizard-field__label">Applies to</span>
           <select
-            aria-label={targetFieldAriaLabel("Provisioning environment", targetIndex)}
+            aria-label={targetFieldAriaLabel(
+              'Provisioning environment',
+              targetIndex,
+            )}
             value={envSet.lane}
-            onChange={(event) => setEnv({ ...envSet, lane: event.target.value as EnvLane })}
+            onChange={(event) =>
+              setEnv({ ...envSet, lane: event.target.value as EnvLane })
+            }
           >
             {lanes.map((lane) => (
               <option key={lane} value={lane}>
@@ -233,9 +275,10 @@ function TargetVariables({ onChange, target, targetIndex, value }: Readonly<Targ
         </label>
       </div>
 
-      {target.provider === "vercel" ? (
+      {target.provider === 'vercel' ? (
         <p className="wizard-field__hint">
-          Vercel deployment secrets are installed automatically after the project is created.
+          Vercel deployment secrets are installed automatically after the
+          project is created.
         </p>
       ) : null}
 
@@ -254,7 +297,9 @@ function TargetVariables({ onChange, target, targetIndex, value }: Readonly<Targ
         <button
           type="button"
           className="ghost-button wizard-target__add"
-          onClick={() => setEnv({ ...envSet, vars: [...vars, { key: "", value: "" }] })}
+          onClick={() =>
+            setEnv({ ...envSet, vars: [...vars, { key: '', value: '' }] })
+          }
         >
           Add variable
         </button>
@@ -283,10 +328,18 @@ function TargetVarRow({
       <label>
         <span>Key</span>
         <input
-          aria-label={targetVarAriaLabel("Variable key", targetIndex, variableIndex)}
+          aria-label={targetVarAriaLabel(
+            'Variable key',
+            targetIndex,
+            variableIndex,
+          )}
           value={variable.key}
           onChange={(event) =>
-            setEnv(updateEnvVar(envSet, variableIndex, { key: event.target.value.toUpperCase() }))
+            setEnv(
+              updateEnvVar(envSet, variableIndex, {
+                key: event.target.value.toUpperCase(),
+              }),
+            )
           }
           placeholder="DATABASE_URL"
           autoComplete="off"
@@ -295,12 +348,20 @@ function TargetVarRow({
       <label>
         <span>Value</span>
         <input
-          aria-label={targetVarAriaLabel("Variable value", targetIndex, variableIndex)}
+          aria-label={targetVarAriaLabel(
+            'Variable value',
+            targetIndex,
+            variableIndex,
+          )}
           type="password"
           autoComplete="off"
           value={variable.value}
           onChange={(event) =>
-            setEnv(updateEnvVar(envSet, variableIndex, { value: event.target.value }))
+            setEnv(
+              updateEnvVar(envSet, variableIndex, {
+                value: event.target.value,
+              }),
+            )
           }
           placeholder="value"
         />
@@ -308,11 +369,20 @@ function TargetVarRow({
       <button
         type="button"
         className="env-var-row__remove env-var-remove"
-        aria-label={targetVarAriaLabel("Remove variable", targetIndex, variableIndex)}
+        aria-label={targetVarAriaLabel(
+          'Remove variable',
+          targetIndex,
+          variableIndex,
+        )}
         disabled={vars.length === 1 && !variable.key && !variable.value}
         onClick={() => {
-          const nextVars = vars.filter((_, currentIndex) => currentIndex !== variableIndex);
-          setEnv({ ...envSet, vars: nextVars.length ? nextVars : [{ key: "", value: "" }] });
+          const nextVars = vars.filter(
+            (_, currentIndex) => currentIndex !== variableIndex,
+          );
+          setEnv({
+            ...envSet,
+            vars: nextVars.length ? nextVars : [{ key: '', value: '' }],
+          });
         }}
       >
         <svg

@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { AnimatePresence, motion } from "framer-motion";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from 'framer-motion';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
-import { useCapabilities } from "@/features/capabilities/current";
+import { useCapabilities } from '@/features/capabilities/current';
 import type {
   CreateProjectResult,
   DeploymentProvisioningResult,
   SetupProjectResponse,
   WorkflowFileMetadata,
-} from "@/shared/api/contracts";
-import { cleanUserMessage } from "../model/workflow-studio-rules";
+} from '@/shared/api/contracts';
+import { cleanUserMessage } from '../model/workflow-studio-rules';
 
 interface SetupResultPanelProps {
   existingRepoResult?: SetupProjectResponse | null;
@@ -73,13 +73,13 @@ function WorkflowFilesList({
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.35rem",
-        padding: "0.7rem",
-        border: "1px solid var(--border-soft)",
-        borderRadius: "8px",
-        background: "rgba(0,0,0,0.14)",
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.35rem',
+        padding: '0.7rem',
+        border: '1px solid var(--border-soft)',
+        borderRadius: '8px',
+        background: 'rgba(0,0,0,0.14)',
       }}
     >
       <p className="helper-text" style={{ margin: 0, fontWeight: 700 }}>
@@ -89,17 +89,17 @@ function WorkflowFilesList({
         <div
           key={file.path}
           style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(7rem, auto) 1fr",
-            gap: "0.45rem",
-            alignItems: "center",
-            fontSize: "0.78rem",
+            display: 'grid',
+            gridTemplateColumns: 'minmax(7rem, auto) 1fr',
+            gap: '0.45rem',
+            alignItems: 'center',
+            fontSize: '0.78rem',
           }}
         >
-          <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
             {file.name}
           </span>
-          <code style={{ color: "var(--text-muted)", wordBreak: "break-all" }}>
+          <code style={{ color: 'var(--text-muted)', wordBreak: 'break-all' }}>
             {file.path}
           </code>
         </div>
@@ -109,69 +109,69 @@ function WorkflowFilesList({
 }
 
 function formatProvider(provider: string) {
-  return provider === "vercel"
-    ? "Vercel"
-    : provider === "render"
-      ? "Render"
+  return provider === 'vercel'
+    ? 'Vercel'
+    : provider === 'render'
+      ? 'Render'
       : provider;
 }
 
 function deploymentRouteLabel(
-  target: DeploymentProvisioningResult["targets"][number],
+  target: DeploymentProvisioningResult['targets'][number],
 ) {
-  if (target.provider === "render") {
+  if (target.provider === 'render') {
     switch (target.deploymentStrategy) {
-      case "render_image_pushed":
-        return target.ownershipMode === "byo"
-          ? "GitHub Actions image deploy"
-          : "Archived managed image deploy";
-      case "render_git_connected":
-        return "Native Render build";
-      case "render_existing_service":
-        return "Existing Render service";
+      case 'render_image_pushed':
+        return target.ownershipMode === 'byo'
+          ? 'GitHub Actions image deploy'
+          : 'Archived managed image deploy';
+      case 'render_git_connected':
+        return 'Native Render build';
+      case 'render_existing_service':
+        return 'Existing Render service';
       default:
         break;
     }
   }
 
   switch (target.deploymentStrategy) {
-    case "vercel_git_connected":
-      return "Connected through Vercel Git";
-    case "vercel_ci_pushed":
-      return "Deploys through GitHub Actions";
-    case "provider_native":
-      return "Provider native";
+    case 'vercel_git_connected':
+      return 'Connected through Vercel Git';
+    case 'vercel_ci_pushed':
+      return 'Deploys through GitHub Actions';
+    case 'provider_native':
+      return 'Provider native';
     default:
-      return target.ownershipMode === "byo"
-        ? "Customer managed"
-        : "Archived ALPHACI-managed";
+      return target.ownershipMode === 'byo'
+        ? 'Customer managed'
+        : 'Archived ALPHACI-managed';
   }
 }
 
 function githubSecretNames(metadata: Record<string, unknown> | undefined) {
   const githubSecrets = metadata?.githubSecrets;
-  if (!githubSecrets || typeof githubSecrets !== "object") return [];
+  if (!githubSecrets || typeof githubSecrets !== 'object') return [];
   return Object.values(githubSecrets as Record<string, unknown>).filter(
-    (value): value is string => typeof value === "string" && value.length > 0,
+    (value): value is string => typeof value === 'string' && value.length > 0,
   );
 }
 
 function formatRenderServiceType(value: string | null | undefined) {
   if (!value) return null;
-  return value.replace(/_/g, " ");
+  return value.replace(/_/g, ' ');
 }
 
 function formatRenderRuntime(value: string | null | undefined) {
   if (!value) return null;
-  if (value === "node") return "Node.js / Bun";
-  if (value === "docker") return "Dockerfile";
+  if (value === 'node') return 'Node.js / Bun';
+  if (value === 'docker') return 'Dockerfile';
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function renderTargetDetails(
-  target: DeploymentProvisioningResult["targets"][number],
+  target: DeploymentProvisioningResult['targets'][number],
 ) {
-  if (target.provider !== "render") return [];
+  if (target.provider !== 'render') return [];
   return [
     formatRenderServiceType(target.renderServiceType),
     formatRenderRuntime(target.renderRuntime),
@@ -182,16 +182,16 @@ function renderTargetDetails(
 }
 
 function hasRenderDeploymentSecrets(
-  target: DeploymentProvisioningResult["targets"][number],
+  target: DeploymentProvisioningResult['targets'][number],
 ) {
-  if (target.provider !== "render") return false;
+  if (target.provider !== 'render') return false;
   const secrets = githubSecretNames(target.providerMetadata);
-  return ["API_KEY", "SERVICE_ID", "OWNER_ID"].every((suffix) =>
+  return ['API_KEY', 'SERVICE_ID', 'OWNER_ID'].every((suffix) =>
     secrets.some((secretName) => secretName.endsWith(suffix)),
   );
 }
 
-type ProvisionedTargetSummary = DeploymentProvisioningResult["targets"][number];
+type ProvisionedTargetSummary = DeploymentProvisioningResult['targets'][number];
 
 /**
  * The live URL a provisioned service answers on. Prefers the URL the provider
@@ -201,13 +201,13 @@ type ProvisionedTargetSummary = DeploymentProvisioningResult["targets"][number];
 function provisioningTargetUrl(
   target: ProvisionedTargetSummary,
 ): string | null {
-  if (target.status === "failed") {
+  if (target.status === 'failed') {
     return null;
   }
 
-  if (target.provider === "render") {
-    const metadataUrl = target.providerMetadata?.["renderServiceUrl"];
-    if (typeof metadataUrl === "string" && metadataUrl.trim()) {
+  if (target.provider === 'render') {
+    const metadataUrl = target.providerMetadata?.['renderServiceUrl'];
+    if (typeof metadataUrl === 'string' && metadataUrl.trim()) {
       return metadataUrl.trim();
     }
     return target.providerProjectName
@@ -215,7 +215,7 @@ function provisioningTargetUrl(
       : null;
   }
 
-  if (target.provider === "vercel") {
+  if (target.provider === 'vercel') {
     return target.providerProjectName
       ? `https://${target.providerProjectName}.vercel.app`
       : null;
@@ -236,9 +236,9 @@ function ServiceUrlLine({ url }: Readonly<{ url: string }>) {
   return (
     <div
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "0.5rem",
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
         minWidth: 0,
       }}
     >
@@ -248,17 +248,17 @@ function ServiceUrlLine({ url }: Readonly<{ url: string }>) {
         rel="noreferrer"
         title={url}
         style={{
-          fontSize: "0.78rem",
-          fontFamily: "var(--font-mono, monospace)",
-          color: "var(--brand)",
-          textDecoration: "none",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
+          fontSize: '0.78rem',
+          fontFamily: 'var(--font-mono, monospace)',
+          color: 'var(--brand)',
+          textDecoration: 'none',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
           minWidth: 0,
         }}
       >
-        {url.replace(/^https?:\/\//, "")}
+        {url.replace(/^https?:\/\//, '')}
       </a>
       <button
         type="button"
@@ -273,25 +273,25 @@ function ServiceUrlLine({ url }: Readonly<{ url: string }>) {
             });
         }}
         style={{
-          minHeight: "1.6rem",
-          padding: "0.1rem 0.55rem",
-          fontSize: "0.7rem",
+          minHeight: '1.6rem',
+          padding: '0.1rem 0.55rem',
+          fontSize: '0.7rem',
           flexShrink: 0,
         }}
       >
-        {copied ? "Copied" : "Copy"}
+        {copied ? 'Copied' : 'Copy'}
       </button>
     </div>
   );
 }
 
 function provisioningStatusCopy(
-  status: DeploymentProvisioningResult["status"],
+  status: DeploymentProvisioningResult['status'],
 ): string {
-  if (status === "completed") return "Provider targets were created.";
-  if (status === "partial")
-    return "Some provider provisioning steps need attention.";
-  return "Provider provisioning failed.";
+  if (status === 'completed') return 'Provider targets were created.';
+  if (status === 'partial')
+    return 'Some provider provisioning steps need attention.';
+  return 'Provider provisioning failed.';
 }
 
 function TargetEnvSet({
@@ -299,16 +299,16 @@ function TargetEnvSet({
   envSet,
 }: Readonly<{
   target: ProvisionedTargetSummary;
-  envSet: ProvisionedTargetSummary["env"][number];
+  envSet: ProvisionedTargetSummary['env'][number];
 }>) {
   const label =
-    envSet.lane === "production"
-      ? "production"
-      : `preview: ${envSet.gitBranch ?? "branch"}`;
+    envSet.lane === 'production'
+      ? 'production'
+      : `preview: ${envSet.gitBranch ?? 'branch'}`;
   return (
     <div
       className="deployment-provisioning-summary__env"
-      key={`${target.slot}-${envSet.lane}-${envSet.gitBranch ?? ""}`}
+      key={`${target.slot}-${envSet.lane}-${envSet.gitBranch ?? ''}`}
     >
       <span>{label}</span>
       <div>
@@ -320,7 +320,7 @@ function TargetEnvSet({
             {variable.key}
             {variable.errorSummary
               ? ` failed: ${cleanUserMessage(variable.errorSummary)}`
-              : " failed"}
+              : ' failed'}
           </code>
         ))}
       </div>
@@ -355,12 +355,12 @@ function ProvisionedTargetCard({
         {target.slot} - {target.status} - {deploymentRouteLabel(target)}
         {target.errorSummary
           ? ` - ${cleanUserMessage(target.errorSummary)}`
-          : ""}
+          : ''}
       </p>
       {serviceUrl ? <ServiceUrlLine url={serviceUrl} /> : null}
       {details.length > 0 ? (
         <p className="helper-text" style={{ margin: 0 }}>
-          {details.join(" - ")}
+          {details.join(' - ')}
         </p>
       ) : null}
       {hasRenderDeploymentSecrets(target) ? (
@@ -380,7 +380,7 @@ function ProvisionedTargetCard({
       ) : null}
       {target.env.map((envSet) => (
         <TargetEnvSet
-          key={`${target.slot}-${envSet.lane}-${envSet.gitBranch ?? ""}`}
+          key={`${target.slot}-${envSet.lane}-${envSet.gitBranch ?? ''}`}
           target={target}
           envSet={envSet}
         />
@@ -392,7 +392,7 @@ function ProvisionedTargetCard({
 export function DeploymentProvisioningSummary({
   result,
 }: Readonly<{ result?: DeploymentProvisioningResult }>) {
-  if (!result || result.status === "skipped" || result.targets.length === 0) {
+  if (!result || result.status === 'skipped' || result.targets.length === 0) {
     return null;
   }
 
@@ -401,7 +401,7 @@ export function DeploymentProvisioningSummary({
       <div className="env-section-header">
         <div>
           <h4>Deployment provisioning</h4>
-          <p className="helper-text" style={{ margin: "0.25rem 0 0" }}>
+          <p className="helper-text" style={{ margin: '0.25rem 0 0' }}>
             {provisioningStatusCopy(result.status)}
           </p>
         </div>
@@ -428,7 +428,7 @@ function ExistingRepoResultView({
   existingRepoResult,
   onViewProject,
 }: Readonly<{
-  existingRepoResult: NonNullable<SetupResultPanelProps["existingRepoResult"]>;
+  existingRepoResult: NonNullable<SetupResultPanelProps['existingRepoResult']>;
   onViewProject: () => void;
 }>) {
   return (
@@ -437,7 +437,7 @@ function ExistingRepoResultView({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+      style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
     >
       <div className="result-repo-header">
         <span className="result-status-dot" aria-hidden="true" />
@@ -452,9 +452,9 @@ function ExistingRepoResultView({
         <p
           className="helper-text"
           style={{
-            margin: "0 0 0.3rem",
-            fontSize: "0.72rem",
-            color: "var(--text-muted)",
+            margin: '0 0 0.3rem',
+            fontSize: '0.72rem',
+            color: 'var(--text-muted)',
           }}
         >
           Workflow file
@@ -469,9 +469,9 @@ function ExistingRepoResultView({
         <p
           className="helper-text"
           style={{
-            margin: "0 0 0.3rem",
-            fontSize: "0.72rem",
-            color: "var(--text-muted)",
+            margin: '0 0 0.3rem',
+            fontSize: '0.72rem',
+            color: 'var(--text-muted)',
           }}
         >
           Commit
@@ -489,8 +489,8 @@ function ExistingRepoResultView({
       <p
         className="helper-text"
         style={{
-          fontSize: "0.78rem",
-          color: "var(--text-muted)",
+          fontSize: '0.78rem',
+          color: 'var(--text-muted)',
           margin: 0,
         }}
       >
@@ -517,7 +517,7 @@ function CreatedProjectResultView({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+      style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
     >
       <div className="result-repo-header">
         <span className="result-status-dot" aria-hidden="true" />
@@ -532,9 +532,9 @@ function CreatedProjectResultView({
         <p
           className="helper-text"
           style={{
-            margin: "0 0 0.3rem",
-            fontSize: "0.72rem",
-            color: "var(--text-muted)",
+            margin: '0 0 0.3rem',
+            fontSize: '0.72rem',
+            color: 'var(--text-muted)',
           }}
         >
           Workflow file
@@ -550,9 +550,9 @@ function CreatedProjectResultView({
         <p
           className="helper-text"
           style={{
-            margin: "0 0 0.3rem",
-            fontSize: "0.72rem",
-            color: "var(--text-muted)",
+            margin: '0 0 0.3rem',
+            fontSize: '0.72rem',
+            color: 'var(--text-muted)',
           }}
         >
           Commit
@@ -583,12 +583,12 @@ function CreatedProjectResultView({
       <p
         className="helper-text"
         style={{
-          fontSize: "0.78rem",
-          color: "var(--text-muted)",
+          fontSize: '0.78rem',
+          color: 'var(--text-muted)',
           margin: 0,
         }}
       >
-        Workflow committed to <code>{setupResult.workflowPath}</code> on{" "}
+        Workflow committed to <code>{setupResult.workflowPath}</code> on{' '}
         <code>main</code>. Push to <code>test</code> to trigger your first CI
         run.
       </p>
@@ -598,7 +598,7 @@ function CreatedProjectResultView({
 
 function HostAssignmentResults({ result }: { result: CreateProjectResult }) {
   const failures =
-    result.hostAssignments?.filter((item) => item.status === "failed") ?? [];
+    result.hostAssignments?.filter((item) => item.status === 'failed') ?? [];
   if (!failures.length && !result.hostAssignmentError) return null;
   return (
     <div role="status">
@@ -617,7 +617,7 @@ function HostAssignmentResults({ result }: { result: CreateProjectResult }) {
           <Link href={`/projects/${encodeURIComponent(target.projectId)}`}>
             {target.slot
               ? `Open the ${target.slot} repository’s Hosting panel to retry the assignment.`
-              : "Open the project’s Hosting panel to retry the assignment."}
+              : 'Open the project’s Hosting panel to retry the assignment.'}
           </Link>
         </p>
       ))}
@@ -626,7 +626,7 @@ function HostAssignmentResults({ result }: { result: CreateProjectResult }) {
 }
 
 type HostAssignmentResult = NonNullable<
-  CreateProjectResult["hostAssignments"]
+  CreateProjectResult['hostAssignments']
 >[number];
 
 /**
@@ -637,10 +637,10 @@ type HostAssignmentResult = NonNullable<
 function retryTargets(
   result: CreateProjectResult,
   failures: readonly HostAssignmentResult[],
-): Array<{ projectId: string; slot?: "backend" | "frontend" }> {
+): Array<{ projectId: string; slot?: 'backend' | 'frontend' }> {
   const targets = new Map<
     string,
-    { projectId: string; slot?: "backend" | "frontend" }
+    { projectId: string; slot?: 'backend' | 'frontend' }
   >();
   for (const item of failures) {
     const projectId = item.projectId ?? result.id;
@@ -663,10 +663,10 @@ export function SetupResultPanel({
 
   return (
     <aside
-      className={`result-panel${setupResult ? " result-panel--success" : ""}`}
+      className={`result-panel${setupResult ? ' result-panel--success' : ''}`}
     >
-      <p className="cp-section-heading" style={{ marginBottom: "1rem" }}>
-        {existingRepoResult ? "CI/CD added" : "Project created"}
+      <p className="cp-section-heading" style={{ marginBottom: '1rem' }}>
+        {existingRepoResult ? 'CI/CD added' : 'Project created'}
       </p>
       <AnimatePresence mode="wait">
         {existingRepoResult ? (

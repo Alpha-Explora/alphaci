@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 /**
  * The content box of an element (padding excluded), kept current as it
@@ -18,10 +18,13 @@ export function usePaneSize<T extends HTMLElement>() {
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    if (!element || typeof ResizeObserver === "undefined") return;
+    if (!element || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(([entry]) => {
       if (!entry) return;
-      setSize({ width: entry.contentRect.width, height: entry.contentRect.height });
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
     });
     observer.observe(element);
     return () => observer.disconnect();

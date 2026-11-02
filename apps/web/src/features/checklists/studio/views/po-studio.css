@@ -20,7 +20,7 @@
   background: var(--accent-amber-light);
 }
 
-.po-accept[data-state="ready"] .po-accept__status {
+.po-accept[data-state='ready'] .po-accept__status {
   border-color: var(--success);
   background: var(--accent-emerald-light);
 }
@@ -112,7 +112,7 @@
   background: var(--layer-2);
 }
 
-.po-check__item[data-accepted="passed"] {
+.po-check__item[data-accepted='passed'] {
   border-left-color: var(--success);
 }
 
@@ -292,11 +292,11 @@
   font-size: 0.8rem;
 }
 
-.po-delivery__row[data-tone="success"] {
+.po-delivery__row[data-tone='success'] {
   --po-row-tone: var(--success);
 }
 
-.po-delivery__row[data-tone="danger"] {
+.po-delivery__row[data-tone='danger'] {
   --po-row-tone: var(--danger);
 }
 
@@ -338,7 +338,7 @@
   background: var(--layer-1);
 }
 
-.po-delivery__outcome[data-tone="danger"] {
+.po-delivery__outcome[data-tone='danger'] {
   border-left-color: var(--danger);
 }
 

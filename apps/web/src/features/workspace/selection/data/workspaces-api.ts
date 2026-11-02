@@ -1,8 +1,8 @@
 import type {
   WorkspaceMemberSummary,
   WorkspacesMeResponse,
-} from "@/shared/api/contracts";
-import { request } from "@/shared/api/request";
+} from '@/shared/api/contracts';
+import { request } from '@/shared/api/request';
 
 /*
  * Read-only. Adding, re-roling and removing members goes through the team
@@ -11,7 +11,7 @@ import { request } from "@/shared/api/request";
  */
 
 export async function getMyWorkspaces(): Promise<WorkspacesMeResponse> {
-  return request<WorkspacesMeResponse>("/workspaces/me");
+  return request<WorkspacesMeResponse>('/workspaces/me');
 }
 
 export async function getWorkspaceMembers(

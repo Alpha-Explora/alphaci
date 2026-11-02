@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import "./pipeline-visual-checks.css";
+import './pipeline-visual-checks.css';
 
-import { useId, useState, type CSSProperties, type ReactNode } from "react";
+import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 
-import { relativeTime } from "@/features/runs";
+import { relativeTime } from '@/features/runs';
 
 import {
   APPROVE_ONE_LABEL,
@@ -22,10 +22,10 @@ import {
   visualHeader,
   visualReadOnlyNote,
   type VisualImageKind,
-} from "../../model/visual-check-rules";
-import type { VisualSnapshot } from "../../model/visual-check-types";
-import type { VisualChecksViewModel } from "../../view-models/use-visual-checks-view-model";
-import { ChevronIcon, DownloadIcon, InfoIcon } from "./pipeline-glyphs";
+} from '../../model/visual-check-rules';
+import type { VisualSnapshot } from '../../model/visual-check-types';
+import type { VisualChecksViewModel } from '../../view-models/use-visual-checks-view-model';
+import { ChevronIcon, DownloadIcon, InfoIcon } from './pipeline-glyphs';
 
 /**
  * The Verify stage's screenshots against their references, and approving a
@@ -52,7 +52,12 @@ export function VisualChecksPanel({
   const headingId = useId();
   return (
     <section className="pipe-visual" aria-labelledby={headingId}>
-      <VisualBody view={view} branch={branch} headingId={headingId} captureOn={captureOn} />
+      <VisualBody
+        view={view}
+        branch={branch}
+        headingId={headingId}
+        captureOn={captureOn}
+      />
     </section>
   );
 }
@@ -62,22 +67,37 @@ function VisualBody({
   branch,
   headingId,
   captureOn,
-}: Readonly<{ view: VisualChecksViewModel; branch: string; headingId: string; captureOn: boolean | null }>) {
-  if (view.status === "idle" || view.status === "loading") {
+}: Readonly<{
+  view: VisualChecksViewModel;
+  branch: string;
+  headingId: string;
+  captureOn: boolean | null;
+}>) {
+  if (view.status === 'idle' || view.status === 'loading') {
     return (
       <>
-        <h6 id={headingId} className="pipe-visual__title">Visual checks</h6>
-        <p className="pipe-stage__reason" role="status">Reading the visual checks…</p>
+        <h6 id={headingId} className="pipe-visual__title">
+          Visual checks
+        </h6>
+        <p className="pipe-stage__reason" role="status">
+          Reading the visual checks…
+        </p>
       </>
     );
   }
-  if (view.status === "error" || !view.checks) {
+  if (view.status === 'error' || !view.checks) {
     return (
       <>
-        <h6 id={headingId} className="pipe-visual__title">Visual checks</h6>
+        <h6 id={headingId} className="pipe-visual__title">
+          Visual checks
+        </h6>
         <p className="pipe-stage__reason" role="alert">
-          {view.error ?? "The visual checks could not be read."}{" "}
-          <button type="button" className="pipe-text-button" onClick={view.reload}>
+          {view.error ?? 'The visual checks could not be read.'}{' '}
+          <button
+            type="button"
+            className="pipe-text-button"
+            onClick={view.reload}
+          >
             Retry
           </button>
         </p>
@@ -87,8 +107,12 @@ function VisualBody({
   if (view.checks.runId === null) {
     return (
       <>
-        <h6 id={headingId} className="pipe-visual__title">Visual checks</h6>
-        <p className="pipe-visual__empty">{visualEmptyMessage(branch, captureOn)}</p>
+        <h6 id={headingId} className="pipe-visual__title">
+          Visual checks
+        </h6>
+        <p className="pipe-visual__empty">
+          {visualEmptyMessage(branch, captureOn)}
+        </p>
       </>
     );
   }
@@ -99,7 +123,11 @@ function VisualResults({
   view,
   branch,
   headingId,
-}: Readonly<{ view: VisualChecksViewModel; branch: string; headingId: string }>) {
+}: Readonly<{
+  view: VisualChecksViewModel;
+  branch: string;
+  headingId: string;
+}>) {
   const snapshots = view.checks?.snapshots ?? [];
   const groups = groupSnapshots(snapshots);
   const pending = approvableNames(snapshots);
@@ -113,13 +141,18 @@ function VisualResults({
             {visualHeader(visualCounts(snapshots))}
           </h6>
           {inheritsUatReferences(snapshots) && (
-            <span className="pipe-visual__inherit">inherits UAT references</span>
+            <span className="pipe-visual__inherit">
+              inherits UAT references
+            </span>
           )}
         </div>
         {canAct && pending.length > 0 && (
           <ApproveButton
             label={approveAllLabel(pending.length)}
-            busy={view.approving.length > 0 && view.approving.length === pending.length}
+            busy={
+              view.approving.length > 0 &&
+              view.approving.length === pending.length
+            }
             disabled={view.approving.length > 0}
             onClick={() => view.approve(pending)}
           />
@@ -131,7 +164,12 @@ function VisualResults({
       <DownloadFailure view={view} />
 
       {[...groups.changed, ...groups.added].map((snapshot) => (
-        <SnapshotCard key={snapshot.name} snapshot={snapshot} view={view} canAct={canAct} />
+        <SnapshotCard
+          key={snapshot.name}
+          snapshot={snapshot}
+          view={view}
+          canAct={canAct}
+        />
       ))}
       <PassedList snapshots={groups.passed} view={view} />
     </>
@@ -140,20 +178,29 @@ function VisualResults({
 
 /* ── Read-only and refusals ─────────────────────────────────────────────── */
 
-function ReadOnlyNote({ view, branch }: Readonly<{ view: VisualChecksViewModel; branch: string }>) {
+function ReadOnlyNote({
+  view,
+  branch,
+}: Readonly<{ view: VisualChecksViewModel; branch: string }>) {
   if (view.readOnly === null) return null;
-  const changes = (view.checks?.snapshots ?? []).some((snapshot) => snapshot.status !== "passed");
+  const changes = (view.checks?.snapshots ?? []).some(
+    (snapshot) => snapshot.status !== 'passed',
+  );
   // A role note on a run with nothing to approve would answer a question nobody asked.
-  if (view.readOnly === "role" && !changes) return null;
+  if (view.readOnly === 'role' && !changes) return null;
   return (
     <p className="pipe-banner pipe-banner--muted pipe-visual__note" role="note">
       <InfoIcon />
       <span>
         {visualReadOnlyNote(view.readOnly, branch)}
-        {view.readOnly === "not-latest" && (
+        {view.readOnly === 'not-latest' && (
           <>
-            {" "}
-            <button type="button" className="pipe-text-button" onClick={view.loadLatest}>
+            {' '}
+            <button
+              type="button"
+              className="pipe-text-button"
+              onClick={view.loadLatest}
+            >
               Load latest run
             </button>
           </>
@@ -166,16 +213,23 @@ function ReadOnlyNote({ view, branch }: Readonly<{ view: VisualChecksViewModel; 
 function ApproveFailure({ view }: Readonly<{ view: VisualChecksViewModel }>) {
   const failure = view.approveError;
   // A role refusal hides the actions; the read-only note already says why.
-  if (!failure || failure.kind === "forbidden") return null;
+  if (!failure || failure.kind === 'forbidden') return null;
   return (
-    <p className="pipe-banner pipe-banner--danger pipe-visual__note" role="alert">
+    <p
+      className="pipe-banner pipe-banner--danger pipe-visual__note"
+      role="alert"
+    >
       <InfoIcon />
       <span>
         {failure.message}
         {offersLoadLatest(failure) && (
           <>
-            {" "}
-            <button type="button" className="pipe-text-button" onClick={view.loadLatest}>
+            {' '}
+            <button
+              type="button"
+              className="pipe-text-button"
+              onClick={view.loadLatest}
+            >
               Load latest run
             </button>
           </>
@@ -188,7 +242,10 @@ function ApproveFailure({ view }: Readonly<{ view: VisualChecksViewModel }>) {
 function DownloadFailure({ view }: Readonly<{ view: VisualChecksViewModel }>) {
   if (!view.downloadError) return null;
   return (
-    <p className="pipe-banner pipe-banner--danger pipe-visual__note" role="alert">
+    <p
+      className="pipe-banner pipe-banner--danger pipe-visual__note"
+      role="alert"
+    >
       <InfoIcon />
       <span>{view.downloadError}</span>
     </p>
@@ -204,46 +261,63 @@ function DownloadButton({
   view,
   snapshot,
   kind,
-}: Readonly<{ view: VisualChecksViewModel; snapshot: VisualSnapshot; kind: VisualImageKind }>) {
+}: Readonly<{
+  view: VisualChecksViewModel;
+  snapshot: VisualSnapshot;
+  kind: VisualImageKind;
+}>) {
   if (!visualImageFor(snapshot, kind)) return null;
-  const busy = view.downloading.includes(visualDownloadKey(snapshot.name, kind));
+  const busy = view.downloading.includes(
+    visualDownloadKey(snapshot.name, kind),
+  );
   return (
     <button
       type="button"
       className="pipe-download"
       aria-busy={busy}
       disabled={busy}
-      aria-label={`Download ${kind === "diff" ? "difference" : kind} image of ${snapshot.name}`}
+      aria-label={`Download ${kind === 'diff' ? 'difference' : kind} image of ${snapshot.name}`}
       onClick={() => view.download(snapshot.name, kind)}
     >
       <DownloadIcon />
-      {busy ? "Downloading…" : "Download"}
+      {busy ? 'Downloading…' : 'Download'}
     </button>
   );
 }
 
 /* ── One changed or new screenshot ──────────────────────────────────────── */
 
-const STATUS_CHIP: Record<"changed" | "new", { tone: string; label: string }> = {
-  changed: { tone: "warning", label: "Changed" },
-  new: { tone: "running", label: "New" },
-};
+const STATUS_CHIP: Record<'changed' | 'new', { tone: string; label: string }> =
+  {
+    changed: { tone: 'warning', label: 'Changed' },
+    new: { tone: 'running', label: 'New' },
+  };
 
 function SnapshotCard({
   snapshot,
   view,
   canAct,
-}: Readonly<{ snapshot: VisualSnapshot; view: VisualChecksViewModel; canAct: boolean }>) {
+}: Readonly<{
+  snapshot: VisualSnapshot;
+  view: VisualChecksViewModel;
+  canAct: boolean;
+}>) {
   const nameId = useId();
   const [compare, setCompare] = useState(false);
-  const changed = snapshot.status === "changed";
-  const comparable = changed && snapshot.baselineUrl !== null && snapshot.actualUrl !== null;
-  const chip = STATUS_CHIP[changed ? "changed" : "new"];
+  const changed = snapshot.status === 'changed';
+  const comparable =
+    changed && snapshot.baselineUrl !== null && snapshot.actualUrl !== null;
+  const chip = STATUS_CHIP[changed ? 'changed' : 'new'];
 
   return (
-    <article className={`pipe-shot pipe-shot--${snapshot.status}`} aria-labelledby={nameId}>
+    <article
+      className={`pipe-shot pipe-shot--${snapshot.status}`}
+      aria-labelledby={nameId}
+    >
       <div className="pipe-shot__head">
-        <code id={nameId} className="pipe-shot__name">{snapshot.name}</code>
+        <code id={nameId} className="pipe-shot__name">
+          {snapshot.name}
+        </code>
         <span className={`pipe-chip pipe-chip--${chip.tone}`}>
           <span className="pipe-chip__dot" aria-hidden="true" />
           {chip.label}
@@ -256,14 +330,18 @@ function SnapshotCard({
               aria-pressed={compare}
               onClick={() => setCompare(!compare)}
             >
-              {compare ? "Side by side" : "Compare"}
+              {compare ? 'Side by side' : 'Compare'}
             </button>
           )}
           <SnapshotApproval snapshot={snapshot} view={view} canAct={canAct} />
         </span>
       </div>
 
-      <SnapshotImages snapshot={snapshot} view={view} compare={comparable && compare} />
+      <SnapshotImages
+        snapshot={snapshot}
+        view={view}
+        compare={comparable && compare}
+      />
 
       <ReferenceLine snapshot={snapshot} />
     </article>
@@ -274,8 +352,13 @@ function SnapshotImages({
   snapshot,
   view,
   compare,
-}: Readonly<{ snapshot: VisualSnapshot; view: VisualChecksViewModel; compare: boolean }>) {
-  if (snapshot.status !== "changed") return <NewPane snapshot={snapshot} view={view} />;
+}: Readonly<{
+  snapshot: VisualSnapshot;
+  view: VisualChecksViewModel;
+  compare: boolean;
+}>) {
+  if (snapshot.status !== 'changed')
+    return <NewPane snapshot={snapshot} view={view} />;
   return compare ? (
     <CompareSlider snapshot={snapshot} view={view} />
   ) : (
@@ -287,7 +370,11 @@ function SnapshotApproval({
   snapshot,
   view,
   canAct,
-}: Readonly<{ snapshot: VisualSnapshot; view: VisualChecksViewModel; canAct: boolean }>) {
+}: Readonly<{
+  snapshot: VisualSnapshot;
+  view: VisualChecksViewModel;
+  canAct: boolean;
+}>) {
   if (snapshot.approved) {
     return <span className="pipe-shot__approved">Approved</span>;
   }
@@ -325,7 +412,7 @@ function ApproveButton({
       disabled={disabled}
       onClick={onClick}
     >
-      {busy ? "Approving…" : label}
+      {busy ? 'Approving…' : label}
       {target && <span className="sr-only">: {target}</span>}
     </button>
   );
@@ -338,13 +425,15 @@ function ReferenceLine({ snapshot }: Readonly<{ snapshot: VisualSnapshot }>) {
   if (!by && !at && !snapshot.inheritedFrom) return null;
   return (
     <p className="pipe-shot__meta">
-      {(by || at) && <span>Reference approved{by ? ` by @${by}` : ""}</span>}
+      {(by || at) && <span>Reference approved{by ? ` by @${by}` : ''}</span>}
       {at && (
         <time dateTime={at} title={new Date(at).toLocaleString()}>
           {relativeTime(at)}
         </time>
       )}
-      {snapshot.inheritedFrom && <span>from {snapshot.inheritedFrom.toUpperCase()}</span>}
+      {snapshot.inheritedFrom && (
+        <span>from {snapshot.inheritedFrom.toUpperCase()}</span>
+      )}
     </p>
   );
 }
@@ -357,9 +446,21 @@ function ReferenceLine({ snapshot }: Readonly<{ snapshot: VisualSnapshot }>) {
  * session cookie the image route needs, and these are diff evidence that must
  * not be resampled.
  */
-function Shot({ src, alt, className }: Readonly<{ src: string; alt: string; className: string }>) {
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} loading="lazy" decoding="async" className={className} />;
+function Shot({
+  src,
+  alt,
+  className,
+}: Readonly<{ src: string; alt: string; className: string }>) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      className={className}
+    />
+  );
 }
 
 /**
@@ -372,16 +473,30 @@ function Pane({
   name,
   src,
   action,
-}: Readonly<{ label: string; name: string; src: string | null; action?: ReactNode }>) {
+}: Readonly<{
+  label: string;
+  name: string;
+  src: string | null;
+  action?: ReactNode;
+}>) {
   return (
     <figure className="pipe-pane">
       <figcaption className="pipe-pane__caption">
         <span className="pipe-pane__label">{label}</span>
         {action}
       </figcaption>
-      <div className="pipe-pane__frame" role="region" aria-label={`${label}: ${name}`} tabIndex={0}>
+      <div
+        className="pipe-pane__frame"
+        role="region"
+        aria-label={`${label}: ${name}`}
+        tabIndex={0}
+      >
         {src ? (
-          <Shot src={src} alt={`${label} screenshot of ${name}`} className="pipe-pane__img" />
+          <Shot
+            src={src}
+            alt={`${label} screenshot of ${name}`}
+            className="pipe-pane__img"
+          />
         ) : (
           <p className="pipe-pane__none">No image</p>
         )}
@@ -394,12 +509,29 @@ function ChangedPanes({
   snapshot,
   view,
 }: Readonly<{ snapshot: VisualSnapshot; view: VisualChecksViewModel }>) {
-  const action = (kind: VisualImageKind) => <DownloadButton view={view} snapshot={snapshot} kind={kind} />;
+  const action = (kind: VisualImageKind) => (
+    <DownloadButton view={view} snapshot={snapshot} kind={kind} />
+  );
   return (
     <div className="pipe-panes">
-      <Pane label="Reference" name={snapshot.name} src={snapshot.baselineUrl} action={action("reference")} />
-      <Pane label="New" name={snapshot.name} src={snapshot.actualUrl} action={action("new")} />
-      <Pane label="Difference" name={snapshot.name} src={snapshot.diffUrl} action={action("diff")} />
+      <Pane
+        label="Reference"
+        name={snapshot.name}
+        src={snapshot.baselineUrl}
+        action={action('reference')}
+      />
+      <Pane
+        label="New"
+        name={snapshot.name}
+        src={snapshot.actualUrl}
+        action={action('new')}
+      />
+      <Pane
+        label="Difference"
+        name={snapshot.name}
+        src={snapshot.diffUrl}
+        action={action('diff')}
+      />
     </div>
   );
 }
@@ -433,7 +565,7 @@ function CompareSlider({
   view,
 }: Readonly<{ snapshot: VisualSnapshot; view: VisualChecksViewModel }>) {
   const [split, setSplit] = useState(50);
-  const style = { "--pipe-split": `${String(split)}%` } as CSSProperties;
+  const style = { '--pipe-split': `${String(split)}%` } as CSSProperties;
   return (
     <div className="pipe-compare" style={style}>
       <div
@@ -444,12 +576,12 @@ function CompareSlider({
       >
         <div className="pipe-compare__stack">
           <Shot
-            src={snapshot.baselineUrl ?? ""}
+            src={snapshot.baselineUrl ?? ''}
             alt={`Reference screenshot of ${snapshot.name}`}
             className="pipe-compare__base"
           />
           <Shot
-            src={snapshot.actualUrl ?? ""}
+            src={snapshot.actualUrl ?? ''}
             alt={`New screenshot of ${snapshot.name}`}
             className="pipe-compare__top"
           />
@@ -487,7 +619,10 @@ function CompareSlider({
 function PassedList({
   snapshots,
   view,
-}: Readonly<{ snapshots: readonly VisualSnapshot[]; view: VisualChecksViewModel }>) {
+}: Readonly<{
+  snapshots: readonly VisualSnapshot[];
+  view: VisualChecksViewModel;
+}>) {
   const listId = useId();
   const [open, setOpen] = useState(false);
   if (snapshots.length === 0) return null;
@@ -500,18 +635,28 @@ function PassedList({
         aria-controls={listId}
         onClick={() => setOpen(!open)}
       >
-        {snapshots.length === 1 ? "1 unchanged screenshot" : `${String(snapshots.length)} unchanged screenshots`}
+        {snapshots.length === 1
+          ? '1 unchanged screenshot'
+          : `${String(snapshots.length)} unchanged screenshots`}
         <ChevronIcon />
       </button>
       <ul id={listId} className="pipe-passed" hidden={!open}>
         {open &&
           snapshots.map((snapshot) => {
             const src = snapshot.actualUrl ?? snapshot.baselineUrl;
-            const kind: VisualImageKind = snapshot.actualUrl ? "new" : "reference";
+            const kind: VisualImageKind = snapshot.actualUrl
+              ? 'new'
+              : 'reference';
             return (
               <li key={snapshot.name} className="pipe-passed__row">
                 <span className="pipe-passed__thumb">
-                  {src && <Shot src={src} alt={`${snapshot.name}, unchanged`} className="pipe-passed__img" />}
+                  {src && (
+                    <Shot
+                      src={src}
+                      alt={`${snapshot.name}, unchanged`}
+                      className="pipe-passed__img"
+                    />
+                  )}
                 </span>
                 <code className="pipe-passed__name">{snapshot.name}</code>
                 <DownloadButton view={view} snapshot={snapshot} kind={kind} />

@@ -1,16 +1,19 @@
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 
-import { useOnpremHosting } from "../../../../../../src/features/workflows/studio/view-models/use-onprem-hosting";
-import type { OnpremHosting } from "../../../../../../src/features/workflows/studio/model/onprem-hosting-rules";
+import { useOnpremHosting } from '../../../../../../src/features/workflows/studio/view-models/use-onprem-hosting';
+import type { OnpremHosting } from '../../../../../../src/features/workflows/studio/model/onprem-hosting-rules';
 
-jest.mock("../../../../../../src/features/workflows/studio/data/deployment-providers-repository", () => ({
-  deploymentProvidersRepository: { list: jest.fn() },
-}));
+jest.mock(
+  '../../../../../../src/features/workflows/studio/data/deployment-providers-repository',
+  () => ({
+    deploymentProvidersRepository: { list: jest.fn() },
+  }),
+);
 
 const mockedList = (
   jest.requireMock(
-    "../../../../../../src/features/workflows/studio/data/deployment-providers-repository",
+    '../../../../../../src/features/workflows/studio/data/deployment-providers-repository',
   ) as { deploymentProvidersRepository: { list: jest.Mock } }
 ).deploymentProvidersRepository.list;
 
@@ -38,7 +41,7 @@ function renderHook(open: boolean, guest = false) {
     snapshot = useOnpremHosting({ guest, open: on });
     return null;
   }
-  root = createRoot(document.createElement("div"));
+  root = createRoot(document.createElement('div'));
   act(() => root!.render(<Probe on={open} />));
   return {
     seen: () => snapshot,
@@ -46,47 +49,50 @@ function renderHook(open: boolean, guest = false) {
   };
 }
 
-describe("useOnpremHosting", () => {
-  it("is hidden until the providers answer, then offers on-prem when it is enabled", async () => {
-    mockedList.mockResolvedValue([{ id: "onprem-compose", enabled: true }]);
+describe('useOnpremHosting', () => {
+  it('is hidden until the providers answer, then offers on-prem when it is enabled', async () => {
+    mockedList.mockResolvedValue([{ id: 'onprem-compose', enabled: true }]);
     const { seen } = renderHook(true);
-    expect(seen()).toEqual({ status: "hidden" });
+    expect(seen()).toEqual({ status: 'hidden' });
     await settle();
-    expect(seen()).toEqual({ status: "enabled" });
+    expect(seen()).toEqual({ status: 'enabled' });
   });
 
   it("carries the server's reason when on-prem is listed but off", async () => {
     mockedList.mockResolvedValue([
-      { id: "onprem-compose", enabled: false, reason: "On-prem is off here." },
+      { id: 'onprem-compose', enabled: false, reason: 'On-prem is off here.' },
     ]);
     const { seen } = renderHook(true);
     await settle();
-    expect(seen()).toEqual({ status: "disabled", reason: "On-prem is off here." });
+    expect(seen()).toEqual({
+      status: 'disabled',
+      reason: 'On-prem is off here.',
+    });
   });
 
-  it("stays hidden when the read fails", async () => {
-    mockedList.mockRejectedValue(new Error("offline"));
+  it('stays hidden when the read fails', async () => {
+    mockedList.mockRejectedValue(new Error('offline'));
     const { seen } = renderHook(true);
     await settle();
-    expect(seen()).toEqual({ status: "hidden" });
+    expect(seen()).toEqual({ status: 'hidden' });
   });
 
-  it("reads nothing for a guest", async () => {
-    mockedList.mockResolvedValue([{ id: "onprem-compose", enabled: true }]);
+  it('reads nothing for a guest', async () => {
+    mockedList.mockResolvedValue([{ id: 'onprem-compose', enabled: true }]);
     const { seen } = renderHook(true, true);
     await settle();
     expect(mockedList).not.toHaveBeenCalled();
-    expect(seen()).toEqual({ status: "hidden" });
+    expect(seen()).toEqual({ status: 'hidden' });
   });
 
-  it("reads nothing until the wizard is active, and only once", async () => {
-    mockedList.mockResolvedValue([{ id: "onprem-compose", enabled: true }]);
+  it('reads nothing until the wizard is active, and only once', async () => {
+    mockedList.mockResolvedValue([{ id: 'onprem-compose', enabled: true }]);
     const { seen, rerender } = renderHook(false);
     await settle();
     expect(mockedList).not.toHaveBeenCalled();
     rerender(true);
     await settle();
-    expect(seen()).toEqual({ status: "enabled" });
+    expect(seen()).toEqual({ status: 'enabled' });
     rerender(false);
     rerender(true);
     await settle();

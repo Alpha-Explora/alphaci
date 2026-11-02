@@ -1,6 +1,6 @@
-import type { DeploymentTarget } from "@/shared/api/contracts";
-import type { AppRole } from "@/shared/api/contracts";
-import { providerDisplayName, providerPublicUrl } from "./provider-urls";
+import type { DeploymentTarget } from '@/shared/api/contracts';
+import type { AppRole } from '@/shared/api/contracts';
+import { providerDisplayName, providerPublicUrl } from './provider-urls';
 
 /**
  * What each project environment runs and what it may receive next, derived
@@ -11,7 +11,7 @@ import { providerDisplayName, providerPublicUrl } from "./provider-urls";
  * the backend would accept, and says why there is none when there is none.
  */
 
-export type EnvironmentRole = "production" | "non_production";
+export type EnvironmentRole = 'production' | 'non_production';
 
 export interface ProjectEnvironment {
   id: string;
@@ -24,18 +24,14 @@ export interface ProjectEnvironment {
 }
 
 export type EnvironmentDeploymentStatus =
-  | "pending"
-  | "deploying"
-  | "healthy"
-  | "failed"
-  | "rolled_back";
+  'pending' | 'deploying' | 'healthy' | 'failed' | 'rolled_back';
 
 export interface EnvironmentDeployment {
   id: string;
   environmentId: string;
   releaseId: string;
-  trigger: "automatic" | "promotion";
-  delivery?: "workflow" | "host";
+  trigger: 'automatic' | 'promotion';
+  delivery?: 'workflow' | 'host';
   targetIds: string[];
   status: EnvironmentDeploymentStatus;
   detail: string | null;
@@ -55,7 +51,7 @@ export interface ProjectRelease {
   sourceBranch: string;
   commitSha: string;
   artifacts: ReleaseArtifact[];
-  verificationStatus: "pending" | "verified";
+  verificationStatus: 'pending' | 'verified';
   createdAt: string;
   deployments: EnvironmentDeployment[];
 }
@@ -64,7 +60,7 @@ export interface DeploymentProviderSummary {
   id: string;
   label: string;
   enabled: boolean;
-  capabilities: { connectivity: "direct" | "indirect" };
+  capabilities: { connectivity: 'direct' | 'indirect' };
 }
 
 export interface EnvironmentDeploymentEntry {
@@ -74,18 +70,18 @@ export interface EnvironmentDeploymentEntry {
 
 export interface EnvironmentTargetRow {
   id: string;
-  provider: DeploymentTarget["provider"];
+  provider: DeploymentTarget['provider'];
   slot: string;
   providerLabel: string;
   name: string;
-  status: DeploymentTarget["status"];
+  status: DeploymentTarget['status'];
   publicUrl: string | null;
 }
 
 export type PromotionOffer =
-  | { kind: "automatic" }
-  | { kind: "available"; release: ProjectRelease; from: ProjectEnvironment }
-  | { kind: "unavailable"; reason: string };
+  | { kind: 'automatic' }
+  | { kind: 'available'; release: ProjectRelease; from: ProjectEnvironment }
+  | { kind: 'unavailable'; reason: string };
 
 export interface EnvironmentRow {
   environment: ProjectEnvironment;
@@ -100,8 +96,8 @@ export interface EnvironmentRow {
 
 const HISTORY_LIMIT = 5;
 const IN_FLIGHT: ReadonlySet<EnvironmentDeploymentStatus> = new Set([
-  "pending",
-  "deploying",
+  'pending',
+  'deploying',
 ]);
 
 /** Roles allowed to promote environment releases under the backend policy. */
@@ -109,8 +105,8 @@ export function canPromoteEnvironment(
   appRole: AppRole | null | undefined,
   production: boolean,
 ): boolean {
-  if (appRole === "admin" || appRole === "lead") return true;
-  return !production && appRole === "member";
+  if (appRole === 'admin' || appRole === 'lead') return true;
+  return !production && appRole === 'member';
 }
 
 export function buildEnvironmentRows(input: {
@@ -138,7 +134,7 @@ export function onpremHostsEnabled(
 ): boolean {
   return providers.some(
     ({ enabled, capabilities }) =>
-      enabled && capabilities.connectivity === "indirect",
+      enabled && capabilities.connectivity === 'indirect',
   );
 }
 
@@ -147,15 +143,15 @@ export function shortCommit(sha: string): string {
 }
 
 export function shortDigest(digest: string): string {
-  return digest.replace(/^sha256:/, "").slice(0, 12);
+  return digest.replace(/^sha256:/, '').slice(0, 12);
 }
 
 const STATUS_LABELS: Record<EnvironmentDeploymentStatus, string> = {
-  pending: "Waiting",
-  deploying: "Deploying",
-  healthy: "Healthy",
-  failed: "Failed",
-  rolled_back: "Rolled back",
+  pending: 'Waiting',
+  deploying: 'Deploying',
+  healthy: 'Healthy',
+  failed: 'Failed',
+  rolled_back: 'Rolled back',
 };
 
 export function deploymentStatusLabel(
@@ -179,7 +175,7 @@ function deploymentEntries(
     );
 }
 
-type EnvironmentState = Omit<EnvironmentRow, "promotion">;
+type EnvironmentState = Omit<EnvironmentRow, 'promotion'>;
 
 function environmentState(
   environment: ProjectEnvironment,
@@ -201,12 +197,12 @@ function environmentState(
     hostDelivered: targets.some(
       ({ provider }) =>
         providerSummary(provider, input.providers)?.capabilities
-          .connectivity === "indirect",
+          .connectivity === 'indirect',
     ),
     // The release an environment runs is its latest healthy deployment, as
     // the backend pins it.
     current:
-      own.find(({ deployment }) => deployment.status === "healthy") ?? null,
+      own.find(({ deployment }) => deployment.status === 'healthy') ?? null,
     inFlight:
       own.find(({ deployment }) => IN_FLIGHT.has(deployment.status)) ?? null,
     history: own.slice(0, HISTORY_LIMIT),
@@ -217,29 +213,29 @@ function promotionOffer(
   row: EnvironmentState,
   previous: EnvironmentState | undefined,
 ): PromotionOffer {
-  if (!previous) return { kind: "automatic" };
+  if (!previous) return { kind: 'automatic' };
   if (!previous.current) {
     return {
-      kind: "unavailable",
-      reason: previous.environment.displayName + " runs no release yet.",
+      kind: 'unavailable',
+      reason: previous.environment.displayName + ' runs no release yet.',
     };
   }
   if (row.inFlight) {
-    return { kind: "unavailable", reason: "A deployment is in progress." };
+    return { kind: 'unavailable', reason: 'A deployment is in progress.' };
   }
   const release = previous.current.release;
   if (row.current?.release.releaseId === release.releaseId) {
     return {
-      kind: "unavailable",
+      kind: 'unavailable',
       reason:
-        "Already runs " +
+        'Already runs ' +
         shortCommit(release.commitSha) +
-        ", the release " +
+        ', the release ' +
         previous.environment.displayName +
-        " runs.",
+        ' runs.',
     };
   }
-  return { kind: "available", release, from: previous.environment };
+  return { kind: 'available', release, from: previous.environment };
 }
 
 function providerSummary(

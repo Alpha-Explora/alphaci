@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { getCentralWorkflowTags } from "@/features/workflows";
-import { projectsRepository } from "../../data/projects-repository";
-import type { ProjectStatus } from "../../model/projects-types";
+import { getCentralWorkflowTags } from '@/features/workflows';
+import { projectsRepository } from '../../data/projects-repository';
+import type { ProjectStatus } from '../../model/projects-types';
 import type {
   WorkflowSettings,
   WorkflowSettingsPreviewResponse,
   WorkflowUpdatePullRequestResponse,
-} from "@/shared/api/contracts";
-import { apiErrorReason } from "../model/api-error-reason";
-import { workspacePermissionErrorMessage } from "../model/workspace-permission-errors";
-import { useLazyProjectQuery } from "./use-lazy-project-query";
+} from '@/shared/api/contracts';
+import { apiErrorReason } from '../model/api-error-reason';
+import { workspacePermissionErrorMessage } from '../model/workspace-permission-errors';
+import { useLazyProjectQuery } from './use-lazy-project-query';
 
 export interface ProjectWorkflowSettingsViewModel {
   status: ProjectStatus;
@@ -43,7 +43,7 @@ export function useProjectWorkflowSettingsViewModel(options: {
     projectId,
     enabled,
     load: loadWorkflowSettings,
-    errorMessage: "Unable to load workflow settings.",
+    errorMessage: 'Unable to load workflow settings.',
   });
 
   const [preview, setPreview] =
@@ -71,7 +71,7 @@ export function useProjectWorkflowSettingsViewModel(options: {
       })
       .catch(() => {
         if (!active || id !== tagsReq.current) return;
-        setTagsError("Unable to load available workflow refs.");
+        setTagsError('Unable to load available workflow refs.');
       });
 
     return () => {
@@ -99,7 +99,7 @@ export function useProjectWorkflowSettingsViewModel(options: {
       setUpdatePrError(null);
     } catch (error) {
       settingsQuery.fail(
-        apiErrorReason(error, "Unable to preview workflow settings."),
+        apiErrorReason(error, 'Unable to preview workflow settings.'),
       );
     } finally {
       setPreviewing(false);
@@ -120,7 +120,7 @@ export function useProjectWorkflowSettingsViewModel(options: {
       setUpdatePrError(
         workspacePermissionErrorMessage(
           error,
-          "Unable to create workflow update PR.",
+          'Unable to create workflow update PR.',
         ),
       );
     } finally {

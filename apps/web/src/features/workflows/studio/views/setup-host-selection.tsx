@@ -1,8 +1,8 @@
-"use client";
-import Link from "next/link";
-import { Fragment, useEffect, useId, useRef } from "react";
-import { healthyHosts, type MachineSummary } from "@/features/hosts";
-import type { EnvironmentDraft } from "../model/project-environments-rules";
+'use client';
+import Link from 'next/link';
+import { Fragment, useEffect, useId, useRef } from 'react';
+import { healthyHosts, type MachineSummary } from '@/features/hosts';
+import type { EnvironmentDraft } from '../model/project-environments-rules';
 import {
   defaultHostAssignment,
   refitHostAssignmentDefaults,
@@ -12,15 +12,15 @@ import {
   withSlotHealthPath,
   type HostSlot,
   type SlotRuntimes,
-} from "../model/setup-host-assignment-rules";
-import type { useSetupHostSelection } from "../view-models/use-setup-host-selection";
+} from '../model/setup-host-assignment-rules';
+import type { useSetupHostSelection } from '../view-models/use-setup-host-selection';
 
 /** Select value for the workspace's only connected machine, chosen by the server. */
-const AUTOMATIC = "automatic";
+const AUTOMATIC = 'automatic';
 
 type AssignmentConfig = NonNullable<
-  EnvironmentDraft["hostAssignment"]
->["config"];
+  EnvironmentDraft['hostAssignment']
+>['config'];
 
 /** A change to one environment's assignment config. */
 type ConfigChange = (
@@ -29,8 +29,8 @@ type ConfigChange = (
 ) => void;
 
 const SLOT_LABELS: Record<HostSlot, string> = {
-  backend: "Backend",
-  frontend: "Frontend",
+  backend: 'Backend',
+  frontend: 'Frontend',
 };
 
 export function SetupHostSelection({
@@ -114,7 +114,7 @@ export function SetupHostSelection({
           <Link
             className="ghost-button wizard-machines__action"
             target="_blank"
-            href={`/hosts${vm.workspaceId ? `?workspace=${encodeURIComponent(vm.workspaceId)}` : ""}`}
+            href={`/hosts${vm.workspaceId ? `?workspace=${encodeURIComponent(vm.workspaceId)}` : ''}`}
           >
             Add a host
           </Link>
@@ -159,10 +159,10 @@ export function SetupHostSelection({
 
 export function setupHostIntro(choices: readonly MachineSummary[]): string {
   if (!choices.length)
-    return "No machine is connected yet. Enroll one; environments are assigned to it from Hosting.";
+    return 'No machine is connected yet. Enroll one; environments are assigned to it from Hosting.';
   if (choices.length === 1)
     return `Non-production environments run on ${choices[0]!.name} automatically, on host ports AlphaCI picks. Production needs an HTTPS address first.`;
-  return "Choose a machine for each environment now, or assign them from Hosting after creation. AlphaCI picks the host ports.";
+  return 'Choose a machine for each environment now, or assign them from Hosting after creation. AlphaCI picks the host ports.';
 }
 
 function SetupHostRow({
@@ -188,7 +188,7 @@ function SetupHostRow({
   const messageId = useId();
   const binding = environment.hostAssignment;
   const single = choices.length === 1 ? choices[0]! : null;
-  const value = binding ? (binding.machineId ?? AUTOMATIC) : "";
+  const value = binding ? (binding.machineId ?? AUTOMATIC) : '';
   // The problem is plain text, read with the fields it concerns; the Delivery
   // step's one live region announces that Continue is held.
   const describedBy = problem ? messageId : undefined;
@@ -208,8 +208,8 @@ function SetupHostRow({
             {single ? (
               <>
                 <option value="">
-                  {environment.role === "production"
-                    ? "Assign later"
+                  {environment.role === 'production'
+                    ? 'Assign later'
                     : `${single.name} (defaults)`}
                 </option>
                 <option value={AUTOMATIC}>{single.name} (configure)</option>
@@ -256,7 +256,7 @@ function SetupAssignmentFields({
   runtimes,
 }: Pick<
   Parameters<typeof SetupHostRow>[0],
-  "environment" | "index" | "change" | "slots" | "runtimes"
+  'environment' | 'index' | 'change' | 'slots' | 'runtimes'
 > & { problemId?: string }) {
   const binding = environment.hostAssignment;
   if (!binding) return null;
@@ -266,7 +266,7 @@ function SetupAssignmentFields({
   // One container port and health path per container: with two repositories
   // the host runs the backend and the frontend, so each field names its own.
   const prefix = (slot: HostSlot) =>
-    slots.length > 1 ? `${SLOT_LABELS[slot]} ` : "";
+    slots.length > 1 ? `${SLOT_LABELS[slot]} ` : '';
   return (
     <>
       {slots.map((slot) => (
@@ -275,7 +275,7 @@ function SetupAssignmentFields({
             <span className="wizard-machines__label">
               {prefix(slot)
                 ? `${prefix(slot)}container port`
-                : "Container port"}
+                : 'Container port'}
             </span>
             <input
               type="number"
@@ -297,7 +297,7 @@ function SetupAssignmentFields({
           </label>
           <label className="wizard-machines__field">
             <span className="wizard-machines__label">
-              {prefix(slot) ? `${prefix(slot)}health path` : "Health path"}
+              {prefix(slot) ? `${prefix(slot)}health path` : 'Health path'}
             </span>
             <input
               required
@@ -312,7 +312,7 @@ function SetupAssignmentFields({
           </label>
         </Fragment>
       ))}
-      {environment.role === "production" ? (
+      {environment.role === 'production' ? (
         <ProductionIngressFields
           binding={binding}
           index={index}
@@ -327,7 +327,7 @@ function SetupAssignmentFields({
 /** The fields of an assignment that has a problem are marked invalid and read the problem out with the field. */
 function invalidAttributes(problemId?: string) {
   return problemId
-    ? { "aria-invalid": true, "aria-describedby": problemId }
+    ? { 'aria-invalid': true, 'aria-describedby': problemId }
     : {};
 }
 
@@ -338,27 +338,27 @@ function ProductionIngressFields({
   problemId,
   change,
 }: {
-  binding: NonNullable<EnvironmentDraft["hostAssignment"]>;
+  binding: NonNullable<EnvironmentDraft['hostAssignment']>;
   index: number;
   problemId?: string;
   change: ConfigChange;
 }) {
-  const tunnel = binding.config.ingress.mode === "tunnel";
+  const tunnel = binding.config.ingress.mode === 'tunnel';
   return (
     <>
       <label className="wizard-machines__field wizard-machines__field--full">
         <span className="wizard-machines__label">How users reach it</span>
         <select
-          value={tunnel ? "tunnel" : "configured"}
+          value={tunnel ? 'tunnel' : 'configured'}
           onChange={(event) =>
             change(index, (config) => ({
               ...config,
               // A tunnel's address is created by the machine, so the mode
               // switch clears any typed URL.
               ingress:
-                event.target.value === "tunnel"
-                  ? { mode: "tunnel", publicUrl: null }
-                  : { mode: "configured", publicUrl: config.ingress.publicUrl },
+                event.target.value === 'tunnel'
+                  ? { mode: 'tunnel', publicUrl: null }
+                  : { mode: 'configured', publicUrl: config.ingress.publicUrl },
             }))
           }
         >
@@ -370,9 +370,10 @@ function ProductionIngressFields({
       </label>
       {tunnel ? (
         <p className="wizard-field__hint wizard-machines__field--full">
-          AlphaCI gives this environment an HTTPS address. On a server with an apps
-          domain it is permanent (for example https://myapp.apps.example.com);
-          otherwise it is a tunnel address that changes when the tunnel restarts.
+          AlphaCI gives this environment an HTTPS address. On a server with an
+          apps domain it is permanent (for example
+          https://myapp.apps.example.com); otherwise it is a tunnel address that
+          changes when the tunnel restarts.
         </p>
       ) : (
         <label className="wizard-machines__field wizard-machines__field--full">
@@ -383,12 +384,12 @@ function ProductionIngressFields({
             type="url"
             required
             {...invalidAttributes(problemId)}
-            value={binding.config.ingress.publicUrl ?? ""}
+            value={binding.config.ingress.publicUrl ?? ''}
             onChange={(event) =>
               change(index, (config) => ({
                 ...config,
                 ingress: {
-                  mode: "configured",
+                  mode: 'configured',
                   publicUrl: event.target.value || null,
                 },
               }))

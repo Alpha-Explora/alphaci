@@ -6,7 +6,11 @@
  * (and the shared dialog primitive), so any slice or feature (the project
  * page, the delivery-project page, QA Studio, requirements, My QA items) can
  * use it without an import cycle. */
-export { IterationLockedNotice, IterationStatus, IterationStatusPill } from "./views/iteration-status";
+export {
+  IterationLockedNotice,
+  IterationStatus,
+  IterationStatusPill,
+} from './views/iteration-status';
 export {
   IterationHeader,
   IterationNextStep,
@@ -14,15 +18,18 @@ export {
   IterationWaitingNotice,
   StartIterationAction,
   StartIterationDialog,
-} from "./views/start-iteration";
+} from './views/start-iteration';
 export {
   useCurrentIterationViewModel,
   type CurrentIterationStatus,
   type CurrentIterationViewModel,
-} from "./view-models/use-current-iteration-view-model";
-export { announceIterationChanged, useIterationEpoch } from "./view-models/iteration-epoch";
-export { useNextIterationViewModel } from "./view-models/use-next-iteration-view-model";
+} from './view-models/use-current-iteration-view-model';
+export {
+  announceIterationChanged,
+  useIterationEpoch,
+} from './view-models/iteration-epoch';
+export { useNextIterationViewModel } from './view-models/use-next-iteration-view-model';
 export {
   useStartIterationViewModel,
   type StartIterationViewModel,
-} from "./view-models/use-start-iteration-view-model";
+} from './view-models/use-start-iteration-view-model';

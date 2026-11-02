@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useCallback } from "react";
+import { useCallback } from 'react';
 
-import type { CapabilityAvailability } from "@/features/capabilities/current";
-import { notificationsFeed } from "../../data/notifications-feed";
-import { useNotificationFeed } from "../../live";
-import { feedUserId } from "../../model/notifications-rules";
+import type { CapabilityAvailability } from '@/features/capabilities/current';
+import { notificationsFeed } from '../../data/notifications-feed';
+import { useNotificationFeed } from '../../live';
+import { feedUserId } from '../../model/notifications-rules';
 import type {
   NotificationItem,
   NotificationsStatus,
-} from "../../model/notifications-types";
+} from '../../model/notifications-types';
 
-export { NOTIFICATIONS_POLL_MS } from "../../data/notifications-feed";
+export { NOTIFICATIONS_POLL_MS } from '../../data/notifications-feed';
 
 export interface NotificationsSummaryViewModel {
   unreadCount: number;

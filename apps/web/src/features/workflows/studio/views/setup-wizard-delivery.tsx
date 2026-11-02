@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import { useId } from "react";
+import { useId } from 'react';
 
-import { formatQuotaStatus } from "../model/workflow-studio-rules";
+import { formatQuotaStatus } from '../model/workflow-studio-rules';
 import {
   HOSTING_DESCRIPTIONS,
   renderVariablesBlockingFor,
   type HostingOption,
-} from "../model/hosting-choice-rules";
-import type { HostingChoiceState } from "../view-models/use-hosting-choice";
-import { firstHostProblem } from "../model/setup-delivery-rules";
-import { DeploymentProvisioningSetup } from "./deployment-provisioning-setup";
-import { EnvironmentsPath } from "./setup-wizard-environments";
-import {SetupHostSelection} from './setup-host-selection';
-import type { WizardStepProps } from "./setup-wizard-props";
+} from '../model/hosting-choice-rules';
+import type { HostingChoiceState } from '../view-models/use-hosting-choice';
+import { firstHostProblem } from '../model/setup-delivery-rules';
+import { DeploymentProvisioningSetup } from './deployment-provisioning-setup';
+import { EnvironmentsPath } from './setup-wizard-environments';
+import { SetupHostSelection } from './setup-host-selection';
+import type { WizardStepProps } from './setup-wizard-props';
 
 function QuotaNotice({
   projectQuota,
-}: Readonly<{ projectQuota: WizardStepProps["projectQuota"] }>) {
+}: Readonly<{ projectQuota: WizardStepProps['projectQuota'] }>) {
   if (!projectQuota) {
     return null;
   }
@@ -34,7 +34,8 @@ function RenderVariablesNotice({ missing }: Readonly<{ missing: boolean }>) {
   }
   return (
     <p className="wizard-notice wizard-notice--alert" role="alert">
-      Add at least one Render environment variable before creating the repository.
+      Add at least one Render environment variable before creating the
+      repository.
     </p>
   );
 }
@@ -86,7 +87,9 @@ function HostingRadio({
  * as segmented pills. An option the deployment cannot offer stays visible,
  * disabled, with the reason beside the group.
  */
-function HostingChoiceField({ hosting }: Readonly<{ hosting: HostingChoiceState }>) {
+function HostingChoiceField({
+  hosting,
+}: Readonly<{ hosting: HostingChoiceState }>) {
   const name = useId();
   const noteId = useId();
   const unavailable = hosting.options.find((option) => option.reason);
@@ -109,7 +112,11 @@ function HostingChoiceField({ hosting }: Readonly<{ hosting: HostingChoiceState 
         {HOSTING_DESCRIPTIONS[hosting.choice]}
       </p>
       {unavailable ? (
-        <p className="wizard-field__hint" id={noteId} data-testid="setup-hosting-unavailable">
+        <p
+          className="wizard-field__hint"
+          id={noteId}
+          data-testid="setup-hosting-unavailable"
+        >
           {unavailable.label} is unavailable: {unavailable.reason}
         </p>
       ) : null}
@@ -135,11 +142,11 @@ function HostedTargets({
 }: Readonly<
   Pick<
     WizardStepProps,
-    | "deploymentOwnershipMode"
-    | "deploymentProvisioning"
-    | "envProvisioningEnabled"
-    | "projectCatalog"
-    | "selectedProjectKind"
+    | 'deploymentOwnershipMode'
+    | 'deploymentProvisioning'
+    | 'envProvisioningEnabled'
+    | 'projectCatalog'
+    | 'selectedProjectKind'
   >
 >) {
   if (!envProvisioningEnabled) {
@@ -187,7 +194,7 @@ export function SetupWizardDelivery({
         environments={form.environments}
         layout={hosting.layout}
       />
-      {hosting.choice === "onprem" ? (
+      {hosting.choice === 'onprem' ? (
         <SetupHostSelection
           environments={form.environments}
           hostProblems={hostProblems}
@@ -198,7 +205,7 @@ export function SetupWizardDelivery({
         />
       ) : null}
       <HostProblemNotice problem={hostProblem} />
-      {hosting.choice === "hosted" ? (
+      {hosting.choice === 'hosted' ? (
         <HostedTargets
           deploymentOwnershipMode={deploymentOwnershipMode}
           deploymentProvisioning={deploymentProvisioning}

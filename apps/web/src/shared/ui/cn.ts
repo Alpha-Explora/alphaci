@@ -9,5 +9,5 @@ export type ClassValue = string | false | null | undefined;
  * because nothing de-duplicates them.
  */
 export function cn(...values: ClassValue[]): string {
-  return values.filter(Boolean).join(" ");
+  return values.filter(Boolean).join(' ');
 }

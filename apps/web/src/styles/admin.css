@@ -6,7 +6,7 @@
 
 /* ── Admin console: use the same typography as the signed-in dashboard ──── */
 .admin-shell {
-  font-family: var(--font-dash-body), "Plus Jakarta Sans", sans-serif;
+  font-family: var(--font-dash-body), 'Plus Jakarta Sans', sans-serif;
   letter-spacing: 0;
   line-height: 1.55;
 }

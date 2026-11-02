@@ -1,16 +1,19 @@
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 
-import { projectsRepository } from "../../../../../src/features/projects/data/projects-repository";
-import { useStudioFullScreen } from "../../../../../src/features/checklists/studio/view-models/use-studio-full-screen";
-import { useStudioPanel } from "../../../../../src/features/checklists/studio/view-models/use-studio-panel";
-import { STUDIO_RESOLUTION_KEYS } from "../../../../../src/features/checklists/studio/view-models/use-studio-resolution";
-import { useStudioViewportViewModel } from "../../../../../src/features/checklists/studio/view-models/use-studio-viewport-view-model";
-import type { ProjectBranchPreview } from "../../../../../src/shared/api/contracts";
+import { projectsRepository } from '../../../../../src/features/projects/data/projects-repository';
+import { useStudioFullScreen } from '../../../../../src/features/checklists/studio/view-models/use-studio-full-screen';
+import { useStudioPanel } from '../../../../../src/features/checklists/studio/view-models/use-studio-panel';
+import { STUDIO_RESOLUTION_KEYS } from '../../../../../src/features/checklists/studio/view-models/use-studio-resolution';
+import { useStudioViewportViewModel } from '../../../../../src/features/checklists/studio/view-models/use-studio-viewport-view-model';
+import type { ProjectBranchPreview } from '../../../../../src/shared/api/contracts';
 
-jest.mock("../../../../../src/features/projects/data/projects-repository", () => ({
-  projectsRepository: { previews: jest.fn() },
-}));
+jest.mock(
+  '../../../../../src/features/projects/data/projects-repository',
+  () => ({
+    projectsRepository: { previews: jest.fn() },
+  }),
+);
 
 const projects = projectsRepository as jest.Mocked<typeof projectsRepository>;
 
@@ -19,8 +22,8 @@ let root: Root | null = null;
 afterEach(() => {
   if (root) act(() => root?.unmount());
   root = null;
-  document.body.innerHTML = "";
-  document.body.removeAttribute("style");
+  document.body.innerHTML = '';
+  document.body.removeAttribute('style');
   window.localStorage.clear();
   jest.clearAllMocks();
 });
@@ -34,7 +37,7 @@ function renderHook<T>(useHook: () => T): () => T {
     onRender(useHook());
     return null;
   }
-  const container = document.createElement("div");
+  const container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
   act(() => root!.render(<Probe onRender={record} />));
@@ -47,15 +50,20 @@ function unmount() {
 }
 
 function pressEscape(init: KeyboardEventInit = {}) {
-  const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true, ...init });
+  const event = new KeyboardEvent('keydown', {
+    key: 'Escape',
+    bubbles: true,
+    cancelable: true,
+    ...init,
+  });
   act(() => {
     document.dispatchEvent(event);
   });
   return event;
 }
 
-describe("useStudioFullScreen", () => {
-  it("starts docked, toggles full screen, and exits", () => {
+describe('useStudioFullScreen', () => {
+  it('starts docked, toggles full screen, and exits', () => {
     const vm = renderHook(() => useStudioFullScreen());
     expect(vm().isFullScreen).toBe(false);
     act(() => vm().toggleFullScreen());
@@ -67,19 +75,19 @@ describe("useStudioFullScreen", () => {
     expect(vm().isFullScreen).toBe(false);
   });
 
-  it("leaves full screen on Escape", () => {
+  it('leaves full screen on Escape', () => {
     const vm = renderHook(() => useStudioFullScreen());
     act(() => vm().enterFullScreen());
     pressEscape();
     expect(vm().isFullScreen).toBe(false);
   });
 
-  it("ignores Escape while a dialog is open, checked when the key is pressed", () => {
+  it('ignores Escape while a dialog is open, checked when the key is pressed', () => {
     const vm = renderHook(() => useStudioFullScreen());
     act(() => vm().enterFullScreen());
     // The dialog opens AFTER full screen began: the listener must look at key time.
-    const dialog = document.createElement("div");
-    dialog.setAttribute("role", "dialog");
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
     document.body.appendChild(dialog);
     pressEscape();
     expect(vm().isFullScreen).toBe(true);
@@ -88,49 +96,52 @@ describe("useStudioFullScreen", () => {
     expect(vm().isFullScreen).toBe(false);
   });
 
-  it("ignores an Escape something else already handled (a menu closing)", () => {
+  it('ignores an Escape something else already handled (a menu closing)', () => {
     const vm = renderHook(() => useStudioFullScreen());
     act(() => vm().enterFullScreen());
-    const menuKey = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    const menuKey = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    });
     menuKey.preventDefault();
     act(() => {
       document.dispatchEvent(menuKey);
     });
     expect(vm().isFullScreen).toBe(true);
-    pressEscape({ key: "Enter" });
+    pressEscape({ key: 'Enter' });
     expect(vm().isFullScreen).toBe(true);
   });
 
-  it("does nothing on Escape while docked", () => {
+  it('does nothing on Escape while docked', () => {
     const vm = renderHook(() => useStudioFullScreen());
     pressEscape();
     expect(vm().isFullScreen).toBe(false);
   });
 
   it("locks the page's scroll while full screen and restores the body's own value on exit", () => {
-    document.body.style.overflow = "clip";
+    document.body.style.overflow = 'clip';
     const vm = renderHook(() => useStudioFullScreen());
     act(() => vm().enterFullScreen());
-    expect(document.body.style.overflow).toBe("hidden");
+    expect(document.body.style.overflow).toBe('hidden');
     act(() => vm().exitFullScreen());
-    expect(document.body.style.overflow).toBe("clip");
+    expect(document.body.style.overflow).toBe('clip');
   });
 
   it("restores the body's scroll when unmounted in full screen", () => {
     const vm = renderHook(() => useStudioFullScreen());
     act(() => vm().enterFullScreen());
-    expect(document.body.style.overflow).toBe("hidden");
+    expect(document.body.style.overflow).toBe('hidden');
     unmount();
-    expect(document.body.style.overflow).toBe("");
+    expect(document.body.style.overflow).toBe('');
     // And its Escape listener is gone with it.
     pressEscape();
   });
-
 });
 
-describe("useStudioPanel", () => {
+describe('useStudioPanel', () => {
   it("starts unpinned, like the app's left rail, and pins and unpins", () => {
-    const vm = renderHook(() => useStudioPanel("qa"));
+    const vm = renderHook(() => useStudioPanel('qa'));
     expect(vm().isRailPinned).toBe(false);
     expect(vm().railHoverSuppressed).toBe(false);
     act(() => vm().toggleRailPinned());
@@ -141,8 +152,8 @@ describe("useStudioPanel", () => {
     expect(vm().isRailPinned).toBe(false);
   });
 
-  it("folds on unpin even under the pointer, until the pointer leaves", () => {
-    const vm = renderHook(() => useStudioPanel("qa"));
+  it('folds on unpin even under the pointer, until the pointer leaves', () => {
+    const vm = renderHook(() => useStudioPanel('qa'));
     act(() => vm().toggleRailPinned());
     act(() => vm().toggleRailPinned());
     expect(vm().railHoverSuppressed).toBe(true);
@@ -150,26 +161,32 @@ describe("useStudioPanel", () => {
     expect(vm().railHoverSuppressed).toBe(false);
   });
 
-  it("remembers the pin in this browser, per studio", () => {
-    const vm = renderHook(() => useStudioPanel("qa"));
+  it('remembers the pin in this browser, per studio', () => {
+    const vm = renderHook(() => useStudioPanel('qa'));
     act(() => vm().toggleRailPinned());
-    expect(window.localStorage.getItem("alphaci.qa-studio.rail-pinned")).toBe("1");
+    expect(window.localStorage.getItem('alphaci.qa-studio.rail-pinned')).toBe(
+      '1',
+    );
     unmount();
-    expect(renderHook(() => useStudioPanel("qa"))().isRailPinned).toBe(true);
+    expect(renderHook(() => useStudioPanel('qa'))().isRailPinned).toBe(true);
     unmount();
     // PO Studio's rail is its own choice.
-    expect(renderHook(() => useStudioPanel("po"))().isRailPinned).toBe(false);
+    expect(renderHook(() => useStudioPanel('po'))().isRailPinned).toBe(false);
   });
 
-  it("still pins when storage throws, and starts unpinned", () => {
-    const get = jest.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-      throw new Error("blocked");
-    });
-    const set = jest.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-      throw new Error("blocked");
-    });
+  it('still pins when storage throws, and starts unpinned', () => {
+    const get = jest
+      .spyOn(Storage.prototype, 'getItem')
+      .mockImplementation(() => {
+        throw new Error('blocked');
+      });
+    const set = jest
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('blocked');
+      });
     try {
-      const vm = renderHook(() => useStudioPanel("po"));
+      const vm = renderHook(() => useStudioPanel('po'));
       expect(vm().isRailPinned).toBe(false);
       act(() => vm().toggleRailPinned());
       expect(vm().isRailPinned).toBe(true);
@@ -180,25 +197,27 @@ describe("useStudioPanel", () => {
   });
 });
 
-function preview(overrides: Partial<ProjectBranchPreview> = {}): ProjectBranchPreview {
+function preview(
+  overrides: Partial<ProjectBranchPreview> = {},
+): ProjectBranchPreview {
   return {
-    branch: "uat",
+    branch: 'uat',
     isProduction: false,
-    deploymentId: "d1",
-    targetId: "web",
-    targetName: "storefront-web",
-    provider: "vercel",
-    status: "ready",
-    commitSha: "abc1234",
+    deploymentId: 'd1',
+    targetId: 'web',
+    targetName: 'storefront-web',
+    provider: 'vercel',
+    status: 'ready',
+    commitSha: 'abc1234',
     commitMessage: null,
     pullRequestNumber: null,
-    previewUrl: "https://shop.example.com",
+    previewUrl: 'https://shop.example.com',
     inspectorUrl: null,
     createdAt: null,
     readyAt: null,
     embeddable: true,
     embedBlockedReason: null,
-    surface: "page",
+    surface: 'page',
     ...overrides,
   };
 }
@@ -211,49 +230,75 @@ async function flush() {
   }
 }
 
-describe("useStudioViewportViewModel", () => {
+describe('useStudioViewportViewModel', () => {
   beforeEach(() => {
     projects.previews.mockResolvedValue({
       enabled: true,
       liveProvidersEnabled: true,
       providerError: null,
-      branches: [preview({ branch: "main", isProduction: true }), preview()],
+      branches: [preview({ branch: 'main', isProduction: true }), preview()],
     });
   });
 
-  it("offers only the uat environment, even with a production main deployment", async () => {
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+  it('offers only the uat environment, even with a production main deployment', async () => {
+    const vm = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
-    expect(vm().environments.map((env) => env.branch)).toEqual(["uat"]);
-    expect(vm().environment?.branch).toBe("uat");
+    expect(vm().environments.map((env) => env.branch)).toEqual(['uat']);
+    expect(vm().environment?.branch).toBe('uat');
   });
 
-  it("rotates tablet and mobile, keeps the choice across devices, and never rotates Desktop", async () => {
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+  it('rotates tablet and mobile, keeps the choice across devices, and never rotates Desktop', async () => {
+    const vm = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
-    expect(vm().device.id).toBe("desktop");
+    expect(vm().device.id).toBe('desktop');
     expect(vm().canRotate).toBe(false);
     act(() => vm().rotate());
-    expect(vm().orientation).toBe("portrait");
-    expect(vm().dimensions).toEqual({ width: 1440, height: 900, orientation: "landscape" });
+    expect(vm().orientation).toBe('portrait');
+    expect(vm().dimensions).toEqual({
+      width: 1440,
+      height: 900,
+      orientation: 'landscape',
+    });
 
-    act(() => vm().setDevice("tablet"));
+    act(() => vm().setDevice('tablet'));
     expect(vm().canRotate).toBe(true);
-    expect(vm().dimensions).toEqual({ width: 768, height: 1024, orientation: "portrait" });
+    expect(vm().dimensions).toEqual({
+      width: 768,
+      height: 1024,
+      orientation: 'portrait',
+    });
     act(() => vm().rotate());
-    expect(vm().dimensions).toEqual({ width: 1024, height: 768, orientation: "landscape" });
+    expect(vm().dimensions).toEqual({
+      width: 1024,
+      height: 768,
+      orientation: 'landscape',
+    });
 
-    act(() => vm().setDevice("mobile"));
-    expect(vm().dimensions).toEqual({ width: 812, height: 375, orientation: "landscape" });
+    act(() => vm().setDevice('mobile'));
+    expect(vm().dimensions).toEqual({
+      width: 812,
+      height: 375,
+      orientation: 'landscape',
+    });
     act(() => vm().rotate());
-    expect(vm().dimensions).toEqual({ width: 375, height: 812, orientation: "portrait" });
+    expect(vm().dimensions).toEqual({
+      width: 375,
+      height: 812,
+      orientation: 'portrait',
+    });
   });
 
-  it("never changes the frame key for device, orientation, the rail or full screen — only for a new page", async () => {
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+  it('never changes the frame key for device, orientation, the rail or full screen — only for a new page', async () => {
+    const vm = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
     const key = vm().frameKey;
-    act(() => vm().setDevice("mobile"));
+    act(() => vm().setDevice('mobile'));
     act(() => vm().rotate());
     act(() => vm().toggleRailPinned());
     act(() => vm().enterFullScreen());
@@ -264,105 +309,164 @@ describe("useStudioViewportViewModel", () => {
     expect(vm().frameKey).not.toBe(key);
   });
 
-  it("opens each class on its default size and switches resolution, rotation still applying", async () => {
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+  it('opens each class on its default size and switches resolution, rotation still applying', async () => {
+    const vm = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
-    expect(vm().resolution).toMatchObject({ choice: "1440x900", width: 1440, height: 900 });
+    expect(vm().resolution).toMatchObject({
+      choice: '1440x900',
+      width: 1440,
+      height: 900,
+    });
 
-    act(() => vm().setResolution("1920x1080"));
-    expect(vm().resolution.choice).toBe("1920x1080");
-    expect(vm().dimensions).toEqual({ width: 1920, height: 1080, orientation: "landscape" });
+    act(() => vm().setResolution('1920x1080'));
+    expect(vm().resolution.choice).toBe('1920x1080');
+    expect(vm().dimensions).toEqual({
+      width: 1920,
+      height: 1080,
+      orientation: 'landscape',
+    });
 
-    act(() => vm().setDevice("mobile"));
-    expect(vm().resolution.choice).toBe("375x812");
-    act(() => vm().setResolution("390x844"));
-    expect(vm().dimensions).toEqual({ width: 390, height: 844, orientation: "portrait" });
+    act(() => vm().setDevice('mobile'));
+    expect(vm().resolution.choice).toBe('375x812');
+    act(() => vm().setResolution('390x844'));
+    expect(vm().dimensions).toEqual({
+      width: 390,
+      height: 844,
+      orientation: 'portrait',
+    });
     act(() => vm().rotate());
-    expect(vm().dimensions).toEqual({ width: 844, height: 390, orientation: "landscape" });
+    expect(vm().dimensions).toEqual({
+      width: 844,
+      height: 390,
+      orientation: 'landscape',
+    });
 
     // Each class keeps its own size.
-    act(() => vm().setDevice("desktop"));
-    expect(vm().dimensions).toEqual({ width: 1920, height: 1080, orientation: "landscape" });
-    act(() => vm().setDevice("tablet"));
-    expect(vm().resolution.choice).toBe("768x1024");
+    act(() => vm().setDevice('desktop'));
+    expect(vm().dimensions).toEqual({
+      width: 1920,
+      height: 1080,
+      orientation: 'landscape',
+    });
+    act(() => vm().setDevice('tablet'));
+    expect(vm().resolution.choice).toBe('768x1024');
   });
 
-  it("does not re-mount the frame when the resolution changes", async () => {
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+  it('does not re-mount the frame when the resolution changes', async () => {
+    const vm = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
     const key = vm().frameKey;
-    act(() => vm().setResolution("2560x1440"));
+    act(() => vm().setResolution('2560x1440'));
     act(() => vm().setCustomResolution(1500, 900));
-    act(() => vm().setDevice("mobile"));
-    act(() => vm().setResolution("custom"));
+    act(() => vm().setDevice('mobile'));
+    act(() => vm().setResolution('custom'));
     expect(vm().frameKey).toBe(key);
   });
 
-  it("starts Custom from the size in view, then takes a typed size", async () => {
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+  it('starts Custom from the size in view, then takes a typed size', async () => {
+    const vm = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
-    act(() => vm().setResolution("1920x1080"));
-    act(() => vm().setResolution("custom"));
-    expect(vm().resolution).toMatchObject({ choice: "custom:1920x1080", width: 1920, height: 1080, preset: null });
+    act(() => vm().setResolution('1920x1080'));
+    act(() => vm().setResolution('custom'));
+    expect(vm().resolution).toMatchObject({
+      choice: 'custom:1920x1080',
+      width: 1920,
+      height: 1080,
+      preset: null,
+    });
     act(() => vm().setCustomResolution(1500, 900));
-    expect(vm().resolution).toMatchObject({ choice: "custom:1500x900", preset: null });
-    expect(vm().dimensions).toEqual({ width: 1500, height: 900, orientation: "landscape" });
+    expect(vm().resolution).toMatchObject({
+      choice: 'custom:1500x900',
+      preset: null,
+    });
+    expect(vm().dimensions).toEqual({
+      width: 1500,
+      height: 900,
+      orientation: 'landscape',
+    });
     // Back to a preset leaves Custom.
-    act(() => vm().setResolution("1366x768"));
+    act(() => vm().setResolution('1366x768'));
     expect(vm().resolution.preset).not.toBeNull();
   });
 
-  it("falls back to the default for a size it was never offered", async () => {
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+  it('falls back to the default for a size it was never offered', async () => {
+    const vm = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
-    act(() => vm().setResolution("9999x9999"));
-    expect(vm().resolution.choice).toBe("1440x900");
+    act(() => vm().setResolution('9999x9999'));
+    expect(vm().resolution.choice).toBe('1440x900');
     act(() => vm().setCustomResolution(10, 10));
-    expect(vm().resolution.choice).toBe("1440x900");
+    expect(vm().resolution.choice).toBe('1440x900');
   });
 
-  it("remembers the resolution per device class in this browser", async () => {
-    const first = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+  it('remembers the resolution per device class in this browser', async () => {
+    const first = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
-    act(() => first().setResolution("1920x1080"));
-    act(() => first().setDevice("mobile"));
+    act(() => first().setResolution('1920x1080'));
+    act(() => first().setDevice('mobile'));
     act(() => first().setCustomResolution(400, 900));
-    expect(window.localStorage.getItem(STUDIO_RESOLUTION_KEYS.desktop)).toBe("1920x1080");
-    expect(window.localStorage.getItem(STUDIO_RESOLUTION_KEYS.mobile)).toBe("custom:400x900");
+    expect(window.localStorage.getItem(STUDIO_RESOLUTION_KEYS.desktop)).toBe(
+      '1920x1080',
+    );
+    expect(window.localStorage.getItem(STUDIO_RESOLUTION_KEYS.mobile)).toBe(
+      'custom:400x900',
+    );
     unmount();
 
-    const again = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    const again = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
     expect(again().dimensions).toMatchObject({ width: 1920, height: 1080 });
-    act(() => again().setDevice("mobile"));
-    expect(again().resolution).toMatchObject({ choice: "custom:400x900", width: 400, height: 900 });
+    act(() => again().setDevice('mobile'));
+    expect(again().resolution).toMatchObject({
+      choice: 'custom:400x900',
+      width: 400,
+      height: 900,
+    });
   });
 
-  it("uses the default when storage holds an unknown or out-of-range value", async () => {
-    window.localStorage.setItem(STUDIO_RESOLUTION_KEYS.desktop, "1111x1111");
-    window.localStorage.setItem(STUDIO_RESOLUTION_KEYS.mobile, "custom:50x50");
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+  it('uses the default when storage holds an unknown or out-of-range value', async () => {
+    window.localStorage.setItem(STUDIO_RESOLUTION_KEYS.desktop, '1111x1111');
+    window.localStorage.setItem(STUDIO_RESOLUTION_KEYS.mobile, 'custom:50x50');
+    const vm = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
-    expect(vm().resolution.choice).toBe("1440x900");
-    act(() => vm().setDevice("mobile"));
-    expect(vm().resolution.choice).toBe("375x812");
+    expect(vm().resolution.choice).toBe('1440x900');
+    act(() => vm().setDevice('mobile'));
+    expect(vm().resolution.choice).toBe('375x812');
   });
 
   it("opens the environment's root, with its host", async () => {
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    const vm = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
-    expect(vm().pageUrl).toBe("https://shop.example.com/");
-    expect(vm().host).toBe("shop.example.com");
+    expect(vm().pageUrl).toBe('https://shop.example.com/');
+    expect(vm().host).toBe('shop.example.com');
   });
 });
 
-describe("useStudioViewportViewModel copy link", () => {
+describe('useStudioViewportViewModel copy link', () => {
   const writeText = jest.fn();
 
   beforeEach(() => {
     jest.useFakeTimers();
     writeText.mockReset();
-    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    });
     projects.previews.mockResolvedValue({
       enabled: true,
       liveProvidersEnabled: true,
@@ -373,78 +477,104 @@ describe("useStudioViewportViewModel copy link", () => {
 
   afterEach(() => {
     jest.useRealTimers();
-    Reflect.deleteProperty(navigator, "clipboard");
+    Reflect.deleteProperty(navigator, 'clipboard');
   });
 
-  it("writes the page url to the clipboard, says Copied, and goes back to idle after two seconds", async () => {
+  it('writes the page url to the clipboard, says Copied, and goes back to idle after two seconds', async () => {
     writeText.mockResolvedValue(undefined);
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    const vm = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
-    expect(vm().copyLinkStatus).toBe("idle");
+    expect(vm().copyLinkStatus).toBe('idle');
     await act(async () => {
       await vm().copyLink();
     });
-    expect(writeText).toHaveBeenCalledWith("https://shop.example.com/");
-    expect(vm().copyLinkStatus).toBe("copied");
+    expect(writeText).toHaveBeenCalledWith('https://shop.example.com/');
+    expect(vm().copyLinkStatus).toBe('copied');
     act(() => {
       jest.advanceTimersByTime(1_900);
     });
-    expect(vm().copyLinkStatus).toBe("copied");
+    expect(vm().copyLinkStatus).toBe('copied');
     act(() => {
       jest.advanceTimersByTime(200);
     });
-    expect(vm().copyLinkStatus).toBe("idle");
+    expect(vm().copyLinkStatus).toBe('idle');
   });
 
-  it("reports a refused copy instead of pretending, then recovers", async () => {
-    writeText.mockRejectedValue(new Error("denied"));
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+  it('reports a refused copy instead of pretending, then recovers', async () => {
+    writeText.mockRejectedValue(new Error('denied'));
+    const vm = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
     await act(async () => {
       await vm().copyLink();
     });
-    expect(vm().copyLinkStatus).toBe("failed");
+    expect(vm().copyLinkStatus).toBe('failed');
     act(() => {
       jest.advanceTimersByTime(2_000);
     });
-    expect(vm().copyLinkStatus).toBe("idle");
+    expect(vm().copyLinkStatus).toBe('idle');
   });
 
-  it("reports a missing clipboard the same way", async () => {
-    Reflect.deleteProperty(navigator, "clipboard");
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+  it('reports a missing clipboard the same way', async () => {
+    Reflect.deleteProperty(navigator, 'clipboard');
+    const vm = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
     await act(async () => {
       await vm().copyLink();
     });
-    expect(vm().copyLinkStatus).toBe("failed");
+    expect(vm().copyLinkStatus).toBe('failed');
   });
 
-  it("copies nothing when there is no page", async () => {
-    projects.previews.mockResolvedValue({ enabled: true, liveProvidersEnabled: true, providerError: null, branches: [] });
-    const vm = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+  it('copies nothing when there is no page', async () => {
+    projects.previews.mockResolvedValue({
+      enabled: true,
+      liveProvidersEnabled: true,
+      providerError: null,
+      branches: [],
+    });
+    const vm = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
     expect(vm().pageUrl).toBeNull();
     await act(async () => {
       await vm().copyLink();
     });
     expect(writeText).not.toHaveBeenCalled();
-    expect(vm().copyLinkStatus).toBe("idle");
+    expect(vm().copyLinkStatus).toBe('idle');
   });
 });
 
-describe("the run rail on the viewport ViewModel", () => {
-  it("rides on it, so every studio on the shell has it, read for its own studio", async () => {
-    projects.previews.mockResolvedValue({ enabled: true, liveProvidersEnabled: true, providerError: null, branches: [] });
-    window.localStorage.setItem("alphaci.po-studio.rail-pinned", "1");
-    const po = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true, studio: "po" }));
+describe('the run rail on the viewport ViewModel', () => {
+  it('rides on it, so every studio on the shell has it, read for its own studio', async () => {
+    projects.previews.mockResolvedValue({
+      enabled: true,
+      liveProvidersEnabled: true,
+      providerError: null,
+      branches: [],
+    });
+    window.localStorage.setItem('alphaci.po-studio.rail-pinned', '1');
+    const po = renderHook(() =>
+      useStudioViewportViewModel({
+        projectId: 'p1',
+        enabled: true,
+        studio: 'po',
+      }),
+    );
     await flush();
     expect(po().isRailPinned).toBe(true);
     act(() => po().toggleRailPinned());
     expect(po().isRailPinned).toBe(false);
     unmount();
     // QA Studio (the default) was never pinned.
-    const qa = renderHook(() => useStudioViewportViewModel({ projectId: "p1", enabled: true }));
+    const qa = renderHook(() =>
+      useStudioViewportViewModel({ projectId: 'p1', enabled: true }),
+    );
     await flush();
     expect(qa().isRailPinned).toBe(false);
   });

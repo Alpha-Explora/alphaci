@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import type { ProvisionedProject } from "@/features/projects";
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
-import { CodeTab } from "./workspace/code-tab";
+import type { ProvisionedProject } from '@/features/projects';
+import type { ProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
+import { CodeTab } from './workspace/code-tab';
 
 /**
  * The repository's source at a branch, or at one commit when the Commits tab's
@@ -14,7 +14,7 @@ export function CodeTabPanel({
   vm,
 }: Readonly<{
   project: ProvisionedProject;
-  vm?: Pick<ProjectDetailTabsViewModel, "codeCommit">;
+  vm?: Pick<ProjectDetailTabsViewModel, 'codeCommit'>;
   dangerZone?: React.ReactNode;
 }>) {
   const commit = vm?.codeCommit ?? null;
@@ -25,7 +25,7 @@ export function CodeTabPanel({
       aria-labelledby="project-detail-tab-code"
       className="ws-panel"
     >
-      <CodeTab key={commit?.sha ?? ""} projectId={project.id} commit={commit} />
+      <CodeTab key={commit?.sha ?? ''} projectId={project.id} commit={commit} />
     </div>
   );
 }

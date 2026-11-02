@@ -11,10 +11,10 @@
  */
 
 /** The branches visual checks run on. `main` falls back to `uat`'s references. */
-export type VisualBranch = "uat" | "main";
+export type VisualBranch = 'uat' | 'main';
 
 /** `passed` matched its reference; `changed` differs; `new` has no reference yet. */
-export type VisualSnapshotStatus = "passed" | "changed" | "new";
+export type VisualSnapshotStatus = 'passed' | 'changed' | 'new';
 
 export interface VisualSnapshot {
   /** The screenshot's file name, e.g. `home-desktop.png`. */
@@ -26,7 +26,7 @@ export interface VisualSnapshot {
   baselineApprovedBy: string | null;
   baselineApprovedAt: string | null;
   /** `uat` when a `main` snapshot is compared against uat's reference. */
-  inheritedFrom: "uat" | null;
+  inheritedFrom: 'uat' | null;
   /** True once the branch's reference already IS this run's screenshot. */
   approved: boolean;
 }

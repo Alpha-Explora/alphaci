@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import type { ReactNode } from "react";
+import Link from 'next/link';
+import type { ReactNode } from 'react';
 
-import { countLabel } from "../../model/home-label-rules";
-import { homeBlockState } from "../../model/home-layout-rules";
-import { MY_WORK_EMPTY_LINE } from "../../model/home-persona-rules";
+import { countLabel } from '../../model/home-label-rules';
+import { homeBlockState } from '../../model/home-layout-rules';
+import { MY_WORK_EMPTY_LINE } from '../../model/home-persona-rules';
 import type {
   MyWorkProject,
   MyWorkRepository,
   ReturnedRow,
-} from "../../model/home-persona-types";
-import type { TeamQaDefectCounts } from "../../model/home-types";
+} from '../../model/home-persona-types';
+import type { TeamQaDefectCounts } from '../../model/home-types';
 import {
   EmptyLine,
   HomeBlock,
@@ -24,13 +24,15 @@ import {
   RunsBlock,
   StatusDot,
   type BlockContext,
-} from "./persona-blocks";
+} from './persona-blocks';
 
 /* ── Developer: "What do I fix next?" ───────────────────────────────────── */
 
-const SEVERITIES = ["blocker", "major", "minor"] as const;
+const SEVERITIES = ['blocker', 'major', 'minor'] as const;
 
-function DefectChips({ defects }: Readonly<{ defects: TeamQaDefectCounts | null }>) {
+function DefectChips({
+  defects,
+}: Readonly<{ defects: TeamQaDefectCounts | null }>) {
   if (!defects) return null;
   const shown = SEVERITIES.filter((severity) => defects[severity] > 0);
   if (!shown.length) return null;
@@ -51,7 +53,13 @@ function ReturnedLink({ row }: Readonly<{ row: ReturnedRow }>) {
       <StatusDot tone="danger" />
       <span className="team-project-copy">
         <strong>{row.name}</strong>
-        <small>{countLabel(row.returned, "item returned to development", "items returned to development")}</small>
+        <small>
+          {countLabel(
+            row.returned,
+            'item returned to development',
+            'items returned to development',
+          )}
+        </small>
       </span>
       <DefectChips defects={row.defects} />
       <span className="dashboard-row-arrow" aria-hidden="true">
@@ -68,13 +76,20 @@ export function returnedByQaBlock(ctx: BlockContext): ReactNode {
     <HomeBlock
       id="returned-by-qa"
       kicker="RETURNED BY QA"
-      title={data.scope.mode === "mine" ? "In my Projects" : "Across the team's Projects"}
-      state={homeBlockState("returned-by-qa", ctx.states)}
+      title={
+        data.scope.mode === 'mine'
+          ? 'In my Projects'
+          : "Across the team's Projects"
+      }
+      state={homeBlockState('returned-by-qa', ctx.states)}
       reduced={reduced}
       order={ctx.order}
     >
       {data.returned.length ? (
-        <HomeRowList label="Projects with items returned by QA" reduced={reduced}>
+        <HomeRowList
+          label="Projects with items returned by QA"
+          reduced={reduced}
+        >
           {data.returned.map((row) => (
             <HomeRow key={row.deliveryProjectId} reduced={reduced}>
               <ReturnedLink row={row} />
@@ -90,16 +105,16 @@ export function returnedByQaBlock(ctx: BlockContext): ReactNode {
 
 /** The runs of the repositories in scope, failures first. */
 export function scopedRunsBlock(ctx: BlockContext): ReactNode {
-  const mine = ctx.data.scope.mode === "mine";
+  const mine = ctx.data.scope.mode === 'mine';
   return (
     <RunsBlock
       id="scoped-runs"
-      kicker={mine ? "MY PIPELINE RUNS" : "TEAM PIPELINE RUNS"}
+      kicker={mine ? 'MY PIPELINE RUNS' : 'TEAM PIPELINE RUNS'}
       title="Failures first"
       runs={ctx.data.runs}
       running={ctx.data.runStats.running}
-      emptyText={mine ? "No runs in your Projects yet." : "No runs yet."}
-      state={homeBlockState("scoped-runs", ctx.states)}
+      emptyText={mine ? 'No runs in your Projects yet.' : 'No runs yet.'}
+      state={homeBlockState('scoped-runs', ctx.states)}
       reduced={ctx.reduced}
       order={ctx.order}
       projectIds={ctx.data.runProjectIds}
@@ -107,17 +122,28 @@ export function scopedRunsBlock(ctx: BlockContext): ReactNode {
   );
 }
 
-function RepositoryLine({ repository }: Readonly<{ repository: MyWorkRepository }>) {
+function RepositoryLine({
+  repository,
+}: Readonly<{ repository: MyWorkRepository }>) {
   const content = (
     <>
-      <StatusDot tone={RUN_TONE_DOT[repository.tone]} label={`Latest run ${RUN_TONE_LABEL[repository.tone]}`} />
+      <StatusDot
+        tone={RUN_TONE_DOT[repository.tone]}
+        label={`Latest run ${RUN_TONE_LABEL[repository.tone]}`}
+      />
       <span className="home-work-repo-name">{repository.name}</span>
-      {repository.branch ? <span className="run-card-branch-pill">{repository.branch}</span> : null}
+      {repository.branch ? (
+        <span className="run-card-branch-pill">{repository.branch}</span>
+      ) : null}
     </>
   );
-  if (!repository.href) return <span className="home-work-repo">{content}</span>;
+  if (!repository.href)
+    return <span className="home-work-repo">{content}</span>;
   return (
-    <Link href={repository.href} className="home-work-repo home-work-repo--link">
+    <Link
+      href={repository.href}
+      className="home-work-repo home-work-repo--link"
+    >
       {content}
     </Link>
   );
@@ -138,7 +164,10 @@ function WorkProject({ project }: Readonly<{ project: MyWorkProject }>) {
         </p>
       ) : null}
       {project.repositories.length ? (
-        <ul className="home-work-repos" aria-label={`Repositories in ${project.name}`}>
+        <ul
+          className="home-work-repos"
+          aria-label={`Repositories in ${project.name}`}
+        >
           {project.repositories.map((repository) => (
             <li key={repository.repositoryId}>
               <RepositoryLine repository={repository} />
@@ -162,10 +191,10 @@ export function myWorkBlock(ctx: BlockContext): ReactNode {
   return (
     <HomeSideBlock
       id="my-work"
-      kicker={data.scope.mode === "mine" ? "MY WORK" : "TEAM PROJECTS"}
+      kicker={data.scope.mode === 'mine' ? 'MY WORK' : 'TEAM PROJECTS'}
       action={href ? <InlineLink href={href}>Add repository</InlineLink> : null}
       note={data.fallbackLine}
-      state={homeBlockState("my-work", ctx.states)}
+      state={homeBlockState('my-work', ctx.states)}
       slotClass={ctx.slotClass}
     >
       {data.myWork.length ? (

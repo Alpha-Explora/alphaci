@@ -13,9 +13,9 @@ import type {
   StageId,
   StageResults,
   StageStatus,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 
-export const CI_RUN_REPORT_SCHEMA_VERSION = "ci-run-report/v1";
+export const CI_RUN_REPORT_SCHEMA_VERSION = 'ci-run-report/v1';
 
 /** Which pipeline execution: a promoted commit is built again on each branch, so the branch is part of the key. */
 export interface CiRunReportRef {
@@ -39,7 +39,7 @@ export interface CiRunReportStage {
 
 export interface CiRunReportFailure {
   stage: StageId;
-  severity: FriendlyMessage["severity"];
+  severity: FriendlyMessage['severity'];
   title: string;
   detail: string;
   hint: string;

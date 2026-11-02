@@ -5,13 +5,10 @@
  * attach per-branch QA runs to these same items, which is why an item carries
  * its own verification type and test identifier rather than the checklist. */
 
-export type ChecklistTargetPersona = "developer" | "qa" | "all";
+export type ChecklistTargetPersona = 'developer' | 'qa' | 'all';
 
 export type ChecklistVerificationType =
-  | "manual"
-  | "playwright"
-  | "unit_test"
-  | "bruno";
+  'manual' | 'playwright' | 'unit_test' | 'bruno';
 
 export interface QaChecklistItem {
   id: string;
@@ -80,7 +77,7 @@ export interface ChecklistShareTarget {
   detail?: string | null;
 }
 
-export type ChecklistsStatus = "loading" | "ready" | "error";
+export type ChecklistsStatus = 'loading' | 'ready' | 'error';
 
 /**
  * One editable row. Strings rather than nulls so inputs stay controlled; the

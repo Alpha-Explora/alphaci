@@ -382,25 +382,25 @@
     transform 0.15s ease;
 }
 
-.pf-chip[data-role="frontend"] {
+.pf-chip[data-role='frontend'] {
   --pf-role: var(--brand);
   --pf-role-tint: var(--brand-light);
   --pf-role-edge: var(--border-brand);
 }
 
-.pf-chip[data-role="backend"] {
+.pf-chip[data-role='backend'] {
   --pf-role: var(--accent-violet);
   --pf-role-tint: var(--accent-violet-light);
   --pf-role-edge: var(--border-violet);
 }
 
-.pf-chip[data-role="service"] {
+.pf-chip[data-role='service'] {
   --pf-role: var(--accent-amber);
   --pf-role-tint: var(--accent-amber-light);
   --pf-role-edge: var(--border-amber);
 }
 
-.pf-chip[data-role="app"] {
+.pf-chip[data-role='app'] {
   --pf-role: var(--accent-emerald);
   --pf-role-tint: var(--accent-emerald-light);
   --pf-role-edge: var(--border-strong);

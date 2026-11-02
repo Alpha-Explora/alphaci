@@ -13,6 +13,8 @@
     "build:enterprise": "node scripts/run-edition.mjs enterprise next build --webpack",
     "start": "next start",
     "lint": "oxlint --report-unused-disable-directives --max-warnings=0 src && eslint --concurrency=4 src --max-warnings=0",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"tests/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"tests/**/*.{ts,tsx}\"",
     "typecheck": "node ../../node_modules/typescript-7/bin/tsc --noEmit -p tsconfig.typecheck.json",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",

@@ -1,23 +1,25 @@
-import type { EnvTargetSlot, UsageLimitItem } from "@/shared/api/contracts";
-import { isProjectNameStepReady } from "./project-name-rules";
-import { toSlug } from "./workflow-studio-rules";
+import type { EnvTargetSlot, UsageLimitItem } from '@/shared/api/contracts';
+import { isProjectNameStepReady } from './project-name-rules';
+import { toSlug } from './workflow-studio-rules';
 
-export function projectKindToSlot(kind?: "frontend" | "backend"): EnvTargetSlot {
-  return kind === "frontend" ? "frontend" : "backend";
+export function projectKindToSlot(
+  kind?: 'frontend' | 'backend',
+): EnvTargetSlot {
+  return kind === 'frontend' ? 'frontend' : 'backend';
 }
 
 export function inferSingleProjectKind(input: {
-  selectedProjectTypeKind?: "frontend" | "backend";
+  selectedProjectTypeKind?: 'frontend' | 'backend';
   selectedProjectTypeId: string;
-}): "frontend" | "backend" {
+}): 'frontend' | 'backend' {
   if (input.selectedProjectTypeKind) {
     return input.selectedProjectTypeKind;
   }
   const id = input.selectedProjectTypeId.toLowerCase();
-  if (id.includes("next") || id.includes("react") || id.includes("frontend")) {
-    return "frontend";
+  if (id.includes('next') || id.includes('react') || id.includes('frontend')) {
+    return 'frontend';
   }
-  return "backend";
+  return 'backend';
 }
 
 export function defaultProjectName(
@@ -29,7 +31,7 @@ export function defaultProjectName(
     return fallback.trim();
   }
   if (!repoName.trim()) {
-    return "";
+    return '';
   }
   return suffix ? `${repoName.trim()}-${suffix}` : repoName.trim();
 }
@@ -68,7 +70,11 @@ export function isGenerateDisabled(input: {
   serviceName: string;
   repoName: string;
 }): boolean {
-  if (input.isCreatingProject || input.isDiscoveringExistingRepo || input.isSettingUpExistingRepo) {
+  if (
+    input.isCreatingProject ||
+    input.isDiscoveringExistingRepo ||
+    input.isSettingUpExistingRepo
+  ) {
     return true;
   }
   if (input.loadingProjectOptions || !input.hasSelectedProjectType) {
@@ -83,7 +89,11 @@ export function isExistingDiscoverDisabled(input: {
   loadingProjectOptions: boolean;
   existingRepoFullName: string;
 }): boolean {
-  if (input.isDiscoveringExistingRepo || input.isSettingUpExistingRepo || input.loadingProjectOptions) {
+  if (
+    input.isDiscoveringExistingRepo ||
+    input.isSettingUpExistingRepo ||
+    input.loadingProjectOptions
+  ) {
     return true;
   }
   return !input.existingRepoFullName.trim();
@@ -101,7 +111,12 @@ export function isExistingSetupDisabled(input: {
   if (isExistingDiscoverDisabled(input)) {
     return true;
   }
-  if (!isProjectNameStepReady(input.projectName, input.projectNameServerError ?? null)) {
+  if (
+    !isProjectNameStepReady(
+      input.projectName,
+      input.projectNameServerError ?? null,
+    )
+  ) {
     return true;
   }
   return !input.hasSelectedProjectType;
@@ -137,7 +152,12 @@ export function isRepositoryStepReady(input: {
   if (input.projectChoiceMissing) {
     return false;
   }
-  if (!isProjectNameStepReady(input.projectName, input.projectNameServerError ?? null)) {
+  if (
+    !isProjectNameStepReady(
+      input.projectName,
+      input.projectNameServerError ?? null,
+    )
+  ) {
     return false;
   }
   if (!input.repoName.trim()) {
@@ -151,13 +171,18 @@ export function isRepositoryStepReady(input: {
 }
 
 /** A Developer's Project select is showing and nothing is picked yet. */
-export function isProjectChoiceMissing(choice: { selectedId: string } | null): boolean {
+export function isProjectChoiceMissing(
+  choice: { selectedId: string } | null,
+): boolean {
   return choice !== null && !choice.selectedId;
 }
 
 /** "Existing repository" is on screen only when chosen and allowed for the caller. */
-export function isExistingSetupMode(setupMode: "new" | "existing", allowed: boolean): boolean {
-  return allowed && setupMode === "existing";
+export function isExistingSetupMode(
+  setupMode: 'new' | 'existing',
+  allowed: boolean,
+): boolean {
+  return allowed && setupMode === 'existing';
 }
 
 /**
@@ -167,16 +192,28 @@ export function isExistingSetupMode(setupMode: "new" | "existing", allowed: bool
  * options; the workflow catalog sets it.
  */
 export function stackRuntimeLabel(
-  projectType: { runtime?: string; language?: string; framework?: string; label?: string } | null | undefined,
+  projectType:
+    | {
+        runtime?: string;
+        language?: string;
+        framework?: string;
+        label?: string;
+      }
+    | null
+    | undefined,
 ): string {
-  const name = projectType?.framework || projectType?.label || projectType?.runtime || "Runtime from catalog";
+  const name =
+    projectType?.framework ||
+    projectType?.label ||
+    projectType?.runtime ||
+    'Runtime from catalog';
   const language = projectType?.language;
   return language && language !== name ? `${name} (${language})` : name;
 }
 
 /** An example repository name that fits the stack: "my-api" for .NET, not "my-next-app". */
 export function repoNamePlaceholder(runtime: string | undefined): string {
-  return (runtime ?? "node") === "node" ? "my-next-app" : "my-api";
+  return (runtime ?? 'node') === 'node' ? 'my-next-app' : 'my-api';
 }
 
 export function isAutomationStepReady(nodeVersion: string): boolean {
@@ -190,11 +227,17 @@ export function wizardStepReadyFlags(input: {
   delivery: boolean;
   createReady: boolean;
 }): readonly boolean[] {
-  return [input.blueprint, input.repository, input.automation, input.delivery, input.createReady];
+  return [
+    input.blueprint,
+    input.repository,
+    input.automation,
+    input.delivery,
+    input.createReady,
+  ];
 }
 
 export function teamChoiceState(input: {
-  creationScope: "choose-team" | "in-team";
+  creationScope: 'choose-team' | 'in-team';
   workspaceCount: number;
   selectedWorkspaceId?: string | null;
   /** A known Project fixes the team (its own), so none is asked for. */
@@ -205,7 +248,7 @@ export function teamChoiceState(input: {
   hasNoTeam: boolean;
   teamChoiceMissing: boolean;
 } {
-  const mustChooseTeam = input.creationScope === "choose-team";
+  const mustChooseTeam = input.creationScope === 'choose-team';
   const needsTeamChoice =
     mustChooseTeam && input.workspaceCount > 1 && input.projectKnown !== true;
   const hasNoTeam = mustChooseTeam && input.workspaceCount === 0;
@@ -221,17 +264,19 @@ export function filterEnforcedOrgRepos<T extends { repoFullName: string }>(
   repos: readonly T[],
   enforcedOrg: string | null | undefined,
 ): T[] {
-  const org = enforcedOrg?.toLowerCase() ?? "";
+  const org = enforcedOrg?.toLowerCase() ?? '';
   if (!org) {
     return [...repos];
   }
-  return repos.filter((repo) => repo.repoFullName.split("/")[0]?.toLowerCase() === org);
+  return repos.filter(
+    (repo) => repo.repoFullName.split('/')[0]?.toLowerCase() === org,
+  );
 }
 
 export function slotProjectName(
   serviceName: string,
   repoName: string,
-  suffix?: "backend" | "frontend",
+  suffix?: 'backend' | 'frontend',
 ): string {
   return defaultProjectName(serviceName, repoName, suffix);
 }
@@ -240,19 +285,21 @@ export function effectiveDualServiceName(
   touched: boolean,
   value: string,
   repoName: string,
-  suffix: "backend" | "frontend",
+  suffix: 'backend' | 'frontend',
 ): string {
   if (touched) {
     return value;
   }
   if (!repoName) {
-    return "";
+    return '';
   }
   return `${toSlug(repoName)}-${suffix}`;
 }
 
-export function findProjectQuota(items: readonly UsageLimitItem[]): UsageLimitItem | null {
-  return items.find((item) => item.code === "projects") ?? null;
+export function findProjectQuota(
+  items: readonly UsageLimitItem[],
+): UsageLimitItem | null {
+  return items.find((item) => item.code === 'projects') ?? null;
 }
 
 export function isProjectQuotaReached(quota: UsageLimitItem | null): boolean {
@@ -297,7 +344,9 @@ export function isFinalCreateDisabled(input: {
   return !input.priorStepsReady;
 }
 
-export function countWorkspaces(workspaces?: { length: number } | null): number {
+export function countWorkspaces(
+  workspaces?: { length: number } | null,
+): number {
   if (!workspaces) {
     return 0;
   }
@@ -318,8 +367,11 @@ export function soleWorkspaceOf<T>(
 }
 
 /** Only offer shapes users can actually pick — hides "coming soon" catalog entries (e.g. monorepo). */
-export function isOfferedRepoShape(shape: { enabled: boolean; id: string }): boolean {
-  return shape.enabled && shape.id !== "monorepo";
+export function isOfferedRepoShape(shape: {
+  enabled: boolean;
+  id: string;
+}): boolean {
+  return shape.enabled && shape.id !== 'monorepo';
 }
 
 export function repoPrefixedPlaceholder(
@@ -335,7 +387,7 @@ export function repoPrefixedPlaceholder(
 
 export function githubOrgLogin(accountLogin?: string | null): string {
   if (!accountLogin) {
-    return "ALPHACI";
+    return 'ALPHACI';
   }
   return accountLogin;
 }
@@ -361,7 +413,7 @@ export function selectedShapeLabel(
 ): string {
   const match = shapes.find((shape) => shape.id === selectedId);
   if (!match) {
-    return "Selected shape";
+    return 'Selected shape';
   }
   return match.label;
 }

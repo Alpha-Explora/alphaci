@@ -1,7 +1,7 @@
 /* Pure rules for the teams domain. No React, no Next, no fetch. */
-import { ApiError } from "@/shared/api/request";
+import { ApiError } from '@/shared/api/request';
 
-import type { Team } from "./teams-types";
+import type { Team } from './teams-types';
 
 /**
  * Which team this page shows.
@@ -21,10 +21,10 @@ export function resolveSelectedTeam(
 
 /** Plural-aware member count, e.g. "1 member" / "4 members". */
 export function memberCountLabel(count: number): string {
-  return `${count} ${count === 1 ? "member" : "members"}`;
+  return `${count} ${count === 1 ? 'member' : 'members'}`;
 }
 
-const GENERIC_LOAD_ERROR = "Could not load this team.";
+const GENERIC_LOAD_ERROR = 'Could not load this team.';
 
 /**
  * Map a thrown value to a message safe to render.
@@ -37,11 +37,11 @@ export function toUserError(err: unknown): string {
 
   switch (err.status) {
     case 401:
-      return "Your session expired. Please sign in again.";
+      return 'Your session expired. Please sign in again.';
     case 403:
-      return "You do not have access to this team.";
+      return 'You do not have access to this team.';
     case 404:
-      return "This team no longer exists.";
+      return 'This team no longer exists.';
     default:
       return GENERIC_LOAD_ERROR;
   }
@@ -64,7 +64,7 @@ export const EMPTY_TEAMS_DEEP_LINK: TeamsDeepLink = {
 };
 
 /** `?section=projects`: the team's Projects explorer (now the Projects page). */
-export const TEAMS_PROJECTS_SECTION = "projects";
+export const TEAMS_PROJECTS_SECTION = 'projects';
 
 /**
  * Read `?workspace=…&section=…&checklist=…&project=…` from a location search
@@ -73,10 +73,10 @@ export const TEAMS_PROJECTS_SECTION = "projects";
 export function parseTeamsDeepLink(search: string): TeamsDeepLink {
   const params = new URLSearchParams(search);
   return {
-    workspaceId: params.get("workspace") || null,
-    section: params.get("section") || null,
-    checklistId: params.get("checklist") || null,
-    projectId: params.get("project") || null,
+    workspaceId: params.get('workspace') || null,
+    section: params.get('section') || null,
+    checklistId: params.get('checklist') || null,
+    projectId: params.get('project') || null,
   };
 }
 
@@ -84,8 +84,12 @@ export function parseTeamsDeepLink(search: string): TeamsDeepLink {
  * Whether a link opens the Projects section: by naming it, or by naming a
  * Project (`?project=` alone is enough — a Project only lives there).
  */
-export function linksToProjects(deepLink: TeamsDeepLink | null | undefined): boolean {
-  return deepLink?.section === TEAMS_PROJECTS_SECTION || Boolean(deepLink?.projectId);
+export function linksToProjects(
+  deepLink: TeamsDeepLink | null | undefined,
+): boolean {
+  return (
+    deepLink?.section === TEAMS_PROJECTS_SECTION || Boolean(deepLink?.projectId)
+  );
 }
 
 /**
@@ -108,17 +112,20 @@ export function linkedItemId(
 
 /** The team pages, one per former section of the team rail. */
 export const TEAM_PAGE_PATHS = {
-  members: "/teams",
-  checklists: "/checklists",
-  activity: "/activity",
-  settings: "/settings",
-  projects: "/workflows",
+  members: '/teams',
+  checklists: '/checklists',
+  activity: '/activity',
+  settings: '/settings',
+  projects: '/workflows',
 } as const;
 
 /** `/settings?tab=team`: the Settings page opened on its Team tab. */
-export const SETTINGS_TEAM_TAB = "team";
+export const SETTINGS_TEAM_TAB = 'team';
 
-function withQuery(path: string, entries: Array<[string, string | null]>): string {
+function withQuery(
+  path: string,
+  entries: Array<[string, string | null]>,
+): string {
   const params = new URLSearchParams();
   for (const [key, value] of entries) {
     if (value) params.set(key, value);
@@ -138,25 +145,25 @@ function withQuery(path: string, entries: Array<[string, string | null]>): strin
  */
 export function legacyTeamsRedirect(deepLink: TeamsDeepLink): string | null {
   const { workspaceId, section, checklistId, projectId } = deepLink;
-  if (section === "qa-checklists") {
+  if (section === 'qa-checklists') {
     return withQuery(TEAM_PAGE_PATHS.checklists, [
-      ["workspace", workspaceId],
-      ["checklist", checklistId],
+      ['workspace', workspaceId],
+      ['checklist', checklistId],
     ]);
   }
-  if (section === "activity") {
-    return withQuery(TEAM_PAGE_PATHS.activity, [["workspace", workspaceId]]);
+  if (section === 'activity') {
+    return withQuery(TEAM_PAGE_PATHS.activity, [['workspace', workspaceId]]);
   }
-  if (section === "settings") {
+  if (section === 'settings') {
     return withQuery(TEAM_PAGE_PATHS.settings, [
-      ["tab", SETTINGS_TEAM_TAB],
-      ["workspace", workspaceId],
+      ['tab', SETTINGS_TEAM_TAB],
+      ['workspace', workspaceId],
     ]);
   }
   if (linksToProjects(deepLink)) {
     return withQuery(TEAM_PAGE_PATHS.projects, [
-      ["group", workspaceId],
-      ["project", projectId],
+      ['group', workspaceId],
+      ['project', projectId],
     ]);
   }
   return null;
@@ -169,14 +176,21 @@ export function legacyTeamsRedirect(deepLink: TeamsDeepLink): string | null {
  * The backend reports "admin" for app-role leads and admins on their teams,
  * and for a platform admin on any team, so this is also "lead/admin only".
  */
-const TEAM_SETTINGS_ROLES: ReadonlySet<string> = new Set(["admin", "delegated_lead"]);
+const TEAM_SETTINGS_ROLES: ReadonlySet<string> = new Set([
+  'admin',
+  'delegated_lead',
+]);
 
 /** Whether the Settings page shows the Team tab for a team the caller holds this role in. */
-export function canManageTeamSettings(teamRole: string | null | undefined): boolean {
+export function canManageTeamSettings(
+  teamRole: string | null | undefined,
+): boolean {
   return Boolean(teamRole) && TEAM_SETTINGS_ROLES.has(teamRole as string);
 }
 
 /** The Members page for one team. */
 export function teamMembersHref(workspaceId?: string | null): string {
-  return withQuery(TEAM_PAGE_PATHS.members, [["workspace", workspaceId ?? null]]);
+  return withQuery(TEAM_PAGE_PATHS.members, [
+    ['workspace', workspaceId ?? null],
+  ]);
 }

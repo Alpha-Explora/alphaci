@@ -1,11 +1,11 @@
-import { getApiBaseUrl, request, requestBlob } from "@/shared/api/request";
+import { getApiBaseUrl, request, requestBlob } from '@/shared/api/request';
 
 import type {
   VisualApproveInput,
   VisualApproveResponse,
   VisualBranch,
   VisualChecksResponse,
-} from "../model/visual-check-types";
+} from '../model/visual-check-types';
 
 /**
  * Visual checks for a project: the Playwright screenshots of the deployed
@@ -21,7 +21,8 @@ import type {
 
 const enc = encodeURIComponent;
 
-const visualUrl = (projectId: string) => `/projects/${enc(projectId)}/workspace/visual`;
+const visualUrl = (projectId: string) =>
+  `/projects/${enc(projectId)}/workspace/visual`;
 
 /** The named run's snapshots, or the branch's latest when `runId` is null. */
 export function getProjectVisualChecks(
@@ -30,17 +31,22 @@ export function getProjectVisualChecks(
   runId: number | null,
 ) {
   const query = new URLSearchParams({ branch });
-  if (runId !== null) query.set("runId", String(runId));
-  return request<VisualChecksResponse>(`${visualUrl(projectId)}?${query.toString()}`);
+  if (runId !== null) query.set('runId', String(runId));
+  return request<VisualChecksResponse>(
+    `${visualUrl(projectId)}?${query.toString()}`,
+  );
 }
 
 /**
  * Makes each named screenshot the branch's reference. All or nothing: one
  * name the server cannot approve refuses the whole batch (409).
  */
-export function approveProjectVisualChecks(projectId: string, input: VisualApproveInput) {
+export function approveProjectVisualChecks(
+  projectId: string,
+  input: VisualApproveInput,
+) {
   return request<VisualApproveResponse>(`${visualUrl(projectId)}/approve`, {
-    method: "POST",
+    method: 'POST',
     body: JSON.stringify(input),
   });
 }
@@ -53,7 +59,8 @@ export function approveProjectVisualChecks(projectId: string, input: VisualAppro
  * fetched with credentials.
  */
 export function getVisualImageBlob(url: string): Promise<Blob> {
-  const base = getApiBaseUrl().replace(/\/+$/, "");
-  if (!url.startsWith(`${base}/`)) return Promise.reject(new Error("Not an API image URL."));
+  const base = getApiBaseUrl().replace(/\/+$/, '');
+  if (!url.startsWith(`${base}/`))
+    return Promise.reject(new Error('Not an API image URL.'));
   return requestBlob(url.slice(base.length));
 }

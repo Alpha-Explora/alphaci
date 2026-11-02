@@ -1,23 +1,30 @@
-"use client";
+'use client';
 
-import "./pipeline-runs.css";
+import './pipeline-runs.css';
 
-import { useMemo } from "react";
+import { useMemo } from 'react';
 
-import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-states";
-import { CommitCard } from "./pipeline-commit-card";
-import { distinctCommitTitles } from "../../model/pipeline-run-card-rules";
-import { runsViewModeFor, type RunsViewMode } from "../../model/runs-view-mode";
-import type { AppRole } from "@/shared/api/contracts";
-import type { BranchRunSection } from "../../model/runs-by-branch";
+import {
+  WorkspaceEmpty,
+  WorkspaceError,
+  WorkspaceLoading,
+} from './workspace-states';
+import { CommitCard } from './pipeline-commit-card';
+import { distinctCommitTitles } from '../../model/pipeline-run-card-rules';
+import { runsViewModeFor, type RunsViewMode } from '../../model/runs-view-mode';
+import type { AppRole } from '@/shared/api/contracts';
+import type { BranchRunSection } from '../../model/runs-by-branch';
 import {
   ALL_BRANCHES,
   usePipelineRunsViewModel,
   type PipelineRunsViewModel,
   type WorkflowRunSummary,
-} from "../../view-models/use-pipeline-runs-view-model";
-import { useBrowserTestsViewModel } from "../../view-models/use-browser-tests-view-model";
-import { visualCaptureOn, type BrowserTestsVisual } from "../../model/browser-test-rules";
+} from '../../view-models/use-pipeline-runs-view-model';
+import { useBrowserTestsViewModel } from '../../view-models/use-browser-tests-view-model';
+import {
+  visualCaptureOn,
+  type BrowserTestsVisual,
+} from '../../model/browser-test-rules';
 
 /**
  * Live GitHub Actions runs for this project: branch → run → jobs → steps → log.
@@ -66,7 +73,7 @@ export function PipelineRunsTab({
     <div className="pipeline-tab__run-view">
       <div className="pipeline-tab__head">
         <h2 className="pipeline-tab__name">Workflows</h2>
-        {runsView.status === "ready" && !runsView.isEmpty ? (
+        {runsView.status === 'ready' && !runsView.isEmpty ? (
           <BranchPicker runsView={runsView} />
         ) : null}
       </div>
@@ -82,7 +89,9 @@ export function PipelineRunsTab({
   );
 }
 
-function BranchPicker({ runsView }: Readonly<{ runsView: PipelineRunsViewModel }>) {
+function BranchPicker({
+  runsView,
+}: Readonly<{ runsView: PipelineRunsViewModel }>) {
   return (
     <label className="ws-branchpick">
       <span className="ws-branchpick__label">Branch</span>
@@ -96,7 +105,7 @@ function BranchPicker({ runsView }: Readonly<{ runsView: PipelineRunsViewModel }
             {section.branch}
             {section.commits.length > 0
               ? ` (${String(section.commits.length)})`
-              : " — no runs"}
+              : ' — no runs'}
           </option>
         ))}
         <option value={ALL_BRANCHES}>All branches</option>
@@ -118,11 +127,11 @@ function PipelineRunsBody({
   runsView: PipelineRunsViewModel;
   visual: BrowserTestsVisual | null;
 }) {
-  if (runsView.status === "loading") return <WorkspaceLoading rows={5} />;
-  if (runsView.status === "error") {
+  if (runsView.status === 'loading') return <WorkspaceLoading rows={5} />;
+  if (runsView.status === 'error') {
     return (
       <WorkspaceError
-        message={runsView.error ?? "The run list could not be read."}
+        message={runsView.error ?? 'The run list could not be read.'}
         onRetry={runsView.reload}
       />
     );
@@ -181,7 +190,10 @@ function BranchSection({
 }) {
   // Computed across the section: a title is only worth showing when it tells
   // this commit apart from the others on the branch.
-  const titles = useMemo(() => distinctCommitTitles(section.commits), [section.commits]);
+  const titles = useMemo(
+    () => distinctCommitTitles(section.commits),
+    [section.commits],
+  );
 
   return (
     <section className="ws-runsection" aria-label={`${section.branch} branch`}>
@@ -190,7 +202,7 @@ function BranchSection({
           <h3 className="ws-runsection__branch">{section.branch}</h3>
           <span className="ws-runsection__count">
             {section.commits.length === 1
-              ? "1 commit"
+              ? '1 commit'
               : `${section.commits.length} commits`}
           </span>
         </div>

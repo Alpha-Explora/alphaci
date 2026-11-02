@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from 'react';
 
-import type { DeploymentLogLine } from "../model/deployment-logs-types";
-import { countLinesAfter, logLevelTone } from "../model/log-buffer";
+import type { DeploymentLogLine } from '../model/deployment-logs-types';
+import { countLinesAfter, logLevelTone } from '../model/log-buffer';
 import {
   formatLogDateTime,
   formatLogTime,
   instanceTag,
   stripAnsi,
-} from "../model/log-format";
-import type { OlderPageState } from "../view-models/use-deployment-logs-view-model";
+} from '../model/log-format';
+import type { OlderPageState } from '../view-models/use-deployment-logs-view-model';
 
 /** How close to the bottom still counts as "at the bottom", in px. */
 const BOTTOM_SLACK = 12;
@@ -23,7 +23,10 @@ function LogLineRow({ line }: Readonly<{ line: DeploymentLogLine }>) {
       data-level={line.level}
     >
       {tag ? (
-        <span className="deploy-logs__instance" title={line.instance ?? undefined}>
+        <span
+          className="deploy-logs__instance"
+          title={line.instance ?? undefined}
+        >
           [{tag}]
         </span>
       ) : null}
@@ -43,16 +46,16 @@ function OlderButton({
   older,
   onLoadOlder,
 }: Readonly<{ older: OlderPageState; onLoadOlder: () => void }>) {
-  if (older === "none") return null;
+  if (older === 'none') return null;
   return (
     <div className="deploy-logs__older">
       <button
         className="deploy-logs__older-button"
-        disabled={older === "loading"}
+        disabled={older === 'loading'}
         onClick={onLoadOlder}
         type="button"
       >
-        {older === "loading" ? "Loading older…" : "Load older"}
+        {older === 'loading' ? 'Loading older…' : 'Load older'}
       </button>
     </div>
   );
@@ -65,7 +68,7 @@ function NewLinesPill({
   if (count <= 0) return null;
   return (
     <button className="deploy-logs__pill" onClick={onJump} type="button">
-      {count === 1 ? "1 new line" : `${count} new lines`}
+      {count === 1 ? '1 new line' : `${count} new lines`}
     </button>
   );
 }

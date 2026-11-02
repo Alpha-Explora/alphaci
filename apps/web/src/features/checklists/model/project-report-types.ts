@@ -6,10 +6,14 @@
  * is the copy frozen at sign-off. The client renders it and never recomputes
  * counts the server already gave. */
 
-import type { ProjectQaRun } from "./project-run-types";
-import type { QaReportDefect, QaReportSignoffEntry, QaReportSummary } from "./qa-report-types";
+import type { ProjectQaRun } from './project-run-types';
+import type {
+  QaReportDefect,
+  QaReportSignoffEntry,
+  QaReportSummary,
+} from './qa-report-types';
 
-export const QA_PROJECT_REPORT_SCHEMA_VERSION = "qa-report/v2";
+export const QA_PROJECT_REPORT_SCHEMA_VERSION = 'qa-report/v2';
 
 export interface QaProjectReportRepository {
   projectId: string;
@@ -22,7 +26,7 @@ export interface QaProjectReportRepository {
 
 export interface QaProjectReportDefect extends QaReportDefect {
   requirementName: string | null;
-  requirementKind: "functional" | "system" | null;
+  requirementKind: 'functional' | 'system' | null;
 }
 
 export interface QaProjectReport {

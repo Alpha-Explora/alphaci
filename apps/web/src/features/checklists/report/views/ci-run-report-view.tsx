@@ -1,17 +1,20 @@
-"use client";
+'use client';
 
-import "./qa-report.css";
+import './qa-report.css';
 
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo } from "react";
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useMemo } from 'react';
 
-import { ThemeToggle } from "@/shared/layout/theme-toggle";
+import { ThemeToggle } from '@/shared/layout/theme-toggle';
 
-import { ciRunReportRefFromQuery } from "../../model/ci-run-report-rules";
-import { useCiRunReportViewModel, type CiRunReportViewModel } from "../view-models/use-ci-run-report-view-model";
-import { CiRunReportDocument } from "./ci-run-report-document";
-import { PrinterIcon } from "./report-icons";
+import { ciRunReportRefFromQuery } from '../../model/ci-run-report-rules';
+import {
+  useCiRunReportViewModel,
+  type CiRunReportViewModel,
+} from '../view-models/use-ci-run-report-view-model';
+import { CiRunReportDocument } from './ci-run-report-document';
+import { PrinterIcon } from './report-icons';
 
 function Toolbar({ vm }: Readonly<{ vm: CiRunReportViewModel }>) {
   return (
@@ -20,7 +23,12 @@ function Toolbar({ vm }: Readonly<{ vm: CiRunReportViewModel }>) {
         <span />
         <div className="qa-report-toolbar__actions">
           <ThemeToggle size="sm" />
-          <button type="button" className="qa-report-toolbar__print" disabled={vm.status !== "ready"} onClick={vm.print}>
+          <button
+            type="button"
+            className="qa-report-toolbar__print"
+            disabled={vm.status !== 'ready'}
+            onClick={vm.print}
+          >
             <PrinterIcon />
             Print / Save as PDF
           </button>
@@ -32,7 +40,11 @@ function Toolbar({ vm }: Readonly<{ vm: CiRunReportViewModel }>) {
 
 function ReportSkeleton() {
   return (
-    <div className="qa-report-sheet qa-report-sheet--skeleton" aria-busy="true" aria-label="Loading the CI report">
+    <div
+      className="qa-report-sheet qa-report-sheet--skeleton"
+      aria-busy="true"
+      aria-label="Loading the CI report"
+    >
       <span className="qa-report-skeleton qa-report-skeleton--title" />
       <span className="qa-report-skeleton qa-report-skeleton--meta" />
       <span className="qa-report-skeleton qa-report-skeleton--block" />
@@ -53,7 +65,11 @@ function ReportError({ vm }: Readonly<{ vm: CiRunReportViewModel }>) {
           Sign in
         </Link>
       ) : (
-        <button type="button" className="qa-report-toolbar__print" onClick={vm.reload}>
+        <button
+          type="button"
+          className="qa-report-toolbar__print"
+          onClick={vm.reload}
+        >
           Try again
         </button>
       )}
@@ -62,15 +78,18 @@ function ReportError({ vm }: Readonly<{ vm: CiRunReportViewModel }>) {
 }
 
 function ReportBody({ vm }: Readonly<{ vm: CiRunReportViewModel }>) {
-  if (vm.status === "loading") return <ReportSkeleton />;
-  if (vm.status === "error" || !vm.report) return <ReportError vm={vm} />;
+  if (vm.status === 'loading') return <ReportSkeleton />;
+  if (vm.status === 'error' || !vm.report) return <ReportError vm={vm} />;
   return <CiRunReportDocument report={vm.report} />;
 }
 
 function CiRunReportPage() {
   const search = useSearchParams();
   const run = useMemo(() => ciRunReportRefFromQuery(search), [search]);
-  const vm = useCiRunReportViewModel({ run, autoPrint: search?.get("print") === "1" });
+  const vm = useCiRunReportViewModel({
+    run,
+    autoPrint: search?.get('print') === '1',
+  });
   return (
     <div className="qa-report-page">
       <Toolbar vm={vm} />

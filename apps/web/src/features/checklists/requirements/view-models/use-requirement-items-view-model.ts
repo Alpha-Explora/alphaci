@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { requirementsRepository } from "../../data/requirements-repository";
+import { requirementsRepository } from '../../data/requirements-repository';
 import {
   blankItemDraft,
   createItemPayload,
@@ -13,12 +13,16 @@ import {
   updateItemPayload,
   withItemOrder,
   type RequirementError,
-} from "../../model/requirement-rules";
-import type { Requirement, RequirementItem, RequirementItemDraft } from "../../model/requirement-types";
+} from '../../model/requirement-rules';
+import type {
+  Requirement,
+  RequirementItem,
+  RequirementItemDraft,
+} from '../../model/requirement-types';
 
-export type RequirementItemsStatus = "idle" | "saving";
+export type RequirementItemsStatus = 'idle' | 'saving';
 
-export type ItemEditing = { mode: "add" } | { mode: "edit"; itemId: string };
+export type ItemEditing = { mode: 'add' } | { mode: 'edit'; itemId: string };
 
 export interface RequirementItemsViewModel {
   /** `saving` while one write (add, edit, delete, move) is in flight. */
@@ -45,7 +49,7 @@ export interface RequirementItemsViewModel {
   dismissError: () => void;
 }
 
-const SAVE_ERROR = "The change could not be saved. Try again in a moment.";
+const SAVE_ERROR = 'The change could not be saved. Try again in a moment.';
 
 /**
  * ViewModel for one requirement's stories or items (Product owner, admin):
@@ -66,7 +70,9 @@ export function useRequirementItemsViewModel(options: {
   const [draft, setDraft] = useState<RequirementItemDraft>(blankItemDraft);
   const [attempted, setAttempted] = useState(false);
   const [busy, setBusy] = useState<{ itemId: string | null } | null>(null);
-  const [error, setError] = useState<(RequirementError & { itemId: string | null }) | null>(null);
+  const [error, setError] = useState<
+    (RequirementError & { itemId: string | null }) | null
+  >(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   function begin(next: ItemEditing, value: RequirementItemDraft) {
@@ -94,9 +100,14 @@ export function useRequirementItemsViewModel(options: {
     if (!editing || busy) return;
     setAttempted(true);
     if (requirementItemDraftError(draft, itemLabel)) return;
-    if (editing.mode === "add") {
+    if (editing.mode === 'add') {
       await run(null, async () => {
-        onItem(await requirementsRepository.addItem(requirement.id, createItemPayload(draft)));
+        onItem(
+          await requirementsRepository.addItem(
+            requirement.id,
+            createItemPayload(draft),
+          ),
+        );
         setEditing(null);
       });
       return;
@@ -108,7 +119,9 @@ export function useRequirementItemsViewModel(options: {
       return;
     }
     await run(item.id, async () => {
-      onItem(await requirementsRepository.updateItem(requirement.id, item.id, body));
+      onItem(
+        await requirementsRepository.updateItem(requirement.id, item.id, body),
+      );
       setEditing(null);
     });
   }
@@ -131,16 +144,21 @@ export function useRequirementItemsViewModel(options: {
   }
 
   return {
-    status: busy ? "saving" : "idle",
+    status: busy ? 'saving' : 'idle',
     busyItemId: busy?.itemId ?? null,
     editing,
     draft,
     updateDraft: (patch) => setDraft((current) => ({ ...current, ...patch })),
-    validationError: attempted && editing ? requirementItemDraftError(draft, itemLabel) : null,
+    validationError:
+      attempted && editing ? requirementItemDraftError(draft, itemLabel) : null,
     error,
     confirmDeleteId,
-    startAdd: () => begin({ mode: "add" }, blankItemDraft()),
-    startEdit: (item) => begin({ mode: "edit", itemId: item.id }, itemDraftFromRequirementItem(item)),
+    startAdd: () => begin({ mode: 'add' }, blankItemDraft()),
+    startEdit: (item) =>
+      begin(
+        { mode: 'edit', itemId: item.id },
+        itemDraftFromRequirementItem(item),
+      ),
     cancel: () => {
       if (!busy) setEditing(null);
     },

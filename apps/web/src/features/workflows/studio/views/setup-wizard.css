@@ -515,7 +515,7 @@ details.wizard-shared-defaults select {
 }
 
 .wizard-shared-defaults > summary::before {
-  content: "";
+  content: '';
   width: 0.45rem;
   height: 0.45rem;
   border-right: 2px solid var(--text-muted);

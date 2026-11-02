@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { motion } from "framer-motion";
-import type { ReactNode } from "react";
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import type { ReactNode } from 'react';
 
-import { HEALTH_BRANCHES } from "../../model/home-run-rules";
+import { HEALTH_BRANCHES } from '../../model/home-run-rules';
 import type {
   BranchHealthRow,
   HomeBlockState,
@@ -12,12 +12,16 @@ import type {
   HomeSectionStates,
   PersonaDashboard,
   RepoRunTone,
-} from "../../model/home-persona-types";
-import { shortRepoName } from "../../model/home-rules";
-import type { ProjectTone, ProvisionedProject, RunGroup } from "../../model/home-types";
-import { EASE_OUT, sectionVariants } from "./motion";
-import { RunActivityCard } from "./pipeline-activity";
-import { DashboardMetric } from "./workspace-overview";
+} from '../../model/home-persona-types';
+import { shortRepoName } from '../../model/home-rules';
+import type {
+  ProjectTone,
+  ProvisionedProject,
+  RunGroup,
+} from '../../model/home-types';
+import { EASE_OUT, sectionVariants } from './motion';
+import { RunActivityCard } from './pipeline-activity';
+import { DashboardMetric } from './workspace-overview';
 
 /* ── Shared pieces of a role's Home ──────────────────────────────────────── */
 
@@ -36,24 +40,39 @@ export interface BlockContext {
 
 /** The run-status dot tone, on the team dashboard's dot classes. */
 export const RUN_TONE_DOT: Readonly<Record<RepoRunTone, ProjectTone>> = {
-  success: "ok",
-  failure: "danger",
-  running: "warn",
-  warning: "warn",
-  none: "muted",
+  success: 'ok',
+  failure: 'danger',
+  running: 'warn',
+  warning: 'warn',
+  none: 'muted',
 };
 
 export const RUN_TONE_LABEL: Readonly<Record<RepoRunTone, string>> = {
-  success: "passed",
-  failure: "failed",
-  running: "running",
-  warning: "partial or cancelled",
-  none: "no run yet",
+  success: 'passed',
+  failure: 'failed',
+  running: 'running',
+  warning: 'partial or cancelled',
+  none: 'no run yet',
 };
 
-export function StatusDot({ tone, label }: Readonly<{ tone: ProjectTone; label?: string }>) {
-  if (!label) return <span className={`team-status-dot team-status-dot--${tone}`} aria-hidden="true" />;
-  return <span className={`team-status-dot team-status-dot--${tone}`} role="img" aria-label={label} />;
+export function StatusDot({
+  tone,
+  label,
+}: Readonly<{ tone: ProjectTone; label?: string }>) {
+  if (!label)
+    return (
+      <span
+        className={`team-status-dot team-status-dot--${tone}`}
+        aria-hidden="true"
+      />
+    );
+  return (
+    <span
+      className={`team-status-dot team-status-dot--${tone}`}
+      role="img"
+      aria-label={label}
+    />
+  );
 }
 
 function BlockSkeleton() {
@@ -67,7 +86,10 @@ function BlockSkeleton() {
 }
 
 /** Loading, a user-safe error, or the block's own content. */
-export function BlockBody({ state, children }: Readonly<{ state: HomeBlockState; children: ReactNode }>) {
+export function BlockBody({
+  state,
+  children,
+}: Readonly<{ state: HomeBlockState; children: ReactNode }>) {
   if (state.loading) return <BlockSkeleton />;
   if (state.error) {
     return (
@@ -83,7 +105,10 @@ export function EmptyLine({ children }: Readonly<{ children: ReactNode }>) {
   return <p className="dashboard-empty">{children}</p>;
 }
 
-export function InlineLink({ href, children }: Readonly<{ href: string; children: ReactNode }>) {
+export function InlineLink({
+  href,
+  children,
+}: Readonly<{ href: string; children: ReactNode }>) {
   return (
     <Link href={href} className="dashboard-inline-link">
       {children} <span aria-hidden="true">→</span>
@@ -122,7 +147,7 @@ export function HomeBlock({
       aria-labelledby={`${id}-title`}
       custom={order}
       variants={sectionVariants}
-      initial={reduced ? false : "hidden"}
+      initial={reduced ? false : 'hidden'}
       animate="visible"
     >
       <div className="dashboard-panel-heading home-block-heading">
@@ -160,7 +185,10 @@ export function HomeSideBlock({
   children: ReactNode;
 }>) {
   return (
-    <section className={`side-rail-block ${slotClass}`} aria-labelledby={`${id}-title`}>
+    <section
+      className={`side-rail-block ${slotClass}`}
+      aria-labelledby={`${id}-title`}
+    >
       <div className="side-rail-head">
         <p className="dashboard-section-kicker" id={`${id}-title`}>
           {kicker}
@@ -196,7 +224,7 @@ export function HomeRowList({
       className="home-row-list"
       aria-label={label}
       variants={reduced ? undefined : listVariants}
-      initial={reduced ? false : "hidden"}
+      initial={reduced ? false : 'hidden'}
       animate="visible"
     >
       {children}
@@ -204,8 +232,15 @@ export function HomeRowList({
   );
 }
 
-export function HomeRow({ reduced, children }: Readonly<{ reduced: boolean | null; children: ReactNode }>) {
-  return <motion.li variants={reduced ? undefined : rowVariants}>{children}</motion.li>;
+export function HomeRow({
+  reduced,
+  children,
+}: Readonly<{ reduced: boolean | null; children: ReactNode }>) {
+  return (
+    <motion.li variants={reduced ? undefined : rowVariants}>
+      {children}
+    </motion.li>
+  );
 }
 
 /* ── Metrics ────────────────────────────────────────────────────────────── */
@@ -214,14 +249,18 @@ export function PersonaMetricsRail({
   metrics,
   loading,
   reduced,
-}: Readonly<{ metrics: ReadonlyArray<HomeMetric>; loading: boolean; reduced: boolean | null }>) {
+}: Readonly<{
+  metrics: ReadonlyArray<HomeMetric>;
+  loading: boolean;
+  reduced: boolean | null;
+}>) {
   return (
     <motion.section
       className="metrics-rail metrics-rail--five"
       aria-label="Workspace metrics"
       custom={1}
       variants={sectionVariants}
-      initial={reduced ? false : "hidden"}
+      initial={reduced ? false : 'hidden'}
       animate="visible"
     >
       {metrics.map((metric) => (
@@ -253,7 +292,11 @@ export function SegmentBar({
   segments,
   label,
   reduced,
-}: Readonly<{ segments: ReadonlyArray<BarSegment>; label: string; reduced: boolean | null }>) {
+}: Readonly<{
+  segments: ReadonlyArray<BarSegment>;
+  label: string;
+  reduced: boolean | null;
+}>) {
   return (
     <span className="home-seg" role="img" aria-label={label}>
       {segments
@@ -313,7 +356,15 @@ export function RunsBlock({
     </div>
   );
   return (
-    <HomeBlock id={id} kicker={kicker} title={title} action={action} state={state} reduced={reduced} order={order}>
+    <HomeBlock
+      id={id}
+      kicker={kicker}
+      title={title}
+      action={action}
+      state={state}
+      reduced={reduced}
+      order={order}
+    >
       {runs.length ? (
         <div className="runs-stream home-runs-stream">
           {runs.slice(0, RUNS_SHOWN).map((run, index) => (
@@ -351,10 +402,22 @@ export function BranchHealthBlock({
   state,
   reduced,
   order,
-}: Readonly<{ data: PersonaDashboard; state: HomeBlockState; reduced: boolean | null; order: number }>) {
+}: Readonly<{
+  data: PersonaDashboard;
+  state: HomeBlockState;
+  reduced: boolean | null;
+  order: number;
+}>) {
   const rows = data.branchHealth;
   return (
-    <HomeBlock id="branch-health" kicker="BRANCH HEALTH" title="dev, uat and main" state={state} reduced={reduced} order={order}>
+    <HomeBlock
+      id="branch-health"
+      kicker="BRANCH HEALTH"
+      title="dev, uat and main"
+      state={state}
+      reduced={reduced}
+      order={order}
+    >
       {rows.length ? (
         <table className="home-branch-table">
           <thead>
@@ -382,13 +445,21 @@ export function BranchHealthBlock({
                     />
                   </td>
                 ))}
-                <td>{row.failureStreak > 0 ? <span className="home-streak">{row.failureStreak} failing</span> : null}</td>
+                <td>
+                  {row.failureStreak > 0 ? (
+                    <span className="home-streak">
+                      {row.failureStreak} failing
+                    </span>
+                  ) : null}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       ) : (
-        <EmptyLine>No runs yet. Each repository&apos;s dev, uat and main show up here.</EmptyLine>
+        <EmptyLine>
+          No runs yet. Each repository&apos;s dev, uat and main show up here.
+        </EmptyLine>
       )}
     </HomeBlock>
   );

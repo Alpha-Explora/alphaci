@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import "./promotion.css";
+import './promotion.css';
 
-import { useId, useRef, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from 'react';
 
 import {
   approvedCountLabel,
@@ -10,16 +10,16 @@ import {
   promotionChip,
   promotionRoute,
   promotionTitle,
-} from "../../model/qa-promotion-rules";
-import type { QaPromotionStatus } from "../../model/qa-promotion-types";
-import { useShowRepositories } from "../view-models/repository-visibility";
-import { useDisclosurePopover } from "../view-models/use-disclosure-popover";
-import type { PoDeliveryViewModel } from "../view-models/use-po-delivery-view-model";
-import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
-import { MergeAllToMain } from "./po-delivery";
-import { PromotionOutcome } from "./promotion-outcome";
-import { MergeButton, MergeDialog, PromotionDetails } from "./promotion-parts";
-import { ChevronDownIcon } from "./studio-icons";
+} from '../../model/qa-promotion-rules';
+import type { QaPromotionStatus } from '../../model/qa-promotion-types';
+import { useShowRepositories } from '../view-models/repository-visibility';
+import { useDisclosurePopover } from '../view-models/use-disclosure-popover';
+import type { PoDeliveryViewModel } from '../view-models/use-po-delivery-view-model';
+import type { QaPromotionViewModel } from '../view-models/use-qa-promotion-view-model';
+import { MergeAllToMain } from './po-delivery';
+import { PromotionOutcome } from './promotion-outcome';
+import { MergeButton, MergeDialog, PromotionDetails } from './promotion-parts';
+import { ChevronDownIcon } from './studio-icons';
 
 /* "Ready for production" in the run column's tab bar: a status chip whose
  * popover holds what the old promotion strip showed, "Merge to main" beside
@@ -29,7 +29,10 @@ import { ChevronDownIcon } from "./studio-icons";
 type BarProps = Readonly<{ vm: QaPromotionViewModel }>;
 
 /** The popover's head: the verdict, the route and the gate in a line. */
-function PopoverHead({ data, headingId }: Readonly<{ data: QaPromotionStatus; headingId: string }>) {
+function PopoverHead({
+  data,
+  headingId,
+}: Readonly<{ data: QaPromotionStatus; headingId: string }>) {
   const showRepositories = useShowRepositories();
   return (
     <div className="qa-promo-pop__head">
@@ -45,17 +48,22 @@ function PopoverHead({ data, headingId }: Readonly<{ data: QaPromotionStatus; he
 }
 
 /** What the popover says: the status, or that it is loading or could not be read. */
-function PopoverBody({ vm, headingId }: Readonly<{ vm: QaPromotionViewModel; headingId: string }>) {
+function PopoverBody({
+  vm,
+  headingId,
+}: Readonly<{ vm: QaPromotionViewModel; headingId: string }>) {
   if (vm.data) {
     return (
       <>
         <PopoverHead data={vm.data} headingId={headingId} />
-        {vm.canMerge && vm.disabledReason ? <p className="qa-promo__why">{vm.disabledReason}</p> : null}
+        {vm.canMerge && vm.disabledReason ? (
+          <p className="qa-promo__why">{vm.disabledReason}</p>
+        ) : null}
         <PromotionDetails vm={vm} data={vm.data} />
       </>
     );
   }
-  if (vm.status === "loading") {
+  if (vm.status === 'loading') {
     return (
       <p className="qa-promo-pop__title" id={headingId}>
         Checking whether uat is ready for {PROMOTION_TARGET_BRANCH}…
@@ -68,7 +76,11 @@ function PopoverBody({ vm, headingId }: Readonly<{ vm: QaPromotionViewModel; hea
         Production readiness unknown
       </p>
       <p className="qa-promo__muted">{vm.error}</p>
-      <button type="button" className="ghost-button qa-promo-pop__retry" onClick={vm.reload}>
+      <button
+        type="button"
+        className="ghost-button qa-promo-pop__retry"
+        onClick={vm.reload}
+      >
         Try again
       </button>
     </>
@@ -88,10 +100,15 @@ export function PromotionStatusChip({ vm }: BarProps) {
   const popover = useDisclosurePopover({ triggerRef, rootRef });
   const panelId = useId();
   const headingId = useId();
-  if (vm.status === "unavailable") return null;
+  if (vm.status === 'unavailable') return null;
   const chip = promotionChip(vm.status, vm.data);
   return (
-    <div ref={rootRef} className="qa-promo-status" onKeyDown={popover.onKeyDown} onBlur={popover.onBlur}>
+    <div
+      ref={rootRef}
+      className="qa-promo-status"
+      onKeyDown={popover.onKeyDown}
+      onBlur={popover.onBlur}
+    >
       <button
         ref={triggerRef}
         type="button"
@@ -151,8 +168,15 @@ export function MergeToMain({ vm }: BarProps) {
 export function StudioMergeAction({
   promotion,
   delivery,
-}: Readonly<{ promotion: QaPromotionViewModel; delivery: PoDeliveryViewModel }>) {
-  return delivery.canMergeAll ? <MergeAllToMain vm={delivery} /> : <MergeToMain vm={promotion} />;
+}: Readonly<{
+  promotion: QaPromotionViewModel;
+  delivery: PoDeliveryViewModel;
+}>) {
+  return delivery.canMergeAll ? (
+    <MergeAllToMain vm={delivery} />
+  ) : (
+    <MergeToMain vm={promotion} />
+  );
 }
 
 /**
@@ -167,13 +191,22 @@ export function PromotionBarFoot({
   vm,
   projectName,
   children,
-}: Readonly<{ vm: QaPromotionViewModel; projectName: string; children?: ReactNode }>) {
+}: Readonly<{
+  vm: QaPromotionViewModel;
+  projectName: string;
+  children?: ReactNode;
+}>) {
   return (
     <>
-      <PromotionOutcome vm={vm} targetBranch={vm.data?.targetBranch ?? PROMOTION_TARGET_BRANCH}>
+      <PromotionOutcome
+        vm={vm}
+        targetBranch={vm.data?.targetBranch ?? PROMOTION_TARGET_BRANCH}
+      >
         {children}
       </PromotionOutcome>
-      {vm.data ? <MergeDialog vm={vm} data={vm.data} projectName={projectName} /> : null}
+      {vm.data ? (
+        <MergeDialog vm={vm} data={vm.data} projectName={projectName} />
+      ) : null}
     </>
   );
 }

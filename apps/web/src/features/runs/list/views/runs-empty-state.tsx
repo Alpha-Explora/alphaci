@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import Link from "next/link";
+import Link from 'next/link';
 
 export function RunsEmptyState() {
   return (
@@ -34,9 +34,9 @@ export function RunsEmptyState() {
         className="ghost-button"
         href="/workflows"
         style={{
-          padding: "0.5rem 1.4rem",
-          fontSize: "0.88rem",
-          minHeight: "2.4rem",
+          padding: '0.5rem 1.4rem',
+          fontSize: '0.88rem',
+          minHeight: '2.4rem',
         }}
       >
         Connect a repository

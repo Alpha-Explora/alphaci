@@ -1,6 +1,6 @@
-import { getRuns } from "@/features/runs/data/runs-api";
+import { getRuns } from '@/features/runs/data/runs-api';
 
-import type { RunGroup } from "../model/runs-types";
+import type { RunGroup } from '../model/runs-types';
 
 /* The only place in this domain that performs I/O. View-models call this;
  * views never do.
@@ -13,7 +13,7 @@ import type { RunGroup } from "../model/runs-types";
  * NEXT_PUBLIC_USE_MOCK is read here and nowhere else. The route used to own
  * this decision, which meant the page knew how its own data was sourced; a view
  * and its view-model should not be able to tell. */
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
 
 /** Matches the skeleton timing the mock path always had. */
 const MOCK_LATENCY_MS = 600;
@@ -32,7 +32,7 @@ export const runsRepository = {
   async list(repoFullName?: string): Promise<RunGroup[]> {
     if (USE_MOCK) {
       await sleep(MOCK_LATENCY_MS);
-      const { MOCK_RUNS } = await import("./runs-mock");
+      const { MOCK_RUNS } = await import('./runs-mock');
       return repoFullName
         ? MOCK_RUNS.runs.filter((run) => run.repoFullName === repoFullName)
         : MOCK_RUNS.runs;

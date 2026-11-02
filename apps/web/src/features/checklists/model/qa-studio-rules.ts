@@ -6,12 +6,12 @@
 import type {
   ProjectBranchPreview,
   ProjectPreviewsResponse,
-} from "@/shared/api/contracts";
-import { QA_BRANCH } from "@/shared/api/pipeline-branches";
+} from '@/shared/api/contracts';
+import { QA_BRANCH } from '@/shared/api/pipeline-branches';
 
-import { normalizeRunAutomation } from "./qa-automation-rules";
-import { passedLabel } from "./qa-run-rules";
-import type { QaRun } from "./qa-run-types";
+import { normalizeRunAutomation } from './qa-automation-rules';
+import { passedLabel } from './qa-run-rules';
+import type { QaRun } from './qa-run-types';
 
 /* ── Environments ────────────────────────────────────────────────────────── */
 
@@ -36,7 +36,7 @@ export interface StudioEnvironment {
  * field sends none, and that has always meant a page.
  */
 function isPageEnvironment(preview: ProjectBranchPreview): boolean {
-  return preview.surface === undefined || preview.surface === "page";
+  return preview.surface === undefined || preview.surface === 'page';
 }
 
 function isQaEnvironment(preview: ProjectBranchPreview): boolean {
@@ -53,14 +53,16 @@ function environmentKey(preview: ProjectBranchPreview): string {
  * branch. Two targets deploying it are told apart by name.
  */
 export function studioEnvironments(
-  previews: Pick<ProjectPreviewsResponse, "branches"> | null,
+  previews: Pick<ProjectPreviewsResponse, 'branches'> | null,
 ): StudioEnvironment[] {
   const pages = (previews?.branches ?? []).filter(isQaEnvironment);
   const labelled = pages.length > 1;
   return pages.map((preview) => ({
     key: environmentKey(preview),
     branch: preview.branch,
-    label: labelled ? `${preview.branch} · ${preview.targetName}` : preview.branch,
+    label: labelled
+      ? `${preview.branch} · ${preview.targetName}`
+      : preview.branch,
     preview,
   }));
 }
@@ -92,12 +94,12 @@ export const NO_QA_ENVIRONMENT = {
 
 /* ── Devices ─────────────────────────────────────────────────────────────── */
 
-export type DevicePresetId = "desktop" | "tablet" | "mobile";
+export type DevicePresetId = 'desktop' | 'tablet' | 'mobile';
 
 /** The hardware drawn around the screen. */
-export type DeviceFrame = "browser" | "tablet" | "phone";
+export type DeviceFrame = 'browser' | 'tablet' | 'phone';
 
-export type DeviceOrientation = "portrait" | "landscape";
+export type DeviceOrientation = 'portrait' | 'landscape';
 
 export interface DevicePreset {
   id: DevicePresetId;
@@ -110,9 +112,30 @@ export interface DevicePreset {
 }
 
 export const DEVICE_PRESETS: ReadonlyArray<DevicePreset> = [
-  { id: "desktop", label: "Desktop", width: 1440, height: 900, frame: "browser", rotatable: false },
-  { id: "tablet", label: "Tablet", width: 768, height: 1024, frame: "tablet", rotatable: true },
-  { id: "mobile", label: "Mobile", width: 375, height: 812, frame: "phone", rotatable: true },
+  {
+    id: 'desktop',
+    label: 'Desktop',
+    width: 1440,
+    height: 900,
+    frame: 'browser',
+    rotatable: false,
+  },
+  {
+    id: 'tablet',
+    label: 'Tablet',
+    width: 768,
+    height: 1024,
+    frame: 'tablet',
+    rotatable: true,
+  },
+  {
+    id: 'mobile',
+    label: 'Mobile',
+    width: 375,
+    height: 812,
+    frame: 'phone',
+    rotatable: true,
+  },
 ];
 
 export function devicePreset(id: DevicePresetId): DevicePreset {
@@ -120,7 +143,9 @@ export function devicePreset(id: DevicePresetId): DevicePreset {
 }
 
 /** "1440 × 900". */
-export function dimensionsLabel(size: Readonly<{ width: number; height: number }>): string {
+export function dimensionsLabel(
+  size: Readonly<{ width: number; height: number }>,
+): string {
   return `${size.width} × ${size.height}`;
 }
 
@@ -139,11 +164,17 @@ export interface ResolutionPreset {
   name: string | null;
 }
 
-function resolutionPreset(width: number, height: number, name: string | null = null): ResolutionPreset {
+function resolutionPreset(
+  width: number,
+  height: number,
+  name: string | null = null,
+): ResolutionPreset {
   return { id: `${width}x${height}`, width, height, name };
 }
 
-export const RESOLUTION_PRESETS: Readonly<Record<DevicePresetId, ReadonlyArray<ResolutionPreset>>> = {
+export const RESOLUTION_PRESETS: Readonly<
+  Record<DevicePresetId, ReadonlyArray<ResolutionPreset>>
+> = {
   desktop: [
     resolutionPreset(1280, 720),
     resolutionPreset(1366, 768),
@@ -153,27 +184,32 @@ export const RESOLUTION_PRESETS: Readonly<Record<DevicePresetId, ReadonlyArray<R
     resolutionPreset(2560, 1440),
   ],
   tablet: [
-    resolutionPreset(768, 1024, "iPad"),
-    resolutionPreset(820, 1180, "iPad Air"),
+    resolutionPreset(768, 1024, 'iPad'),
+    resolutionPreset(820, 1180, 'iPad Air'),
     resolutionPreset(834, 1194, 'iPad Pro 11"'),
     resolutionPreset(1024, 1366, 'iPad Pro 12.9"'),
   ],
   mobile: [
-    resolutionPreset(360, 800, "Android"),
-    resolutionPreset(375, 667, "iPhone SE"),
-    resolutionPreset(375, 812, "iPhone X/11 Pro"),
-    resolutionPreset(390, 844, "iPhone 14"),
-    resolutionPreset(393, 852, "iPhone 15"),
-    resolutionPreset(412, 915, "Pixel"),
-    resolutionPreset(430, 932, "iPhone Pro Max"),
+    resolutionPreset(360, 800, 'Android'),
+    resolutionPreset(375, 667, 'iPhone SE'),
+    resolutionPreset(375, 812, 'iPhone X/11 Pro'),
+    resolutionPreset(390, 844, 'iPhone 14'),
+    resolutionPreset(393, 852, 'iPhone 15'),
+    resolutionPreset(412, 915, 'Pixel'),
+    resolutionPreset(430, 932, 'iPhone Pro Max'),
   ],
 };
 
 /** The select's value for "Custom…": not a size, so it can never collide with a preset id. */
-export const CUSTOM_RESOLUTION_OPTION = "custom";
+export const CUSTOM_RESOLUTION_OPTION = 'custom';
 
 /** What a typed size may be, in CSS pixels: a viewport outside this is not a real screen. */
-export const CUSTOM_RESOLUTION_LIMITS = { minWidth: 320, maxWidth: 3840, minHeight: 320, maxHeight: 2400 } as const;
+export const CUSTOM_RESOLUTION_LIMITS = {
+  minWidth: 320,
+  maxWidth: 3840,
+  minHeight: 320,
+  maxHeight: 2400,
+} as const;
 
 /** The size a class opens at: its device preset's own. */
 export function defaultResolutionId(deviceId: DevicePresetId): string {
@@ -199,7 +235,10 @@ function inRange(value: number, min: number, max: number): boolean {
 
 function isValidCustomSize(width: number, height: number): boolean {
   const limits = CUSTOM_RESOLUTION_LIMITS;
-  return inRange(width, limits.minWidth, limits.maxWidth) && inRange(height, limits.minHeight, limits.maxHeight);
+  return (
+    inRange(width, limits.minWidth, limits.maxWidth) &&
+    inRange(height, limits.minHeight, limits.maxHeight)
+  );
 }
 
 /** The storable choice for a typed size. Not validated here: resolveResolution falls back from a bad one. */
@@ -208,11 +247,16 @@ export function customResolutionChoice(width: number, height: number): string {
 }
 
 function parseCustomChoice(stored: string | null): Resolution | null {
-  const match = CUSTOM_CHOICE.exec(stored ?? "");
+  const match = CUSTOM_CHOICE.exec(stored ?? '');
   if (!match) return null;
   const [width, height] = [Number(match[1]), Number(match[2])];
   if (!isValidCustomSize(width, height)) return null;
-  return { choice: customResolutionChoice(width, height), width, height, preset: null };
+  return {
+    choice: customResolutionChoice(width, height),
+    width,
+    height,
+    preset: null,
+  };
 }
 
 /**
@@ -221,23 +265,35 @@ function parseCustomChoice(stored: string | null): Resolution | null {
  * out-of-range custom size, a size stored for another class — is the class's
  * default, so a stale preference can never leave the frame without a size.
  */
-export function resolveResolution(deviceId: DevicePresetId, stored: string | null): Resolution {
+export function resolveResolution(
+  deviceId: DevicePresetId,
+  stored: string | null,
+): Resolution {
   const presets = RESOLUTION_PRESETS[deviceId];
   const known = presets.find((preset) => preset.id === stored);
   const custom = known ? null : parseCustomChoice(stored);
   if (custom) return custom;
-  const preset = known ?? presets.find((entry) => entry.id === defaultResolutionId(deviceId)) ?? presets[0];
-  return { choice: preset.id, width: preset.width, height: preset.height, preset };
+  const preset =
+    known ??
+    presets.find((entry) => entry.id === defaultResolutionId(deviceId)) ??
+    presets[0];
+  return {
+    choice: preset.id,
+    width: preset.width,
+    height: preset.height,
+    preset,
+  };
 }
 
 /** The option's text: "1920 × 1080", or "390 × 844 · iPhone 14". */
 export function resolutionLabel(preset: ResolutionPreset): string {
-  return preset.name ? `${dimensionsLabel(preset)} · ${preset.name}` : dimensionsLabel(preset);
+  return preset.name
+    ? `${dimensionsLabel(preset)} · ${preset.name}`
+    : dimensionsLabel(preset);
 }
 
 export type CustomResolutionResult =
-  | { ok: true; width: number; height: number }
-  | { ok: false; error: string };
+  { ok: true; width: number; height: number } | { ok: false; error: string };
 
 function wholeNumber(raw: string): number | null {
   const text = raw.trim();
@@ -245,15 +301,24 @@ function wholeNumber(raw: string): number | null {
 }
 
 /** The typed width and height, as numbers within the limits, or what to tell the tester. */
-export function validateCustomResolution(widthRaw: string, heightRaw: string): CustomResolutionResult {
+export function validateCustomResolution(
+  widthRaw: string,
+  heightRaw: string,
+): CustomResolutionResult {
   const limits = CUSTOM_RESOLUTION_LIMITS;
   const width = wholeNumber(widthRaw);
   const height = wholeNumber(heightRaw);
   if (width === null || !inRange(width, limits.minWidth, limits.maxWidth)) {
-    return { ok: false, error: `Width must be a whole number from ${limits.minWidth} to ${limits.maxWidth}.` };
+    return {
+      ok: false,
+      error: `Width must be a whole number from ${limits.minWidth} to ${limits.maxWidth}.`,
+    };
   }
   if (height === null || !inRange(height, limits.minHeight, limits.maxHeight)) {
-    return { ok: false, error: `Height must be a whole number from ${limits.minHeight} to ${limits.maxHeight}.` };
+    return {
+      ok: false,
+      error: `Height must be a whole number from ${limits.minHeight} to ${limits.maxHeight}.`,
+    };
   }
   return { ok: true, width, height };
 }
@@ -275,14 +340,18 @@ export function resolveDeviceDimensions(
   orientation: DeviceOrientation,
   size: Readonly<{ width: number; height: number }> = preset,
 ): DeviceDimensions {
-  const swap = preset.rotatable && orientation === "landscape";
+  const swap = preset.rotatable && orientation === 'landscape';
   const width = swap ? size.height : size.width;
   const height = swap ? size.width : size.height;
-  return { width, height, orientation: width > height ? "landscape" : "portrait" };
+  return {
+    width,
+    height,
+    orientation: width > height ? 'landscape' : 'portrait',
+  };
 }
 
 export function orientationLabel(orientation: DeviceOrientation): string {
-  return orientation === "landscape" ? "Landscape" : "Portrait";
+  return orientation === 'landscape' ? 'Landscape' : 'Portrait';
 }
 
 /**
@@ -303,27 +372,64 @@ export interface FrameChrome {
   outsetY: number;
 }
 
-const BROWSER_CHROME: FrameChrome = { top: 0, right: 0, bottom: 0, left: 0, outsetX: 0, outsetY: 0 };
-const TABLET_CHROME: FrameChrome = { top: 26, right: 26, bottom: 26, left: 26, outsetX: 0, outsetY: 0 };
+const BROWSER_CHROME: FrameChrome = {
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+  outsetX: 0,
+  outsetY: 0,
+};
+const TABLET_CHROME: FrameChrome = {
+  top: 26,
+  right: 26,
+  bottom: 26,
+  left: 26,
+  outsetX: 0,
+  outsetY: 0,
+};
 
 /* A phone turned landscape is the same chassis turned a quarter: the top
  * bezel (island and speaker) goes left, the chin right, the side buttons to
  * the top and bottom edges. */
-const FRAME_CHROME: Record<DeviceFrame, Record<DeviceOrientation, FrameChrome>> = {
+const FRAME_CHROME: Record<
+  DeviceFrame,
+  Record<DeviceOrientation, FrameChrome>
+> = {
   browser: { portrait: BROWSER_CHROME, landscape: BROWSER_CHROME },
   tablet: { portrait: TABLET_CHROME, landscape: TABLET_CHROME },
   phone: {
-    portrait: { top: 44, right: 12, bottom: 28, left: 12, outsetX: 3, outsetY: 0 },
-    landscape: { top: 12, right: 28, bottom: 12, left: 44, outsetX: 0, outsetY: 3 },
+    portrait: {
+      top: 44,
+      right: 12,
+      bottom: 28,
+      left: 12,
+      outsetX: 3,
+      outsetY: 0,
+    },
+    landscape: {
+      top: 12,
+      right: 28,
+      bottom: 12,
+      left: 44,
+      outsetX: 0,
+      outsetY: 3,
+    },
   },
 };
 
-export function frameChrome(frame: DeviceFrame, orientation: DeviceOrientation): FrameChrome {
+export function frameChrome(
+  frame: DeviceFrame,
+  orientation: DeviceOrientation,
+): FrameChrome {
   return FRAME_CHROME[frame][orientation];
 }
 
 /** The chrome's total width and height, outsets included. */
-export function chromeSize(chrome: FrameChrome): { width: number; height: number } {
+export function chromeSize(chrome: FrameChrome): {
+  width: number;
+  height: number;
+} {
   return {
     width: chrome.left + chrome.right + 2 * chrome.outsetX,
     height: chrome.top + chrome.bottom + 2 * chrome.outsetY,
@@ -351,7 +457,13 @@ export function fitDeviceScale(
   chromeWidth: number,
   chromeHeight: number,
 ): number {
-  if (deviceWidth <= 0 || deviceHeight <= 0 || stageWidth <= 0 || stageHeight <= 0) return 1;
+  if (
+    deviceWidth <= 0 ||
+    deviceHeight <= 0 ||
+    stageWidth <= 0 ||
+    stageHeight <= 0
+  )
+    return 1;
   const byWidth = (stageWidth - chromeWidth) / deviceWidth;
   const byHeight = (stageHeight - chromeHeight) / deviceHeight;
   return Math.max(MIN_DEVICE_SCALE, Math.min(1, byWidth, byHeight));
@@ -364,9 +476,14 @@ export function scaleLabel(scale: number): string | null {
 }
 
 /** "Tablet · 1024 × 768 · Landscape": what the page lays out at (no orientation for Desktop). */
-export function viewportLabel(device: Pick<DevicePreset, "label" | "rotatable">, dimensions: DeviceDimensions): string {
+export function viewportLabel(
+  device: Pick<DevicePreset, 'label' | 'rotatable'>,
+  dimensions: DeviceDimensions,
+): string {
   const size = `${device.label} · ${dimensionsLabel(dimensions)}`;
-  return device.rotatable ? `${size} · ${orientationLabel(dimensions.orientation)}` : size;
+  return device.rotatable
+    ? `${size} · ${orientationLabel(dimensions.orientation)}`
+    : size;
 }
 
 /** "62%", the toolbar's short form of `scaleLabel`; null at life size. */
@@ -385,7 +502,7 @@ export function scalePercent(scale: number): string | null {
  * per-viewer, per-studio preference: pinning it in QA Studio is not a choice
  * for PO Studio. The rail stays mounted either way.
  */
-export function studioRailPinnedKey(studio: "qa" | "po"): string {
+export function studioRailPinnedKey(studio: 'qa' | 'po'): string {
   return `alphaci.${studio}-studio.rail-pinned`;
 }
 
@@ -395,11 +512,14 @@ export function studioRailPinnedKey(studio: "qa" | "po"): string {
  * "QA checklist · 3/5 passed", or just the title before a run exists: what
  * the closed rail says it holds. PO Studio's panel is its "Acceptance".
  */
-export function launcherLabel(run: Pick<QaRun, "summary"> | null, title = "QA checklist"): string {
+export function launcherLabel(
+  run: Pick<QaRun, 'summary'> | null,
+  title = 'QA checklist',
+): string {
   return run ? `${title} · ${passedLabel(run)}` : title;
 }
 
-export type AutomationSignalTone = "running" | "failed" | "passed" | "none";
+export type AutomationSignalTone = 'running' | 'failed' | 'passed' | 'none';
 
 export interface AutomationSignal {
   tone: AutomationSignalTone;
@@ -408,26 +528,33 @@ export interface AutomationSignal {
 }
 
 const SIGNAL_LABELS: Record<AutomationSignalTone, string> = {
-  running: "Automated tests running",
-  failed: "Automated tests failed",
-  passed: "Automated tests passed",
-  none: "No automated results",
+  running: 'Automated tests running',
+  failed: 'Automated tests failed',
+  passed: 'Automated tests passed',
+  none: 'No automated results',
 };
 
-function signalTone(statuses: ReadonlyArray<string | null>): AutomationSignalTone {
-  if (statuses.includes("running")) return "running";
-  if (statuses.includes("failure")) return "failed";
-  if (statuses.includes("success")) return "passed";
-  return "none";
+function signalTone(
+  statuses: ReadonlyArray<string | null>,
+): AutomationSignalTone {
+  if (statuses.includes('running')) return 'running';
+  if (statuses.includes('failure')) return 'failed';
+  if (statuses.includes('success')) return 'passed';
+  return 'none';
 }
 
 /**
  * One dot for the run's CI stages: running wins (results are on the way),
  * then any failure, then a pass. Cancelled or absent stages say nothing.
  */
-export function automationSignal(run: { automation?: unknown } | null): AutomationSignal {
+export function automationSignal(
+  run: { automation?: unknown } | null,
+): AutomationSignal {
   const automation = normalizeRunAutomation(run?.automation);
-  const tone = signalTone([automation.verify?.status ?? null, automation.quality?.status ?? null]);
+  const tone = signalTone([
+    automation.verify?.status ?? null,
+    automation.quality?.status ?? null,
+  ]);
   return { tone, label: SIGNAL_LABELS[tone] };
 }
 
@@ -442,10 +569,13 @@ function originOf(url: string, base?: string): URL | null {
 }
 
 /** The preview's origin with the path appended. Null for an unusable address. */
-export function previewPageUrl(previewUrl: string, path: string): string | null {
+export function previewPageUrl(
+  previewUrl: string,
+  path: string,
+): string | null {
   const base = originOf(previewUrl);
   if (!base) return null;
-  return new URL(path || "/", base.origin).toString();
+  return new URL(path || '/', base.origin).toString();
 }
 
 /* ── The rail's width ─────────────────────────────────────────────────────── */
@@ -459,7 +589,7 @@ export const RAIL_WIDTH_STEP = 32;
 /** The page keeps at least this much beside the widest panel. */
 const RAIL_PAGE_MIN = 240;
 
-export function studioRailWidthKey(studio: "qa" | "po"): string {
+export function studioRailWidthKey(studio: 'qa' | 'po'): string {
   return `alphaci.${studio}-studio.rail-width`;
 }
 
@@ -470,13 +600,16 @@ export function railWidthMax(panesWidth: number): number {
 
 /** A width within [minimum, max], whole pixels. */
 export function clampRailWidth(width: number, max: number): number {
-  return Math.round(Math.min(Math.max(width, RAIL_WIDTH_MIN), Math.max(RAIL_WIDTH_MIN, max)));
+  return Math.round(
+    Math.min(Math.max(width, RAIL_WIDTH_MIN), Math.max(RAIL_WIDTH_MIN, max)),
+  );
 }
 
 /** A remembered width, or null (the default) for nothing, garbage or a value below the minimum. */
 export function parseRailWidth(raw: string | null): number | null {
   if (!raw) return null;
   const value = Number(raw);
-  return Number.isFinite(value) && value >= RAIL_WIDTH_MIN ? Math.round(value) : null;
+  return Number.isFinite(value) && value >= RAIL_WIDTH_MIN
+    ? Math.round(value)
+    : null;
 }
-

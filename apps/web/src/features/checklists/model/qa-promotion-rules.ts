@@ -8,12 +8,16 @@
  * true only when the server sent exactly `true`, and the role check below can
  * only hide the button, never show it. */
 
-import type { AppRole } from "@/shared/api/contracts";
-import { QA_BRANCH } from "@/shared/api/pipeline-branches";
+import type { AppRole } from '@/shared/api/contracts';
+import { QA_BRANCH } from '@/shared/api/pipeline-branches';
 
-import { iterationDateLabel, iterationName, normalizeIterationRef } from "./iteration-rules";
-import { normalizeHeads } from "./project-run-rules";
-import { QA_ERROR_MESSAGES, qaCodeMessage } from "./qa-error-messages";
+import {
+  iterationDateLabel,
+  iterationName,
+  normalizeIterationRef,
+} from './iteration-rules';
+import { normalizeHeads } from './project-run-rules';
+import { QA_ERROR_MESSAGES, qaCodeMessage } from './qa-error-messages';
 import type {
   QaPromotionChecklist,
   QaPromotionIteration,
@@ -24,9 +28,14 @@ import type {
   QaPromotionRun,
   QaPromotionScope,
   QaPromotionStatus,
-} from "./qa-promotion-types";
-import { QA_VERDICTS, shortSha, verdictLabel, type QaTone } from "./qa-run-rules";
-import type { QaRunStatus } from "./qa-run-types";
+} from './qa-promotion-types';
+import {
+  QA_VERDICTS,
+  shortSha,
+  verdictLabel,
+  type QaTone,
+} from './qa-run-rules';
+import type { QaRunStatus } from './qa-run-types';
 import {
   errorCode,
   errorDetails,
@@ -40,13 +49,13 @@ import {
   text,
   texts,
   type Loose,
-} from "./wire-readers";
+} from './wire-readers';
 
 /** Where a QA-approved uat is promoted to. Mirrors the backend's pipeline. */
-export const PROMOTION_TARGET_BRANCH = "main";
+export const PROMOTION_TARGET_BRANCH = 'main';
 
-const RUN_STATUSES: ReadonlyArray<QaRunStatus> = ["open", "signed_off"];
-const SCOPES: ReadonlyArray<QaPromotionScope> = ["project", "unfiled"];
+const RUN_STATUSES: ReadonlyArray<QaRunStatus> = ['open', 'signed_off'];
+const SCOPES: ReadonlyArray<QaPromotionScope> = ['project', 'unfiled'];
 
 /* ── Reading the status ──────────────────────────────────────────────────── */
 
@@ -55,7 +64,7 @@ function checklistFrom(raw: Loose): QaPromotionChecklist | null {
   if (!id) return null;
   return {
     id,
-    name: text(raw.name) ?? "Untitled checklist",
+    name: text(raw.name) ?? 'Untitled checklist',
     runId: text(raw.runId),
     verdict: oneOf(raw.verdict, QA_VERDICTS),
     runStatus: oneOf(raw.runStatus, RUN_STATUSES),
@@ -71,17 +80,24 @@ function pullRequestFrom(value: unknown): QaPromotionPullRequest | null {
   return { number, url, headSha: text(raw?.headSha) };
 }
 
-function deliveryProjectFrom(value: unknown): QaPromotionStatus["deliveryProject"] {
+function deliveryProjectFrom(
+  value: unknown,
+): QaPromotionStatus['deliveryProject'] {
   const raw = record(value);
   const id = text(raw?.id);
-  return id ? { id, name: text(raw?.name) ?? "Project" } : null;
+  return id ? { id, name: text(raw?.name) ?? 'Project' } : null;
 }
 
 function promotionRunFrom(value: unknown): QaPromotionRun | null {
   const raw = record(value);
   const id = text(raw?.id);
   if (!id) return null;
-  return { id, verdict: oneOf(raw?.verdict, QA_VERDICTS), signedAt: text(raw?.signedAt), stale: raw?.stale === true };
+  return {
+    id,
+    verdict: oneOf(raw?.verdict, QA_VERDICTS),
+    signedAt: text(raw?.signedAt),
+    stale: raw?.stale === true,
+  };
 }
 
 function promotionIterationFrom(value: unknown): QaPromotionIteration | null {
@@ -92,7 +108,10 @@ function promotionIterationFrom(value: unknown): QaPromotionIteration | null {
 /** The stored delivery state (Iterations phase 2). All absent on an older backend. */
 function deliveryFrom(raw: Loose) {
   return {
-    repositoryDelivered: typeof raw.repositoryDelivered === "boolean" ? raw.repositoryDelivered : null,
+    repositoryDelivered:
+      typeof raw.repositoryDelivered === 'boolean'
+        ? raw.repositoryDelivered
+        : null,
     iterationDelivered: raw.iterationDelivered === true,
     iteration: promotionIterationFrom(raw.iteration),
   };
@@ -134,10 +153,13 @@ export function normalizePromotionStatus(value: unknown): QaPromotionStatus {
 }
 
 const MERGED_FALLBACK = `Merged into ${PROMOTION_TARGET_BRANCH}.`;
-const REFUSED_FALLBACK = "GitHub did not merge the pull request and gave no reason.";
+const REFUSED_FALLBACK =
+  'GitHub did not merge the pull request and gave no reason.';
 
 /** The merge reply. `merged` only when the server said exactly `true`. */
-export function normalizePromotionMerge(value: unknown): QaPromotionMergeResult {
+export function normalizePromotionMerge(
+  value: unknown,
+): QaPromotionMergeResult {
   const raw = record(value) ?? {};
   const merged = raw.merged === true;
   const pr = record(raw.pullRequest);
@@ -148,17 +170,21 @@ export function normalizePromotionMerge(value: unknown): QaPromotionMergeResult 
     sha: merged ? text(raw.sha) : null,
     message: text(raw.message) ?? (merged ? MERGED_FALLBACK : REFUSED_FALLBACK),
     pullRequest: number && url ? { number, url } : null,
-    alreadyInMain: !merged && raw.how === "already_in_main",
+    alreadyInMain: !merged && raw.how === 'already_in_main',
   };
 }
 
 /* ── What the card says ──────────────────────────────────────────────────── */
 
-type DeliveryFlags = Partial<Pick<QaPromotionStatus, "iterationDelivered" | "iteration">>;
+type DeliveryFlags = Partial<
+  Pick<QaPromotionStatus, 'iterationDelivered' | 'iteration'>
+>;
 
 /** "Iteration 3 delivered", once the server says the Project's iteration reached main. */
 export function deliveredTitle(status: DeliveryFlags): string {
-  return status.iteration ? `${iterationName(status.iteration.number)} delivered` : "Delivered to production";
+  return status.iteration
+    ? `${iterationName(status.iteration.number)} delivered`
+    : 'Delivered to production';
 }
 
 /**
@@ -167,17 +193,22 @@ export function deliveredTitle(status: DeliveryFlags): string {
  * signed-off uat head." `locale` is for tests.
  */
 export function deliveredNote(
-  status: DeliveryFlags & Pick<QaPromotionStatus, "qaBranch" | "targetBranch">,
+  status: DeliveryFlags & Pick<QaPromotionStatus, 'qaBranch' | 'targetBranch'>,
   locale?: string,
 ): string {
-  const date = iterationDateLabel(status.iteration?.deliveredAt ?? null, { withYear: true, locale });
-  const when = date ? ` on ${date}` : "";
+  const date = iterationDateLabel(status.iteration?.deliveredAt ?? null, {
+    withYear: true,
+    locale,
+  });
+  const when = date ? ` on ${date}` : '';
   return `${deliveredTitle(status)}${when}. Every repository's ${status.targetBranch} holds the signed-off ${status.qaBranch} head.`;
 }
 
-export function promotionTitle(status: Pick<QaPromotionStatus, "eligible"> & DeliveryFlags): string {
+export function promotionTitle(
+  status: Pick<QaPromotionStatus, 'eligible'> & DeliveryFlags,
+): string {
   if (status.iterationDelivered) return deliveredTitle(status);
-  return status.eligible ? "Ready for production" : "Not ready for production";
+  return status.eligible ? 'Ready for production' : 'Not ready for production';
 }
 
 /**
@@ -186,7 +217,7 @@ export function promotionTitle(status: Pick<QaPromotionStatus, "eligible"> & Del
  * read. `label` is the full sentence (the chip's accessible name); `short`
  * is what a narrow column shows.
  */
-export type PromotionChipTone = "ready" | "blocked" | "unknown" | "delivered";
+export type PromotionChipTone = 'ready' | 'blocked' | 'unknown' | 'delivered';
 
 export interface PromotionChip {
   tone: PromotionChipTone;
@@ -195,23 +226,37 @@ export interface PromotionChip {
 }
 
 export function promotionChip(
-  load: "loading" | "ready" | "error",
-  status: (Pick<QaPromotionStatus, "eligible"> & DeliveryFlags) | null,
+  load: 'loading' | 'ready' | 'error',
+  status: (Pick<QaPromotionStatus, 'eligible'> & DeliveryFlags) | null,
 ): PromotionChip {
-  if (status?.iterationDelivered) return { tone: "delivered", label: deliveredTitle(status), short: "Delivered" };
+  if (status?.iterationDelivered)
+    return {
+      tone: 'delivered',
+      label: deliveredTitle(status),
+      short: 'Delivered',
+    };
   if (status) {
     const label = promotionTitle(status);
     return status.eligible
-      ? { tone: "ready", label, short: "Ready" }
-      : { tone: "blocked", label, short: "Not ready" };
+      ? { tone: 'ready', label, short: 'Ready' }
+      : { tone: 'blocked', label, short: 'Not ready' };
   }
-  if (load === "loading") return { tone: "unknown", label: "Checking production readiness", short: "Checking" };
-  return { tone: "unknown", label: "Production readiness unknown", short: "Unknown" };
+  if (load === 'loading')
+    return {
+      tone: 'unknown',
+      label: 'Checking production readiness',
+      short: 'Checking',
+    };
+  return {
+    tone: 'unknown',
+    label: 'Production readiness unknown',
+    short: 'Unknown',
+  };
 }
 
 /** "uat @ 9f8e7d6 → main". */
 export function promotionRoute(
-  status: Pick<QaPromotionStatus, "qaBranch" | "targetBranch" | "headSha">,
+  status: Pick<QaPromotionStatus, 'qaBranch' | 'targetBranch' | 'headSha'>,
 ): string {
   const head = shortSha(status.headSha);
   const from = head ? `${status.qaBranch} @ ${head}` : status.qaBranch;
@@ -220,28 +265,55 @@ export function promotionRoute(
 
 /** Where the Project's latest signed-off run stands, in a few words. */
 export function promotionRunState(
-  status: Pick<QaPromotionStatus, "run">,
+  status: Pick<QaPromotionStatus, 'run'>,
 ): PromotionChecklistState {
   const run = status.run;
-  if (!run?.verdict) return { tone: "neutral", label: "QA has not signed the Project off yet", approved: false };
-  if (run.stale) return { tone: "warning", label: "Project run is stale: uat moved since sign-off", approved: false };
-  if (run.verdict === "APPROVED") return { tone: "success", label: "Project run approved for the current heads", approved: true };
-  if (run.verdict === "CONDITIONAL") {
-    return { tone: "warning", label: `Conditional — ${PROMOTION_TARGET_BRANCH} needs Approved`, approved: false };
+  if (!run?.verdict)
+    return {
+      tone: 'neutral',
+      label: 'QA has not signed the Project off yet',
+      approved: false,
+    };
+  if (run.stale)
+    return {
+      tone: 'warning',
+      label: 'Project run is stale: uat moved since sign-off',
+      approved: false,
+    };
+  if (run.verdict === 'APPROVED')
+    return {
+      tone: 'success',
+      label: 'Project run approved for the current heads',
+      approved: true,
+    };
+  if (run.verdict === 'CONDITIONAL') {
+    return {
+      tone: 'warning',
+      label: `Conditional — ${PROMOTION_TARGET_BRANCH} needs Approved`,
+      approved: false,
+    };
   }
-  return { tone: "danger", label: `Latest sign-off is ${verdictLabel(run.verdict)}`, approved: false };
+  return {
+    tone: 'danger',
+    label: `Latest sign-off is ${verdictLabel(run.verdict)}`,
+    approved: false,
+  };
 }
 
 /** "1 of 2 checklists approved", or that nothing is shared. */
 export function approvedCountLabel(
-  status: Pick<QaPromotionStatus, "checklists"> & Partial<Pick<QaPromotionStatus, "scope" | "run">>,
+  status: Pick<QaPromotionStatus, 'checklists'> &
+    Partial<Pick<QaPromotionStatus, 'scope' | 'run'>>,
 ): string {
-  if (status.scope === "unfiled") return "Not filed under a Project";
-  if (status.scope === "project") return promotionRunState({ run: status.run ?? null }).label;
+  if (status.scope === 'unfiled') return 'Not filed under a Project';
+  if (status.scope === 'project')
+    return promotionRunState({ run: status.run ?? null }).label;
   const total = status.checklists.length;
-  if (total === 0) return "No checklist shared";
-  const approved = status.checklists.filter((entry) => entry.approvedForHead).length;
-  return `${approved} of ${total} ${total === 1 ? "checklist" : "checklists"} approved`;
+  if (total === 0) return 'No checklist shared';
+  const approved = status.checklists.filter(
+    (entry) => entry.approvedForHead,
+  ).length;
+  return `${approved} of ${total} ${total === 1 ? 'checklist' : 'checklists'} approved`;
 }
 
 export interface PromotionChecklistState {
@@ -251,17 +323,42 @@ export interface PromotionChecklistState {
 }
 
 /** Where one checklist stands on uat's current commit, in a few words. */
-export function promotionChecklistState(entry: QaPromotionChecklist): PromotionChecklistState {
-  if (entry.approvedForHead) return { tone: "success", label: "Approved for this commit", approved: true };
-  if (!entry.runId) return { tone: "neutral", label: "Not verified on this commit yet", approved: false };
-  if (entry.runStatus !== "signed_off" || !entry.verdict) {
-    return { tone: "brand", label: "Run in progress — not signed off yet", approved: false };
+export function promotionChecklistState(
+  entry: QaPromotionChecklist,
+): PromotionChecklistState {
+  if (entry.approvedForHead)
+    return {
+      tone: 'success',
+      label: 'Approved for this commit',
+      approved: true,
+    };
+  if (!entry.runId)
+    return {
+      tone: 'neutral',
+      label: 'Not verified on this commit yet',
+      approved: false,
+    };
+  if (entry.runStatus !== 'signed_off' || !entry.verdict) {
+    return {
+      tone: 'brand',
+      label: 'Run in progress — not signed off yet',
+      approved: false,
+    };
   }
-  if (entry.verdict === "REJECTED") return { tone: "danger", label: "Signed off Rejected", approved: false };
-  if (entry.verdict === "CONDITIONAL") {
-    return { tone: "warning", label: `Conditional — ${PROMOTION_TARGET_BRANCH} needs Approved`, approved: false };
+  if (entry.verdict === 'REJECTED')
+    return { tone: 'danger', label: 'Signed off Rejected', approved: false };
+  if (entry.verdict === 'CONDITIONAL') {
+    return {
+      tone: 'warning',
+      label: `Conditional — ${PROMOTION_TARGET_BRANCH} needs Approved`,
+      approved: false,
+    };
   }
-  return { tone: "warning", label: "Approved, but not for this commit", approved: false };
+  return {
+    tone: 'warning',
+    label: 'Approved, but not for this commit',
+    approved: false,
+  };
 }
 
 /**
@@ -278,33 +375,43 @@ export const UNFILED_REASON = QA_ERROR_MESSAGES.QA_PROJECT_REQUIRED;
  */
 export function projectReasons(reasons: ReadonlyArray<string>): string[] {
   const words = reasons.map((reason) => {
-    if (/^Project run is stale: ".+"/.test(reason)) return "The Project's code on uat changed since QA signed it off.";
-    if (reason.startsWith("Could not read the uat head of")) return "ALPHACI could not read the Project's uat build. Try again in a moment.";
+    if (/^Project run is stale: ".+"/.test(reason))
+      return "The Project's code on uat changed since QA signed it off.";
+    if (reason.startsWith('Could not read the uat head of'))
+      return "ALPHACI could not read the Project's uat build. Try again in a moment.";
     return reason;
   });
   return [...new Set(words)];
 }
 
 export function blockingReasons(
-  status: Pick<QaPromotionStatus, "eligible" | "reasons" | "checklists" | "qaBranch"> &
-    Partial<Pick<QaPromotionStatus, "scope" | "iterationDelivered">>,
+  status: Pick<
+    QaPromotionStatus,
+    'eligible' | 'reasons' | 'checklists' | 'qaBranch'
+  > &
+    Partial<Pick<QaPromotionStatus, 'scope' | 'iterationDelivered'>>,
 ): string[] {
   // Delivered is not blocked: there is simply nothing left to merge.
   if (status.eligible || status.iterationDelivered) return [];
   if (status.reasons.length > 0) return status.reasons;
-  if (status.scope === "unfiled") return [UNFILED_REASON];
-  if (status.scope === "project") {
-    return [`QA must sign the Project off Approved on its current ${status.qaBranch} build.`];
+  if (status.scope === 'unfiled') return [UNFILED_REASON];
+  if (status.scope === 'project') {
+    return [
+      `QA must sign the Project off Approved on its current ${status.qaBranch} build.`,
+    ];
   }
-  if (status.checklists.length === 0) return ["No QA checklist is shared with this project yet."];
-  return [`Every shared checklist must be signed off Approved on ${status.qaBranch}'s current commit.`];
+  if (status.checklists.length === 0)
+    return ['No QA checklist is shared with this project yet.'];
+  return [
+    `Every shared checklist must be signed off Approved on ${status.qaBranch}'s current commit.`,
+  ];
 }
 
 /* ── Merge to main ───────────────────────────────────────────────────────── */
 
 /** Team leads and Admins merge; QA Team reads the same status. */
 export function roleCanMerge(role: AppRole | null | undefined): boolean {
-  return role === "lead" || role === "admin";
+  return role === 'lead' || role === 'admin';
 }
 
 /**
@@ -312,33 +419,53 @@ export function roleCanMerge(role: AppRole | null | undefined): boolean {
  * delivered iteration has none: the delivered banner takes its place.
  */
 export function canOfferMerge(
-  status: Pick<QaPromotionStatus, "canMerge"> & Partial<Pick<QaPromotionStatus, "iterationDelivered">>,
+  status: Pick<QaPromotionStatus, 'canMerge'> &
+    Partial<Pick<QaPromotionStatus, 'iterationDelivered'>>,
   role: AppRole | null | undefined,
 ): boolean {
   return status.canMerge && roleCanMerge(role) && !status.iterationDelivered;
 }
 
-type MergeReasonStatus = Pick<QaPromotionStatus, "eligible" | "headSha" | "qaBranch" | "targetBranch"> &
-  Partial<Pick<QaPromotionStatus, "scope" | "repositoryDelivered" | "iterationDelivered" | "iteration">>;
+type MergeReasonStatus = Pick<
+  QaPromotionStatus,
+  'eligible' | 'headSha' | 'qaBranch' | 'targetBranch'
+> &
+  Partial<
+    Pick<
+      QaPromotionStatus,
+      'scope' | 'repositoryDelivered' | 'iterationDelivered' | 'iteration'
+    >
+  >;
 
 /**
  * Whether this repository's main already holds uat's head: the server's
  * stored answer (`repositoryDelivered`) when it sends one, else (an older
  * backend) whether this viewer just merged exactly this head.
  */
-function alreadyInMain(status: MergeReasonStatus, mergedHead: string | null): boolean {
-  return status.repositoryDelivered ?? (mergedHead !== null && mergedHead === status.headSha);
+function alreadyInMain(
+  status: MergeReasonStatus,
+  mergedHead: string | null,
+): boolean {
+  return (
+    status.repositoryDelivered ??
+    (mergedHead !== null && mergedHead === status.headSha)
+  );
 }
 
 /**
  * Why the button is disabled, or null when it can be pressed. `mergedHead` is
  * the uat commit this viewer just merged: merging it again has nothing to do.
  */
-export function mergeDisabledReason(status: MergeReasonStatus, mergedHead: string | null): string | null {
-  if (status.scope === "unfiled") return UNFILED_REASON;
-  if (status.iterationDelivered) return `${deliveredTitle(status)}: every repository is already in ${status.targetBranch}.`;
-  if (!status.headSha) return `${status.qaBranch}'s current commit could not be resolved.`;
-  if (!status.eligible && status.scope === "project") {
+export function mergeDisabledReason(
+  status: MergeReasonStatus,
+  mergedHead: string | null,
+): string | null {
+  if (status.scope === 'unfiled') return UNFILED_REASON;
+  if (status.iterationDelivered)
+    return `${deliveredTitle(status)}: every repository is already in ${status.targetBranch}.`;
+  if (!status.headSha)
+    return `${status.qaBranch}'s current commit could not be resolved.`;
+  if (!status.eligible && status.scope === 'project') {
     return `Merging opens once QA signs the Project off Approved on its current ${status.qaBranch} build.`;
   }
   if (!status.eligible) {
@@ -352,7 +479,10 @@ export function mergeDisabledReason(status: MergeReasonStatus, mergedHead: strin
 
 /** The confirmation's sentence: project, commit and pull request, named. */
 export function mergeConfirmText(
-  status: Pick<QaPromotionStatus, "qaBranch" | "targetBranch" | "headSha" | "pullRequest">,
+  status: Pick<
+    QaPromotionStatus,
+    'qaBranch' | 'targetBranch' | 'headSha' | 'pullRequest'
+  >,
   projectName: string,
 ): string {
   const pr = status.pullRequest
@@ -362,36 +492,40 @@ export function mergeConfirmText(
 }
 
 /** Under GitHub's verbatim refusal: what usually unblocks it. */
-export const MERGE_REFUSED_HINT =
-  `A reviewer must approve the pull request, or ${PROMOTION_TARGET_BRANCH}'s branch rules must allow this merge. Then try again.`;
+export const MERGE_REFUSED_HINT = `A reviewer must approve the pull request, or ${PROMOTION_TARGET_BRANCH}'s branch rules must allow this merge. Then try again.`;
 
-export function mergedLabel(result: Pick<QaPromotionMergeResult, "sha">, targetBranch: string): string {
+export function mergedLabel(
+  result: Pick<QaPromotionMergeResult, 'sha'>,
+  targetBranch: string,
+): string {
   const sha = shortSha(result.sha);
-  return sha ? `${targetBranch} updated · merge commit ${sha}` : `${targetBranch} updated`;
+  return sha
+    ? `${targetBranch} updated · merge commit ${sha}`
+    : `${targetBranch} updated`;
 }
 
 /* ── A merge that failed ─────────────────────────────────────────────────── */
 
 const CODE_KINDS: Record<string, QaPromotionMergeErrorKind> = {
-  QA_PROMOTION_BLOCKED: "blocked",
-  QA_UAT_MOVED: "moved",
-  GITHUB_REAUTH: "reauth",
-  QA_PROJECT_REQUIRED: "project_required",
-  ITERATION_DELIVERED: "delivered",
-  PROJECT_HAS_NO_REPOSITORIES: "no_repositories",
+  QA_PROMOTION_BLOCKED: 'blocked',
+  QA_UAT_MOVED: 'moved',
+  GITHUB_REAUTH: 'reauth',
+  QA_PROJECT_REQUIRED: 'project_required',
+  ITERATION_DELIVERED: 'delivered',
+  PROJECT_HAS_NO_REPOSITORIES: 'no_repositories',
 };
 
 const STATUS_KINDS: Record<number, QaPromotionMergeErrorKind> = {
-  401: "reauth",
-  403: "forbidden",
-  404: "not_found",
+  401: 'reauth',
+  403: 'forbidden',
+  404: 'not_found',
 };
 
 function kindOf(cause: unknown): QaPromotionMergeErrorKind {
   const byCode = CODE_KINDS[errorCode(cause)];
   if (byCode) return byCode;
   const status = errorStatus(cause);
-  return (status !== null && STATUS_KINDS[status]) || "failed";
+  return (status !== null && STATUS_KINDS[status]) || 'failed';
 }
 
 /** The kinds whose sentence never depends on what the server said. */
@@ -407,26 +541,31 @@ function copyFor(kind: QaPromotionMergeErrorKind, cause: unknown): string {
   const fixed = FIXED_COPY[kind];
   if (fixed) return fixed;
   const server = errorMessage(cause);
-  if (kind === "blocked") return server ?? `QA has not approved every shared checklist on ${QA_BRANCH}'s current commit.`;
-  if (kind === "delivered") return qaCodeMessage(cause) ?? QA_ERROR_MESSAGES.ITERATION_DELIVERED;
-  if (kind === "reauth") {
+  if (kind === 'blocked')
+    return (
+      server ??
+      `QA has not approved every shared checklist on ${QA_BRANCH}'s current commit.`
+    );
+  if (kind === 'delivered')
+    return qaCodeMessage(cause) ?? QA_ERROR_MESSAGES.ITERATION_DELIVERED;
+  if (kind === 'reauth') {
     return errorStatus(cause) === 401
-      ? "Your session has ended. Sign in again to merge."
-      : "GitHub needs you to sign in again before ALPHACI can merge for you.";
+      ? 'Your session has ended. Sign in again to merge.'
+      : 'GitHub needs you to sign in again before ALPHACI can merge for you.';
   }
-  return server ?? "The merge could not be completed. Try again in a moment.";
+  return server ?? 'The merge could not be completed. Try again in a moment.';
 }
 
 const ERROR_TITLES: Record<QaPromotionMergeErrorKind, string> = {
-  blocked: "Not merged — QA approval is incomplete",
+  blocked: 'Not merged — QA approval is incomplete',
   moved: `Not merged — ${QA_BRANCH} moved since sign-off`,
-  reauth: "Sign in again to merge",
-  project_required: "Not merged — this repository is not in a Project",
-  delivered: "Not merged — this version was already delivered",
-  no_repositories: "Nothing to merge",
-  forbidden: "Not merged",
-  not_found: "Not merged",
-  failed: "Not merged",
+  reauth: 'Sign in again to merge',
+  project_required: 'Not merged — this repository is not in a Project',
+  delivered: 'Not merged — this version was already delivered',
+  no_repositories: 'Nothing to merge',
+  forbidden: 'Not merged',
+  not_found: 'Not merged',
+  failed: 'Not merged',
 };
 
 export function mergeErrorTitle(kind: QaPromotionMergeErrorKind): string {
@@ -439,24 +578,29 @@ export function promotionMergeError(cause: unknown): QaPromotionMergeError {
   return {
     kind,
     message: copyFor(kind, cause),
-    reasons: kind === "blocked" ? texts(errorDetails(cause)?.reasons) : [],
-    signIn: kind === "reauth",
+    reasons: kind === 'blocked' ? texts(errorDetails(cause)?.reasons) : [],
+    signIn: kind === 'reauth',
   };
 }
 
 /** Outcomes the card shows in place (the dialog closes); the rest stay in the dialog to retry. */
-export function mergeErrorClosesDialog(error: Pick<QaPromotionMergeError, "kind">): boolean {
-  return error.kind !== "failed";
+export function mergeErrorClosesDialog(
+  error: Pick<QaPromotionMergeError, 'kind'>,
+): boolean {
+  return error.kind !== 'failed';
 }
 
-const REFRESHING_KINDS: ReadonlySet<QaPromotionMergeErrorKind> = new Set<QaPromotionMergeErrorKind>([
-  "blocked",
-  "moved",
-  "project_required",
-  "delivered",
-]);
+const REFRESHING_KINDS: ReadonlySet<QaPromotionMergeErrorKind> =
+  new Set<QaPromotionMergeErrorKind>([
+    'blocked',
+    'moved',
+    'project_required',
+    'delivered',
+  ]);
 
 /** Outcomes after which the status is stale and must be read again. */
-export function mergeErrorRefreshesStatus(error: Pick<QaPromotionMergeError, "kind">): boolean {
+export function mergeErrorRefreshesStatus(
+  error: Pick<QaPromotionMergeError, 'kind'>,
+): boolean {
   return REFRESHING_KINDS.has(error.kind);
 }

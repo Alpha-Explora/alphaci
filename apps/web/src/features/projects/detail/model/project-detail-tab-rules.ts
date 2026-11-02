@@ -8,39 +8,39 @@ import type {
   ReinstallDeploymentSecretsResponse,
   WorkflowFileMetadata,
   WorkflowSettings,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 
-import { isFailedConclusion } from "./github-conclusion";
-import { isPullRequestRole } from "./pull-request-compose-rules";
+import { isFailedConclusion } from './github-conclusion';
+import { isPullRequestRole } from './pull-request-compose-rules';
 
 export type ProjectDetailTab =
-  | "overview"
-  | "code"
-  | "commits"
-  | "pulls"
-  | "checklists"
-  | "pipeline"
-  | "hosting"
-  | "qa"
-  | "po"
-  | "audit"
-  | "history"
-  | "settings";
+  | 'overview'
+  | 'code'
+  | 'commits'
+  | 'pulls'
+  | 'checklists'
+  | 'pipeline'
+  | 'hosting'
+  | 'qa'
+  | 'po'
+  | 'audit'
+  | 'history'
+  | 'settings';
 
 /** Every tab, in strip order. */
 export const PROJECT_DETAIL_TABS: ReadonlyArray<ProjectDetailTab> = [
-  "overview",
-  "code",
-  "commits",
-  "pulls",
-  "checklists",
-  "pipeline",
-  "hosting",
-  "qa",
-  "po",
-  "audit",
-  "history",
-  "settings",
+  'overview',
+  'code',
+  'commits',
+  'pulls',
+  'checklists',
+  'pipeline',
+  'hosting',
+  'qa',
+  'po',
+  'audit',
+  'history',
+  'settings',
 ];
 
 /**
@@ -49,13 +49,19 @@ export const PROJECT_DETAIL_TABS: ReadonlyArray<ProjectDetailTab> = [
  * requirements and fix what QA returns (the "My QA items" list the Overview
  * summarises); they do not test in a studio.
  */
-export const QA_STUDIO_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["qa", "admin"]);
+export const QA_STUDIO_ROLES: ReadonlySet<AppRole> = new Set<AppRole>([
+  'qa',
+  'admin',
+]);
 
 /**
  * The roles PO Studio is for: Product owners, who accept the whole system on
  * uat once QA signed it off and merge it to main, and admins.
  */
-export const PO_STUDIO_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["lead", "admin"]);
+export const PO_STUDIO_ROLES: ReadonlySet<AppRole> = new Set<AppRole>([
+  'lead',
+  'admin',
+]);
 
 export function canOpenQaStudio(appRole: AppRole | null | undefined): boolean {
   return appRole != null && QA_STUDIO_ROLES.has(appRole);
@@ -65,11 +71,11 @@ export function canOpenPoStudio(appRole: AppRole | null | undefined): boolean {
   return appRole != null && PO_STUDIO_ROLES.has(appRole);
 }
 
-export type StudioTab = Extract<ProjectDetailTab, "qa" | "po">;
+export type StudioTab = Extract<ProjectDetailTab, 'qa' | 'po'>;
 
 /** QA Studio or PO Studio: the tabs whose preview controls sit in the tab row. */
 export function isStudioTab(tab: ProjectDetailTab): tab is StudioTab {
-  return tab === "qa" || tab === "po";
+  return tab === 'qa' || tab === 'po';
 }
 
 /**
@@ -80,9 +86,11 @@ export function isStudioTab(tab: ProjectDetailTab): tab is StudioTab {
  * main go through the studio" notice point the viewer at their own studio
  * (a Developer, who has none, gets the notice without the link).
  */
-export function studioTabFor(appRole: AppRole | null | undefined): StudioTab | null {
-  if (canOpenQaStudio(appRole)) return "qa";
-  if (canOpenPoStudio(appRole)) return "po";
+export function studioTabFor(
+  appRole: AppRole | null | undefined,
+): StudioTab | null {
+  if (canOpenQaStudio(appRole)) return 'qa';
+  if (canOpenPoStudio(appRole)) return 'po';
   return null;
 }
 
@@ -94,9 +102,14 @@ export function studioTabFor(appRole: AppRole | null | undefined): StudioTab | n
  * Named rather than derived (`!== "member"`): a role added later gets the
  * Developer's page — more navigation, never more power — until it is listed.
  */
-const PRODUCT_VIEW_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["qa", "lead"]);
+const PRODUCT_VIEW_ROLES: ReadonlySet<AppRole> = new Set<AppRole>([
+  'qa',
+  'lead',
+]);
 
-export function seesProjectAsProduct(appRole: AppRole | null | undefined): boolean {
+export function seesProjectAsProduct(
+  appRole: AppRole | null | undefined,
+): boolean {
   return appRole != null && PRODUCT_VIEW_ROLES.has(appRole);
 }
 
@@ -109,8 +122,10 @@ export function seesProjectAsProduct(appRole: AppRole | null | undefined): boole
  * as on an older backend) keeps the per-repository screens; `pending` shows
  * those until the Project is known, as the tab always did.
  */
-export function checklistsTabCarriesProjectQa(qaScopeKind: "pending" | "project" | "repository"): boolean {
-  return qaScopeKind === "project";
+export function checklistsTabCarriesProjectQa(
+  qaScopeKind: 'pending' | 'project' | 'repository',
+): boolean {
+  return qaScopeKind === 'project';
 }
 
 /**
@@ -120,7 +135,10 @@ export function checklistsTabCarriesProjectQa(qaScopeKind: "pending" | "project"
  * owners (`lead`), QA Team and a session with no known role are refused, so
  * they never see that column.
  */
-const ENV_VARS_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["member", "admin"]);
+const ENV_VARS_ROLES: ReadonlySet<AppRole> = new Set<AppRole>([
+  'member',
+  'admin',
+]);
 
 export function canManageEnvVars(appRole: AppRole | null | undefined): boolean {
   return appRole != null && ENV_VARS_ROLES.has(appRole);
@@ -136,7 +154,7 @@ export function showOverviewProductionReadiness(
   appRole: AppRole | null | undefined,
   qaChecklistsEnabled: boolean,
 ): boolean {
-  return qaChecklistsEnabled && appRole === "member";
+  return qaChecklistsEnabled && appRole === 'member';
 }
 
 /**
@@ -146,7 +164,10 @@ export function showOverviewProductionReadiness(
  * Reinstalling deployment secrets used to share this list; it follows the
  * hosting rule now (`canReinstallDeploymentSecrets` below).
  */
-const PROJECT_LIFECYCLE_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["lead", "admin"]);
+const PROJECT_LIFECYCLE_ROLES: ReadonlySet<AppRole> = new Set<AppRole>([
+  'lead',
+  'admin',
+]);
 
 export function canManageProjectLifecycle(
   appRole: AppRole | null | undefined,
@@ -161,7 +182,10 @@ export function canManageProjectLifecycle(
  * domains. Product owners (`lead`) and QA Team are refused. Listing stays open
  * to anyone who can see the project.
  */
-const HOSTING_ROLES: ReadonlySet<AppRole> = new Set<AppRole>(["member", "admin"]);
+const HOSTING_ROLES: ReadonlySet<AppRole> = new Set<AppRole>([
+  'member',
+  'admin',
+]);
 
 export function canManageHosting(appRole: AppRole | null | undefined): boolean {
   return appRole != null && HOSTING_ROLES.has(appRole);
@@ -169,7 +193,7 @@ export function canManageHosting(appRole: AppRole | null | undefined): boolean {
 
 /** Shown where a hosting mutation control would otherwise be. */
 export const HOSTING_LEAD_ONLY_NOTE =
-  "Developers and admins can change hosting services and custom domains.";
+  'Developers and admins can change hosting services and custom domains.';
 
 /** Every tab except the ones a role is never offered. */
 function allTabsExcept(
@@ -195,26 +219,26 @@ function allTabsExcept(
  *   - Admin: everything, both studios included.
  */
 const OWNER_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTab>([
-  "overview",
-  "checklists",
-  "po",
-  "audit",
-  "history",
-  "settings",
+  'overview',
+  'checklists',
+  'po',
+  'audit',
+  'history',
+  'settings',
 ]);
 
 const QA_TEAM_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTab>([
-  "overview",
-  "checklists",
-  "qa",
-  "audit",
-  "history",
-  "settings",
+  'overview',
+  'checklists',
+  'qa',
+  'audit',
+  'history',
+  'settings',
 ]);
 
 const ROLE_TABS: Readonly<Record<AppRole, ReadonlySet<ProjectDetailTab>>> = {
   lead: OWNER_TABS,
-  member: allTabsExcept("qa", "po"),
+  member: allTabsExcept('qa', 'po'),
   qa: QA_TEAM_TABS,
   admin: allTabsExcept(),
 };
@@ -226,10 +250,10 @@ const ROLE_TABS: Readonly<Record<AppRole, ReadonlySet<ProjectDetailTab>>> = {
  * (`canManageEnvVars`).
  */
 const UNKNOWN_ROLE_TABS: ReadonlySet<ProjectDetailTab> = allTabsExcept(
-  "checklists",
-  "qa",
-  "po",
-  "history",
+  'checklists',
+  'qa',
+  'po',
+  'history',
 );
 
 /** The role's allow-list. */
@@ -241,12 +265,8 @@ export function projectDetailTabsForRole(
 }
 
 /** Checklists, the studios and the iteration History exist only with the QA checklists capability. */
-const QA_CAPABILITY_TABS: ReadonlySet<ProjectDetailTab> = new Set<ProjectDetailTab>([
-  "checklists",
-  "qa",
-  "po",
-  "history",
-]);
+const QA_CAPABILITY_TABS: ReadonlySet<ProjectDetailTab> =
+  new Set<ProjectDetailTab>(['checklists', 'qa', 'po', 'history']);
 
 /**
  * The tabs this viewer gets, in strip order: the role's allow-list
@@ -259,7 +279,9 @@ export function visibleProjectDetailTabs(
 ): ProjectDetailTab[] {
   const allowed = projectDetailTabsForRole(appRole);
   return PROJECT_DETAIL_TABS.filter(
-    (tab) => allowed.has(tab) && (flags.qaChecklistsEnabled || !QA_CAPABILITY_TABS.has(tab)),
+    (tab) =>
+      allowed.has(tab) &&
+      (flags.qaChecklistsEnabled || !QA_CAPABILITY_TABS.has(tab)),
   );
 }
 
@@ -268,14 +290,18 @@ export function visibleProjectDetailTabs(
  * empty hashes give null (start on Overview). Visibility is still decided by
  * `resolveVisibleTab`, so a link can never reveal a gated tab.
  */
-export function tabFromHash(hash: string | null | undefined): ProjectDetailTab | null {
+export function tabFromHash(
+  hash: string | null | undefined,
+): ProjectDetailTab | null {
   const id = hashId(hash);
   if (id in TAB_HASH_ALIASES) return TAB_HASH_ALIASES[id];
-  return (PROJECT_DETAIL_TABS as ReadonlyArray<string>).includes(id) ? (id as ProjectDetailTab) : null;
+  return (PROJECT_DETAIL_TABS as ReadonlyArray<string>).includes(id)
+    ? (id as ProjectDetailTab)
+    : null;
 }
 
 function hashId(hash: string | null | undefined): string {
-  return (hash ?? "").replace(/^#/, "");
+  return (hash ?? '').replace(/^#/, '');
 }
 
 /**
@@ -285,20 +311,22 @@ function hashId(hash: string | null | undefined): string {
  * `#workflow` open it (on the view `pipelineViewFromHash` names).
  */
 const TAB_HASH_ALIASES: Readonly<Record<string, ProjectDetailTab>> = {
-  environment: "hosting",
-  runs: "pipeline",
-  workflow: "pipeline",
+  environment: 'hosting',
+  runs: 'pipeline',
+  workflow: 'pipeline',
 };
 
 /**
  * The Pipeline tab's two views: Runs (what ran; the default) and
  * Configuration (the workflow that produced the runs, once the Workflow tab).
  */
-export type PipelineView = "runs" | "configuration";
+export type PipelineView = 'runs' | 'configuration';
 
 /** `#workflow` (the retired Workflow tab) opens Configuration; any other hash, Runs. */
-export function pipelineViewFromHash(hash: string | null | undefined): PipelineView {
-  return hashId(hash) === "workflow" ? "configuration" : "runs";
+export function pipelineViewFromHash(
+  hash: string | null | undefined,
+): PipelineView {
+  return hashId(hash) === 'workflow' ? 'configuration' : 'runs';
 }
 
 /**
@@ -306,24 +334,33 @@ export function pipelineViewFromHash(hash: string | null | undefined): PipelineV
  * Pipeline runs had Workflow too, so it follows the Pipeline tab itself; it is
  * a rule of its own so the two can part without the view changing.
  */
-export function pipelineConfigurationAvailable(visible: ReadonlyArray<ProjectDetailTab>): boolean {
-  return visible.includes("pipeline");
+export function pipelineConfigurationAvailable(
+  visible: ReadonlyArray<ProjectDetailTab>,
+): boolean {
+  return visible.includes('pipeline');
 }
 
 /** The view to show: Configuration only where it is offered, else Runs. */
-export function resolvePipelineView(view: PipelineView, configurationAvailable: boolean): PipelineView {
-  return view === "configuration" && configurationAvailable ? "configuration" : "runs";
+export function resolvePipelineView(
+  view: PipelineView,
+  configurationAvailable: boolean,
+): PipelineView {
+  return view === 'configuration' && configurationAvailable
+    ? 'configuration'
+    : 'runs';
 }
 
 /** What the Hosting tab should bring into view when it opens. */
-export type HostingFocus = "variables";
+export type HostingFocus = 'variables';
 
 /**
  * `#environment` (the retired Environment tab) opens Hosting on Production
  * with its Variables card in view; any other hash asks for nothing.
  */
-export function hostingFocusFromHash(hash: string | null | undefined): HostingFocus | null {
-  return hashId(hash) === "environment" ? "variables" : null;
+export function hostingFocusFromHash(
+  hash: string | null | undefined,
+): HostingFocus | null {
+  return hashId(hash) === 'environment' ? 'variables' : null;
 }
 
 /**
@@ -331,9 +368,12 @@ export function hostingFocusFromHash(hash: string | null | undefined): HostingFo
  * The branch only counts with the `#commits` hash; anything else is null (the
  * server's default branch).
  */
-export function commitsBranchFromUrl(hash: string | null | undefined, search: string | null | undefined): string | null {
-  if (tabFromHash(hash) !== "commits" || !search) return null;
-  const branch = new URLSearchParams(search).get("branch")?.trim();
+export function commitsBranchFromUrl(
+  hash: string | null | undefined,
+  search: string | null | undefined,
+): string | null {
+  if (tabFromHash(hash) !== 'commits' || !search) return null;
+  const branch = new URLSearchParams(search).get('branch')?.trim();
   return branch ? branch : null;
 }
 
@@ -344,13 +384,18 @@ export function commitsBranchFromUrl(hash: string | null | undefined, search: st
  * `useSearchParams`, so this VM does not force the route into dynamic
  * rendering just to read one query flag.
  */
-export function shouldHighlightMyQaItems(search: string | null | undefined): boolean {
+export function shouldHighlightMyQaItems(
+  search: string | null | undefined,
+): boolean {
   if (!search) return false;
-  return new URLSearchParams(search).get("focus") === "my-qa-items";
+  return new URLSearchParams(search).get('focus') === 'my-qa-items';
 }
 
 /** Each studio's counterpart: a link to one lands a viewer without it on the other. */
-const OTHER_STUDIO: Readonly<Partial<Record<ProjectDetailTab, StudioTab>>> = { qa: "po", po: "qa" };
+const OTHER_STUDIO: Readonly<Partial<Record<ProjectDetailTab, StudioTab>>> = {
+  qa: 'po',
+  po: 'qa',
+};
 
 /**
  * The selected tab, or Overview when the selection is not (or no longer)
@@ -364,43 +409,45 @@ export function resolveVisibleTab(
 ): ProjectDetailTab {
   if (visible.includes(tab)) return tab;
   const other = OTHER_STUDIO[tab];
-  return other && visible.includes(other) ? other : "overview";
+  return other && visible.includes(other) ? other : 'overview';
 }
 
-export const COVERAGE_THRESHOLD_OPTIONS: Array<{ value: string; label: string }> =
-  [
-    { value: "0", label: "None (0%)" },
-    { value: "60", label: "Basic (60%)" },
-    { value: "80", label: "Standard (80%)" },
-    { value: "90", label: "Strict (90%)" },
-    { value: "100", label: "Full (100%)" },
-  ];
-
-export const WORKFLOW_CHECK_OPTIONS: Array<{
-  key: keyof WorkflowSettings["checks"];
+export const COVERAGE_THRESHOLD_OPTIONS: Array<{
+  value: string;
   label: string;
 }> = [
-  { key: "lint", label: "Lint" },
-  { key: "unit", label: "Unit tests" },
-  { key: "build", label: "Build" },
-  { key: "security", label: "Security" },
+  { value: '0', label: 'None (0%)' },
+  { value: '60', label: 'Basic (60%)' },
+  { value: '80', label: 'Standard (80%)' },
+  { value: '90', label: 'Strict (90%)' },
+  { value: '100', label: 'Full (100%)' },
+];
+
+export const WORKFLOW_CHECK_OPTIONS: Array<{
+  key: keyof WorkflowSettings['checks'];
+  label: string;
+}> = [
+  { key: 'lint', label: 'Lint' },
+  { key: 'unit', label: 'Unit tests' },
+  { key: 'build', label: 'Build' },
+  { key: 'security', label: 'Security' },
 ];
 
 export function projectQueryStatus(
   hasData: boolean,
   error: string | null,
-): "loading" | "ready" | "error" {
-  if (hasData) return "ready";
-  if (error) return "error";
-  return "loading";
+): 'loading' | 'ready' | 'error' {
+  if (hasData) return 'ready';
+  if (error) return 'error';
+  return 'loading';
 }
 
 export function configuredOrNot(value: string | null | undefined): string {
-  return value ?? "Not configured";
+  return value ?? 'Not configured';
 }
 
 export function emptyToNull(value: string | null | undefined): string | null {
-  const trimmed = value?.trim() ?? "";
+  const trimmed = value?.trim() ?? '';
   if (!trimmed) return null;
   return trimmed;
 }
@@ -444,8 +491,8 @@ export function isCiRunsQueryEnabled(input: {
   overviewCiRunTracking: boolean | undefined;
 }): boolean {
   return (
-    input.tab === "pipeline" &&
-    input.pipelineView === "runs" &&
+    input.tab === 'pipeline' &&
+    input.pipelineView === 'runs' &&
     input.ciRunTrackingEnabled &&
     input.overviewCiRunTracking === true
   );
@@ -457,7 +504,7 @@ export function isDeploymentsQueryEnabled(input: {
   overviewDeploymentHistory: boolean | undefined;
 }): boolean {
   return (
-    input.tab === "hosting" &&
+    input.tab === 'hosting' &&
     input.deploymentHistoryEnabled &&
     input.overviewDeploymentHistory === true
   );
@@ -471,30 +518,30 @@ export function isWorkflowSettingsQueryEnabled(input: {
   overviewWorkflowSettings: boolean | undefined;
 }): boolean {
   return (
-    input.tab === "pipeline" &&
-    input.pipelineView === "configuration" &&
+    input.tab === 'pipeline' &&
+    input.pipelineView === 'configuration' &&
     input.workflowSettingsPreviewEnabled &&
     input.overviewWorkflowSettings === true
   );
 }
 
 export function snapshotFindingLabel(count: number): string {
-  return `${count} finding${count === 1 ? "" : "s"}`;
+  return `${count} finding${count === 1 ? '' : 's'}`;
 }
 
 export function hostingProviderLabel(provider: string): string {
-  if (provider === "render") return "Render backend";
-  return "Vercel frontend";
+  if (provider === 'render') return 'Render backend';
+  return 'Vercel frontend';
 }
 
 export function ciRunRowClass(conclusion: string | null): string {
-  if (isFailedConclusion(conclusion)) return "failed";
-  return "provisioned";
+  if (isFailedConclusion(conclusion)) return 'failed';
+  return 'provisioned';
 }
 
 export function previewDiffBadgeClass(status: string): string {
-  if (status === "changed") return "dash-badge-violet";
-  return "branch-chip";
+  if (status === 'changed') return 'dash-badge-violet';
+  return 'branch-chip';
 }
 
 export function coverageHasPreset(threshold: number): boolean {
@@ -507,38 +554,41 @@ export function centralRefIsListed(tags: string[], ref: string): boolean {
 }
 
 export function targetSyncLabel(syncing: boolean): string {
-  if (syncing) return "Syncing…";
-  return "Sync";
+  if (syncing) return 'Syncing…';
+  return 'Sync';
 }
 
 export function logsToggleLabel(open: boolean): string {
-  if (open) return "Hide Logs";
-  return "Logs";
+  if (open) return 'Hide Logs';
+  return 'Logs';
 }
 
-export function detachButtonLabel(detaching: boolean, confirming: boolean): string {
-  if (detaching) return "Detaching…";
-  if (confirming) return "Confirm detach";
-  return "Detach";
+export function detachButtonLabel(
+  detaching: boolean,
+  confirming: boolean,
+): string {
+  if (detaching) return 'Detaching…';
+  if (confirming) return 'Confirm detach';
+  return 'Detach';
 }
 
 export function saveMetadataLabel(saving: boolean): string {
-  if (saving) return "Saving...";
-  return "Save metadata";
+  if (saving) return 'Saving...';
+  return 'Save metadata';
 }
 
 export function previewWorkflowLabel(previewing: boolean): string {
-  if (previewing) return "Previewing...";
-  return "Preview";
+  if (previewing) return 'Previewing...';
+  return 'Preview';
 }
 
 /** Shown in place of the update-PR button for roles the backend refuses (QA). */
 export const UPDATE_PR_ROLE_NOTE =
-  "A Developer, Product owner or admin can open the workflow update pull request.";
+  'A Developer, Product owner or admin can open the workflow update pull request.';
 
 /** The backend targets dev, else uat — never main. */
 export const UPDATE_PR_TARGET_NOTE =
-  "Opens a pull request into dev (or uat when there is no dev branch).";
+  'Opens a pull request into dev (or uat when there is no dev branch).';
 
 /**
  * Whether this viewer can be sent to the update pull request (the Pipeline
@@ -548,7 +598,7 @@ export const UPDATE_PR_TARGET_NOTE =
  * UPDATE_PR_ROLE_NOTE instead), `unavailable` when the deployment or project
  * does not offer the update pull request at all.
  */
-export type WorkflowUpdateAccess = "open" | "role" | "unavailable";
+export type WorkflowUpdateAccess = 'open' | 'role' | 'unavailable';
 
 export function workflowUpdateAccess(input: {
   appRole: AppRole | null | undefined;
@@ -559,19 +609,26 @@ export function workflowUpdateAccess(input: {
   /** The project overview's `capabilities.workflowSettings`; undefined until it loads. */
   projectWorkflowSettings: boolean | undefined;
 }): WorkflowUpdateAccess {
-  const offered = input.updatePrEnabled && input.settingsPreviewEnabled && input.projectWorkflowSettings === true;
-  if (!offered) return "unavailable";
-  return input.workflowTabVisible && isPullRequestRole(input.appRole) ? "open" : "role";
+  const offered =
+    input.updatePrEnabled &&
+    input.settingsPreviewEnabled &&
+    input.projectWorkflowSettings === true;
+  if (!offered) return 'unavailable';
+  return input.workflowTabVisible && isPullRequestRole(input.appRole)
+    ? 'open'
+    : 'role';
 }
 
 export function createUpdatePrLabel(creating: boolean): string {
-  if (creating) return "Creating...";
-  return "Create update PR";
+  if (creating) return 'Creating...';
+  return 'Create update PR';
 }
 
-export function targetSyncMessage(response: DeploymentTargetSyncResponse): string {
+export function targetSyncMessage(
+  response: DeploymentTargetSyncResponse,
+): string {
   const findingCount = response.findings.length;
-  if (response.mode === "provider_live") {
+  if (response.mode === 'provider_live') {
     return liveSyncMessage(findingCount);
   }
   return localSyncMessage(findingCount, liveCheckUnavailable(response));
@@ -581,11 +638,14 @@ function liveSyncMessage(findingCount: number): string {
   if (findingCount) {
     return `Live status check completed with ${snapshotFindingLabel(findingCount)}.`;
   }
-  return "Live status check completed.";
+  return 'Live status check completed.';
 }
 
-function localSyncMessage(findingCount: number, liveCheckFailed: boolean): string {
-  const suffix = liveCheckFailed ? " (live check unavailable)" : "";
+function localSyncMessage(
+  findingCount: number,
+  liveCheckFailed: boolean,
+): string {
+  const suffix = liveCheckFailed ? ' (live check unavailable)' : '';
   if (findingCount) {
     return `Local metadata sync completed with ${snapshotFindingLabel(findingCount)}.${suffix}`;
   }
@@ -594,7 +654,7 @@ function localSyncMessage(findingCount: number, liveCheckFailed: boolean): strin
 
 function liveCheckUnavailable(response: DeploymentTargetSyncResponse): boolean {
   return response.findings.some(
-    (finding) => finding.code === "provider_live_check_failed",
+    (finding) => finding.code === 'provider_live_check_failed',
   );
 }
 
@@ -608,7 +668,7 @@ export function targetDetachMessage(
   if (response.providerDeleteError) {
     return detachProviderErrorMessage(response.providerDeleteError, target);
   }
-  return "Target detached from ALPHACI. Provider resource was not deleted.";
+  return 'Target detached from ALPHACI. Provider resource was not deleted.';
 }
 
 function detachProviderErrorMessage(
@@ -714,8 +774,8 @@ export function canReinstallDeploymentSecrets(
 }
 
 export function reinstallSecretsLabel(reinstalling: boolean): string {
-  if (reinstalling) return "Reinstalling…";
-  return "Reinstall deployment secrets";
+  if (reinstalling) return 'Reinstalling…';
+  return 'Reinstall deployment secrets';
 }
 
 /** Every string value in a loosely-typed record, in insertion order. */
@@ -724,7 +784,8 @@ function stringValues(
 ): string[] {
   if (!record) return [];
   return Object.values(record).filter(
-    (value): value is string => typeof value === "string" && value.trim().length > 0,
+    (value): value is string =>
+      typeof value === 'string' && value.trim().length > 0,
   );
 }
 
@@ -735,15 +796,18 @@ function stringValues(
  */
 export function reinstallSecretsSuccessMessage(
   response: Partial<
-    Pick<ReinstallDeploymentSecretsResponse, "githubSecrets" | "githubVariables">
+    Pick<
+      ReinstallDeploymentSecretsResponse,
+      'githubSecrets' | 'githubVariables'
+    >
   >,
 ): string {
   const names = [
     ...stringValues(response.githubSecrets),
     ...stringValues(response.githubVariables),
   ];
-  if (!names.length) return "Deployment secrets reinstalled.";
-  return `Deployment secrets reinstalled: ${names.join(", ")}.`;
+  if (!names.length) return 'Deployment secrets reinstalled.';
+  return `Deployment secrets reinstalled: ${names.join(', ')}.`;
 }
 
 export interface ReinstallSecretsFailure {
@@ -754,7 +818,7 @@ export interface ReinstallSecretsFailure {
 
 function reinstallErrorStatus(cause: unknown): number | null {
   const status = (cause as { status?: unknown } | null | undefined)?.status;
-  return typeof status === "number" ? status : null;
+  return typeof status === 'number' ? status : null;
 }
 
 function reinstallErrorDetails(cause: unknown): unknown {
@@ -763,19 +827,23 @@ function reinstallErrorDetails(cause: unknown): unknown {
 
 /** The raw `message` a JSON error body carries — a string, a validator array, or absent. */
 function messageFromDetails(details: unknown): unknown {
-  if (typeof details === "string") return details;
-  if (typeof details !== "object" || details === null || !("message" in details)) {
+  if (typeof details === 'string') return details;
+  if (
+    typeof details !== 'object' ||
+    details === null ||
+    !('message' in details)
+  ) {
     return null;
   }
   return (details as { message?: unknown }).message;
 }
 
 function normalizeMessageText(message: unknown): string | null {
-  if (typeof message === "string") return message.trim() || null;
+  if (typeof message === 'string') return message.trim() || null;
   if (!Array.isArray(message)) return null;
   const joined = message
-    .filter((part): part is string => typeof part === "string")
-    .join(" ")
+    .filter((part): part is string => typeof part === 'string')
+    .join(' ')
     .trim();
   return joined || null;
 }
@@ -810,14 +878,14 @@ export function reinstallSecretsFailure(
   }
   if (status === 403) {
     return {
-      message: "Only Developers and admins can reinstall deployment secrets.",
+      message: 'Only Developers and admins can reinstall deployment secrets.',
       signInHref: null,
     };
   }
   return {
     message:
       reinstallErrorServerMessage(cause) ??
-      "Unable to reinstall deployment secrets. Try again in a moment.",
+      'Unable to reinstall deployment secrets. Try again in a moment.',
     signInHref: null,
   };
 }

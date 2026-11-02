@@ -1,24 +1,31 @@
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 
-import { WorkspaceProvider } from "../../../../../../src/features/workspace/selection/views/workspace-selection-context";
-import { useWorkspaceSelectionViewModel } from "../../../../../../src/features/workspace/selection/view-models/use-workspace-selection-view-model";
+import { WorkspaceProvider } from '../../../../../../src/features/workspace/selection/views/workspace-selection-context';
+import { useWorkspaceSelectionViewModel } from '../../../../../../src/features/workspace/selection/view-models/use-workspace-selection-view-model';
 
-jest.mock("../../../../../../src/features/workspace/selection/data/workspace-repository", () => ({
-  getWorkspaces: jest.fn(),
-  getVisibleTeams: jest.fn(),
-}));
+jest.mock(
+  '../../../../../../src/features/workspace/selection/data/workspace-repository',
+  () => ({
+    getWorkspaces: jest.fn(),
+    getVisibleTeams: jest.fn(),
+  }),
+);
 
 import {
   getVisibleTeams,
   getWorkspaces,
-} from "../../../../../../src/features/workspace/selection/data/workspace-repository";
-import { useWorkspaceSelection } from "../../../../../../src/features/workspace/selection/views/workspace-selection-context";
+} from '../../../../../../src/features/workspace/selection/data/workspace-repository';
+import { useWorkspaceSelection } from '../../../../../../src/features/workspace/selection/views/workspace-selection-context';
 
-const mockedGetWorkspaces = getWorkspaces as jest.MockedFunction<typeof getWorkspaces>;
-const mockedGetVisibleTeams = getVisibleTeams as jest.MockedFunction<typeof getVisibleTeams>;
+const mockedGetWorkspaces = getWorkspaces as jest.MockedFunction<
+  typeof getWorkspaces
+>;
+const mockedGetVisibleTeams = getVisibleTeams as jest.MockedFunction<
+  typeof getVisibleTeams
+>;
 
-describe("useWorkspaceSelectionViewModel", () => {
+describe('useWorkspaceSelectionViewModel', () => {
   let root: Root | null = null;
 
   afterEach(() => {
@@ -28,11 +35,16 @@ describe("useWorkspaceSelectionViewModel", () => {
     jest.clearAllMocks();
   });
 
-  it("loads and publishes the mapped workspaces through the selection context", async () => {
+  it('loads and publishes the mapped workspaces through the selection context', async () => {
     const response = {
       enabled: true,
       items: [
-        { id: "workspace-1", name: "Workspace", kind: "team" as const, role: "admin" as const },
+        {
+          id: 'workspace-1',
+          name: 'Workspace',
+          kind: 'team' as const,
+          role: 'admin' as const,
+        },
       ],
     };
     mockedGetWorkspaces.mockResolvedValue(response);
@@ -46,11 +58,14 @@ describe("useWorkspaceSelectionViewModel", () => {
        * point, and there is no effect to move it into without changing what is
        * being asserted. */
       // eslint-disable-next-line react-hooks/immutability
-      captured.snapshot = useWorkspaceSelectionViewModel({ enabled: true, capability: "enabled" });
+      captured.snapshot = useWorkspaceSelectionViewModel({
+        enabled: true,
+        capability: 'enabled',
+      });
       return null;
     }
 
-    const container = document.createElement("div");
+    const container = document.createElement('div');
     root = createRoot(container);
     await act(async () => {
       root!.render(
@@ -61,18 +76,20 @@ describe("useWorkspaceSelectionViewModel", () => {
     });
 
     expect(mockedGetWorkspaces).toHaveBeenCalledTimes(1);
-    expect(captured.snapshot?.status).toBe("ready");
+    expect(captured.snapshot?.status).toBe('ready');
     expect(captured.snapshot?.workspaces).toEqual(response);
-    expect(window.localStorage.getItem("flowci.workspaceId")).toBe("workspace-1");
+    expect(window.localStorage.getItem('flowci.workspaceId')).toBe(
+      'workspace-1',
+    );
   });
 
-  it("does not probe when the route is guest-only", async () => {
+  it('does not probe when the route is guest-only', async () => {
     function Probe() {
-      useWorkspaceSelectionViewModel({ enabled: false, capability: "enabled" });
+      useWorkspaceSelectionViewModel({ enabled: false, capability: 'enabled' });
       return null;
     }
 
-    const container = document.createElement("div");
+    const container = document.createElement('div');
     root = createRoot(container);
     await act(async () => {
       root!.render(
@@ -85,25 +102,31 @@ describe("useWorkspaceSelectionViewModel", () => {
     expect(mockedGetWorkspaces).not.toHaveBeenCalled();
   });
 
-  describe("against the workspaces capability", () => {
+  describe('against the workspaces capability', () => {
     type Snapshot = {
       vm: ReturnType<typeof useWorkspaceSelectionViewModel>;
       selectedId: string | null;
     };
 
     async function renderWith(
-      capability: "pending" | "disabled",
+      capability: 'pending' | 'disabled',
     ): Promise<Snapshot> {
       const captured: { snapshot: Snapshot | null } = { snapshot: null };
       const capture = (snapshot: Snapshot) => {
         captured.snapshot = snapshot;
       };
       function Probe({ onRender }: { onRender: typeof capture }) {
-        const vm = useWorkspaceSelectionViewModel({ enabled: true, capability });
-        onRender({ vm, selectedId: useWorkspaceSelection().selectedWorkspaceId });
+        const vm = useWorkspaceSelectionViewModel({
+          enabled: true,
+          capability,
+        });
+        onRender({
+          vm,
+          selectedId: useWorkspaceSelection().selectedWorkspaceId,
+        });
         return null;
       }
-      root = createRoot(document.createElement("div"));
+      root = createRoot(document.createElement('div'));
       await act(async () => {
         root!.render(
           <WorkspaceProvider>
@@ -114,26 +137,26 @@ describe("useWorkspaceSelectionViewModel", () => {
       return captured.snapshot!;
     }
 
-    it("waits for /capabilities before asking for workspaces", async () => {
-      const { vm } = await renderWith("pending");
+    it('waits for /capabilities before asking for workspaces', async () => {
+      const { vm } = await renderWith('pending');
       expect(mockedGetWorkspaces).not.toHaveBeenCalled();
-      expect(vm.status).toBe("idle");
+      expect(vm.status).toBe('idle');
       expect(vm.workspaces).toBeNull();
     });
 
-    it("never asks while workspaces are off, and reports them off rather than failed", async () => {
-      window.localStorage.setItem("flowci.workspaceId", "workspace-1");
-      const { vm, selectedId } = await renderWith("disabled");
+    it('never asks while workspaces are off, and reports them off rather than failed', async () => {
+      window.localStorage.setItem('flowci.workspaceId', 'workspace-1');
+      const { vm, selectedId } = await renderWith('disabled');
       expect(mockedGetWorkspaces).not.toHaveBeenCalled();
-      expect(vm.status).toBe("ready");
+      expect(vm.status).toBe('ready');
       expect(vm.error).toBeNull();
       expect(vm.workspaces).toEqual({ enabled: false, items: [] });
       expect(selectedId).toBeNull();
-      expect(window.localStorage.getItem("flowci.workspaceId")).toBeNull();
+      expect(window.localStorage.getItem('flowci.workspaceId')).toBeNull();
     });
 
-    it("ignores a refresh while workspaces are off", async () => {
-      const { vm } = await renderWith("disabled");
+    it('ignores a refresh while workspaces are off', async () => {
+      const { vm } = await renderWith('disabled');
       await act(async () => {
         await vm.loadWorkspaces();
       });
@@ -141,10 +164,17 @@ describe("useWorkspaceSelectionViewModel", () => {
     });
   });
 
-  describe("for a platform admin", () => {
+  describe('for a platform admin', () => {
     const mine = {
       enabled: true,
-      items: [{ id: "workspace-1", name: "Workspace", kind: "team" as const, role: "admin" as const }],
+      items: [
+        {
+          id: 'workspace-1',
+          name: 'Workspace',
+          kind: 'team' as const,
+          role: 'admin' as const,
+        },
+      ],
     };
 
     type Captured = {
@@ -156,12 +186,16 @@ describe("useWorkspaceSelectionViewModel", () => {
       const captured: Captured = { vm: null, selectedId: null };
       function Probe() {
         // eslint-disable-next-line react-hooks/immutability
-        captured.vm = useWorkspaceSelectionViewModel({ enabled: true, capability: "enabled", includeOtherTeams });
+        captured.vm = useWorkspaceSelectionViewModel({
+          enabled: true,
+          capability: 'enabled',
+          includeOtherTeams,
+        });
         // eslint-disable-next-line react-hooks/immutability
         captured.selectedId = useWorkspaceSelection().selectedWorkspaceId;
         return null;
       }
-      const container = document.createElement("div");
+      const container = document.createElement('div');
       root = createRoot(container);
       await act(async () => {
         root!.render(
@@ -173,47 +207,56 @@ describe("useWorkspaceSelectionViewModel", () => {
       return captured;
     }
 
-    it("also lists the teams they are not a member of", async () => {
+    it('also lists the teams they are not a member of', async () => {
       mockedGetWorkspaces.mockResolvedValue(mine);
       mockedGetVisibleTeams.mockResolvedValue([
-        { id: "workspace-1", name: "Workspace" },
-        { id: "workspace-9", name: "Johns Kitchen" },
+        { id: 'workspace-1', name: 'Workspace' },
+        { id: 'workspace-9', name: 'Johns Kitchen' },
       ]);
       const captured = await renderAdmin(true);
       expect(mockedGetVisibleTeams).toHaveBeenCalledTimes(1);
       expect(captured.vm?.otherTeams).toEqual([
-        { id: "workspace-9", name: "Johns Kitchen", kind: "team", role: "admin" },
+        {
+          id: 'workspace-9',
+          name: 'Johns Kitchen',
+          kind: 'team',
+          role: 'admin',
+        },
       ]);
     });
 
     /* Both lists are published in one update, so a remembered selection of a
      * team the admin is not in is not reset to their first own team. */
-    it("keeps a remembered other-team selection", async () => {
-      window.localStorage.setItem("flowci.workspaceId", "workspace-9");
+    it('keeps a remembered other-team selection', async () => {
+      window.localStorage.setItem('flowci.workspaceId', 'workspace-9');
       mockedGetWorkspaces.mockResolvedValue(mine);
-      mockedGetVisibleTeams.mockResolvedValue([{ id: "workspace-9", name: "Johns Kitchen" }]);
+      mockedGetVisibleTeams.mockResolvedValue([
+        { id: 'workspace-9', name: 'Johns Kitchen' },
+      ]);
       const captured = await renderAdmin(true);
-      expect(captured.selectedId).toBe("workspace-9");
-      expect(window.localStorage.getItem("flowci.workspaceId")).toBe("workspace-9");
+      expect(captured.selectedId).toBe('workspace-9');
+      expect(window.localStorage.getItem('flowci.workspaceId')).toBe(
+        'workspace-9',
+      );
     });
 
     it("still loads the admin's own teams when the full list fails", async () => {
       mockedGetWorkspaces.mockResolvedValue(mine);
-      mockedGetVisibleTeams.mockRejectedValue(new Error("offline"));
+      mockedGetVisibleTeams.mockRejectedValue(new Error('offline'));
       const captured = await renderAdmin(true);
-      expect(captured.vm?.status).toBe("ready");
+      expect(captured.vm?.status).toBe('ready');
       expect(captured.vm?.workspaces).toEqual(mine);
       expect(captured.vm?.otherTeams).toEqual([]);
     });
 
-    it("never asks for the full list for anyone else", async () => {
-      window.localStorage.setItem("flowci.workspaceId", "workspace-9");
+    it('never asks for the full list for anyone else', async () => {
+      window.localStorage.setItem('flowci.workspaceId', 'workspace-9');
       mockedGetWorkspaces.mockResolvedValue(mine);
       const captured = await renderAdmin(false);
       expect(mockedGetVisibleTeams).not.toHaveBeenCalled();
       expect(captured.vm?.otherTeams).toEqual([]);
       // A non-member team is not selectable: the selection falls back.
-      expect(captured.selectedId).toBe("workspace-1");
+      expect(captured.selectedId).toBe('workspace-1');
     });
   });
 });
