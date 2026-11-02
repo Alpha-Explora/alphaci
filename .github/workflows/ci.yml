@@ -285,7 +285,7 @@ jobs:
             args: -- --ci
           - name: architecture and documentation
             tasks: >-
-              boundaries arch:check check:capability-package check:capabilities
+              boundaries arch:check check:capabilities
               check:profiles check:documentation complexity
           # The two profile builds both write .next, so each gets its own job.
           - name: hosted profile build

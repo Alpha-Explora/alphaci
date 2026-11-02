@@ -129,9 +129,8 @@ const steps = [
     reference,
   ],
 ];
-// The web app regenerates its snapshot, surface view, and the three pack profiles from the package.
+// The web app regenerates its surface view and the three pack profiles from the package.
 const webSteps = [
-  ['scripts/sync-catalog-snapshot.cjs'],
   ['scripts/generate-capability-surface-registry.cjs'],
   ['scripts/generate-architecture-maps.mjs'],
 ];
@@ -146,12 +145,6 @@ function run(cwd, args) {
 }
 
 for (const step of steps) run(ROOT, step);
-// The web app's expected provenance record is a copy of the package's own; the
-// pull request diff is where the new digest gets reviewed.
-fs.copyFileSync(
-  path.join(ROOT, '..', '..', 'packages', 'capability-catalog', 'provenance.json'),
-  path.join(WEB, 'capabilities', 'catalog.provenance.json'),
-);
 for (const step of webSteps) run(WEB, step);
 
 console.log('Added ' + key + ' to ' + record.editions.join(', ') + '.');

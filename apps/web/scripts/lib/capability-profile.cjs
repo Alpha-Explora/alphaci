@@ -2,17 +2,9 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const {
-  PACKAGE_NAME,
-  PROVENANCE_FILE,
-  artifactDigestFromDirectory,
-  provenanceShapeErrors,
-} = require('./capability-package-provenance.cjs');
 
-const ROOT = path.resolve(__dirname, '..', '..');
 // Resolved through the npm workspace, so it follows packages/capability-catalog.
 const PACKAGE_DIR = path.dirname(require.resolve('@alphaci/capability-catalog'));
-const EXPECTED_PROVENANCE = path.join(ROOT, 'capabilities', 'catalog.provenance.json');
 const PROFILE_PACKS = Object.freeze({
   hosted: Object.freeze(['saas', 'edu']),
   enterprise: Object.freeze(['enterprise']),
@@ -30,7 +22,6 @@ function loadCatalogPackage(packageDirectory = PACKAGE_DIR) {
     version: metadata.version,
     catalog,
     manifests: readJson(path.join(packageDirectory, 'manifests.json')),
-    provenance: readJson(path.join(packageDirectory, PROVENANCE_FILE)),
     surfaces: catalog.map((record) => {
       if (!record.surface) {
         throw new Error(`capability ${record.key} is missing its published surface`);
@@ -187,69 +178,11 @@ function writeCapabilityStubs(projection, stubDirectory) {
   return createAliasEntries(projection, stubDirectory);
 }
 
-function packageDriftErrors(snapshot, pkg, packageDirectory = PACKAGE_DIR) {
-  const metadata = pkg.metadata || {};
-  if (metadata.name !== PACKAGE_NAME) {
-    return [`capability package name must be ${PACKAGE_NAME}, found ${metadata.name || '<missing>'}`];
-  }
-  if (!/^\d+\.\d+\.\d+$/.test(metadata.version || '')) {
-    return [`capability package version must be a release version, found ${metadata.version || '<missing>'}`];
-  }
-  const fields = [
-    'key',
-    'context',
-    'description',
-    'maturity',
-    'configuration',
-    'configurationFlags',
-    'editions',
-    'requires',
-    'surface',
-  ];
-  const normalize = (record) => Object.fromEntries(fields.map((field) => [field, record[field]]));
-  const expected = snapshot.map(normalize);
-  const actual = pkg.catalog.map(normalize);
-  const errors = [];
-  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-    errors.push(`vendor capability catalog ${pkg.version} does not match capabilities/catalog.snapshot.json`);
-  }
-  const expectedManifests = Object.fromEntries(
-    ['saas', 'edu', 'enterprise'].map((edition) => [
-      edition,
-      snapshot.filter((record) => record.editions.includes(edition)).map((record) => record.key),
-    ]),
-  );
-  if (JSON.stringify(pkg.manifests) !== JSON.stringify(expectedManifests)) {
-    errors.push(`vendor capability manifests do not match catalog edition membership`);
-  }
-  let expectedProvenance;
-  try {
-    expectedProvenance = readJson(EXPECTED_PROVENANCE);
-  } catch (error) {
-    errors.push(`checked-in expected capability provenance is unavailable: ${error.message}`);
-  }
-  errors.push(...provenanceShapeErrors(pkg.provenance, metadata.version));
-  if (expectedProvenance && JSON.stringify(pkg.provenance) !== JSON.stringify(expectedProvenance)) {
-    errors.push('vendor capability provenance does not match capabilities/catalog.provenance.json');
-  }
-  try {
-    const actualArtifactDigest = artifactDigestFromDirectory(packageDirectory);
-    if (actualArtifactDigest !== pkg.provenance.artifactDigest) {
-      errors.push('vendor capability package artifact digest does not match provenance.json');
-    }
-  } catch (error) {
-    errors.push(`could not recompute vendor capability package artifact digest: ${error.message}`);
-  }
-  return errors;
-}
-
 module.exports = {
   PACKAGE_DIR,
-  EXPECTED_PROVENANCE,
   PROFILE_PACKS,
   createAliasEntries,
   loadCatalogPackage,
-  packageDriftErrors,
   readSurfaceRegistry,
   resolveBuildProfile,
   resolveProfile,

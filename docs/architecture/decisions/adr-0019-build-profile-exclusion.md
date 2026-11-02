@@ -37,7 +37,7 @@ The capability catalog is consumed as a versioned dependency owned by the API: t
 
 - Each profile is built and verified separately.
 - Route paths for excluded features may still appear in build output even when their implementation does not. Removing the paths themselves requires pruning the route tree before the build and is not adopted.
-- Catalog drift becomes a reviewable package-artifact change instead of an unverified local step. The package check compares the package with the documentation snapshot and the expected provenance record.
+- Catalog drift becomes a reviewable package-artifact change instead of an unverified local step. The API's package check rebuilds the package from its source and rejects any difference.
 - Pack profiles and the capability matrix are updated by the change that implements profiles, not by this record.
 
 ## Verification

@@ -20,4 +20,5 @@
 * [ADR-0018: Shared catalog and packs](adr-0018-shared-catalog-and-packs.md) - one product, three pack projections, no edition UI forks.
 * [ADR-0019: Build profile exclusion](adr-0019-build-profile-exclusion.md) - per-profile web artifacts and the catalog package dependency.
 * [ADR-0020: Package-owned capability surfaces](adr-0020-package-owned-capability-surfaces.md) - web surface consumption from the versioned catalog package.
-* [ADR-0021: Capability package provenance](adr-0021-capability-package-provenance.md) - deterministic integrity checks for the catalog package.
+* [ADR-0021: Capability package provenance](adr-0021-capability-package-provenance.md) - deterministic integrity checks for the catalog package. Superseded by ADR-0022.
+* [ADR-0022: One catalog integrity check](adr-0022-one-catalog-integrity-check.md) - the API's package check is the only integrity check; the web app keeps no copies of the package.

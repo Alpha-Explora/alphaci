@@ -8,9 +8,6 @@ sources:
   - id: "catalog-package"
     resource: "packages/capability-catalog"
     title: "Versioned capability catalog fixture"
-  - id: "catalog-snapshot"
-    resource: "apps/web/capabilities/catalog.snapshot.json"
-    title: "Shared catalog snapshot"
   - id: "surface-registry"
     resource: "apps/web/capabilities/surface-registry.ts"
     title: "Frontend surface map"
@@ -21,7 +18,7 @@ sources:
 
 # Capability surface matrix
 
-This matrix is generated from the versioned `@alphaci/capability-catalog` package and the frontend surface registry. The checked-in snapshot supplies the backend-owned descriptions and configuration notes used for documentation. The frontend does not replace `/api/v1/capabilities` and does not implement entitlement resolution.
+This matrix is generated from the versioned `@alphaci/capability-catalog` package and the frontend surface registry. The frontend does not replace `/api/v1/capabilities` and does not implement entitlement resolution.
 
 | Capability key | Context | Maturity | Compatibility field | View flag | Frontend routes |
 |---|---|---|---|---|---|

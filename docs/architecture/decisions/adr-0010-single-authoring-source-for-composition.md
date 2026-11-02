@@ -42,7 +42,7 @@ The source is validated before anything is generated. A key that is not lowercas
 ## Consequences
 
 - The generated files must not be edited by hand. `npm run check:composition-source` rejects a hand edit, and `npm run check:documentation` runs it.
-- Surface data is owned here and published in the catalog package. The generated provenance binds that package to this source; the web app's expected release record and documentation snapshot are downstream verification inputs.
+- Surface data is owned here and published in the catalog package. The generated provenance binds that package to this source, and the web app reads the package directly.
 - A capability whose dependency is absent from one of its packs now fails authoring rather than resolving to a quietly missing feature.
 
 ## Verification

@@ -25,7 +25,6 @@
     "arch:check:touched": "node scripts/check-boundaries.mjs --cwd . --src auto --since origin/main",
     "arch:new": "node \"${NFA:-$HOME/.agents/skills/next-feature-architecture}/scripts/scaffold-feature.mjs\"",
     "check:capabilities": "node scripts/check-capabilities.cjs",
-    "check:capability-package": "node scripts/check-capability-package.cjs",
     "check:profiles": "node scripts/check-build-profiles.cjs",
     "build:profile": "node scripts/build-profile.cjs",
     "generate:architecture-maps": "node scripts/generate-architecture-maps.mjs",

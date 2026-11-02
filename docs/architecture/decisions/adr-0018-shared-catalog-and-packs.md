@@ -9,9 +9,9 @@ sources:
   - id: pack-contract
     resource: "/packs/pack-contract.md"
     title: "Current pack contract"
-  - id: catalog-snapshot
-    resource: "apps/web/capabilities/catalog.snapshot.json"
-    title: "Shared catalog snapshot"
+  - id: catalog-package
+    resource: "packages/capability-catalog"
+    title: "Capability catalog package"
 ---
 # ADR-0018: Shared catalog and packs
 
@@ -23,7 +23,7 @@ sources:
 
 SaaS, EDU, and Enterprise are composition packs of one product. This frontend is one application. A pack selects and documents capabilities; it does not own feature domains, routes, or wire contracts.
 
-The frontend consumes the versioned `@alphaci/capability-catalog` package owned by the backend. The checked-in snapshot mirrors the package's public fields for portable documentation. Pack status is derived from catalog maturity and edition applicability, not invented per pack.
+The frontend consumes the versioned `@alphaci/capability-catalog` package owned by the backend. Pack status is derived from catalog maturity and edition applicability, not invented per pack.
 
 ## Rejected alternatives
 

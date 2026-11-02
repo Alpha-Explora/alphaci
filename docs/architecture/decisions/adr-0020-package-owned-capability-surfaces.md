@@ -21,16 +21,16 @@ The backend publishes the surface block, including `artifactSymbols`, in the ver
 
 `artifactSymbols` identify implementation names for exclusion scanning only. Excluded feature aliases expose a default `notFound()` stub and never re-emit those implementation names.
 
-`apps/web/capabilities/catalog.snapshot.json` includes the published surface fields so documentation drift is visible. `apps/web/capabilities/surface-registry.ts` is generated from the package and must not be edited by hand.
+`apps/web/capabilities/surface-registry.ts` is generated from the package and must not be edited by hand.
 
 ## Consequences
 
 - Surface changes are authored in the API composition source and regenerated into the package, which the web app consumes.
 - A real Enterprise client-composition surface is gated by the resolved backend capability and configuration projection; the frontend does not define a second client catalog or imply capabilities the backend did not enable.
 - Frontend profile exclusion and compatibility checks use the same versioned surface contract as the package drift check.
-- A stale or tampered package, snapshot, provenance record, or generated documentation registry fails the frontend checks.
+- A stale or tampered package fails the API's package check; a stale generated surface registry fails the web capability check.
 - The frontend no longer owns an independent surface map.
 
 ## Verification
 
-In `apps/web`, run `node scripts/check-capability-package.cjs`, `node scripts/check-capabilities.cjs`, `node scripts/check-build-profiles.cjs`, and `node scripts/check-documentation.cjs`. The package check validates the package provenance and recomputes its canonical artifact digest.
+In `apps/web`, run `node scripts/check-capabilities.cjs`, `node scripts/check-build-profiles.cjs`, and `node scripts/check-documentation.cjs`. `npm run check:capability-package -w @alphaci/api` validates the package and recomputes its canonical artifact digest.

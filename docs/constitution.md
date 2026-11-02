@@ -68,7 +68,7 @@ The [capability contract](/capabilities/capability-contract.md) and [pack contra
 
 ## Shared catalog
 
-Capability keys, maturity, pack applicability, dependency edges, capability surfaces, and package provenance are authored once in `apps/api/src/kernel/composition/catalog.source.json` and published to the web app as the workspace package `@alphaci/capability-catalog` (`packages/capability-catalog`). The web app's `apps/web/capabilities/` holds an expected provenance record, a documentation snapshot, and a generated surface view. Those files are verification inputs, not catalog sources.
+Capability keys, maturity, pack applicability, dependency edges, capability surfaces, and package provenance are authored once in `apps/api/src/kernel/composition/catalog.source.json` and published to the web app as the workspace package `@alphaci/capability-catalog` (`packages/capability-catalog`). The web app reads the package directly; `apps/web/capabilities/surface-registry.ts` is a generated view of its surfaces, not a catalog source. The API's `check:capability-package` is the only integrity check on the package.
 
 ## Runtime providers
 

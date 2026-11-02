@@ -411,7 +411,7 @@ npm run typecheck && npm run lint && npm run lint:css \
 ```
 
 CI (the `Web …` jobs of `.github/workflows/ci.yml` at the monorepo root, Node 26) also runs the capability
-package, capability surface and build-profile checks, both profile builds, and
+surface and build-profile checks, both profile builds, and
 `npm run complexity`.
 
 Lockfile is the monorepo root `package-lock.json` — use npm, and run `npm install` from the root. Port 3000 must match `FRONTEND_URL`

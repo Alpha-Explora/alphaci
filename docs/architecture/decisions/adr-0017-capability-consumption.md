@@ -26,7 +26,7 @@ sources:
 
 The frontend consumes `GET /api/v1/capabilities` as the compatibility surface. View-models read boolean flags from that response. Documentation records the mapping from shared catalog keys to compatibility fields, view flags, domains, and routes.
 
-The documentation snapshot is not imported by the application. It does not add endpoints, flags, or persistence.
+The generated surface registry is not imported by the application. It does not add endpoints, flags, or persistence.
 
 ## Rejected alternatives
 
@@ -42,4 +42,4 @@ The documentation snapshot is not imported by the application. It does not add e
 
 ## Verification
 
-`npm run check:capabilities` verifies snapshot order, compatibility field ownership, view-flag ownership, and pack catalog completeness.
+`npm run check:capabilities` verifies package order, compatibility field ownership, view-flag ownership, and pack catalog completeness.

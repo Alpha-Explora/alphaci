@@ -3,7 +3,7 @@ type: "Architecture Decision Record"
 title: "Capability package provenance"
 description: "Verify that the catalog package the web app consumes is the API-generated artifact."
 tags: [architecture, capabilities, composition, package, integrity]
-status: stable
+status: deprecated
 timestamp: "2026-09-15T00:00:00Z"
 sources:
   - id: capability-contract
@@ -19,7 +19,7 @@ sources:
 # ADR-0021: Capability package provenance
 
 **Decision date:** 2026-09-15
-**Decision status:** Accepted
+**Decision status:** Superseded by [ADR-0022](adr-0022-one-catalog-integrity-check.md)
 **Scope:** Integrity and source ownership of the capability catalog package
 
 ## Context

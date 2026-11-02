@@ -269,7 +269,7 @@ If any answer is not yet acceptable, the capability remains limited, setup-depen
 |---|---|---|
 | The reference becomes outdated. | High | Update the affected records with each material change and run the document and map checks. |
 | Enterprise work becomes a separate product or UI copy. | High | Build shared capabilities and screens once and keep one pack and status language. |
-| The web snapshot or surface view drifts from the catalog package. | High | Regenerate them with every catalog change; the package, capability, and documentation checks fail on drift. |
+| The web surface view or pack profiles drift from the catalog package. | High | Regenerate them with every catalog change; the capability and documentation checks fail on drift. |
 | Parallel work creates conflicting definitions. | High | One owner per area and shared contract review before reuse. |
 | Hosting details spread into unrelated areas. | High | Keep hosting-specific behavior in the Runtime area and check its boundary. |
 | Background work disappears or runs twice. | High | Save tasks durably, prevent overlapping processing, retry failures, review exhausted tasks, and require repeat-safe handling. |

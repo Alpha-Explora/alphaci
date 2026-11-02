@@ -65,19 +65,13 @@ The `surface` block records how the web app presents a capability. The [surface 
 
 The API packages the public composition metadata as the workspace package `@alphaci/capability-catalog` (`packages/capability-catalog`), written by `npm run package:capability-catalog -w @alphaci/api`. The package contains stable keys, context, descriptions, maturity, edition applicability, dependency edges, configuration flags, and surface metadata. The web app resolves it through the npm workspace for its build profile, exclusion, and surface checks, and does not read the API's TypeScript source. Runtime availability still comes from the `/api/v1/capabilities` response; package metadata only describes the contract and the exclusion boundary.
 
-The web app keeps three verification inputs under `apps/web/capabilities/`:
-
-- `catalog.provenance.json`, the expected provenance record for the package.
-- `catalog.snapshot.json`, the documentation fields mirrored from the package and checked against it.
-- `surface-registry.ts`, a generated view of the package-owned surfaces.
-
-None of them is a catalog source.
+The web app keeps one generated file under `apps/web/capabilities/`: `surface-registry.ts`, a view of the package-owned surfaces that its capability check compares with the package and with the compatibility response types. It is not a catalog source.
 
 ### Package provenance and integrity
 
-The package also contains `provenance.json`. It records the package name and version, the source repository identifier `github.com/Alpha-Explora/alphaci-golden-copy-be`, the authoritative source path `src/kernel/composition/catalog.source.json`, a catalog source digest, and a deterministic artifact digest. It contains no timestamps or checkout-specific paths.
+The package also contains `provenance.json`. It records the package name and version, the source repository identifier `github.com/Alpha-Explora/alphaci`, the authoritative source path `apps/api/src/kernel/composition/catalog.source.json`, a catalog source digest, and a deterministic artifact digest. It contains no timestamps or checkout-specific paths.
 
-The catalog source digest is SHA-256 over canonical JSON: object keys are sorted recursively while array order is preserved. The artifact digest is SHA-256 over the JSON encoding of filename/content pairs for this ordered canonical set: `package.json`, `catalog.json`, `index.d.ts`, `index.js`, and `manifests.json`. Text content is normalized to LF before hashing. `provenance.json` is excluded from that set to avoid a self-referential digest. The package generator and both apps' `check-capability-package` implement this contract: the API checker rejects stale or tampered output, and the web checker compares the provenance with `apps/web/capabilities/catalog.provenance.json` and recomputes the artifact digest.
+The catalog source digest is SHA-256 over canonical JSON: object keys are sorted recursively while array order is preserved. The artifact digest is SHA-256 over the JSON encoding of filename/content pairs for this ordered canonical set: `package.json`, `catalog.json`, `index.d.ts`, `index.js`, and `manifests.json`. Text content is normalized to LF before hashing. `provenance.json` is excluded from that set to avoid a self-referential digest. The package generator and the API's `check:capability-package` implement this contract: the check rebuilds the package from the source, rejects any file that differs, and recomputes the artifact digest. It is the only integrity check; see [ADR-0022](/architecture/decisions/adr-0022-one-catalog-integrity-check.md).
 
 ## Request enforcement
 
@@ -146,7 +140,7 @@ A client policy is a deny-only declaration for one client, selected by `ALPHACI_
 - Do not invent web-only capability keys.
 - Record provider-specific availability in the provider map and pack notes.
 - Record missing UI for an implemented key as an honest surface gap, not as `not-implemented`.
-- Update the source record, the package, the web snapshot and surface view, and the generated matrices with the code or configuration change that changes the behavior.
+- Update the source record, the package, the web surface view, and the generated matrices with the code or configuration change that changes the behavior.
 
 A capability change that alters keys, maturity, or edition applicability regenerates every pack profile in the same change. Pack tables are a comparable projection of this registry; they are not a second catalog.
 
@@ -162,8 +156,8 @@ Use `npm run ledger:record` in `apps/api` to append an entry; it computes the ha
 
 `apps/api/src/kernel/composition/catalog.source.json` is the authoring source. One record carries the capability, its pack membership, configuration flags, and its web surface, including any unique implementation symbols that profile checks must exclude. `capability-registry.ts`, `manifests.ts`, and the package are generated from it and must not be edited by hand; `npm run generate:composition` rewrites the registry/manifests and `npm run check:composition-source` rejects drift.
 
-`npm run capability:new` in `apps/api` adds a capability in one command. It writes the record, regenerates the registry, the manifests, and the package, appends the ledger entry, copies the package provenance into the web app's expected record, then refreshes the web snapshot, surface view, pack profiles, and generated maps. A configuration flag named by a record is code and still has to exist in `AppConfig`. See [ADR-0010](/architecture/decisions/adr-0010-single-authoring-source-for-composition.md).
+`npm run capability:new` in `apps/api` adds a capability in one command. It writes the record, regenerates the registry, the manifests, and the package, appends the ledger entry, then refreshes the web surface view, pack profiles, and generated maps. A configuration flag named by a record is code and still has to exist in `AppConfig`. See [ADR-0010](/architecture/decisions/adr-0010-single-authoring-source-for-composition.md).
 
 ## Verification
 
-In `apps/api`, run `npm run check:capability-package`, `npm run check:capabilities`, `npm run check:capability-ledger`, `npm run check:composition-profiles`, and `npm run check:documentation`. In `apps/web`, run `npm run check:capability-package`, `npm run check:capabilities`, `npm run check:profiles`, and `npm run check:documentation`. At the repository root, run `npm run check:documentation`. Review any capability change against the [orthogonal axes decision](/architecture/decisions/adr-0002-orthogonal-product-axes.md), the [shared catalog decision](/architecture/decisions/adr-0018-shared-catalog-and-packs.md), and the [pack contract](/packs/pack-contract.md).
+In `apps/api`, run `npm run check:capability-package`, `npm run check:capabilities`, `npm run check:capability-ledger`, `npm run check:composition-profiles`, and `npm run check:documentation`. In `apps/web`, run `npm run check:capabilities`, `npm run check:profiles`, and `npm run check:documentation`. At the repository root, run `npm run check:documentation`. Review any capability change against the [orthogonal axes decision](/architecture/decisions/adr-0002-orthogonal-product-axes.md), the [shared catalog decision](/architecture/decisions/adr-0018-shared-catalog-and-packs.md), and the [pack contract](/packs/pack-contract.md).

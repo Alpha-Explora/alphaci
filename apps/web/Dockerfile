@@ -62,7 +62,6 @@ COPY --from=builder /app/apps/web/next.config.ts ./next.config.ts
 COPY --from=builder /app/apps/web/src/shared/api/api-proxy-rewrites.ts ./src/shared/api/api-proxy-rewrites.ts
 COPY --from=builder /app/apps/web/src/shared/composition/build-profile.ts ./src/shared/composition/build-profile.ts
 COPY --from=builder /app/apps/web/scripts/lib ./scripts/lib
-COPY --from=builder /app/apps/web/capabilities/catalog.provenance.json ./capabilities/catalog.provenance.json
 EXPOSE 3000
 # The image has no curl, so the probe uses Node's built-in fetch. It calls the
 # cheap /healthz route, which does not touch the backend.

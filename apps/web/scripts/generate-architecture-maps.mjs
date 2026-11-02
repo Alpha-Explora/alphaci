@@ -8,10 +8,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const REPO = path.resolve(ROOT, '..', '..');
-const SNAPSHOT = path.join(ROOT, 'capabilities/catalog.snapshot.json');
 const {
   loadCatalogPackage,
-  packageDriftErrors,
   readSurfaceRegistry,
   resolveProfile,
 } = require('./lib/capability-profile.cjs');
@@ -200,27 +198,9 @@ function concept({ type, title, description, tags, sources = [], body }) {
 }
 
 function loadCatalog() {
-  if (!fs.existsSync(SNAPSHOT)) {
-    throw new Error('Catalog snapshot is missing; obtain the versioned capability package and refresh the documentation snapshot');
-  }
-  const snapshot = JSON.parse(fs.readFileSync(SNAPSHOT, 'utf8'));
   const catalogPackage = loadCatalogPackage();
-  const driftErrors = packageDriftErrors(snapshot, catalogPackage);
-  if (driftErrors.length > 0) {
-    throw new Error(driftErrors.join('; '));
-  }
-
-  const detailsByKey = new Map(snapshot.map((record) => [record.key, record]));
-  const capabilities = catalogPackage.catalog.map((record) => {
-    const details = detailsByKey.get(record.key);
-    if (!details) {
-      throw new Error(`Catalog snapshot is missing package key ${record.key}`);
-    }
-    return { ...details, ...record };
-  });
-
   return {
-    capabilities,
+    capabilities: catalogPackage.catalog,
     manifests: catalogPackage.manifests,
     packageVersion: catalogPackage.version,
   };
@@ -357,7 +337,7 @@ This snapshot is generated from the current source tree. It is descriptive evide
 | Tests | \`npm test\` | Jest |
 | Dependency boundaries | \`npm run boundaries\` | dependency-cruiser |
 | Feature architecture | \`npm run arch:check\` | thin routes, view I/O, model purity |
-| Capability package and surfaces | \`npm run check:capability-package\` and \`npm run check:capabilities\` | package drift, compatibility fields, and pack catalogs |
+| Capability surfaces | \`npm run check:capabilities\` | surface registry, compatibility fields, and pack catalogs (the package itself: \`npm run check:capability-package -w @alphaci/api\`) |
 | Documentation bundle | \`npm run check:documentation\` at the repository root | OKF v0.2 format, links, naming, current-state wording, generated-map drift, then each app's own check |
 | App documentation | \`npm run check:documentation\` | changelog, edition branches, and capability sources |
 
@@ -386,13 +366,12 @@ function generateCapabilityMatrix(capabilities, surfaces) {
     tags: ['capabilities', 'map', 'packs'],
     sources: [
       { id: 'catalog-package', resource: 'packages/capability-catalog', title: 'Versioned capability catalog fixture' },
-      { id: 'catalog-snapshot', resource: 'apps/web/capabilities/catalog.snapshot.json', title: 'Shared catalog snapshot' },
       { id: 'surface-registry', resource: 'apps/web/capabilities/surface-registry.ts', title: 'Frontend surface map' },
       { id: 'capability-endpoint', resource: 'apps/web/src/features/capabilities/current/data/capabilities-api.ts', title: 'Compatibility capability client' },
     ],
     body: `# Capability surface matrix
 
-This matrix is generated from the versioned \`@alphaci/capability-catalog\` package and the frontend surface registry. The checked-in snapshot supplies the backend-owned descriptions and configuration notes used for documentation. The frontend does not replace \`/api/v1/capabilities\` and does not implement entitlement resolution.
+This matrix is generated from the versioned \`@alphaci/capability-catalog\` package and the frontend surface registry. The frontend does not replace \`/api/v1/capabilities\` and does not implement entitlement resolution.
 
 | Capability key | Context | Maturity | Compatibility field | View flag | Frontend routes |
 |---|---|---|---|---|---|
