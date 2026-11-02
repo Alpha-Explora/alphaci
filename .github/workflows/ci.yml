@@ -160,6 +160,15 @@ jobs:
             packages/*/node_modules
           key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
           fail-on-cache-miss: true
+      # Turbo's task cache: a rerun, or a later commit that leaves a task's
+      # inputs unchanged, replays the result instead of running the task. A
+      # pull request also restores from its base branch's newest entry.
+      - uses: actions/cache@v6
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-api-${{ matrix.name }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-api-${{ matrix.name }}-
       - name: turbo run ${{ matrix.tasks }}
         run: npx turbo run ${{ matrix.tasks }} --filter=@alphaci/api --continue ${{ matrix.args }}
 
@@ -200,6 +209,15 @@ jobs:
             packages/*/node_modules
           key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
           fail-on-cache-miss: true
+      # Turbo's task cache: a rerun, or a later commit that leaves a task's
+      # inputs unchanged, replays the result instead of running the task. A
+      # pull request also restores from its base branch's newest entry.
+      - uses: actions/cache@v6
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-api-e2e-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-api-e2e-
 
       # global-setup starts the disposable Postgres fixture with docker compose.
       - run: npx turbo run test:e2e --filter=@alphaci/api
@@ -330,6 +348,15 @@ jobs:
             packages/*/node_modules
           key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
           fail-on-cache-miss: true
+      # Turbo's task cache: a rerun, or a later commit that leaves a task's
+      # inputs unchanged, replays the result instead of running the task. A
+      # pull request also restores from its base branch's newest entry.
+      - uses: actions/cache@v6
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-web-${{ matrix.name }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-web-${{ matrix.name }}-
       - name: turbo run ${{ matrix.tasks }}
         run: npx turbo run ${{ matrix.tasks }} --filter=@alphaci/web --continue ${{ matrix.args }}
 
