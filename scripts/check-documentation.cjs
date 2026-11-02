@@ -173,6 +173,36 @@ function unknownScriptErrors() {
   return errors;
 }
 
+// One changelog for the product: both images ship from one release tag.
+// Entries are one line of what changed for the people who run and use
+// AlphaCI; the pull request holds the detail.
+const CHANGELOG_MAX_WORDS = 40;
+
+function changelogErrors() {
+  const file = path.join(ROOT, 'CHANGELOG.md');
+  if (!fs.existsSync(file)) return ['CHANGELOG.md: the product changelog is required at the repository root'];
+  const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
+  const errors = [];
+  if (!lines.some((line) => /^##\s+\[Unreleased\]\s*$/.test(line))) {
+    errors.push('CHANGELOG.md: an ## [Unreleased] section is required');
+  }
+  const firstSection = lines.findIndex((line) => line.startsWith('## '));
+  lines.forEach((line, index) => {
+    if (index <= firstSection || line.trim() === '' || line.startsWith('#')) return;
+    if (!line.startsWith('- ')) {
+      errors.push(`CHANGELOG.md:${index + 1}: write each change as one "- " line, with no continuation text`);
+      return;
+    }
+    const words = line.slice(2).trim().split(/\s+/).length;
+    if (words > CHANGELOG_MAX_WORDS) {
+      errors.push(
+        `CHANGELOG.md:${index + 1}: ${words} words; say what changed for users in at most ${CHANGELOG_MAX_WORDS} and leave the detail to the pull request`,
+      );
+    }
+  });
+  return errors;
+}
+
 function generatedMapErrors() {
   return ['api', 'web'].flatMap((app) => {
     const cwd = path.join(ROOT, 'apps', app);
@@ -192,6 +222,7 @@ function main() {
   const errors = [
     ...scatteredBundleErrors(),
     ...requiredFileErrors(),
+    ...changelogErrors(),
     ...namingErrors(),
     ...staleClaimErrors(),
     ...validateBundle(DOCS),
@@ -204,9 +235,9 @@ function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Documentation checks passed: one bundle, OKF v0.2, naming, current-state policy, and generated maps.');
+  console.log('Documentation checks passed: one bundle, OKF v0.2, naming, current-state policy, changelog, and generated maps.');
 }
 
 if (require.main === module) main();
 
-module.exports = { scatteredBundleErrors, namingErrors, staleClaimErrors, requiredFileErrors, unknownScriptErrors };
+module.exports = { changelogErrors, scatteredBundleErrors, namingErrors, staleClaimErrors, requiredFileErrors, unknownScriptErrors };

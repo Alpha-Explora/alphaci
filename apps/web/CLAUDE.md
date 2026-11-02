@@ -398,7 +398,7 @@ npm run boundaries      # dependency-cruiser
 npm run arch:check      # MVVM layer checks
 npm run complexity      # cyclomatic complexity audit
 npm run arch:new        # scaffold a feature slice (needs the NFA skill on disk)
-npm run check:documentation       # changelog, edition branches, generated-map drift (bundle: run it at the root)
+npm run check:documentation       # edition branches, capability sources (bundle, maps, changelog: run it at the root)
 npm run generate:architecture-maps  # regenerate ../../docs/architecture/web/*.generated.md, the surface matrix and the pack files
 ```
 

@@ -16,7 +16,7 @@ The canonical documentation for both apps is the OKF v0.2 bundle at the reposito
 - [Capability contract](../../docs/capabilities/capability-contract.md) - shared catalog consumption.
 - [Composition packs](../../docs/packs/index.md) - comparable SaaS, EDU, and Enterprise references.
 - [Runbooks](../../docs/runbooks/index.md) - verification, session, and self-hosted image procedures.
-- [Changelog](CHANGELOG.md) - repository-level changes.
+- [Changelog](../../CHANGELOG.md) - notable changes to AlphaCI, both apps.
 
 `CLAUDE.md` is the working guide for coding agents. The backend repository owns the product catalog. This frontend vendors that catalog and records the screens that consume it.
 

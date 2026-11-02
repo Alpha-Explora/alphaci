@@ -52,7 +52,7 @@ Dead in-process adapters measured by the source report: **0**.
 | Capability registry | `npm run check:capabilities` | AppConfig flag ownership, capability dependency, and pack catalog completeness checker |
 | Migration order | `npm run db:apply:all -- --dry-run` | migration replay planner |
 | Documentation bundle | `npm run check:documentation` at the repository root | OKF v0.2 format, links, naming, current-state wording, generated-map drift, then each app's own check |
-| App documentation | `npm run check:documentation` | changelog, edition branches, and capability sources |
+| App documentation | `npm run check:documentation` | edition branches and capability sources |
 
 ## Limits
 

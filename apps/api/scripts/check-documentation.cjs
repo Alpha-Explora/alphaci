@@ -40,15 +40,6 @@ function sourceBranchErrors() {
   return errors;
 }
 
-function changelogErrors() {
-  const file = path.join(ROOT, 'CHANGELOG.md');
-  if (!fs.existsSync(file)) return ['CHANGELOG.md: repository changelog is required'];
-  const text = fs.readFileSync(file, 'utf8');
-  return /^##\s+\[Unreleased\]\s*$/m.test(text)
-    ? []
-    : ['CHANGELOG.md: an ## [Unreleased] section is required'];
-}
-
 function capabilityRegistryErrors() {
   const result = spawnSync(
     process.execPath,
@@ -88,7 +79,6 @@ function compositionSourceErrors() {
 function main() {
   const errors = [
     ...sourceBranchErrors(),
-    ...changelogErrors(),
     ...capabilityRegistryErrors(),
     ...capabilityLedgerErrors(),
     ...compositionSourceErrors(),
@@ -100,7 +90,7 @@ function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('API documentation checks passed: changelog, edition branches and capability sources. The bundle and the maps generated into it are checked by npm run check:documentation at the repository root.');
+  console.log('API documentation checks passed: edition branches and capability sources. The bundle and the maps generated into it are checked by npm run check:documentation at the repository root.');
 }
 
 if (require.main === module) main();

@@ -64,4 +64,4 @@ A profile must never imply that a tenant override or web flag can enable a capab
 
 ## Update rule
 
-A change to the shared catalog regenerates the package, the pack profiles, and the generated matrices in the same change. Record it in `docs/log.md` and the changed app's `CHANGELOG.md`. Change a pack's prose sections in the `PACKS` table of `apps/web/scripts/generate-architecture-maps.mjs`, keeping the three profiles structurally comparable with the [pack template](pack-template.md).
+A change to the shared catalog regenerates the package, the pack profiles, and the generated matrices in the same change. Record it in `docs/log.md`, and in the root `CHANGELOG.md` when users would notice. Change a pack's prose sections in the `PACKS` table of `apps/web/scripts/generate-architecture-maps.mjs`, keeping the three profiles structurally comparable with the [pack template](pack-template.md).

@@ -15,7 +15,7 @@ The canonical documentation for both apps is the OKF v0.2 bundle at the reposito
 - [Capability contract](../../docs/capabilities/capability-contract.md) - capability vocabulary and narrowing rules.
 - [Composition packs](../../docs/packs/index.md) - comparable SaaS, EDU, and Enterprise references.
 - [Runbooks](../../docs/runbooks/index.md) - self-hosted install, upgrade and backup, migrations, on-prem hosts, outbox, provisioning, authentication, and verification procedures.
-- [Changelog](CHANGELOG.md) - repository-level changes.
+- [Changelog](../../CHANGELOG.md) - notable changes to AlphaCI, both apps.
 
 The `FLOWCI_*` environment namespace remains a compatibility identifier where it appears in current configuration and generated deployment workflows.
 
