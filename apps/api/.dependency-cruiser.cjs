@@ -198,6 +198,29 @@ module.exports = {
       "to": {
         "path": "^tests/"
       }
+    },
+    {
+      "name": "no-dev-dependencies-at-runtime",
+      "severity": "error",
+      "comment": "The production image installs with --omit=dev, so a runtime import of a devDependency only fails in production. Move the package to dependencies, or import it as a type (import type) if only its types are used.",
+      "from": {
+        "path": "^src/"
+      },
+      "to": {
+        "dependencyTypes": ["npm-dev"],
+        "dependencyTypesNot": ["type-only"]
+      }
+    },
+    {
+      "name": "no-undeclared-packages",
+      "severity": "error",
+      "comment": "Every package src/ imports must be listed in apps/api/package.json. An undeclared one works only while npm happens to hoist it from another workspace.",
+      "from": {
+        "path": "^src/"
+      },
+      "to": {
+        "dependencyTypes": ["npm-no-pkg", "npm-unknown"]
+      }
     }
   ],
   "options": {
