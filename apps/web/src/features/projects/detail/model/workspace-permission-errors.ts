@@ -1,6 +1,6 @@
 /**
  * Display text for the Phase 1 security-gate 403s, by the backend's own code
- * (PERSONA_WORKFLOW_SPEC.md §5, §8.1):
+ * (docs/design/persona-workflow.md §5, §8.1):
  *
  *   - `MAIN_MERGE_VIA_QA_STUDIO` — the generic workspace merge refused a PR
  *     into `main`; production release happens in PO Studio instead.

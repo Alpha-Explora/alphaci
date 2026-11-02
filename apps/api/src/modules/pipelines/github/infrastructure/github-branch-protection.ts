@@ -8,7 +8,7 @@ import type { GithubHttp } from './github-http';
  * Pull-request-only branch protection that never loosens what a branch
  * already has.
  *
- * The rule (see PERSONA_WORKFLOW_SPEC.md, "Branch protection"): a pull request
+ * The rule (see docs/design/persona-workflow.md, "Branch protection"): a pull request
  * is required before anything lands on dev, uat or main, force pushes and
  * deletion are blocked, and enforce_admins stays off so an organisation admin
  * keeps an escape hatch. Zero approvals are required: ALPHACI merges pull

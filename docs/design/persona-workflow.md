@@ -1,8 +1,22 @@
+---
+type: "Design Specification"
+title: "Persona architecture, branch scoping, and notifications"
+description: "Role boundaries for Product owners, QA and Developers: what each may do, which branches each sees, pull request routing and promotion, the QA defect loop, and notification fan-out."
+tags: [design, personas, access, branches, notifications]
+status: stable
+sources:
+  - id: persona-rules
+    resource: "apps/api/src/kernel/rules/persona-access.rules.ts"
+    title: "Backend persona access rules"
+  - id: qa-run-access
+    resource: "apps/api/src/modules/projects/domain/qa-run-access.rules.ts"
+    title: "QA run access rules"
+---
 # AlphaCI: Persona Architecture, Branch Scoping & Notification Specification
 
 ## 1. Summary
 
-This document is the reference for role boundaries, branch visibility, pull request routing and notification fan-out. Backend rules live in `src/kernel/rules/persona-access.rules.ts` and `src/modules/projects/domain/qa-run-access.rules.ts`; the frontend mirrors them. QA requirements, runs and the merge gate are specified in `docs/design/project-requirements.md` and ADR-0014.
+This document is the reference for role boundaries, branch visibility, pull request routing and notification fan-out. Backend rules live in `apps/api/src/kernel/rules/persona-access.rules.ts` and `apps/api/src/modules/projects/domain/qa-run-access.rules.ts`; the web app mirrors them. QA requirements, runs and the merge gate are specified in the [project requirements design](project-requirements.md) and [ADR-0014](/architecture/decisions/adr-0014-project-requirements.md).
 
 Three personas share one delivery pipeline:
 1. **Product owner (Team lead)**: requirements, Projects, acceptance of QA's result, and the production release.

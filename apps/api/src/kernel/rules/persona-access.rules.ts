@@ -24,7 +24,7 @@ import type { PlatformAppRole } from '#kernel/ports/platform-admin.port';
  * forbids. A future rename or policy change reaches every caller from here,
  * the same way pipeline-branches.ts already does for branch names.
  *
- * Source of truth: PERSONA_WORKFLOW_SPEC.md §3 (the feature separation
+ * Source of truth: docs/design/persona-workflow.md §3 (the feature separation
  * matrix wins over §8.1's older recommendation where the two disagree).
  * Personas are the global `identity.app_users.app_role` — 'admin' | 'lead' |
  * 'qa' | 'member' — resolved by ProjectsRepository.findAppRole, which folds

@@ -135,7 +135,7 @@ describe("suggestTitle", () => {
 
 /**
  * Phase 1 security gates: what this composer offers as a base
- * (PERSONA_WORKFLOW_SPEC.md §5, §8.1).
+ * (docs/design/persona-workflow.md §5, §8.1).
  */
 describe("selectableBaseBranches", () => {
   it("excludes main, keeping every other branch in order", () => {

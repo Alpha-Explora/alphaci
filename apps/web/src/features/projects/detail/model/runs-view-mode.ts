@@ -1,6 +1,6 @@
 /**
  * How much of a pipeline run the Runs tab opens up front, by role
- * (PERSONA_WORKFLOW_SPEC.md §3, "CI Stage Stepper & Tool Logs").
+ * (docs/design/persona-workflow.md §3, "CI Stage Stepper & Tool Logs").
  *
  *   - `deep`: the developer who broke the build reads the tool logs, so each
  *     stage's failure output is shown as it always was.

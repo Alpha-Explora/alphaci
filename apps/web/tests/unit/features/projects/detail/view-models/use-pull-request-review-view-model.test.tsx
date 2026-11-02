@@ -142,7 +142,7 @@ describe("usePullRequestReviewViewModel merging", () => {
     );
   });
 
-  /** Phase 1 security gate: MAIN_MERGE_VIA_QA_STUDIO (PERSONA_WORKFLOW_SPEC.md §8.1). */
+  /** Phase 1 security gate: MAIN_MERGE_VIA_QA_STUDIO (docs/design/persona-workflow.md §8.1). */
   it("shows the backend's MAIN_MERGE_VIA_QA_STUDIO sentence, not the raw server message", async () => {
     mockMerge.mockRejectedValue(
       new ApiError("Request failed with status 403", 403, {

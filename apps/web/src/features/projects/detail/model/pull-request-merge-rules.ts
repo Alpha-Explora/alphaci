@@ -87,7 +87,7 @@ export function mergeButtonLabel(method: "merge" | "squash" | "rebase"): string 
 /**
  * Why the generic workspace merge button is not offered, mirroring the
  * backend's two 403 codes for `POST .../pull-requests/:number/merge`
- * (PERSONA_WORKFLOW_SPEC.md §5, §8.1):
+ * (docs/design/persona-workflow.md §5, §8.1):
  *
  *   - `qa-role`             — QA never merges here (`PR_ROLE_FORBIDDEN`),
  *     regardless of the base branch. QA's sign-off happens in QA Studio.

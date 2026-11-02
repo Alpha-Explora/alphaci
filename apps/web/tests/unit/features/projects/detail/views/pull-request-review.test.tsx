@@ -266,7 +266,7 @@ describe("PullRequestsTab review panel", () => {
 });
 
 /**
- * Phase 1 security gates (PERSONA_WORKFLOW_SPEC.md §3, §5, §8.1): what each
+ * Phase 1 security gates (docs/design/persona-workflow.md §3, §5, §8.1): what each
  * role sees for merging into `main`, and for opening a pull request at all.
  * Shares the same fixtures and mocks as the describe block above.
  */

@@ -13,6 +13,7 @@ This bundle describes AlphaCI as it is today: a NestJS API (`apps/api`) and a Ne
 * [Capabilities](capabilities/) - capability contract, generated matrix, surface matrix, and ledger.
 * [Packs](packs/) - comparable SaaS, EDU, and Enterprise composition references.
 * [Project requirements design](design/project-requirements.md) - Project requirements, Iterations, QA runs, test cases, acceptance, and the merge-to-main gate.
+* [Persona workflow design](design/persona-workflow.md) - what Product owners, QA and Developers may each do, branch visibility, pull request routing, and notification fan-out.
 * [Runbooks](runbooks/) - verification, self-hosted install, migrations, outbox, provisioning, on-prem hosts, sessions, authentication, and performance procedures.
 * [Workspace member notifications](operations/workspace-member-notifications.md) - live delivery, settings, and recipient verification.
 

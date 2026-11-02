@@ -106,7 +106,7 @@ function commits(count: number): string {
  *
  * `main` is never one of them: Hop 3 (`uat` -> `main`) is locked to the
  * promotion engine and QA Studio's "Ready for production" gate
- * (PERSONA_WORKFLOW_SPEC.md §5), not this generic composer — for every role,
+ * (docs/design/persona-workflow.md §5), not this generic composer — for every role,
  * Team Lead and Admin included.
  */
 export function selectableBaseBranches(
@@ -198,7 +198,7 @@ export function isPullRequestRouteAllowed(
 /**
  * Whether opening a pull request from `head` into `base` should be offered,
  * mirroring the backend's 403 codes for `POST .../pull-requests`
- * (PERSONA_WORKFLOW_SPEC.md §5, §8.1): `MAIN_PR_RESTRICTED` for `main`,
+ * (docs/design/persona-workflow.md §5, §8.1): `MAIN_PR_RESTRICTED` for `main`,
  * `PR_ROLE_FORBIDDEN` for QA, and `PR_ROUTE_RESTRICTED` for a Developer's
  * disallowed route.
  */
@@ -227,7 +227,7 @@ export function suggestTitle(head: string, commits: ComparisonCommit[]): string 
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-/* ── Phase 3 presets (PERSONA_WORKFLOW_SPEC.md §8.4) ───────────────────── */
+/* ── Phase 3 presets (docs/design/persona-workflow.md §8.4) ───────────────────── */
 
 export type PullRequestPresetId = "feature-to-dev" | "dev-to-uat" | "custom";
 
