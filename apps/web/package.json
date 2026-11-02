@@ -13,7 +13,7 @@
     "build:enterprise": "node scripts/run-edition.mjs enterprise next build --webpack",
     "start": "next start",
     "lint": "eslint src --max-warnings=0",
-    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "typecheck": "node ../../node_modules/typescript-7/bin/tsc --noEmit -p tsconfig.typecheck.json",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:e2e": "tsx tests/e2e/playwright-e2e.ts",
