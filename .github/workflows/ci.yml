@@ -292,7 +292,7 @@ jobs:
       # system libraries it needs are not in the cache, so a hit still
       # installs those.
       - id: playwright
-        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
       - id: playwright-cache
         uses: actions/cache@v6
         with:
@@ -311,6 +311,54 @@ jobs:
         with:
           name: fullstack-e2e-report
           path: apps/web/test-results/fullstack/
+          if-no-files-found: ignore
+
+  # The web app's mocked end-to-end suite (apps/web/playwright.config.ts): a
+  # production build, every /api/v1 call answered in the browser by the
+  # spec's mock backend. Traces and the HTML report are uploaded on failure.
+  web-e2e:
+    name: Web e2e
+    needs: plan
+    if: needs.plan.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v6
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          fail-on-cache-miss: true
+      - id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium-headless-shell
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps --only-shell chromium
+      - if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - run: npm run test:e2e -w @alphaci/web
+
+      - name: Upload e2e report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-e2e-report
+          path: |
+            apps/web/playwright-report/e2e/
+            apps/web/test-results/e2e/
           if-no-files-found: ignore
 
   web:
@@ -368,7 +416,7 @@ jobs:
   ci-passed:
     name: ci-passed
     if: always()
-    needs: [plan, affected-guard, api, api-e2e, api-integration, fullstack-e2e, web]
+    needs: [plan, affected-guard, api, api-e2e, api-integration, fullstack-e2e, web-e2e, web]
     runs-on: ubuntu-latest
     steps:
       - name: Every job passed or was skipped

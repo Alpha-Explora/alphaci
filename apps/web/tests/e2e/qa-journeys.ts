@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-import type { Browser, BrowserContext, Locator, Page, Route } from 'playwright';
+import type { BrowserContext, Locator, Page, Route } from '@playwright/test';
 
 import type {
   AppRole,
@@ -74,8 +74,8 @@ import { json, text } from './support';
 /* QA journeys — the QA checklist feature driven end to end, one persona at a
  * time, against a stateful mock of the backend.
  *
- * Run by playwright-e2e.ts when E2E_QA_JOURNEYS=1. Every journey opens its own
- * browser context with its own QaMockBackend, so a write in one journey never
+ * Each journey is one test in qa-journeys.spec.ts, with Playwright's own
+ * browser context and its own QaMockBackend, so a write in one journey never
  * leaks into the next.
  *
  * The mock mirrors the backend contract, not just its shapes:
@@ -100,12 +100,8 @@ import { json, text } from './support';
  * A journey fails on any mock reply of 400 or more, any /api/v1 call nothing
  * mocks (a 404), any uncaught page error and any console error.
  *
- * Local run (Windows needs webpack; Next 16 dev refuses its own dev resources
- * to a 127.0.0.1 origin, so browse via localhost):
- *   NEXT_PUBLIC_API_BASE_URL=http://localhost:4862/api/v1 npx next dev --webpack --port 4862
- *   E2E_QA_JOURNEYS=1 E2E_BASE_URL=http://localhost:4862 npm run test:e2e
- * E2E_QA_ONLY=b,c runs a subset; E2E_BROWSER_EXECUTABLE_PATH points at a local
- * Chromium; E2E_QA_ARTIFACTS=<dir> saves a screenshot of a failed journey. */
+ * Run: npm run test:e2e -- qa-journeys (add -g "qa:b" for one journey).
+ * E2E_QA_SHOTS=<dir> saves the named screenshots some journeys take. */
 
 /* ── People, places and time ─────────────────────────────────────────────── */
 
@@ -1556,6 +1552,65 @@ class QaMockBackend {
             unreadCount: 0,
             items: [],
           } satisfies NotificationsResponse,
+        }),
+      ],
+      // The live stream: open, then quiet (the API sends a heartbeat every 15 s).
+      [
+        'GET',
+        /^\/notifications\/stream$/,
+        () => ({ body: ': connected\n\n', contentType: 'text/event-stream' }),
+      ],
+      // The providers the API registers. On-prem is listed but off, as on a
+      // server with no enrolled machine.
+      [
+        'GET',
+        /^\/deployment-providers$/,
+        () => ({
+          body: {
+            providers: [
+              {
+                id: 'vercel',
+                label: 'Vercel',
+                enabled: true,
+                supportedSlots: ['frontend'],
+              },
+              {
+                id: 'render',
+                label: 'Render',
+                enabled: true,
+                supportedSlots: ['frontend', 'backend'],
+              },
+              {
+                id: 'onprem-compose',
+                label: 'On-prem',
+                enabled: false,
+                reason: 'On-prem hosting is not enabled on this server.',
+                supportedSlots: ['frontend', 'backend'],
+              },
+            ],
+          },
+        }),
+      ],
+      // The API always has an active Iteration (it starts the first one on
+      // demand). Its delivery state is not modelled here yet.
+      [
+        'GET',
+        new RegExp(`^/delivery-projects/${P}/iterations/current$`),
+        (m) => ({
+          body: {
+            iteration: {
+              id: `iteration-${m[1]}-1`,
+              number: 1,
+              status: 'active',
+              goal: null,
+              deliveredAt: null,
+              deliveredByLogin: null,
+            },
+            canStartNext: false,
+            deliveredRepositories: [],
+            coveredRepositories: [],
+            canMergeAll: false,
+          },
         }),
       ],
       // The project page reads only enforcedOrg (to label repositories outside it "External").
@@ -3446,7 +3501,7 @@ interface JourneyContext {
   baseUrl: string;
 }
 
-interface Journey {
+export interface Journey {
   id: string;
   title: string;
   backend: () => QaMockBackend;
@@ -5989,7 +6044,7 @@ function seedReturnedRun(backend: QaMockBackend) {
   });
 }
 
-const JOURNEYS: Journey[] = [
+export const JOURNEYS: Journey[] = [
   {
     id: 'a',
     title:
@@ -6176,15 +6231,11 @@ const JOURNEYS: Journey[] = [
 const PREVIEW_HTML =
   '<!doctype html><title>Storefront</title><h1>Checkout</h1>';
 
-/**
- * A failed step, with what was on screen and what the mock refused. With
- * E2E_QA_ARTIFACTS=<dir> a full-page screenshot is saved there too.
- */
+/** A failed step, with what was on screen and what the mock refused. */
 async function withFailureContext(
   error: unknown,
   page: Page,
   backend: QaMockBackend,
-  id: string,
 ): Promise<Error> {
   const lines = [error instanceof Error ? error.message : String(error)];
   // Where in the journey it stopped: the helper and the journey step that called it.
@@ -6203,50 +6254,48 @@ async function withFailureContext(
   lines.push(`url: ${page.url()}`, `visible text:\n${screen.slice(0, 1500)}`);
   if (backend.refusals.length > 0)
     lines.push(`mock refusals:\n${backend.refusals.join('\n')}`);
-  const dir = process.env.E2E_QA_ARTIFACTS;
-  if (dir) {
-    const file = `${dir}/qa-${id}-failure.png`;
-    await page
-      .screenshot({ path: file, fullPage: true })
-      .catch(() => undefined);
-    lines.push(`screenshot: ${file}`);
-  }
   return new Error(lines.join('\n'));
 }
 
-async function runJourney(browser: Browser, baseUrl: string, journey: Journey) {
+/**
+ * Runs one journey on the test's own page and context: its mock backend
+ * answers every /api/v1 call, and any page error, console error or refused
+ * call fails it.
+ */
+export async function runJourney(
+  {
+    page,
+    context,
+    baseURL,
+  }: { page: Page; context: BrowserContext; baseURL: string },
+  journey: Journey,
+) {
   const backend = journey.backend();
-  const context = await browser.newContext({
-    viewport: { width: 1440, height: 900 },
-  });
   const problems: string[] = [];
-  try {
-    if (journey.permissions)
-      await context.grantPermissions(journey.permissions, { origin: baseUrl });
-    // Context-wide, so the print page opened by Download PDF is mocked too.
-    await context.route('**/api/v1/**', (route) => backend.handle(route));
-    for (const origin of [PREVIEW_ORIGIN, MAIN_PREVIEW_ORIGIN]) {
-      await context.route(`${origin}/**`, (route) =>
-        text(route, 200, PREVIEW_HTML, 'text/html'),
-      );
-    }
-    context.on('page', (page) => {
-      page.on('pageerror', (error) =>
-        problems.push(`page error: ${error.message}`),
-      );
-      page.on('console', (message) => {
-        if (message.type() === 'error')
-          problems.push(`console error: ${message.text()}`);
-      });
+  if (journey.permissions)
+    await context.grantPermissions(journey.permissions, { origin: baseURL });
+  // Context-wide, so the print page opened by Download PDF is mocked too.
+  await context.route('**/api/v1/**', (route) => backend.handle(route));
+  for (const origin of [PREVIEW_ORIGIN, MAIN_PREVIEW_ORIGIN]) {
+    await context.route(`${origin}/**`, (route) =>
+      text(route, 200, PREVIEW_HTML, 'text/html'),
+    );
+  }
+  const watch = (watched: Page) => {
+    watched.on('pageerror', (error) =>
+      problems.push(`page error: ${error.message}`),
+    );
+    watched.on('console', (message) => {
+      if (message.type() === 'error')
+        problems.push(`console error: ${message.text()}`);
     });
-    const page = await context.newPage();
-    try {
-      await journey.run({ page, context, backend, baseUrl });
-    } catch (error) {
-      throw await withFailureContext(error, page, backend, journey.id);
-    }
-  } finally {
-    await context.close();
+  };
+  watch(page);
+  context.on('page', watch);
+  try {
+    await journey.run({ page, context, backend, baseUrl: baseURL });
+  } catch (error) {
+    throw await withFailureContext(error, page, backend);
   }
   // The browser logs every 4xx as a console error; one per reply the journey
   // provoked on purpose is expected, anything beyond that still fails.
@@ -6261,45 +6310,4 @@ async function runJourney(browser: Browser, baseUrl: string, journey: Journey) {
     ...backend.refusals.map((refusal) => `unexpected API reply: ${refusal}`),
   );
   if (problems.length > 0) throw new Error(problems.join('\n'));
-}
-
-/** Runs the QA journeys (all, or the comma-separated ids in `only`). Returns how many passed; throws if any failed. */
-export async function runQaJourneys(
-  browser: Browser,
-  baseUrl: string,
-  only?: string,
-): Promise<number> {
-  const wanted = only ? new Set(only.split(',').map((id) => id.trim())) : null;
-  const selected = JOURNEYS.filter(
-    (journey) => !wanted || wanted.has(journey.id),
-  );
-  assert.ok(
-    selected.length > 0,
-    `E2E_QA_ONLY=${only ?? ''} matches no journey (have ${JOURNEYS.map((j) => j.id).join(', ')})`,
-  );
-  const failures: string[] = [];
-  for (const journey of selected) {
-    const started = Date.now();
-    try {
-      await runJourney(browser, baseUrl, journey);
-      console.log(
-        `PASS qa:${journey.id} ${journey.title} (${Date.now() - started}ms)`,
-      );
-    } catch (error) {
-      const detail =
-        error instanceof Error
-          ? `${error.message}${error.cause instanceof Error ? `\n  cause: ${error.cause.message}` : ''}`
-          : String(error);
-      console.error(
-        `FAIL qa:${journey.id} ${journey.title}\n  ${detail.replace(/\n/g, '\n  ')}`,
-      );
-      failures.push(journey.id);
-    }
-  }
-  if (failures.length > 0) {
-    throw new Error(
-      `QA journeys failed: ${failures.join(', ')} (${selected.length - failures.length}/${selected.length} passed)`,
-    );
-  }
-  return selected.length;
 }

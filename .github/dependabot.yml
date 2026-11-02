@@ -64,7 +64,7 @@ updates:
           - '@types/jest'
           - ts-jest
           - '@testing-library/*'
-          - playwright
+          - '@playwright/test'
           - supertest
           - '@types/supertest'
       production:

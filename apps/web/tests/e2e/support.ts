@@ -1,6 +1,6 @@
-import type { Page, Route } from 'playwright';
+import type { Page, Route } from '@playwright/test';
 
-/* Helpers shared by every scenario the E2E runner (playwright-e2e.ts) drives:
+/* Helpers shared by every scenario the end-to-end specs (tests/e2e/*.spec.ts) drive:
  * fulfilling a mocked /api/v1 route, and waiting for text a person would see. */
 
 export function json(route: Route, body: unknown, status = 200) {
