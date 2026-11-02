@@ -39,7 +39,7 @@ const eslintConfig = defineConfig([
   {
     linterOptions: { reportUnusedDisableDirectives: "off" },
   },
-  // Dropped on purpose (docs/plans/2026-11-01-monorepo-improvements.md, wave E):
+  // Dropped on purpose when Oxlint took over most rules:
   // these two only validate React Compiler plugin options (moduleTypeProvider,
   // environment, dynamicGating, sources). We pass none and the compiler is not
   // enabled in next.config.ts, so neither can report anything, yet each run

@@ -50,17 +50,14 @@ describe('HTTP route inventory', () => {
       );
       const actual = routeSet(document);
       const baselineText = readFileSync(
-        resolve(
-          __dirname,
-          '../../docs/architecture/route-inventory.baseline.txt',
-        ),
+        resolve(__dirname, '../../architecture/route-inventory.baseline.txt'),
         'utf8',
       );
       const manifest = JSON.parse(
         readFileSync(
           resolve(
             __dirname,
-            '../../docs/architecture/route-inventory.manifest.json',
+            '../../architecture/route-inventory.manifest.json',
           ),
           'utf8',
         ),

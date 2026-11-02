@@ -1,9 +1,7 @@
 # Dependency updates for the monorepo.
 #
 # npm: one root lockfile for every workspace. Updates arrive weekly in grouped
-# pull requests, one per family, majors included. Majors were held back while
-# the upgrade waves in docs/plans/2026-11-01-monorepo-improvements.md were done
-# by hand; with waves A–E, js-yaml 5 and Node 26 landed, the hold is lifted.
+# pull requests, one per family, majors included.
 #
 # docker: Node base images, majors included. A Node major also moves CI's
 # NODE_VERSION, .nvmrc, the root engines and @types/node, so finish such a pull

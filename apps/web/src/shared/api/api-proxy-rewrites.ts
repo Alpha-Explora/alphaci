@@ -7,7 +7,7 @@
  *
  * Pair it with NEXT_PUBLIC_API_BASE_URL=/api/v1. Unset means no rewrite and the
  * FE calls the backend directly, as before. Removed at the custom-domain
- * cutover (backend docs/runbooks/runbook-auth-custom-domain-cutover.md).
+ * cutover (docs/runbooks/runbook-auth-custom-domain-cutover.md).
  */
 export interface ApiProxyRewrite {
   source: string;

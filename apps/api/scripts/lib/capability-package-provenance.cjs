@@ -6,8 +6,8 @@ const path = require('node:path');
 
 const PROVENANCE_SCHEMA_VERSION = 1;
 const PACKAGE_NAME = '@alphaci/capability-catalog';
-const SOURCE_REPOSITORY = 'github.com/Alpha-Explora/alphaci-golden-copy-be';
-const AUTHORITATIVE_SOURCE = 'src/kernel/composition/catalog.source.json';
+const SOURCE_REPOSITORY = 'github.com/Alpha-Explora/alphaci';
+const AUTHORITATIVE_SOURCE = 'apps/api/src/kernel/composition/catalog.source.json';
 const PROVENANCE_FILE = 'provenance.json';
 
 // This ordered set is the digest contract. provenance.json is excluded because

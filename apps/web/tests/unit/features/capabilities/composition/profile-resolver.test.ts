@@ -7,7 +7,6 @@ import path from "node:path";
 const {
   PROFILE_PACKS,
   loadCatalogPackage,
-  packageDriftErrors,
   readSurfaceRegistry,
   resolveBuildProfile,
   resolveProfile,
@@ -105,19 +104,6 @@ describe("frontend build profile resolver", () => {
       manifests: catalogPackage.manifests,
       surfaces,
     })).toThrow("Unknown build profile");
-  });
-
-  it("detects package drift against the snapshot", () => {
-    const snapshot = JSON.parse(
-      fs.readFileSync(path.join(root, "docs/capabilities/catalog.snapshot.json"), "utf8"),
-    );
-    expect(packageDriftErrors(snapshot, catalogPackage)).toEqual([]);
-    expect(packageDriftErrors(snapshot, {
-      ...catalogPackage,
-      catalog: catalogPackage.catalog.slice(1),
-    })).toEqual(expect.arrayContaining([
-      expect.stringContaining("does not match docs/capabilities/catalog.snapshot.json"),
-    ]));
   });
 
   it("generates a notFound stub for any future excluded barrel", () => {

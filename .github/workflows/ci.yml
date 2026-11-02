@@ -90,6 +90,15 @@ jobs:
       - name: Shared dependency versions match
         run: npm run check:versions
 
+      # docs/ is one bundle for both apps and belongs to neither package, so a
+      # docs-only change affects no app job. Check it here, on every event:
+      # format, links, naming, and drift in the maps and pack profiles both
+      # apps generate into it.
+      - name: Documentation bundle
+        run: |
+          npm run test:documentation
+          node scripts/check-documentation.cjs
+
   affected-guard:
     name: Affected detection guard
     if: github.event_name == 'pull_request'
@@ -136,7 +145,6 @@ jobs:
               check:provider-encapsulation check:schema-ownership check:capabilities
               check:capability-package check:composition-source check:capability-ledger
               check:composition-profiles check:migration-order check:documentation
-              test:documentation
     steps:
       - uses: actions/checkout@v7
         with:
@@ -153,10 +161,6 @@ jobs:
           key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
           fail-on-cache-miss: true
       - name: turbo run ${{ matrix.tasks }}
-        env:
-          # The live database integration spec runs only when these are set.
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-          SUPABASE_DB_CA_CERT: ${{ secrets.SUPABASE_DB_CA_CERT }}
         run: npx turbo run ${{ matrix.tasks }} --filter=@alphaci/api --continue ${{ matrix.args }}
 
   api-e2e:
@@ -207,6 +211,33 @@ jobs:
           name: e2e-report
           path: apps/api/artifacts/e2e/
           if-no-files-found: ignore
+
+  # Every tests/integration/*.integration.spec.ts against real PostgreSQL:
+  # migration replays, the self-hosted migration runner, the outbox contract.
+  # Each spec skips itself without a database; tests/integration/run.ts
+  # starts the disposable fixture and gives each spec the database it reads.
+  api-integration:
+    name: API integration (Postgres fixture)
+    needs: plan
+    if: needs.plan.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v6
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          fail-on-cache-miss: true
+      - run: npm run test:integration -w @alphaci/api
 
   # The web app against the real API (apps/web/tests/fullstack/run.ts): the
   # API e2e Postgres fixture, the self-hosted migrator, the compiled API in
@@ -277,7 +308,7 @@ jobs:
             args: -- --ci
           - name: architecture and documentation
             tasks: >-
-              boundaries arch:check check:capability-package check:capabilities
+              boundaries arch:check check:capabilities
               check:profiles check:documentation complexity
           # The two profile builds both write .next, so each gets its own job.
           - name: hosted profile build
@@ -305,7 +336,7 @@ jobs:
   ci-passed:
     name: ci-passed
     if: always()
-    needs: [plan, affected-guard, api, api-e2e, fullstack-e2e, web]
+    needs: [plan, affected-guard, api, api-e2e, api-integration, fullstack-e2e, web]
     runs-on: ubuntu-latest
     steps:
       - name: Every job passed or was skipped

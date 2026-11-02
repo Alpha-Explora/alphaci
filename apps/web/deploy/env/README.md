@@ -23,7 +23,7 @@ services.
 
 The self-hosted image uses the `enterprise.env` pair, passed as Docker build
 arguments together with `NEXT_PUBLIC_API_BASE_URL=/api/v1`. See
-[`docs/runbooks/runbook-selfhost.md`](../../docs/runbooks/runbook-selfhost.md).
+[`docs/runbooks/runbook-selfhost-web-image.md`](../../../../docs/runbooks/runbook-selfhost-web-image.md).
 
 There is deliberately no `enterprise-client.env` here, unlike the backend. The
 client axis (`ALPHACI_CLIENT`, `ALPHACI_CLIENT_CONFIG`) narrows an Enterprise

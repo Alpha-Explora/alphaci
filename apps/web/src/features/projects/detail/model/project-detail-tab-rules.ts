@@ -141,7 +141,7 @@ export function showOverviewProductionReadiness(
 
 /**
  * Team leads and Admins — the backend's `PROJECT_ROLE_FORBIDDEN` allow-list
- * for disconnecting/deleting a project (PERSONA_WORKFLOW_SPEC.md §3, §8.1).
+ * for disconnecting/deleting a project (docs/design/persona-workflow.md §3, §8.1).
  *
  * Reinstalling deployment secrets used to share this list; it follows the
  * hosting rule now (`canReinstallDeploymentSecrets` below).

@@ -41,7 +41,7 @@ const mockedFailureLog = getProjectRunFailureLog as jest.MockedFunction<typeof g
 const LOG_LINE = "sonar-project.properties files are not understood by the SonarScanner.";
 
 /**
- * PERSONA_WORKFLOW_SPEC.md section 3: a developer gets the deep-debug view (tool
+ * docs/design/persona-workflow.md section 3: a developer gets the deep-debug view (tool
  * logs open, as always); lead, QA and admin get the summary, with the log
  * behind a "Show logs" disclosure per stage.
  */

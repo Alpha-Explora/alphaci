@@ -77,8 +77,8 @@ import { json, text } from './support';
  * The mock mirrors the backend contract, not just its shapes:
  *   - response bodies are typed with the frontend's own wire types (the same
  *     ones the app parses), and
- *   - the rules the UI depends on are ported from the backend (the
- *     alphaci-golden-copy-be repo, src/modules/projects/), with its error
+ *   - the rules the UI depends on are ported from the API
+ *     (apps/api/src/modules/projects/), with its error
  *     messages: domain/qa-run-access.rules.ts (who may do what),
  *     application/qa-runs/qa-runs.service.ts (severity required, verdict
  *     rules, re-test only from returned_to_dev, rowVersion conflicts),
@@ -635,8 +635,8 @@ class QaMockBackend {
 
   /* ── Project requirements and Project QA runs ──
    *
-   * Ported from the backend (alphaci-golden-copy-be 3147e15,
-   * src/modules/projects: qa-requirements.service.ts, qa-project-runs.service.ts,
+   * Ported from the API (apps/api/src/modules/projects:
+   * qa-requirements.service.ts, qa-project-runs.service.ts,
    * qa-run-access.rules.ts): who may manage, move Progress and verify; Passed
    * only on a Done item (QA_PROGRESS_NOT_DONE); severity for Failed and
    * Returned to dev; Returned to dev puts the source item back In progress;

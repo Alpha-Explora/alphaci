@@ -7,7 +7,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DOCS = path.join(ROOT, 'docs');
+const REPO = path.resolve(ROOT, '..', '..');
 const NODE_SCRIPTS = path.join(ROOT, 'scripts');
 const require = createRequire(import.meta.url);
 const { schemaOwnershipSnapshot } = require('./check-schema-ownership.cjs');
@@ -223,10 +223,10 @@ function parseOutboxTopics() {
 
 function routeInventory() {
   const manifest = readJson(
-    path.join(DOCS, 'architecture/route-inventory.manifest.json'),
+    path.join(ROOT, 'architecture/route-inventory.manifest.json'),
   );
   const routeFile = path.join(
-    DOCS,
+    ROOT,
     'architecture',
     manifest.referenceFile,
   );
@@ -260,8 +260,8 @@ function generateContextMap(metrics) {
     description: 'Generated ownership map for the six current NestJS bounded contexts.',
     tags: ['architecture', 'map', 'ownership'],
     sources: [
-      { id: 'context-source', resource: 'src/modules', title: 'Current context source tree' },
-      { id: 'metrics-source', resource: 'scripts/report-architecture-metrics.cjs', title: 'Architecture metrics generator' },
+      { id: 'context-source', resource: 'apps/api/src/modules', title: 'Current context source tree' },
+      { id: 'metrics-source', resource: 'apps/api/scripts/report-architecture-metrics.cjs', title: 'Architecture metrics generator' },
     ],
     body: `# Bounded context map
 
@@ -296,10 +296,10 @@ function generateEventsMap() {
     description: 'Generated map of the PostgreSQL outbox topics, owners, and active in-process relay.',
     tags: ['architecture', 'events', 'map', 'operations'],
     sources: [
-      { id: 'topic-source', resource: 'src/kernel/events/outbox-topics.ts', title: 'Outbox topic registry' },
-      { id: 'relay-source', resource: 'src/modules/platform-ops/application/outbox-relay.service.ts', title: 'Active outbox relay' },
-      { id: 'relay-worker', resource: 'src/modules/platform-ops/application/outbox-relay.worker.ts', title: 'In-process relay worker' },
-      { id: 'schema-source', resource: 'supabase/migrations/identity-access/20260606_domain_schema_bootstrap.sql', title: 'Outbox table migration' },
+      { id: 'topic-source', resource: 'apps/api/src/kernel/events/outbox-topics.ts', title: 'Outbox topic registry' },
+      { id: 'relay-source', resource: 'apps/api/src/modules/platform-ops/application/outbox-relay.service.ts', title: 'Active outbox relay' },
+      { id: 'relay-worker', resource: 'apps/api/src/modules/platform-ops/application/outbox-relay.worker.ts', title: 'In-process relay worker' },
+      { id: 'schema-source', resource: 'apps/api/supabase/migrations/identity-access/20260606_domain_schema_bootstrap.sql', title: 'Outbox table migration' },
     ],
     body: `# Current event and outbox map
 
@@ -324,7 +324,7 @@ Delivery is at-least-once. A handler can run again if the process stops after th
 
 ## Operator references
 
-See the [outbox relay runbook](/runbooks/runbook-outbox-relay.md), the [PostgreSQL outbox decision](/architecture/decisions/adr-0005-postgresql-outbox-delivery.md), and the [current architecture](/architecture/current-architecture.md).`,
+See the [outbox relay runbook](/runbooks/runbook-outbox-relay.md), the [PostgreSQL outbox decision](/architecture/decisions/adr-0005-postgresql-outbox-delivery.md), and the [current architecture](/architecture/api/current-architecture.md).`,
   });
 }
 
@@ -343,8 +343,8 @@ function generateProviderMap() {
     description: 'Generated inventory of the provider plugins currently composed by Runtime.',
     tags: ['architecture', 'providers', 'runtime', 'map'],
     sources: [
-      { id: 'runtime-source', resource: 'src/modules/runtime', title: 'Runtime context source tree' },
-      { id: 'provider-composition', resource: 'src/modules/runtime/runtime.module.ts', title: 'Runtime composition root' },
+      { id: 'runtime-source', resource: 'apps/api/src/modules/runtime', title: 'Runtime context source tree' },
+      { id: 'provider-composition', resource: 'apps/api/src/modules/runtime/runtime.module.ts', title: 'Runtime composition root' },
     ],
     body: `# Runtime provider map
 
@@ -375,8 +375,8 @@ function generateRouteMap() {
     description: `Generated inventory of the ${manifest.routeCount} current API routes.`,
     tags: ['architecture', 'http', 'routes', 'map'],
     sources: [
-      { id: 'route-reference', resource: 'docs/architecture/route-inventory.baseline.txt', title: 'Checked-in pre-PR route baseline' },
-      { id: 'route-manifest', resource: 'docs/architecture/route-inventory.manifest.json', title: 'Route inventory manifest' },
+      { id: 'route-reference', resource: 'apps/api/architecture/route-inventory.baseline.txt', title: 'Checked-in pre-PR route baseline' },
+      { id: 'route-manifest', resource: 'apps/api/architecture/route-inventory.manifest.json', title: 'Route inventory manifest' },
     ],
     body: `# HTTP route map
 
@@ -415,8 +415,8 @@ function generateSchemaMap() {
     description: 'Generated schema ownership and explicit transition-reference inventory.',
     tags: ['architecture', 'database', 'schema', 'map'],
     sources: [
-      { id: 'ownership-source', resource: 'scripts/check-schema-ownership.cjs', title: 'Schema ownership gate' },
-      { id: 'migration-source', resource: 'supabase/migrations', title: 'Current migration tree' },
+      { id: 'ownership-source', resource: 'apps/api/scripts/check-schema-ownership.cjs', title: 'Schema ownership gate' },
+      { id: 'migration-source', resource: 'apps/api/supabase/migrations', title: 'Current migration tree' },
     ],
     body: `# Database schema ownership map
 
@@ -483,9 +483,9 @@ function generateArchitectureChecks(metrics) {
     description: 'Generated snapshot of source metrics and the repository architecture gates.',
     tags: ['architecture', 'checks', 'map', 'verification'],
     sources: [
-      { id: 'metrics-source', resource: 'scripts/report-architecture-metrics.cjs', title: 'Architecture metrics generator' },
-      { id: 'boundary-source', resource: '.dependency-cruiser.cjs', title: 'Authoritative dependency graph configuration' },
-      { id: 'capability-gate', resource: 'scripts/check-capabilities.cjs', title: 'Capability registry gate' },
+      { id: 'metrics-source', resource: 'apps/api/scripts/report-architecture-metrics.cjs', title: 'Architecture metrics generator' },
+      { id: 'boundary-source', resource: 'apps/api/.dependency-cruiser.cjs', title: 'Authoritative dependency graph configuration' },
+      { id: 'capability-gate', resource: 'apps/api/scripts/check-capabilities.cjs', title: 'Capability registry gate' },
       { id: 'ci-source', resource: '.github/workflows/ci.yml', title: 'Continuous integration gate' },
     ],
     body: `# Architecture check map
@@ -515,8 +515,8 @@ Dead in-process adapters measured by the source report: **${total.deadInProcessA
 | Schema ownership | \`npm run check:schema-ownership\` | migration and inline SQL checker |
 | Capability registry | \`npm run check:capabilities\` | AppConfig flag ownership, capability dependency, and pack catalog completeness checker |
 | Migration order | \`npm run db:apply:all -- --dry-run\` | migration replay planner |
-| OKF bundle | \`npm run check:okf\` | OKF v0.2 bundle validator |
-| Documentation | \`npm run check:documentation\` | naming, stale-claim, generated-map, and documentation policy checker |
+| Documentation bundle | \`npm run check:documentation\` at the repository root | OKF v0.2 format, links, naming, current-state wording, generated-map drift, then each app's own check |
+| App documentation | \`npm run check:documentation\` | edition branches and capability sources |
 
 ## Limits
 
@@ -545,10 +545,10 @@ function generateCapabilityMatrix() {
     description: 'Generated documentation inventory of current capability keys and their compatibility posture.',
     tags: ['capabilities', 'map', 'packs'],
     sources: [
-      { id: 'capability-registry', resource: 'src/kernel/composition/capability-registry.ts', title: 'Application capability registry' },
-      { id: 'capability-manifests', resource: 'src/kernel/composition/manifests.ts', title: 'Application capability manifests' },
-      { id: 'capability-gate', resource: 'scripts/check-capabilities.cjs', title: 'Capability registry gate' },
-      { id: 'capability-endpoint', resource: 'src/modules/identity-access/capabilities/capabilities.controller.ts', title: 'Compatibility capability endpoint' },
+      { id: 'capability-registry', resource: 'apps/api/src/kernel/composition/capability-registry.ts', title: 'Application capability registry' },
+      { id: 'capability-manifests', resource: 'apps/api/src/kernel/composition/manifests.ts', title: 'Application capability manifests' },
+      { id: 'capability-gate', resource: 'apps/api/scripts/check-capabilities.cjs', title: 'Capability registry gate' },
+      { id: 'capability-endpoint', resource: 'apps/api/src/modules/identity-access/capabilities/capabilities.controller.ts', title: 'Compatibility capability endpoint' },
     ],
     body: `# Capability matrix
 
@@ -569,12 +569,12 @@ Pack profiles list every key in this table, in this order. Pack status is derive
 }
 
 const OUTPUTS = [
-  ['docs/architecture/context-map.generated.md', generateContextMap],
-  ['docs/architecture/events-map.generated.md', generateEventsMap],
-  ['docs/architecture/provider-map.generated.md', generateProviderMap],
-  ['docs/architecture/route-map.generated.md', generateRouteMap],
-  ['docs/architecture/schema-ownership.generated.md', generateSchemaMap],
-  ['docs/architecture/architecture-checks.generated.md', generateArchitectureChecks],
+  ['docs/architecture/api/context-map.generated.md', generateContextMap],
+  ['docs/architecture/api/events-map.generated.md', generateEventsMap],
+  ['docs/architecture/api/provider-map.generated.md', generateProviderMap],
+  ['docs/architecture/api/route-map.generated.md', generateRouteMap],
+  ['docs/architecture/api/schema-ownership.generated.md', generateSchemaMap],
+  ['docs/architecture/api/architecture-checks.generated.md', generateArchitectureChecks],
   ['docs/capabilities/capability-matrix.generated.md', generateCapabilityMatrix],
   ['docs/capabilities/capability-ledger.generated.md', generateCapabilityLedger],
 ];
@@ -589,7 +589,7 @@ function generateCapabilityLedger() {
 }
 
 function writeOrCheck(relativePath, content, check) {
-  const file = path.join(ROOT, relativePath);
+  const file = path.join(REPO, relativePath);
   if (check) {
     const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
     if (current !== content) {

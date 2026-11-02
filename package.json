@@ -17,13 +17,15 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "boundaries": "turbo run boundaries",
-    "check:documentation": "turbo run check:documentation",
+    "check:documentation": "node scripts/check-documentation.cjs && turbo run check:documentation",
     "check:capabilities": "turbo run check:capabilities",
     "check:capability-package": "turbo run check:capability-package",
-    "check:versions": "node scripts/check-versions.mjs"
+    "check:versions": "node scripts/check-versions.mjs",
+    "test:documentation": "node --test scripts/check-okf-bundle.test.cjs"
   },
   "devDependencies": {
     "eslint": "^10.14.0",
+    "js-yaml": "^5.5.0",
     "lefthook": "^2.2.2",
     "oxlint": "^1.90.0",
     "turbo": "^2.11.10",

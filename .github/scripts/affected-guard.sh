@@ -43,6 +43,7 @@ check "config package"      packages/config/tsconfig.base.json      "api=true we
 check "self-hosted bundle"  deploy/selfhost/compose.yaml            "api=true web=true"
 check "root workspace file" turbo.json                              "api=true web=true"
 check "root docs only"      README.md                               "api=false web=false"
+check "docs bundle only"    docs/index.md                           "api=false web=false"
 
 if ((failures > 0)); then
   echo "::error::plan-affected.sh misjudged $failures change(s); CI would skip work it must run."

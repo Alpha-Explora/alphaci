@@ -66,7 +66,7 @@ describe("mergeButtonLabel", () => {
 
 /**
  * Phase 1 security gates: the two 403s the backend sends for
- * `POST .../pull-requests/:number/merge` (PERSONA_WORKFLOW_SPEC.md §5, §8.1).
+ * `POST .../pull-requests/:number/merge` (docs/design/persona-workflow.md §5, §8.1).
  */
 describe("workspaceMergeGate / canMergeViaWorkspace", () => {
   const ROLES: ReadonlyArray<AppRole> = ["admin", "lead", "member"];

@@ -1,13 +1,13 @@
 # CLAUDE.md — AlphaCI web (apps/web)
 
 Next.js 16 (App Router, React 19, Tailwind 4) frontend for the AlphaCI CI/CD
-platform. Canonical current-state documentation is the OKF bundle under
-[`docs/`](docs/index.md). Start with the
-[Golden Copy executive report](docs/executive/golden-copy-executive-report.md).
+platform. Canonical current-state documentation for both apps is the OKF bundle
+at the monorepo root, [`docs/`](../../docs/index.md); web-only concepts are
+under `docs/architecture/web/`. Start with the
+[Golden Copy executive report](../../docs/executive/golden-copy-executive-report.md).
 Product context and the self-hosted direction are in the workspace `AGENTS.md`
 at the Alpha Explora workspace root (outside this repository). API details are
-in the backend workspace `apps/api` of this monorepo (its `README.md` and
-`docs/` bundle).
+in `apps/api/README.md` and `docs/architecture/api/`.
 
 npm workspace name is `@alphaci/web` (`apps/web`); the repo is the `Alpha-Explora/alphaci` monorepo.
 
@@ -18,7 +18,7 @@ npm workspace name is `@alphaci/web` (`apps/web`); the repo is the `Alpha-Explor
 AlphaCI runs on the customer's own server. One frontend image serves every
 self-hosted customer: it is built with `NEXT_PUBLIC_API_BASE_URL=/api/v1` and
 the `enterprise` profile and edition, and sits behind Caddy on the same origin
-as the backend (see [Self-hosted frontend image](docs/runbooks/runbook-selfhost.md)).
+as the backend (see [Self-hosted frontend image](../../docs/runbooks/runbook-selfhost-web-image.md)).
 The same code still builds the hosted SaaS and EDU editions.
 
 What the UI covers today, by feature domain:
@@ -35,12 +35,12 @@ What the UI covers today, by feature domain:
 - `workflows` — the Create project wizard (one or two repositories; Vercel /
   Render, on-prem host, or CI only) and the workflow studio.
 - `hosts` — on-prem machine enrollment and environment assignment
-  ([contract](docs/architecture/onprem-hosts.md)).
+  ([contract](../../docs/architecture/web/onprem-hosts.md)).
 - `notifications` — Inbox and live notifications (an `EventSource` stream with
   periodic fallback), including workspace membership alerts.
 - `teams`, `groups`, `workspace`, `home`, `runs`, `settings`, `admin`, `auth`,
   `capabilities`, `guide`, `public-site` — see the
-  [feature map](docs/architecture/feature-map.generated.md).
+  [feature map](../../docs/architecture/web/feature-map.generated.md).
 
 ---
 
@@ -219,7 +219,7 @@ sign-out; do not call `logout()` and `refresh()` by hand.
 
 28 pages plus the `/healthz` route handler. Everything except `/`, `/login`,
 `/signup` and `/auth/callback` is a one-line re-export from a feature. The
-generated [route map](docs/architecture/route-map.generated.md) is the full list.
+generated [route map](../../docs/architecture/web/route-map.generated.md) is the full list.
 
 ```
 /                     SaaS landing (public-site) or redirect to /login
@@ -398,8 +398,8 @@ npm run boundaries      # dependency-cruiser
 npm run arch:check      # MVVM layer checks
 npm run complexity      # cyclomatic complexity audit
 npm run arch:new        # scaffold a feature slice (needs the NFA skill on disk)
-npm run check:documentation       # OKF, naming, stale claims, generated maps
-npm run generate:architecture-maps  # regenerate docs/**/*.generated.md and pack files
+npm run check:documentation       # edition branches, capability sources (bundle, maps, changelog: run it at the root)
+npm run generate:architecture-maps  # regenerate ../../docs/architecture/web/*.generated.md, the surface matrix and the pack files
 ```
 
 Full local gate, in the order failures are cheapest to read:
@@ -411,7 +411,7 @@ npm run typecheck && npm run lint && npm run lint:css \
 ```
 
 CI (the `Web …` jobs of `.github/workflows/ci.yml` at the monorepo root, Node 26) also runs the capability
-package, capability surface and build-profile checks, both profile builds, and
+surface and build-profile checks, both profile builds, and
 `npm run complexity`.
 
 Lockfile is the monorepo root `package-lock.json` — use npm, and run `npm install` from the root. Port 3000 must match `FRONTEND_URL`

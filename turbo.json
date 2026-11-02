@@ -46,9 +46,17 @@
       "outputs": []
     },
     "check:documentation": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/docs/packs/**"
+      ],
       "outputs": []
     },
     "check:capabilities": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/docs/packs/**"
+      ],
       "outputs": []
     },
     "check:capability-package": {
@@ -61,9 +69,6 @@
     "start:dev": {
       "cache": false,
       "persistent": true
-    },
-    "test:documentation": {
-      "outputs": []
     },
     "check:application-boundaries": {
       "outputs": []

@@ -272,7 +272,7 @@ describe("useCreatePullRequestViewModel", () => {
   });
 });
 
-/** Phase 1 security gates (PERSONA_WORKFLOW_SPEC.md §5, §8.1). */
+/** Phase 1 security gates (docs/design/persona-workflow.md §5, §8.1). */
 describe("useCreatePullRequestViewModel, Phase 1 security gates", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -368,7 +368,7 @@ describe("useCreatePullRequestViewModel, Phase 1 security gates", () => {
   });
 });
 
-/** Phase 3 presets (PERSONA_WORKFLOW_SPEC.md section 8.4). */
+/** Phase 3 presets (docs/design/persona-workflow.md section 8.4). */
 describe("useCreatePullRequestViewModel, Phase 3 presets", () => {
   let container: HTMLDivElement;
   let root: Root;
