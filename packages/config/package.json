@@ -1,0 +1,15 @@
+{
+  "name": "@alphaci/config",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Configuration shared by the AlphaCI API and web app: the TypeScript compiler options and Oxlint rules both enforce identically. No build step.",
+  "license": "UNLICENSED",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./oxlint.base.json": "./oxlint.base.json"
+  },
+  "files": [
+    "tsconfig.base.json",
+    "oxlint.base.json"
+  ]
+}

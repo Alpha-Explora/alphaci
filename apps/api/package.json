@@ -101,6 +101,7 @@
   "devDependencies": {
     "@alphaci/api-contracts": "*",
     "@alphaci/capability-catalog": "*",
+    "@alphaci/config": "*",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^10.0.1",
     "@nestjs/cli": "^12.0.11",
