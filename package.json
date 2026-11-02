@@ -19,7 +19,8 @@
     "boundaries": "turbo run boundaries",
     "check:documentation": "turbo run check:documentation",
     "check:capabilities": "turbo run check:capabilities",
-    "check:capability-package": "turbo run check:capability-package"
+    "check:capability-package": "turbo run check:capability-package",
+    "check:versions": "node scripts/check-versions.mjs"
   },
   "devDependencies": {
     "eslint": "^10.14.0",

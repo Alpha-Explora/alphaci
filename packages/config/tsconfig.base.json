@@ -1,0 +1,14 @@
+{
+  // Compiler options apps/api and apps/web both set to the same value.
+  // Each app's tsconfig.json extends this and keeps everything specific to
+  // it (module system, target, decorators, JSX, paths, types, emit).
+  // Add an option here only when both apps already agree on it.
+  "compilerOptions": {
+    "strict": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "allowJs": false,
+    "incremental": true
+  }
+}

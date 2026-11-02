@@ -367,6 +367,34 @@ and the root `node_modules` holds a single copy.
 config and the prettier config. Both apps extend it. Add `syncpack` (or
 npm `overrides`) with a `check:versions` task so the versions stay aligned.
 
+**Status (2026-11-02): done, smaller than planned.** `packages/config`
+(`@alphaci/config`, a devDependency of both apps, no build step) holds only
+what both apps already set identically:
+
+- `tsconfig.base.json`: `strict`, `skipLibCheck`, `isolatedModules`,
+  `esModuleInterop`, `allowJs: false`, `incremental`. Both app
+  `tsconfig.json` files extend it. `tsc --showConfig` (TypeScript 6 and 7) is
+  identical before and after for all five projects; no option was unified.
+  `forceConsistentCasingInFileNames` stays in the API only (the web app
+  relies on the default). `packages/api-contracts` does not extend it: it
+  sets neither `esModuleInterop` nor `incremental`.
+- `oxlint.base.json`: the 22 rules both `.oxlintrc.json` files enforced with
+  the same settings. Both extend it. Categories stay in each app because
+  `eslint-plugin-oxlint` reads them only from the file it is given; it does
+  follow `extends` for rules, so ESLint still turns the shared ones off.
+- No shared ESLint config: after wave E the two `eslint.config.mjs` files
+  share no rules (the API keeps prettier, `consistent-type-imports` and
+  `no-octal`; the web app keeps Next's leftovers).
+- No shared Prettier config: only the API uses Prettier.
+
+`check:versions` is `scripts/check-versions.mjs`, a dependency-free script
+(no syncpack): it fails when a dependency listed by more than one
+`package.json` has different ranges, with an allowlist for intentional
+differences. CI runs it in the `plan` job. It found three mismatches, aligned
+to the version already installed: `eslint` (API `^10.1.0` → `^10.14.0`),
+`jest` (web `^30.3.0` → `^30.5.2`), `typescript-eslint` (API `^8.20.0`, web
+`^8.59.1` → `^8.72.1`).
+
 ### Wave C: API runtime majors
 
 One PR per row.

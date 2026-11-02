@@ -84,6 +84,12 @@ jobs:
             .github/scripts/plan-affected.sh full | tee -a "$GITHUB_OUTPUT"
           fi
 
+      # A dependency listed by more than one workspace must use one version
+      # range everywhere (scripts/check-versions.mjs). Reads the package.json
+      # files only, so it costs nothing and runs on every pull request.
+      - name: Shared dependency versions match
+        run: npm run check:versions
+
   affected-guard:
     name: Affected detection guard
     if: github.event_name == 'pull_request'
