@@ -20,6 +20,7 @@ import {
   buildCiRunReportFilename,
   renderCiRunReportMarkdown,
 } from '../application/ci-run-report';
+import { extractBearerToken } from './ci-bearer';
 import { CiReportBodyDto } from './dto/ci-report-body.dto';
 import { GetRunReportQueryDto } from './dto/get-run-report-query.dto';
 import { GetRunsQueryDto } from './dto/get-runs-query.dto';
@@ -38,7 +39,7 @@ export class CiController {
     @Headers('authorization') authorization: string | undefined,
     @Body() body: ValidateCiRunDto,
   ) {
-    const token = this.extractBearerToken(authorization);
+    const token = extractBearerToken(authorization);
     const input = {
       token,
       repoFullName: body.repo,
@@ -64,7 +65,7 @@ export class CiController {
     @Body() body: CiReportBodyDto,
   ) {
     // Verify the ALPHACI_TOKEN is valid for this repo before accepting the report
-    const token = this.extractBearerToken(authorization);
+    const token = extractBearerToken(authorization);
     await this.ciService.validateRun({
       token,
       repoFullName: body.repoFullName,
@@ -135,14 +136,5 @@ export class CiController {
       Buffer.from(JSON.stringify(report, null, 2), 'utf8'),
       { type: 'application/json; charset=utf-8', disposition },
     );
-  }
-
-  private extractBearerToken(authorization: string | undefined): string {
-    const match = authorization?.match(/^Bearer\s+(.+)$/i);
-    if (!match?.[1]) {
-      throw new UnauthorizedException('Bearer CI token is required');
-    }
-
-    return match[1].trim();
   }
 }

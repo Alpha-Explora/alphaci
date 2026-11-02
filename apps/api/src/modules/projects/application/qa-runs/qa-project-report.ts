@@ -1,3 +1,4 @@
+import { markdownTableCell } from '#kernel/text/markdown-table-cell';
 /**
  * QA report v2: the export of a Project run (docs/design/project-requirements.md,
  * section 2.4). v1 plus `repositories[]` (name, head SHA the run captured) and
@@ -143,10 +144,7 @@ function cell(value: string | null): string {
   if (value === null) {
     return EM_DASH;
   }
-  const escaped = value
-    .replace(/\r\n|\r|\n/g, '<br>')
-    .replace(/\|/g, '\\|')
-    .trim();
+  const escaped = markdownTableCell(value);
   return escaped.length > 0 ? escaped : EM_DASH;
 }
 

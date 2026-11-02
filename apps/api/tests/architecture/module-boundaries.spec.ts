@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -40,10 +40,9 @@ describe('module boundary policy', () => {
     ) as { bin: Record<string, string> };
     const depcruiseJs = resolve(packageDir, bin['depcruise']!);
     try {
-      const quote = process.platform === 'win32' ? '"' : "'";
-      const q = (value: string) => `${quote}${value}${quote}`;
-      execSync(
-        `${q(nodeCmd)} ${q(depcruiseJs)} src tests --config ${q(configPath)}`,
+      execFileSync(
+        nodeCmd,
+        [depcruiseJs, 'src', 'tests', '--config', configPath],
         {
           cwd: repositoryRoot,
           encoding: 'utf8',

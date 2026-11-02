@@ -2106,7 +2106,8 @@ export function buildEnvGuardWorkflowFile(
  * falls back to the repository root.
  */
 function normalizeServicePath(servicePath: string | undefined): string {
-  const trimmed = (servicePath ?? '.').trim().replace(/\/+$/, '');
+  let trimmed = (servicePath ?? '.').trim();
+  while (trimmed.endsWith('/')) trimmed = trimmed.slice(0, -1);
   return trimmed === '' ? '.' : trimmed;
 }
 

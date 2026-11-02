@@ -65,6 +65,28 @@ describe('GithubWebhookProcessor', () => {
     );
   });
 
+  it.each(['constructor', 'toString', '__proto__', 'hasOwnProperty'])(
+    'ignores the event name %s instead of calling an inherited method',
+    async (eventName) => {
+      const installations = makeInstallations();
+      const emit = jest.fn();
+      const processor = makeProcessor(installations, emit);
+      const payload = { action: 'created' };
+      const { rawBody, signature } = sign(payload);
+
+      await expect(
+        processor.handleWebhook(
+          signature,
+          eventName,
+          'delivery-proto',
+          rawBody,
+          payload,
+        ),
+      ).resolves.toEqual({ accepted: true });
+      expect(emit).not.toHaveBeenCalled();
+    },
+  );
+
   it('rejects an invalid webhook signature', async () => {
     const processor = makeProcessor(makeInstallations());
 

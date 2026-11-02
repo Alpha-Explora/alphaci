@@ -279,8 +279,14 @@ const FAILED_JOB_KIND_NEEDLES: ReadonlyArray<{
  * deployment under "Tests failed - run the failing test command locally":
  * advice that cannot help, because nothing was tested.
  */
-const DEPLOYMENT_WAIT_STEP =
-  /wait for .*(deploy|health|service)|health ?check/i;
+function isDeploymentWaitStep(step: string): boolean {
+  const lower = step.toLowerCase();
+  const waitFor = lower.indexOf('wait for ');
+  if (waitFor >= 0 && /deploy|health|service/.test(lower.slice(waitFor + 9))) {
+    return true;
+  }
+  return /health ?check/.test(lower);
+}
 
 /** A step name that says no OpenAPI document could be located. */
 const SCHEMA_STEP = /locate schema|openapi|swagger/i;
@@ -403,7 +409,7 @@ function classifyFailedJob(jobName: string, stage?: Stage): FailedJobKind {
    */
   const step = failedStepName(jobName);
   if (stage === 'verify' || stage === undefined) {
-    if (DEPLOYMENT_WAIT_STEP.test(step)) {
+    if (isDeploymentWaitStep(step)) {
       return 'deployment';
     }
     if (SCHEMA_STEP.test(step)) {

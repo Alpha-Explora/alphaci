@@ -12,6 +12,7 @@ import { WorkflowHistoryRepository } from './infrastructure/workflow-history.rep
 import type { GenerateWorkflowDto } from './dto/generate-workflow.dto';
 import { buildStagedWorkflowBundle } from './staged-workflow.builder';
 import { WorkflowFragmentRegistry } from '#kernel/ports/workflow-fragment.port';
+import { fileSlug } from '../../domain/file-slug';
 
 type Enhancement =
   | 'strictProductionApproval'
@@ -238,11 +239,6 @@ export class WorkflowsService {
   }
 
   private outputFileName(serviceName: string, templateId: string): string {
-    const normalized = serviceName
-      .toLowerCase()
-      .replaceAll(/[^a-z0-9-]+/g, '-')
-      .replaceAll(/^-+|-+$/g, '');
-
-    return `${normalized || 'service'}-${templateId}.yml`;
+    return `${fileSlug(serviceName) || 'service'}-${templateId}.yml`;
   }
 }

@@ -14,6 +14,7 @@ never import from `src/modules/`.**
 | `http/` | exception filters and HTTP middleware shared by the application |
 | `ports/` | small dependency-inversion ports used to break genuine context cycles |
 | `rules/` | pure authorization policy shared by two or more bounded contexts, agreed on by neither owner alone |
+| `text/` | pure text helpers two or more contexts need identically, such as escaping a Markdown table cell |
 
 ## Admission rule
 

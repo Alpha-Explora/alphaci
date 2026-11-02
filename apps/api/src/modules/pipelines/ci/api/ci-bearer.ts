@@ -10,11 +10,14 @@ import { CiService } from '../application/ci.service';
 
 /** The ALPHACI_TOKEN from an `Authorization: Bearer ...` header, or a 401. */
 export function extractBearerToken(authorization: string | undefined): string {
-  const match = authorization?.match(/^Bearer\s+(.+)$/i);
-  if (!match?.[1]) {
+  const value = authorization ?? '';
+  const hasScheme =
+    value.slice(0, 6).toLowerCase() === 'bearer' && /\s/.test(value.charAt(6));
+  const token = hasScheme ? value.slice(7).trim() : '';
+  if (token === '' || /[\r\n]/.test(token)) {
     throw new UnauthorizedException('Bearer CI token is required');
   }
-  return match[1].trim();
+  return token;
 }
 
 /**

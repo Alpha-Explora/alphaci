@@ -5,6 +5,7 @@
  * output is actually streamed back.
  */
 
+import { markdownTableCell } from '#kernel/text/markdown-table-cell';
 import type {
   QaChecklistTargetPersona,
   QaChecklistVerificationType,
@@ -47,25 +48,12 @@ function collapseNewlines(value: string): string {
   return value.replace(/\r\n|\r|\n/g, '<br>').trim();
 }
 
-/**
- * For a table cell: newlines collapsed to `<br>` (a bare newline would break
- * the row), then `|` escaped as `\|` (a bare pipe would add a column), then
- * trimmed -- the exact order the task spec gives for the Notes column,
- * applied to every free-text cell for consistency.
- */
-function escapeTableCell(value: string): string {
-  return value
-    .replace(/\r\n|\r|\n/g, '<br>')
-    .replace(/\|/g, '\\|')
-    .trim();
-}
-
 /** Notes column rule: escape as a table cell; empty (or originally null) becomes an em dash. */
 function renderNotesCell(value: string | null): string {
   if (value === null) {
     return EM_DASH;
   }
-  const escaped = escapeTableCell(value);
+  const escaped = markdownTableCell(value);
   return escaped.length > 0 ? escaped : EM_DASH;
 }
 
@@ -171,12 +159,12 @@ function renderHeader(report: QaReport): string {
   const run = report.run;
   const sha7 = run.commitSha.slice(0, 7);
   const rows: string[][] = [
-    ['Branch', escapeTableCell(run.branch)],
+    ['Branch', markdownTableCell(run.branch)],
     ['Commit', sha7],
     ['Commit source', commitSourceLabel(run.commitSource)],
     [
       'Checklist',
-      `${escapeTableCell(run.checklistName)} v${run.checklistVersion}`,
+      `${markdownTableCell(run.checklistName)} v${run.checklistVersion}`,
     ],
     ['Run status', runStatusLabel(run.status)],
     ['Verdict', run.signoff ? run.signoff.verdict : 'Not signed off'],
@@ -220,7 +208,7 @@ function renderChecklist(items: readonly QaRunItem[]): string {
     // 1-based for a human-facing report; qa_run_items.position itself is
     // 0-based (CHECK ("position" >= 0)).
     String(item.position + 1),
-    escapeTableCell(item.title),
+    markdownTableCell(item.title),
     PERSONA_LABELS[item.targetPersona],
     VERIFICATION_LABELS[item.verificationType],
     statusCellWithAutomation(item),
