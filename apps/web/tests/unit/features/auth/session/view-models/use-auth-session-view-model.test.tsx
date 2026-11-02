@@ -26,6 +26,7 @@ const baseSession: AuthMeResponse = {
   user: {
     id: 'user-1',
     login: 'tone',
+    onboardingCompleted: true,
   },
   subscription: {
     plan: 'pro',

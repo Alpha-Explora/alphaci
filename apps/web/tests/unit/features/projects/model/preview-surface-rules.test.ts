@@ -9,7 +9,9 @@ describe('preview surface rules', () => {
     expect(previewSurface({ surface: 'logs' })).toBe('logs');
     expect(previewSurface({ surface: 'page' })).toBe('page');
     // An older backend omits the field.
-    expect(previewSurface({})).toBe('page');
+    expect(previewSurface({} as Parameters<typeof previewSurface>[0])).toBe(
+      'page',
+    );
   });
 
   it("labels the host from the backend's descriptor, else from the provider id", () => {
@@ -19,7 +21,12 @@ describe('preview surface rules', () => {
         providerLabel: 'Render (Oregon)',
       }),
     ).toBe('Render (Oregon)');
-    expect(previewHostLabel({ provider: 'vercel' })).toBe('Vercel');
+    // An older backend sends no providerLabel.
+    expect(
+      previewHostLabel({ provider: 'vercel' } as Parameters<
+        typeof previewHostLabel
+      >[0]),
+    ).toBe('Vercel');
     expect(previewHostLabel({ provider: 'render', providerLabel: '' })).toBe(
       'Render',
     );

@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { ProductionDeploymentView } from '../../../../../src/features/projects/previews';
 import type { ProjectBranchPreview } from '../../../../../src/shared/api/contracts';
 import { FakeEventSource, line, page } from '../deployment-logs/log-fixtures';
+import { branchPreview } from '../../../../support/branch-preview';
 
 /*
  * Which media the Production Deployment card shows. The backend picks the
@@ -13,7 +14,7 @@ import { FakeEventSource, line, page } from '../deployment-logs/log-fixtures';
 function production(
   overrides: Partial<ProjectBranchPreview> = {},
 ): ProjectBranchPreview {
-  return {
+  return branchPreview({
     branch: 'main',
     isProduction: true,
     deploymentId: 'dep-1',
@@ -31,7 +32,7 @@ function production(
     embeddable: false,
     embedBlockedReason: null,
     ...overrides,
-  };
+  });
 }
 
 const LOGS: Partial<ProjectBranchPreview> = {
@@ -343,7 +344,15 @@ describe('Production Deployment card surface', () => {
   });
 
   it('falls back to the page, and the old label, when the backend predates the field', () => {
-    render(production({ embeddable: true }));
+    // An API from before `surface` and `providerLabel` existed sends neither.
+    const {
+      surface: _surface,
+      providerLabel: _label,
+      ...predates
+    } = production({
+      embeddable: true,
+    });
+    render(predates as ProjectBranchPreview);
     expect(
       container.querySelector('article')?.getAttribute('data-surface'),
     ).toBe('page');

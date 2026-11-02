@@ -18,7 +18,7 @@ import {
   startIterationLabel,
   waitingForNextIterationText,
 } from '../../../../../src/features/checklists/model/iteration-start-rules';
-import type { CurrentVersion } from '../../../../../src/features/checklists/model/iteration-types';
+import type { CurrentIteration } from '../../../../../src/features/checklists/model/iteration-types';
 import {
   currentWire,
   DELIVERED_AT,
@@ -28,7 +28,7 @@ import {
 } from '../iteration-fixtures';
 import { apiErrorWith } from '../qa-promotion-fixtures';
 
-function current(wire: Record<string, unknown>): CurrentVersion {
+function current(wire: Record<string, unknown>): CurrentIteration {
   const normalized = normalizeCurrentIteration(wire);
   if (!normalized) throw new Error('fixture names no iteration');
   return normalized;
@@ -106,7 +106,7 @@ describe('iterationNextStep', () => {
 
   it('names the roles that start iterations', () => {
     expect(
-      ['lead', 'admin', 'qa', 'member', null, undefined].map(
+      (['lead', 'admin', 'qa', 'member', null, undefined] as const).map(
         roleCanStartIteration,
       ),
     ).toEqual([true, true, false, false, false, false]);

@@ -8,6 +8,7 @@ import type {
   DeploymentTarget,
   ProjectDeploymentHistoryItem,
 } from '../../../../../../src/shared/api/contracts';
+import { deploymentHistoryItem } from '../../../../../support/deployment-history-item';
 
 const TARGET = {
   id: 't-1',
@@ -33,7 +34,7 @@ function deploy(
   id: string,
   status: ProjectDeploymentHistoryItem['status'],
 ): ProjectDeploymentHistoryItem {
-  return {
+  return deploymentHistoryItem({
     id,
     targetId: 't-1',
     targetName: 'orders-api',
@@ -50,7 +51,7 @@ function deploy(
     inspectorUrl: null,
     dashboardUrl: '',
     consoleUrl: '',
-  };
+  });
 }
 
 const DEPLOYS = [deploy('d3', 'ready'), deploy('d2', 'superseded')];

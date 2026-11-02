@@ -99,7 +99,7 @@ describe('env provisioning API helpers', () => {
 
     await provisionProjectEnvVars('project-1', {
       deploymentTargetId: 'target-1',
-      environment: 'test',
+      lane: 'production',
       vars: [{ key: 'DATABASE_URL', value: 'secret' }],
     });
 
@@ -109,7 +109,7 @@ describe('env provisioning API helpers', () => {
         method: 'POST',
         body: JSON.stringify({
           deploymentTargetId: 'target-1',
-          environment: 'test',
+          lane: 'production',
           vars: [{ key: 'DATABASE_URL', value: 'secret' }],
         }),
       }),

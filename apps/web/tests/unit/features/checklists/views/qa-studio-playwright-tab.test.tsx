@@ -25,6 +25,7 @@ import { promotionWire } from '../qa-promotion-fixtures';
 import realCases from '../../runs/test-report/real-playwright-cases.json';
 import { runAs, runItem } from '../qa-run-fixtures';
 import { projectRunWire, runItemWire } from '../requirement-fixtures';
+import { branchPreview } from '../../../../support/branch-preview';
 
 jest.mock(
   '../../../../../src/features/checklists/data/checklists-repository',
@@ -87,7 +88,7 @@ const projectRuns = projectQaRunsRepository as jest.Mocked<
 >;
 const projects = projectsRepository as jest.Mocked<typeof projectsRepository>;
 
-const PREVIEW: ProjectBranchPreview = {
+const PREVIEW: ProjectBranchPreview = branchPreview({
   branch: 'uat',
   isProduction: false,
   deploymentId: 'd1',
@@ -105,7 +106,7 @@ const PREVIEW: ProjectBranchPreview = {
   embeddable: true,
   embedBlockedReason: null,
   surface: 'page',
-};
+});
 
 const PROJECT_SCOPE: QaScope = {
   kind: 'project',

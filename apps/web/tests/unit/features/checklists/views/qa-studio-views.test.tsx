@@ -16,6 +16,7 @@ import type {
 import { checklist } from '../checklist-fixtures';
 import { automation } from '../qa-automation-fixtures';
 import { runAs, runItem } from '../qa-run-fixtures';
+import { branchPreview } from '../../../../support/branch-preview';
 
 jest.mock(
   '../../../../../src/features/checklists/data/checklists-repository',
@@ -55,7 +56,7 @@ const projects = projectsRepository as jest.Mocked<typeof projectsRepository>;
 function preview(
   overrides: Partial<ProjectBranchPreview> = {},
 ): ProjectBranchPreview {
-  return {
+  return branchPreview({
     branch: 'uat',
     isProduction: false,
     deploymentId: 'd1',
@@ -74,7 +75,7 @@ function preview(
     embedBlockedReason: null,
     surface: 'page',
     ...overrides,
-  };
+  });
 }
 
 const ITEMS = [

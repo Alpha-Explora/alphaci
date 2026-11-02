@@ -95,31 +95,35 @@ const deploymentTarget: DeploymentTarget = {
   ownershipMode: 'byo',
   provider: 'vercel',
   providerConnectionId: 'connection-1',
-  providerTargetId: 'prj_1',
-  projectName: 'web',
-  serviceName: 'web',
+  providerProjectId: 'prj_1',
+  providerProjectName: 'web',
+  repoFullName: 'acme/web',
+  branchName: 'main',
+  rootDirectory: null,
+  buildCommand: null,
+  startCommand: null,
+  environmentMap: {},
   status: 'active',
   providerMetadata: {
     vercelOrgId: 'team_1',
     vercelProjectId: 'prj_1',
   },
   deploymentStrategy: 'vercel_ci_pushed',
-  lastProvisionedAt: null,
-  lastProvisionedBy: null,
-  createdAt: '2026-06-10T00:00:00.000Z',
-  updatedAt: '2026-06-10T00:00:00.000Z',
 };
 
 const envMetadata: EnvVarMetadata = {
   id: 'env-1',
   projectId: 'project-1',
-  targetId: 'target-1',
-  provider: 'vercel',
-  environment: 'test',
+  deploymentTargetId: 'target-1',
+  lane: 'production',
+  gitBranch: null,
   key: 'NEXT_PUBLIC_API_URL',
-  valueFingerprint: 'fp',
+  provider: 'vercel',
+  valueStored: false,
   lastProvisionedAt: '2026-06-10T00:00:00.000Z',
   lastProvisionedBy: 'user-1',
+  status: 'provisioned',
+  errorSummary: null,
 };
 
 async function flushEffects() {
@@ -231,8 +235,8 @@ describe('env provisioning hooks', () => {
       id: 'target-2',
     });
     mockedProvisionProjectEnvVars.mockResolvedValue({
-      metadata: [envMetadata],
-      targetId: 'target-2',
+      provisioned: [{ key: 'NEXT_PUBLIC_API_URL', status: 'provisioned' }],
+      failed: [],
     });
 
     const snapshots = renderProjectHook();
@@ -240,6 +244,7 @@ describe('env provisioning hooks', () => {
 
     await act(async () => {
       await snapshots.at(-1)?.addTarget({
+        action: 'create',
         slot: 'frontend',
         ownershipMode: 'byo',
         provider: 'vercel',
@@ -252,20 +257,18 @@ describe('env provisioning hooks', () => {
 
     await act(async () => {
       await snapshots.at(-1)?.provision({
-        targetId: 'target-2',
-        environment: 'test',
-        variables: [
+        deploymentTargetId: 'target-2',
+        lane: 'production',
+        vars: [
           { key: 'NEXT_PUBLIC_API_URL', value: 'https://api.example.com' },
         ],
       });
     });
 
     expect(mockedProvisionProjectEnvVars).toHaveBeenCalledWith('project-1', {
-      targetId: 'target-2',
-      environment: 'test',
-      variables: [
-        { key: 'NEXT_PUBLIC_API_URL', value: 'https://api.example.com' },
-      ],
+      deploymentTargetId: 'target-2',
+      lane: 'production',
+      vars: [{ key: 'NEXT_PUBLIC_API_URL', value: 'https://api.example.com' }],
     });
     expect(mockedListDeploymentTargets).toHaveBeenCalledTimes(2);
     expect(snapshots.at(-1)?.saving).toBe(false);
@@ -293,7 +296,7 @@ describe('env provisioning hooks', () => {
     await expect(
       snapshots.at(-1)?.validateEnvText({
         deploymentTargetId: 'target-1',
-        environment: 'test',
+        lane: 'production',
         text: 'DATABASE_URL=postgres://secret\nAPI_KEY=secret',
       }),
     ).resolves.toMatchObject({
@@ -302,7 +305,7 @@ describe('env provisioning hooks', () => {
     });
     expect(mockedValidateProjectEnvVars).toHaveBeenCalledWith('project-1', {
       deploymentTargetId: 'target-1',
-      environment: 'test',
+      lane: 'production',
       text: 'DATABASE_URL=postgres://secret\nAPI_KEY=secret',
     });
 
@@ -324,7 +327,7 @@ describe('env provisioning hooks', () => {
       ...activeConnection,
       id: 'connection-3',
     });
-    mockedRevokeProviderConnection.mockResolvedValue(undefined);
+    mockedRevokeProviderConnection.mockResolvedValue({ revoked: true });
 
     const snapshots = renderConnectionsHook();
     await flushEffects();
@@ -456,7 +459,7 @@ describe('env provisioning hooks', () => {
             startCommand: '   ',
             env: [
               {
-                environment: 'test',
+                lane: 'preview',
                 vars: [
                   { key: 'API_URL', value: 'https://api.example.com' },
                   { key: '   ', value: 'ignored' },
@@ -485,7 +488,7 @@ describe('env provisioning hooks', () => {
           startCommand: undefined,
           env: [
             {
-              environment: 'test',
+              lane: 'preview',
               vars: [{ key: 'API_URL', value: 'https://api.example.com' }],
             },
           ],
@@ -512,7 +515,7 @@ describe('env provisioning hooks', () => {
             buildCommand: 'npm ci && npm run build',
             env: [
               {
-                environment: 'test',
+                lane: 'preview',
                 vars: [
                   { key: 'DATABASE_URL', value: '' },
                   { key: '   ', value: 'ignored' },
@@ -556,7 +559,7 @@ describe('env provisioning hooks', () => {
             targetBranches: ['backend:render:test'],
             env: [
               {
-                environment: 'test',
+                lane: 'preview',
                 vars: [{ key: 'DATABASE_URL', value: 'postgres://x' }],
               },
             ],
@@ -593,9 +596,7 @@ describe('env provisioning hooks', () => {
           {
             // name and appliesTo and targetBranches all omitted — all optional
             provider: 'render',
-            env: [
-              { environment: 'test', vars: [{ key: 'SECRET', value: 'abc' }] },
-            ],
+            env: [{ lane: 'preview', vars: [{ key: 'SECRET', value: 'abc' }] }],
           },
         ],
       });
@@ -636,7 +637,7 @@ describe('env provisioning hooks', () => {
             targetBranches: ['backend:render:test'],
             env: [
               {
-                environment: 'test',
+                lane: 'preview',
                 vars: [{ key: 'DB_URL', value: 'postgres://x' }],
               },
             ],
@@ -675,7 +676,7 @@ describe('env provisioning hooks', () => {
             name: 'Vercel Only',
             provider: 'vercel', // render is the only active provider — vercel gets filtered
             appliesTo: 'all',
-            env: [{ environment: 'test', vars: [{ key: 'X', value: 'y' }] }],
+            env: [{ lane: 'preview', vars: [{ key: 'X', value: 'y' }] }],
           },
         ],
       });
@@ -708,9 +709,7 @@ describe('env provisioning hooks', () => {
             name: 'Empty',
             provider: 'render',
             appliesTo: 'all',
-            env: [
-              { environment: 'test', vars: [{ key: '', value: 'ignored' }] },
-            ],
+            env: [{ lane: 'preview', vars: [{ key: '', value: 'ignored' }] }],
           },
         ],
       });
@@ -744,7 +743,7 @@ describe('env provisioning hooks', () => {
             provider: 'render',
             appliesTo: 'selected',
             targetBranches: [], // empty — gets filtered
-            env: [{ environment: 'test', vars: [{ key: 'X', value: 'y' }] }],
+            env: [{ lane: 'preview', vars: [{ key: 'X', value: 'y' }] }],
           },
         ],
       });
@@ -774,7 +773,7 @@ describe('env provisioning hooks', () => {
         ],
         sharedEnv: [
           {
-            environment: 'test',
+            lane: 'preview',
             vars: [{ key: 'GLOBAL', value: 'global-value' }],
           },
         ],
@@ -783,7 +782,7 @@ describe('env provisioning hooks', () => {
     });
 
     expect(snapshots.at(-1)?.payload?.sharedEnv).toEqual([
-      { environment: 'test', vars: [{ key: 'GLOBAL', value: 'global-value' }] },
+      { lane: 'preview', vars: [{ key: 'GLOBAL', value: 'global-value' }] },
     ]);
   });
 });

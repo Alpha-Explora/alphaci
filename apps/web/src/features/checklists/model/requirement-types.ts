@@ -42,6 +42,8 @@ export interface RequirementItemWire {
   progressAt: string | null;
   rowVersion: number;
   canSetProgress: boolean;
+  /** QA's test cases by category; a System item has none. */
+  testCategories?: TestCategoryDefinition[];
 }
 
 export interface RequirementWire {

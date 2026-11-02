@@ -130,7 +130,6 @@ describe('step readiness', () => {
         ...base,
         projectName: '',
         isMultiRepoShape: true,
-        serviceName: '',
       }),
     ).toBe(false);
     expect(
@@ -138,7 +137,6 @@ describe('step readiness', () => {
         ...base,
         projectName: 'Checkout',
         isMultiRepoShape: true,
-        serviceName: '',
       }),
     ).toBe(true);
   });

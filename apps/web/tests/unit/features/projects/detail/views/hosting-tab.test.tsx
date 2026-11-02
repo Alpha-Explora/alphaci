@@ -14,6 +14,8 @@ import type {
   ProvisionedProject,
 } from '../../../../../../src/shared/api/contracts';
 import { FakeEventSource } from '../../deployment-logs/log-fixtures';
+import { branchPreview } from '../../../../../support/branch-preview';
+import { deploymentHistoryItem } from '../../../../../support/deployment-history-item';
 
 const mockPreviews: {
   current: {
@@ -105,7 +107,7 @@ function preview(
   branch: string,
   overrides: Partial<ProjectBranchPreview> = {},
 ): ProjectBranchPreview {
-  return {
+  return branchPreview({
     branch,
     isProduction: branch === 'main',
     deploymentId: 'd',
@@ -123,7 +125,7 @@ function preview(
     embeddable: null,
     embedBlockedReason: null,
     ...overrides,
-  };
+  });
 }
 
 function variable(
@@ -148,15 +150,17 @@ function variable(
 }
 
 function deploy(id: string, branch: string): ProjectDeploymentHistoryItem {
-  return {
+  return deploymentHistoryItem({
     id,
     targetId: 't-web',
     targetName: 'acme-web',
     provider: 'vercel',
+    slot: 'frontend',
     environment: null,
     branch,
     commitSha: 'abcdef1234',
     commitMessage: `deploy ${id}`,
+    createdBy: null,
     status: 'ready',
     createdAt: '2026-10-12T10:00:00Z',
     readyAt: null,
@@ -165,7 +169,7 @@ function deploy(id: string, branch: string): ProjectDeploymentHistoryItem {
     inspectorUrl: null,
     dashboardUrl: 'https://vercel.com/acme/acme-web',
     consoleUrl: 'https://vercel.com/acme/acme-web/deployments',
-  };
+  });
 }
 
 const METADATA = [

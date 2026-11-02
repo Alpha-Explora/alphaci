@@ -66,7 +66,7 @@ const projectRuns = projectQaRunsRepository as jest.Mocked<
   typeof projectQaRunsRepository
 >;
 
-const PREVIEW: ProjectBranchPreview = {
+const PREVIEW: ProjectBranchPreview = branchPreview({
   branch: 'uat',
   isProduction: false,
   deploymentId: 'd1',
@@ -84,7 +84,7 @@ const PREVIEW: ProjectBranchPreview = {
   embeddable: true,
   embedBlockedReason: null,
   surface: 'page',
-};
+});
 
 function setup(promotion: unknown, run: QaRun | null = null) {
   projects.previews.mockResolvedValue({
@@ -176,6 +176,7 @@ import {
   SHA_BE,
   SHA_BE_NEW,
 } from '../requirement-fixtures';
+import { branchPreview } from '../../../../support/branch-preview';
 
 const PROJECT_SCOPE: QaScope = {
   kind: 'project',

@@ -17,10 +17,12 @@ const mockDriverInstance = {
   drive: jest.fn(),
   destroy: jest.fn(),
 };
-const mockDriver = jest.fn(() => mockDriverInstance);
+const mockDriver = jest.fn(
+  (_config: Record<string, unknown>) => mockDriverInstance,
+);
 
 jest.mock('driver.js', () => ({
-  driver: (...args: unknown[]) => mockDriver(...args),
+  driver: (config: Record<string, unknown>) => mockDriver(config),
 }));
 
 describe('getCurrentProjectsTourSteps', () => {
@@ -145,7 +147,7 @@ describe('createCurrentProjectsTour', () => {
   it('passes showProgress and allowClose to driver()', () => {
     const onFinished = jest.fn();
     createCurrentProjectsTour({ onFinished });
-    const config = mockDriver.mock.calls[0][0] as Record<string, unknown>;
+    const config = mockDriver.mock.calls[0]![0];
     expect(config.showProgress).toBe(true);
     expect(config.allowClose).toBe(true);
   });
@@ -153,7 +155,7 @@ describe('createCurrentProjectsTour', () => {
   it('passes all steps to driver() when all anchors are in the DOM', () => {
     const onFinished = jest.fn();
     createCurrentProjectsTour({ onFinished });
-    const config = mockDriver.mock.calls[0][0] as Record<string, unknown>;
+    const config = mockDriver.mock.calls[0]![0];
     expect(Array.isArray(config.steps)).toBe(true);
     expect((config.steps as unknown[]).length).toBe(
       getCurrentProjectsTourSteps().length,
@@ -165,7 +167,7 @@ describe('createCurrentProjectsTour', () => {
     document.body.replaceChildren();
     const onFinished = jest.fn();
     createCurrentProjectsTour({ onFinished });
-    const config = mockDriver.mock.calls[0][0] as Record<string, unknown>;
+    const config = mockDriver.mock.calls[0]![0];
     // Only the projects-list step (always retained) should be present.
     expect((config.steps as unknown[]).length).toBe(1);
   });
@@ -173,7 +175,7 @@ describe('createCurrentProjectsTour', () => {
   it('onDestroyed fires onFinished exactly once', () => {
     const onFinished = jest.fn();
     createCurrentProjectsTour({ onFinished });
-    const config = mockDriver.mock.calls[0][0] as Record<string, unknown>;
+    const config = mockDriver.mock.calls[0]![0];
     const onDestroyed = config.onDestroyed as () => void;
 
     onDestroyed();

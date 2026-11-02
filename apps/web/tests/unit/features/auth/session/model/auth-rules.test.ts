@@ -10,6 +10,7 @@ const baseSession: AuthMeResponse = {
   user: {
     id: 'user-1',
     login: 'tone',
+    onboardingCompleted: true,
   },
   subscription: {
     plan: 'pro',
@@ -94,7 +95,12 @@ describe('isGuest', () => {
 
 describe('internal users', () => {
   const internalInactive = buildSession({
-    user: { id: 'u-int', login: 'employee', isInternal: true },
+    user: {
+      id: 'u-int',
+      login: 'employee',
+      isInternal: true,
+      onboardingCompleted: true,
+    },
     subscription: {
       plan: 'free',
       status: 'inactive',

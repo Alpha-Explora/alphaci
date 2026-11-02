@@ -579,7 +579,12 @@ describe('Evidence on a Project run item', () => {
     });
     const frame = document.createElement('iframe');
     const container = await render(
-      <StudioHarness frame={frame} whileCapturing={whileCapturing} />,
+      <StudioHarness
+        frame={frame}
+        whileCapturing={
+          whileCapturing as <T>(capture: () => Promise<T>) => Promise<T>
+        }
+      />,
     );
     await click(button(sections(container)[0], 'Capture'));
     expect(whileCapturing).toHaveBeenCalledTimes(1);

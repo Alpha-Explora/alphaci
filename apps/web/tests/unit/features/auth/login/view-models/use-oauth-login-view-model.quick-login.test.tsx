@@ -6,6 +6,7 @@ import {
   useOAuthLoginViewModel,
   type OAuthLoginViewModel,
 } from '../../../../../../src/features/auth/login/view-models/use-oauth-login-view-model';
+import { setNodeEnv } from '../../../../../support/node-env';
 
 const mockRefresh = jest.fn().mockResolvedValue(undefined);
 
@@ -56,12 +57,12 @@ describe('useOAuthLoginViewModel Quick login', () => {
     originalNodeEnv = process.env.NODE_ENV;
     originalFlag = process.env.NEXT_PUBLIC_DEV_QUICK_LOGIN;
     originalApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    process.env.NODE_ENV = 'development';
+    setNodeEnv('development');
     process.env.NEXT_PUBLIC_DEV_QUICK_LOGIN = 'true';
     process.env.NEXT_PUBLIC_API_BASE_URL = 'http://localhost:4000/api/v1';
     currentViewModel = null;
     mockDevQuickLogin.mockReset();
-    mockDevQuickLogin.mockResolvedValue({ ok: true });
+    mockDevQuickLogin.mockResolvedValue(undefined);
     mockRefresh.mockReset();
     mockRefresh.mockResolvedValue(undefined);
     container = document.createElement('div');
@@ -78,8 +79,7 @@ describe('useOAuthLoginViewModel Quick login', () => {
       root.unmount();
     });
     container.remove();
-    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = originalNodeEnv;
+    setNodeEnv(originalNodeEnv);
     if (originalFlag === undefined)
       delete process.env.NEXT_PUBLIC_DEV_QUICK_LOGIN;
     else process.env.NEXT_PUBLIC_DEV_QUICK_LOGIN = originalFlag;
@@ -101,7 +101,7 @@ describe('useOAuthLoginViewModel Quick login', () => {
   });
 
   it('does not expose or call Quick login in a production runtime', async () => {
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
 
     await act(async () => {
       root.render(<Probe />);

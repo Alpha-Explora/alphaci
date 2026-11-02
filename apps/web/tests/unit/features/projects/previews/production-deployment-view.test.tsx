@@ -6,11 +6,12 @@ import type {
   ProjectBranchPreview,
   ProjectPreviewsResponse,
 } from '../../../../../src/shared/api/contracts';
+import { branchPreview } from '../../../../support/branch-preview';
 
 function production(
   overrides: Partial<ProjectBranchPreview> = {},
 ): ProjectBranchPreview {
-  return {
+  return branchPreview({
     branch: 'main',
     isProduction: true,
     deploymentId: 'dpl_1',
@@ -30,7 +31,7 @@ function production(
     embeddable: true,
     embedBlockedReason: null,
     ...overrides,
-  };
+  });
 }
 
 function response(branches: ProjectBranchPreview[]): ProjectPreviewsResponse {

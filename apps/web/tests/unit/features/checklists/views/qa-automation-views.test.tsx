@@ -20,6 +20,7 @@ import {
 } from '../qa-automation-fixtures';
 import { frozenReport } from '../qa-report-fixtures';
 import { runAs, runItem } from '../qa-run-fixtures';
+import { branchPreview } from '../../../../support/branch-preview';
 
 jest.mock(
   '../../../../../src/features/checklists/data/checklists-repository',
@@ -107,7 +108,6 @@ const ITEMS = [
     automated: automated({
       source: 'bruno',
       status: 'not_run',
-      scope: null,
       matchedSpec: null,
       failure: null,
     }),
@@ -122,7 +122,7 @@ function setup(run: QaRun | null) {
     liveProvidersEnabled: true,
     providerError: null,
     branches: [
-      {
+      branchPreview({
         branch: 'uat',
         isProduction: false,
         deploymentId: 'd1',
@@ -140,7 +140,7 @@ function setup(run: QaRun | null) {
         embeddable: true,
         embedBlockedReason: null,
         surface: 'page',
-      },
+      }),
     ],
   });
   checklists.listForProject.mockResolvedValue({

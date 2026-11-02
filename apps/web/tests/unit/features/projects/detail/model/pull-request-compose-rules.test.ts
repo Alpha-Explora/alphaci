@@ -289,7 +289,13 @@ describe('Phase 3 pull request presets', () => {
   });
 
   it('offers nothing to a role that may not open pull requests', () => {
-    for (const role of ['qa', undefined, null, 'root' as AppRole]) {
+    const roles: (AppRole | null | undefined)[] = [
+      'qa',
+      undefined,
+      null,
+      'root' as AppRole,
+    ];
+    for (const role of roles) {
       const context = { ...lead, role };
       expect(presetFor('feature-to-dev', context).available).toBe(false);
       expect(defaultPresetId(context)).toBe('custom');

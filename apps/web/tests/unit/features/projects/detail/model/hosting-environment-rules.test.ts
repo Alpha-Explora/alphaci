@@ -26,6 +26,8 @@ import type {
   ProjectBranchPreview,
   ProjectDeploymentHistoryItem,
 } from '../../../../../../src/shared/api/contracts';
+import { branchPreview } from '../../../../../support/branch-preview';
+import { deploymentHistoryItem } from '../../../../../support/deployment-history-item';
 
 const TARGET = { id: 't-web', branchName: 'main' };
 
@@ -33,7 +35,7 @@ function preview(
   branch: string,
   overrides: Partial<ProjectBranchPreview> = {},
 ): ProjectBranchPreview {
-  return {
+  return branchPreview({
     branch,
     isProduction: branch === 'main',
     deploymentId: 'd1',
@@ -51,7 +53,7 @@ function preview(
     embeddable: null,
     embedBlockedReason: null,
     ...overrides,
-  };
+  });
 }
 
 function variable(
@@ -81,15 +83,17 @@ function deploy(
   createdAt: string,
   targetId = 't-web',
 ): ProjectDeploymentHistoryItem {
-  return {
+  return deploymentHistoryItem({
     id,
     targetId,
     targetName: 'web',
     provider: 'vercel',
+    slot: 'frontend',
     environment: null,
     branch,
     commitSha: null,
     commitMessage: null,
+    createdBy: null,
     status: 'ready',
     createdAt,
     readyAt: null,
@@ -98,7 +102,7 @@ function deploy(
     inspectorUrl: null,
     dashboardUrl: 'https://vercel.com/x',
     consoleUrl: 'https://vercel.com/x/deployments',
-  };
+  });
 }
 
 describe('deriveHostingEnvironments', () => {

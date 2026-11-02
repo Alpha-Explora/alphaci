@@ -17,6 +17,7 @@ import {
   readyWire,
 } from '../qa-promotion-fixtures';
 import { runAs, runItem } from '../qa-run-fixtures';
+import { branchPreview } from '../../../../support/branch-preview';
 
 jest.mock(
   '../../../../../src/features/checklists/data/checklists-repository',
@@ -52,7 +53,7 @@ const checklists = checklistsRepository as jest.Mocked<
 const runs = qaRunsRepository as jest.Mocked<typeof qaRunsRepository>;
 const projects = projectsRepository as jest.Mocked<typeof projectsRepository>;
 
-const PREVIEW: ProjectBranchPreview = {
+const PREVIEW: ProjectBranchPreview = branchPreview({
   branch: 'uat',
   isProduction: false,
   deploymentId: 'd1',
@@ -70,7 +71,7 @@ const PREVIEW: ProjectBranchPreview = {
   embeddable: true,
   embedBlockedReason: null,
   surface: 'page',
-};
+});
 
 function setup(promotion: unknown, run: QaRun | null = null) {
   projects.previews.mockResolvedValue({

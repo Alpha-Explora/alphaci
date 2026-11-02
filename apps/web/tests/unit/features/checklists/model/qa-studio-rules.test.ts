@@ -33,11 +33,12 @@ import {
   verifyFailure,
 } from '../qa-automation-fixtures';
 import { qaRun, runItem } from '../qa-run-fixtures';
+import { branchPreview } from '../../../../support/branch-preview';
 
 function preview(
   overrides: Partial<ProjectBranchPreview> = {},
 ): ProjectBranchPreview {
-  return {
+  return branchPreview({
     branch: 'uat',
     isProduction: false,
     deploymentId: 'd1',
@@ -55,7 +56,7 @@ function preview(
     embeddable: true,
     embedBlockedReason: null,
     ...overrides,
-  };
+  });
 }
 
 describe('studioEnvironments (QA branch only)', () => {

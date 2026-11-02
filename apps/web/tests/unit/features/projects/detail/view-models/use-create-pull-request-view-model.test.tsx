@@ -130,6 +130,7 @@ describe('useCreatePullRequestViewModel', () => {
       // The repository's own default branch is `main` — the one branch the
       // composer must not default into. See `defaultComposeBase`.
       defaultBranch: 'main',
+      canCreateBranch: true,
       branches: [
         { name: 'main', protected: true, commitSha: 'a' },
         { name: 'dev', protected: false, commitSha: 'd' },
@@ -267,6 +268,7 @@ describe('useCreatePullRequestViewModel', () => {
 
     mockBranches.mockResolvedValueOnce({
       defaultBranch: 'main',
+      canCreateBranch: true,
       branches: [{ name: 'main', protected: true, commitSha: 'a' }],
     });
     act(() => current().retry());
@@ -303,6 +305,7 @@ describe('useCreatePullRequestViewModel, Phase 1 security gates', () => {
   it('will not submit for QA even when a comparison is otherwise ready', async () => {
     mockBranches.mockResolvedValue({
       defaultBranch: 'main',
+      canCreateBranch: true,
       branches: [
         { name: 'main', protected: true, commitSha: 'a' },
         { name: 'dev', protected: false, commitSha: 'd' },
@@ -326,6 +329,7 @@ describe('useCreatePullRequestViewModel, Phase 1 security gates', () => {
   it('will not submit into main even if it were somehow picked as the base', async () => {
     mockBranches.mockResolvedValue({
       defaultBranch: 'main',
+      canCreateBranch: true,
       branches: [
         { name: 'main', protected: true, commitSha: 'a' },
         { name: 'feature', protected: false, commitSha: 'b' },
@@ -346,6 +350,7 @@ describe('useCreatePullRequestViewModel, Phase 1 security gates', () => {
   it("shows the backend's PR_ROLE_FORBIDDEN sentence, not the raw server message", async () => {
     mockBranches.mockResolvedValue({
       defaultBranch: 'main',
+      canCreateBranch: true,
       branches: [
         { name: 'main', protected: true, commitSha: 'a' },
         { name: 'dev', protected: false, commitSha: 'd' },
@@ -393,6 +398,7 @@ describe('useCreatePullRequestViewModel, Phase 3 presets', () => {
   ) {
     mockBranches.mockResolvedValue({
       defaultBranch: 'main',
+      canCreateBranch: true,
       branches: names.map((name) => ({
         name,
         protected: false,
