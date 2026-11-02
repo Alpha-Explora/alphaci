@@ -21,7 +21,8 @@
     "eslint",
     "typescript"
   ],
-  "categories": { "correctness": "off" },
+  // Correctness: Oxlint's bug-catching rules, all on.
+  "categories": { "correctness": "error" },
   "env": {
     "builtin": true,
     "es2024": true,
@@ -35,6 +36,9 @@
     "**/*.mjs"
   ],
   "rules": {
+    // Spreading a validated DTO into a plain object is how payloads are built;
+    // the DTO classes carry no methods to lose.
+    "typescript/no-misused-spread": "off",
     "eslint/for-direction": "error",
     "eslint/no-async-promise-executor": "error",
     "eslint/no-case-declarations": "error",

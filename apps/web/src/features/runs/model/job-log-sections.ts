@@ -15,6 +15,7 @@
  */
 
 /** ANSI SGR sequences. Colour in a terminal, noise in HTML. */
+// oxlint-disable-next-line eslint/no-control-regex -- ANSI escapes start with the ESC control character
 const ANSI = /\u001B\[[\d;]*m/g;
 
 /** GitHub prefixes every line with the instant it was written. */

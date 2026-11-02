@@ -859,9 +859,11 @@ describeDatabase('project_requirements migration', () => {
         ],
       });
       expect(next.created).toBe(true);
-      expect(next.items.map((item) => item.prior_run_item_id).sort()).toEqual(
-        first.items.map((item) => item.id).sort(),
-      );
+      const byId = (a: string | null, b: string | null) =>
+        String(a).localeCompare(String(b));
+      expect(
+        next.items.map((item) => item.prior_run_item_id).sort(byId),
+      ).toEqual(first.items.map((item) => item.id).sort(byId));
       runId = next.run.id;
       itemId = next.items.find((item) => item.source_item_id === storyB)!.id;
     });

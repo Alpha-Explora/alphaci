@@ -267,6 +267,7 @@ export function WorkspacePicker({
     const selected = option.id === currentId;
     const active = index === activeIndex;
     return (
+      // oxlint-disable-next-line jsx-a11y/click-events-have-key-events -- the panel handles Enter and arrow keys for every option
       <div
         key={option.id}
         ref={(element) => {

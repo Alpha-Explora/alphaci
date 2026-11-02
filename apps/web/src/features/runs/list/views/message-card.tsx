@@ -151,6 +151,7 @@ export function MessageCard({ message: stored }: MessageCardProps) {
       {/* Failure items list */}
       {message.items && message.items.length > 0 && (
         <ul
+          // oxlint-disable-next-line jsx-a11y/no-redundant-roles -- Safari drops list semantics under list-style: none
           role="list"
           style={{
             margin: '0.15rem 0 0',

@@ -19,7 +19,9 @@
     "jsx-a11y",
     "import"
   ],
-  "categories": { "correctness": "off" },
+  // Correctness: Oxlint's bug-catching rules, all on. The jsx-a11y ones below
+  // are tuned where this app's patterns are deliberate.
+  "categories": { "correctness": "error" },
   "env": {
     "builtin": true,
     "es2024": true,
@@ -27,6 +29,20 @@
     "node": true
   },
   "rules": {
+    // Suggests e.g. <output> for role="status" live regions: not better.
+    "jsx-a11y/prefer-tag-over-role": "off",
+    // Every use focuses the first field of a dialog or an inline editor, as the
+    // WAI-ARIA dialog pattern prescribes.
+    "jsx-a11y/no-autofocus": "off",
+    // Labels wrap their input with the text a few elements deep.
+    "jsx-a11y/label-has-associated-control": ["error", { "depth": 5 }],
+    "jsx-a11y/control-has-associated-label": ["error", { "depth": 5 }],
+    // A mouse-only click is the failure. Key handlers on a wrapper (Escape on a
+    // dialog layer, roving focus in a menu) delegate for focusable children.
+    "jsx-a11y/no-static-element-interactions": ["error", { "handlers": ["onClick"] }],
+    "jsx-a11y/no-noninteractive-element-interactions": ["error", { "handlers": ["onClick"] }],
+    // Scrollable log and screenshot panes take focus so the keyboard can scroll them.
+    "jsx-a11y/no-noninteractive-tabindex": ["error", { "roles": ["tabpanel", "log", "region"] }],
     "eslint/no-unused-expressions": [
       "warn",
       {
