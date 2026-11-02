@@ -44,10 +44,12 @@
  * configuration lives in a file, which is the one wrong answer it must never
  * give.
  */
-import * as dotenv from 'dotenv';
+import { existsSync } from 'node:fs';
 
+// Node's loader, like dotenv before it, never overrides a variable that is
+// already set, so the shell wins and .env wins over .env.local.
 for (const file of ['.env', '.env.local']) {
-  dotenv.config({ path: file, quiet: true });
+  if (existsSync(file)) process.loadEnvFile(file);
 }
 
 const API = 'https://api.vercel.com';

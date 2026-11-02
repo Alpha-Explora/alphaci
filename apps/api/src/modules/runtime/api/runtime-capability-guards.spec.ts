@@ -3,8 +3,7 @@ import { Test } from '@nestjs/testing';
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
-import type { NextFunction, Request, Response } from 'express';
-import type { Express } from 'express-serve-static-core';
+import type { Express, NextFunction, Request, Response } from 'express';
 import type { Server } from 'http';
 
 import {

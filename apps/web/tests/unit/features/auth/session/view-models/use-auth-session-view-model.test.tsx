@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { useAuthSession } from '@/features/auth/session';
 import { getAuthSession } from '../../../../../../src/features/auth/session/data/auth-api';
 import { ApiError } from '../../../../../../src/shared/api/request';
-import type { AuthMeResponse } from '../../src/shared/api/contracts';
+import type { AuthMeResponse } from '@/shared/api/contracts';
 
 jest.mock('../../../../../../src/features/auth/session/data/auth-api', () => {
   const actual = jest.requireActual(

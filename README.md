@@ -69,6 +69,12 @@ use the same version range in each. `npm run check:versions`
 request. When two ranges must differ on purpose, add the dependency to
 `ALLOWED_DIFFERENCES` in that script with the reason.
 
+`npm run check:deps` ([knip](https://knip.dev), configured in `knip.ts`) fails
+when a workspace imports a package it does not declare, declares one it never
+uses, or calls an unknown binary. CI runs it on every pull request. When knip
+cannot see a real use, add the package to `ignoreDependencies` in `knip.ts`
+with the reason.
+
 ### Lint and typecheck toolchain
 
 - **Two TypeScripts.** `typescript` is 6.x: ts-jest, typescript-eslint, Nest's

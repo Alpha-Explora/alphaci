@@ -2,7 +2,7 @@ import { act, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { useAuthSession } from '@/features/auth/session';
-import type { AuthMeResponse } from '../../src/shared/api/contracts';
+import type { AuthMeResponse } from '@/shared/api/contracts';
 
 /* ── Mocks ───────────────────────────────────────────────────────────────── */
 

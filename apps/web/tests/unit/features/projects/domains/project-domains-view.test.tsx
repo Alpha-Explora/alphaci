@@ -2,7 +2,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { ProjectDomainsView } from '../../../../../src/features/projects/domains';
-import type { CustomDomain } from '../../../../../src/lib/api/contracts';
+import type { CustomDomain } from '@/shared/api/contracts';
 
 function domain(overrides: Partial<CustomDomain> = {}): CustomDomain {
   return {
