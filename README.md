@@ -90,6 +90,16 @@ request. When two ranges must differ on purpose, add the dependency to
 `allowScripts` in the root `package.json` lists which install scripts npm may
 run.
 
+### Security overrides
+
+npm honours `overrides` only in the root `package.json`. Today it forces
+`exceljs`'s `uuid` to `^11.1.1` (GHSA-w5hq-g745-h8pq); the QA report workbook
+specs cover that path. Known and accepted (moderate, reviewed 2026-11-02):
+`minimatch` < 11.0.1 (GHSA-g3hv-75wg-m249) has no patched release below 11; in
+production it is reached only through `exceljs` → `archiver` → `readdir-glob`
+with patterns from our own code, never user input. The other `npm audit`
+findings (`glob` 9–14.0.1, `deepmerge`) are dev tooling only (ESLint, Jest).
+
 ## Git hooks
 
 `npm install` installs a pre-push hook ([lefthook](https://lefthook.dev),
