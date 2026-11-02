@@ -15,7 +15,8 @@
       ],
       "inputs": [
         "$TURBO_DEFAULT$",
-        ".env*"
+        ".env*",
+        "!**/*.md"
       ],
       "env": [
         "NEXT_PUBLIC_*",
@@ -32,10 +33,18 @@
       "dependsOn": [
         "^build"
       ],
-      "outputs": []
+      "outputs": [],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md"
+      ]
     },
     "lint": {
-      "outputs": []
+      "outputs": [],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md"
+      ]
     },
     "format:check": {
       "outputs": []
@@ -46,10 +55,18 @@
     "test": {
       "outputs": [
         "coverage/**"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md"
       ]
     },
     "boundaries": {
-      "outputs": []
+      "outputs": [],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md"
+      ]
     },
     "check:documentation": {
       "inputs": [
