@@ -27,6 +27,13 @@ updates:
     commit-message:
       prefix: deps
       prefix-development: deps-dev
+    ignore:
+      # `typescript` stays on 6: ts-jest, typescript-eslint, Nest's emit and
+      # `next build` need its programmatic API, which TypeScript 7.0 does not have.
+      # TypeScript 7 is the `typescript-7` alias, used only by `typecheck`, and
+      # gets its updates under that name. Lift this when 7 ships the API.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       nestjs:
         patterns: ['@nestjs/*']
