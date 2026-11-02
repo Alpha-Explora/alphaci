@@ -9,7 +9,6 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
-  Query,
   UnauthorizedException,
   ValidationPipe,
 } from '@nestjs/common';
@@ -33,6 +32,7 @@ import {
   CiReportDeploymentStatusDto,
   RegisterReleaseDto,
 } from './dto/release-registry.dto';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -115,7 +115,7 @@ export class ReleasesController {
   async getRelease(
     @Headers('authorization') authorization: string | undefined,
     @Param('releaseId') releaseId: string,
-    @Query('repo') repo: string | undefined,
+    @QueryString('repo') repo: string | undefined,
   ): Promise<ReleaseView | ReleaseRegistryView> {
     // The repository is required here as well: the token alone says which
     // project it belongs to, and checking both keeps one validation path for

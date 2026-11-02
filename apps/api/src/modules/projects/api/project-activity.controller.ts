@@ -4,7 +4,6 @@ import {
   Get,
   Param,
   Post,
-  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -16,6 +15,7 @@ import { SessionAuthGuard } from '#kernel/auth/session-auth.guard';
 import { ProjectBranchProtectionService } from '../application/branch-protection/project-branch-protection.service';
 import { ProjectCommitsService } from '../application/github-activity/project-commits.service';
 import { ProjectGithubActivityService } from '../application/github-activity/project-github-activity.service';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 /**
  * What a repository's GitHub looks like from inside the product, and the
@@ -45,9 +45,9 @@ export class ProjectActivityController {
   listCommits(
     @Req() req: Request,
     @Param('id') id: string,
-    @Query('branch') branch?: string,
-    @Query('limit') limit?: string,
-    @Query('before') before?: string,
+    @QueryString('branch') branch?: string,
+    @QueryString('limit') limit?: string,
+    @QueryString('before') before?: string,
   ) {
     return this.commitsService.listCommits(
       id,

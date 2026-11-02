@@ -8,7 +8,6 @@ import {
   NotFoundException,
   Param,
   Post,
-  Query,
   Req,
   UnauthorizedException,
   Optional,
@@ -39,6 +38,7 @@ import { ProjectDriftRepairApplicationService } from '../application/drift/proje
 import { ProjectLifecycleService } from '../application/lifecycle/project-lifecycle.service';
 import { ProjectPreviewsApplicationService } from '../application/dashboard/project-previews.service';
 import { ProjectWorkflowsService } from '../application/workflows/project-workflows.service';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 @Controller('projects')
 export class ProjectsController {
@@ -134,8 +134,8 @@ export class ProjectsController {
   @UseGuards(SessionAuthGuard)
   async listProjects(
     @Req() req: Request,
-    @Query('limit') limit?: string,
-    @Query('workspaceId') workspaceId?: string,
+    @QueryString('limit') limit?: string,
+    @QueryString('workspaceId') workspaceId?: string,
   ) {
     const userId = req.session.user?.id ?? req.session.userId;
     if (!userId) {
@@ -456,8 +456,8 @@ export class ProjectsController {
   async listProjectAuditEvents(
     @Req() req: Request,
     @Param('id') id: string,
-    @Query('limit') limit?: string,
-    @Query('before') before?: string,
+    @QueryString('limit') limit?: string,
+    @QueryString('before') before?: string,
   ) {
     const userId = req.session.user?.id ?? req.session.userId;
     if (!userId) {

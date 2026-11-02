@@ -8,7 +8,6 @@ import {
   Patch,
   Post,
   Put,
-  Query,
   Req,
   Sse,
   UseGuards,
@@ -26,6 +25,7 @@ import { DeploymentTargetsService } from '../application/deployment-targets.serv
 import type { UpdateDeploymentTargetMetadataInput } from '../core/deployments.types';
 import { parseDeploymentLogsQuery } from './deployment-logs-stream.util';
 import { DeploymentLogsHubService } from '../application/deployment-logs-hub.service';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 @Controller('projects/:projectId/deployment-targets')
 @RequiresCapability('runtime.env-provisioning')
@@ -40,7 +40,7 @@ export class DeploymentTargetsController {
   list(
     @Req() req: Request,
     @Param('projectId') projectId: string,
-    @Query('environmentId') environmentId?: string,
+    @QueryString('environmentId') environmentId?: string,
   ) {
     return this.service.listDeploymentTargets(
       projectId,
@@ -178,14 +178,14 @@ export class DeploymentTargetsController {
     @Req() req: Request,
     @Param('projectId') projectId: string,
     @Param('targetId') targetId: string,
-    @Query('type') type?: string,
-    @Query('startTime') startTime?: string,
-    @Query('endTime') endTime?: string,
-    @Query('direction') direction?: string,
-    @Query('limit') limit?: string,
-    @Query('level') level?: string,
-    @Query('text') text?: string,
-    @Query('instance') instance?: string,
+    @QueryString('type') type?: string,
+    @QueryString('startTime') startTime?: string,
+    @QueryString('endTime') endTime?: string,
+    @QueryString('direction') direction?: string,
+    @QueryString('limit') limit?: string,
+    @QueryString('level') level?: string,
+    @QueryString('text') text?: string,
+    @QueryString('instance') instance?: string,
   ) {
     return this.service.getDeploymentTargetLogs(
       projectId,
@@ -224,13 +224,13 @@ export class DeploymentTargetsController {
     @Req() req: Request,
     @Param('projectId') projectId: string,
     @Param('targetId') targetId: string,
-    @Query('mode') mode?: string,
-    @Query('type') type?: string,
-    @Query('startTime') startTime?: string,
-    @Query('endTime') endTime?: string,
-    @Query('level') level?: string,
-    @Query('text') text?: string,
-    @Query('instance') instance?: string,
+    @QueryString('mode') mode?: string,
+    @QueryString('type') type?: string,
+    @QueryString('startTime') startTime?: string,
+    @QueryString('endTime') endTime?: string,
+    @QueryString('level') level?: string,
+    @QueryString('text') text?: string,
+    @QueryString('instance') instance?: string,
   ): Observable<MessageEvent> {
     const userId = req.session.user!.id;
     const filters = parseDeploymentLogsQuery({

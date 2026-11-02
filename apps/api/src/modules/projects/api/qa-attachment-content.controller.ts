@@ -6,7 +6,6 @@ import {
   Get,
   Headers,
   Inject,
-  Query,
   Res,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
@@ -16,6 +15,7 @@ import {
   QA_ATTACHMENT_STORAGE,
   type QaAttachmentStoragePort,
 } from '../application/qa-runs/qa-attachment-storage.port';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 /**
  * Requests one client address may make to the content route per minute. The
@@ -51,9 +51,9 @@ export class QaAttachmentContentController {
   @Get('content')
   @Throttle({ default: QA_ATTACHMENT_CONTENT_RATE_LIMIT })
   async getContent(
-    @Query('path') path: string,
-    @Query('exp') exp: string,
-    @Query('sig') sig: string,
+    @QueryString('path') path: string | undefined,
+    @QueryString('exp') exp: string | undefined,
+    @QueryString('sig') sig: string | undefined,
     @Res() res: Response,
     @Headers('if-none-match') ifNoneMatch?: string,
   ): Promise<void> {

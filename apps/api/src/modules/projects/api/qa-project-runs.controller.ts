@@ -6,7 +6,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   Req,
   Res,
   StreamableFile,
@@ -40,6 +39,7 @@ import {
   parseReportFormat,
   requireUserId,
 } from './qa-runs.controller';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 /**
  * Project QA runs: QA verifies once per Project, against the uat head of every
@@ -60,8 +60,8 @@ export class DeliveryProjectQaRunsController {
   list(
     @Req() req: Request,
     @Param('deliveryProjectId') deliveryProjectId: string,
-    @Query('limit') limit?: string,
-    @Query('cursor') cursor?: string,
+    @QueryString('limit') limit?: string,
+    @QueryString('cursor') cursor?: string,
   ) {
     return this.qaProjectRunsService.list(
       deliveryProjectId,
@@ -119,7 +119,7 @@ export class DeliveryProjectQaRunsController {
     @Req() req: Request,
     @Param('deliveryProjectId') deliveryProjectId: string,
     @Param('runId') runId: string,
-    @Query('format') formatParam?: string,
+    @QueryString('format') formatParam?: string,
   ): Promise<StreamableFile> {
     const format = parseReportFormat(formatParam);
     const report = await this.qaProjectRunsService.buildReport(

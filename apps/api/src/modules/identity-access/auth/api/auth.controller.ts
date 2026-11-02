@@ -4,7 +4,6 @@ import {
   Get,
   Inject,
   Post,
-  Query,
   Req,
   Res,
   UnauthorizedException,
@@ -23,8 +22,8 @@ import {
   type SubscriptionAccessPort,
 } from '#kernel/auth/subscription-access.port';
 import { PlatformAdminAccessService } from '#modules/identity-access/admin/index.js';
-import { singleQueryValue } from '#kernel/http/single-query-value';
 import { AuthService } from '../application/auth.service';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 @Throttle({ default: { ttl: 60_000, limit: 10 } })
 @Controller('auth')
@@ -46,7 +45,7 @@ export class AuthController {
   async githubStart(
     @Req() req: Request,
     @Res() res: Response,
-    @Query('returnTo') returnTo?: string,
+    @QueryString('returnTo') returnTo?: string,
   ) {
     const redirectUrl = await this.authService.startGitHubAuth(req, returnTo);
     return res.redirect(redirectUrl);
@@ -57,13 +56,13 @@ export class AuthController {
   async githubCallback(
     @Req() req: Request,
     @Res() res: Response,
-    @Query('code') code?: unknown,
-    @Query('state') state?: unknown,
+    @QueryString('code') code?: string,
+    @QueryString('state') state?: string,
   ) {
     const redirectUrl = await this.authService.handleGitHubCallback(
       req,
-      singleQueryValue(code),
-      singleQueryValue(state),
+      code,
+      state,
     );
     return res.redirect(redirectUrl);
   }

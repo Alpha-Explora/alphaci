@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -15,13 +16,18 @@ import {
 import type { Request } from 'express';
 
 import { SessionAuthGuard } from '#kernel/auth/session-auth.guard';
-import type { FeedbackStatus } from '#kernel/ports/feedback.port';
+import {
+  FEEDBACK_STATUSES,
+  isFeedbackStatus,
+  type FeedbackStatus,
+} from '#kernel/ports/feedback.port';
 import { AdminService } from '../application/admin.service';
 import { GrantRoleDto } from './dto/grant-role.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { SetAppRoleDto } from './dto/set-app-role.dto';
 import { PlatformAdminGuard } from './guards/platform-admin.guard';
 import { SuperAdminGuard } from './guards/super-admin.guard';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 /**
  * Platform admin API. Every route is locked by the class-level guards
@@ -107,7 +113,12 @@ export class AdminController {
   }
 
   @Get('feedback')
-  listFeedback(@Req() req: Request, @Query('status') status?: FeedbackStatus) {
+  listFeedback(@Req() req: Request, @QueryString('status') status?: string) {
+    if (!status) return this.adminService.listFeedback(this.actorId(req));
+    if (!isFeedbackStatus(status))
+      throw new BadRequestException(
+        `status must be one of: ${FEEDBACK_STATUSES.join(', ')}`,
+      );
     return this.adminService.listFeedback(this.actorId(req), status);
   }
 

@@ -26,6 +26,7 @@ import { GroupActivityService } from '../application/group-activity.service';
 import { AddGroupMemberDto } from './dto/add-group-member.dto';
 import { GroupMembersService } from '../application/group-members.service';
 import { GroupsService } from '../application/groups.service';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 @Controller('groups')
 @UseGuards(SessionAuthGuard)
@@ -142,7 +143,7 @@ export class GroupsController {
   searchEligibleUsers(
     @Req() req: Request,
     @Param('groupId') groupId: string,
-    @Query('search') search = '',
+    @QueryString('search') search = '',
   ) {
     return this.groupsService.searchEligibleMembers(
       groupId,
