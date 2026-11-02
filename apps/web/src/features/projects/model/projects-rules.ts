@@ -308,15 +308,35 @@ export function createdLabel(
   return preview.createdBy ? `${ago} by ${preview.createdBy}` : ago;
 }
 
+/**
+ * Display names of the providers the backend registers, matching their
+ * descriptor labels. Providers are plugins, so this list is not exhaustive.
+ */
+const KNOWN_PROVIDER_LABELS: Readonly<Record<string, string>> = {
+  vercel: "Vercel",
+  render: "Render",
+  gcp: "Google Cloud Platform",
+  "onprem-compose": "On-prem host (Docker Compose)",
+};
+
+/**
+ * The provider's display name when the backend sends none: a known id's
+ * name, else the id made readable (`fly-io` -> "Fly Io"), never another
+ * provider's name.
+ */
 export function previewProviderLabel(
   provider: ProjectBranchPreview["provider"],
 ): string {
-  return provider === "vercel" ? "Vercel" : "Render";
+  const known = KNOWN_PROVIDER_LABELS[provider];
+  if (known) return known;
+  const words = provider.split(/[-_\s]+/).filter(Boolean);
+  if (words.length === 0) return "Hosting provider";
+  return words.map((word) => word[0].toUpperCase() + word.slice(1)).join(" ");
 }
 
 /**
- * The host's display name: the backend's provider descriptor label, or the
- * older fixed rule when a backend predates the field.
+ * The host's display name: the backend's provider descriptor label, or
+ * `previewProviderLabel` when a backend predates the field or sends it empty.
  */
 export function previewHostLabel(
   preview: Pick<ProjectBranchPreview, "provider" | "providerLabel">,
