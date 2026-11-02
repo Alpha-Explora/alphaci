@@ -110,7 +110,7 @@
     "@types/connect-pg-simple": "^7.0.3",
     "@types/express": "^5.0.0",
     "@types/express-session": "^1.19.0",
-    "@types/helmet": "^0.0.48",
+    "@types/helmet": "^4.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.6.6",
     "@types/pg": "^8.20.0",
