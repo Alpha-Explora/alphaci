@@ -44,7 +44,10 @@ services:
       # authenticated roles. migrate runs the same file on every start.
       - ./postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U alphaci -d alphaci']
+      # Over TCP: on first start the image runs its init scripts on a temporary
+      # server that listens on the Unix socket only, then restarts. A socket check
+      # passes during that phase and reports healthy before migrate can connect.
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U alphaci -d alphaci']
       interval: 5s
       timeout: 3s
       retries: 20

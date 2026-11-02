@@ -18,9 +18,12 @@ services:
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:
+      # Over TCP: on first start the image runs its init scripts on a temporary
+      # server that listens on the Unix socket only, then restarts. A socket check
+      # passes during that phase and reports healthy before clients can connect.
       test:
         - CMD-SHELL
-        - pg_isready -U alphaci_migration_test -d alphaci_migration_test
+        - pg_isready -h 127.0.0.1 -U alphaci_migration_test -d alphaci_migration_test
       interval: 2s
       timeout: 3s
       retries: 20
