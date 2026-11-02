@@ -1,7 +1,7 @@
 import type {
   DeploymentTarget,
   EnvLane,
-  EnvProvider,
+  CreatableEnvProvider,
   EnvTargetSlot,
   EnvVarMetadata,
   EnvVarScope,
@@ -43,7 +43,7 @@ export interface EnvRow {
 }
 
 export function hostingForProject(project: ProvisionedProject): {
-  provider: EnvProvider;
+  provider: CreatableEnvProvider;
   slot: EnvTargetSlot;
   label: string;
 } {

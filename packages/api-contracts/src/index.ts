@@ -7,5 +7,7 @@
  */
 
 export type * from './deployments.js';
+export type * from './domains.js';
 export type * from './drift.js';
+export type * from './env-vars.js';
 export type * from './previews.js';

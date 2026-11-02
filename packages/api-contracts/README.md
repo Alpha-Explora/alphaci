@@ -10,6 +10,13 @@ that breaks the web app, the web typecheck fails in the same pull request.
 | `src/deployments.ts` | `GET /projects/:id/deployments`: `DeploymentHistoryResponse`, `DeploymentHistoryItem`, `DeploymentHistoryStatus`, `DeploymentHistoryMode`, and the `DeploymentProvider` / `DeploymentSlot` vocabulary |
 | `src/previews.ts` | `GET /projects/:id/previews`: `ProjectPreviewsResponse`, `ProjectBranchPreview`, `ProjectBranchPreviewStatus`, `ProjectPreviewDeploy`, `PreviewSurface` |
 | `src/drift.ts` | `GET /projects/:id/drift`, `POST .../drift/run`, `POST .../drift/:findingId/repair`: `DeploymentDriftResponse`, `DeploymentDriftFinding` and its severity, status and source, `ProjectDriftRepairAction`, `ProjectDriftRepairResponse` |
+| `src/env-vars.ts` | `GET /projects/:id/env-vars`, `POST .../env-vars/provision`, `POST .../env-vars/validate`, `DELETE .../env-vars/:metadataId`: `EnvVarMetadata` and its `EnvVarProvisionStatus`, `EnvLane`, `EnvVarScope`, `EnvVarInput`, `ProvisionEnvVarsRequest`/`Response`, `ValidateEnvVarsRequest`/`Response`, `DeleteEnvVarMetadataResponse` |
+| `src/domains.ts` | `GET`/`POST /projects/:id/domains`, `POST .../domains/:domainId/verify`, `DELETE .../domains/:domainId`: `CustomDomain`, `DomainVerificationChallenge`, `AddCustomDomainRequest`, `RemoveCustomDomainResponse` |
+
+`DeploymentProvider` is an open `string`, not a list: providers are runtime
+plugins (`render`, `vercel`, `onprem-compose`, `gcp`, ...). Every `provider`
+field here uses it, so a client that labels providers needs a fallback for an
+id it does not know.
 
 ## Rules
 
@@ -39,6 +46,15 @@ that breaks the web app, the web typecheck fails in the same pull request.
   Previews go through
   `src/modules/projects/application/dashboard/project-previews.types.ts`.
   `PreviewSurface` goes through `src/modules/projects/domain/preview-surface.rule.ts`.
+  Env vars and domains go through `src/modules/runtime/core/deployments.types.ts`
+  (`CustomDomain` under the API name `CustomDomainSummary`), and
+  `EnvVarMetadata` through the kernel port too. The request and response
+  types go through the files that declared them:
+  `src/modules/runtime/api/dto/provision-env-vars.dto.ts`
+  (`ProvisionEnvVarsDto`), `application/env-vars.service.ts`
+  (`ValidateEnvTextInput`, `ValidateEnvTextResponse`) and
+  `application/custom-domains.service.ts` (`AddCustomDomainInput`); the
+  services' return types name the package's response types.
   The rest of the API keeps importing from those files.
 - **Web:** `src/shared/api/contracts.ts` is the only file that imports the
   package; the web `boundaries` rule `api-contracts-through-shared-api`
@@ -46,6 +62,14 @@ that breaks the web app, the web typecheck fails in the same pull request.
   that name differs (`ProjectDeploymentHistoryItem` is `DeploymentHistoryItem`,
   `ProjectDriftFinding` is `DeploymentDriftFinding`, `EnvTargetSlot` is
   `DeploymentSlot`, and so on).
+- **Names.** A type keeps the API's name when that name describes the wire
+  shape (`DeploymentHistoryItem`). Where the API's name was internal (a
+  `*Dto`, `*Input` or `*Summary`, or an inline return type), the package uses
+  the web's `*Request` / `*Response` name and the API aliases it.
+- **Provider choices stay in the web.** The web's `CreatableEnvProvider`
+  (`"render" | "vercel"`) is the fixed list the UI offers when the user picks
+  a provider. It lives in `contracts.ts`, is not a wire type, and does not
+  belong here.
 
 ## Adding a type
 
