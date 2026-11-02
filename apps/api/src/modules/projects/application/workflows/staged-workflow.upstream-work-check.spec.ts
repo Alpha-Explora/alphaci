@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from './yaml';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -94,7 +94,7 @@ const bundles = () => [
   ),
 ];
 
-const parse = (file: StagedWorkflowFile) => yaml.load(file.yaml) as Parsed;
+const parse = (file: StagedWorkflowFile) => loadYaml(file.yaml) as Parsed;
 
 const chainedFiles = (files: StagedWorkflowFile[]) =>
   files.filter((file) => parse(file).jobs['upstream-work-check']);

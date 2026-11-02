@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from './yaml';
 import { WorkflowFragmentRegistry } from '#kernel/ports/workflow-fragment.port';
 import { renderWorkflowFragment } from '#modules/runtime/infrastructure/providers/render/render-workflow.fragment';
 import { vercelWorkflowFragment } from '#modules/runtime/infrastructure/providers/vercel/vercel-workflow.fragment';
@@ -110,7 +110,7 @@ function workflows(bundleOptions: StagedWorkflowOptions) {
   return new Map(
     bundle.workflowFiles.map((file) => [
       file.path,
-      yaml.load(file.yaml) as Workflow,
+      loadYaml(file.yaml) as Workflow,
     ]),
   );
 }
@@ -337,7 +337,7 @@ describe('verify stage of an environment pipeline', () => {
       ]),
     ).workflowFiles.find((candidate) => candidate.stage === 'verify');
     return (
-      file && { path: file.path, workflow: yaml.load(file.yaml) as Workflow }
+      file && { path: file.path, workflow: loadYaml(file.yaml) as Workflow }
     );
   };
 

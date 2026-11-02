@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from './yaml';
 import { execFileSync } from 'node:child_process';
 import type { ProjectsRepository } from '../../infrastructure/projects.repository';
 import type { GithubProjectPort } from '#kernel/ports/github.port';
@@ -78,7 +78,7 @@ it('regenerates persisted environment targets instead of dropping host delivery'
   );
   expect(preview.validationWarnings).toEqual([]);
   for (const file of preview.workflowFiles) {
-    const workflow = yaml.load(file.yaml) as {
+    const workflow = loadYaml(file.yaml) as {
       env?: Record<string, string>;
       jobs: Record<string, { steps?: Array<{ name?: string; run?: string }> }>;
     };
@@ -108,7 +108,7 @@ it('regenerates persisted environment targets instead of dropping host delivery'
     (file) => file.stage === 'package',
   );
   const packageJobs = (
-    yaml.load(packageFile!.yaml) as { jobs: Record<string, unknown> }
+    loadYaml(packageFile!.yaml) as { jobs: Record<string, unknown> }
   ).jobs;
   expect(packageJobs['image-frontend']).toBeDefined();
   expect(packageJobs['sign-release']).toBeDefined();
@@ -119,7 +119,7 @@ it('regenerates persisted environment targets instead of dropping host delivery'
     file.path.endsWith('30-alphaci-promote.yml'),
   );
   expect(promote).toBeDefined();
-  const parsed = yaml.load(promote!.yaml) as { jobs: Record<string, unknown> };
+  const parsed = loadYaml(promote!.yaml) as { jobs: Record<string, unknown> };
   expect(
     Object.keys(parsed.jobs).filter((key) => key.startsWith('deploy-')),
   ).toEqual([]);
@@ -199,7 +199,7 @@ async function regeneratedSignJobWith(
     (file) => file.stage === 'package',
   );
   const jobs = (
-    yaml.load(packageFile!.yaml) as {
+    loadYaml(packageFile!.yaml) as {
       jobs: Record<string, { with?: Record<string, unknown> }>;
     }
   ).jobs;

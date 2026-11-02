@@ -3,12 +3,35 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const yaml = require('js-yaml');
+const {
+  CORE_SCHEMA,
+  legacyMapTag,
+  loadAll,
+  mergeTag,
+  timestampTag,
+} = require('js-yaml');
 
 const OKF_VERSION = '0.2';
 const RESERVED_FILES = new Set(['index.md', 'log.md']);
 const LIFECYCLE_STATUSES = new Set(['draft', 'stable', 'deprecated']);
 const SKIP_DIRECTORIES = new Set(['superpowers', 'node_modules']);
+
+// Frontmatter reads as it did with js-yaml 4: dates become Date objects, `<<`
+// merges keys, complex keys become strings, and frontmatter with no content is
+// null (a "must be a YAML mapping" error) rather than a parse error.
+const FRONTMATTER_SCHEMA = CORE_SCHEMA.withTags(
+  timestampTag,
+  mergeTag,
+  legacyMapTag,
+);
+
+function loadFrontmatter(yamlText) {
+  const documents = loadAll(yamlText, { schema: FRONTMATTER_SCHEMA });
+  if (documents.length > 1) {
+    throw new Error('expected a single document in the stream, but found more');
+  }
+  return documents.length === 0 ? null : documents[0];
+}
 
 function filesUnder(directory) {
   if (!fs.existsSync(directory)) return [];
@@ -51,7 +74,7 @@ function readFrontmatter(text, relative) {
   const body = text.slice(3 + closing.index + closing[0].length);
   let metadata;
   try {
-    metadata = yaml.load(yamlText);
+    metadata = loadFrontmatter(yamlText);
   } catch (error) {
     return {
       error: `${relative}: invalid YAML frontmatter: ${error.message}`,

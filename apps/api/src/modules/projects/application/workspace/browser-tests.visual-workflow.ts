@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from '../workflows/yaml';
 
 /** The reusable workflow whose inputs decide whether visual testing runs. */
 const PLAYWRIGHT_WORKFLOW = 'playwright-e2e.yml';
@@ -46,7 +46,7 @@ export function readVisualTestingFlag(
   }
   let parsed: unknown;
   try {
-    parsed = yaml.load(content, { schema: yaml.DEFAULT_SCHEMA });
+    parsed = loadYaml(content);
   } catch {
     return null;
   }

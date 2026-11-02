@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { dumpYaml } from './yaml';
 import { validateCiApiConnectivity } from '#kernel/config/ci-api-connectivity';
 import { resolvePlatformBaseUrl } from '#kernel/config/ci-api-base-url';
 import type { ReleaseSigner } from '#kernel/config/release-signing.config';
@@ -3228,11 +3228,5 @@ function reportingJob(
 }
 
 function dumpWorkflow(workflow: Record<string, unknown>): string {
-  return yaml
-    .dump(workflow, {
-      lineWidth: -1,
-      noRefs: true,
-      sortKeys: false,
-    })
-    .replaceAll('runs_on:', 'runs-on:');
+  return dumpYaml(workflow).replaceAll('runs_on:', 'runs-on:');
 }

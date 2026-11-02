@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from '../../src/modules/projects/application/workflows/yaml';
 
 import {
   startApplication,
@@ -279,7 +279,7 @@ describe('Project creation with environments', () => {
 
     const pushes = pushesSince(start);
     const pipeline = (path: string) =>
-      yaml.load(
+      loadYaml(
         required(
           pushes.find((push) => push.path === path && push.branch === 'dev'),
         ).content,
@@ -486,7 +486,7 @@ describe('Project creation with environments', () => {
 
     const pushes = filePushes(calls);
     const pipeline = (path: string, branch: string) =>
-      yaml.load(
+      loadYaml(
         required(
           pushes.find((push) => push.path === path && push.branch === branch),
         ).content,

@@ -12,7 +12,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { load } from 'js-yaml';
+import { loadYaml } from '../../../src/modules/projects/application/workflows/yaml';
 
 // The self-enrolling images: cloud-init user-data for a VM, and the WSL overlay and
 // first-boot unit. The renderer and overlay mode run anywhere Node runs; the shell
@@ -74,7 +74,7 @@ describe('cloud-init user-data for an Ubuntu VM', () => {
     expect(userData.startsWith('#cloud-config\n')).toBe(true);
     expect(userData.split(CODE).length - 1).toBe(1);
 
-    const config = load(userData) as {
+    const config = loadYaml(userData) as {
       write_files: { path: string; permissions: string; content: string }[];
       runcmd: unknown[];
     };

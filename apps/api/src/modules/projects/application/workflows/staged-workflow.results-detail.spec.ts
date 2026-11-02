@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { loadYaml } from './yaml';
 import { execFileSync } from 'node:child_process';
 
 import { WorkflowFragmentRegistry } from '#kernel/ports/workflow-fragment.port';
@@ -54,7 +54,7 @@ function stage(name: 'verify' | 'quality'): Parsed {
     } as never,
     new WorkflowFragmentRegistry([vercelWorkflowFragment]),
   );
-  return yaml.load(
+  return loadYaml(
     bundle.workflowFiles.find((file) => file.stage === name)!.yaml,
   ) as Parsed;
 }

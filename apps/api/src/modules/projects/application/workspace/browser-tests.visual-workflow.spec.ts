@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import { dumpYaml, loadYaml } from '../workflows/yaml';
 
 import { WorkflowFragmentRegistry } from '#kernel/ports/workflow-fragment.port';
 import { vercelWorkflowFragment } from '#modules/runtime/infrastructure/providers/vercel/vercel-workflow.fragment';
@@ -86,7 +86,7 @@ function workflowWith(job: {
   with?: Record<string, unknown>;
   secrets?: unknown;
 }): string {
-  return yaml.dump({
+  return dumpYaml({
     jobs: {
       'ui-tests-uat': {
         uses: 'Alpha-Explora/alphaci-workflow/.github/workflows/playwright-e2e.yml@v1',
@@ -130,7 +130,7 @@ describe('readVisualTestingFlag', () => {
   });
 
   it('is false when no job calls the Playwright workflow', () => {
-    const content = yaml.dump({
+    const content = dumpYaml({
       jobs: {
         lint: { 'runs-on': 'ubuntu-latest', steps: [{ run: 'echo hi' }] },
         k6: { uses: 'org/repo/.github/workflows/k6-load.yml@v1' },
@@ -187,11 +187,11 @@ describe('readVisualTestingFlag', () => {
   });
 
   it('needs EVERY Playwright job to be wired, not just one', () => {
-    const complete = yaml.load(workflowWith({})) as {
+    const complete = loadYaml(workflowWith({})) as {
       jobs: Record<string, unknown>;
     };
-    const old = yaml.load(OLD_VERIFY_YAML) as { jobs: Record<string, unknown> };
-    const mixed = yaml.dump({
+    const old = loadYaml(OLD_VERIFY_YAML) as { jobs: Record<string, unknown> };
+    const mixed = dumpYaml({
       jobs: { ...complete.jobs, 'ui-tests-main': old.jobs['ui-tests-main'] },
     });
     expect(readVisualTestingFlag(mixed)).toBe(false);

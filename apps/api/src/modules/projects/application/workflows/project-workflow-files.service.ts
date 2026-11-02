@@ -5,7 +5,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import yaml from 'js-yaml';
+import { dumpYaml, loadYaml } from './yaml';
 import type { ConfigService } from '@nestjs/config';
 import {
   releaseSignerFor,
@@ -285,13 +285,7 @@ export class ProjectWorkflowFilesService {
 
     const source = await readFile(template.workflowPath, 'utf8');
 
-    // Use DEFAULT_SCHEMA (the js-yaml default) explicitly to document that no
-    // unsafe tag constructors (!!js/function, !!js/regexp, etc.) are permitted.
-    // This is equivalent to yaml.load() with no schema option, but makes the
-    // intent clear and is resilient to any future js-yaml API drift.
-    const parsed = yaml.load(source, {
-      schema: yaml.DEFAULT_SCHEMA,
-    }) as Record<string, unknown> | null;
+    const parsed = loadYaml(source) as Record<string, unknown> | null;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       throw new UnprocessableEntityException(
         'Workflow template could not be parsed',
@@ -327,11 +321,7 @@ export class ProjectWorkflowFilesService {
     const withConfig = ensureObject(pipelineConfig, 'with');
     applyEnhancements(withConfig, enhancements ?? []);
 
-    const generatedYaml = yaml.dump(parsed, {
-      lineWidth: -1,
-      noRefs: true,
-      sortKeys: false,
-    });
+    const generatedYaml = dumpYaml(parsed);
 
     const outputFileName =
       customOutputFileName ?? deriveOutputFileName(serviceName, template.id);

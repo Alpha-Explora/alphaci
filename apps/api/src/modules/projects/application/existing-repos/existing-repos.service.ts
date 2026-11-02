@@ -9,7 +9,7 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import yaml from 'js-yaml';
+import { dumpYaml, loadYaml } from '../workflows/yaml';
 
 import { CatalogService } from '../catalog/catalog.service';
 import {
@@ -463,10 +463,7 @@ export class ExistingReposService {
     }
 
     const source = await readFile(template.workflowPath, 'utf8');
-    const parsed = yaml.load(source, { schema: yaml.DEFAULT_SCHEMA }) as Record<
-      string,
-      unknown
-    > | null;
+    const parsed = loadYaml(source) as Record<string, unknown> | null;
 
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       throw new UnprocessableEntityException(
@@ -497,11 +494,7 @@ export class ExistingReposService {
     }
 
     return {
-      generatedYaml: yaml.dump(parsed, {
-        lineWidth: -1,
-        noRefs: true,
-        sortKeys: false,
-      }),
+      generatedYaml: dumpYaml(parsed),
       outputFileName:
         customOutputFileName ??
         this.deriveOutputFileName(serviceName, templateId),
