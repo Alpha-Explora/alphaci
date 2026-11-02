@@ -146,6 +146,10 @@ seconds. Skip once with `git push --no-verify`.
   and outbound requests refused. Run it locally with
   `npm run test:fullstack -w @alphaci/web` (needs Docker). On failure the job
   uploads `apps/web/test-results/fullstack/` as `fullstack-e2e-report`.
+- **`Web e2e`** runs when the web is affected: Playwright journeys against a
+  production build whose `/api/v1` calls a contract-shaped mock answers. Run it
+  locally with `npm run test:e2e -w @alphaci/web`. On failure the job uploads
+  the HTML report and traces as `web-e2e-report`.
 - **`Affected detection guard`** replays synthetic changes through
   `plan-affected.sh` so a detection bug fails CI instead of skipping work.
 - **`ci-passed`** fails if any job failed or was cancelled. It is the only

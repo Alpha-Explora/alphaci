@@ -1,11 +1,9 @@
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
-import { chromium, type Page } from 'playwright';
 
 import { startEgressGuard, type EgressGuard } from './egress-guard';
-import { journeys, type ExpectedResponse, type Journey } from './journeys';
 import {
   ProcessGroup,
   WEB_ROOT,
@@ -32,27 +30,23 @@ import {
  * Starts the API e2e suite's disposable Postgres, applies the migrations with
  * the self-hosted runner, starts the compiled API in self-hosted mode with
  * quick login on, builds and starts the web app (same origin, /api/v1 proxied
- * to the API), and drives the journeys in journeys.ts with Playwright
- * chromium. Any page error, console error, failed or 4xx/5xx same-origin
- * request, or attempt by the browser, API or web server to reach a
- * non-loopback host fails the run. Everything is stopped at the end.
+ * to the API), and runs journeys.spec.ts with Playwright
+ * (playwright.config.ts here). Any page error, console error, failed or
+ * 4xx/5xx same-origin request, or attempt by the browser, API or web server to
+ * reach a non-loopback host fails the run. Everything is stopped at the end.
+ * Arguments after --skip-build (or after --) go to `playwright test`.
  *
- * Writes test-results/fullstack/: report.json, one log per process, and a
- * screenshot of each failed journey. Overwrites apps/web/.next.
+ * Writes test-results/fullstack/: report.json (the stack), one log per
+ * process, and Playwright's HTML report (report/) with a trace and screenshot
+ * of each failed test. Overwrites apps/web/.next.
  * --skip-build reuses apps/api/dist and a .next this runner built.
  */
 
 const REPORT_DIR = join(WEB_ROOT, 'test-results', 'fullstack');
+const PLAYWRIGHT_CLI = require.resolve('@playwright/test/cli');
 // The API usually answers within 6 s. Loading a freshly compiled dist/ while
 // `next build` saturates the machine has taken close to 60 s on Windows.
 const SERVICE_READY_MS = 120_000;
-
-interface JourneyResult {
-  name: string;
-  result: 'passed' | 'failed' | 'skipped';
-  problems: string[];
-  screenshot?: string;
-}
 
 interface Report {
   result: 'passed' | 'failed';
@@ -60,7 +54,6 @@ interface Report {
   startedAt: string;
   seconds: number;
   steps: { name: string; seconds: number; ok: boolean }[];
-  journeys: JourneyResult[];
   egressAttempts: string[];
   error?: string;
 }
@@ -72,7 +65,6 @@ const report: Report = {
   startedAt: new Date().toISOString(),
   seconds: 0,
   steps: [],
-  journeys: [],
   egressAttempts: [],
 };
 
@@ -112,123 +104,34 @@ async function step<T>(name: string, work: () => Promise<T> | T): Promise<T> {
   }
 }
 
-function isLoopback(url: URL): boolean {
-  return ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname);
-}
-
-/**
- * Collect everything on the page that counts as a failure, except the 4xx/5xx
- * responses the current journey expects (and Chrome's console line for them).
- */
-function watchPage(
-  page: Page,
-  baseUrl: string,
-  problems: string[],
-  expected: () => readonly ExpectedResponse[],
-): void {
-  const isExpected = (status: number, url: string, method?: string) =>
-    expected().some(
-      (response) =>
-        response.status === status &&
-        url === `${baseUrl}${response.path}` &&
-        (method === undefined || response.method === method),
-    );
-  page.on('pageerror', (error) =>
-    problems.push(`page error: ${error.message}`),
-  );
-  page.on('console', (message) => {
-    if (message.type() !== 'error') return;
-    const resourceStatus = /^Failed to load resource: .* status of (\d+)/.exec(
-      message.text(),
-    );
-    if (
-      resourceStatus &&
-      isExpected(Number(resourceStatus[1]), message.location().url)
-    )
-      return;
-    problems.push(`console error: ${message.text()}`);
-  });
-  page.on('requestfailed', (request) => {
-    const failure = request.failure()?.errorText ?? 'unknown';
-    // Navigating away cancels in-flight requests and prefetches; not a failure.
-    if (request.url().startsWith(baseUrl) && failure !== 'net::ERR_ABORTED') {
-      problems.push(
-        `request failed: ${request.method()} ${request.url()} (${failure})`,
-      );
-    }
-  });
-  page.on('response', (response) => {
-    const method = response.request().method();
-    if (!response.url().startsWith(baseUrl) || response.status() < 400) return;
-    if (isExpected(response.status(), response.url(), method)) return;
-    problems.push(`HTTP ${response.status()}: ${method} ${response.url()}`);
-  });
-}
-
+/** Runs the journeys against the started stack; a failed test throws. */
 async function runJourneys(baseUrl: string): Promise<void> {
-  const browser = await chromium.launch({ headless: true });
-  try {
-    const context = await browser.newContext();
-    await context.route(
-      (url) => !isLoopback(url),
-      (route) => {
-        report.egressAttempts.push(
-          `browser: ${route.request().method()} ${route.request().url()}`,
-        );
-        return route.abort('blockedbyclient');
-      },
+  const args = process.argv
+    .slice(2)
+    .filter((arg) => arg !== '--skip-build' && arg !== '--');
+  const child = spawn(
+    process.execPath,
+    [
+      PLAYWRIGHT_CLI,
+      'test',
+      '-c',
+      'tests/fullstack/playwright.config.ts',
+      ...args,
+    ],
+    {
+      cwd: WEB_ROOT,
+      env: { ...process.env, FULLSTACK_BASE_URL: baseUrl },
+      stdio: 'inherit',
+    },
+  );
+  const code = await new Promise<number | null>((done) => {
+    child.once('error', () => done(null));
+    child.once('exit', (exitCode) => done(exitCode));
+  });
+  if (code !== 0)
+    throw new Error(
+      `Playwright exited with ${String(code)}: a journey failed.`,
     );
-    const page = await context.newPage();
-    const problems: string[] = [];
-    let current: Journey | undefined;
-    watchPage(page, baseUrl, problems, () => current?.expectedResponses ?? []);
-
-    let failed = false;
-    for (const [index, journey] of journeys.entries()) {
-      if (failed) {
-        report.journeys.push({
-          name: journey.name,
-          result: 'skipped',
-          problems: [],
-        });
-        continue;
-      }
-      problems.length = 0;
-      current = journey;
-      log(`journey: ${journey.name}`);
-      try {
-        await journey.run(page, baseUrl);
-        // Let late requests land so they are charged to this journey.
-        await page
-          .waitForLoadState('networkidle', { timeout: 5_000 })
-          .catch(() => undefined);
-      } catch (error) {
-        problems.unshift(`assertion: ${errorMessage(error)}`);
-      }
-      const result: JourneyResult = {
-        name: journey.name,
-        result: 'passed',
-        problems: [...problems],
-      };
-      if (problems.length > 0) {
-        failed = true;
-        result.result = 'failed';
-        result.screenshot = `journey-${index + 1}.png`;
-        await page
-          .screenshot({
-            path: join(REPORT_DIR, result.screenshot),
-            fullPage: true,
-          })
-          .catch(() => undefined);
-      }
-      report.journeys.push(result);
-      log(`journey: ${journey.name}: ${result.result}`);
-      for (const problem of result.problems) log(`  ${problem}`);
-    }
-    if (failed) throw new Error('A journey failed.');
-  } finally {
-    await browser.close();
-  }
 }
 
 async function main(): Promise<void> {

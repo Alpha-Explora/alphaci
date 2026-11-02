@@ -1,65 +1,14 @@
-import { spawn } from 'node:child_process';
-import process from 'node:process';
-import type { Page } from 'playwright';
-import { chromium, firefox, webkit } from 'playwright';
+import { test, type Page } from '@playwright/test';
 
-import { runQaJourneys } from './qa-journeys';
 import { expectVisibleText, json, text } from './support';
 
-type BrowserName = 'chromium' | 'firefox' | 'webkit';
-
-const LOCAL_PAGE_MARKERS = [
-  'Ship with calm, not chaos.',
-  'ALPHACI',
-  'Pro subscription is 300 pesos per month',
-];
-
-function hasExpectedLandingMarker(text: string): boolean {
-  return LOCAL_PAGE_MARKERS.some((marker) => text.includes(marker));
-}
-
-function isProtectedPreview(status: number | undefined, text: string): boolean {
-  if (status === 401 || status === 403) {
-    return true;
-  }
-
-  const normalized = text.toLowerCase();
-  return (
-    normalized.includes('authentication required') ||
-    normalized.includes('access denied') ||
-    normalized.includes('vercel authentication') ||
-    normalized.includes('password required')
-  );
-}
-
-function resolveBrowser(name: string): BrowserName {
-  if (name === 'firefox' || name === 'webkit') {
-    return name;
-  }
-
-  return 'chromium';
-}
-
-function launchBrowser(name: BrowserName) {
-  const executablePath = process.env.E2E_BROWSER_EXECUTABLE_PATH;
-  if (executablePath) {
-    if (name !== 'chromium') {
-      throw new Error(
-        'E2E_BROWSER_EXECUTABLE_PATH is only supported with chromium-compatible browsers',
-      );
-    }
-    return chromium.launch({ headless: true, executablePath });
-  }
-
-  switch (name) {
-    case 'firefox':
-      return firefox.launch({ headless: true });
-    case 'webkit':
-      return webkit.launch({ headless: true });
-    default:
-      return chromium.launch({ headless: true });
-  }
-}
+/* Dashboard audit: an admin's Projects, project detail and Settings render
+ * against a mocked backend with no failed request and no console error.
+ *
+ * Stale: its fixtures predate project folders, and the tabs and Billing page
+ * it walks are gone. Its checks (Pipeline configuration, Hosting variables,
+ * Audit, Settings) move into qa-journeys.ts on its contract-shaped mock, and
+ * this file is deleted. */
 
 const sessionUser = {
   id: 'user-1',
@@ -530,7 +479,10 @@ async function installDashboardAuditApi(page: Page) {
   });
 }
 
-async function runDashboardAudit(page: Page, baseUrl: string) {
+test('an admin walks the dashboard without a browser error', async ({
+  page,
+}) => {
+  test.fixme(true, 'Predates project folders; moving into qa-journeys.ts');
   const consoleMessages: string[] = [];
   const failedResponses: string[] = [];
   page.on('console', (message) => {
@@ -548,7 +500,7 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
   });
 
   await installDashboardAuditApi(page);
-  await page.goto(`${baseUrl}/workflows`, { waitUntil: 'networkidle' });
+  await page.goto(`/workflows`, { waitUntil: 'networkidle' });
   // The heading is plain "Projects": the team comes from the header picker,
   // and the page has no dropdown of its own.
   await page
@@ -603,7 +555,7 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
   await page.getByRole('tab', { name: 'Audit' }).click();
   await expectVisibleText(page, 'project_created');
 
-  await page.goto(`${baseUrl}/settings`, { waitUntil: 'networkidle' });
+  await page.goto(`/settings`, { waitUntil: 'networkidle' });
   await expectVisibleText(page, 'Workspace');
   await expectVisibleText(page, 'tone@example.test');
   await expectVisibleText(page, 'Email delivery unavailable');
@@ -624,118 +576,4 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
       .join('\n\n');
     throw new Error(`Dashboard audit saw browser errors:\n${details}`);
   }
-}
-
-async function waitForServer(url: string, timeoutMs = 45_000): Promise<void> {
-  const startedAt = Date.now();
-
-  while (Date.now() - startedAt < timeoutMs) {
-    try {
-      const res = await fetch(url, { method: 'GET' });
-      // For deployment URLs, a protected preview can legitimately return 401/403.
-      if (res.status >= 200 && res.status < 500) {
-        return;
-      }
-    } catch {
-      // server is not ready yet
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-
-  throw new Error(`Timed out waiting for server at ${url}`);
-}
-
-async function isServerReachable(url: string): Promise<boolean> {
-  try {
-    const response = await fetch(url, { method: 'GET' });
-    return response.status >= 200 && response.status < 500;
-  } catch {
-    return false;
-  }
-}
-
-async function main() {
-  const port = process.env.PORT || '4173';
-  const baseUrl = process.env.E2E_BASE_URL || `http://127.0.0.1:${port}`;
-  const browserName = resolveBrowser(process.env.E2E_BROWSER || 'chromium');
-  const dashboardAudit = process.env.E2E_DASHBOARD_AUDIT === '1';
-  const qaJourneys = process.env.E2E_QA_JOURNEYS === '1';
-  const isExternalTarget = Boolean(process.env.E2E_BASE_URL);
-  const waitTimeoutMs = isExternalTarget ? 120_000 : 45_000;
-
-  const hasReusableLocalServer = isExternalTarget
-    ? false
-    : await isServerReachable(baseUrl);
-
-  const app =
-    isExternalTarget || hasReusableLocalServer
-      ? null
-      : spawn(
-          'npm',
-          ['run', 'dev', '--', '--hostname', '127.0.0.1', '--port', port],
-          {
-            stdio: 'inherit',
-            shell: process.platform === 'win32',
-            env: process.env,
-          },
-        );
-
-  try {
-    await waitForServer(baseUrl, waitTimeoutMs);
-
-    const browser = await launchBrowser(browserName);
-    try {
-      if (qaJourneys) {
-        // Each journey opens its own browser context, so it gets its own
-        // mocked backend, storage and permissions.
-        const passed = await runQaJourneys(
-          browser,
-          baseUrl,
-          process.env.E2E_QA_ONLY,
-        );
-        console.log(
-          `Playwright QA journeys passed on ${browserName} (${passed} scenarios)`,
-        );
-        return;
-      }
-
-      const page = await browser.newPage();
-      if (dashboardAudit) {
-        await runDashboardAudit(page, baseUrl);
-        console.log(`Playwright dashboard audit passed on ${browserName}`);
-        return;
-      }
-
-      const response = await page.goto(baseUrl, {
-        waitUntil: 'domcontentloaded',
-      });
-      const status = response?.status();
-      const text = (await page.textContent('body')) || '';
-
-      if (isExternalTarget && isProtectedPreview(status, text)) {
-        console.log(
-          `Playwright smoke reached protected preview on ${browserName} (status: ${status ?? 'unknown'})`,
-        );
-        return;
-      }
-
-      if (!hasExpectedLandingMarker(text)) {
-        throw new Error(
-          `Expected landing page content was not found (status: ${status ?? 'unknown'})`,
-        );
-      }
-    } finally {
-      await browser.close();
-    }
-
-    console.log(`Playwright smoke test passed on ${browserName}`);
-  } finally {
-    app?.kill();
-  }
-}
-
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
 });

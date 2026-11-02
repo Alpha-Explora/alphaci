@@ -11,7 +11,13 @@ const customJestConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
+  // tests/e2e and tests/fullstack are Playwright specs (playwright test).
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/.next/',
+    '<rootDir>/tests/e2e/',
+    '<rootDir>/tests/fullstack/',
+  ],
   modulePathIgnorePatterns: ['<rootDir>/.next/'],
   collectCoverage: true,
   collectCoverageFrom: [
