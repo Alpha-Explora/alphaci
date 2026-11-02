@@ -27,14 +27,24 @@ import {
   dropDatabase,
   migrationFiles,
   uniqueDatabaseName,
-} from '../tests/e2e/support/database';
+} from '../e2e/support/database';
 
-const APP_ROOT = join(__dirname, '..');
+const APP_ROOT = join(__dirname, '..', '..');
 const SPEC_ROOT = join(APP_ROOT, 'tests', 'integration');
-const JEST = join(APP_ROOT, '..', '..', 'node_modules', 'jest', 'bin', 'jest.js');
+const JEST = join(
+  APP_ROOT,
+  '..',
+  '..',
+  'node_modules',
+  'jest',
+  'bin',
+  'jest.js',
+);
 const COMPOSE_PROJECT = 'alphaci-integration';
 
-type Provide = (adminUrl: string) => Promise<{ url: string; database?: string }>;
+type Provide = (
+  adminUrl: string,
+) => Promise<{ url: string; database?: string }>;
 
 const PROVIDERS: Record<string, Provide> = {
   MIGRATION_TEST_DB_URL: async (adminUrl) => {
@@ -47,7 +57,8 @@ const PROVIDERS: Record<string, Provide> = {
     await applySqlFiles(url, migrationFiles());
     return { url, database };
   },
-  SELFHOST_MIGRATION_TEST_ADMIN_URL: (adminUrl) => Promise.resolve({ url: adminUrl }),
+  SELFHOST_MIGRATION_TEST_ADMIN_URL: (adminUrl) =>
+    Promise.resolve({ url: adminUrl }),
 };
 
 function specs(): string[] {
@@ -60,9 +71,9 @@ function specs(): string[] {
 /** The *_URL variables a spec reads; each must have a provider. */
 function databaseVariables(spec: string): string[] {
   const source = readFileSync(spec, 'utf8');
-  const names = [...source.matchAll(/process\.env\[['"]([A-Z0-9_]+_URL)['"]\]/g)].flatMap(
-    (match) => (match[1] ? [match[1]] : []),
-  );
+  const names = [
+    ...source.matchAll(/process\.env\[['"]([A-Z0-9_]+_URL)['"]\]/g),
+  ].flatMap((match) => (match[1] ? [match[1]] : []));
   return [...new Set(names)];
 }
 
@@ -81,7 +92,9 @@ async function main(): Promise<number> {
     const providers = variables.flatMap((name): Array<[string, Provide]> => {
       const provide = PROVIDERS[name];
       if (provide) return [[name, provide]];
-      unprovided.push(`${relative(APP_ROOT, spec)} reads ${name}, which scripts/test-integration.ts cannot provide`);
+      unprovided.push(
+        `${relative(APP_ROOT, spec)} reads ${name}, which tests/integration/run.ts cannot provide`,
+      );
       return [];
     });
     return { spec, variables, providers };
@@ -106,10 +119,18 @@ async function main(): Promise<number> {
         env[name] = provided.url;
         if (provided.database) created.push(provided.database);
       }
-      console.log(`\n▶ ${relative(APP_ROOT, spec)} (${variables.join(', ') || 'no database'})`);
+      console.log(
+        `\n▶ ${relative(APP_ROOT, spec)} (${variables.join(', ') || 'no database'})`,
+      );
       const result = spawnSync(
         process.execPath,
-        ['--experimental-vm-modules', JEST, '--ci', '--runInBand', relative(APP_ROOT, spec)],
+        [
+          '--experimental-vm-modules',
+          JEST,
+          '--ci',
+          '--runInBand',
+          relative(APP_ROOT, spec),
+        ],
         { cwd: APP_ROOT, env, stdio: 'inherit' },
       );
       if (result.status !== 0) failed.push(relative(APP_ROOT, spec));
@@ -123,7 +144,9 @@ async function main(): Promise<number> {
     console.error(`\nIntegration specs failed: ${failed.join(', ')}`);
     return 1;
   }
-  console.log(`\nAll ${plan.length} integration specs passed against PostgreSQL.`);
+  console.log(
+    `\nAll ${plan.length} integration specs passed against PostgreSQL.`,
+  );
   return 0;
 }
 

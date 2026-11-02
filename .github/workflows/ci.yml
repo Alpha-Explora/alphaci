@@ -214,7 +214,7 @@ jobs:
 
   # Every tests/integration/*.integration.spec.ts against real PostgreSQL:
   # migration replays, the self-hosted migration runner, the outbox contract.
-  # Each spec skips itself without a database; scripts/test-integration.ts
+  # Each spec skips itself without a database; tests/integration/run.ts
   # starts the disposable fixture and gives each spec the database it reads.
   api-integration:
     name: API integration (Postgres fixture)

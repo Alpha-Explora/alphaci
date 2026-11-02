@@ -42,7 +42,7 @@
     "test:cov": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --coverage",
     "test:debug": "node --experimental-vm-modules --inspect-brk -r tsconfig-paths/register -r ts-node/register ../../node_modules/jest/bin/jest.js --runInBand",
     "test:e2e": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ./tests/e2e/jest-e2e.json --runInBand",
-    "test:integration": "node -r ts-node/register scripts/test-integration.ts",
+    "test:integration": "node -r ts-node/register tests/integration/run.ts",
     "routes:add": "node scripts/add-routes.cjs",
     "db:hierarchy:verify": "node scripts/hierarchy-migrations.cjs verify",
     "db:hierarchy:apply": "node scripts/hierarchy-migrations.cjs apply",

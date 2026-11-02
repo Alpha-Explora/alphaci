@@ -97,7 +97,7 @@ Each run writes `artifacts/e2e/<commit>/report.json` with the commit, a dirty fl
 
 ### API integration suite
 
-`npm run test:integration` needs Docker. Each spec under `apps/api/tests/integration/` skips itself unless the database URL it reads is set, so plain `npm test` never runs them. `apps/api/scripts/test-integration.ts` starts the same disposable loopback PostgreSQL fixture, gives every spec its own fresh database (empty for migration replays, fully migrated for the outbox contract, the admin connection for the self-hosted runner), runs it, and drops it. It fails when a spec reads a database URL it cannot provide, so a new database test cannot be skipped silently. Set `INTEGRATION_ADMIN_URL` to a running loopback server's admin connection to reuse it. CI runs the same command in the `API integration (Postgres fixture)` job.
+`npm run test:integration` needs Docker. Each spec under `apps/api/tests/integration/` skips itself unless the database URL it reads is set, so plain `npm test` never runs them. `apps/api/tests/integration/run.ts` starts the same disposable loopback PostgreSQL fixture, gives every spec its own fresh database (empty for migration replays, fully migrated for the outbox contract, the admin connection for the self-hosted runner), runs it, and drops it. It fails when a spec reads a database URL it cannot provide, so a new database test cannot be skipped silently. Set `INTEGRATION_ADMIN_URL` to a running loopback server's admin connection to reuse it. CI runs the same command in the `API integration (Postgres fixture)` job.
 
 ## Full web loop
 
