@@ -28,7 +28,7 @@ id it does not know.
   shipping. Neither app loads it at runtime, and the API lists it as a
   devDependency.
 - **Consumers use `import type`.** The API's lint rule
-  `consistent-type-imports` already requires it, and ts-jest and SWC erase
+  `consistent-type-imports` already requires it, and tsc and SWC erase
   type-only imports.
 - **The API's shape wins.** A type belongs here only when it is exactly what
   the API sends. If the web app expects something else, the web app is wrong:

@@ -42,7 +42,8 @@
     "unrs-resolver": true,
     "@scarf/scarf": false,
     "@nestjs/core": false,
-    "lefthook": true
+    "lefthook": true,
+    "@swc/core": false
   },
   "overrides": {
     "exceljs": {

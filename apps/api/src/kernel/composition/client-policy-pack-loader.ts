@@ -11,7 +11,7 @@ export interface ClientPolicyPackLoaderDeps {
   readonly loadModule?: (specifier: string) => Promise<unknown>;
 }
 
-// Keep the default seam compatible with ts-jest and compiled CommonJS output.
+// Keep the default seam compatible with the Jest transform and compiled CommonJS output.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const commonJsRequire = require as (specifier: string) => unknown;
 

@@ -106,6 +106,8 @@
     "@nestjs/cli": "^12.0.11",
     "@nestjs/schematics": "^12.0.12",
     "@nestjs/testing": "^12.3.2",
+    "@swc/core": "^1.16.21",
+    "@swc/jest": "^0.2.39",
     "@types/connect-pg-simple": "^7.0.3",
     "@types/express": "^5.0.0",
     "@types/express-session": "^1.19.0",
@@ -121,7 +123,6 @@
     "jest-junit": "^17.0.0",
     "oxlint-tsgolint": "^7.0.2005",
     "supertest": "^7.0.0",
-    "ts-jest": "^29.4.15",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
@@ -137,9 +138,24 @@
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": [
-        "ts-jest",
+        "@swc/jest",
         {
-          "transpilation": true
+          "sourceMaps": "inline",
+          "jsc": {
+            "target": "es2023",
+            "parser": {
+              "syntax": "typescript",
+              "decorators": true
+            },
+            "transform": {
+              "legacyDecorator": true,
+              "decoratorMetadata": true
+            },
+            "keepClassNames": true
+          },
+          "module": {
+            "type": "commonjs"
+          }
         }
       ]
     },

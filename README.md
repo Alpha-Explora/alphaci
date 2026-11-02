@@ -77,13 +77,19 @@ with the reason.
 
 ### Lint and typecheck toolchain
 
-- **Two TypeScripts.** `typescript` is 6.x: ts-jest, typescript-eslint, Nest's
+- **Two TypeScripts.** `typescript` is 6.x: typescript-eslint, Nest's
   emit (`npm run build`), `next build` and dependency-cruiser import its API,
   which TypeScript 7 does not have yet (planned for 7.1). TypeScript 7, the
   Go compiler, is installed as `typescript-7` and only checks: each
   `typecheck` script runs `node ../../node_modules/typescript-7/bin/tsc
   --noEmit`. Both packages ship a `tsc` binary, so `node_modules/.bin/tsc` may
   be either one; scripts call each compiler by path.
+- **Jest compiles with SWC** and checks no types; `typecheck` does that. The
+  API uses `@swc/jest` with legacy decorators and decorator metadata, which
+  Nest's dependency injection needs; the web uses `next/jest`. Tests run
+  output that SWC, not `tsc`, printed, so no code may depend on compiled
+  source text (`Function.prototype.toString()`): generated pipelines embed
+  fixed strings.
 - **Oxlint, then ESLint.** `npm run lint` runs Oxlint first (`.oxlintrc.json`
   in each app; type-aware rules through `oxlint-tsgolint`, which uses
   TypeScript 7), then ESLint for the few rules Oxlint lacks.
