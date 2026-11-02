@@ -6,22 +6,21 @@
 import type {
   BranchComparisonResponse,
   ComparisonCommit,
-} from "../data/project-workspace-api";
-import type { AppRole } from "@/shared/api/contracts";
+} from '../data/project-workspace-api';
+import type { AppRole } from '@/shared/api/contracts';
 import {
   PRODUCTION_BRANCH,
   QA_BRANCH,
   WORKING_BRANCH,
   isPipelineBranch,
-} from "@/shared/api/pipeline-branches";
+} from '@/shared/api/pipeline-branches';
 
 /**
  * Something the banner can offer to fix what it describes, so the person is
  * not left to work out the remedy from the sentence.
  */
 export type ComposeAction =
-  | { kind: "swap" }
-  | { kind: "open-existing"; number: number };
+  { kind: 'swap' } | { kind: 'open-existing'; number: number };
 
 /**
  * What the compose screen should say about a comparison, and whether the
@@ -33,7 +32,7 @@ export type ComposeAction =
  */
 export interface ComposeReadiness {
   canCreate: boolean;
-  tone: "ready" | "warning" | "blocked";
+  tone: 'ready' | 'warning' | 'blocked';
   message: string;
   action?: ComposeAction;
 }
@@ -62,9 +61,9 @@ export function describeComparison(
   if (existingPullRequest) {
     return {
       canCreate: false,
-      tone: "blocked",
+      tone: 'blocked',
       message: `${head} → ${base} is already open as #${String(existingPullRequest.number)}: ${existingPullRequest.title}`,
-      action: { kind: "open-existing", number: existingPullRequest.number },
+      action: { kind: 'open-existing', number: existingPullRequest.number },
     };
   }
 
@@ -72,31 +71,31 @@ export function describeComparison(
     if (comparison.behindBy === 0) {
       return {
         canCreate: false,
-        tone: "blocked",
+        tone: 'blocked',
         message: `${head} and ${base} point at the same commit, so there is nothing to merge.`,
       };
     }
     return {
       canCreate: false,
-      tone: "blocked",
+      tone: 'blocked',
       message: `${head} has no commits that ${base} lacks; ${base} is ${commits(comparison.behindBy)} ahead of it. The branches may be the wrong way round.`,
-      action: { kind: "swap" },
+      action: { kind: 'swap' },
     };
   }
 
   if (comparison.behindBy > 0) {
     return {
       canCreate: true,
-      tone: "warning",
+      tone: 'warning',
       message: `${head} is ${commits(comparison.behindBy)} behind ${base}. It may conflict, and its checks will run against an older ${base}. Consider updating it first.`,
     };
   }
 
-  return { canCreate: true, tone: "ready", message: "" };
+  return { canCreate: true, tone: 'ready', message: '' };
 }
 
 function commits(count: number): string {
-  return `${String(count)} commit${count === 1 ? "" : "s"}`;
+  return `${String(count)} commit${count === 1 ? '' : 's'}`;
 }
 
 /* ── Phase 1 security gates: what this composer offers as a base ────────── */
@@ -115,7 +114,7 @@ export function selectableBaseBranches(
 ): string[] {
   const selectable = branches.filter((branch) => branch !== PRODUCTION_BRANCH);
   // A Developer only ever opens into dev (from a feature) or uat (from dev).
-  if (role === "member") {
+  if (role === 'member') {
     return selectable.filter(
       (branch) => branch === WORKING_BRANCH || branch === QA_BRANCH,
     );
@@ -133,11 +132,12 @@ export function selectableHeadBranches(
   role: AppRole | null | undefined,
   base: string,
 ): string[] {
-  if (role !== "member") return branches.filter((name) => name !== base);
+  if (role !== 'member') return branches.filter((name) => name !== base);
   if (base === WORKING_BRANCH) {
     return branches.filter((name) => !isPipelineBranch(name));
   }
-  if (base === QA_BRANCH) return branches.filter((name) => name === WORKING_BRANCH);
+  if (base === QA_BRANCH)
+    return branches.filter((name) => name === WORKING_BRANCH);
   return [];
 }
 
@@ -159,10 +159,14 @@ export function defaultComposeBase(
   const selectable = selectableBaseBranches(branches, role);
   if (selectable.includes(WORKING_BRANCH)) return WORKING_BRANCH;
   if (selectable.includes(QA_BRANCH)) return QA_BRANCH;
-  return selectable[0] ?? "";
+  return selectable[0] ?? '';
 }
 
-const PULL_REQUEST_ROLES: ReadonlySet<AppRole> = new Set(["admin", "lead", "member"]);
+const PULL_REQUEST_ROLES: ReadonlySet<AppRole> = new Set([
+  'admin',
+  'lead',
+  'member',
+]);
 
 /**
  * Who may open or merge pull requests from the workspace. An allow-list, so a
@@ -189,8 +193,8 @@ export function isPullRequestRouteAllowed(
 ): boolean {
   if (!isPullRequestRole(role)) return false;
   if (base === PRODUCTION_BRANCH) return false;
-  if (role !== "member") return true;
-  if (head === "" || head === base) return false;
+  if (role !== 'member') return true;
+  if (head === '' || head === base) return false;
   if (base === WORKING_BRANCH) return !isPipelineBranch(head);
   return base === QA_BRANCH && head === WORKING_BRANCH;
 }
@@ -217,35 +221,38 @@ export function canCreatePullRequest(
  * that is used verbatim. Several commits have no one sentence, so the branch
  * name is turned back into words: `feature/add-login` becomes "Add login".
  */
-export function suggestTitle(head: string, commits: ComparisonCommit[]): string {
+export function suggestTitle(
+  head: string,
+  commits: ComparisonCommit[],
+): string {
   const [only] = commits;
   if (commits.length === 1 && only?.headline) return only.headline;
 
-  const lastSegment = head.split("/").pop() ?? head;
-  const words = lastSegment.replace(/[-_]+/g, " ").trim();
+  const lastSegment = head.split('/').pop() ?? head;
+  const words = lastSegment.replace(/[-_]+/g, ' ').trim();
   if (!words) return head;
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 /* ── Phase 3 presets (docs/design/persona-workflow.md §8.4) ───────────────────── */
 
-export type PullRequestPresetId = "feature-to-dev" | "dev-to-uat" | "custom";
+export type PullRequestPresetId = 'feature-to-dev' | 'dev-to-uat' | 'custom';
 
 /** In the order they are offered; the first available one is the default. */
 export const PULL_REQUEST_PRESET_IDS: readonly PullRequestPresetId[] = [
-  "feature-to-dev",
-  "dev-to-uat",
-  "custom",
+  'feature-to-dev',
+  'dev-to-uat',
+  'custom',
 ];
 
 /** Shared with the backend's `PR_ROUTE_RESTRICTED` sentence. */
 export const DEVELOPER_ROUTE_MESSAGE =
-  "Developers open pull requests from a feature branch into dev, and from dev into uat.";
+  'Developers open pull requests from a feature branch into dev, and from dev into uat.';
 
 const PRESET_LABELS: Record<PullRequestPresetId, string> = {
-  "feature-to-dev": "Feature → Dev",
-  "dev-to-uat": "Dev → UAT",
-  custom: "Custom",
+  'feature-to-dev': 'Feature → Dev',
+  'dev-to-uat': 'Dev → UAT',
+  custom: 'Custom',
 };
 
 /** What the presets need to know about the viewer and the repository. */
@@ -277,14 +284,16 @@ export function presetFor(
   let reason: string | null = null;
 
   if (!isPullRequestRole(context.role)) {
-    reason = "Your role does not open pull requests.";
-  } else if (id === "custom" && context.role === "member") {
+    reason = 'Your role does not open pull requests.';
+  } else if (id === 'custom' && context.role === 'member') {
     reason = DEVELOPER_ROUTE_MESSAGE;
-  } else if (id === "feature-to-dev" && !has(WORKING_BRANCH)) {
+  } else if (id === 'feature-to-dev' && !has(WORKING_BRANCH)) {
     reason = `There is no ${WORKING_BRANCH} branch to merge into.`;
-  } else if (id === "dev-to-uat") {
-    if (!has(WORKING_BRANCH)) reason = `There is no ${WORKING_BRANCH} branch to merge from.`;
-    else if (!has(QA_BRANCH)) reason = `There is no ${QA_BRANCH} branch to merge into.`;
+  } else if (id === 'dev-to-uat') {
+    if (!has(WORKING_BRANCH))
+      reason = `There is no ${WORKING_BRANCH} branch to merge from.`;
+    else if (!has(QA_BRANCH))
+      reason = `There is no ${QA_BRANCH} branch to merge into.`;
   }
 
   return { id, label, available: reason === null, reason };
@@ -294,7 +303,7 @@ export function presetFor(
 export function defaultPresetId(context: PresetContext): PullRequestPresetId {
   return (
     PULL_REQUEST_PRESET_IDS.find((id) => presetFor(id, context).available) ??
-    "custom"
+    'custom'
   );
 }
 
@@ -308,12 +317,12 @@ export function defaultPresetId(context: PresetContext): PullRequestPresetId {
  * convention is trusted, because their list is not scoped to them.
  */
 export function ownBranches(context: PresetContext): string[] {
-  const login = context.login?.trim().toLowerCase() ?? "";
-  const serverScoped = context.role === "member";
+  const login = context.login?.trim().toLowerCase() ?? '';
+  const serverScoped = context.role === 'member';
   return context.branches.filter((name) => {
     if (isPipelineBranch(name)) return false;
     if (serverScoped) return true;
-    return login !== "" && name.toLowerCase().startsWith(`feature/${login}-`);
+    return login !== '' && name.toLowerCase().startsWith(`feature/${login}-`);
   });
 }
 
@@ -322,7 +331,7 @@ export function ownBranches(context: PresetContext): string[] {
  * is the last own branch in the order the backend returned them.
  */
 export function mostRecentOwnBranch(context: PresetContext): string {
-  return ownBranches(context).at(-1) ?? "";
+  return ownBranches(context).at(-1) ?? '';
 }
 
 /**
@@ -334,9 +343,9 @@ export function applyPreset(
   context: PresetContext,
 ): { base: string; head: string } | null {
   if (!presetFor(id, context).available) return null;
-  if (id === "feature-to-dev") {
+  if (id === 'feature-to-dev') {
     return { base: WORKING_BRANCH, head: mostRecentOwnBranch(context) };
   }
-  if (id === "dev-to-uat") return { base: QA_BRANCH, head: WORKING_BRANCH };
+  if (id === 'dev-to-uat') return { base: QA_BRANCH, head: WORKING_BRANCH };
   return null;
 }

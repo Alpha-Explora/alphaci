@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useQaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
-import { PromotionCard } from "./promotion-card";
+import { useQaPromotionViewModel } from '../view-models/use-qa-promotion-view-model';
+import { PromotionCard } from './promotion-card';
 
 /**
  * The "Ready for production" card with no actions: no Merge button and no
@@ -17,7 +17,7 @@ export function ProductionReadinessCard({
   const vm = useQaPromotionViewModel({
     projectId,
     enabled,
-    appRole: "member",
+    appRole: 'member',
     watch: null,
   });
   return <PromotionCard vm={vm} />;

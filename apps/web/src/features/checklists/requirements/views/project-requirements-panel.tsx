@@ -1,15 +1,18 @@
-"use client";
+'use client';
 
-import "./requirements.css";
+import './requirements.css';
 
-import { motion, useReducedMotion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 
-import { LoadingRows } from "@/features/groups/workspace";
-import type { AppRole } from "@/shared/api/contracts";
+import { LoadingRows } from '@/features/groups/workspace';
+import type { AppRole } from '@/shared/api/contracts';
 
-import { IterationNextStep } from "../../iteration";
-import { useItemProgressViewModel, type ItemProgressViewModel } from "../../returned";
+import { IterationNextStep } from '../../iteration';
+import {
+  useItemProgressViewModel,
+  type ItemProgressViewModel,
+} from '../../returned';
 import {
   CHECKLIST_FILTERS,
   checklistFilterCounts,
@@ -19,31 +22,43 @@ import {
   NO_VERDICTS,
   type ChecklistFilter,
   type ItemVerdicts,
-} from "../../model/checklist-filter-rules";
-import { deliveredIterationTitle, deliveredRequirementsText } from "../../model/iteration-rules";
+} from '../../model/checklist-filter-rules';
+import {
+  deliveredIterationTitle,
+  deliveredRequirementsText,
+} from '../../model/iteration-rules';
 import {
   canSetVerification,
   kindCopy,
   SHOWN_REQUIREMENT_KINDS,
   type RequirementPermissions,
-} from "../../model/requirement-rules";
-import type { Requirement, RequirementKind } from "../../model/requirement-types";
+} from '../../model/requirement-rules';
+import type {
+  Requirement,
+  RequirementKind,
+} from '../../model/requirement-types';
 import {
   useProjectRequirementsViewModel,
   type ProjectRequirementsViewModel,
-} from "../view-models/use-project-requirements-view-model";
+} from '../view-models/use-project-requirements-view-model';
 import {
   useRequirementDialogViewModel,
   type RequirementDialogViewModel,
-} from "../view-models/use-requirement-dialog-view-model";
-import { RequirementCard } from "./requirement-card";
-import { ArchiveRequirementDialog, RequirementDialog } from "./requirement-dialog";
-import { FeatureIcon, PlusIcon, SystemIcon } from "./requirement-icons";
+} from '../view-models/use-requirement-dialog-view-model';
+import { RequirementCard } from './requirement-card';
+import {
+  ArchiveRequirementDialog,
+  RequirementDialog,
+} from './requirement-dialog';
+import { FeatureIcon, PlusIcon, SystemIcon } from './requirement-icons';
 
 const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 /** One line, for the viewer's role: what they do here. */
-function roleLine(permissions: RequirementPermissions, appRole: AppRole | null | undefined): string {
+function roleLine(
+  permissions: RequirementPermissions,
+  appRole: AppRole | null | undefined,
+): string {
   if (permissions.canManage) {
     return "You write the requirements. Developers move each item's Progress; the QA Team verifies them in QA testing.";
   }
@@ -51,17 +66,17 @@ function roleLine(permissions: RequirementPermissions, appRole: AppRole | null |
     return "Move each item's Progress as you build it. Mark it Done when it is ready for QA.";
   }
   if (canSetVerification(appRole)) {
-    return "Developers mark items Done; you verify them in QA testing.";
+    return 'Developers mark items Done; you verify them in QA testing.';
   }
-  return "Requirements for every repository in this Project.";
+  return 'Requirements for every repository in this Project.';
 }
 
 function emptyCopy(kind: RequirementKind, canManage: boolean): string {
   const copy = kindCopy(kind);
   if (canManage) {
-    return kind === "functional"
-      ? "Describe what this Project must do as Features, each told as User stories with acceptance criteria."
-      : "Add the checks every repository must pass, such as security or performance baselines.";
+    return kind === 'functional'
+      ? 'Describe what this Project must do as Features, each told as User stories with acceptance criteria.'
+      : 'Add the checks every repository must pass, such as security or performance baselines.';
   }
   return `${copy.empty} Your Product owner writes them.`;
 }
@@ -74,7 +89,11 @@ function FilterChips({
   filter,
   counts,
   onChange,
-}: Readonly<{ filter: ChecklistFilter; counts: Record<ChecklistFilter, number>; onChange: (next: ChecklistFilter) => void }>) {
+}: Readonly<{
+  filter: ChecklistFilter;
+  counts: Record<ChecklistFilter, number>;
+  onChange: (next: ChecklistFilter) => void;
+}>) {
   // Nothing to narrow yet: the sections say why.
   if (counts.all === 0) return null;
   const active = CHECKLIST_FILTERS.find((entry) => entry.id === filter)!;
@@ -85,7 +104,11 @@ function FilterChips({
         <strong>{active.label}</strong>
         <span className="rq-filter__count">{counts[active.id]}</span>
       </summary>
-      <div className="rq-filter-menu__options" role="group" aria-label="Filter items by progress">
+      <div
+        className="rq-filter-menu__options"
+        role="group"
+        aria-label="Filter items by progress"
+      >
         {CHECKLIST_FILTERS.map((entry) => (
           <button
             key={entry.id}
@@ -96,7 +119,7 @@ function FilterChips({
             data-has={String(counts[entry.id] > 0)}
             onClick={(event) => {
               onChange(entry.id);
-              const menu = event.currentTarget.closest("details");
+              const menu = event.currentTarget.closest('details');
               if (menu) menu.open = false;
             }}
           >
@@ -110,9 +133,15 @@ function FilterChips({
 }
 
 /** The requirements with at least one item a filter keeps; all of them with no filter. */
-function filteredRequirements(requirements: Requirement[], verdicts: ItemVerdicts, filter: ChecklistFilter): Requirement[] {
-  if (filter === "all") return requirements;
-  return requirements.filter((requirement) => requirement.items.some((item) => itemMatches(item, verdicts, filter)));
+function filteredRequirements(
+  requirements: Requirement[],
+  verdicts: ItemVerdicts,
+  filter: ChecklistFilter,
+): Requirement[] {
+  if (filter === 'all') return requirements;
+  return requirements.filter((requirement) =>
+    requirement.items.some((item) => itemMatches(item, verdicts, filter)),
+  );
 }
 
 function SectionHeading({
@@ -137,7 +166,7 @@ function SectionHeading({
       {!filterable ? (
         <>
           <span className="rq-section__icon" aria-hidden="true">
-            {kind === "functional" ? <FeatureIcon /> : <SystemIcon />}
+            {kind === 'functional' ? <FeatureIcon /> : <SystemIcon />}
           </span>
           <div className="rq-section__titles">
             <h3 className="rq-section__title" id={titleId}>
@@ -149,7 +178,11 @@ function SectionHeading({
         </>
       ) : null}
       {canManage && count > 0 ? (
-        <button type="button" className="primary-button rq-section__create" onClick={onCreate}>
+        <button
+          type="button"
+          className="primary-button rq-section__create"
+          onClick={onCreate}
+        >
           <PlusIcon />
           {copy.create}
         </button>
@@ -205,9 +238,15 @@ function KindSection({
         <div className="rq-empty">
           <p>{emptyCopy(kind, canManage)}</p>
           {canManage ? (
-            <button type="button" className="primary-button" onClick={() => dialog.openCreate(kind)}>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => dialog.openCreate(kind)}
+            >
               <PlusIcon />
-              {kind === "functional" ? "Add the first Feature" : "Add a System requirement"}
+              {kind === 'functional'
+                ? 'Add the first Feature'
+                : 'Add a System requirement'}
             </button>
           ) : null}
         </div>
@@ -219,7 +258,11 @@ function KindSection({
               key={requirement.id}
               initial={reduced ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.28, ease: EASE_OUT, delay: Math.min(index, 5) * 0.05 }}
+              transition={{
+                duration: 0.28,
+                ease: EASE_OUT,
+                delay: Math.min(index, 5) * 0.05,
+              }}
             >
               <RequirementCard
                 requirement={requirement}
@@ -264,14 +307,24 @@ function DeliveredRequirements({
     <div className="rq-panel">
       <div className="rq-delivered" role="status">
         <p className="rq-delivered__title">{deliveredIterationTitle(number)}</p>
-        <p className="rq-delivered__text">{deliveredRequirementsText(Boolean(onOpenHistory))}</p>
+        <p className="rq-delivered__text">
+          {deliveredRequirementsText(Boolean(onOpenHistory))}
+        </p>
         {onOpenHistory ? (
-          <button type="button" className="ghost-button" onClick={onOpenHistory}>
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={onOpenHistory}
+          >
             View in Release
           </button>
         ) : null}
       </div>
-      <IterationNextStep deliveryProjectId={deliveryProjectId} enabled appRole={appRole} />
+      <IterationNextStep
+        deliveryProjectId={deliveryProjectId}
+        enabled
+        appRole={appRole}
+      />
     </div>
   );
 }
@@ -283,13 +336,24 @@ function DeliveredRequirements({
  */
 function useChecklistFilter(filterable = false) {
   const [filter, setFilter] = useState<ChecklistFilter>(() =>
-    filterable && typeof window !== "undefined" ? initialChecklistFilter(window.location.hash) : "all",
+    filterable && typeof window !== 'undefined'
+      ? initialChecklistFilter(window.location.hash)
+      : 'all',
   );
-  return { filter: filterable ? filter : "all", setFilter };
+  return { filter: filterable ? filter : 'all', setFilter };
 }
 
-function shouldOpenRequested(request: number, handled: number, vm: ProjectRequirementsViewModel): boolean {
-  return request > 0 && request !== handled && vm.status === "ready" && vm.permissions.canManage;
+function shouldOpenRequested(
+  request: number,
+  handled: number,
+  vm: ProjectRequirementsViewModel,
+): boolean {
+  return (
+    request > 0 &&
+    request !== handled &&
+    vm.status === 'ready' &&
+    vm.permissions.canManage
+  );
 }
 
 /**
@@ -306,9 +370,9 @@ function useFeatureRequest(
   const [handledRequest, setHandledRequest] = useState(0);
   if (shouldOpenRequested(request, handledRequest, vm)) {
     setHandledRequest(request);
-    dialog.openCreate("functional");
+    dialog.openCreate('functional');
   }
-  const featureCount = vm.status === "ready" ? vm.functional.length : null;
+  const featureCount = vm.status === 'ready' ? vm.functional.length : null;
   useEffect(() => {
     if (featureCount !== null) onFeatureCount?.(featureCount);
   }, [featureCount, onFeatureCount]);
@@ -351,16 +415,26 @@ export function ProjectRequirementsPanel({
   /** Show the filter chips (the Project checklist, Product owner and Developer). */
   filterable?: boolean;
 }>) {
-  const vm = useProjectRequirementsViewModel({ deliveryProjectId, enabled, appRole });
-  const dialog = useRequirementDialogViewModel({ deliveryProjectId, onSaved: vm.applyRequirement });
+  const vm = useProjectRequirementsViewModel({
+    deliveryProjectId,
+    enabled,
+    appRole,
+  });
+  const dialog = useRequirementDialogViewModel({
+    deliveryProjectId,
+    onSaved: vm.applyRequirement,
+  });
   const progress = useItemProgressViewModel({ onSaved: vm.applyItem });
   useFeatureRequest(vm, dialog, newFeatureRequest, onFeatureCount);
   const { filter, setFilter } = useChecklistFilter(filterable);
 
-  if (vm.status === "loading") return <LoadingRows rows={3} />;
-  if (vm.status === "error" || vm.status === "unavailable") {
+  if (vm.status === 'loading') return <LoadingRows rows={3} />;
+  if (vm.status === 'error' || vm.status === 'unavailable') {
     return (
-      <div className="hier-state" role={vm.status === "error" ? "alert" : undefined}>
+      <div
+        className="hier-state"
+        role={vm.status === 'error' ? 'alert' : undefined}
+      >
         <h3 className="hier-state-title">Requirements did not load</h3>
         <p className="hier-state-text">{vm.error}</p>
         <button type="button" className="ghost-button" onClick={vm.reload}>
@@ -394,8 +468,11 @@ export function ProjectRequirementsPanel({
   );
 }
 
-function kindRequirements(vm: ProjectRequirementsViewModel, kind: RequirementKind): Requirement[] {
-  return kind === "functional" ? vm.functional : vm.system;
+function kindRequirements(
+  vm: ProjectRequirementsViewModel,
+  kind: RequirementKind,
+): Requirement[] {
+  return kind === 'functional' ? vm.functional : vm.system;
 }
 
 /** The loaded list: the role line, the chips, each shown kind, and the author's dialogs. */
@@ -423,11 +500,16 @@ function ReadyRequirements({
 }>) {
   return (
     <div className="rq-panel">
-      {!filterable ? <p className="rq-panel__role">{roleLine(vm.permissions, appRole)}</p> : null}
+      {!filterable ? (
+        <p className="rq-panel__role">{roleLine(vm.permissions, appRole)}</p>
+      ) : null}
       {filterable ? (
         <FilterChips
           filter={filter}
-          counts={checklistFilterCounts(kinds.flatMap((kind) => kindRequirements(vm, kind)), verdicts)}
+          counts={checklistFilterCounts(
+            kinds.flatMap((kind) => kindRequirements(vm, kind)),
+            verdicts,
+          )}
           onChange={onFilter}
         />
       ) : null}

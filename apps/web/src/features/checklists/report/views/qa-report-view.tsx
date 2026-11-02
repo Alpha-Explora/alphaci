@@ -1,27 +1,36 @@
-"use client";
+'use client';
 
-import "./qa-report.css";
+import './qa-report.css';
 
-import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import Link from 'next/link';
+import { useParams, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-import { ThemeToggle } from "@/shared/layout/theme-toggle";
+import { ThemeToggle } from '@/shared/layout/theme-toggle';
 
-import { qaStudioHref } from "../../model/qa-report-rules";
-import { useQaReportViewModel, type QaReportViewModel } from "../view-models/use-qa-report-view-model";
-import { QaReportDocument } from "./qa-report-document";
-import { ArrowLeftIcon, PrinterIcon } from "./report-icons";
+import { qaStudioHref } from '../../model/qa-report-rules';
+import {
+  useQaReportViewModel,
+  type QaReportViewModel,
+} from '../view-models/use-qa-report-view-model';
+import { QaReportDocument } from './qa-report-document';
+import { ArrowLeftIcon, PrinterIcon } from './report-icons';
 
 function param(value: string | string[] | undefined): string {
-  return (Array.isArray(value) ? value[0] : value) ?? "";
+  return (Array.isArray(value) ? value[0] : value) ?? '';
 }
 
-function Toolbar({ projectId, vm }: Readonly<{ projectId: string; vm: QaReportViewModel }>) {
+function Toolbar({
+  projectId,
+  vm,
+}: Readonly<{ projectId: string; vm: QaReportViewModel }>) {
   return (
     <header className="qa-report-toolbar" data-print="hide">
       <div className="qa-report-toolbar__inner">
-        <Link className="qa-report-toolbar__back" href={qaStudioHref(projectId)}>
+        <Link
+          className="qa-report-toolbar__back"
+          href={qaStudioHref(projectId)}
+        >
           <ArrowLeftIcon />
           Back to QA Studio
         </Link>
@@ -30,7 +39,7 @@ function Toolbar({ projectId, vm }: Readonly<{ projectId: string; vm: QaReportVi
           <button
             type="button"
             className="qa-report-toolbar__print"
-            disabled={vm.status !== "ready"}
+            disabled={vm.status !== 'ready'}
             onClick={vm.print}
           >
             <PrinterIcon />
@@ -44,7 +53,11 @@ function Toolbar({ projectId, vm }: Readonly<{ projectId: string; vm: QaReportVi
 
 function ReportSkeleton() {
   return (
-    <div className="qa-report-sheet qa-report-sheet--skeleton" aria-busy="true" aria-label="Loading the QA report">
+    <div
+      className="qa-report-sheet qa-report-sheet--skeleton"
+      aria-busy="true"
+      aria-label="Loading the QA report"
+    >
       <span className="qa-report-skeleton qa-report-skeleton--title" />
       <span className="qa-report-skeleton qa-report-skeleton--meta" />
       <span className="qa-report-skeleton qa-report-skeleton--block" />
@@ -65,7 +78,11 @@ function ReportError({ vm }: Readonly<{ vm: QaReportViewModel }>) {
           Sign in
         </Link>
       ) : (
-        <button type="button" className="qa-report-toolbar__print" onClick={vm.reload}>
+        <button
+          type="button"
+          className="qa-report-toolbar__print"
+          onClick={vm.reload}
+        >
           Try again
         </button>
       )}
@@ -74,8 +91,8 @@ function ReportError({ vm }: Readonly<{ vm: QaReportViewModel }>) {
 }
 
 function ReportBody({ vm }: Readonly<{ vm: QaReportViewModel }>) {
-  if (vm.status === "loading") return <ReportSkeleton />;
-  if (vm.status === "error" || !vm.report) return <ReportError vm={vm} />;
+  if (vm.status === 'loading') return <ReportSkeleton />;
+  if (vm.status === 'error' || !vm.report) return <ReportError vm={vm} />;
   return <QaReportDocument report={vm.report} />;
 }
 
@@ -86,7 +103,7 @@ function QaReportPage() {
   const vm = useQaReportViewModel({
     projectId,
     runId: param(params?.runId),
-    autoPrint: search?.get("print") === "1",
+    autoPrint: search?.get('print') === '1',
   });
   return (
     <div className="qa-report-page">

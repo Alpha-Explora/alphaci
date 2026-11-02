@@ -1,1 +1,1 @@
-export { GroupProjectsView as default } from "@/features/groups/systems";
+export { GroupProjectsView as default } from '@/features/groups/systems';

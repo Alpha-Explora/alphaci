@@ -15,15 +15,15 @@
  * Automated results are information for the tester. Sign-off stays manual:
  * nothing here ever changes an item's recorded status. */
 
-import type { TestCase } from "@/shared/api/contracts";
+import type { TestCase } from '@/shared/api/contracts';
 
-export type QaAutomationStage = "verify" | "quality";
+export type QaAutomationStage = 'verify' | 'quality';
 
 /** A CI stage run's own conclusion. */
-export type QaStageRunStatus = "success" | "failure" | "running" | "cancelled";
+export type QaStageRunStatus = 'success' | 'failure' | 'running' | 'cancelled';
 
 /** Where the automated verdict for one item comes from. */
-export type QaAutomatedSource = "playwright" | "unit_test" | "bruno";
+export type QaAutomatedSource = 'playwright' | 'unit_test' | 'bruno';
 
 /**
  * `unknown` — CI cannot tell for this item (still running, or more failures
@@ -31,13 +31,14 @@ export type QaAutomatedSource = "playwright" | "unit_test" | "bruno";
  * `unlinked` — the item names no test, so nothing CI ran speaks for it; the
  * stage's verdict rides along as context only and is never the item's pass.
  */
-export type QaAutomatedStatus = "passed" | "failed" | "unknown" | "not_run" | "unlinked";
+export type QaAutomatedStatus =
+  'passed' | 'failed' | 'unknown' | 'not_run' | 'unlinked';
 
 /**
  * `spec` — the item's own spec file. `suite` — inferred from the whole suite.
  * `stage` — only the stage's overall verdict is known.
  */
-export type QaAutomatedScope = "spec" | "suite" | "stage";
+export type QaAutomatedScope = 'spec' | 'suite' | 'stage';
 
 /* ── Wire (as the backend sends it; any field may be missing) ────────────── */
 

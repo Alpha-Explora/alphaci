@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   getProjectPullRequestDetail,
@@ -8,11 +8,11 @@ import {
   type PullRequestCheck,
   type PullRequestDetail,
   type PullRequestDetailResponse,
-} from "../data/project-workspace-api";
+} from '../data/project-workspace-api';
 
-import { apiErrorReason } from "../model/api-error-reason";
-import { workspacePermissionErrorMessage } from "../model/workspace-permission-errors";
-import type { ProjectStatus } from "../../model/projects-types";
+import { apiErrorReason } from '../model/api-error-reason';
+import { workspacePermissionErrorMessage } from '../model/workspace-permission-errors';
+import type { ProjectStatus } from '../../model/projects-types';
 /*
  * Re-exported so a View can name what it renders without importing from
  * `data/`. The boundary checks reject any views -> data edge, type-only or
@@ -21,7 +21,7 @@ import type { ProjectStatus } from "../../model/projects-types";
 export type { PullRequestCheck, PullRequestDetail, PullRequestDetailResponse };
 
 /** GitHub's three ways to merge; which ones a repository allows is its own setting. */
-export type MergeMethod = "merge" | "squash" | "rebase";
+export type MergeMethod = 'merge' | 'squash' | 'rebase';
 
 export interface PullRequestReviewViewModel {
   status: ProjectStatus;
@@ -58,26 +58,24 @@ export function usePullRequestReviewViewModel(options: {
 }): PullRequestReviewViewModel {
   const { projectId, pullNumber, enabled, onMerged } = options;
 
-  const [status, setStatus] = useState<ProjectStatus>("loading");
+  const [status, setStatus] = useState<ProjectStatus>('loading');
   const [detail, setDetail] = useState<PullRequestDetailResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [merging, setMerging] = useState(false);
   const [mergeMessage, setMergeMessage] = useState<string | null>(null);
   const [mergeFailed, setMergeFailed] = useState(false);
-  const [mergeMethod, setMergeMethod] = useState<MergeMethod>("merge");
+  const [mergeMethod, setMergeMethod] = useState<MergeMethod>('merge');
 
   const load = useCallback(() => {
     return getProjectPullRequestDetail(projectId, pullNumber)
       .then((result) => {
         setDetail(result);
         setError(null);
-        setStatus("ready");
+        setStatus('ready');
       })
       .catch((cause: unknown) => {
-        setError(
-          apiErrorReason(cause, "This pull request could not be read."),
-        );
-        setStatus("error");
+        setError(apiErrorReason(cause, 'This pull request could not be read.'));
+        setStatus('error');
       });
   }, [projectId, pullNumber]);
 
@@ -87,7 +85,7 @@ export function usePullRequestReviewViewModel(options: {
   }, [enabled, load]);
 
   const reload = useCallback(() => {
-    setStatus("loading");
+    setStatus('loading');
     void load();
   }, [load]);
 
@@ -119,7 +117,7 @@ export function usePullRequestReviewViewModel(options: {
       setMergeMessage(
         workspacePermissionErrorMessage(
           cause,
-          "The merge request could not be sent.",
+          'The merge request could not be sent.',
         ),
       );
       setMergeFailed(true);

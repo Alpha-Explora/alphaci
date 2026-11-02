@@ -16,7 +16,13 @@ const NEXT_BIN = require.resolve('next/dist/bin/next', { paths: [WEB_ROOT] });
 // The API end-to-end suite's fixture: postgres:16-alpine on tmpfs, published
 // on loopback only, test-only credentials, the self-hosted role bootstrap.
 // Its own compose project keeps it apart from a running API e2e fixture.
-const COMPOSE_FILE = join(API_ROOT, 'tests', 'integration', 'database', 'compose.yaml');
+const COMPOSE_FILE = join(
+  API_ROOT,
+  'tests',
+  'integration',
+  'database',
+  'compose.yaml',
+);
 const COMPOSE_PROJECT = 'alphaci-fullstack';
 const DATABASE_PORT = 55432;
 const DATABASE_URL = `postgresql://alphaci_migration_test:alphaci_migration_test_only@127.0.0.1:${DATABASE_PORT}/alphaci_migration_test`;
@@ -65,8 +71,14 @@ export class ProcessGroup {
   constructor(private readonly logDir: string) {}
 
   /** Start a long-running process; its output goes to <logDir>/<name>.log. */
-  start(name: string, command: string, args: readonly string[], options: SpawnOptions): Service {
-    if (this.closed) throw new Error(`Not starting ${name}: the stack is shutting down.`);
+  start(
+    name: string,
+    command: string,
+    args: readonly string[],
+    options: SpawnOptions,
+  ): Service {
+    if (this.closed)
+      throw new Error(`Not starting ${name}: the stack is shutting down.`);
     const logFile = join(this.logDir, `${name}.log`);
     const log = openSync(logFile, 'a');
     const child = spawn(command, args, {
@@ -85,14 +97,21 @@ export class ProcessGroup {
   }
 
   /** Run a command to completion. A non-zero exit throws with the log tail. */
-  async run(name: string, command: string, args: readonly string[], options: SpawnOptions): Promise<void> {
+  async run(
+    name: string,
+    command: string,
+    args: readonly string[],
+    options: SpawnOptions,
+  ): Promise<void> {
     const service = this.start(name, command, args, options);
     const code = await new Promise<number | null>((done) => {
       service.child.once('error', () => done(null));
       service.child.once('exit', (exitCode) => done(exitCode));
     });
     if (code !== 0) {
-      throw new Error(`${name} failed (exit ${String(code)}).\n${logTail(service.logFile)}`);
+      throw new Error(
+        `${name} failed (exit ${String(code)}).\n${logTail(service.logFile)}`,
+      );
     }
   }
 
@@ -104,12 +123,19 @@ export class ProcessGroup {
 
 async function stop(service: Service): Promise<void> {
   const { child } = service;
-  if (child.exitCode !== null || child.signalCode !== null || child.pid === undefined) return;
+  if (
+    child.exitCode !== null ||
+    child.signalCode !== null ||
+    child.pid === undefined
+  )
+    return;
   const exited = new Promise<void>((done) => child.once('exit', () => done()));
   const exitedWithin = (ms: number) =>
     Promise.race([exited.then(() => true), delay(ms).then(() => false)]);
   if (process.platform === 'win32') {
-    spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+    spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], {
+      stdio: 'ignore',
+    });
     await exitedWithin(10_000);
     return;
   }
@@ -133,12 +159,19 @@ function delay(ms: number): Promise<void> {
 
 export function logTail(file: string, lines = 40): string {
   if (!existsSync(file)) return '';
-  const tail = readFileSync(file, 'utf8').trimEnd().split(/\r?\n/).slice(-lines);
+  const tail = readFileSync(file, 'utf8')
+    .trimEnd()
+    .split(/\r?\n/)
+    .slice(-lines);
   return `--- last ${tail.length} lines of ${file} ---\n${tail.join('\n')}`;
 }
 
 /** Poll until `url` answers 2xx. Fails early, with its log, if the service exits. */
-export async function waitForHttp(url: string, service: Service, timeoutMs: number): Promise<void> {
+export async function waitForHttp(
+  url: string,
+  service: Service,
+  timeoutMs: number,
+): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (service.child.exitCode !== null) {
@@ -154,13 +187,17 @@ export async function waitForHttp(url: string, service: Service, timeoutMs: numb
     }
     await delay(500);
   }
-  throw new Error(`${service.name} did not answer ${url} within ${timeoutMs / 1000} s.\n${logTail(service.logFile)}`);
+  throw new Error(
+    `${service.name} did not answer ${url} within ${timeoutMs / 1000} s.\n${logTail(service.logFile)}`,
+  );
 }
 
 export function assertPortFree(port: number, hint: string): Promise<void> {
   return new Promise((done, fail) => {
     const server = createServer();
-    server.once('error', () => fail(new Error(`Port ${port} is already in use. ${hint}`)));
+    server.once('error', () =>
+      fail(new Error(`Port ${port} is already in use. ${hint}`)),
+    );
     server.listen(port, '127.0.0.1', () => server.close(() => done()));
   });
 }
@@ -172,8 +209,20 @@ export function assertPortFree(port: number, hint: string): Promise<void> {
  */
 function baseEnv(): NodeJS.ProcessEnv {
   const keep = new Set([
-    'PATH', 'PATHEXT', 'SYSTEMROOT', 'WINDIR', 'COMSPEC', 'HOME', 'USERPROFILE',
-    'APPDATA', 'LOCALAPPDATA', 'TEMP', 'TMP', 'TMPDIR', 'LANG', 'TZ',
+    'PATH',
+    'PATHEXT',
+    'SYSTEMROOT',
+    'WINDIR',
+    'COMSPEC',
+    'HOME',
+    'USERPROFILE',
+    'APPDATA',
+    'LOCALAPPDATA',
+    'TEMP',
+    'TMP',
+    'TMPDIR',
+    'LANG',
+    'TZ',
   ]);
   return Object.fromEntries(
     Object.entries(process.env).filter(([key]) => keep.has(key.toUpperCase())),
@@ -185,10 +234,15 @@ function baseEnv(): NodeJS.ProcessEnv {
 // ---------------------------------------------------------------------------
 
 function compose(group: ProcessGroup, args: readonly string[]): Promise<void> {
-  return group.run('database', 'docker', ['compose', '-f', COMPOSE_FILE, '-p', COMPOSE_PROJECT, ...args], {
-    cwd: WEB_ROOT,
-    env: process.env,
-  });
+  return group.run(
+    'database',
+    'docker',
+    ['compose', '-f', COMPOSE_FILE, '-p', COMPOSE_PROJECT, ...args],
+    {
+      cwd: WEB_ROOT,
+      env: process.env,
+    },
+  );
 }
 
 export async function startDatabase(group: ProcessGroup): Promise<void> {
@@ -206,17 +260,31 @@ export function stopDatabase(logDir: string): Promise<void> {
   return new ProcessGroup(logDir).run(
     'database',
     'docker',
-    ['compose', '-f', COMPOSE_FILE, '-p', COMPOSE_PROJECT, 'down', '-v', '--remove-orphans'],
+    [
+      'compose',
+      '-f',
+      COMPOSE_FILE,
+      '-p',
+      COMPOSE_PROJECT,
+      'down',
+      '-v',
+      '--remove-orphans',
+    ],
     { cwd: WEB_ROOT, env: process.env },
   );
 }
 
 /** The self-hosted migration runner the appliance's `migrate` service runs. */
 export function migrateDatabase(group: ProcessGroup): Promise<void> {
-  return group.run('migrate', process.execPath, ['dist/src/scripts/migrate-selfhost.js'], {
-    cwd: API_ROOT,
-    env: { ...baseEnv(), DATABASE_URL },
-  });
+  return group.run(
+    'migrate',
+    process.execPath,
+    ['dist/src/scripts/migrate-selfhost.js'],
+    {
+      cwd: API_ROOT,
+      env: { ...baseEnv(), DATABASE_URL },
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -232,7 +300,12 @@ export function buildApi(group: ProcessGroup): Promise<void> {
 }
 
 // The appliance's shipped settings, so the run exercises its real defaults.
-const APPLIANCE_ENV_FILE = join(REPO_ROOT, 'deploy', 'selfhost', 'alphaci.env.example');
+const APPLIANCE_ENV_FILE = join(
+  REPO_ROOT,
+  'deploy',
+  'selfhost',
+  'alphaci.env.example',
+);
 const APPLIANCE_COMPOSITION_KEYS = [
   'ALPHACI_DEPLOYMENT_MODE',
   'ALPHACI_EDITION',
@@ -250,18 +323,28 @@ function applianceSettings(): Record<string, string> {
   const settings: Record<string, string> = {};
   for (const line of readFileSync(APPLIANCE_ENV_FILE, 'utf8').split(/\r?\n/)) {
     const match = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim());
-    if (match && (APPLIANCE_COMPOSITION_KEYS.includes(match[1]) || match[1].endsWith('_ENABLED'))) {
+    if (
+      match &&
+      (APPLIANCE_COMPOSITION_KEYS.includes(match[1]) ||
+        match[1].endsWith('_ENABLED'))
+    ) {
       settings[match[1]] = match[2].trim();
     }
   }
   const missing = APPLIANCE_COMPOSITION_KEYS.filter((key) => !settings[key]);
   if (missing.length > 0) {
-    throw new Error(`${APPLIANCE_ENV_FILE} no longer sets ${missing.join(', ')}.`);
+    throw new Error(
+      `${APPLIANCE_ENV_FILE} no longer sets ${missing.join(', ')}.`,
+    );
   }
   return settings;
 }
 
-function apiEnv(ports: StackPorts, egressEnv: Readonly<Record<string, string>>, logDir: string): NodeJS.ProcessEnv {
+function apiEnv(
+  ports: StackPorts,
+  egressEnv: Readonly<Record<string, string>>,
+  logDir: string,
+): NodeJS.ProcessEnv {
   const web = loopbackOrigin(ports.web);
   return {
     ...baseEnv(),
@@ -336,12 +419,20 @@ function webAppEnv(ports: StackPorts): NodeJS.ProcessEnv {
   };
 }
 
-export function buildWeb(group: ProcessGroup, ports: StackPorts): Promise<void> {
+export function buildWeb(
+  group: ProcessGroup,
+  ports: StackPorts,
+): Promise<void> {
   // Inherits the shell: next/font downloads the Google fonts at build time.
-  return group.run('web-build', process.execPath, [NEXT_BIN, 'build', '--webpack'], {
-    cwd: WEB_ROOT,
-    env: { ...process.env, ...webAppEnv(ports) },
-  });
+  return group.run(
+    'web-build',
+    process.execPath,
+    [NEXT_BIN, 'build', '--webpack'],
+    {
+      cwd: WEB_ROOT,
+      env: { ...process.env, ...webAppEnv(ports) },
+    },
+  );
 }
 
 /** For --skip-build: the existing .next must proxy /api/v1 to this run's API. */
@@ -362,8 +453,13 @@ export function startWeb(
   ports: StackPorts,
   egressEnv: Readonly<Record<string, string>>,
 ): Service {
-  return group.start('web', process.execPath, [NEXT_BIN, 'start', '-H', '127.0.0.1', '-p', String(ports.web)], {
-    cwd: WEB_ROOT,
-    env: { ...baseEnv(), ...egressEnv, ...webAppEnv(ports) },
-  });
+  return group.start(
+    'web',
+    process.execPath,
+    [NEXT_BIN, 'start', '-H', '127.0.0.1', '-p', String(ports.web)],
+    {
+      cwd: WEB_ROOT,
+      env: { ...baseEnv(), ...egressEnv, ...webAppEnv(ports) },
+    },
+  );
 }

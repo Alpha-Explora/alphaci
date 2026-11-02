@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import Link from "next/link";
+import Link from 'next/link';
 
 import {
   FEATURE_NUDGE_MESSAGE,
   FEATURES_REQUIRED_NOTE,
   type AddRepositoryState,
-} from "../model/project-folder-rules";
-import { FeatureIcon, LockIcon, PlusIcon } from "./project-folder-icons";
+} from '../model/project-folder-rules';
+import { FeatureIcon, LockIcon, PlusIcon } from './project-folder-icons';
 
 /**
  * "Add repository": the wizard filed in this Project, or, while the Project
@@ -33,9 +33,13 @@ export function AddRepositoryAction({
   /** Cards wrap the label in their own span (hidden on phones). */
   showLabel?: boolean;
 }>) {
-  if (state === "hidden") return null;
-  const label = showLabel ? "Add repository" : <span className="pf-card__manage-label">Add repository</span>;
-  if (state === "enabled") {
+  if (state === 'hidden') return null;
+  const label = showLabel ? (
+    'Add repository'
+  ) : (
+    <span className="pf-card__manage-label">Add repository</span>
+  );
+  if (state === 'enabled') {
     return (
       <Link className={className} href={href} aria-label={ariaLabel}>
         <PlusIcon />
@@ -58,7 +62,10 @@ export function AddRepositoryAction({
 }
 
 /** Why a Developer cannot add a repository yet. */
-export function FeaturesRequiredNote({ id, className = "pf-gate-note" }: Readonly<{ id: string; className?: string }>) {
+export function FeaturesRequiredNote({
+  id,
+  className = 'pf-gate-note',
+}: Readonly<{ id: string; className?: string }>) {
   return (
     <p className={className} id={id}>
       <LockIcon />
@@ -74,8 +81,12 @@ export function FeaturesRequiredNote({ id, className = "pf-gate-note" }: Readonl
 export function FeatureNudge({
   projectName,
   onAddFeature,
-  className = "pf-nudge",
-}: Readonly<{ projectName: string; onAddFeature: () => void; className?: string }>) {
+  className = 'pf-nudge',
+}: Readonly<{
+  projectName: string;
+  onAddFeature: () => void;
+  className?: string;
+}>) {
   return (
     <div className={className}>
       <span className="pf-nudge__text">

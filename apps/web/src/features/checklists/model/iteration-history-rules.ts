@@ -5,9 +5,9 @@
  * the report QA signed off (the run's `signoffRunId`), read as it was; the
  * active iteration is worked in on the Checklists tab, not here. */
 
-import type { HistoryIteration } from "./iteration-types";
-import { iterationDateLabel, normalizeIteration } from "./iteration-rules";
-import { record, records, text } from "./wire-readers";
+import type { HistoryIteration } from './iteration-types';
+import { iterationDateLabel, normalizeIteration } from './iteration-rules';
+import { record, records, text } from './wire-readers';
 
 function login(raw: unknown): string | null {
   return text(record(raw)?.login);
@@ -37,35 +37,56 @@ export function normalizeIterationHistory(value: unknown): HistoryIteration[] {
  * The line under an iteration's title: "Delivered 15 Oct 2026 by @ana ·
  * started 2 Oct 2026", or "In progress · started 2 Oct 2026".
  */
-export function historyMetaLabel(iteration: HistoryIteration, locale?: string): string {
-  const started = iterationDateLabel(iteration.startedAt, { withYear: true, locale });
+export function historyMetaLabel(
+  iteration: HistoryIteration,
+  locale?: string,
+): string {
+  const started = iterationDateLabel(iteration.startedAt, {
+    withYear: true,
+    locale,
+  });
   const startedPart = started ? `started ${started}` : null;
-  if (iteration.status === "active") return ["In progress", startedPart].filter(Boolean).join(" · ");
-  const delivered = iterationDateLabel(iteration.deliveredAt, { withYear: true, locale });
-  const by = iteration.deliveredByLogin ? ` by @${iteration.deliveredByLogin}` : "";
-  return [`Delivered${delivered ? ` ${delivered}` : ""}${by}`, startedPart].filter(Boolean).join(" · ");
+  if (iteration.status === 'active')
+    return ['In progress', startedPart].filter(Boolean).join(' · ');
+  const delivered = iterationDateLabel(iteration.deliveredAt, {
+    withYear: true,
+    locale,
+  });
+  const by = iteration.deliveredByLogin
+    ? ` by @${iteration.deliveredByLogin}`
+    : '';
+  return [`Delivered${delivered ? ` ${delivered}` : ''}${by}`, startedPart]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 /** What a card says instead of a checklist, when it has none to show. */
-export function historyNoReportText(iteration: Pick<HistoryIteration, "status" | "signoffRunId">): string | null {
-  if (iteration.status === "active") {
-    return "This version is in progress. Its requirements, progress and QA testing are on the Checklists tab.";
+export function historyNoReportText(
+  iteration: Pick<HistoryIteration, 'status' | 'signoffRunId'>,
+): string | null {
+  if (iteration.status === 'active') {
+    return 'This version is in progress. Its requirements, progress and QA testing are on the Checklists tab.';
   }
-  if (!iteration.signoffRunId) return "No QA sign-off was recorded for this version.";
+  if (!iteration.signoffRunId)
+    return 'No QA sign-off was recorded for this version.';
   return null;
 }
 
 /** "Signed off Approved by @ana-qa on 15 Oct 2026". */
 export function historySignoffLabel(
-  signoff: { signedBy: { login: string | null } | null; signedAt: string | null },
+  signoff: {
+    signedBy: { login: string | null } | null;
+    signedAt: string | null;
+  },
   locale?: string,
 ): string {
-  const by = signoff.signedBy?.login ? ` by @${signoff.signedBy.login}` : "";
+  const by = signoff.signedBy?.login ? ` by @${signoff.signedBy.login}` : '';
   const date = iterationDateLabel(signoff.signedAt, { withYear: true, locale });
-  return `Signed off${by}${date ? ` on ${date}` : ""}`;
+  return `Signed off${by}${date ? ` on ${date}` : ''}`;
 }
 
-export const HISTORY_EMPTY_TEXT = "No versions yet. Version 1 appears here once the Project has requirements.";
+export const HISTORY_EMPTY_TEXT =
+  'No versions yet. Version 1 appears here once the Project has requirements.';
 
 export const HISTORY_INTRO =
-  "Every version of this Project. A delivered one is read-only: its checklist and QA results exactly as QA signed them off.";
+  'Every version of this Project. A delivered one is read-only: its checklist and QA results exactly as QA signed them off.';

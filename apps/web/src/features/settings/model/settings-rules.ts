@@ -1,11 +1,11 @@
 /* Pure rules for the settings surface. No React, no Next, no fetch. */
 
-import { canManageTeamSettings } from "@/features/teams";
+import { canManageTeamSettings } from '@/features/teams';
 
-import type { SettingsSection } from "./settings-types";
+import type { SettingsSection } from './settings-types';
 
 /** App roles that lead teams. An allow-list: a new role (qa, …) is not one. */
-const TEAM_LEAD_APP_ROLES: ReadonlySet<string> = new Set(["lead", "admin"]);
+const TEAM_LEAD_APP_ROLES: ReadonlySet<string> = new Set(['lead', 'admin']);
 
 /**
  * Whether the Settings rail offers the Team tab for the header's team.
@@ -20,7 +20,9 @@ export function canSeeTeamSettingsTab(
   appRole: string | null | undefined,
 ): boolean {
   if (!teamRole) return false;
-  return canManageTeamSettings(teamRole) || TEAM_LEAD_APP_ROLES.has(appRole ?? "");
+  return (
+    canManageTeamSettings(teamRole) || TEAM_LEAD_APP_ROLES.has(appRole ?? '')
+  );
 }
 
 /**
@@ -42,22 +44,22 @@ export function canDeleteAccount(
  */
 export function settingsNavSections(canManageTeam: boolean): SettingsSection[] {
   return [
-    "account",
-    ...(canManageTeam ? (["team"] as const) : []),
-    "appearance",
-    "connections",
-    "guide",
-    "danger",
+    'account',
+    ...(canManageTeam ? (['team'] as const) : []),
+    'appearance',
+    'connections',
+    'guide',
+    'danger',
   ];
 }
 
 const SECTIONS: ReadonlySet<string> = new Set<SettingsSection>([
-  "account",
-  "team",
-  "appearance",
-  "connections",
-  "guide",
-  "danger",
+  'account',
+  'team',
+  'appearance',
+  'connections',
+  'guide',
+  'danger',
 ]);
 
 /**
@@ -66,8 +68,8 @@ const SECTIONS: ReadonlySet<string> = new Set<SettingsSection>([
  * Account, as a plain /settings always has.
  */
 export function settingsSectionFromSearch(search: string): SettingsSection {
-  const tab = new URLSearchParams(search).get("tab") ?? "";
-  return SECTIONS.has(tab) ? (tab as SettingsSection) : "account";
+  const tab = new URLSearchParams(search).get('tab') ?? '';
+  return SECTIONS.has(tab) ? (tab as SettingsSection) : 'account';
 }
 
 /**
@@ -79,5 +81,5 @@ export function visibleSettingsSection(
   active: SettingsSection,
   canManageTeam: boolean,
 ): SettingsSection {
-  return active === "team" && !canManageTeam ? "account" : active;
+  return active === 'team' && !canManageTeam ? 'account' : active;
 }

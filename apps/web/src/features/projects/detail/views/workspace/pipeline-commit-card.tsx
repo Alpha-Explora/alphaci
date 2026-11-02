@@ -1,37 +1,45 @@
-"use client";
+'use client';
 
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useState } from 'react';
 
-import { CiRunReportExport } from "@/features/checklists/studio";
-import { checkLabel, relativeTime } from "@/features/runs";
-import type { AppRole, RunGroup, StageId } from "@/shared/api/contracts";
+import { CiRunReportExport } from '@/features/checklists/studio';
+import { checkLabel, relativeTime } from '@/features/runs';
+import type { AppRole, RunGroup, StageId } from '@/shared/api/contracts';
 
-import type { RunsViewMode } from "../../model/runs-view-mode";
+import type { RunsViewMode } from '../../model/runs-view-mode';
 import {
   defaultOpenStage,
   headlineChipLabel,
   stageEntries,
   stageName,
   type VerdictTone,
-} from "../../model/pipeline-run-card-rules";
+} from '../../model/pipeline-run-card-rules';
 import {
   promotionReadiness,
   type PromotionReadiness,
-} from "../../model/promotion-readiness";
-import { commitHeadline, type CommitHeadline, type CommitRunGroup } from "../../model/runs-by-commit";
-import { isVisualBranch, visualChipLabel, visualRequestRunId } from "../../model/visual-check-rules";
-import type { WorkflowRunSummary } from "../../view-models/use-pipeline-runs-view-model";
-import { useVisualChecksViewModel } from "../../view-models/use-visual-checks-view-model";
-import { ChevronIcon, InfoIcon, PromoteIcon } from "./pipeline-glyphs";
-import { StageDetail, StageStepper, StatusChip } from "./pipeline-stage-detail";
-import { WorkflowRunList } from "./pipeline-workflow-runs";
+} from '../../model/promotion-readiness';
+import {
+  commitHeadline,
+  type CommitHeadline,
+  type CommitRunGroup,
+} from '../../model/runs-by-commit';
+import {
+  isVisualBranch,
+  visualChipLabel,
+  visualRequestRunId,
+} from '../../model/visual-check-rules';
+import type { WorkflowRunSummary } from '../../view-models/use-pipeline-runs-view-model';
+import { useVisualChecksViewModel } from '../../view-models/use-visual-checks-view-model';
+import { ChevronIcon, InfoIcon, PromoteIcon } from './pipeline-glyphs';
+import { StageDetail, StageStepper, StatusChip } from './pipeline-stage-detail';
+import { WorkflowRunList } from './pipeline-workflow-runs';
 
-const HEADLINE_TONE: Record<CommitHeadline["tone"], VerdictTone> = {
-  success: "success",
-  failure: "danger",
-  running: "running",
-  neutral: "muted",
-  warning: "warning",
+const HEADLINE_TONE: Record<CommitHeadline['tone'], VerdictTone> = {
+  success: 'success',
+  failure: 'danger',
+  running: 'running',
+  neutral: 'muted',
+  warning: 'warning',
 };
 
 /**
@@ -57,7 +65,7 @@ export function CommitCard({
   branch,
   commit,
   title,
-  viewMode = "deep",
+  viewMode = 'deep',
   appRole,
   repoFullName,
   visualCaptureOn = null,
@@ -96,22 +104,27 @@ export function CommitCard({
   const [chosen, setChosen] = useState<StageId | null | undefined>(undefined);
   const openStage = chosen === undefined ? defaultOpenStage(entries) : chosen;
   const openEntry = entries.find((entry) => entry.stage.stage === openStage);
-  const verifyEntry = entries.find((entry) => entry.stage.stage === "verify");
+  const verifyEntry = entries.find((entry) => entry.stage.stage === 'verify');
 
   const visual = useVisualChecksViewModel({
     projectId,
     branch,
     runId: visualRequestRunId(verifyEntry?.stage.runId),
-    enabled: openStage === "verify",
+    enabled: openStage === 'verify',
     appRole,
     repoFullName,
   });
   const visualChip = visualChipLabel(visual.checks, visualCaptureOn);
-  const showsVisual = openEntry?.stage.stage === "verify" && isVisualBranch(branch);
+  const showsVisual =
+    openEntry?.stage.stage === 'verify' && isVisualBranch(branch);
 
   return (
     <li className="pipe-commit-item">
-      <article className={`pipe-commit pipe-commit--${tone}`} aria-labelledby={headingId} data-commit-card>
+      <article
+        className={`pipe-commit pipe-commit--${tone}`}
+        aria-labelledby={headingId}
+        data-commit-card
+      >
         <CommitHeader
           headingId={headingId}
           title={title}
@@ -126,16 +139,23 @@ export function CommitCard({
               entries={entries}
               openStage={openStage}
               panelId={panelId}
-              onSelect={(stage) => setChosen(openStage === stage ? null : stage)}
+              onSelect={(stage) =>
+                setChosen(openStage === stage ? null : stage)
+              }
               visualChip={visualChip}
             />
-            <PromotionBanner branch={branch} report={report} runs={commit.runs} />
+            <PromotionBanner
+              branch={branch}
+              report={report}
+              runs={commit.runs}
+            />
           </>
         ) : (
           <p className="pipe-banner pipe-banner--muted">
             <InfoIcon />
             <span>
-              No stage report was filed for this commit. The runs below are what GitHub executed.
+              No stage report was filed for this commit. The runs below are what
+              GitHub executed.
             </span>
           </p>
         )}
@@ -182,7 +202,8 @@ function CommitHeader({
         <h4 id={headingId} className="pipe-commit__title">
           {title ?? (
             <>
-              Commit <code className="pipe-sha pipe-sha--title">{shortSha}</code>
+              Commit{' '}
+              <code className="pipe-sha pipe-sha--title">{shortSha}</code>
             </>
           )}
         </h4>
@@ -190,7 +211,10 @@ function CommitHeader({
           {title && <code className="pipe-sha">{shortSha}</code>}
           {latest.actor && <span>{latest.actor}</span>}
           {latest.createdAt && (
-            <time dateTime={latest.createdAt} title={new Date(latest.createdAt).toLocaleString()}>
+            <time
+              dateTime={latest.createdAt}
+              title={new Date(latest.createdAt).toLocaleString()}
+            >
               {relativeTime(latest.createdAt)}
             </time>
           )}
@@ -248,7 +272,7 @@ function CommitRuns({
           onClick={() => setChosen(!open)}
         >
           <ChevronIcon />
-          {count === 1 ? "1 workflow run" : `${count} workflow runs`}
+          {count === 1 ? '1 workflow run' : `${count} workflow runs`}
         </button>
       </footer>
 
@@ -265,13 +289,13 @@ function CommitRuns({
   );
 }
 
-const PROMOTION_TONE: Record<PromotionReadiness["state"], VerdictTone> = {
-  opened: "success",
-  "in-progress": "running",
-  failed: "danger",
-  blocked: "danger",
-  "did-not-run": "muted",
-  "not-applicable": "muted",
+const PROMOTION_TONE: Record<PromotionReadiness['state'], VerdictTone> = {
+  opened: 'success',
+  'in-progress': 'running',
+  failed: 'danger',
+  blocked: 'danger',
+  'did-not-run': 'muted',
+  'not-applicable': 'muted',
 };
 
 /**
@@ -288,28 +312,41 @@ function PromotionBanner({
   branch,
   report,
   runs,
-}: Readonly<{ branch: string; report: RunGroup; runs: readonly WorkflowRunSummary[] }>) {
-  const packageStage = report.stages.find((stage) => stage.stage === "package");
-  const packageRun = packageStage ? runs.find((run) => run.id === packageStage.runId) : undefined;
+}: Readonly<{
+  branch: string;
+  report: RunGroup;
+  runs: readonly WorkflowRunSummary[];
+}>) {
+  const packageStage = report.stages.find((stage) => stage.stage === 'package');
+  const packageRun = packageStage
+    ? runs.find((run) => run.id === packageStage.runId)
+    : undefined;
   const readiness = promotionReadiness(
     branch,
     packageStage?.checks,
-    packageRun ? { status: packageRun.status, conclusion: packageRun.conclusion } : null,
+    packageRun
+      ? { status: packageRun.status, conclusion: packageRun.conclusion }
+      : null,
   );
-  if (readiness.state === "not-applicable") return null;
+  if (readiness.state === 'not-applicable') return null;
 
-  const target = readiness.target ?? "";
-  const stage = stageName("package");
-  const text: Record<Exclude<PromotionReadiness["state"], "not-applicable">, string> = {
+  const target = readiness.target ?? '';
+  const stage = stageName('package');
+  const text: Record<
+    Exclude<PromotionReadiness['state'], 'not-applicable'>,
+    string
+  > = {
     opened: `Promotion pull request into ${target} is open.`,
-    "in-progress": `The promotion into ${target} was still running when ${stage} reported.`,
+    'in-progress': `The promotion into ${target} was still running when ${stage} reported.`,
     failed: `The promotion into ${target} failed after ${stage} reported, so no pull request was opened.`,
-    blocked: `Not promoted to ${target}: ${readiness.blockedBy.map(checkLabel).join(", ")} failed.`,
-    "did-not-run": `No promotion pull request into ${target} was opened for this commit.`,
+    blocked: `Not promoted to ${target}: ${readiness.blockedBy.map(checkLabel).join(', ')} failed.`,
+    'did-not-run': `No promotion pull request into ${target} was opened for this commit.`,
   };
 
   return (
-    <p className={`pipe-banner pipe-banner--${PROMOTION_TONE[readiness.state]}`}>
+    <p
+      className={`pipe-banner pipe-banner--${PROMOTION_TONE[readiness.state]}`}
+    >
       <PromoteIcon />
       <span>{text[readiness.state]}</span>
     </p>

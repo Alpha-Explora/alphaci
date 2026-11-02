@@ -88,7 +88,7 @@
 
 /* The indicator: a rule that grows in along the selected tab's inner edge. */
 .qa-coltab::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 0.35rem;
   bottom: 0.35rem;
@@ -109,12 +109,12 @@
   outline-offset: -2px;
 }
 
-.qa-coltab[aria-selected="true"] {
+.qa-coltab[aria-selected='true'] {
   background: var(--layer-2);
   color: var(--brand);
 }
 
-.qa-coltab[aria-selected="true"]::after {
+.qa-coltab[aria-selected='true']::after {
   transform: scaleY(1);
 }
 
@@ -143,15 +143,15 @@
   color: var(--text-secondary);
 }
 
-.qa-coltab__status[data-tone="failed"] {
+.qa-coltab__status[data-tone='failed'] {
   color: var(--danger);
 }
 
-.qa-coltab__status[data-tone="passed"] {
+.qa-coltab__status[data-tone='passed'] {
   color: var(--success);
 }
 
-.qa-coltab__status[data-tone="running"] {
+.qa-coltab__status[data-tone='running'] {
   color: var(--brand);
 }
 
@@ -354,11 +354,11 @@
   background: var(--bg-soft);
 }
 
-.qa-pw-item[data-tone="success"] {
+.qa-pw-item[data-tone='success'] {
   --qa-tone: var(--success);
 }
 
-.qa-pw-item[data-tone="danger"] {
+.qa-pw-item[data-tone='danger'] {
   --qa-tone: var(--danger);
 }
 

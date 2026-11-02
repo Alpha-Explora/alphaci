@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { createContext, useContext } from "react";
+import Link from 'next/link';
+import { createContext, useContext } from 'react';
 
-import { useAuthSession } from "@/features/auth/session";
-import type { PlatformRole } from "@/shared/api/contracts";
-import { canAccessAdmin, isSuperAdmin } from "../../model/admin-rules";
+import { useAuthSession } from '@/features/auth/session';
+import type { PlatformRole } from '@/shared/api/contracts';
+import { canAccessAdmin, isSuperAdmin } from '../../model/admin-rules';
 
 interface AdminContextValue {
   role: PlatformRole;
@@ -18,7 +18,7 @@ const AdminContext = createContext<AdminContextValue | null>(null);
 export function useAdminContext(): AdminContextValue {
   const ctx = useContext(AdminContext);
   if (!ctx) {
-    throw new Error("useAdminContext must be used within <AdminGate>");
+    throw new Error('useAdminContext must be used within <AdminGate>');
   }
   return ctx;
 }
@@ -32,10 +32,15 @@ export function useAdminContext(): AdminContextValue {
 export function AdminGate({ children }: { children: React.ReactNode }) {
   const { status, session } = useAuthSession();
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return (
-      <main className="dash-shell" style={{ minHeight: "60vh", display: "grid", placeItems: "center" }}>
-        <p style={{ color: "var(--text-secondary)" }}>Verifying admin access…</p>
+      <main
+        className="dash-shell"
+        style={{ minHeight: '60vh', display: 'grid', placeItems: 'center' }}
+      >
+        <p style={{ color: 'var(--text-secondary)' }}>
+          Verifying admin access…
+        </p>
       </main>
     );
   }
@@ -45,13 +50,35 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
 
   if (!hasAccess) {
     return (
-      <main className="dash-shell" style={{ minHeight: "60vh", display: "grid", placeItems: "center" }}>
-        <div className="glass-panel" style={{ textAlign: "center", padding: "3rem 2rem", maxWidth: "26rem" }}>
-          <h1 style={{ fontSize: "1.25rem", marginBottom: "0.75rem" }}>Admin access required</h1>
-          <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
+      <main
+        className="dash-shell"
+        style={{ minHeight: '60vh', display: 'grid', placeItems: 'center' }}
+      >
+        <div
+          className="glass-panel"
+          style={{
+            textAlign: 'center',
+            padding: '3rem 2rem',
+            maxWidth: '26rem',
+          }}
+        >
+          <h1 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>
+            Admin access required
+          </h1>
+          <p
+            style={{
+              color: 'var(--text-secondary)',
+              marginBottom: '1.5rem',
+              fontSize: '0.9rem',
+            }}
+          >
             This area is restricted to administrators.
           </p>
-          <Link className="primary-button" href="/home" style={{ padding: "0.6rem 1.4rem" }}>
+          <Link
+            className="primary-button"
+            href="/home"
+            style={{ padding: '0.6rem 1.4rem' }}
+          >
             Back to dashboard
           </Link>
         </div>
@@ -62,7 +89,7 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
   return (
     <AdminContext.Provider
       value={{
-        role: session?.platformRole ?? "admin",
+        role: session?.platformRole ?? 'admin',
         isSuperAdmin: superAdmin,
         currentUserId: session!.user.id,
       }}

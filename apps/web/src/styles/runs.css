@@ -182,10 +182,15 @@
   gap: 0.85rem;
   overflow: hidden;
   padding: 0.9rem 1rem 0.95rem;
-  border: 1px solid color-mix(in srgb, var(--run-accent) 18%, var(--border-layer));
+  border: 1px solid
+    color-mix(in srgb, var(--run-accent) 18%, var(--border-layer));
   border-radius: 8px;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--run-accent) 7%, transparent), transparent 38%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--run-accent) 7%, transparent),
+      transparent 38%
+    ),
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 42%),
     var(--layer-1);
   box-shadow:
@@ -198,7 +203,7 @@
 }
 
 .runs-run-card::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0.42rem;
   z-index: -1;
@@ -241,7 +246,7 @@
 .runs-run-id {
   max-width: min(18rem, 50%);
   overflow: hidden;
-  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -264,7 +269,7 @@
 
 .runs-meta-chip--mono,
 .runs-card-footer p:first-child {
-  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
 }
 
 .runs-pipeline-row {
@@ -301,7 +306,7 @@
 }
 
 .runs-connector::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 50%;
   right: 0;
@@ -465,10 +470,15 @@
   min-width: 0;
   min-height: 3.35rem;
   padding: 0.62rem 0.7rem;
-  border: 1px solid color-mix(in srgb, var(--stage-ring) 42%, var(--border-soft));
+  border: 1px solid
+    color-mix(in srgb, var(--stage-ring) 42%, var(--border-soft));
   border-radius: 7px;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--stage-ring) 12%, transparent), transparent 62%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--stage-ring) 12%, transparent),
+      transparent 62%
+    ),
     rgba(255, 255, 255, 0.025);
   color: var(--text-primary);
   cursor: pointer;
@@ -486,7 +496,11 @@
 .runs-stage-node--expanded {
   border-color: var(--stage-ring);
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--stage-ring) 18%, transparent), transparent 68%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--stage-ring) 18%, transparent),
+      transparent 68%
+    ),
     rgba(255, 255, 255, 0.035);
   box-shadow: 0 0 18px color-mix(in srgb, var(--stage-ring) 18%, transparent);
 }
@@ -768,7 +782,7 @@
 
 .runs-commit-sha {
   color: var(--text-primary);
-  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
   font-size: 0.88rem;
   font-weight: 800;
   letter-spacing: 0.025em;
@@ -790,7 +804,7 @@
 }
 
 .runs-commit-meta span + span::before {
-  content: "·";
+  content: '·';
   margin-right: 0.55rem;
   color: var(--border-strong);
 }
@@ -873,7 +887,7 @@
 .runs-workflow-details-header strong {
   overflow: hidden;
   color: var(--text-primary);
-  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
   font-size: 0.76rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -925,9 +939,15 @@
   padding: 0;
 }
 
-.runs-hero-heading { align-items: center; }
+.runs-hero-heading {
+  align-items: center;
+}
 
-.runs-hero-heading-right { display: inline-flex; align-items: center; gap: 0.9rem; }
+.runs-hero-heading-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+}
 
 .runs-live-badge {
   display: inline-flex;
@@ -955,11 +975,23 @@
 }
 
 @keyframes runs-live-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-amber) 55%, transparent); }
-  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-amber) 0%, transparent); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-amber) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 5px
+      color-mix(in srgb, var(--accent-amber) 0%, transparent);
+  }
 }
 
-.runs-stream { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; margin-top: 0.85rem; }
+.runs-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+  margin-top: 0.85rem;
+}
 
 /* Recent-outcomes sparkline, divided off at the foot of the hero. */
 .runs-outcomes {
@@ -975,7 +1007,10 @@
   border-radius: 0.72rem;
   background: color-mix(in srgb, var(--bg-elevated) 62%, var(--bg-base) 38%);
   overflow: hidden;
-  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
 }
 
 .run-card:hover {
@@ -991,19 +1026,33 @@
   background: var(--text-muted);
 }
 
-.run-card--success .run-card-accent { background: var(--success); }
-
-.run-card--failure .run-card-accent { background: var(--danger); }
-
-.run-card--running .run-card-accent {
-  background: linear-gradient(180deg, var(--accent-amber), color-mix(in srgb, var(--accent-amber) 30%, transparent));
+.run-card--success .run-card-accent {
+  background: var(--success);
 }
 
-.run-card--partial .run-card-accent { background: var(--accent-violet); }
+.run-card--failure .run-card-accent {
+  background: var(--danger);
+}
 
-.run-card--cancelled .run-card-accent { background: var(--text-muted); }
+.run-card--running .run-card-accent {
+  background: linear-gradient(
+    180deg,
+    var(--accent-amber),
+    color-mix(in srgb, var(--accent-amber) 30%, transparent)
+  );
+}
 
-.run-card--failure { border-color: color-mix(in srgb, var(--danger) 32%, var(--border-soft)); }
+.run-card--partial .run-card-accent {
+  background: var(--accent-violet);
+}
+
+.run-card--cancelled .run-card-accent {
+  background: var(--text-muted);
+}
+
+.run-card--failure {
+  border-color: color-mix(in srgb, var(--danger) 32%, var(--border-soft));
+}
 
 .run-card-link {
   display: flex;
@@ -1014,9 +1063,20 @@
   color: var(--text-primary);
 }
 
-.run-card-main { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 0.55rem; }
+.run-card-main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.55rem;
+}
 
-.run-card-head { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.run-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
 
 .run-card-repo {
   font-family: ui-monospace, monospace;
@@ -1041,13 +1101,19 @@
 }
 
 .run-status-live {
-  width: 0.4rem; height: 0.4rem; border-radius: 50%;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
   background: var(--accent-amber);
   animation: runs-live-pulse 1.6s ease-in-out infinite;
 }
 
 /* Horizontal pipeline track — the visual centerpiece spanning the card. */
-.run-track { display: flex; align-items: center; gap: 0.55rem; }
+.run-track {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
 
 .run-track-cap {
   flex: 0 0 auto;
@@ -1059,9 +1125,18 @@
   color: var(--text-muted);
 }
 
-.run-track-line { display: flex; align-items: center; flex: 1 1 auto; min-width: 0; }
+.run-track-line {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
 
-.run-track-dot { width: 0.78rem; height: 0.78rem; flex: 0 0 auto; }
+.run-track-dot {
+  width: 0.78rem;
+  height: 0.78rem;
+  flex: 0 0 auto;
+}
 
 .run-track-seg {
   position: relative;
@@ -1073,17 +1148,28 @@
   overflow: hidden;
 }
 
-.run-track-seg--success { background: color-mix(in srgb, var(--success) 60%, transparent); }
+.run-track-seg--success {
+  background: color-mix(in srgb, var(--success) 60%, transparent);
+}
 
-.run-track-seg--danger { background: color-mix(in srgb, var(--danger) 65%, transparent); }
+.run-track-seg--danger {
+  background: color-mix(in srgb, var(--danger) 65%, transparent);
+}
 
-.run-track-seg--flowing { background: color-mix(in srgb, var(--success) 45%, transparent); }
+.run-track-seg--flowing {
+  background: color-mix(in srgb, var(--success) 45%, transparent);
+}
 
 .run-track-seg--flowing::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-amber) 90%, transparent), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent-amber) 90%, transparent),
+    transparent
+  );
   animation: flow-travel 1.8s ease-in-out infinite;
 }
 
@@ -1109,7 +1195,11 @@
   color: var(--text-muted);
 }
 
-.run-card-sha { padding: 0.08rem 0.35rem; border-radius: 0.3rem; background: color-mix(in srgb, var(--text-muted) 12%, transparent); }
+.run-card-sha {
+  padding: 0.08rem 0.35rem;
+  border-radius: 0.3rem;
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+}
 
 /* Right side — status word + View link, vertically centered. */
 .run-card-side {
@@ -1130,72 +1220,144 @@
   color: var(--text-secondary);
 }
 
-.run-status-word--success { color: var(--success); }
+.run-status-word--success {
+  color: var(--success);
+}
 
-.run-status-word--failure { color: var(--danger); }
+.run-status-word--failure {
+  color: var(--danger);
+}
 
-.run-status-word--running { color: var(--accent-amber); }
+.run-status-word--running {
+  color: var(--accent-amber);
+}
 
-.run-status-word--partial { color: var(--accent-violet); }
+.run-status-word--partial {
+  color: var(--accent-violet);
+}
 
-.run-status-word--cancelled { color: var(--text-muted); }
+.run-status-word--cancelled {
+  color: var(--text-muted);
+}
 
 .run-card-cta {
-  display: inline-flex; align-items: center; gap: 0.28rem;
-  color: var(--text-secondary); font-weight: 700; font-size: 0.74rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 0.74rem;
   transition: color 0.18s ease;
 }
 
-.run-card-cta svg { transition: transform 0.18s ease; }
+.run-card-cta svg {
+  transition: transform 0.18s ease;
+}
 
-.run-card:hover .run-card-cta { color: var(--brand); }
+.run-card:hover .run-card-cta {
+  color: var(--brand);
+}
 
-.run-card:hover .run-card-cta svg { transform: translateX(3px); }
+.run-card:hover .run-card-cta svg {
+  transform: translateX(3px);
+}
 
-.run-card-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 0.72rem; }
+.run-card-link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.72rem;
+}
 
 /* Run empty + skeletons */
 .runs-empty {
-  display: flex; align-items: center; gap: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
   padding: 1.1rem 1rem;
   border: 1px dashed color-mix(in srgb, var(--brand) 30%, var(--border-soft));
   border-radius: 0.72rem;
   background: color-mix(in srgb, var(--brand) 4%, transparent);
-  text-decoration: none; color: var(--text-primary);
-  transition: border-color 0.18s ease, background 0.18s ease;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
 }
 
-.runs-empty:hover { border-color: color-mix(in srgb, var(--brand) 55%, transparent); background: color-mix(in srgb, var(--brand) 8%, transparent); }
+.runs-empty:hover {
+  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+}
 
 .runs-empty-icon {
-  display: grid; place-items: center; flex: 0 0 auto;
-  width: 2.4rem; height: 2.4rem; border-radius: 0.6rem;
-  color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, transparent);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.6rem;
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
 }
 
-.runs-empty > span:nth-child(2) { display: flex; flex-direction: column; gap: 0.18rem; flex: 1; min-width: 0; }
+.runs-empty > span:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  flex: 1;
+  min-width: 0;
+}
 
-.runs-empty strong { font-size: 0.85rem; }
+.runs-empty strong {
+  font-size: 0.85rem;
+}
 
-.runs-empty small { color: var(--text-muted); font-size: 0.72rem; line-height: 1.4; }
+.runs-empty small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
 
-.run-card--skeleton { pointer-events: none; }
+.run-card--skeleton {
+  pointer-events: none;
+}
 
-.run-skel { display: block; border-radius: 6px; background: color-mix(in srgb, var(--text-muted) 14%, transparent); animation: state-pulse 1.5s infinite; }
+.run-skel {
+  display: block;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
+  animation: state-pulse 1.5s infinite;
+}
 
-.run-skel--repo { width: 8rem; height: 0.9rem; }
+.run-skel--repo {
+  width: 8rem;
+  height: 0.9rem;
+}
 
-.run-skel--pill { width: 3.5rem; height: 1rem; border-radius: 999px; }
+.run-skel--pill {
+  width: 3.5rem;
+  height: 1rem;
+  border-radius: 999px;
+}
 
-.run-skel--track { width: 100%; height: 0.9rem; margin: 0.15rem 0; }
+.run-skel--track {
+  width: 100%;
+  height: 0.9rem;
+  margin: 0.15rem 0;
+}
 
-.run-skel--foot { width: 60%; height: 0.7rem; }
+.run-skel--foot {
+  width: 60%;
+  height: 0.7rem;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .runs-live-dot,
   .run-status-live,
   .run-track-seg--flowing::after,
-  .run-card--skeleton .run-skel { animation: none; }
+  .run-card--skeleton .run-skel {
+    animation: none;
+  }
 }
 
 /* Runs-hero operational signal line (folded in from the retired scope banner). */
@@ -1216,7 +1378,9 @@
   font-weight: 600;
 }
 
-.runs-hero-signal--idle { color: var(--text-muted); }
+.runs-hero-signal--idle {
+  color: var(--text-muted);
+}
 
 .runs-hero-chip {
   display: inline-flex;
@@ -1230,16 +1394,27 @@
   font-size: 0.72rem;
   font-weight: 650;
   text-decoration: none;
-  transition: transform 0.16s ease, border-color 0.16s ease;
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease;
 }
 
-.runs-hero-chip:hover { transform: translateY(-1px); }
+.runs-hero-chip:hover {
+  transform: translateY(-1px);
+}
 
-.runs-hero-chip--danger { border-color: color-mix(in srgb, var(--danger) 45%, var(--border-soft)); }
+.runs-hero-chip--danger {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border-soft));
+}
 
-.runs-hero-chip--warning { border-color: color-mix(in srgb, var(--accent-amber) 45%, var(--border-soft)); }
+.runs-hero-chip--warning {
+  border-color: color-mix(in srgb, var(--accent-amber) 45%, var(--border-soft));
+}
 
-.runs-hero-chip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.runs-hero-chip:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
 
 .runs-hero-chip-dot {
   width: 0.42rem;
@@ -1250,36 +1425,66 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 13%, transparent);
 }
 
-.runs-hero-chip--danger .runs-hero-chip-dot { background: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 13%, transparent); }
+.runs-hero-chip--danger .runs-hero-chip-dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 13%, transparent);
+}
 
-.runs-hero-chip--warning .runs-hero-chip-dot { background: var(--accent-amber); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-amber) 13%, transparent); }
+.runs-hero-chip--warning .runs-hero-chip-dot {
+  background: var(--accent-amber);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-amber) 13%, transparent);
+}
 
-.runs-hero-signal--idle .runs-hero-chip-dot { background: var(--text-muted); box-shadow: none; }
+.runs-hero-signal--idle .runs-hero-chip-dot {
+  background: var(--text-muted);
+  box-shadow: none;
+}
 
 /* Featured latest-run card — the emphasised hero card at the top of the stream. */
 .run-card--featured {
   border-color: color-mix(in srgb, var(--brand) 30%, var(--border-soft));
   background:
-    radial-gradient(130% 170% at 0% 0%, color-mix(in srgb, var(--brand) 9%, transparent), transparent 55%),
+    radial-gradient(
+      130% 170% at 0% 0%,
+      color-mix(in srgb, var(--brand) 9%, transparent),
+      transparent 55%
+    ),
     color-mix(in srgb, var(--bg-elevated) 82%, var(--bg-base) 18%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.run-card--featured .run-card-accent { width: 4px; }
+.run-card--featured .run-card-accent {
+  width: 4px;
+}
 
-.run-card--featured .run-card-link { padding: 0.9rem 1rem 0.9rem 1.2rem; }
+.run-card--featured .run-card-link {
+  padding: 0.9rem 1rem 0.9rem 1.2rem;
+}
 
-.run-card--featured .run-card-repo { font-size: clamp(0.95rem, 1.7vw, 1.08rem); }
+.run-card--featured .run-card-repo {
+  font-size: clamp(0.95rem, 1.7vw, 1.08rem);
+}
 
-.run-card--featured .run-track { gap: 0.7rem; }
+.run-card--featured .run-track {
+  gap: 0.7rem;
+}
 
-.run-card--featured .run-track-dot { width: 0.92rem; height: 0.92rem; }
+.run-card--featured .run-track-dot {
+  width: 0.92rem;
+  height: 0.92rem;
+}
 
-.run-card--featured .run-track-seg { min-width: 1.5rem; }
+.run-card--featured .run-track-seg {
+  min-width: 1.5rem;
+}
 
-.run-card--featured .run-status-word { font-size: 0.85rem; }
+.run-card--featured .run-status-word {
+  font-size: 0.85rem;
+}
 
-.run-card-time { font-variant-numeric: tabular-nums; }
+.run-card-time {
+  font-variant-numeric: tabular-nums;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    PIPELINE RUNS PAGE

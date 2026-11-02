@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { qaRunsRepository } from "../../data/qa-runs-repository";
+import { qaRunsRepository } from '../../data/qa-runs-repository';
 import {
   defaultVerdict,
   isSignedOff,
@@ -13,10 +13,15 @@ import {
   signoffPayload,
   type SignoffItems,
   type VerdictEligibility,
-} from "../../model/qa-run-rules";
-import type { QaActionError, QaRun, QaSignoffInput, QaVerdict } from "../../model/qa-run-types";
+} from '../../model/qa-run-rules';
+import type {
+  QaActionError,
+  QaRun,
+  QaSignoffInput,
+  QaVerdict,
+} from '../../model/qa-run-types';
 
-export type QaSignoffStatus = "closed" | "editing" | "submitting";
+export type QaSignoffStatus = 'closed' | 'editing' | 'submitting';
 
 export interface QaSignoffViewModel {
   /** The dialog's state: closed, being filled in, or being sent. */
@@ -43,7 +48,7 @@ export interface QaSignoffViewModel {
   submit: () => Promise<void>;
 }
 
-const SIGNOFF_ERROR = "The run could not be signed off. Try again in a moment.";
+const SIGNOFF_ERROR = 'The run could not be signed off. Try again in a moment.';
 
 /**
  * The sign-off dialog for any run: a repository run or a Project run. The
@@ -61,9 +66,9 @@ export function useSignoffViewModel(options: {
   const { canSignOff, run, send } = options;
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [verdict, setVerdict] = useState<QaVerdict>("REJECTED");
-  const [summary, setSummary] = useState("");
-  const [conditions, setConditions] = useState("");
+  const [verdict, setVerdict] = useState<QaVerdict>('REJECTED');
+  const [summary, setSummary] = useState('');
+  const [conditions, setConditions] = useState('');
   const [attempted, setAttempted] = useState(false);
   const [error, setError] = useState<QaActionError | null>(null);
   const blockedReason = signoffBlockedReason(run);
@@ -71,8 +76,8 @@ export function useSignoffViewModel(options: {
   function openDialog() {
     if (!canSignOff || blockedReason) return;
     setVerdict(defaultVerdict(run));
-    setSummary("");
-    setConditions("");
+    setSummary('');
+    setConditions('');
     setAttempted(false);
     setError(null);
     setOpen(true);
@@ -100,8 +105,8 @@ export function useSignoffViewModel(options: {
   }
 
   function dialogStatus(): QaSignoffStatus {
-    if (!open) return "closed";
-    return submitting ? "submitting" : "editing";
+    if (!open) return 'closed';
+    return submitting ? 'submitting' : 'editing';
   }
 
   return {
@@ -135,6 +140,7 @@ export function useQaSignoffViewModel(options: {
   return useSignoffViewModel({
     canSignOff: run.permissions.canSignOff && !isSignedOff(run),
     run,
-    send: async (input) => onRun(await qaRunsRepository.signoff(projectId, run.id, input)),
+    send: async (input) =>
+      onRun(await qaRunsRepository.signoff(projectId, run.id, input)),
   });
 }

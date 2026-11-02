@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { playwrightLiveRepository } from "../../data/playwright-live-repository";
+import { playwrightLiveRepository } from '../../data/playwright-live-repository';
 import {
   applyLiveReads,
   liveConfirmationMode,
@@ -14,9 +14,9 @@ import {
   type LiveRead,
   type LiveRound,
   type LiveRuns,
-} from "../../model/playwright-live-rules";
-import { errorStatus } from "../../model/wire-readers";
-import { usePageVisible } from "./use-page-visible";
+} from '../../model/playwright-live-rules';
+import { errorStatus } from '../../model/wire-readers';
+import { usePageVisible } from './use-page-visible';
 
 export interface LiveRepository {
   projectId: string;
@@ -42,8 +42,10 @@ const NO_RUNS: LiveRuns = {};
 function readLive(projectId: string, branch: string): Promise<LiveRead> {
   return playwrightLiveRepository
     .getPlaywrightLive(projectId, branch)
-    .then((run): LiveRead => ({ kind: "run", run }))
-    .catch((cause: unknown): LiveRead => (errorStatus(cause) === 404 ? { kind: "missing" } : { kind: "error" }));
+    .then((run): LiveRead => ({ kind: 'run', run }))
+    .catch((cause: unknown): LiveRead =>
+      errorStatus(cause) === 404 ? { kind: 'missing' } : { kind: 'error' },
+    );
 }
 
 /** The runs read for these repositories; another set (a project change) starts empty. */
@@ -73,11 +75,14 @@ export function usePlaywrightLiveViewModel(options: {
   onFinished: () => void;
 }): PlaywrightLiveViewModel {
   const { repositories, enabled, startedAt } = options;
-  const key = repositories.map((repository) => repository.projectId).join(",");
+  const key = repositories.map((repository) => repository.projectId).join(',');
   const visible = usePageVisible();
-  const [view, setView] = useState<{ key: string; runs: LiveRuns }>({ key, runs: NO_RUNS });
+  const [view, setView] = useState<{ key: string; runs: LiveRuns }>({
+    key,
+    runs: NO_RUNS,
+  });
   const [supported, setSupported] = useState<boolean | null>(null);
-  const [announcement, setAnnouncement] = useState("");
+  const [announcement, setAnnouncement] = useState('');
   /** The dispatch whose run has shown up (or whose wait ran out). */
   const [arrivedFor, setArrivedFor] = useState<number | null>(null);
   const latest = useRef({ options, view, supported, arrivedFor });
@@ -87,7 +92,8 @@ export function usePlaywrightLiveViewModel(options: {
   });
 
   useEffect(() => {
-    if (!enabled || !visible || !key || latest.current.supported === false) return;
+    if (!enabled || !visible || !key || latest.current.supported === false)
+      return;
     let cancelled = false;
     let timer: number | undefined;
     const pollingSince = Date.now();
@@ -97,7 +103,8 @@ export function usePlaywrightLiveViewModel(options: {
     function apply(round: LiveRound): boolean {
       latest.current.view = { key, runs: round.runs };
       setView(latest.current.view);
-      if (round.milestones.length > 0) setAnnouncement(round.milestones.join(" "));
+      if (round.milestones.length > 0)
+        setAnnouncement(round.milestones.join(' '));
       latest.current.supported = !round.missing;
       setSupported(!round.missing);
       return !round.missing;
@@ -105,16 +112,32 @@ export function usePlaywrightLiveViewModel(options: {
 
     /** Run Playwright's run showed up, or waiting for it ran out. */
     function settleArrival(round: LiveRound, now: number) {
-      if (!arrivalSettled(dispatchedAt, latest.current.arrivedFor, round.arrived, now)) return;
+      if (
+        !arrivalSettled(
+          dispatchedAt,
+          latest.current.arrivedFor,
+          round.arrived,
+          now,
+        )
+      )
+        return;
       latest.current.arrivedFor = dispatchedAt;
       setArrivedFor(dispatchedAt);
     }
 
     async function tick() {
       const { options: current, view: known } = latest.current;
-      const reads = await Promise.all(current.repositories.map((repository) => readLive(repository.projectId, current.branch)));
+      const reads = await Promise.all(
+        current.repositories.map((repository) =>
+          readLive(repository.projectId, current.branch),
+        ),
+      );
       if (cancelled) return;
-      const round = applyLiveReads(runsFor(known, key), current.repositories, reads);
+      const round = applyLiveReads(
+        runsFor(known, key),
+        current.repositories,
+        reads,
+      );
       if (!apply(round)) return;
       if (round.finished) current.onFinished();
       const now = Date.now();
@@ -122,10 +145,14 @@ export function usePlaywrightLiveViewModel(options: {
       const keep = liveKeepPolling({
         runs: Object.values(round.runs),
         supported: true,
-        awaitingUntil: awaitingDeadline(dispatchedAt, latest.current.arrivedFor),
+        awaitingUntil: awaitingDeadline(
+          dispatchedAt,
+          latest.current.arrivedFor,
+        ),
         now,
       });
-      if (keep && now - pollingSince < LIVE_POLL_MAX_MS) timer = window.setTimeout(() => void tick(), LIVE_POLL_INTERVAL_MS);
+      if (keep && now - pollingSince < LIVE_POLL_MAX_MS)
+        timer = window.setTimeout(() => void tick(), LIVE_POLL_INTERVAL_MS);
     }
 
     void tick();
@@ -137,23 +164,38 @@ export function usePlaywrightLiveViewModel(options: {
   }, [enabled, visible, key, startedAt]);
 
   const runs = runsFor(view, key);
-  const awaiting = startedAt !== null && arrivedFor !== startedAt && supported !== false;
+  const awaiting =
+    startedAt !== null && arrivedFor !== startedAt && supported !== false;
   return {
     supported,
     runs,
     awaiting,
-    confirmation: liveConfirmationMode({ supported, awaiting, anyRun: Object.values(runs).some(Boolean) }),
+    confirmation: liveConfirmationMode({
+      supported,
+      awaiting,
+      anyRun: Object.values(runs).some(Boolean),
+    }),
     announcement,
   };
 }
 
 /** Until when Run Playwright's run is waited for; null when nothing is awaited. */
-function awaitingDeadline(dispatchedAt: number | null, arrivedFor: number | null): number | null {
-  return dispatchedAt !== null && arrivedFor !== dispatchedAt ? dispatchedAt + LIVE_DISPATCH_GRACE_MS : null;
+function awaitingDeadline(
+  dispatchedAt: number | null,
+  arrivedFor: number | null,
+): number | null {
+  return dispatchedAt !== null && arrivedFor !== dispatchedAt
+    ? dispatchedAt + LIVE_DISPATCH_GRACE_MS
+    : null;
 }
 
 /** Whether the wait for Run Playwright's run is over: it showed up, or the grace ran out. */
-function arrivalSettled(dispatchedAt: number | null, arrivedFor: number | null, arrived: boolean, now: number): boolean {
+function arrivalSettled(
+  dispatchedAt: number | null,
+  arrivedFor: number | null,
+  arrived: boolean,
+  now: number,
+): boolean {
   const deadline = awaitingDeadline(dispatchedAt, arrivedFor);
   if (deadline === null) return false;
   return arrived || now >= deadline;

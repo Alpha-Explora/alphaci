@@ -1,18 +1,27 @@
-"use client";
+'use client';
 
-import "./playwright.css";
+import './playwright.css';
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
-import type { PlaywrightTabStatus, StudioColumnTab } from "../../model/playwright-tab-rules";
-import type { AutomationSignal } from "../../model/qa-studio-rules";
-import type { StudioColumnTabViewModel } from "../view-models/use-studio-column-tab";
-import { ChecklistIcon, FlaskIcon } from "./studio-icons";
+import type {
+  PlaywrightTabStatus,
+  StudioColumnTab,
+} from '../../model/playwright-tab-rules';
+import type { AutomationSignal } from '../../model/qa-studio-rules';
+import type { StudioColumnTabViewModel } from '../view-models/use-studio-column-tab';
+import { ChecklistIcon, FlaskIcon } from './studio-icons';
 
-const LABELS: Record<StudioColumnTab, string> = { checklist: "Checklist", playwright: "Playwright" };
+const LABELS: Record<StudioColumnTab, string> = {
+  checklist: 'Checklist',
+  playwright: 'Playwright',
+};
 
 /** The ids that tie each tab to its panel. */
-export function columnTabIds(baseId: string, tab: StudioColumnTab): { tab: string; panel: string } {
+export function columnTabIds(
+  baseId: string,
+  tab: StudioColumnTab,
+): { tab: string; panel: string } {
   return { tab: `${baseId}-coltab-${tab}`, panel: `${baseId}-colpanel-${tab}` };
 }
 
@@ -27,7 +36,7 @@ export interface ColumnTabBadges {
 function TabStatus({
   text,
   spoken,
-  tone = "none",
+  tone = 'none',
 }: Readonly<{ text: string | null; spoken: string | null; tone?: string }>) {
   if (!text) return null;
   return (
@@ -79,11 +88,16 @@ export function ColumnTabs({
   onChoose?: () => void;
 }>) {
   return (
-    <div className="qa-coltabs" role="tablist" aria-label={label} aria-orientation="vertical">
+    <div
+      className="qa-coltabs"
+      role="tablist"
+      aria-label={label}
+      aria-orientation="vertical"
+    >
       {(Object.keys(LABELS) as StudioColumnTab[]).map((tab) => {
         const ids = columnTabIds(baseId, tab);
         const selected = vm.tab === tab;
-        const playwright = tab === "playwright";
+        const playwright = tab === 'playwright';
         return (
           <button
             key={tab}
@@ -96,7 +110,11 @@ export function ColumnTabs({
             tabIndex={selected ? 0 : -1}
             className="qa-coltab"
             data-tab={tab}
-            title={playwright ? playwrightTitle(badges.playwright) : badges.checklist.title}
+            title={
+              playwright
+                ? playwrightTitle(badges.playwright)
+                : badges.checklist.title
+            }
             onClick={() => {
               vm.select(tab);
               onChoose?.();
@@ -106,7 +124,11 @@ export function ColumnTabs({
             <span className="qa-coltab__icon">
               {playwright ? <FlaskIcon /> : <ChecklistIcon />}
               {playwright ? (
-                <span className="qa-rail__dot" data-tone={badges.playwright.signal.tone} aria-hidden="true" />
+                <span
+                  className="qa-rail__dot"
+                  data-tone={badges.playwright.signal.tone}
+                  aria-hidden="true"
+                />
               ) : null}
             </span>
             <span className="sr-only">{LABELS[tab]}</span>
@@ -120,7 +142,10 @@ export function ColumnTabs({
                 <span className="sr-only">{`. ${badges.playwright.signal.label}`}</span>
               </>
             ) : (
-              <TabStatus text={badges.checklist.text} spoken={badges.checklist.spoken} />
+              <TabStatus
+                text={badges.checklist.text}
+                spoken={badges.checklist.spoken}
+              />
             )}
           </button>
         );
@@ -129,9 +154,9 @@ export function ColumnTabs({
   );
 }
 
-function playwrightTitle(badge: ColumnTabBadges["playwright"]): string {
+function playwrightTitle(badge: ColumnTabBadges['playwright']): string {
   const status = badge.status.spoken ?? badge.status.text;
-  return status ? `Playwright · ${status}` : "Playwright";
+  return status ? `Playwright · ${status}` : 'Playwright';
 }
 
 /** One tab's panel. Both stay mounted; the hidden one keeps its drafts, dialogs and polling. */
@@ -140,7 +165,12 @@ export function ColumnTabPanel({
   tab,
   selected,
   children,
-}: Readonly<{ baseId: string; tab: StudioColumnTab; selected: boolean; children: ReactNode }>) {
+}: Readonly<{
+  baseId: string;
+  tab: StudioColumnTab;
+  selected: boolean;
+  children: ReactNode;
+}>) {
   const ids = columnTabIds(baseId, tab);
   return (
     <div

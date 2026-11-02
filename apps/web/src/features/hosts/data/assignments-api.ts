@@ -1,11 +1,11 @@
-import { request } from "@/shared/api/request";
+import { request } from '@/shared/api/request';
 import type {
   AssignmentDefaults,
   AssignmentRequestConfig,
   MachineAssignment,
   HostAssignment,
   ReadinessCheck,
-} from "../model/host-types";
+} from '../model/host-types';
 const path = (projectId: string, environmentId: string) =>
   `/projects/${encodeURIComponent(projectId)}/environments/${encodeURIComponent(environmentId)}`;
 export function getAssignment(projectId: string, environmentId: string) {
@@ -14,7 +14,10 @@ export function getAssignment(projectId: string, environmentId: string) {
   );
 }
 /** The container port and health path per slot an assignment starts from. */
-export function getAssignmentDefaults(projectId: string, environmentId: string) {
+export function getAssignmentDefaults(
+  projectId: string,
+  environmentId: string,
+) {
   return request<AssignmentDefaults>(
     `${path(projectId, environmentId)}/host-assignment/defaults`,
   );
@@ -37,7 +40,7 @@ export function assignHost(
 ) {
   return request<MachineAssignment>(
     `${path(projectId, environmentId)}/host-assignment`,
-    { method: "POST", body: JSON.stringify(input) },
+    { method: 'POST', body: JSON.stringify(input) },
   );
 }
 export function unassignHost(
@@ -46,7 +49,7 @@ export function unassignHost(
   expectedAssignmentId: string,
 ) {
   return request<void>(`${path(projectId, environmentId)}/host-assignment`, {
-    method: "DELETE",
+    method: 'DELETE',
     body: JSON.stringify({ expectedAssignmentId }),
   });
 }

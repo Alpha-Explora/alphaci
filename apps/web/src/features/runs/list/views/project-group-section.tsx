@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { branchDisplayLabel } from "@/shared/api/pipeline-branches";
+import { branchDisplayLabel } from '@/shared/api/pipeline-branches';
 import {
   groupRunsByBranch,
   STATUS_COLORS,
   STATUS_LABELS,
-} from "../../model/runs-rules";
-import { relativeTime } from "../../model/runs-presentation";
-import type { BranchRunGroup, ProjectRunGroup } from "../../model/runs-types";
-import { RunCard } from "./run-card";
+} from '../../model/runs-rules';
+import { relativeTime } from '../../model/runs-presentation';
+import type { BranchRunGroup, ProjectRunGroup } from '../../model/runs-types';
+import { RunCard } from './run-card';
 
 /**
  * One branch's history inside a repository.
@@ -40,7 +40,7 @@ function BranchSection({
           style={{
             background: latest
               ? STATUS_COLORS[latest.overallStatus]
-              : "var(--border-layer)",
+              : 'var(--border-layer)',
           }}
           aria-hidden="true"
         />
@@ -52,8 +52,8 @@ function BranchSection({
         )}
         <span className="runs-branch-group-meta">
           {latest
-            ? `${STATUS_LABELS[latest.overallStatus]} · ${relativeTime(latest.startedAt)} · ${String(count)} ${count === 1 ? "commit" : "commits"}`
-            : "Nothing promoted here yet"}
+            ? `${STATUS_LABELS[latest.overallStatus]} · ${relativeTime(latest.startedAt)} · ${String(count)} ${count === 1 ? 'commit' : 'commits'}`
+            : 'Nothing promoted here yet'}
         </span>
       </h3>
 
@@ -66,9 +66,7 @@ function BranchSection({
       ) : (
         /* An empty declared branch is rendered, not skipped. A section that
            vanishes cannot say "nothing has reached uat". */
-        <p className="runs-branch-group-empty">
-          No runs on this branch yet.
-        </p>
+        <p className="runs-branch-group-empty">No runs on this branch yet.</p>
       )}
     </section>
   );
@@ -90,8 +88,8 @@ export function ProjectGroupSection({
   // Ordered by the promotion flow (dev, then uat, then main) rather than by
   // recency, so the column reads in the direction the pipeline runs.
   const branchGroups = groupRunsByBranch(group.runs);
-  const bodyId = `project-runs-${group.repoFullName.replaceAll(/[^a-zA-Z0-9-]/g, "-")}`;
-  const runCountLabel = `${group.runs.length} ${group.runs.length === 1 ? "commit" : "commits"}`;
+  const bodyId = `project-runs-${group.repoFullName.replaceAll(/[^a-zA-Z0-9-]/g, '-')}`;
+  const runCountLabel = `${group.runs.length} ${group.runs.length === 1 ? 'commit' : 'commits'}`;
   const metaText = `Latest ${STATUS_LABELS[latestStatus].toLowerCase()} · ${relativeTime(group.latestRun.startedAt)} · ${runCountLabel}`;
 
   return (
@@ -129,7 +127,7 @@ export function ProjectGroupSection({
         <span
           className="runs-project-group-chevron"
           style={{
-            transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)",
+            transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
           }}
           aria-hidden="true"
         >

@@ -1,17 +1,20 @@
-"use client";
+'use client';
 
 import type {
   DeploymentTarget,
   CreatableEnvProvider,
   RenderRuntime,
   UsageLimitItem,
-} from "@/features/projects";
-import type { EnvOwnershipMode, ProviderConnection } from "@/shared/api/contracts";
+} from '@/features/projects';
+import type {
+  EnvOwnershipMode,
+  ProviderConnection,
+} from '@/shared/api/contracts';
 import {
   RENDER_RUNTIME_OPTIONS,
   USAGE_LABELS,
   canSaveEnvTarget,
-} from "../model/env-panel-rules";
+} from '../model/env-panel-rules';
 
 export function EnvHostingSection({
   activeProviderConnectionId,
@@ -69,9 +72,9 @@ export function EnvHostingSection({
   setRenderRuntime: (value: RenderRuntime) => void;
   setRootDirectory: (value: string) => void;
   setStartCommand: (value: string) => void;
-  setTargetAction: (value: "create" | "register_existing") => void;
+  setTargetAction: (value: 'create' | 'register_existing') => void;
   startCommand: string;
-  targetAction: "create" | "register_existing";
+  targetAction: 'create' | 'register_existing';
   targets: DeploymentTarget[];
 }>) {
   return (
@@ -176,9 +179,9 @@ function EnvHostingForm({
   setRenderRuntime: (value: RenderRuntime) => void;
   setRootDirectory: (value: string) => void;
   setStartCommand: (value: string) => void;
-  setTargetAction: (value: "create" | "register_existing") => void;
+  setTargetAction: (value: 'create' | 'register_existing') => void;
   startCommand: string;
-  targetAction: "create" | "register_existing";
+  targetAction: 'create' | 'register_existing';
 }>) {
   const canSave = canSaveEnvTarget({
     saving,
@@ -198,7 +201,9 @@ function EnvHostingForm({
           aria-label="Target action"
           value={targetAction}
           onChange={(event) =>
-            setTargetAction(event.target.value as "create" | "register_existing")
+            setTargetAction(
+              event.target.value as 'create' | 'register_existing',
+            )
           }
         >
           <option value="create">Create new target</option>
@@ -212,12 +217,12 @@ function EnvHostingForm({
       <div className="env-target-grid__field">
         <span>Ownership</span>
         <span className="env-static-field">
-          {ownershipMode === "byo"
-            ? "Bring your own provider"
-            : "Managed by the organization"}
+          {ownershipMode === 'byo'
+            ? 'Bring your own provider'
+            : 'Managed by the organization'}
         </span>
       </div>
-      {ownershipMode === "byo" ? (
+      {ownershipMode === 'byo' ? (
         <EnvConnectionSelect
           activeProviderConnectionId={activeProviderConnectionId}
           matchingConnections={matchingConnections}
@@ -225,7 +230,7 @@ function EnvHostingForm({
           setProviderConnectionId={setProviderConnectionId}
         />
       ) : null}
-      {targetAction === "create" ? (
+      {targetAction === 'create' ? (
         <EnvCreateFields
           buildCommand={buildCommand}
           projectName={projectName}
@@ -261,7 +266,7 @@ function EnvHostingForm({
         type="button"
         onClick={onSaveTarget}
       >
-        {targetAction === "create" ? "Create target" : "Register target"}
+        {targetAction === 'create' ? 'Create target' : 'Register target'}
       </button>
     </div>
   );
@@ -348,7 +353,7 @@ function EnvCreateFields({
           placeholder="Build command"
         />
       </FieldLabel>
-      {provider === "render" ? (
+      {provider === 'render' ? (
         <>
           <FieldLabel label="Deploy method">
             <select
@@ -428,7 +433,9 @@ function EnvUsageList({ items }: Readonly<{ items: UsageLimitItem[] }>) {
     <div className="env-metadata-list" aria-label="Resource usage">
       {items.map((item) => (
         <div key={item.code} className="env-metadata-row provisioned">
-          <span>{USAGE_LABELS[item.code] ?? item.code.replaceAll("_", " ")}</span>
+          <span>
+            {USAGE_LABELS[item.code] ?? item.code.replaceAll('_', ' ')}
+          </span>
           <span>
             {item.current} / {item.limit}
           </span>

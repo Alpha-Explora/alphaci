@@ -1,9 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 
-import type { ProjectStatus } from "../../model/projects-types";
-import { projectQueryStatus } from "../model/project-detail-tab-rules";
+import type { ProjectStatus } from '../../model/projects-types';
+import { projectQueryStatus } from '../model/project-detail-tab-rules';
 
 export interface LazyProjectQuery<T> {
   data: T | null;

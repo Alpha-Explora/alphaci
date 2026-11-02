@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import Link from "next/link";
+import Link from 'next/link';
 
-import { teamMembersHref } from "@/features/teams";
-import { RoleBadge } from "@/features/groups/workspace";
-import type { WorkspaceSummary } from "@/features/workspace/selection";
+import { teamMembersHref } from '@/features/teams';
+import { RoleBadge } from '@/features/groups/workspace';
+import type { WorkspaceSummary } from '@/features/workspace/selection';
 
-import { useWorkspaceMembersViewModel } from "../view-models/use-workspace-members-view-model";
+import { useWorkspaceMembersViewModel } from '../view-models/use-workspace-members-view-model';
 
 /**
  * A workspace's members, read-only.
@@ -22,19 +22,25 @@ export function WorkspaceMembersSection({
 
   return (
     <div className="workspace-members">
-      {vm.status === "loading" ? (
-        <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
+      {vm.status === 'loading' ? (
+        <p
+          style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}
+        >
           Loading members...
         </p>
       ) : null}
-      {vm.status === "ready" ? (
-        <ul className="workspace-members-list" aria-label={`Members of ${workspace.name}`}>
+      {vm.status === 'ready' ? (
+        <ul
+          className="workspace-members-list"
+          aria-label={`Members of ${workspace.name}`}
+        >
           {vm.members.map((member) => (
             <li key={member.id} className="workspace-member-row">
               <div className="workspace-member-identity">
                 <strong>{member.name || member.login}</strong>
                 <span>
-                  @{member.login}{member.email ? ` / ${member.email}` : ""}
+                  @{member.login}
+                  {member.email ? ` / ${member.email}` : ''}
                 </span>
               </div>
               <RoleBadge role={member.role} />

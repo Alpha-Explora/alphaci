@@ -1,7 +1,7 @@
-import { getGroups } from "@/features/groups";
-import { getProjects } from "@/features/projects";
+import { getGroups } from '@/features/groups';
+import { getProjects } from '@/features/projects';
 
-import type { ProvisionedProject, Team } from "../model/teams-types";
+import type { ProvisionedProject, Team } from '../model/teams-types';
 
 /* The only place in this domain that performs I/O. View-models call this;
  * views never do. */

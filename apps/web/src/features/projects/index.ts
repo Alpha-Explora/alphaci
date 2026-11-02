@@ -4,12 +4,15 @@
  * barrel data-only lets other features consume project operations without
  * pulling the detail view back into their dependency graph.
  */
-export type { ProjectOverviewResponse, ProvisionedProject } from "./model/projects-types";
-export type { ProjectStatus } from "./model/projects-types";
-export * from "./detail/data/projects-api";
-export * from "./detail/data/project-workspace-api";
-export * from "./detail/data/usage-api";
-export { projectsRepository } from "./data/projects-repository";
+export type {
+  ProjectOverviewResponse,
+  ProvisionedProject,
+} from './model/projects-types';
+export type { ProjectStatus } from './model/projects-types';
+export * from './detail/data/projects-api';
+export * from './detail/data/project-workspace-api';
+export * from './detail/data/usage-api';
+export { projectsRepository } from './data/projects-repository';
 export type {
   DeploymentTarget,
   EnvEnvironment,
@@ -35,7 +38,7 @@ export type {
   WorkflowSettings,
   WorkflowSettingsPreviewResponse,
   WorkflowUpdatePullRequestResponse,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 
 /* Preview framing rules, shared with the QA Studio so the thumbnail, the full
  * viewport and the studio frame cannot drift apart. Pure functions only. */
@@ -44,8 +47,8 @@ export {
   displayHost,
   previewFrameSandbox,
   previewUnavailableReason,
-} from "./model/projects-rules";
+} from './model/projects-rules';
 export type {
   ProjectBranchPreview,
   ProjectPreviewsResponse,
-} from "./model/projects-types";
+} from './model/projects-types';

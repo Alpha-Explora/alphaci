@@ -15,7 +15,7 @@ export type {
   ChecklistVerificationType,
   QaChecklist,
   QaChecklistItem,
-} from "./model/checklist-types";
+} from './model/checklist-types';
 
 export {
   QA_CHECKLISTS_SECTION,
@@ -23,23 +23,31 @@ export {
   itemCountLabel,
   targetPersonaLabel,
   verificationTypeLabel,
-} from "./model/checklist-rules";
+} from './model/checklist-rules';
 
-export { qaStudioHref } from "./model/qa-report-rules";
+export { qaStudioHref } from './model/qa-report-rules';
 /* Between a delivered iteration and the next (Iterations phase 3, P15): the
  * sentence a Developer or the QA Team reads, for features that show a
  * Project's iteration from the team overview (Home). */
-export { waitingForNextIterationText } from "./model/iteration-start-rules";
+export { waitingForNextIterationText } from './model/iteration-start-rules';
 /* Where a repository's QA happens (its Project, or the repository itself). */
-export { qaScopeFromFolder, REPOSITORY_SCOPE, withProjectOnPage, type QaScope } from "./model/qa-scope";
+export {
+  qaScopeFromFolder,
+  REPOSITORY_SCOPE,
+  withProjectOnPage,
+  type QaScope,
+} from './model/qa-scope';
 /* Whether a repository's Checklists tab carries the full "My QA items" list
  * (no Project to send the viewer to). */
-export { checklistsTabShowsMyItems } from "./model/my-qa-items-summary-rules";
+export { checklistsTabShowsMyItems } from './model/my-qa-items-summary-rules';
 /* `#my-qa-items` on a Project page opens its QA workspace on "My QA items". */
-export { PROJECT_MY_QA_ITEMS_HASH } from "./model/my-qa-items-summary-rules";
+export { PROJECT_MY_QA_ITEMS_HASH } from './model/my-qa-items-summary-rules';
 /* Project requirement counts for the team's Project cards. */
-export { canManageRequirements, requirementCountLabel } from "./model/requirement-rules";
-export { requirementsRepository } from "./data/requirements-repository";
+export {
+  canManageRequirements,
+  requirementCountLabel,
+} from './model/requirement-rules';
+export { requirementsRepository } from './data/requirements-repository';
 /* The team's QA overview, read whole by requirementsRepository.teamOverview
  * (Home's role dashboards). */
 export type {
@@ -54,16 +62,16 @@ export type {
   TeamQaPromotion,
   TeamQaRequirementSummary,
   TeamQaVerificationCounts,
-} from "./model/team-qa-overview-types";
-export type { QaRunStatus, QaVerdict } from "./model/qa-run-types";
-export { roleCanStartRun } from "./model/qa-run-rules";
+} from './model/team-qa-overview-types';
+export type { QaRunStatus, QaVerdict } from './model/qa-run-types';
+export { roleCanStartRun } from './model/qa-run-rules';
 /* Team-level checklist reads and share edits, for features that show a
  * team's checklists in their own context (the Teams project explorer). */
-export { checklistsRepository } from "./data/checklists-repository";
+export { checklistsRepository } from './data/checklists-repository';
 
 export type {
   QaRun,
   QaRunItem,
   QaRunItemStatus,
   QaReturnedItem,
-} from "./model/qa-run-types";
+} from './model/qa-run-types';

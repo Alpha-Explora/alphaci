@@ -1,20 +1,25 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import type {
   FriendlyMessage,
   RunGroup,
   StageReport,
-} from "../../model/runs-types";
+} from '../../model/runs-types';
 import {
   checkLabel,
   checkTone,
   formatFailedJobs,
-} from "../../model/runs-presentation";
-import { hasSonarDetail, normalizeTestCases, SonarPanel, TestCaseList } from "../../test-report";
-import { StageNode, StageConnector } from "./stage-node";
-import { MessageCard } from "./message-card";
+} from '../../model/runs-presentation';
+import {
+  hasSonarDetail,
+  normalizeTestCases,
+  SonarPanel,
+  TestCaseList,
+} from '../../test-report';
+import { StageNode, StageConnector } from './stage-node';
+import { MessageCard } from './message-card';
 
 /**
  * Every browser test the stage ran and what SonarCloud said, as the Project's
@@ -31,19 +36,19 @@ function StageReportDetail({ stage }: Readonly<{ stage: StageReport }>) {
   );
 }
 
-const STAGE_ORDER: Array<StageReport["stage"]> = [
-  "access",
-  "quality",
-  "package",
-  "verify",
+const STAGE_ORDER: Array<StageReport['stage']> = [
+  'access',
+  'quality',
+  'package',
+  'verify',
 ];
 
 /** Colour per tone, kept beside the tones so the two cannot drift apart. */
 const TONE_COLOR: Record<ReturnType<typeof checkTone>, string> = {
-  passed: "var(--success, #2a6e48)",
-  failed: "var(--danger, #a83a32)",
-  running: "var(--info, #2d5f8b)",
-  skipped: "var(--text-muted, #6b7484)",
+  passed: 'var(--success, #2a6e48)',
+  failed: 'var(--danger, #a83a32)',
+  running: 'var(--info, #2d5f8b)',
+  skipped: 'var(--text-muted, #6b7484)',
 };
 
 interface RunPipelineProps {
@@ -57,87 +62,90 @@ interface RunPipelineProps {
  * SonarCloud results are in view on every repository, not only one whose
  * Quality failed.
  */
-function preferredStage(run: RunGroup): StageReport["stage"] | null {
+function preferredStage(run: RunGroup): StageReport['stage'] | null {
   return (
-    run.stages.find((stage) => stage.status === "failure")?.stage ??
-    run.stages.find((stage) => stage.status === "running")?.stage ??
-    run.stages.find((stage) => stage.stage === "quality" && hasSonarDetail(stage.results?.sonar))?.stage ??
+    run.stages.find((stage) => stage.status === 'failure')?.stage ??
+    run.stages.find((stage) => stage.status === 'running')?.stage ??
+    run.stages.find(
+      (stage) =>
+        stage.stage === 'quality' && hasSonarDetail(stage.results?.sonar),
+    )?.stage ??
     null
   );
 }
 
 function fallbackStageMessage(stage: StageReport): FriendlyMessage {
-  if (stage.status === "failure") {
+  if (stage.status === 'failure') {
     const guidance: Record<
-      StageReport["stage"],
+      StageReport['stage'],
       { title: string; detail: string; hint: string }
     > = {
       access: {
-        title: "Access check failed before details were reported",
+        title: 'Access check failed before details were reported',
         detail:
-          "ALPHACI received the failed result but GitHub did not provide the failed job output for this commit.",
-        hint: "Open the GitHub workflow, fix the first failed access step, then re-run. Check the ALPHACI_TOKEN secret and GitHub App repository access first.",
+          'ALPHACI received the failed result but GitHub did not provide the failed job output for this commit.',
+        hint: 'Open the GitHub workflow, fix the first failed access step, then re-run. Check the ALPHACI_TOKEN secret and GitHub App repository access first.',
       },
       quality: {
-        title: "Quality check failed before details were reported",
+        title: 'Quality check failed before details were reported',
         detail:
-          "ALPHACI received the failed result but GitHub did not provide test, lint, typecheck, or scan details for this commit.",
-        hint: "Open the GitHub workflow, fix the first failed quality step, then re-run. New ALPHACI workflows report the failed job name here automatically.",
+          'ALPHACI received the failed result but GitHub did not provide test, lint, typecheck, or scan details for this commit.',
+        hint: 'Open the GitHub workflow, fix the first failed quality step, then re-run. New ALPHACI workflows report the failed job name here automatically.',
       },
       package: {
-        title: "Build or package check failed before details were reported",
+        title: 'Build or package check failed before details were reported',
         detail:
-          "ALPHACI received the failed result but GitHub did not provide the failed build step for this commit.",
-        hint: "Open the GitHub workflow, fix the first failed build or package step, then re-run the workflow.",
+          'ALPHACI received the failed result but GitHub did not provide the failed build step for this commit.',
+        hint: 'Open the GitHub workflow, fix the first failed build or package step, then re-run the workflow.',
       },
       // Verify drove a DEPLOYED service, so the same red has three possible
       // homes: the code, the deployment, or the environment it was pointed at.
       // Sending someone to re-read the diff first is wrong two times in three.
       verify: {
-        title: "The deployed service failed its API checks",
+        title: 'The deployed service failed its API checks',
         detail:
-          "ALPHACI received the failed result but GitHub did not provide the failing request or assertion for this commit.",
-        hint: "Check the deployment answered at all before reading the code: an environment that never started fails every request the same way.",
+          'ALPHACI received the failed result but GitHub did not provide the failing request or assertion for this commit.',
+        hint: 'Check the deployment answered at all before reading the code: an environment that never started fails every request the same way.',
       },
     };
-    return { severity: "error", ...guidance[stage.stage] };
+    return { severity: 'error', ...guidance[stage.stage] };
   }
 
-  if (stage.status === "pending") {
+  if (stage.status === 'pending') {
     return {
-      severity: "info",
-      title: "This stage has not started",
-      detail: "It is waiting for the earlier workflow stages to finish.",
-      hint: "No action is needed unless an earlier stage fails.",
+      severity: 'info',
+      title: 'This stage has not started',
+      detail: 'It is waiting for the earlier workflow stages to finish.',
+      hint: 'No action is needed unless an earlier stage fails.',
     };
   }
 
-  if (stage.status === "cancelled") {
+  if (stage.status === 'cancelled') {
     return {
-      severity: "warning",
-      title: "This stage was cancelled",
-      detail: "The workflow stopped before this stage could complete.",
-      hint: "Fix the earlier failed stage, then re-run the workflow.",
+      severity: 'warning',
+      title: 'This stage was cancelled',
+      detail: 'The workflow stopped before this stage could complete.',
+      hint: 'Fix the earlier failed stage, then re-run the workflow.',
     };
   }
 
   return {
-    severity: "success",
-    title: "This stage completed successfully",
-    detail: "GitHub did not send additional details for this completed stage.",
-    hint: "No action is needed.",
+    severity: 'success',
+    title: 'This stage completed successfully',
+    detail: 'GitHub did not send additional details for this completed stage.',
+    hint: 'No action is needed.',
   };
 }
 
 export function RunPipeline({ run, reduced }: RunPipelineProps) {
   const [expandedStage, setExpandedStage] = useState<
-    StageReport["stage"] | null
+    StageReport['stage'] | null
   >(() => preferredStage(run));
 
   // Build an ordered map of stages
   const stageMap = new Map(run.stages.map((s) => [s.stage, s]));
 
-  function handleToggle(stage: StageReport["stage"]) {
+  function handleToggle(stage: StageReport['stage']) {
     setExpandedStage((prev) => (prev === stage ? null : stage));
   }
 
@@ -146,7 +154,7 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
   // A connector is "active" (colored) when the stage to its left is success
   function connectorActive(afterIndex: number): boolean {
     const leftStage = STAGE_ORDER[afterIndex];
-    return stageMap.get(leftStage)?.status === "success";
+    return stageMap.get(leftStage)?.status === 'success';
   }
 
   return (
@@ -188,10 +196,10 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
           <motion.div
             key={expandedStage}
             initial={reduced ? false : { opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
+            animate={{ opacity: 1, height: 'auto' }}
             exit={reduced ? undefined : { opacity: 0, height: 0 }}
             transition={{ duration: 0.28, ease: [0.25, 0, 0, 1] }}
-            style={{ overflow: "hidden" }}
+            style={{ overflow: 'hidden' }}
           >
             <div className="runs-messages-panel">
               {/*
@@ -215,13 +223,13 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
                           style={{ color: TONE_COLOR[tone] }}
                         >
                           <span aria-hidden="true">
-                            {tone === "passed"
-                              ? "✓"
-                              : tone === "failed"
-                                ? "✗"
-                                : tone === "running"
-                                  ? "●"
-                                  : "–"}
+                            {tone === 'passed'
+                              ? '✓'
+                              : tone === 'failed'
+                                ? '✗'
+                                : tone === 'running'
+                                  ? '●'
+                                  : '–'}
                           </span>
                           <span>{checkLabel(check.name)}</span>
                           <span>{check.conclusion}</span>
@@ -256,25 +264,25 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
               {expandedStageData.rawLogs && (
                 <details
                   style={{
-                    marginTop: "0.35rem",
-                    border: "1px solid var(--border-soft)",
-                    borderRadius: "0.5rem",
-                    overflow: "hidden",
+                    marginTop: '0.35rem',
+                    border: '1px solid var(--border-soft)',
+                    borderRadius: '0.5rem',
+                    overflow: 'hidden',
                   }}
                 >
                   <summary
                     style={{
-                      padding: "0.5rem 0.75rem",
-                      fontSize: "0.76rem",
+                      padding: '0.5rem 0.75rem',
+                      fontSize: '0.76rem',
                       fontWeight: 600,
-                      color: "var(--text-muted)",
-                      cursor: "pointer",
-                      userSelect: "none",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.4rem",
-                      listStyle: "none",
-                      background: "rgba(255,255,255,0.02)",
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      listStyle: 'none',
+                      background: 'rgba(255,255,255,0.02)',
                     }}
                   >
                     <svg
@@ -296,16 +304,16 @@ export function RunPipeline({ run, reduced }: RunPipelineProps) {
                   <pre
                     style={{
                       margin: 0,
-                      padding: "0.75rem",
-                      fontSize: "0.72rem",
+                      padding: '0.75rem',
+                      fontSize: '0.72rem',
                       lineHeight: 1.6,
                       fontFamily:
                         "ui-monospace, 'Cascadia Code', 'Fira Code', monospace",
-                      color: "var(--text-secondary)",
-                      background: "rgba(0,0,0,0.3)",
-                      overflowX: "auto",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
+                      color: 'var(--text-secondary)',
+                      background: 'rgba(0,0,0,0.3)',
+                      overflowX: 'auto',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
                     }}
                   >
                     {formatFailedJobs(expandedStageData.rawLogs)}

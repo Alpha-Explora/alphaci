@@ -70,7 +70,7 @@ button.ws-link {
   border-color: var(--border-brand);
 }
 
-.ws-preset__option[data-checked="true"] {
+.ws-preset__option[data-checked='true'] {
   border-color: var(--border-brand);
   background: var(--brand-light);
   color: var(--brand);
@@ -81,7 +81,7 @@ button.ws-link {
   outline-offset: 2px;
 }
 
-.ws-preset__option[data-disabled="true"] {
+.ws-preset__option[data-disabled='true'] {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -301,7 +301,7 @@ button.ws-link {
 
 /* base.css gives every input width: 100%, which stretched this box and
    squeezed its label into a column. */
-.ws-compose__draft input[type="checkbox"] {
+.ws-compose__draft input[type='checkbox'] {
   flex: none;
   width: 1rem;
   height: 1rem;
@@ -326,12 +326,12 @@ button.ws-link {
 }
 
 .ws-difffile > summary::before {
-  content: "▸";
+  content: '▸';
   color: var(--text-secondary);
 }
 
 .ws-difffile[open] > summary::before {
-  content: "▾";
+  content: '▾';
 }
 
 /* The table scrolls inside its own box, so one long line never makes the

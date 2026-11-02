@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   useEffect,
@@ -6,9 +6,9 @@ import {
   useRef,
   type ClipboardEvent,
   type KeyboardEvent,
-} from "react";
+} from 'react';
 
-import { FormDialog } from "@/features/groups/workspace";
+import { FormDialog } from '@/features/groups/workspace';
 
 import {
   addCardLabel,
@@ -19,31 +19,40 @@ import {
   cardTabLabel,
   storyCountLabel,
   tabIndexForKey,
-} from "../../model/requirement-batch-rules";
-import { kindCopy, REQUIREMENT_NAME_MAX } from "../../model/requirement-rules";
-import type { RequirementCardDraft, RequirementKind } from "../../model/requirement-types";
+} from '../../model/requirement-batch-rules';
+import { kindCopy, REQUIREMENT_NAME_MAX } from '../../model/requirement-rules';
+import type {
+  RequirementCardDraft,
+  RequirementKind,
+} from '../../model/requirement-types';
 import type {
   RequirementDialogMode,
   RequirementDialogViewModel,
-} from "../view-models/use-requirement-dialog-view-model";
-import { PlusIcon, RemoveIcon } from "./requirement-icons";
+} from '../view-models/use-requirement-dialog-view-model';
+import { PlusIcon, RemoveIcon } from './requirement-icons';
 
-const PLACEHOLDERS: Record<RequirementKind, { name: string; description: string; items: readonly string[] }> = {
+const PLACEHOLDERS: Record<
+  RequirementKind,
+  { name: string; description: string; items: readonly string[] }
+> = {
   functional: {
-    name: "Checkout with saved cards",
-    description: "Why this matters, and for whom",
-    items: ["As a shopper, I can save a card", "As a shopper, I can pay with a saved card"],
+    name: 'Checkout with saved cards',
+    description: 'Why this matters, and for whom',
+    items: [
+      'As a shopper, I can save a card',
+      'As a shopper, I can pay with a saved card',
+    ],
   },
   system: {
-    name: "Security baseline",
-    description: "What this requirement protects",
-    items: ["Secrets are never logged", "Every endpoint requires a session"],
+    name: 'Security baseline',
+    description: 'What this requirement protects',
+    items: ['Secrets are never logged', 'Every endpoint requires a session'],
   },
 };
 
 /** Ctrl+Enter (Cmd+Enter on a Mac): add another requirement. */
 function isAddCardShortcut(event: KeyboardEvent<HTMLElement>): boolean {
-  return event.key === "Enter" && (event.ctrlKey || event.metaKey);
+  return event.key === 'Enter' && (event.ctrlKey || event.metaKey);
 }
 
 /* ── Story rows ─────────────────────────────────────────────────────────── */
@@ -99,11 +108,15 @@ function StoryRowsField({
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>, index: number) {
     if (isAddCardShortcut(event)) return;
-    if (event.key === "Enter") {
+    if (event.key === 'Enter') {
       // The dialog is a form: Enter here means "next row", not "create".
       event.preventDefault();
       addAfter(index);
-    } else if (event.key === "Backspace" && rows[index] === "" && rows.length > 1) {
+    } else if (
+      event.key === 'Backspace' &&
+      rows[index] === '' &&
+      rows.length > 1
+    ) {
       event.preventDefault();
       pendingFocus.current = Math.max(0, index - 1);
       handlers.remove(index);
@@ -111,7 +124,8 @@ function StoryRowsField({
   }
 
   function onPaste(event: ClipboardEvent<HTMLInputElement>, index: number) {
-    if (handlers.paste(index, event.clipboardData.getData("text"))) event.preventDefault();
+    if (handlers.paste(index, event.clipboardData.getData('text')))
+      event.preventDefault();
   }
 
   return (
@@ -133,7 +147,7 @@ function StoryRowsField({
               aria-invalid={invalidRow === index ? true : undefined}
               aria-describedby={invalidRow === index ? errorId : undefined}
               value={row}
-              placeholder={PLACEHOLDERS[kind].items[index] ?? ""}
+              placeholder={PLACEHOLDERS[kind].items[index] ?? ''}
               onChange={(event) => handlers.edit(index, event.target.value)}
               onKeyDown={(event) => onKeyDown(event, index)}
               onPaste={(event) => onPaste(event, index)}
@@ -142,7 +156,7 @@ function StoryRowsField({
               type="button"
               className="rq-story-row__remove"
               aria-label={`Remove ${copy.item.toLowerCase()} ${index + 1}`}
-              disabled={rows.length === 1 && row === ""}
+              disabled={rows.length === 1 && row === ''}
               onClick={() => remove(index)}
             >
               <RemoveIcon />
@@ -150,7 +164,11 @@ function StoryRowsField({
           </li>
         ))}
       </ol>
-      <button type="button" className="rq-add" onClick={() => addAfter(rows.length - 1)}>
+      <button
+        type="button"
+        className="rq-add"
+        onClick={() => addAfter(rows.length - 1)}
+      >
         <PlusIcon /> {copy.addItem}
       </button>
     </fieldset>
@@ -159,7 +177,10 @@ function StoryRowsField({
 
 /* ── The side list: one tab per requirement ─────────────────────────────── */
 
-function storyHandlers(vm: RequirementDialogViewModel, key: string): StoryRowsHandlers {
+function storyHandlers(
+  vm: RequirementDialogViewModel,
+  key: string,
+): StoryRowsHandlers {
   return {
     edit: (index, value) => vm.editCardStory(key, index, value),
     add: (afterIndex) => vm.addCardStory(key, afterIndex),
@@ -169,8 +190,8 @@ function storyHandlers(vm: RequirementDialogViewModel, key: string): StoryRowsHa
 }
 
 /** A boolean as a data attribute: present ("true") or absent, for CSS. */
-function dataFlag(on: boolean): "true" | undefined {
-  return on ? "true" : undefined;
+function dataFlag(on: boolean): 'true' | undefined {
+  return on ? 'true' : undefined;
 }
 
 function tabDomId(baseId: string, key: string): string {
@@ -231,19 +252,26 @@ function RequirementTab({
         onKeyDown={onKeyDown}
       >
         <span className="rq-rail__marker" aria-hidden="true">
-          {invalid ? "!" : position}
+          {invalid ? '!' : position}
         </span>
-        <span className="rq-rail__name" data-untitled={dataFlag(label.untitled)}>
+        <span
+          className="rq-rail__name"
+          data-untitled={dataFlag(label.untitled)}
+        >
           {label.text}
         </span>
         {count > 0 ? (
-          <span className="rq-rail__count" aria-hidden="true" title={storyCountLabel(kind, count)}>
+          <span
+            className="rq-rail__count"
+            aria-hidden="true"
+            title={storyCountLabel(kind, count)}
+          >
             {count}
           </span>
         ) : null}
         <span className="sr-only">
           , {storyCountLabel(kind, count)}
-          {invalid ? ", needs a fix" : ""}
+          {invalid ? ', needs a fix' : ''}
         </span>
       </button>
       {onRemove ? (
@@ -319,10 +347,12 @@ function RequirementPane({
 }>) {
   const error = vm.cardErrors[card.key] ?? null;
   const field = error ? cardErrorField(card) : null;
-  const nameInvalid = field?.field === "name";
+  const nameInvalid = field?.field === 'name';
   return (
     <div className="rq-pane__body" data-invalid={dataFlag(error !== null)}>
-      <p className="rq-pane__position">{cardPosition(kind, index, vm.cards.length)}</p>
+      <p className="rq-pane__position">
+        {cardPosition(kind, index, vm.cards.length)}
+      </p>
       <label className="hier-field">
         <span className="hier-field-label">Name</span>
         <input
@@ -334,7 +364,9 @@ function RequirementPane({
           aria-invalid={nameInvalid ? true : undefined}
           aria-describedby={nameInvalid ? errorId : undefined}
           data-autofocus
-          onChange={(event) => vm.updateCard(card.key, { name: event.target.value })}
+          onChange={(event) =>
+            vm.updateCard(card.key, { name: event.target.value })
+          }
         />
       </label>
       <label className="hier-field">
@@ -344,14 +376,16 @@ function RequirementPane({
           rows={3}
           value={card.description}
           placeholder={PLACEHOLDERS[kind].description}
-          onChange={(event) => vm.updateCard(card.key, { description: event.target.value })}
+          onChange={(event) =>
+            vm.updateCard(card.key, { description: event.target.value })
+          }
         />
       </label>
       <StoryRowsField
         kind={kind}
         rows={card.stories}
         handlers={storyHandlers(vm, card.key)}
-        invalidRow={field?.field === "story" ? field.row : null}
+        invalidRow={field?.field === 'story' ? field.row : null}
         errorId={errorId}
       />
       {error ? (
@@ -360,8 +394,8 @@ function RequirementPane({
         </p>
       ) : null}
       <p className="rq-field-hint rq-pane__hint">
-        In a story, Enter adds the next one and pasting a list adds a row per line. Acceptance criteria can be
-        added to each one afterwards.
+        In a story, Enter adds the next one and pasting a list adds a row per
+        line. Acceptance criteria can be added to each one afterwards.
       </p>
     </div>
   );
@@ -370,7 +404,7 @@ function RequirementPane({
 /* ── Create: several at once ────────────────────────────────────────────── */
 
 /** After the next render: focus the open requirement's Name, or the selected tab. */
-type PendingFocus = "name" | "tab" | null;
+type PendingFocus = 'name' | 'tab' | null;
 
 /**
  * Master-detail: the side list of requirements on the left (a vertical
@@ -401,24 +435,28 @@ function CreateRequirementsBody({
      brought into view in the list (a long list scrolls on its own). */
   useEffect(() => {
     if (pane.current) pane.current.scrollTop = 0;
-    tabs.current.get(vm.selectedKey)?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    tabs.current
+      .get(vm.selectedKey)
+      ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
   }, [vm.selectedKey]);
 
   useEffect(() => {
     const what = pendingFocus.current;
     if (what === null) return;
     pendingFocus.current = null;
-    if (what === "name") nameInput.current?.focus();
+    if (what === 'name') nameInput.current?.focus();
     else tabs.current.get(vm.selectedKey)?.focus();
   });
 
   useEffect(() => {
     if (!cardFocus) return;
     const target =
-      cardFocus.field.field === "name"
+      cardFocus.field.field === 'name'
         ? nameInput.current
-        : pane.current?.querySelectorAll<HTMLInputElement>(".rq-story-row__input")[cardFocus.field.row];
-    target?.scrollIntoView?.({ block: "nearest" });
+        : pane.current?.querySelectorAll<HTMLInputElement>(
+            '.rq-story-row__input',
+          )[cardFocus.field.row];
+    target?.scrollIntoView?.({ block: 'nearest' });
     target?.focus({ preventScroll: true });
   }, [cardFocus]);
 
@@ -427,20 +465,23 @@ function CreateRequirementsBody({
       tabs.current.get(key)?.focus();
       return;
     }
-    pendingFocus.current = "tab";
+    pendingFocus.current = 'tab';
     vm.selectCard(key);
   }
 
   function add() {
-    if (vm.addCard()) pendingFocus.current = "name";
+    if (vm.addCard()) pendingFocus.current = 'name';
   }
 
   function remove(key: string) {
-    pendingFocus.current = "tab";
+    pendingFocus.current = 'tab';
     vm.removeCard(key);
   }
 
-  function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+  function onTabKeyDown(
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) {
     if (isAddCardShortcut(event)) return;
     const next = tabIndexForKey(event.key, index, vm.cards.length);
     if (next === null) return;
@@ -515,10 +556,10 @@ function CreateRequirementsDialog({
   kind,
 }: Readonly<{ vm: RequirementDialogViewModel; kind: RequirementKind }>) {
   const copy = kindCopy(kind);
-  const saving = vm.status === "saving";
+  const saving = vm.status === 'saving';
   return (
     <FormDialog
-      open={vm.status === "editing" || saving}
+      open={vm.status === 'editing' || saving}
       onClose={vm.close}
       size="wide"
       title={copy.create}
@@ -540,12 +581,15 @@ function CreateRequirementsDialog({
 function EditRequirementDialog({
   vm,
   mode,
-}: Readonly<{ vm: RequirementDialogViewModel; mode: Extract<RequirementDialogMode, { kind: "edit" }> }>) {
+}: Readonly<{
+  vm: RequirementDialogViewModel;
+  mode: Extract<RequirementDialogMode, { kind: 'edit' }>;
+}>) {
   const kind = mode.requirement.kind;
-  const saving = vm.status === "saving";
+  const saving = vm.status === 'saving';
   return (
     <FormDialog
-      open={vm.status === "editing" || saving}
+      open={vm.status === 'editing' || saving}
       onClose={vm.close}
       title={`Edit ${kindCopy(kind).singular.toLowerCase()}`}
       submitLabel={vm.submitLabel}
@@ -572,7 +616,9 @@ function EditRequirementDialog({
           value={vm.draft.description}
           disabled={saving}
           placeholder={PLACEHOLDERS[kind].description}
-          onChange={(event) => vm.updateDraft({ description: event.target.value })}
+          onChange={(event) =>
+            vm.updateDraft({ description: event.target.value })
+          }
         />
       </label>
       {vm.validationError ? (
@@ -589,18 +635,24 @@ function EditRequirementDialog({
  * them beside one editor, sent together. Edit keeps the single-requirement
  * form. Product owners and admins only.
  */
-export function RequirementDialog({ vm }: Readonly<{ vm: RequirementDialogViewModel }>) {
+export function RequirementDialog({
+  vm,
+}: Readonly<{ vm: RequirementDialogViewModel }>) {
   const mode = vm.mode;
-  if (!mode || vm.status === "confirm-archive" || vm.status === "archiving") return null;
-  if (mode.kind === "create") return <CreateRequirementsDialog vm={vm} kind={mode.requirementKind} />;
+  if (!mode || vm.status === 'confirm-archive' || vm.status === 'archiving')
+    return null;
+  if (mode.kind === 'create')
+    return <CreateRequirementsDialog vm={vm} kind={mode.requirementKind} />;
   return <EditRequirementDialog vm={vm} mode={mode} />;
 }
 
 /** "Archive this requirement?" — it leaves the Project and the next QA run. */
-export function ArchiveRequirementDialog({ vm }: Readonly<{ vm: RequirementDialogViewModel }>) {
-  const open = vm.status === "confirm-archive" || vm.status === "archiving";
+export function ArchiveRequirementDialog({
+  vm,
+}: Readonly<{ vm: RequirementDialogViewModel }>) {
+  const open = vm.status === 'confirm-archive' || vm.status === 'archiving';
   const mode = vm.mode;
-  if (!open || mode?.kind !== "edit") return null;
+  if (!open || mode?.kind !== 'edit') return null;
   const requirement = mode.requirement;
   const copy = kindCopy(requirement.kind);
   return (
@@ -610,12 +662,15 @@ export function ArchiveRequirementDialog({ vm }: Readonly<{ vm: RequirementDialo
       title={`Archive ${requirement.name}?`}
       description={`The ${copy.singular.toLowerCase()} leaves this Project and future QA testing. Testing already under way keeps its copy, and signed-off testing stays as it is.`}
       submitLabel="Archive"
-      submitting={vm.status === "archiving"}
+      submitting={vm.status === 'archiving'}
       error={vm.error?.message ?? null}
       onSubmit={() => void vm.confirmArchive()}
     >
       <p className="rq-note">
-        {requirement.items.length} {requirement.items.length === 1 ? copy.item.toLowerCase() : copy.items.toLowerCase()}{" "}
+        {requirement.items.length}{' '}
+        {requirement.items.length === 1
+          ? copy.item.toLowerCase()
+          : copy.items.toLowerCase()}{' '}
         will be archived with it.
       </p>
     </FormDialog>

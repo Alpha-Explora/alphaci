@@ -1,17 +1,32 @@
-"use client";
+'use client';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
-import type { QaScope } from "../../model/qa-scope";
-import { usePoDeliveryViewModel, type PoDeliveryViewModel } from "./use-po-delivery-view-model";
-import { useProjectRunViewModel, type ProjectRunViewModel } from "./use-project-run-view-model";
-import { useQaPromotionViewModel, type QaPromotionViewModel } from "./use-qa-promotion-view-model";
-import { useQaRunViewModel, type QaRunViewModel } from "./use-qa-run-view-model";
-import { useStudioChecklistsViewModel, type StudioChecklistsViewModel } from "./use-studio-checklists-view-model";
+import type { QaScope } from '../../model/qa-scope';
+import {
+  usePoDeliveryViewModel,
+  type PoDeliveryViewModel,
+} from './use-po-delivery-view-model';
+import {
+  useProjectRunViewModel,
+  type ProjectRunViewModel,
+} from './use-project-run-view-model';
+import {
+  useQaPromotionViewModel,
+  type QaPromotionViewModel,
+} from './use-qa-promotion-view-model';
+import {
+  useQaRunViewModel,
+  type QaRunViewModel,
+} from './use-qa-run-view-model';
+import {
+  useStudioChecklistsViewModel,
+  type StudioChecklistsViewModel,
+} from './use-studio-checklists-view-model';
 
 export interface StudioRunsViewModel {
   /** The Project run's lookup state: what decides which run column shows. */
-  status: ProjectRunViewModel["status"];
+  status: ProjectRunViewModel['status'];
   /** True when the run column is the Project's QA run. */
   projectMode: boolean;
   projectRun: ProjectRunViewModel;
@@ -29,16 +44,20 @@ export interface StudioRunsViewModel {
  * the chip re-reads whether uat is ready for main.
  */
 function repositoryWatch(run: QaRunViewModel): string | null {
-  if (run.status !== "ready" && run.status !== "starting") return null;
+  if (run.status !== 'ready' && run.status !== 'starting') return null;
   const current = run.run;
-  return [current?.id, current?.status, current?.signoff?.id].map((part) => part ?? "").join("|");
+  return [current?.id, current?.status, current?.signoff?.id]
+    .map((part) => part ?? '')
+    .join('|');
 }
 
 /** The same watch on a Project run: its sign-off decides the merge gate now. */
 function projectWatch(run: ProjectRunViewModel): string | null {
-  if (run.status !== "ready" && run.status !== "starting") return null;
+  if (run.status !== 'ready' && run.status !== 'starting') return null;
   const current = run.run;
-  return ["project", current?.id, current?.status, current?.signoff?.id].map((part) => part ?? "").join("|");
+  return ['project', current?.id, current?.status, current?.signoff?.id]
+    .map((part) => part ?? '')
+    .join('|');
 }
 
 /**
@@ -57,12 +76,17 @@ export function useStudioRunsViewModel(options: {
   const { projectId, appRole, qaScope, branch } = options;
   const enabled = Boolean(projectId);
   const projectRun = useProjectRunViewModel({
-    deliveryProjectId: qaScope.kind === "project" ? qaScope.deliveryProjectId : null,
+    deliveryProjectId:
+      qaScope.kind === 'project' ? qaScope.deliveryProjectId : null,
     enabled,
   });
-  const projectMode = qaScope.kind === "project" && projectRun.status !== "unavailable";
-  const legacyEnabled = enabled && qaScope.kind !== "pending" && !projectMode;
-  const checklists = useStudioChecklistsViewModel({ projectId, enabled: legacyEnabled });
+  const projectMode =
+    qaScope.kind === 'project' && projectRun.status !== 'unavailable';
+  const legacyEnabled = enabled && qaScope.kind !== 'pending' && !projectMode;
+  const checklists = useStudioChecklistsViewModel({
+    projectId,
+    enabled: legacyEnabled,
+  });
   const run = useQaRunViewModel({
     projectId,
     enabled: legacyEnabled,
@@ -76,11 +100,20 @@ export function useStudioRunsViewModel(options: {
     watch: projectMode ? projectWatch(projectRun) : repositoryWatch(run),
   });
   const delivery = usePoDeliveryViewModel({
-    deliveryProjectId: qaScope.kind === "project" ? qaScope.deliveryProjectId : null,
+    deliveryProjectId:
+      qaScope.kind === 'project' ? qaScope.deliveryProjectId : null,
     enabled: enabled && projectMode,
     projectId,
     appRole,
     promotion,
   });
-  return { status: projectRun.status, projectMode, projectRun, checklists, run, promotion, delivery };
+  return {
+    status: projectRun.status,
+    projectMode,
+    projectRun,
+    checklists,
+    run,
+    promotion,
+    delivery,
+  };
 }

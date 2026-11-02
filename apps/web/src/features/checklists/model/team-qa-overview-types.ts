@@ -10,8 +10,8 @@
  * normaliser (team-qa-overview-rules.ts) reads each as "not known" (null)
  * rather than as zero, and `supports` says which ones the server sent at all. */
 
-import type { QaRunStatus, QaVerdict } from "./qa-run-types";
-import type { ProgressCounts, RequirementKind } from "./requirement-types";
+import type { QaRunStatus, QaVerdict } from './qa-run-types';
+import type { ProgressCounts, RequirementKind } from './requirement-types';
 
 /** Verification of a requirement's items on the Project's newest run. Key names match the wire. */
 export interface TeamQaVerificationCounts {
@@ -71,12 +71,12 @@ export interface TeamQaPromotion {
 /** The Project's current iteration (Iterations phase 2). */
 export interface TeamQaIteration {
   number: number;
-  status: "active" | "delivered";
+  status: 'active' | 'delivered';
   deliveredAt: string | null;
 }
 
 /** The caller's own Project membership. */
-export type TeamQaMembership = "developer" | "qa";
+export type TeamQaMembership = 'developer' | 'qa';
 
 export interface TeamQaProject {
   deliveryProject: { id: string; name: string };

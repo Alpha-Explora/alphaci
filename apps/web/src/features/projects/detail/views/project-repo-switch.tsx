@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useId, useRef, useState, type KeyboardEvent } from "react";
+import { useRouter } from 'next/navigation';
+import { useId, useRef, useState, type KeyboardEvent } from 'react';
 
-import type { ProjectDetailTab } from "../model/project-detail-tab-rules";
+import type { ProjectDetailTab } from '../model/project-detail-tab-rules';
 import {
   nextEnabledIndex,
   repoSwitchOptionDisplay,
   switchHref,
   UNLINKED_REPO_HINT,
-} from "../model/project-folder-rules";
-import type { RepoSwitchOption } from "../model/project-folder-types";
+} from '../model/project-folder-rules';
+import type { RepoSwitchOption } from '../model/project-folder-types';
 
 const KEY_STEPS: Readonly<Record<string, 1 | -1>> = {
   ArrowRight: 1,
@@ -55,9 +55,10 @@ export function ProjectRepoSwitch({
   const [focused, setFocused] = useState<number | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
-  const stop = focused !== null && options[focused] && !options[focused].disabled
-    ? focused
-    : tabStopIndex(options);
+  const stop =
+    focused !== null && options[focused] && !options[focused].disabled
+      ? focused
+      : tabStopIndex(options);
 
   function open(option: RepoSwitchOption) {
     if (option.disabled || option.current || !option.projectId) return;
@@ -69,8 +70,9 @@ export function ProjectRepoSwitch({
     let next: number | null = null;
     const step = KEY_STEPS[event.key];
     if (step) next = nextEnabledIndex(options, index, step);
-    else if (event.key === "Home") next = nextEnabledIndex(options, -1, 1);
-    else if (event.key === "End") next = nextEnabledIndex(options, options.length, -1);
+    else if (event.key === 'Home') next = nextEnabledIndex(options, -1, 1);
+    else if (event.key === 'End')
+      next = nextEnabledIndex(options, options.length, -1);
     if (next === null) return;
     event.preventDefault();
     setFocused(next);
@@ -92,7 +94,11 @@ export function ProjectRepoSwitch({
           return [
             display.pairHeading === null ? null : (
               // Names the pair once; read as part of each half's label instead.
-              <span key={`${option.key}:pair`} className="repo-switch__pair" aria-hidden="true">
+              <span
+                key={`${option.key}:pair`}
+                className="repo-switch__pair"
+                aria-hidden="true"
+              >
                 {display.pairHeading}
               </span>
             ),
@@ -119,7 +125,9 @@ export function ProjectRepoSwitch({
               onFocus={() => setFocused(index)}
             >
               <span className="repo-switch__role">{option.roleLabel}</span>
-              {display.showName ? <span className="repo-switch__name">{option.label}</span> : null}
+              {display.showName ? (
+                <span className="repo-switch__name">{option.label}</span>
+              ) : null}
             </button>,
           ];
         })}

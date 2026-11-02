@@ -1,1 +1,1 @@
-export { GroupActivityView as default } from "@/features/groups/activity";
+export { GroupActivityView as default } from '@/features/groups/activity';

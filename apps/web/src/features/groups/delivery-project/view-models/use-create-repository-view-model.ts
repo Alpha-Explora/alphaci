@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 import {
   inferSingleProjectKind,
@@ -9,11 +9,19 @@ import {
   useCreateProjectForm,
   useDeploymentProvisioningForm,
   useProjectOptionsCatalog,
-} from "@/features/workflows/studio";
-import type { NodeVersionOption, ProjectTypeOption, RepoShapeOption, WorkflowRecipeOption } from "@/shared/api/contracts";
+} from '@/features/workflows/studio';
+import type {
+  NodeVersionOption,
+  ProjectTypeOption,
+  RepoShapeOption,
+  WorkflowRecipeOption,
+} from '@/shared/api/contracts';
 
-import { createRepository } from "../../data/hierarchy-api";
-import type { CreatedRepositoryResponse, HierarchyRepository } from "../../data/hierarchy-contracts";
+import { createRepository } from '../../data/hierarchy-api';
+import type {
+  CreatedRepositoryResponse,
+  HierarchyRepository,
+} from '../../data/hierarchy-contracts';
 import {
   addRepositoryErrorMessage,
   addRepositoryRequest,
@@ -25,10 +33,10 @@ import {
   singleRepositoryShapes,
   type HostingOverrides,
   type RepositoryOutcomeView,
-} from "../../model/add-repository-rules";
+} from '../../model/add-repository-rules';
 
 /** editing -> submitting -> created (the result step), or back to editing on a refusal. */
-export type CreateRepositoryStatus = "editing" | "submitting" | "created";
+export type CreateRepositoryStatus = 'editing' | 'submitting' | 'created';
 
 export interface CreateRepositoryViewModel {
   status: CreateRepositoryStatus;
@@ -74,24 +82,41 @@ export function useCreateRepositoryViewModel(
 ): CreateRepositoryViewModel {
   const form = useCreateProjectForm();
   const catalog = useProjectOptionsCatalog();
-  const hostingForm = useDeploymentProvisioningForm(catalog.selectedRepoShapeId);
+  const hostingForm = useDeploymentProvisioningForm(
+    catalog.selectedRepoShapeId,
+  );
   const [stackChosen, setStackChosen] = useState(false);
   const [hostingEnabled, setHostingEnabled] = useState(true);
-  const [overrides, setOverrides] = useState<HostingOverrides>(NO_HOSTING_OVERRIDES);
-  const [status, setStatus] = useState<CreateRepositoryStatus>("editing");
+  const [overrides, setOverrides] =
+    useState<HostingOverrides>(NO_HOSTING_OVERRIDES);
+  const [status, setStatus] = useState<CreateRepositoryStatus>('editing');
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<CreatedRepositoryResponse | null>(null);
+  const [created, setCreated] = useState<CreatedRepositoryResponse | null>(
+    null,
+  );
 
-  const stackId = stackChosen ? catalog.selectedProjectTypeId : "";
-  const kindFor = (projectTypeId: string, kind?: "frontend" | "backend") =>
-    inferSingleProjectKind({ selectedProjectTypeKind: kind, selectedProjectTypeId: projectTypeId });
+  const stackId = stackChosen ? catalog.selectedProjectTypeId : '';
+  const kindFor = (projectTypeId: string, kind?: 'frontend' | 'backend') =>
+    inferSingleProjectKind({
+      selectedProjectTypeKind: kind,
+      selectedProjectTypeId: projectTypeId,
+    });
 
   /* Advanced hosting edits ride on the wizard form's default target for this
    * stack and name, re-seeded whenever either changes while edits exist. */
-  function seedHosting(projectTypeId: string, serviceName: string, next: HostingOverrides) {
+  function seedHosting(
+    projectTypeId: string,
+    serviceName: string,
+    next: HostingOverrides,
+  ) {
     if (!hasHostingOverrides(next) || !projectTypeId) return;
-    const type = catalog.projectTypesForShape.find((option) => option.id === projectTypeId);
-    hostingForm.setDefaultTarget(projectKindToSlot(kindFor(projectTypeId, type?.kind)), serviceName);
+    const type = catalog.projectTypesForShape.find(
+      (option) => option.id === projectTypeId,
+    );
+    hostingForm.setDefaultTarget(
+      projectKindToSlot(kindFor(projectTypeId, type?.kind)),
+      serviceName,
+    );
   }
 
   function setName(value: string) {
@@ -101,7 +126,7 @@ export function useCreateRepositoryViewModel(
   }
 
   function setStackId(next: string) {
-    setStackChosen(next !== "");
+    setStackChosen(next !== '');
     if (next) catalog.setSelectedProjectTypeId(next);
     setError(null);
     seedHosting(next, form.serviceName || form.repoName, overrides);
@@ -115,7 +140,7 @@ export function useCreateRepositoryViewModel(
 
   async function submit() {
     if (!stackChosen) {
-      setError("Choose the stack for this repository.");
+      setError('Choose the stack for this repository.');
       return;
     }
     const built = form.buildPayload({
@@ -133,19 +158,23 @@ export function useCreateRepositoryViewModel(
     }
     const body = addRepositoryRequest(
       built.payload,
-      resolveHostingChoice({ hostingEnabled, overrides, formPayload: hostingForm.payload }),
+      resolveHostingChoice({
+        hostingEnabled,
+        overrides,
+        formPayload: hostingForm.payload,
+      }),
     );
-    setStatus("submitting");
+    setStatus('submitting');
     setError(null);
     try {
       const response = await createRepository(deliveryProjectId, body);
       const { provisioning: _provisioning, ...repository } = response;
       onCreated(repository);
       setCreated(response);
-      setStatus("created");
+      setStatus('created');
     } catch (cause) {
       setError(addRepositoryErrorMessage(cause));
-      setStatus("editing");
+      setStatus('editing');
     }
   }
 
@@ -177,7 +206,8 @@ export function useCreateRepositoryViewModel(
     hostingProvider: selectedKind ? hostingProviderName(selectedKind) : null,
     overrides,
     setOverride,
-    canSubmit: status === "editing" && form.repoName.trim() !== "" && stackChosen,
+    canSubmit:
+      status === 'editing' && form.repoName.trim() !== '' && stackChosen,
     submit,
     outcome: created ? repositoryOutcome(created) : null,
   };

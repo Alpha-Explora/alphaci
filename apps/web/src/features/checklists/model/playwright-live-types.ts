@@ -11,17 +11,18 @@
 
 /** The run's own state; `unknown` is a status this page does not know yet (read as still going). */
 export type PlaywrightLiveStatus =
-  | "queued"
-  | "starting"
-  | "running"
-  | "passed"
-  | "failed"
-  | "cancelled"
-  | "timedout"
-  | "unknown";
+  | 'queued'
+  | 'starting'
+  | 'running'
+  | 'passed'
+  | 'failed'
+  | 'cancelled'
+  | 'timedout'
+  | 'unknown';
 
 /** One finished test; `unknown` when the reporter said something this page does not know. */
-export type PlaywrightLiveTestStatus = "passed" | "failed" | "skipped" | "unknown";
+export type PlaywrightLiveTestStatus =
+  'passed' | 'failed' | 'skipped' | 'unknown';
 
 export interface PlaywrightLiveRunningTest {
   id: string;

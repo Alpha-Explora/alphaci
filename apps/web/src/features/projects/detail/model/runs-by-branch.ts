@@ -25,17 +25,17 @@
  * back its own full run type.
  */
 
-import type { RunGroup } from "@/shared/api/contracts";
+import type { RunGroup } from '@/shared/api/contracts';
 import {
   PIPELINE_BRANCHES,
   isPipelineBranch,
-} from "@/shared/api/pipeline-branches";
+} from '@/shared/api/pipeline-branches';
 
-import { groupRunsByCommit, type CommitRunGroup } from "./runs-by-commit";
+import { groupRunsByCommit, type CommitRunGroup } from './runs-by-commit';
 import {
   indexReportedIdentities,
   reportedBranch,
-} from "./reported-run-identity";
+} from './reported-run-identity';
 
 /**
  * The fields the grouping needs from a run.

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { AddMemberDialog, MemberTable } from "@/features/groups/workspace";
+import { AddMemberDialog, MemberTable } from '@/features/groups/workspace';
 
-import type { Team } from "../../model/teams-types";
-import { useTeamMembersViewModel } from "../view-models/use-team-members-view-model";
+import type { Team } from '../../model/teams-types';
+import { useTeamMembersViewModel } from '../view-models/use-team-members-view-model';
 
 /**
  * The Teams page body: the header team's roster, with Add member for a Lead or
@@ -18,7 +18,10 @@ export function TeamMembersPanel({
   const vm = useTeamMembersViewModel({ team, onMembershipChanged });
 
   return (
-    <section className="glass-panel team-detail-surface" aria-labelledby="team-members-title">
+    <section
+      className="glass-panel team-detail-surface"
+      aria-labelledby="team-members-title"
+    >
       <div className="group-section-head">
         <h2 className="group-section-title" id="team-members-title">
           Members
@@ -51,13 +54,13 @@ function TeamMembersBody({
   vm,
   team,
 }: Readonly<{ vm: ReturnType<typeof useTeamMembersViewModel>; team: Team }>) {
-  if (vm.status === "loading") {
+  if (vm.status === 'loading') {
     return <p className="project-list-empty">Loading members…</p>;
   }
-  if (vm.status !== "ready" && vm.status !== "empty") {
+  if (vm.status !== 'ready' && vm.status !== 'empty') {
     return (
       <p className="project-list-empty">
-        Members could not be loaded.{" "}
+        Members could not be loaded.{' '}
         <button type="button" className="inline-link" onClick={vm.reload}>
           Retry
         </button>

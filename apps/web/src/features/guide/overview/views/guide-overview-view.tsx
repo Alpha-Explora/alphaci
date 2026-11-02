@@ -1,15 +1,19 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useCallback } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import Link from 'next/link';
+import { useCallback } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
-import { AppNav } from "@/features/workspace/selection";
-import { FlowBackground } from "@/shared/layout/flow-background";
-import { PipelineLoader } from "@/shared/layout/pipeline-loader";
-import { PublicSiteNav } from "@/shared/layout/public-site-nav";
-import { FlowExplainer } from "./flow-explainer";
-import { isGuest, useAuthSession, useSignOutAndRedirect } from "@/features/auth/session";
+import { AppNav } from '@/features/workspace/selection';
+import { FlowBackground } from '@/shared/layout/flow-background';
+import { PipelineLoader } from '@/shared/layout/pipeline-loader';
+import { PublicSiteNav } from '@/shared/layout/public-site-nav';
+import { FlowExplainer } from './flow-explainer';
+import {
+  isGuest,
+  useAuthSession,
+  useSignOutAndRedirect,
+} from '@/features/auth/session';
 
 /* Level 0 in the skill's progressive depth: the guide has no data of its own,
  * so there is no view-model and no data layer. Sign-out is the one action, and
@@ -36,13 +40,13 @@ interface GuideSection {
 }
 
 const SECTIONS: GuideSection[] = [
-  { id: "welcome", title: "What is ALPHACI" },
-  { id: "getting-started", title: "Getting started" },
-  { id: "creating-a-project", title: "Creating a project" },
-  { id: "branch-strategy", title: "Branch strategy" },
-  { id: "quality-gates", title: "CI/CD quality gates" },
-  { id: "managing-projects", title: "Managing your projects" },
-  { id: "faq", title: "FAQ & troubleshooting" },
+  { id: 'welcome', title: 'What is ALPHACI' },
+  { id: 'getting-started', title: 'Getting started' },
+  { id: 'creating-a-project', title: 'Creating a project' },
+  { id: 'branch-strategy', title: 'Branch strategy' },
+  { id: 'quality-gates', title: 'CI/CD quality gates' },
+  { id: 'managing-projects', title: 'Managing your projects' },
+  { id: 'faq', title: 'FAQ & troubleshooting' },
 ];
 
 /* ── Small presentational helpers ───────────────────────────────────────────── */
@@ -65,23 +69,23 @@ function GuideCard({
       id={id}
       className="section-card glass-panel"
       style={{
-        scrollMarginTop: "6rem",
-        padding: "1.6rem 1.7rem",
-        marginBottom: "1.1rem",
+        scrollMarginTop: '6rem',
+        padding: '1.6rem 1.7rem',
+        marginBottom: '1.1rem',
       }}
       custom={index}
       variants={sectionVariants}
-      initial={reduced ? false : "hidden"}
-      whileInView={reduced ? undefined : "visible"}
-      animate={reduced ? "visible" : undefined}
-      viewport={{ once: true, margin: "-80px" }}
+      initial={reduced ? false : 'hidden'}
+      whileInView={reduced ? undefined : 'visible'}
+      animate={reduced ? 'visible' : undefined}
+      viewport={{ once: true, margin: '-80px' }}
     >
       <h2
         style={{
-          fontSize: "1.18rem",
+          fontSize: '1.18rem',
           fontWeight: 700,
-          marginBottom: "0.7rem",
-          color: "var(--text-primary)",
+          marginBottom: '0.7rem',
+          color: 'var(--text-primary)',
         }}
       >
         {title}
@@ -98,7 +102,7 @@ function FaqItem({
   return (
     <details className="guide-faq-item">
       <summary>{q}</summary>
-      <div style={{ marginTop: "0.5rem" }}>{children}</div>
+      <div style={{ marginTop: '0.5rem' }}>{children}</div>
     </details>
   );
 }
@@ -110,24 +114,24 @@ function PublicGuidePage({ error }: Readonly<{ error: string | null }>) {
   const reduced = prefersReducedMotion ?? false;
   const steps = [
     {
-      label: "Stack",
-      title: "Choose your stack",
-      body: "Pick the repository shape, framework, runtime, and checks that match the project you want to ship.",
+      label: 'Stack',
+      title: 'Choose your stack',
+      body: 'Pick the repository shape, framework, runtime, and checks that match the project you want to ship.',
     },
     {
-      label: "Repo",
-      title: "Generate the repository",
-      body: "ALPHACI creates the GitHub repository, starter project, protected branches, and workflow files.",
+      label: 'Repo',
+      title: 'Generate the repository',
+      body: 'ALPHACI creates the GitHub repository, starter project, protected branches, and workflow files.',
     },
     {
-      label: "Gates",
-      title: "Promote safely",
-      body: "Changes move through test, uat, and main with pull requests, quality gates, and approvals.",
+      label: 'Gates',
+      title: 'Promote safely',
+      body: 'Changes move through test, uat, and main with pull requests, quality gates, and approvals.',
     },
     {
-      label: "Deploy",
-      title: "Deploy to hosting",
-      body: "Connect your own Vercel or Render account from the same governed pipeline.",
+      label: 'Deploy',
+      title: 'Deploy to hosting',
+      body: 'Connect your own Vercel or Render account from the same governed pipeline.',
     },
   ];
 
@@ -199,7 +203,7 @@ function PublicGuidePage({ error }: Readonly<{ error: string | null }>) {
                   className="public-guide-step"
                   initial={reduced ? false : { opacity: 0, y: 12 }}
                   whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-80px" }}
+                  viewport={{ once: true, margin: '-80px' }}
                   transition={{
                     duration: 0.28,
                     ease: EASE_OUT,
@@ -207,7 +211,7 @@ function PublicGuidePage({ error }: Readonly<{ error: string | null }>) {
                   }}
                 >
                   <div className="public-guide-step-top">
-                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <span>{String(index + 1).padStart(2, '0')}</span>
                     <strong>{step.label}</strong>
                   </div>
                   <h3>{step.title}</h3>
@@ -221,7 +225,7 @@ function PublicGuidePage({ error }: Readonly<{ error: string | null }>) {
               aria-label="Generated workflow preview"
               initial={reduced ? false : { opacity: 0, y: 12 }}
               whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
+              viewport={{ once: true, margin: '-80px' }}
               transition={{ duration: 0.28, ease: EASE_OUT, delay: 0.12 }}
             >
               <div className="public-guide-panel-top">
@@ -290,11 +294,11 @@ export function GuideOverviewView() {
       if (!target) return;
       event.preventDefault();
       target.scrollIntoView({
-        behavior: reduced ? "auto" : "smooth",
-        block: "start",
+        behavior: reduced ? 'auto' : 'smooth',
+        block: 'start',
       });
       // Keep the hash in the URL for shareable deep-links without a jump.
-      window.history.replaceState(null, "", `#${id}`);
+      window.history.replaceState(null, '', `#${id}`);
     },
     [reduced],
   );
@@ -304,12 +308,12 @@ export function GuideOverviewView() {
     await signOutAndRedirect();
   }
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return <PipelineLoader label="Loading Guide" />;
   }
 
-  if (status !== "signed-in") {
-    return <PublicGuidePage error={status === "error" ? error : null} />;
+  if (status !== 'signed-in') {
+    return <PublicGuidePage error={status === 'error' ? error : null} />;
   }
 
   const guest = isGuest(session);
@@ -365,10 +369,10 @@ export function GuideOverviewView() {
               href="/workflows?tour=1"
               className="primary-button"
               style={{
-                marginTop: "1rem",
-                width: "100%",
-                justifyContent: "center",
-                fontSize: "0.82rem",
+                marginTop: '1rem',
+                width: '100%',
+                justifyContent: 'center',
+                fontSize: '0.82rem',
               }}
               aria-label="Replay the guided product tour on the Projects page"
             >
@@ -385,8 +389,8 @@ export function GuideOverviewView() {
             >
               <p>
                 ALPHACI turns a blank idea into a working repository in one
-                step. It creates a GitHub repository, sets up the{" "}
-                <code>main</code>, <code>uat</code>, and <code>test</code>{" "}
+                step. It creates a GitHub repository, sets up the{' '}
+                <code>main</code>, <code>uat</code>, and <code>test</code>{' '}
                 branches, scaffolds a starter project, and commits a
                 ready-to-run CI/CD pipeline — so you can start coding
                 immediately instead of wiring up infrastructure.
@@ -405,15 +409,15 @@ export function GuideOverviewView() {
                   login page.
                 </li>
                 <li>
-                  <strong>Install the GitHub App.</strong> On the Projects
-                  page, if you see an
+                  <strong>Install the GitHub App.</strong> On the Projects page,
+                  if you see an
                   <em> &ldquo;Install GitHub App&rdquo;</em> chip, click it and
                   grant access to the repositories (or organisation) you want
                   ALPHACI to manage. This is what lets ALPHACI create repos and
                   commit workflows on your behalf.
                 </li>
                 <li>
-                  <strong>Open Projects</strong> and head to the{" "}
+                  <strong>Open Projects</strong> and head to the{' '}
                   <strong>Setup</strong> tab to create your first project.
                 </li>
               </ol>
@@ -436,12 +440,12 @@ export function GuideOverviewView() {
                   NestJS or Next.js. This tailors the CI jobs.
                 </li>
                 <li>
-                  <strong>Workflow recipe</strong> — a preset bundle of CI jobs.{" "}
+                  <strong>Workflow recipe</strong> — a preset bundle of CI jobs.{' '}
                   <em>Standard</em> suits most teams.
                 </li>
                 <li>
                   <strong>Repository name</strong> — your GitHub repo name.
-                  Lowercase, hyphen-separated, e.g.{" "}
+                  Lowercase, hyphen-separated, e.g.{' '}
                   <code>my-first-service</code>.
                 </li>
                 <li>
@@ -467,7 +471,7 @@ export function GuideOverviewView() {
                 </li>
               </ul>
 
-              <p style={{ marginTop: "0.9rem" }}>
+              <p style={{ marginTop: '0.9rem' }}>
                 <strong>Repository shapes — the difference:</strong>
               </p>
               <ul>
@@ -498,23 +502,23 @@ export function GuideOverviewView() {
               title="Branch strategy"
               reduced={reduced}
             >
-              <div style={{ marginBottom: "1rem" }}>
+              <div style={{ marginBottom: '1rem' }}>
                 <FlowExplainer heading={null} />
               </div>
               <p>
-                Every repository ships with a strict promotion flow:{" "}
+                Every repository ships with a strict promotion flow:{' '}
                 <code>test &rarr; uat &rarr; main</code>. Changes always move
                 forward — never backward. All three branches are protected, so
                 you work on short-lived branches and open pull requests.
               </p>
               <ul>
                 <li>
-                  <code>feature/*</code> and <code>bugfix/*</code> merge into{" "}
+                  <code>feature/*</code> and <code>bugfix/*</code> merge into{' '}
                   <code>test</code>.
                 </li>
                 <li>
-                  Merging into <code>test</code> auto-opens a PR to{" "}
-                  <code>uat</code>; merging <code>uat</code> auto-opens a PR to{" "}
+                  Merging into <code>test</code> auto-opens a PR to{' '}
+                  <code>uat</code>; merging <code>uat</code> auto-opens a PR to{' '}
                   <code>main</code>.
                 </li>
                 <li>
@@ -522,7 +526,7 @@ export function GuideOverviewView() {
                   mandatory back-merge.
                 </li>
               </ul>
-              <p style={{ marginTop: "0.7rem" }}>
+              <p style={{ marginTop: '0.7rem' }}>
                 Commits follow Conventional Commits:
               </p>
               <pre className="guide-code">
@@ -539,7 +543,7 @@ docs: update the guide page`}</code>
               title="CI/CD quality gates"
               reduced={reduced}
             >
-              <div style={{ marginBottom: "1rem" }}>
+              <div style={{ marginBottom: '1rem' }}>
                 <FlowExplainer heading={null} variant="compact" />
               </div>
               <p>
@@ -551,7 +555,7 @@ docs: update the guide page`}</code>
                   <strong>Lint</strong> — zero errors.
                 </li>
                 <li>
-                  <strong>TypeScript</strong> — strict mode,{" "}
+                  <strong>TypeScript</strong> — strict mode,{' '}
                   <code>tsc --noEmit</code> passes.
                 </li>
                 <li>
@@ -563,7 +567,7 @@ docs: update the guide page`}</code>
                   vulnerabilities on <code>uat</code>/<code>main</code>.
                 </li>
                 <li>
-                  <strong>E2E + k6 gate</strong> — a required status check on{" "}
+                  <strong>E2E + k6 gate</strong> — a required status check on{' '}
                   <code>test</code> and <code>uat</code>.
                 </li>
               </ul>
@@ -583,7 +587,7 @@ docs: update the guide page`}</code>
                 </li>
                 <li>
                   <strong>Catalog tab</strong> — browse all available workflow
-                  templates and send one straight into the Setup form with{" "}
+                  templates and send one straight into the Setup form with{' '}
                   <em>Use in Create Project</em>.
                 </li>
               </ul>
@@ -601,12 +605,12 @@ docs: update the guide page`}</code>
                 the Projects page, then reload.
               </FaqItem>
               <FaqItem q="How do I replay the guided tour?">
-                Click <strong>Replay guided tour</strong> on this page, or the{" "}
+                Click <strong>Replay guided tour</strong> on this page, or the{' '}
                 <strong>Show guide</strong> button on the Projects Setup tab.
                 The tour walks every field and ends at the Create button.
               </FaqItem>
               <FaqItem q="What's the difference between Microservices and Multi-repo?">
-                Microservices keeps backend and frontend together in{" "}
+                Microservices keeps backend and frontend together in{' '}
                 <em>one</em> repository (separate folders, separate workflows).
                 Multi-repo creates <em>two</em> separate GitHub repositories.
                 Choose multi-repo when the services are deployed and versioned
@@ -622,9 +626,9 @@ docs: update the guide page`}</code>
             {guest ? (
               <div
                 className="section-card glass-panel"
-                style={{ padding: "1.4rem 1.6rem", textAlign: "center" }}
+                style={{ padding: '1.4rem 1.6rem', textAlign: 'center' }}
               >
-                <p style={{ marginBottom: "0.9rem" }}>
+                <p style={{ marginBottom: '0.9rem' }}>
                   Ready to create your first repository?
                 </p>
                 <Link className="primary-button" href="/signup">
@@ -634,9 +638,9 @@ docs: update the guide page`}</code>
             ) : (
               <div
                 className="section-card glass-panel"
-                style={{ padding: "1.4rem 1.6rem", textAlign: "center" }}
+                style={{ padding: '1.4rem 1.6rem', textAlign: 'center' }}
               >
-                <p style={{ marginBottom: "0.9rem" }}>Ready to build?</p>
+                <p style={{ marginBottom: '0.9rem' }}>Ready to build?</p>
                 <Link className="primary-button" href="/workflows">
                   Go to Projects
                 </Link>
@@ -648,4 +652,3 @@ docs: update the guide page`}</code>
     </main>
   );
 }
-

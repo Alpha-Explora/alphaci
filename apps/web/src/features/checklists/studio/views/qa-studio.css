@@ -38,7 +38,7 @@
    the window's right edge (as the app rail sits on the left). The project
    page drops its bottom padding on a studio tab, so both panes run to the
    bottom edge and the page itself never scrolls. */
-.qa-studio:not([data-full-screen="true"]) {
+.qa-studio:not([data-full-screen='true']) {
   margin-right: calc(-1 * var(--layout-gutter));
 }
 
@@ -99,14 +99,14 @@
 
 /* Full screen (and a studio with no tab row to host it): a slim bar atop the
    studio, so Exit full screen and the rest stay in reach. */
-.qa-toolbar[data-placement="studio"] {
+.qa-toolbar[data-placement='studio'] {
   padding: 0.4rem 0.6rem;
 }
 
 /* Docked, the controls sit in the project page's tab row: no box of their
    own, sized to the tabs (about 1.9rem), and the actions straight after the
    size controls — the tabs, not the row's end, are on their right. */
-.qa-toolbar[data-placement="tab-row"] {
+.qa-toolbar[data-placement='tab-row'] {
   display: block;
   padding: 0;
   border: 0;
@@ -114,24 +114,24 @@
   background: transparent;
 }
 
-.qa-toolbar[data-placement="tab-row"] .qa-toolbar__row {
+.qa-toolbar[data-placement='tab-row'] .qa-toolbar__row {
   gap: 0.4rem;
 }
 
-.qa-toolbar[data-placement="tab-row"] .qa-toolbar__actions {
+.qa-toolbar[data-placement='tab-row'] .qa-toolbar__actions {
   gap: 0.3rem;
   margin-left: 0;
 }
 
-.qa-toolbar[data-placement="tab-row"] .qa-toolbar__select {
+.qa-toolbar[data-placement='tab-row'] .qa-toolbar__select {
   padding-block: 0.28rem;
 }
 
-.qa-toolbar[data-placement="tab-row"] .qa-device-switch__option {
+.qa-toolbar[data-placement='tab-row'] .qa-device-switch__option {
   min-height: 1.65rem;
 }
 
-.qa-toolbar[data-placement="tab-row"] .qa-icon-button {
+.qa-toolbar[data-placement='tab-row'] .qa-icon-button {
   width: 2rem;
   height: 2rem;
 }
@@ -165,7 +165,9 @@
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.16s ease, color 0.16s ease;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
 }
 
 .qa-device-switch__option:hover {
@@ -209,7 +211,9 @@
   color: var(--text-primary);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.8rem;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 .qa-resolution .qa-resolution__input:focus {
@@ -239,7 +243,10 @@
   background: var(--bg-soft);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+  transition:
+    color 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.16s ease;
 }
 
 .qa-icon-button:hover:not(:disabled) {
@@ -271,17 +278,17 @@
 }
 
 /* Copy link: the icon swap is the sighted confirmation, and it is coloured too. */
-.qa-icon-button[data-status="copied"] {
+.qa-icon-button[data-status='copied'] {
   border-color: var(--success);
   color: var(--success);
 }
 
-.qa-icon-button[data-status="failed"] {
+.qa-icon-button[data-status='failed'] {
   border-color: var(--border-amber);
   color: var(--warning);
 }
 
-.qa-icon-button[aria-pressed="true"] {
+.qa-icon-button[aria-pressed='true'] {
   border-color: var(--border-brand);
   background: var(--brand-light);
   color: var(--brand);
@@ -323,7 +330,7 @@
   padding-right: calc(var(--qa-rail-closed) + var(--qa-rail-edge) + 0.75rem);
 }
 
-.qa-studio[data-rail="pinned"] .qa-studio__panes {
+.qa-studio[data-rail='pinned'] .qa-studio__panes {
   padding-right: calc(var(--qa-rail-open) + var(--qa-rail-edge) + 0.75rem);
 }
 
@@ -337,7 +344,7 @@
 }
 
 /* Nothing to frame: size to the message instead of a tall empty box. */
-.qa-studio__preview[data-framed="false"] {
+.qa-studio__preview[data-framed='false'] {
   height: auto;
 }
 
@@ -368,18 +375,18 @@
    typing a note never closes it when the pointer drifts. A click into the
    page moves focus out, and it folds. Overflow is visible open: the Export
    menu and the chip's popover must never be clipped. */
-.qa-rail[data-pinned="true"],
+.qa-rail[data-pinned='true'],
 .qa-rail:has(:focus-visible),
 .qa-rail:has(.qa-studio__run:focus-within),
-.qa-rail:not([data-hover-suppressed="true"]):hover {
+.qa-rail:not([data-hover-suppressed='true']):hover {
   width: var(--qa-rail-open);
   overflow: visible;
 }
 
 /* Peeking paints over the page, so it lifts off it. */
-.qa-rail:not([data-pinned="true"]):has(:focus-visible),
-.qa-rail:not([data-pinned="true"]):has(.qa-studio__run:focus-within),
-.qa-rail:not([data-pinned="true"]):not([data-hover-suppressed="true"]):hover {
+.qa-rail:not([data-pinned='true']):has(:focus-visible),
+.qa-rail:not([data-pinned='true']):has(.qa-studio__run:focus-within),
+.qa-rail:not([data-pinned='true']):not([data-hover-suppressed='true']):hover {
   box-shadow: var(--qa-rail-offset), var(--shadow-hard);
 }
 
@@ -417,7 +424,7 @@
   color: var(--text-primary);
 }
 
-.qa-rail__pin[aria-pressed="true"] {
+.qa-rail__pin[aria-pressed='true'] {
   color: var(--brand);
 }
 
@@ -470,7 +477,7 @@
 }
 
 .qa-rail__resize::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 50%;
   left: 4px;
@@ -485,7 +492,7 @@
 
 .qa-rail__resize:hover::after,
 .qa-rail__resize:focus-visible::after,
-.qa-rail__resize[data-active="true"]::after {
+.qa-rail__resize[data-active='true']::after {
   opacity: 1;
 }
 
@@ -495,26 +502,26 @@
 
 /* While dragging: no text selection, and the preview iframe never takes the
    pointer (it would swallow the moves). */
-.qa-studio[data-resizing="true"] {
+.qa-studio[data-resizing='true'] {
   cursor: col-resize;
   user-select: none;
 }
 
-.qa-studio[data-resizing="true"] iframe {
+.qa-studio[data-resizing='true'] iframe {
   pointer-events: none;
 }
 
-.qa-rail[data-pinned="true"] > .qa-studio__run,
+.qa-rail[data-pinned='true'] > .qa-studio__run,
 .qa-rail:has(:focus-visible) > .qa-studio__run,
 .qa-rail:has(.qa-studio__run:focus-within) > .qa-studio__run,
-.qa-rail:not([data-hover-suppressed="true"]):hover > .qa-studio__run {
+.qa-rail:not([data-hover-suppressed='true']):hover > .qa-studio__run {
   display: flex;
 }
 
 /* A capture takes the tab's pixels where the page is: a rail open over it
    goes transparent for that moment, never hidden, so focus stays on Capture
    and nothing remounts. */
-.qa-studio[data-capturing="true"] .qa-rail {
+.qa-studio[data-capturing='true'] .qa-rail {
   opacity: 0;
   pointer-events: none;
   animation: none;
@@ -537,8 +544,8 @@
    run (and PO Studio's acceptance), which has no single item list. No
    scrollbar-width here: it would outrank the "No scrollbar" rule below and
    draw a light bar on the dark column. */
-.qa-colpanel[data-tab="playwright"],
-.qa-studio__run[data-scroll="column"] > .qa-colpanel {
+.qa-colpanel[data-tab='playwright'],
+.qa-studio__run[data-scroll='column'] > .qa-colpanel {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -597,7 +604,7 @@
   overflow: hidden;
 }
 
-.qa-stage:not([data-frame="browser"]) {
+.qa-stage:not([data-frame='browser']) {
   padding: 0.75rem;
 }
 
@@ -612,7 +619,8 @@
   box-sizing: content-box;
   width: calc(var(--qa-screen-w) * var(--qa-scale, 1) * 1px);
   height: calc(var(--qa-screen-h) * var(--qa-scale, 1) * 1px);
-  padding: var(--qa-chrome-top) var(--qa-chrome-right) var(--qa-chrome-bottom) var(--qa-chrome-left);
+  padding: var(--qa-chrome-top) var(--qa-chrome-right) var(--qa-chrome-bottom)
+    var(--qa-chrome-left);
 }
 
 .qa-device__screen {
@@ -658,14 +666,14 @@
 
 /* Desktop: the page itself, no mock browser window. One hairline edge, so a
    page the same colour as the app still shows where it ends. */
-.qa-device[data-frame="browser"] .qa-device__screen {
+.qa-device[data-frame='browser'] .qa-device__screen {
   border-radius: 0;
   box-shadow: 0 0 0 1px var(--border-layer);
 }
 
 /* Tablet and phone: a dark chassis, whichever theme — hardware is dark. */
-.qa-device[data-frame="tablet"],
-.qa-device[data-frame="phone"] {
+.qa-device[data-frame='tablet'],
+.qa-device[data-frame='phone'] {
   background: var(--device-chassis);
   box-shadow:
     0 0 0 1px var(--device-chassis-rim),
@@ -673,16 +681,16 @@
     var(--shadow-elevated);
 }
 
-.qa-device[data-frame="tablet"] {
+.qa-device[data-frame='tablet'] {
   border-radius: 30px;
 }
 
-.qa-device[data-frame="tablet"] .qa-device__screen {
+.qa-device[data-frame='tablet'] .qa-device__screen {
   border-radius: 8px;
 }
 
 /* Front camera, centred in the top bezel. */
-.qa-device[data-frame="tablet"] .qa-device__sensor {
+.qa-device[data-frame='tablet'] .qa-device__sensor {
   display: block;
   top: calc(var(--qa-chrome-top) / 2 - 4px);
   left: calc(50% - 4px);
@@ -694,7 +702,7 @@
 }
 
 /* Home bar, centred in the bottom bezel. */
-.qa-device[data-frame="tablet"] .qa-device__home {
+.qa-device[data-frame='tablet'] .qa-device__home {
   display: block;
   bottom: calc(var(--qa-chrome-bottom) / 2 - 2px);
   left: calc(50% - 36px);
@@ -704,16 +712,16 @@
   background: var(--device-home);
 }
 
-.qa-device[data-frame="phone"] {
+.qa-device[data-frame='phone'] {
   border-radius: 42px;
 }
 
-.qa-device[data-frame="phone"] .qa-device__screen {
+.qa-device[data-frame='phone'] .qa-device__screen {
   border-radius: 16px;
 }
 
 /* The dynamic island lives in the top bezel, above the screen, never on it. */
-.qa-device[data-frame="phone"] .qa-device__sensor {
+.qa-device[data-frame='phone'] .qa-device__sensor {
   display: block;
   top: 12px;
   left: calc(50% - 46px);
@@ -721,11 +729,15 @@
   height: 22px;
   border-radius: var(--radius-pill);
   background:
-    radial-gradient(circle at calc(100% - 13px) 50%, var(--device-lens) 0 3.5px, transparent 4.5px),
+    radial-gradient(
+      circle at calc(100% - 13px) 50%,
+      var(--device-lens) 0 3.5px,
+      transparent 4.5px
+    ),
     var(--device-sensor);
 }
 
-.qa-device[data-frame="phone"] .qa-device__home {
+.qa-device[data-frame='phone'] .qa-device__home {
   display: block;
   bottom: 11px;
   left: calc(50% - 55px);
@@ -736,11 +748,11 @@
 }
 
 /* Side buttons, past the chassis edge: action + volume on one side, power on the other. */
-.qa-device[data-frame="phone"] .qa-device__buttons {
+.qa-device[data-frame='phone'] .qa-device__buttons {
   display: block;
 }
 
-.qa-device[data-frame="phone"] .qa-device__buttons--start {
+.qa-device[data-frame='phone'] .qa-device__buttons--start {
   top: 96px;
   left: -3px;
   width: 3px;
@@ -755,7 +767,7 @@
   );
 }
 
-.qa-device[data-frame="phone"] .qa-device__buttons--end {
+.qa-device[data-frame='phone'] .qa-device__buttons--end {
   top: 140px;
   right: -3px;
   width: 3px;
@@ -766,23 +778,29 @@
 
 /* Landscape: the same chassis turned a quarter — island left, chin right,
    the buttons along the bottom and top edges. */
-.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__sensor {
+.qa-device[data-frame='phone'][data-orientation='landscape']
+  .qa-device__sensor {
   top: calc(50% - 46px);
   left: 12px;
   width: 22px;
   height: 92px;
   background:
-    radial-gradient(circle at 50% 13px, var(--device-lens) 0 3.5px, transparent 4.5px),
+    radial-gradient(
+      circle at 50% 13px,
+      var(--device-lens) 0 3.5px,
+      transparent 4.5px
+    ),
     var(--device-sensor);
 }
 
-.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__home {
+.qa-device[data-frame='phone'][data-orientation='landscape'] .qa-device__home {
   inset: calc(50% - 55px) 11px auto auto;
   width: 5px;
   height: 110px;
 }
 
-.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__buttons--start {
+.qa-device[data-frame='phone'][data-orientation='landscape']
+  .qa-device__buttons--start {
   top: auto;
   bottom: -3px;
   left: 96px;
@@ -799,7 +817,8 @@
   );
 }
 
-.qa-device[data-frame="phone"][data-orientation="landscape"] .qa-device__buttons--end {
+.qa-device[data-frame='phone'][data-orientation='landscape']
+  .qa-device__buttons--end {
   top: -3px;
   right: auto;
   left: 140px;
@@ -1258,7 +1277,15 @@
    tone and a bolder line. Scoped to the panel; the Runs report keeps its
    cards. */
 .qa-studio__run
-  :is(.qa-run-item, .tr-case, .qa-auto-stage, .qa-live, .qa-pw-item, .qa-auto-detail, .qa-auto-failure) {
+  :is(
+    .qa-run-item,
+    .tr-case,
+    .qa-auto-stage,
+    .qa-live,
+    .qa-pw-item,
+    .qa-auto-detail,
+    .qa-auto-failure
+  ) {
   --qa-accent: var(--border-strong);
 
   border: 0;
@@ -1279,50 +1306,70 @@
 }
 
 .qa-studio__run .qa-auto-failure,
-.qa-studio__run .tr-case[data-tone="danger"],
-.qa-studio__run .qa-run-item[data-status="failed"] {
+.qa-studio__run .tr-case[data-tone='danger'],
+.qa-studio__run .qa-run-item[data-status='failed'] {
   --qa-accent: var(--danger);
 }
 
-.qa-studio__run .tr-case[data-tone="success"],
-.qa-studio__run .qa-run-item[data-status="passed"] {
+.qa-studio__run .tr-case[data-tone='success'],
+.qa-studio__run .qa-run-item[data-status='passed'] {
   --qa-accent: var(--success);
 }
 
-.qa-studio__run .tr-case[data-tone="warning"],
-.qa-studio__run .qa-run-item[data-status="returned_to_dev"] {
+.qa-studio__run .tr-case[data-tone='warning'],
+.qa-studio__run .qa-run-item[data-status='returned_to_dev'] {
   --qa-accent: var(--warning);
 }
 
-.qa-studio__run .qa-run-item[data-status="blocked"] {
+.qa-studio__run .qa-run-item[data-status='blocked'] {
   --qa-accent: var(--accent-rose);
 }
 
-.qa-studio__run .qa-run-item[data-status="in_progress"] {
+.qa-studio__run .qa-run-item[data-status='in_progress'] {
   --qa-accent: var(--brand);
 }
 
 /* Rows of a list sit flush, parted by a hairline. */
-.qa-studio__run :is(.qa-run__items, .tr-cases__list, .qa-pw-items__list, .qa-auto__stages, .qa-auto-failures__list) {
+.qa-studio__run
+  :is(
+    .qa-run__items,
+    .tr-cases__list,
+    .qa-pw-items__list,
+    .qa-auto__stages,
+    .qa-auto-failures__list
+  ) {
   gap: 0;
 }
 
 .qa-studio__run
-  :is(.qa-run__items, .tr-cases__list, .qa-pw-items__list, .qa-auto__stages, .qa-auto-failures__list)
-  > * + * {
+  :is(
+    .qa-run__items,
+    .tr-cases__list,
+    .qa-pw-items__list,
+    .qa-auto__stages,
+    .qa-auto-failures__list
+  )
+  > *
+  + * {
   border-top: 1px solid var(--border);
 }
 
 /* Hover: the row under the pointer, never a section and the row inside it
    at once, gets a bolder state line. No fill: a filled row reads as a box.
    An item being edited keeps the bolder line. */
-.qa-studio__run :is(.qa-run-item, .tr-case, .qa-pw-item, .qa-auto-failure):hover,
-.qa-studio__run :is(.qa-auto-stage, .qa-live, .qa-auto-detail):hover:not(:has(:is(.tr-case, .qa-auto-failure):hover)),
+.qa-studio__run
+  :is(.qa-run-item, .tr-case, .qa-pw-item, .qa-auto-failure):hover,
+.qa-studio__run
+  :is(.qa-auto-stage, .qa-live, .qa-auto-detail):hover:not(
+    :has(:is(.tr-case, .qa-auto-failure):hover)
+  ),
 .qa-studio__run .qa-run-item--open {
   box-shadow: inset 3px 0 0 var(--qa-accent);
 }
 
-.qa-studio__run :is(.qa-run-item, .tr-case, .qa-pw-item):hover :is(.qa-run-item__title, .tr-case__name, .qa-pw-item__title) {
+.qa-studio__run
+  :is(.qa-run-item, .tr-case, .qa-pw-item):hover
+  :is(.qa-run-item__title, .tr-case__name, .qa-pw-item__title) {
   color: var(--text-primary);
 }
 
@@ -1394,16 +1441,29 @@
   display: none;
 }
 
-.qa-studio__run :is(.qa-colpanel[data-tab="playwright"], .qa-run > .qa-run__items),
-.qa-studio__run[data-scroll="column"] > .qa-colpanel {
+.qa-studio__run
+  :is(.qa-colpanel[data-tab='playwright'], .qa-run > .qa-run__items),
+.qa-studio__run[data-scroll='column'] > .qa-colpanel {
   padding-bottom: 1.5rem;
   /* A mask reads only alpha: any opaque token draws the visible part. */
-  mask-image: linear-gradient(to bottom, var(--bg-base) calc(100% - 1.5rem), transparent);
+  mask-image: linear-gradient(
+    to bottom,
+    var(--bg-base) calc(100% - 1.5rem),
+    transparent
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {
   .qa-studio__run
-    :is(.qa-run-item, .tr-case, .qa-auto-stage, .qa-live, .qa-pw-item, .qa-auto-detail, .qa-auto-failure) {
+    :is(
+      .qa-run-item,
+      .tr-case,
+      .qa-auto-stage,
+      .qa-live,
+      .qa-pw-item,
+      .qa-auto-detail,
+      .qa-auto-failure
+    ) {
     transition: none;
   }
 }
@@ -1815,7 +1875,9 @@
   border-radius: 0.6rem;
   background: var(--bg-soft);
   cursor: pointer;
-  transition: border-color 0.16s ease, background 0.16s ease;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease;
 }
 
 .qa-verdict--success {
@@ -1876,7 +1938,7 @@
    its right edge as docked. Nothing up the tree may carry a transform,
    filter or backdrop-filter, or `position: fixed` would stop meaning "the
    viewport" — and nothing here adds one. */
-.qa-studio[data-full-screen="true"] {
+.qa-studio[data-full-screen='true'] {
   position: fixed;
   inset: 0;
   z-index: 120;
@@ -1889,42 +1951,42 @@
 }
 
 /* The studio has no right padding (the rail is on the edge); the toolbar keeps its own. */
-.qa-studio[data-full-screen="true"] .qa-toolbar {
+.qa-studio[data-full-screen='true'] .qa-toolbar {
   margin-right: 0.75rem;
 }
 
-.qa-studio[data-full-screen="true"] .qa-studio__panes {
+.qa-studio[data-full-screen='true'] .qa-studio__panes {
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
   min-height: 0;
 }
 
-.qa-studio[data-full-screen="true"] .qa-studio__preview,
-.qa-studio[data-full-screen="true"] .qa-studio__preview[data-framed="false"] {
+.qa-studio[data-full-screen='true'] .qa-studio__preview,
+.qa-studio[data-full-screen='true'] .qa-studio__preview[data-framed='false'] {
   height: 100%;
   min-height: 0;
 }
 
-.qa-studio[data-full-screen="true"] .qa-stage {
+.qa-studio[data-full-screen='true'] .qa-stage {
   place-items: center;
 }
 
-.qa-studio[data-full-screen="true"] .qa-stage:not([data-frame="browser"]) {
+.qa-studio[data-full-screen='true'] .qa-stage:not([data-frame='browser']) {
   padding: 1.25rem;
 }
 
-.qa-studio[data-full-screen="true"] .qa-colpanel > .qa-run-card {
+.qa-studio[data-full-screen='true'] .qa-colpanel > .qa-run-card {
   flex: 1 1 auto;
   gap: 0.7rem;
   padding: 0.75rem 1rem 0.9rem;
 }
 
-.qa-studio[data-full-screen="true"] .qa-run-card__head {
+.qa-studio[data-full-screen='true'] .qa-run-card__head {
   padding-bottom: 0.65rem;
 }
 
-.qa-studio[data-full-screen="true"] .qa-colpanel > .qa-panel-state,
-.qa-studio[data-full-screen="true"] .qa-colpanel > .qa-skeleton-card {
+.qa-studio[data-full-screen='true'] .qa-colpanel > .qa-panel-state,
+.qa-studio[data-full-screen='true'] .qa-colpanel > .qa-skeleton-card {
   margin: 0.85rem 1rem 1rem;
 }
 
@@ -1934,7 +1996,10 @@
    The Export menu belongs to the repository run, which keeps the item-list
    scrolling; the sign-off dialog is fixed to the viewport (no transform or
    filter up the tree), so a scrolling panel clips neither. */
-.qa-studio[data-studio] .qa-studio__run[data-scroll="column"] > .qa-colpanel > .qa-run-card {
+.qa-studio[data-studio]
+  .qa-studio__run[data-scroll='column']
+  > .qa-colpanel
+  > .qa-run-card {
   flex: 0 0 auto;
   max-height: none;
 }
@@ -2007,15 +2072,15 @@
   box-shadow: 0 0 0 3px var(--bg-soft);
 }
 
-.qa-rail__dot[data-tone="passed"] {
+.qa-rail__dot[data-tone='passed'] {
   background: var(--success);
 }
 
-.qa-rail__dot[data-tone="failed"] {
+.qa-rail__dot[data-tone='failed'] {
   background: var(--danger);
 }
 
-.qa-rail__dot[data-tone="running"] {
+.qa-rail__dot[data-tone='running'] {
   background: var(--brand);
   animation: qa-dot-pulse 1.4s ease-in-out infinite;
 }
@@ -2030,7 +2095,7 @@
 /* The tab row has no room for the scale beside the tabs: it would push them
    onto a second line. Full screen keeps it. */
 @media (max-width: 1199px) {
-  .qa-toolbar[data-placement="tab-row"] .qa-scale {
+  .qa-toolbar[data-placement='tab-row'] .qa-scale {
     display: none;
   }
 }
@@ -2039,11 +2104,11 @@
   /* The rail stays on the right edge, a strip as on a wide screen. Too narrow
      to move the page aside, so pinned it opens over the page too: the page
      keeps its width and the strip is all it ever gives up. */
-  .qa-studio[data-rail="pinned"] .qa-studio__panes {
+  .qa-studio[data-rail='pinned'] .qa-studio__panes {
     padding-right: calc(var(--qa-rail-closed) + var(--qa-rail-edge) + 0.75rem);
   }
 
-  .qa-rail[data-pinned="true"] {
+  .qa-rail[data-pinned='true'] {
     box-shadow: var(--qa-rail-offset), var(--shadow-hard);
   }
 }
@@ -2071,11 +2136,11 @@
     max-width: none;
   }
 
-  .qa-stage:not([data-frame="browser"]) {
+  .qa-stage:not([data-frame='browser']) {
     padding: 0.5rem;
   }
 
-  .qa-studio[data-full-screen="true"] {
+  .qa-studio[data-full-screen='true'] {
     padding: 0.5rem 0 0 0.5rem;
   }
 
@@ -2117,7 +2182,7 @@
   }
 
   .qa-studio__run,
-  .qa-rail__dot[data-tone="running"] {
+  .qa-rail__dot[data-tone='running'] {
     animation: none;
   }
 }

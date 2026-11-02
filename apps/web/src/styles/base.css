@@ -58,8 +58,8 @@ textarea {
     box-shadow 0.15s ease;
 }
 
-input[type="checkbox"],
-input[type="radio"] {
+input[type='checkbox'],
+input[type='radio'] {
   max-width: none;
 }
 

@@ -1,4 +1,4 @@
-import type { AuthSession } from "./auth-types";
+import type { AuthSession } from './auth-types';
 
 /**
  * Internal employees (company GitHub org members) are reported by the backend
@@ -6,7 +6,9 @@ import type { AuthSession } from "./auth-types";
  * external users for display purposes — it no longer affects routing, since
  * this deployment has no paywall to route around.
  */
-export function isInternalUser(session: AuthSession | null | undefined): boolean {
+export function isInternalUser(
+  session: AuthSession | null | undefined,
+): boolean {
   return Boolean(session?.authenticated && session.user?.isInternal);
 }
 

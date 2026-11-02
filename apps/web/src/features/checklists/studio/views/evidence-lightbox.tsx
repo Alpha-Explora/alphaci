@@ -1,18 +1,21 @@
-"use client";
+'use client';
 
-import { useEffect, useId, useRef, type KeyboardEvent } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useId, useRef, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 
-import { evidenceAlt, positionLabel } from "../../model/qa-attachment-rules";
-import type { QaAttachment } from "../../model/qa-attachment-types";
-import { agoLabel } from "../../model/qa-run-rules";
-import { ChevronLeftIcon, ChevronRightIcon, CrossIcon } from "./studio-icons";
+import { evidenceAlt, positionLabel } from '../../model/qa-attachment-rules';
+import type { QaAttachment } from '../../model/qa-attachment-types';
+import { agoLabel } from '../../model/qa-run-rules';
+import { ChevronLeftIcon, ChevronRightIcon, CrossIcon } from './studio-icons';
 
-const FOCUSABLE = 'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE =
+  'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
 
 /** Keep Tab inside the dialog: from the last control back to the first, and the other way. */
 function trapTab(event: KeyboardEvent<HTMLDivElement>) {
-  const nodes = [...event.currentTarget.querySelectorAll<HTMLElement>(FOCUSABLE)];
+  const nodes = [
+    ...event.currentTarget.querySelectorAll<HTMLElement>(FOCUSABLE),
+  ];
   const first = nodes[0];
   const last = nodes[nodes.length - 1];
   if (!first || !last) return;
@@ -27,16 +30,23 @@ function trapTab(event: KeyboardEvent<HTMLDivElement>) {
 }
 
 /** Escape closes, the arrows step between images, Tab stays inside. */
-function keyHandler(onClose: () => void, onStep: (delta: number) => void, many: boolean) {
+function keyHandler(
+  onClose: () => void,
+  onStep: (delta: number) => void,
+  many: boolean,
+) {
   return (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Escape") {
+    if (event.key === 'Escape') {
       // Handled here: full screen must not also take this Escape.
       event.preventDefault();
       onClose();
-    } else if (many && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+    } else if (
+      many &&
+      (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
+    ) {
       event.preventDefault();
-      onStep(event.key === "ArrowLeft" ? -1 : 1);
-    } else if (event.key === "Tab") {
+      onStep(event.key === 'ArrowLeft' ? -1 : 1);
+    } else if (event.key === 'Tab') {
       trapTab(event);
     }
   };
@@ -52,9 +62,9 @@ function Byline({ attachment }: Readonly<{ attachment: QaAttachment }>) {
           Added by <strong>@{attachment.createdByLogin}</strong>
         </>
       ) : (
-        "Added"
+        'Added'
       )}
-      {ago ? ` · ${ago}` : ""}
+      {ago ? ` · ${ago}` : ''}
     </p>
   );
 }
@@ -114,8 +124,18 @@ export function EvidenceLightbox({
           <h2 className="qa-lightbox__title" id={titleId}>
             Evidence · {itemTitle}
           </h2>
-          {many ? <span className="qa-lightbox__position">{positionLabel(index, attachments.length)}</span> : null}
-          <button ref={closeRef} type="button" className="qa-lightbox__button" aria-label="Close" onClick={onClose}>
+          {many ? (
+            <span className="qa-lightbox__position">
+              {positionLabel(index, attachments.length)}
+            </span>
+          ) : null}
+          <button
+            ref={closeRef}
+            type="button"
+            className="qa-lightbox__button"
+            aria-label="Close"
+            onClick={onClose}
+          >
             <CrossIcon />
           </button>
         </div>
@@ -135,7 +155,12 @@ export function EvidenceLightbox({
             {attachment.url ? (
               // A signed, short-lived URL from the backend: next/image cannot optimise it.
               // eslint-disable-next-line @next/next/no-img-element
-              <img className="qa-lightbox__image" src={attachment.url} alt={alt} onError={onImageError} />
+              <img
+                className="qa-lightbox__image"
+                src={attachment.url}
+                alt={alt}
+                onError={onImageError}
+              />
             ) : (
               <p className="qa-lightbox__missing" role="status">
                 Loading the screenshot…
@@ -154,7 +179,9 @@ export function EvidenceLightbox({
             ) : null}
           </div>
           <figcaption className="qa-lightbox__caption">
-            {attachment.caption ? <p className="qa-lightbox__text">{attachment.caption}</p> : null}
+            {attachment.caption ? (
+              <p className="qa-lightbox__text">{attachment.caption}</p>
+            ) : null}
             <Byline attachment={attachment} />
           </figcaption>
         </figure>

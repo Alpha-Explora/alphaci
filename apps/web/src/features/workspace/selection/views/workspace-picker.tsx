@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import "./workspace-picker.css";
+import './workspace-picker.css';
 
 import {
   useEffect,
@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
-} from "react";
+} from 'react';
 
 import {
   flattenSwitcherOptions,
@@ -19,8 +19,8 @@ import {
   OWN_TEAMS_HEADING,
   switcherOptionGroups,
   switcherPanelShift,
-} from "../model/workspace-switcher-rules";
-import type { WorkspaceSummary } from "../model/workspace-types";
+} from '../model/workspace-switcher-rules';
+import type { WorkspaceSummary } from '../model/workspace-types';
 
 export interface WorkspacePickerProps {
   /** The caller's own teams. */
@@ -129,7 +129,7 @@ export function WorkspacePicker({
   const groups = switcherOptionGroups(items, otherTeams);
   const options = flattenSwitcherOptions(groups);
   const currentId = current?.id ?? null;
-  const currentName = current?.name ?? "Choose a team";
+  const currentName = current?.name ?? 'Choose a team';
 
   // Focus follows the active stop while the panel is open.
   useEffect(() => {
@@ -145,8 +145,8 @@ export function WorkspacePicker({
         setActiveIndex(-1);
       }
     }
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [open]);
 
   // Keep the panel on screen: on a phone the trigger sits mid-header and a
@@ -157,7 +157,7 @@ export function WorkspacePicker({
     if (!open || !panel) return;
     function place() {
       if (!panel) return;
-      panel.style.setProperty("--team-switcher-shift", "0px");
+      panel.style.setProperty('--team-switcher-shift', '0px');
       // The layout width, not the rect's: the entry animation starts at
       // scale(0.98), which would under-measure the panel by a few pixels.
       const left = panel.getBoundingClientRect().left;
@@ -166,11 +166,11 @@ export function WorkspacePicker({
         left + panel.offsetWidth,
         document.documentElement.clientWidth,
       );
-      panel.style.setProperty("--team-switcher-shift", `${shift}px`);
+      panel.style.setProperty('--team-switcher-shift', `${shift}px`);
     }
     place();
-    window.addEventListener("resize", place);
-    return () => window.removeEventListener("resize", place);
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
   }, [open]);
 
   function openAt(index: number) {
@@ -197,46 +197,57 @@ export function WorkspacePicker({
   }
 
   function onTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
-    if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+    if (
+      event.key === 'ArrowDown' ||
+      event.key === 'Enter' ||
+      event.key === ' '
+    ) {
       event.preventDefault();
       openAt(openingSwitcherIndex(options, currentId));
-    } else if (event.key === "ArrowUp") {
+    } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       openAt(Math.max(options.length - 1, 0));
-    } else if (event.key === "Escape" && open) {
+    } else if (event.key === 'Escape' && open) {
       event.preventDefault();
       close(true);
     }
   }
 
-  function onTab(event: KeyboardEvent<HTMLDivElement>, onCreateButton: boolean) {
+  function onTab(
+    event: KeyboardEvent<HTMLDivElement>,
+    onCreateButton: boolean,
+  ) {
     const action = panelTabAction(event.shiftKey, onCreateButton, canCreate);
-    if (action === "close") {
+    if (action === 'close') {
       // Not prevented: with focus back on the button, Tab moves on from it.
       close(true);
       return;
     }
     event.preventDefault();
-    const target = action === "to-create" ? createRef.current : stopRefs.current[Math.max(activeIndex, 0)];
+    const target =
+      action === 'to-create'
+        ? createRef.current
+        : stopRefs.current[Math.max(activeIndex, 0)];
     target?.focus();
   }
 
   function onPanelKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const onCreateButton = event.target === createRef.current;
-    if (event.key === "Escape") {
+    if (event.key === 'Escape') {
       event.preventDefault();
       close(true);
       return;
     }
-    if (event.key === "Tab") {
+    if (event.key === 'Tab') {
       onTab(event, onCreateButton);
       return;
     }
-    if (event.key === "Enter" || event.key === " ") {
+    if (event.key === 'Enter' || event.key === ' ') {
       // On the "+" button these are its own native click.
       if (!onCreateButton) {
         event.preventDefault();
-        if (activeIndex >= 0 && activeIndex < options.length) choose(options[activeIndex]);
+        if (activeIndex >= 0 && activeIndex < options.length)
+          choose(options[activeIndex]);
       }
       return;
     }
@@ -248,7 +259,9 @@ export function WorkspacePicker({
   }
 
   // Teams never repeat across the merged list, so an id names one stop.
-  const optionIndexById = new Map(options.map((option, index) => [option.id, index]));
+  const optionIndexById = new Map(
+    options.map((option, index) => [option.id, index]),
+  );
   function renderOption(option: WorkspaceSummary) {
     const index = optionIndexById.get(option.id) ?? -1;
     const selected = option.id === currentId;
@@ -264,12 +277,14 @@ export function WorkspacePicker({
         aria-selected={selected}
         tabIndex={-1}
         title={option.name}
-        className={`team-switcher-option${active ? " is-active" : ""}${selected ? " is-selected" : ""}`}
+        className={`team-switcher-option${active ? ' is-active' : ''}${selected ? ' is-selected' : ''}`}
         onPointerEnter={() => setActiveIndex(index)}
         onClick={() => choose(option)}
       >
         <span className="team-switcher-option-name">{option.name}</span>
-        <span className="team-switcher-option-check">{selected ? <CheckIcon /> : null}</span>
+        <span className="team-switcher-option-check">
+          {selected ? <CheckIcon /> : null}
+        </span>
       </div>
     );
   }
@@ -286,7 +301,9 @@ export function WorkspacePicker({
         aria-labelledby={`${prefixId} ${nameId}`}
         title={currentName}
         data-testid="workspace-switcher-trigger"
-        onClick={() => (open ? close(false) : openAt(openingSwitcherIndex(options, currentId)))}
+        onClick={() =>
+          open ? close(false) : openAt(openingSwitcherIndex(options, currentId))
+        }
         onKeyDown={onTriggerKeyDown}
       >
         <span id={prefixId} className="sr-only">
@@ -305,9 +322,7 @@ export function WorkspacePicker({
           onKeyDown={onPanelKeyDown}
         >
           <div className="team-switcher-heading-row">
-            <div className="team-switcher-group-label">
-              {OWN_TEAMS_HEADING}
-            </div>
+            <div className="team-switcher-group-label">{OWN_TEAMS_HEADING}</div>
             {canCreate ? (
               <button
                 ref={createRef}

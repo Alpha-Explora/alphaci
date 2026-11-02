@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { useWorkspaceSelection } from "@/features/workspace/selection";
+import { useWorkspaceSelection } from '@/features/workspace/selection';
 
-import { settingsRepository } from "../../data/settings-repository";
+import { settingsRepository } from '../../data/settings-repository';
 import {
   canSeeTeamSettingsTab,
   settingsNavSections,
   visibleSettingsSection,
-} from "../../model/settings-rules";
+} from '../../model/settings-rules';
 import type {
   SettingsSection,
   WorkspacesMeResponse,
-} from "../../model/settings-types";
+} from '../../model/settings-types';
 
 export interface SettingsViewModel {
   /** The section on screen (Team falls back to Account while it is hidden). */
@@ -28,7 +28,7 @@ export interface SettingsViewModel {
    * The workspaces load — the only async work this surface owns. "idle" while
    * a section that does not need them is open, or the capability is off.
    */
-  status: "idle" | "loading" | "ready" | "error";
+  status: 'idle' | 'loading' | 'ready' | 'error';
   /** Safe to render. Never an API detail. */
   workspacesError: string | null;
   /** True while the account deletion request is in flight. */
@@ -58,7 +58,7 @@ export function useSettingsViewModel(options: {
   /** The caller's app role, for the Team tab's lead/admin gate. */
   appRole?: string | null;
 }): SettingsViewModel {
-  const { workspacesEnabled, initialSection = "account", appRole } = options;
+  const { workspacesEnabled, initialSection = 'account', appRole } = options;
   // The header owns which team is selected; the Team tab is for that team.
   const { selectedWorkspace } = useWorkspaceSelection();
   const canManageTeam = canSeeTeamSettingsTab(selectedWorkspace?.role, appRole);
@@ -70,17 +70,16 @@ export function useSettingsViewModel(options: {
     null,
   );
   const [workspacesError, setWorkspacesError] = useState<string | null>(null);
-  const [status, setStatus] =
-    useState<SettingsViewModel["status"]>("idle");
+  const [status, setStatus] = useState<SettingsViewModel['status']>('idle');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
 
   const req = useRef(0);
 
   useEffect(() => {
-    if (activeSection !== "account" || !workspacesEnabled) return;
+    if (activeSection !== 'account' || !workspacesEnabled) return;
 
     req.current += 1;
     const id = req.current;
@@ -95,12 +94,12 @@ export function useSettingsViewModel(options: {
         // member-only list could validate away an admin's other-team selection.
         setWorkspaces(response);
         setWorkspacesError(null);
-        setStatus("ready");
+        setStatus('ready');
       })
       .catch(() => {
         if (!active || id !== req.current) return;
-        setWorkspacesError("Workspaces are unavailable right now.");
-        setStatus("error");
+        setWorkspacesError('Workspaces are unavailable right now.');
+        setStatus('error');
       });
 
     return () => {
@@ -118,7 +117,7 @@ export function useSettingsViewModel(options: {
       // second request against a deleted account.
       return true;
     } catch {
-      setDeleteMessage("Failed to delete account. Please try again.");
+      setDeleteMessage('Failed to delete account. Please try again.');
       setIsDeleting(false);
       return false;
     }
@@ -127,7 +126,7 @@ export function useSettingsViewModel(options: {
   return {
     activeSection,
     setActiveSection: (section) => {
-      if (section === "account" && workspacesEnabled) setStatus("loading");
+      if (section === 'account' && workspacesEnabled) setStatus('loading');
       setActiveSection(section);
     },
     sections: settingsNavSections(canManageTeam),

@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { adminRepository } from "../../data/admin-repository";
-import { NEXT_FEEDBACK_STATUS } from "../../model/admin-rules";
+import { adminRepository } from '../../data/admin-repository';
+import { NEXT_FEEDBACK_STATUS } from '../../model/admin-rules';
 import type {
   AdminStatus,
   FeedbackRecord,
   FeedbackStatus,
-} from "../../model/admin-types";
+} from '../../model/admin-types';
 
 export interface AdminFeedbackViewModel {
   items: FeedbackRecord[];
   status: AdminStatus;
   /** Safe to render. Never an API detail. */
   error: string | null;
-  filter: FeedbackStatus | "all";
-  setFilter: (filter: FeedbackStatus | "all") => void;
+  filter: FeedbackStatus | 'all';
+  setFilter: (filter: FeedbackStatus | 'all') => void;
   /** Id of the record whose triage is in flight, or null. */
   busyId: string | null;
   /** Advances one record to the next status in the triage cycle. */
@@ -27,9 +27,9 @@ export interface AdminFeedbackViewModel {
 /** ViewModel for the admin feedback queue. */
 export function useAdminFeedbackViewModel(): AdminFeedbackViewModel {
   const [items, setItems] = useState<FeedbackRecord[]>([]);
-  const [status, setStatus] = useState<AdminStatus>("loading");
+  const [status, setStatus] = useState<AdminStatus>('loading');
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FeedbackStatus | "all">("all");
+  const [filter, setFilter] = useState<FeedbackStatus | 'all'>('all');
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const [nonce, setNonce] = useState(0);
@@ -48,12 +48,12 @@ export function useAdminFeedbackViewModel(): AdminFeedbackViewModel {
         if (!active || id !== req.current) return;
         setItems(next);
         setError(null);
-        setStatus("ready");
+        setStatus('ready');
       })
       .catch(() => {
         if (!active || id !== req.current) return;
-        setError("Could not load feedback.");
-        setStatus("error");
+        setError('Could not load feedback.');
+        setStatus('error');
       });
 
     return () => {
@@ -82,13 +82,13 @@ export function useAdminFeedbackViewModel(): AdminFeedbackViewModel {
     error,
     filter,
     setFilter: (next) => {
-      setStatus("loading");
+      setStatus('loading');
       setFilter(next);
     },
     busyId,
     advance,
     retry: () => {
-      setStatus("loading");
+      setStatus('loading');
       setNonce((n) => n + 1);
     },
   };

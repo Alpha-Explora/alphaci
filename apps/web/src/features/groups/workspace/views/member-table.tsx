@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
+import { useMemo, useState } from 'react';
 
-import { removeGroupMember, type GroupMember } from "@/features/groups";
-import { MemberRoleBadge, MemberStatusBadge } from "./badges";
-import { Avatar, SectionHeader } from "./primitives";
+import { removeGroupMember, type GroupMember } from '@/features/groups';
+import { MemberRoleBadge, MemberStatusBadge } from './badges';
+import { Avatar, SectionHeader } from './primitives';
 
 /**
  * Member roster. Roles are DISPLAY-ONLY here — they come from the global app
@@ -47,13 +47,13 @@ export function MemberTable({
   const [error, setError] = useState<string | null>(null);
 
   const activeMembers = useMemo(
-    () => members.filter((member) => member.memberStatus !== "removed"),
+    () => members.filter((member) => member.memberStatus !== 'removed'),
     [members],
   );
   const leadCount = useMemo(
     () =>
       activeMembers.filter(
-        (member) => member.role === "admin" && member.memberStatus === "active",
+        (member) => member.role === 'admin' && member.memberStatus === 'active',
       ).length,
     [activeMembers],
   );
@@ -65,19 +65,19 @@ export function MemberTable({
       onMembersChange((current) =>
         current.map((item) =>
           item.id === member.id
-            ? { ...item, memberStatus: "removed" as const }
+            ? { ...item, memberStatus: 'removed' as const }
             : item,
         ),
       );
     } catch {
-      setError("Member could not be removed.");
+      setError('Member could not be removed.');
     } finally {
       setBusyId(null);
     }
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <section aria-label="Members">
         {showHeader ? (
           <SectionHeader
@@ -87,9 +87,17 @@ export function MemberTable({
           />
         ) : null}
         <div className="hier-panel">
-          {activeMembers.map((member) => <MemberRow key={member.id} member={member} leadCount={leadCount}
-            canManage={canManage} currentUserId={currentUserId} busyId={busyId}
-            onRemove={handleRemove} />)}
+          {activeMembers.map((member) => (
+            <MemberRow
+              key={member.id}
+              member={member}
+              leadCount={leadCount}
+              canManage={canManage}
+              currentUserId={currentUserId}
+              busyId={busyId}
+              onRemove={handleRemove}
+            />
+          ))}
         </div>
       </section>
 
@@ -102,27 +110,83 @@ export function MemberTable({
   );
 }
 
-function MemberRow({ member, leadCount, canManage, currentUserId, busyId, onRemove }: Readonly<{
-  member: GroupMember; leadCount: number; canManage: boolean; currentUserId: string; busyId: string | null;
+function MemberRow({
+  member,
+  leadCount,
+  canManage,
+  currentUserId,
+  busyId,
+  onRemove,
+}: Readonly<{
+  member: GroupMember;
+  leadCount: number;
+  canManage: boolean;
+  currentUserId: string;
+  busyId: string | null;
   onRemove: (member: GroupMember) => Promise<void>;
 }>) {
-  const isLastLead = member.role === "admin" && leadCount <= 1;
-  const removed = member.memberStatus === "removed";
+  const isLastLead = member.role === 'admin' && leadCount <= 1;
+  const removed = member.memberStatus === 'removed';
   return (
     <div className="hier-row">
-      <div className="hier-row-identity"><Avatar login={member.login} name={member.name} avatarUrl={member.avatarUrl} /><div className="hier-row-name"><strong>{member.name || member.login}</strong><span>@{member.login}{member.email ? ` · ${member.email}` : ""}</span></div></div>
+      <div className="hier-row-identity">
+        <Avatar
+          login={member.login}
+          name={member.name}
+          avatarUrl={member.avatarUrl}
+        />
+        <div className="hier-row-name">
+          <strong>{member.name || member.login}</strong>
+          <span>
+            @{member.login}
+            {member.email ? ` · ${member.email}` : ''}
+          </span>
+        </div>
+      </div>
       <div className="hier-row-actions">
         <MemberStatusBadge status={member.memberStatus} />
         <MemberRoleBadge member={member} />
-        {canManage && !removed && <RemoveMemberButton member={member} busy={busyId === member.id} isLastLead={isLastLead} isSelf={member.userId === currentUserId} onRemove={onRemove} />}
+        {canManage && !removed && (
+          <RemoveMemberButton
+            member={member}
+            busy={busyId === member.id}
+            isLastLead={isLastLead}
+            isSelf={member.userId === currentUserId}
+            onRemove={onRemove}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-function RemoveMemberButton({ member, busy, isLastLead, isSelf, onRemove }: Readonly<{
-  member: GroupMember; busy: boolean; isLastLead: boolean; isSelf: boolean; onRemove: (member: GroupMember) => Promise<void>;
+function RemoveMemberButton({
+  member,
+  busy,
+  isLastLead,
+  isSelf,
+  onRemove,
+}: Readonly<{
+  member: GroupMember;
+  busy: boolean;
+  isLastLead: boolean;
+  isSelf: boolean;
+  onRemove: (member: GroupMember) => Promise<void>;
 }>) {
-  const title = isLastLead ? "A group must keep at least one group lead" : isSelf ? "You can't remove yourself" : undefined;
-  return <button type="button" className="hier-btn-danger" disabled={busy || isLastLead || isSelf} title={title} onClick={() => void onRemove(member)}>Remove</button>;
+  const title = isLastLead
+    ? 'A group must keep at least one group lead'
+    : isSelf
+      ? "You can't remove yourself"
+      : undefined;
+  return (
+    <button
+      type="button"
+      className="hier-btn-danger"
+      disabled={busy || isLastLead || isSelf}
+      title={title}
+      onClick={() => void onRemove(member)}
+    >
+      Remove
+    </button>
+  );
 }

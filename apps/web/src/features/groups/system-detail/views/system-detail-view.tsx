@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import Link from "next/link";
+import type { ReactNode } from 'react';
+import Link from 'next/link';
 import {
   useGroupSystemRouteViewModel,
   type DeliveryProject,
   type ResourceState,
-} from "@/features/groups";
+} from '@/features/groups';
 import {
   CreateDeliveryProjectDialog,
   HierarchyPageShell,
   LifecycleStatusBadge,
-} from "@/features/groups/workspace";
+} from '@/features/groups/workspace';
 import {
   Breadcrumb,
   LoadingRows,
   PageHeader,
   ResourceBoundary,
   SectionHeader,
-} from "@/features/groups/workspace";
+} from '@/features/groups/workspace';
 
-import { useSystemDetailViewModel } from "../view-models/use-system-detail-view-model";
-import { groupDisplayName } from "../../model/groups-rules";
+import { useSystemDetailViewModel } from '../view-models/use-system-detail-view-model';
+import { groupDisplayName } from '../../model/groups-rules';
 
 function SystemDetailNotReady({
   state,
@@ -30,10 +30,7 @@ function SystemDetailNotReady({
   return (
     <>
       <Breadcrumb
-        items={[
-          { label: "Projects", href: "/workflows" },
-          { label: "System" },
-        ]}
+        items={[{ label: 'Projects', href: '/workflows' }, { label: 'System' }]}
       />
       <ResourceBoundary
         state={state}
@@ -60,13 +57,10 @@ function SystemDeliveryProjects({
   createButton: ReactNode;
   onRetry: () => void;
 }>) {
-  if (status === "ready") {
+  if (status === 'ready') {
     return (
       <>
-        <SectionHeader
-          title="Delivery projects"
-          count={projects.length}
-        />
+        <SectionHeader title="Delivery projects" count={projects.length} />
         <div className="hier-card-grid">
           {projects.map((project) => (
             <SystemDeliveryProjectCard
@@ -79,7 +73,7 @@ function SystemDeliveryProjects({
       </>
     );
   }
-  if (status === "loading") {
+  if (status === 'loading') {
     return <LoadingRows rows={2} />;
   }
   return (
@@ -89,8 +83,8 @@ function SystemDeliveryProjects({
       emptyTitle="No delivery projects yet"
       emptyMessage={
         canManage
-          ? "Create a delivery project to start adding repositories."
-          : "This system has no delivery projects yet."
+          ? 'Create a delivery project to start adding repositories.'
+          : 'This system has no delivery projects yet.'
       }
       emptyAction={createButton}
     />
@@ -115,8 +109,8 @@ function SystemDeliveryProjectCard({
       ) : null}
       <div className="hier-card-meta">
         <span>
-          <strong>{project.repositoryCount}</strong>{" "}
-          {project.repositoryCount === 1 ? "repository" : "repositories"}
+          <strong>{project.repositoryCount}</strong>{' '}
+          {project.repositoryCount === 1 ? 'repository' : 'repositories'}
         </span>
       </div>
     </Link>
@@ -129,7 +123,7 @@ function SystemDetail({
 }: Readonly<{ groupId: string; systemId: string }>) {
   const vm = useSystemDetailViewModel(groupId, systemId);
 
-  if (vm.status !== "ready" || !vm.system) {
+  if (vm.status !== 'ready' || !vm.system) {
     return <SystemDetailNotReady state={vm.status} onRetry={vm.reload} />;
   }
 
@@ -148,9 +142,9 @@ function SystemDetail({
     <>
       <Breadcrumb
         items={[
-          { label: "Projects", href: "/workflows" },
+          { label: 'Projects', href: '/workflows' },
           { label: groupDisplayName(vm.group), href: `/groups/${groupId}` },
-          { label: "Projects", href: `/groups/${groupId}/systems` },
+          { label: 'Projects', href: `/groups/${groupId}/systems` },
           { label: system.name },
         ]}
       />
@@ -158,7 +152,7 @@ function SystemDetail({
         title={system.name}
         subtitle={system.description ?? undefined}
         actions={
-          <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
             <LifecycleStatusBadge status={system.status} />
             {createButton}
           </div>
@@ -191,9 +185,7 @@ export function SystemDetailView() {
   const { groupId, systemId } = useGroupSystemRouteViewModel();
   return (
     <HierarchyPageShell>
-      {() => (
-        <SystemDetail groupId={groupId} systemId={systemId} />
-      )}
+      {() => <SystemDetail groupId={groupId} systemId={systemId} />}
     </HierarchyPageShell>
   );
 }

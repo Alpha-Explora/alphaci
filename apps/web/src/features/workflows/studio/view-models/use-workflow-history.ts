@@ -1,11 +1,13 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
-import { getWorkflowHistory } from "@/features/workflows/studio/data/workflows-api";
-import type { WorkflowHistoryItem } from "@/shared/api/contracts";
+import { getWorkflowHistory } from '@/features/workflows/studio/data/workflows-api';
+import type { WorkflowHistoryItem } from '@/shared/api/contracts';
 
-export function useWorkflowHistory(setStatusMessage: (message: string) => void) {
+export function useWorkflowHistory(
+  setStatusMessage: (message: string) => void,
+) {
   const [history, setHistory] = useState<WorkflowHistoryItem[]>([]);
   // The mount effect starts the first read, so history is loading from the first render.
   const [loadingHistory, setLoadingHistory] = useState(true);
@@ -24,9 +26,9 @@ export function useWorkflowHistory(setStatusMessage: (message: string) => void) 
             setHistoryError(null);
           },
           () => {
-            setHistoryError("Workflow history is temporarily unavailable.");
+            setHistoryError('Workflow history is temporarily unavailable.');
             if (!silent) {
-              setStatusMessage("Workflow history is temporarily unavailable.");
+              setStatusMessage('Workflow history is temporarily unavailable.');
             }
           },
         )
@@ -42,12 +44,15 @@ export function useWorkflowHistory(setStatusMessage: (message: string) => void) 
     void readHistory(false);
   }, [readHistory]);
 
-  const loadHistory = useCallback(async (silent = false) => {
-    if (!silent) {
-      setLoadingHistory(true);
-    }
-    await readHistory(silent);
-  }, [readHistory]);
+  const loadHistory = useCallback(
+    async (silent = false) => {
+      if (!silent) {
+        setLoadingHistory(true);
+      }
+      await readHistory(silent);
+    },
+    [readHistory],
+  );
 
   return {
     history,

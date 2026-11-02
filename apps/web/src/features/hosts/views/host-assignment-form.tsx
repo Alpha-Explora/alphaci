@@ -1,10 +1,10 @@
-"use client";
+'use client';
 import {
   hostConnectionLabel,
   hostStatusTone,
   reachedAt,
-} from "../model/host-types";
-import type { useHostAssignmentViewModel } from "../view-models/use-host-assignment-view-model";
+} from '../model/host-types';
+import type { useHostAssignmentViewModel } from '../view-models/use-host-assignment-view-model';
 export type AssignmentVm = ReturnType<typeof useHostAssignmentViewModel>;
 export function AssignmentForm({ vm }: { vm: AssignmentVm }) {
   return (
@@ -69,7 +69,7 @@ function PortFields({
   port,
   vm,
 }: {
-  port: AssignmentVm["config"]["ports"][number];
+  port: AssignmentVm['config']['ports'][number];
   vm: AssignmentVm;
 }) {
   return (
@@ -92,7 +92,7 @@ function PortFields({
           <input
             value={
               vm.config.health.find((item) => item.slot === port.slot)?.path ??
-              ""
+              ''
             }
             placeholder="/health"
             onChange={(event) => vm.health(port.slot, event.target.value)}
@@ -117,7 +117,7 @@ function IngressFields({ vm }: { vm: AssignmentVm }) {
               ingress: {
                 mode: next,
                 // A tunnel's address is created by the machine, never typed in.
-                publicUrl: next === "tunnel" ? null : old.ingress.publicUrl,
+                publicUrl: next === 'tunnel' ? null : old.ingress.publicUrl,
               },
             }));
           }}
@@ -129,20 +129,21 @@ function IngressFields({ vm }: { vm: AssignmentVm }) {
           <option value="tunnel">Automatic HTTPS address</option>
         </select>
       </label>
-      {mode === "tunnel" ? (
+      {mode === 'tunnel' ? (
         <p className="hassign-hint">
-          AlphaCI gives this environment an HTTPS address. On a server with an apps
-          domain it is permanent (for example https://myapp.apps.example.com);
-          otherwise it is a tunnel address that changes when the tunnel restarts.
+          AlphaCI gives this environment an HTTPS address. On a server with an
+          apps domain it is permanent (for example
+          https://myapp.apps.example.com); otherwise it is a tunnel address that
+          changes when the tunnel restarts.
         </p>
       ) : null}
-      {mode === "configured" ? (
+      {mode === 'configured' ? (
         <label className="hassign-field">
           <span className="hassign-field__label">Public application URL</span>
           <input
             type="url"
             required
-            value={vm.config.ingress.publicUrl ?? ""}
+            value={vm.config.ingress.publicUrl ?? ''}
             placeholder="https://app.example.com"
             onChange={(event) =>
               vm.setConfig((old) => ({
@@ -183,7 +184,7 @@ function AssignmentActions({ vm }: { vm: AssignmentVm }) {
             disabled={vm.busy}
             onClick={() => void vm.unassign()}
           >
-            {vm.confirmation === "unassign" ? "Confirm unassign" : "Unassign"}
+            {vm.confirmation === 'unassign' ? 'Confirm unassign' : 'Unassign'}
           </button>
         ) : null}
         {vm.confirmation ? (
@@ -196,11 +197,11 @@ function AssignmentActions({ vm }: { vm: AssignmentVm }) {
   );
 }
 function assignLabel(vm: AssignmentVm) {
-  if (vm.confirmation === "replace") return "Confirm replacement";
-  return vm.current ? "Save changes" : "Assign machine";
+  if (vm.confirmation === 'replace') return 'Confirm replacement';
+  return vm.current ? 'Save changes' : 'Assign machine';
 }
 export function AssignmentSummary({ vm }: { vm: AssignmentVm }) {
-  if (vm.status === "loading")
+  if (vm.status === 'loading')
     return (
       <p role="status" className="hassign-hint">
         Loading assignment…
@@ -226,14 +227,14 @@ export function AssignmentSummary({ vm }: { vm: AssignmentVm }) {
       </div>
     );
   const machine = vm.hosts.find((host) => host.id === vm.current?.machineId);
-  const label = machine ? hostConnectionLabel(machine) : "Unavailable";
+  const label = machine ? hostConnectionLabel(machine) : 'Unavailable';
   const { ports } = vm.current.config;
   const reach = reachedAt(vm.current.config, vm.current.tunnel);
   return (
     <div className="hassign-summary">
       <div className="hassign-summary__row">
         <p className="hassign-summary__name">
-          {machine?.name ?? "Machine unavailable"}
+          {machine?.name ?? 'Machine unavailable'}
         </p>
         <span className={`status-chip status-chip-${hostStatusTone(label)}`}>
           {label}
@@ -242,7 +243,7 @@ export function AssignmentSummary({ vm }: { vm: AssignmentVm }) {
       <dl className="hassign-facts">
         {ports.map((port) => (
           <div key={port.slot}>
-            <dt>{port.slot === "frontend" ? "Frontend" : "Backend"}</dt>
+            <dt>{port.slot === 'frontend' ? 'Frontend' : 'Backend'}</dt>
             <dd>
               port {port.hostPort} → {port.containerPort}
             </dd>
@@ -251,7 +252,7 @@ export function AssignmentSummary({ vm }: { vm: AssignmentVm }) {
         <div>
           <dt>Reached at</dt>
           <dd>
-            {reach.kind === "link" ? (
+            {reach.kind === 'link' ? (
               <a href={reach.href} target="_blank" rel="noreferrer">
                 {reach.href}
               </a>

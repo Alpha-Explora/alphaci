@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useApiResource } from "./use-hierarchy-resource";
+import { useApiResource } from './use-hierarchy-resource';
 
-import { groupsRepository } from "../data/groups-repository";
-import type { GroupSummary } from "../model/groups-types";
+import { groupsRepository } from '../data/groups-repository';
+import type { GroupSummary } from '../model/groups-types';
 
 export interface GroupViewModel {
   group: GroupSummary | null;
-  status: ReturnType<typeof useApiResource<GroupSummary>>["state"];
+  status: ReturnType<typeof useApiResource<GroupSummary>>['state'];
   reload: () => void;
 }
 

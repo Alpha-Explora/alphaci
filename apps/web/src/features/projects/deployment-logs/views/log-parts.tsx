@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import type { LogSource } from "../model/deployment-logs-types";
-import { timeZoneAbbreviation } from "../model/log-format";
+import type { LogSource } from '../model/deployment-logs-types';
+import { timeZoneAbbreviation } from '../model/log-format';
 import {
   isRateLimitReason,
   LEGACY_RATE_LIMIT_TEXT,
   rateLimitNotice,
-} from "../model/log-rate-limit";
-import { useSecondsLeft } from "../view-models/use-seconds-left";
+} from '../model/log-rate-limit';
+import { useSecondsLeft } from '../view-models/use-seconds-left';
 import type {
   DeploymentLogsViewModel,
   LogTailState,
-} from "../view-models/use-deployment-logs-view-model";
-import { LogLineList } from "./log-line-list";
+} from '../view-models/use-deployment-logs-view-model';
+import { LogLineList } from './log-line-list';
 
-type BadgeKind = "live" | "simulated" | "unavailable" | "idle";
+type BadgeKind = 'live' | 'simulated' | 'unavailable' | 'idle';
 
 const TAIL_LABEL: Record<LogTailState, string> = {
-  off: "Not tailing",
-  connecting: "Connecting…",
-  live: "Live",
-  paused: "Paused while hidden",
-  closed: "Fixed range",
+  off: 'Not tailing',
+  connecting: 'Connecting…',
+  live: 'Live',
+  paused: 'Paused while hidden',
+  closed: 'Fixed range',
 };
 
 /**
@@ -32,10 +32,13 @@ function badgeFor(
   tail: LogTailState,
   source: LogSource | null,
 ): { kind: BadgeKind; label: string } {
-  if (source === "simulated") return { kind: "simulated", label: "Simulated (local mock)" };
-  if (source === "unavailable") return { kind: "unavailable", label: "Unavailable" };
-  if (tail === "live" && source === "live") return { kind: "live", label: "Live" };
-  return { kind: "idle", label: TAIL_LABEL[tail] };
+  if (source === 'simulated')
+    return { kind: 'simulated', label: 'Simulated (local mock)' };
+  if (source === 'unavailable')
+    return { kind: 'unavailable', label: 'Unavailable' };
+  if (tail === 'live' && source === 'live')
+    return { kind: 'live', label: 'Live' };
+  return { kind: 'idle', label: TAIL_LABEL[tail] };
 }
 
 export function LogSourceBadge({
@@ -57,9 +60,14 @@ export function LogSourceBadge({
  */
 export function ErrorsChip({
   vm,
-}: Readonly<{ vm: Pick<DeploymentLogsViewModel, "errorCount" | "errorsOnly" | "toggleErrorsOnly" | "supportedFilters"> }>) {
+}: Readonly<{
+  vm: Pick<
+    DeploymentLogsViewModel,
+    'errorCount' | 'errorsOnly' | 'toggleErrorsOnly' | 'supportedFilters'
+  >;
+}>) {
   const label = `Errors (${vm.errorCount})`;
-  if (!vm.supportedFilters.includes("level")) {
+  if (!vm.supportedFilters.includes('level')) {
     if (vm.errorCount === 0) return null;
     return (
       <span className="deploy-logs__chip deploy-logs__chip--danger deploy-logs__chip--static">
@@ -67,13 +75,13 @@ export function ErrorsChip({
       </span>
     );
   }
-  const tone = vm.errorCount > 0 ? " deploy-logs__chip--danger" : "";
+  const tone = vm.errorCount > 0 ? ' deploy-logs__chip--danger' : '';
   return (
     <button
       aria-pressed={vm.errorsOnly}
       className={`deploy-logs__chip${tone}`}
       onClick={vm.toggleErrorsOnly}
-      title={vm.errorsOnly ? "Show every line" : "Show errors only"}
+      title={vm.errorsOnly ? 'Show every line' : 'Show errors only'}
       type="button"
     >
       {label}
@@ -115,23 +123,35 @@ function ProviderNotices({
   providerLabel,
 }: Readonly<{ vm: DeploymentLogsViewModel; providerLabel: string }>) {
   if (vm.rateLimitedUntil !== null) {
-    return <RateLimitNotice providerLabel={providerLabel} until={vm.rateLimitedUntil} />;
+    return (
+      <RateLimitNotice
+        providerLabel={providerLabel}
+        until={vm.rateLimitedUntil}
+      />
+    );
   }
-  if (vm.source !== "unavailable") return null;
+  if (vm.source !== 'unavailable') return null;
   if (isRateLimitReason(vm.reason)) {
     return (
       <p className="deploy-logs__notice" role="status">
-        {LEGACY_RATE_LIMIT_TEXT}{" "}
-        <button className="deploy-logs__older-button" onClick={vm.restart} type="button">
+        {LEGACY_RATE_LIMIT_TEXT}{' '}
+        <button
+          className="deploy-logs__older-button"
+          onClick={vm.restart}
+          type="button"
+        >
           Retry
         </button>
       </p>
     );
   }
   return (
-    <p className="deploy-logs__notice deploy-logs__notice--danger" role="status">
-      <strong>{providerLabel} logs are unavailable.</strong>{" "}
-      {vm.reason ?? "The provider did not answer."}
+    <p
+      className="deploy-logs__notice deploy-logs__notice--danger"
+      role="status"
+    >
+      <strong>{providerLabel} logs are unavailable.</strong>{' '}
+      {vm.reason ?? 'The provider did not answer.'}
     </p>
   );
 }
@@ -146,23 +166,34 @@ function LogNotices({
   return (
     <>
       <ProviderNotices providerLabel={providerLabel} vm={vm} />
-      {vm.source === "simulated" && vm.reason ? (
+      {vm.source === 'simulated' && vm.reason ? (
         <p className="deploy-logs__notice" role="status">
           Simulated lines from the local mock, not {providerLabel}: {vm.reason}
         </p>
       ) : null}
       {!vm.atLive ? (
         <p className="deploy-logs__notice" role="status">
-          Showing older lines; new ones are held back.{" "}
-          <button className="deploy-logs__older-button" onClick={vm.restart} type="button">
+          Showing older lines; new ones are held back.{' '}
+          <button
+            className="deploy-logs__older-button"
+            onClick={vm.restart}
+            type="button"
+          >
             Back to live
           </button>
         </p>
       ) : null}
-      {vm.error && vm.status === "ready" ? (
-        <p className="deploy-logs__notice deploy-logs__notice--danger" role="alert">
-          {vm.error}{" "}
-          <button className="deploy-logs__older-button" onClick={vm.restart} type="button">
+      {vm.error && vm.status === 'ready' ? (
+        <p
+          className="deploy-logs__notice deploy-logs__notice--danger"
+          role="alert"
+        >
+          {vm.error}{' '}
+          <button
+            className="deploy-logs__older-button"
+            onClick={vm.restart}
+            type="button"
+          >
             Retry
           </button>
         </p>
@@ -172,22 +203,25 @@ function LogNotices({
 }
 
 function emptyText(vm: DeploymentLogsViewModel): string {
-  if (vm.errorsOnly) return "No errors in this range.";
-  if (vm.search.trim()) return "No lines match this search.";
-  return "No log lines in this range yet.";
+  if (vm.errorsOnly) return 'No errors in this range.';
+  if (vm.search.trim()) return 'No lines match this search.';
+  return 'No log lines in this range yet.';
 }
 
 function LogBodyState({ vm }: Readonly<{ vm: DeploymentLogsViewModel }>) {
-  if (vm.status === "error") {
+  if (vm.status === 'error') {
     return (
       <div className="deploy-logs__frame">
-        <p className="deploy-logs__state deploy-logs__state--error" role="alert">
+        <p
+          className="deploy-logs__state deploy-logs__state--error"
+          role="alert"
+        >
           {vm.error}
         </p>
       </div>
     );
   }
-  const text = vm.status === "ready" ? emptyText(vm) : "Loading logs…";
+  const text = vm.status === 'ready' ? emptyText(vm) : 'Loading logs…';
   return (
     <div className="deploy-logs__frame">
       <p className="deploy-logs__state">{text}</p>
@@ -209,8 +243,8 @@ export function LogBody({
   providerLabel: string;
   label: string;
 }>) {
-  const hasLines = vm.status === "ready" && vm.lines.length > 0;
-  const silent = vm.source === "unavailable" && !hasLines;
+  const hasLines = vm.status === 'ready' && vm.lines.length > 0;
+  const silent = vm.source === 'unavailable' && !hasLines;
   return (
     <>
       <LogNotices providerLabel={providerLabel} vm={vm} />

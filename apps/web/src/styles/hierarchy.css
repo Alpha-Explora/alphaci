@@ -48,7 +48,6 @@
 }
 
 @media (max-width: 860px) {
-
   .side-tabs-list {
     flex-direction: row;
     overflow-x: auto;
@@ -64,4 +63,3 @@
     display: none;
   }
 }
-

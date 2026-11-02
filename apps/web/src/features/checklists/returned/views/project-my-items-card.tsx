@@ -1,32 +1,49 @@
-"use client";
+'use client';
 
-import "./returned.css";
-import "./progress.css";
+import './returned.css';
+import './progress.css';
 
-import { useEffect, useRef, type ReactNode } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useEffect, useRef, type ReactNode } from 'react';
+import { useReducedMotion } from 'framer-motion';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
-import { IterationNextStepView, useNextIterationViewModel, type StartIterationViewModel } from "../../iteration";
-import { SeverityBadge, StatusPill } from "../../items";
+import {
+  IterationNextStepView,
+  useNextIterationViewModel,
+  type StartIterationViewModel,
+} from '../../iteration';
+import { SeverityBadge, StatusPill } from '../../items';
 import {
   bucketCopy,
   feedItemKey,
   MY_ITEMS_BUCKETS,
   projectMyItemsCount,
-} from "../../model/project-run-rules";
-import type { MyItemsBucket, ProjectFeedItem } from "../../model/project-run-types";
-import { canSetProgress, itemProgressEditable, kindCopy } from "../../model/requirement-rules";
-import { useItemProgressViewModel, type ItemProgressViewModel } from "../view-models/use-item-progress-view-model";
+} from '../../model/project-run-rules';
+import type {
+  MyItemsBucket,
+  ProjectFeedItem,
+} from '../../model/project-run-types';
+import {
+  canSetProgress,
+  itemProgressEditable,
+  kindCopy,
+} from '../../model/requirement-rules';
+import {
+  useItemProgressViewModel,
+  type ItemProgressViewModel,
+} from '../view-models/use-item-progress-view-model';
 import {
   useProjectMyItemsViewModel,
   type ProjectMyItemsViewModel,
-} from "../view-models/use-project-my-items-view-model";
-import { ProgressControl } from "./progress-control";
-import { QaFindings } from "./qa-findings";
+} from '../view-models/use-project-my-items-view-model';
+import { ProgressControl } from './progress-control';
+import { QaFindings } from './qa-findings';
 
-function Detail({ label, text }: Readonly<{ label: string; text: string | null }>) {
+function Detail({
+  label,
+  text,
+}: Readonly<{ label: string; text: string | null }>) {
   if (!text) return null;
   return (
     <div className="qa-returned__detail">
@@ -55,7 +72,9 @@ function FeedRow({
       <div className="qa-returned__head">
         <span className="qa-returned__title">{item.title}</span>
         <span className="pmi-states">
-          {runItem?.defectSeverity && bucket === "returned" ? <SeverityBadge severity={runItem.defectSeverity} /> : null}
+          {runItem?.defectSeverity && bucket === 'returned' ? (
+            <SeverityBadge severity={runItem.defectSeverity} />
+          ) : null}
           {runItem ? <StatusPill status={runItem.status} /> : null}
         </span>
       </div>
@@ -64,7 +83,7 @@ function FeedRow({
         <span>{requirement.name}</span>
       </p>
       <Detail label="Acceptance criteria" text={item.acceptanceCriteria} />
-      {bucket === "returned" ? <QaFindings runItem={runItem} /> : null}
+      {bucket === 'returned' ? <QaFindings runItem={runItem} /> : null}
       <ProgressControl
         item={item}
         editable={itemProgressEditable(item, canSet)}
@@ -92,10 +111,20 @@ function Bucket({
   const copy = bucketCopy(bucket);
   const titleId = `pmi-${bucket}`;
   return (
-    <section className="qa-mine__section" aria-labelledby={titleId} data-bucket={bucket}>
+    <section
+      className="qa-mine__section"
+      aria-labelledby={titleId}
+      data-bucket={bucket}
+    >
       <h3 className="qa-mine__section-title" id={titleId}>
         {copy.title}
-        <span className={bucket === "returned" ? "qa-returned__count" : "qa-mine__count"}>{entries.length}</span>
+        <span
+          className={
+            bucket === 'returned' ? 'qa-returned__count' : 'qa-mine__count'
+          }
+        >
+          {entries.length}
+        </span>
       </h3>
       <p className="qa-mine__lede">{copy.lede}</p>
       <ul className="qa-returned__list">
@@ -127,7 +156,10 @@ function useFocusWhenReady(requested: boolean, ready: boolean) {
     const node = headingRef.current;
     if (!node) return;
     done.current = true;
-    node.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "center" });
+    node.scrollIntoView({
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      block: 'center',
+    });
     node.focus({ preventScroll: true });
   }, [requested, ready, prefersReducedMotion]);
   return headingRef;
@@ -137,10 +169,15 @@ function CardPlaceholder({
   state,
   list,
   fallback,
-}: Readonly<{ state: Exclude<CardState, "list">; list: ProjectMyItemsViewModel; fallback: ReactNode }>) {
-  if (state === "fallback") return <>{fallback}</>;
-  if (state === "loading") return <div className="hier-skeleton pmi-skeleton" aria-hidden="true" />;
-  if (state === "hidden") return null;
+}: Readonly<{
+  state: Exclude<CardState, 'list'>;
+  list: ProjectMyItemsViewModel;
+  fallback: ReactNode;
+}>) {
+  if (state === 'fallback') return <>{fallback}</>;
+  if (state === 'loading')
+    return <div className="hier-skeleton pmi-skeleton" aria-hidden="true" />;
+  if (state === 'hidden') return null;
   return (
     <div className="qa-returned-error" role="alert">
       <p>{list.error}</p>
@@ -156,9 +193,18 @@ function Buckets({
   ready,
   canSet,
   progress,
-}: Readonly<{ list: ProjectMyItemsViewModel; ready: boolean; canSet: boolean; progress: ItemProgressViewModel }>) {
+}: Readonly<{
+  list: ProjectMyItemsViewModel;
+  ready: boolean;
+  canSet: boolean;
+  progress: ItemProgressViewModel;
+}>) {
   if (!ready) {
-    return <p className="qa-mine__lede">Nothing here yet. Items appear once a Product owner writes requirements.</p>;
+    return (
+      <p className="qa-mine__lede">
+        Nothing here yet. Items appear once a Product owner writes requirements.
+      </p>
+    );
   }
   return (
     <>
@@ -190,24 +236,26 @@ function CardContent({
   canSet: boolean;
   progress: ItemProgressViewModel;
 }>) {
-  if (next.step.kind !== "none") return <IterationNextStepView vm={next} />;
-  return <Buckets list={list} ready={ready} canSet={canSet} progress={progress} />;
+  if (next.step.kind !== 'none') return <IterationNextStepView vm={next} />;
+  return (
+    <Buckets list={list} ready={ready} canSet={canSet} progress={progress} />
+  );
 }
 
-type CardState = "hidden" | "fallback" | "loading" | "error" | "list";
+type CardState = 'hidden' | 'fallback' | 'loading' | 'error' | 'list';
 
 /** Which face the card shows: nothing, the older card, a skeleton, an error, or the list. */
 function cardState(
   enabled: boolean,
-  status: ProjectMyItemsViewModel["status"],
+  status: ProjectMyItemsViewModel['status'],
   ready: boolean,
   hideWhenEmpty: boolean,
 ): CardState {
-  if (!enabled || status === "idle") return "hidden";
-  if (status === "unavailable") return "fallback";
-  if (status === "error") return "error";
-  if (status === "loading") return hideWhenEmpty ? "hidden" : "loading";
-  return !ready && hideWhenEmpty ? "hidden" : "list";
+  if (!enabled || status === 'idle') return 'hidden';
+  if (status === 'unavailable') return 'fallback';
+  if (status === 'error') return 'error';
+  if (status === 'loading') return hideWhenEmpty ? 'hidden' : 'loading';
+  return !ready && hideWhenEmpty ? 'hidden' : 'list';
 }
 
 /**
@@ -239,29 +287,53 @@ export function ProjectMyItemsCard({
 }>) {
   const list = useProjectMyItemsViewModel({ deliveryProjectId, enabled });
   const progress = useItemProgressViewModel({ onSaved: list.applyItem });
-  const next = useNextIterationViewModel({ deliveryProjectId, enabled, appRole });
-  const waiting = next.step.kind !== "none";
+  const next = useNextIterationViewModel({
+    deliveryProjectId,
+    enabled,
+    appRole,
+  });
+  const waiting = next.step.kind !== 'none';
   const total = projectMyItemsCount(list.data);
-  const ready = list.status === "ready" && total > 0;
+  const ready = list.status === 'ready' && total > 0;
   const canSet = canSetProgress(appRole);
   const headingRef = useFocusWhenReady(highlightRequested, ready);
 
-  const state = cardState(enabled, list.status, ready || waiting, hideWhenEmpty);
-  if (state !== "list") return <CardPlaceholder state={state} list={list} fallback={fallback} />;
+  const state = cardState(
+    enabled,
+    list.status,
+    ready || waiting,
+    hideWhenEmpty,
+  );
+  if (state !== 'list')
+    return <CardPlaceholder state={state} list={list} fallback={fallback} />;
   return (
     <section
-      className={`qa-returned qa-mine${highlightRequested ? " qa-mine--focused" : ""}`}
-      data-tone={list.data.returned.length > 0 ? "returned" : "checks"}
+      className={`qa-returned qa-mine${highlightRequested ? ' qa-mine--focused' : ''}`}
+      data-tone={list.data.returned.length > 0 ? 'returned' : 'checks'}
       aria-labelledby="pmi-title"
     >
       <header className="qa-returned__header">
-        <h2 ref={headingRef} tabIndex={-1} className="qa-returned__heading" id="pmi-title">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="qa-returned__heading"
+          id="pmi-title"
+        >
           Progress
           {waiting ? null : <span className="qa-mine__count">{total}</span>}
         </h2>
-        <p className="qa-mine__lede">Where every story stands: to do, in progress, sent back by QA, and ready for QA testing.</p>
+        <p className="qa-mine__lede">
+          Where every story stands: to do, in progress, sent back by QA, and
+          ready for QA testing.
+        </p>
       </header>
-      <CardContent list={list} next={next} ready={ready} canSet={canSet} progress={progress} />
+      <CardContent
+        list={list}
+        next={next}
+        ready={ready}
+        canSet={canSet}
+        progress={progress}
+      />
     </section>
   );
 }

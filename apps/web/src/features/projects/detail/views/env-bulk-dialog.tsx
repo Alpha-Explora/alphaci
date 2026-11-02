@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import type { ValidateEnvVarsResponse } from "@/features/projects";
-import { bulkValidationSummary } from "../model/env-panel-rules";
+import type { ValidateEnvVarsResponse } from '@/features/projects';
+import { bulkValidationSummary } from '../model/env-panel-rules';
 
 export function EnvBulkDialog({
   activeTargetId,
@@ -25,7 +25,7 @@ export function EnvBulkDialog({
   saving: boolean;
 }>) {
   const validateDisabled =
-    saving || loading || !activeTargetId || bulkEnvText.trim() === "";
+    saving || loading || !activeTargetId || bulkEnvText.trim() === '';
 
   return (
     <section
@@ -44,7 +44,7 @@ export function EnvBulkDialog({
         aria-label="Bulk env text"
         value={bulkEnvText}
         onChange={(event) => onTextChange(event.target.value)}
-        placeholder={"DATABASE_URL=...\nAPI_KEY=..."}
+        placeholder={'DATABASE_URL=...\nAPI_KEY=...'}
         rows={6}
       />
       <button

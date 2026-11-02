@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
-import { groupsRepository } from "../../data/groups-repository";
+import { groupsRepository } from '../../data/groups-repository';
 import type {
   GroupMember,
   InternalUserDirectoryEntry,
-} from "../../model/groups-types";
+} from '../../model/groups-types';
 import {
   describeAddMemberError,
   describeDirectoryError,
   emptyDirectoryMessage,
-} from "../../model/member-directory-rules";
+} from '../../model/member-directory-rules';
 
 /** `idle` while closed or once someone is picked; the list is not needed. */
-export type MemberDirectoryStatus = "idle" | "loading" | "ready" | "error";
+export type MemberDirectoryStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 export const DIRECTORY_SEARCH_DEBOUNCE_MS = 250;
 
 interface Lookup {
   /** The group and search this answer belongs to. */
   key: string;
-  status: "loading" | "ready" | "error";
+  status: 'loading' | 'ready' | 'error';
   results: InternalUserDirectoryEntry[];
   error: string | null;
 }
@@ -32,7 +32,7 @@ interface LookupView {
   error: string | null;
 }
 
-const IDLE: LookupView = { status: "idle", results: [], error: null };
+const IDLE: LookupView = { status: 'idle', results: [], error: null };
 
 /**
  * What the picker shows for the search in the box. Until the answer for
@@ -46,9 +46,13 @@ function deriveLookup(
 ): LookupView {
   if (!active) return IDLE;
   if (lookup === null || lookup.key !== key) {
-    return { status: "loading", results: lookup?.results ?? [], error: null };
+    return { status: 'loading', results: lookup?.results ?? [], error: null };
   }
-  return { status: lookup.status, results: lookup.results, error: lookup.error };
+  return {
+    status: lookup.status,
+    results: lookup.results,
+    error: lookup.error,
+  };
 }
 
 /**
@@ -63,21 +67,25 @@ function useDirectoryLookup(active: boolean, groupId: string, term: string) {
   useEffect(() => {
     if (!active) return;
     let stale = false;
-    const settle = (next: Omit<Lookup, "key">) => {
+    const settle = (next: Omit<Lookup, 'key'>) => {
       if (!stale) setLookup({ key, ...next });
     };
     const handle = window.setTimeout(() => {
       setLookup((previous) => ({
         key,
-        status: "loading",
+        status: 'loading',
         results: previous?.results ?? [],
         error: null,
       }));
       groupsRepository
         .eligibleMembers(groupId, term)
-        .then((results) => settle({ status: "ready", results, error: null }))
+        .then((results) => settle({ status: 'ready', results, error: null }))
         .catch((cause: unknown) =>
-          settle({ status: "error", results: [], error: describeDirectoryError(cause) }),
+          settle({
+            status: 'error',
+            results: [],
+            error: describeDirectoryError(cause),
+          }),
         );
     }, DIRECTORY_SEARCH_DEBOUNCE_MS);
     return () => {
@@ -91,7 +99,7 @@ function useDirectoryLookup(active: boolean, groupId: string, term: string) {
 }
 
 function emptyMessageFor(view: LookupView, term: string): string | null {
-  return view.status === "ready" && view.results.length === 0
+  return view.status === 'ready' && view.results.length === 0
     ? emptyDirectoryMessage(term)
     : null;
 }
@@ -125,7 +133,7 @@ export function useAddMemberViewModel({
   onAdded: (member: GroupMember) => void;
   onClose: () => void;
 }): AddMemberViewModel {
-  const [search, setSearchValue] = useState("");
+  const [search, setSearchValue] = useState('');
   const [selectedUser, setSelectedUser] =
     useState<InternalUserDirectoryEntry | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -139,7 +147,7 @@ export function useAddMemberViewModel({
   );
 
   const close = useCallback(() => {
-    setSearchValue("");
+    setSearchValue('');
     setSelectedUser(null);
     setSubmitError(null);
     clear();
@@ -148,7 +156,9 @@ export function useAddMemberViewModel({
 
   const submit = useCallback(async () => {
     if (!selectedUser?.hasAccount || !selectedUser.id) {
-      setSubmitError("Select an organization member who has an AlphaCI account.");
+      setSubmitError(
+        'Select an organization member who has an AlphaCI account.',
+      );
       return;
     }
     setSubmitting(true);
@@ -183,7 +193,7 @@ export function useAddMemberViewModel({
     },
     clearSelection: () => {
       setSelectedUser(null);
-      setSearchValue("");
+      setSearchValue('');
     },
     error: submitError ?? view.error,
     canSubmit: selectedUser?.hasAccount === true,

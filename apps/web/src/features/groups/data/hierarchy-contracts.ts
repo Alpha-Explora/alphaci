@@ -19,7 +19,7 @@ import type {
   DeploymentProvisioningRequest,
   DeploymentProvisioningResult,
   WorkspaceRole,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 
 /**
  * Create capability (systems, delivery projects, repositories) is governed by
@@ -28,8 +28,10 @@ import type {
  * per-group membership tier (see isGroupManagerRole). Mirrors the backend
  * HierarchyAccessService.assertCanCreate* gate (2026-07-14).
  */
-export function isGlobalCreatorRole(appRole: AppRole | null | undefined): boolean {
-  return appRole === "admin" || appRole === "lead";
+export function isGlobalCreatorRole(
+  appRole: AppRole | null | undefined,
+): boolean {
+  return appRole === 'admin' || appRole === 'lead';
 }
 
 /* ── Role wire values + display labels (plan §2.1) ─────────────────────────── */
@@ -49,7 +51,7 @@ export type GroupRole = WorkspaceRole;
  * Roles a lead may grant when adding someone — ownership only moves via
  * transfer, so 'admin' is never grantable.
  */
-export type GrantableRole = Exclude<GroupRole, "admin">; // 'delegated_lead' | 'member' | 'viewer'
+export type GrantableRole = Exclude<GroupRole, 'admin'>; // 'delegated_lead' | 'member' | 'viewer'
 
 /**
  * Display-label mapping (plan §2.1). The UI must render these labels, never the
@@ -58,10 +60,10 @@ export type GrantableRole = Exclude<GroupRole, "admin">; // 'delegated_lead' | '
  * `admin` here = top membership tier ("Lead"), NOT identity.platform_admins.
  */
 export const GROUP_ROLE_LABELS: Record<GroupRole, string> = {
-  admin: "Lead",
-  delegated_lead: "Delegated lead",
-  member: "Member",
-  viewer: "Viewer",
+  admin: 'Lead',
+  delegated_lead: 'Delegated lead',
+  member: 'Member',
+  viewer: 'Viewer',
 };
 
 /**
@@ -76,14 +78,14 @@ export function memberRoleLabel(member: {
   appRole?: AppRole | null;
 }): string {
   switch (member.appRole) {
-    case "admin":
-      return "Admin";
-    case "lead":
-      return "Product owner";
-    case "qa":
-      return "QA Team";
-    case "member":
-      return "Developer";
+    case 'admin':
+      return 'Admin';
+    case 'lead':
+      return 'Product owner';
+    case 'qa':
+      return 'QA Team';
+    case 'member':
+      return 'Developer';
     default:
       return GROUP_ROLE_LABELS[member.role];
   }
@@ -101,69 +103,53 @@ export const GROUP_ROLE_RANK: Record<GroupRole, number> = {
  * Manager tier (top tier 'admin' aka "Lead" | 'delegated_lead') may create/manage;
  * member|viewer are read-only.
  */
-export function isGroupManagerRole(role: GroupRole | null | undefined): boolean {
-  return role === "admin" || role === "delegated_lead";
+export function isGroupManagerRole(
+  role: GroupRole | null | undefined,
+): boolean {
+  return role === 'admin' || role === 'delegated_lead';
 }
 
 /* ── Enum strings — copied verbatim from plan §2.2 ─────────────────────────── */
 
-export type GroupStatus = "active" | "archived";
+export type GroupStatus = 'active' | 'archived';
 /**
  * 'invited' is retained only for historical rows — members are added directly,
  * so nothing produces it now.
  */
-export type GroupMemberStatus = "invited" | "active" | "removed";
+export type GroupMemberStatus = 'invited' | 'active' | 'removed';
 
-export type SystemStatus = "active" | "archived";
-export type DeliveryProjectStatus = "active" | "archived";
-export type RepositoryStatus = "pending" | "active" | "archived";
+export type SystemStatus = 'active' | 'archived';
+export type DeliveryProjectStatus = 'active' | 'archived';
+export type RepositoryStatus = 'pending' | 'active' | 'archived';
 
-export type AssignmentDesiredState = "assigned" | "unassigned";
+export type AssignmentDesiredState = 'assigned' | 'unassigned';
 export type AssignmentEffectiveState =
-  | "unknown"
-  | "pending"
-  | "active"
-  | "revoking"
-  | "revoked"
-  | "failed";
+  'unknown' | 'pending' | 'active' | 'revoking' | 'revoked' | 'failed';
 /** Denormalized convenience field the UI badges bind to (plan §1.6). */
-export type AssignmentStatus = "pending" | "active" | "revoked" | "failed";
+export type AssignmentStatus = 'pending' | 'active' | 'revoked' | 'failed';
 
 export type GithubSyncState =
-  | "pending"
-  | "syncing"
-  | "verified"
-  | "failed"
-  | "drift_detected";
+  'pending' | 'syncing' | 'verified' | 'failed' | 'drift_detected';
 
-export type ConfigurationEnvironmentScope = "non_production" | "production";
-export type ConfigurationType = "variable" | "secret";
-export type ConfigurationAction = "create" | "update" | "delete";
+export type ConfigurationEnvironmentScope = 'non_production' | 'production';
+export type ConfigurationType = 'variable' | 'secret';
+export type ConfigurationAction = 'create' | 'update' | 'delete';
 export type ConfigurationApprovalState =
-  | "not_required"
-  | "pending"
-  | "approved"
-  | "rejected";
-export type ConfigurationGithubSyncState = "pending" | "synced" | "failed";
+  'not_required' | 'pending' | 'approved' | 'rejected';
+export type ConfigurationGithubSyncState = 'pending' | 'synced' | 'failed';
 
 /** Activity feed target/link discriminators (plan §2.8). */
 export type GroupActivityTargetType =
-  | "group"
-  | "system"
-  | "delivery_project"
-  | "repository"
-  | "assignment"
-  | "configuration";
+  | 'group'
+  | 'system'
+  | 'delivery_project'
+  | 'repository'
+  | 'assignment'
+  | 'configuration';
 export type GroupActivityType =
-  | "assignment"
-  | "configuration"
-  | "membership"
-  | "github";
+  'assignment' | 'configuration' | 'membership' | 'github';
 export type GroupActivityGithubLinkType =
-  | "commit"
-  | "pull_request"
-  | "workflow_run"
-  | "deployment";
+  'commit' | 'pull_request' | 'workflow_run' | 'deployment';
 
 /* ── Groups (plan §2.4) ────────────────────────────────────────────────────── */
 
@@ -288,7 +274,7 @@ export interface HierarchyRepository {
   deliveryProjectId: string;
   name: string;
   status: RepositoryStatus;
-  visibility: "private";
+  visibility: 'private';
   /** null until the paired provisioned_projects row is created/linked (plan §1.5). */
   provisionedProjectId: string | null;
   repoFullName: string | null;
@@ -309,10 +295,10 @@ export interface CreateRepositoryRequest {
   name: string;
   projectTypeId: string;
   /** The UI sends 'private'; the backend also accepts 'public', as the wizard does. */
-  visibility?: "private" | "public";
+  visibility?: 'private' | 'public';
   workflowRecipeId?: string;
   serviceName?: string;
-  repoShape?: "standalone" | "mono" | "monorepo";
+  repoShape?: 'standalone' | 'mono' | 'monorepo';
   servicePath?: string;
   nodeVersion?: string;
   coverageThreshold?: number;
@@ -322,7 +308,8 @@ export interface CreateRepositoryRequest {
 }
 
 /** What the hosting step of "Add repository" did. `skipped` = none requested. */
-export type RepositoryHostingOutcome = "provisioned" | "partial" | "failed" | "skipped";
+export type RepositoryHostingOutcome =
+  'provisioned' | 'partial' | 'failed' | 'skipped';
 
 export interface RepositoryHostingFailure {
   slot: string;
@@ -349,14 +336,14 @@ export interface CreatedRepositoryResponse extends HierarchyRepository {
 /* ── Project members (delivery-project membership + its GitHub access) ────── */
 
 /** Derived server-side from the app role: member -> developer, qa -> qa. */
-export type DeliveryProjectMemberKind = "developer" | "qa";
+export type DeliveryProjectMemberKind = 'developer' | 'qa';
 
 export interface DeliveryProjectMember {
   id: string;
   deliveryProjectId: string;
   userId: string;
   memberKind: DeliveryProjectMemberKind;
-  status: "active" | "removed";
+  status: 'active' | 'removed';
   addedBy: string | null;
   createdAt: string;
   updatedAt: string;
@@ -367,7 +354,7 @@ export interface DeliveryProjectMember {
 
 /** The GitHub side of a membership change. `stub`: nothing is granted yet. */
 export interface ProjectMemberGithubAccess {
-  syncMode: "live" | "stub";
+  syncMode: 'live' | 'stub';
   /** Repositories a grant (add) or a revoke (remove) was queued for. */
   repositoriesQueued: number;
 }
@@ -383,7 +370,7 @@ export interface ProjectMemberChangeResponse {
 
 export interface ProjectMembersSyncResponse {
   items: DeliveryProjectMember[];
-  syncMode: "live";
+  syncMode: 'live';
   repositoriesQueued: number;
 }
 
@@ -401,7 +388,7 @@ export interface RepositoryAssignment {
   desiredState: AssignmentDesiredState;
   effectiveState: AssignmentEffectiveState;
   status: AssignmentStatus;
-  accessLevel: "write";
+  accessLevel: 'write';
   assignedBy: string | null;
   createdAt: string;
   updatedAt: string;
@@ -410,7 +397,7 @@ export interface RepositoryAssignment {
 export interface CreateAssignmentRequest {
   userId: string;
   /** Defaults to 'write' — the only level the plan defines this session. */
-  accessLevel?: "write";
+  accessLevel?: 'write';
 }
 
 /**
@@ -484,7 +471,7 @@ export interface MyAssignedRepository {
   groupName: string | null;
   status: AssignmentStatus;
   effectiveState: AssignmentEffectiveState;
-  accessLevel: "write";
+  accessLevel: 'write';
   updatedAt: string;
 }
 
@@ -537,7 +524,7 @@ export interface GroupActivityResponse {
 
 /* ── Capability gate (plan §3.2) ───────────────────────────────────────────── */
 
-export type HierarchyGithubSyncMode = "stub" | "live";
+export type HierarchyGithubSyncMode = 'stub' | 'live';
 
 export interface HierarchyCapability {
   enabled: boolean;

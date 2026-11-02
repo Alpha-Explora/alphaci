@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-import { deploymentProvidersRepository } from "../data/deployment-providers-repository";
+import { deploymentProvidersRepository } from '../data/deployment-providers-repository';
 import {
   onpremHostingFrom,
   type OnpremHosting,
-} from "../model/onprem-hosting-rules";
+} from '../model/onprem-hosting-rules';
 
 /**
  * Whether the create wizard offers "On-prem host" (see OnpremHosting).
@@ -34,12 +34,12 @@ export function useOnpremHosting(options: {
         if (current) setHosting(onpremHostingFrom(providers));
       })
       .catch(() => {
-        if (current) setHosting({ status: "hidden" });
+        if (current) setHosting({ status: 'hidden' });
       });
     return () => {
       current = false;
     };
   }, [active, loaded]);
 
-  return hosting ?? { status: "hidden" };
+  return hosting ?? { status: 'hidden' };
 }

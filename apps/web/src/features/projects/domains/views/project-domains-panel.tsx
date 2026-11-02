@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useProjectDomainsViewModel } from "../view-models/use-project-domains-view-model";
-import { ProjectDomainsView } from "./project-domains-view";
+import { useProjectDomainsViewModel } from '../view-models/use-project-domains-view-model';
+import { ProjectDomainsView } from './project-domains-view';
 
 /**
  * Connected panel: owns the ViewModel so a host surface can drop domains in

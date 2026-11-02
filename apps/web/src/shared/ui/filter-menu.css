@@ -33,7 +33,7 @@
   height: 0.42rem;
   border-right: 1.5px solid currentcolor;
   border-bottom: 1.5px solid currentcolor;
-  content: "";
+  content: '';
   transform: rotate(45deg) translateY(-0.1rem);
 }
 
@@ -97,7 +97,7 @@
   color: var(--text-primary);
 }
 
-.filter-menu__option[aria-pressed="true"] {
+.filter-menu__option[aria-pressed='true'] {
   border-color: var(--border-brand);
   background: var(--brand-light);
   color: var(--brand);

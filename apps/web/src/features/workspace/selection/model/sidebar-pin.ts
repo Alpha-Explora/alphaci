@@ -2,18 +2,18 @@
  * on hover. A per-viewer preference kept in this browser's localStorage.
  * Pure: no React, no DOM access beyond the string the boot script runs. */
 
-export const SIDEBAR_PINNED_KEY = "alphaci.sidebar.pinned";
+export const SIDEBAR_PINNED_KEY = 'alphaci.sidebar.pinned';
 
 /** Set on <html>; the stylesheet widens the rail and the page's gutter off it. */
-export const SIDEBAR_PINNED_ATTRIBUTE = "data-sidebar-pinned";
+export const SIDEBAR_PINNED_ATTRIBUTE = 'data-sidebar-pinned';
 
 /** What storage holds, as the pin. Anything but "1" (or nothing) is unpinned. */
 export function sidebarPinnedFrom(stored: string | null): boolean {
-  return stored === "1";
+  return stored === '1';
 }
 
-export function storedSidebarPinned(pinned: boolean): "1" | "0" {
-  return pinned ? "1" : "0";
+export function storedSidebarPinned(pinned: boolean): '1' | '0' {
+  return pinned ? '1' : '0';
 }
 
 /**

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
-import type { CSSProperties } from "react";
-import type { StageReport } from "../../model/runs-types";
-import { stageStatusColors, stageLabel } from "../../model/runs-presentation";
+import { motion } from 'framer-motion';
+import type { CSSProperties } from 'react';
+import type { StageReport } from '../../model/runs-types';
+import { stageStatusColors, stageLabel } from '../../model/runs-presentation';
 
 /* ── Icons ─────────────────────────────────────────────────────────────────── */
 
@@ -69,13 +69,13 @@ function SpinnerIcon({ color }: { color: string }) {
       role="status"
       aria-label="Running"
       style={{
-        display: "block",
+        display: 'block',
         width: 14,
         height: 14,
-        borderRadius: "50%",
+        borderRadius: '50%',
         border: `2px solid rgba(255,255,255,0.15)`,
         borderTopColor: color,
-        animation: "runs-spin 0.7s linear infinite",
+        animation: 'runs-spin 0.7s linear infinite',
         flexShrink: 0,
       }}
     />
@@ -88,18 +88,18 @@ function StageIcon({
   status,
   iconColor,
 }: {
-  status: StageReport["status"];
+  status: StageReport['status'];
   iconColor: string;
 }) {
   switch (status) {
-    case "success":
+    case 'success':
       return <CheckIcon />;
-    case "failure":
+    case 'failure':
       return <XIcon />;
-    case "running":
+    case 'running':
       return <SpinnerIcon color={iconColor} />;
-    case "cancelled":
-    case "pending":
+    case 'cancelled':
+    case 'pending':
       return <ClockIcon />;
   }
 }
@@ -115,7 +115,7 @@ interface ConnectorProps {
 export function StageConnector({ active, reduced, delay }: ConnectorProps) {
   return (
     <div
-      className={`runs-connector ${active ? "runs-connector--active" : ""}`}
+      className={`runs-connector ${active ? 'runs-connector--active' : ''}`}
       aria-hidden="true"
     >
       {!reduced && active ? (
@@ -156,12 +156,12 @@ export function StageNode({
   return (
     <motion.button
       type="button"
-      className={`runs-stage-node ${isExpanded ? "runs-stage-node--expanded" : ""}`}
-      aria-label={`${label} stage: ${stage.status}. ${isExpanded ? "Collapse" : "Expand"} details`}
+      className={`runs-stage-node ${isExpanded ? 'runs-stage-node--expanded' : ''}`}
+      aria-label={`${label} stage: ${stage.status}. ${isExpanded ? 'Collapse' : 'Expand'} details`}
       aria-expanded={isExpanded}
       onClick={onToggle}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
+        if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onToggle();
         }
@@ -173,10 +173,10 @@ export function StageNode({
       whileTap={reduced ? undefined : { scale: 0.99 }}
       style={
         {
-          "--stage-ring": colors.ring,
-          "--stage-bg": colors.bg,
-          "--stage-glow": colors.glow,
-          "--stage-icon": colors.iconColor,
+          '--stage-ring': colors.ring,
+          '--stage-bg': colors.bg,
+          '--stage-glow': colors.glow,
+          '--stage-icon': colors.iconColor,
         } as CSSProperties
       }
     >

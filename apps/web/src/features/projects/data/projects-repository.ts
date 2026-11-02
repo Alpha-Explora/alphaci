@@ -1,4 +1,4 @@
-import { getProjectOptions } from "@/features/workflows";
+import { getProjectOptions } from '@/features/workflows';
 import {
   addProjectDomain,
   createWorkflowUpdatePullRequest as requestWorkflowUpdatePullRequest,
@@ -27,7 +27,7 @@ import {
   syncProjectSnapshot,
   updateDeploymentTarget as requestUpdateDeploymentTarget,
   verifyProjectDomain,
-} from "../detail/data/projects-api";
+} from '../detail/data/projects-api';
 
 import type {
   DeploymentTarget,
@@ -51,16 +51,16 @@ import type {
   WorkflowSettings,
   WorkflowSettingsPreviewResponse,
   WorkflowUpdatePullRequestResponse,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 import type {
   AddCustomDomainRequest,
   CustomDomain,
   ProjectOverviewResponse,
   ProjectPreviewsResponse,
   RemoveCustomDomainResponse,
-} from "../model/projects-types";
-import { normaliseProjectFolder } from "../detail/model/project-folder-rules";
-import type { ProjectFolderSummary } from "../detail/model/project-folder-types";
+} from '../model/projects-types';
+import { normaliseProjectFolder } from '../detail/model/project-folder-rules';
+import type { ProjectFolderSummary } from '../detail/model/project-folder-types';
 
 /* The only place in this domain that performs I/O. View-models call these;
  * views never do. */

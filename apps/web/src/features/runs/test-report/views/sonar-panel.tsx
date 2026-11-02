@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import "./test-report.css";
+import './test-report.css';
 
-import { useId } from "react";
+import { useId } from 'react';
 
 import {
   hasSonarDetail,
@@ -12,7 +12,7 @@ import {
   sonarMeasures,
   sonarSeverityLabel,
   type SonarResult,
-} from "../model/sonar-rules";
+} from '../model/sonar-rules';
 
 /**
  * What SonarCloud said about a Quality run, in the product: the gate, each
@@ -20,7 +20,9 @@ import {
  * issues on new code with the file and line to fix. Nothing when SonarCloud
  * reported nothing (no credentials, or a pipeline that does not collect it).
  */
-export function SonarPanel({ sonar }: Readonly<{ sonar: SonarResult | undefined }>) {
+export function SonarPanel({
+  sonar,
+}: Readonly<{ sonar: SonarResult | undefined }>) {
   const headingId = useId();
   if (!hasSonarDetail(sonar)) return null;
   const gate = sonarGate(sonar);
@@ -38,11 +40,15 @@ export function SonarPanel({ sonar }: Readonly<{ sonar: SonarResult | undefined 
           {gate.label}
         </span>
       </div>
-      {gate.blockedReason ? <p className="tr-sonar__blocked">{gate.blockedReason}</p> : null}
+      {gate.blockedReason ? (
+        <p className="tr-sonar__blocked">{gate.blockedReason}</p>
+      ) : null}
       {conditions.length > 0 ? (
         <ul className="tr-sonar__conditions" aria-label="Failed conditions">
           {conditions.map((condition, index) => (
-            <li key={`${String(index)}-${condition.metric}`}>{sonarCondition(condition)}</li>
+            <li key={`${String(index)}-${condition.metric}`}>
+              {sonarCondition(condition)}
+            </li>
           ))}
         </ul>
       ) : null}
@@ -66,10 +72,17 @@ export function SonarPanel({ sonar }: Readonly<{ sonar: SonarResult | undefined 
               const where = sonarIssueWhere(issue);
               const severity = sonarSeverityLabel(issue.severity);
               return (
-                <li key={`${String(index)}-${issue.rule}`} className="tr-sonar__issue">
-                  <span className="tr-sonar__issue-message">{issue.message}</span>
+                <li
+                  key={`${String(index)}-${issue.rule}`}
+                  className="tr-sonar__issue"
+                >
+                  <span className="tr-sonar__issue-message">
+                    {issue.message}
+                  </span>
                   <span className="tr-sonar__issue-meta">
-                    {[severity, where, issue.rule].filter((part): part is string => Boolean(part)).join(" · ")}
+                    {[severity, where, issue.rule]
+                      .filter((part): part is string => Boolean(part))
+                      .join(' · ')}
                   </span>
                 </li>
               );

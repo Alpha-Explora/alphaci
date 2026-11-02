@@ -1,4 +1,4 @@
-import { ApiError } from "@/shared/api/request";
+import { ApiError } from '@/shared/api/request';
 import {
   createGitHubLoginUrl as createLoginUrl,
   completeOnboarding as requestCompleteOnboarding,
@@ -10,14 +10,14 @@ import {
   restoreAccount as requestRestoreAccount,
   startFreshAccount as requestStartFreshAccount,
   warmupBackend as requestWarmupBackend,
-} from "@/features/auth/session/data/auth-api";
+} from '@/features/auth/session/data/auth-api';
 import type {
   AuthMeResponse,
   PendingAccountResponse,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 
-import type { AuthSession } from "../model/auth-types";
-import type { PendingAccount } from "../model/pending-account";
+import type { AuthSession } from '../model/auth-types';
+import type { PendingAccount } from '../model/pending-account';
 
 function mapSession(dto: AuthMeResponse): AuthSession {
   return {

@@ -6,12 +6,12 @@ import {
   type QaProjectReport,
   type QaProjectReportDefect,
   type QaProjectReportRepository,
-} from "./project-report-types";
-import type { ProjectQaRun } from "./project-run-types";
-import { normalizeProjectRun } from "./project-run-rules";
-import { sanitizeFilenamePart } from "./qa-report-rules";
-import type { QaReportSignoffEntry, QaReportSummary } from "./qa-report-types";
-import { record, records, text } from "./wire-readers";
+} from './project-report-types';
+import type { ProjectQaRun } from './project-run-types';
+import { normalizeProjectRun } from './project-run-rules';
+import { sanitizeFilenamePart } from './qa-report-rules';
+import type { QaReportSignoffEntry, QaReportSummary } from './qa-report-types';
+import { record, records, text } from './wire-readers';
 
 const RUN_ID_PREFIX_LENGTH = 7;
 
@@ -23,7 +23,7 @@ function repositoryOf(raw: unknown): QaProjectReportRepository | null {
   return {
     projectId,
     repoFullName,
-    name: text(value.name) ?? (repoFullName.split("/").pop() || repoFullName),
+    name: text(value.name) ?? (repoFullName.split('/').pop() || repoFullName),
     headSha: text(value.headSha),
   };
 }
@@ -35,13 +35,22 @@ function listOf<T>(value: unknown): T[] {
 function repositoriesOf(value: unknown): QaProjectReportRepository[] {
   return records(value)
     .map(repositoryOf)
-    .filter((repository): repository is QaProjectReportRepository => repository !== null);
+    .filter(
+      (repository): repository is QaProjectReportRepository =>
+        repository !== null,
+    );
 }
 
 /** The report's project, or the run's own when the report names none. */
-function projectOf(value: unknown, run: ProjectQaRun): QaProjectReport["project"] {
+function projectOf(
+  value: unknown,
+  run: ProjectQaRun,
+): QaProjectReport['project'] {
   const project = record(value);
-  return { id: text(project?.id) ?? run.deliveryProjectId, name: text(project?.name) ?? run.deliveryProjectName };
+  return {
+    id: text(project?.id) ?? run.deliveryProjectId,
+    name: text(project?.name) ?? run.deliveryProjectName,
+  };
 }
 
 /**
@@ -56,7 +65,7 @@ export function normalizeProjectReport(value: unknown): QaProjectReport | null {
   if (!raw || !run || !summary) return null;
   return {
     schemaVersion: QA_PROJECT_REPORT_SCHEMA_VERSION,
-    generatedAt: text(raw.generatedAt) ?? "",
+    generatedAt: text(raw.generatedAt) ?? '',
     frozen: raw.frozen === true,
     project: projectOf(raw.project, run),
     repositories: repositoriesOf(raw.repositories),
@@ -72,15 +81,19 @@ export function normalizeProjectReport(value: unknown): QaProjectReport | null {
  * the same way (project name, first seven of the run id), so a report saves
  * under one name whichever side produced it.
  */
-export function projectReportBaseName(report: Pick<QaProjectReport, "project" | "run">): string {
+export function projectReportBaseName(
+  report: Pick<QaProjectReport, 'project' | 'run'>,
+): string {
   const project = sanitizeFilenamePart(report.project.name);
-  const run = sanitizeFilenamePart(report.run.id.slice(0, RUN_ID_PREFIX_LENGTH));
+  const run = sanitizeFilenamePart(
+    report.run.id.slice(0, RUN_ID_PREFIX_LENGTH),
+  );
   return `QA-Report-${project}-${run}`;
 }
 
 export function projectReportFilename(
-  report: Pick<QaProjectReport, "project" | "run">,
-  extension: "json" | "md" | "pdf" | "xlsx",
+  report: Pick<QaProjectReport, 'project' | 'run'>,
+  extension: 'json' | 'md' | 'pdf' | 'xlsx',
 ): string {
   return `${projectReportBaseName(report)}.${extension}`;
 }
@@ -96,6 +109,10 @@ export function projectReportPageHref(
 }
 
 /** One covered repository with the head it captured, "logistics2cicd-fe @ 708e8d3". */
-export function repositoryHeadLabel(repository: Pick<QaProjectReportRepository, "name" | "headSha">): string {
-  return repository.headSha ? `${repository.name} @ ${repository.headSha.slice(0, RUN_ID_PREFIX_LENGTH)}` : repository.name;
+export function repositoryHeadLabel(
+  repository: Pick<QaProjectReportRepository, 'name' | 'headSha'>,
+): string {
+  return repository.headSha
+    ? `${repository.name} @ ${repository.headSha.slice(0, RUN_ID_PREFIX_LENGTH)}`
+    : repository.name;
 }

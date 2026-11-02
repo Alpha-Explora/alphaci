@@ -1,14 +1,17 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { checklistsRepository } from "../../data/checklists-repository";
-import { checklistErrorMessage, sortChecklists } from "../../model/checklist-rules";
+import { checklistsRepository } from '../../data/checklists-repository';
+import {
+  checklistErrorMessage,
+  sortChecklists,
+} from '../../model/checklist-rules';
 import type {
   ChecklistsStatus,
   QaChecklist,
   QaChecklistListResponse,
-} from "../../model/checklist-types";
+} from '../../model/checklist-types';
 
 export interface ProjectChecklistsViewModel {
   status: ChecklistsStatus;
@@ -25,11 +28,12 @@ interface LoadResult {
   error: string | null;
 }
 
-const LOAD_ERROR = "Checklists for this project could not be loaded. Try again in a moment.";
+const LOAD_ERROR =
+  'Checklists for this project could not be loaded. Try again in a moment.';
 
 function loadStatus(result: LoadResult | null): ChecklistsStatus {
-  if (!result) return "loading";
-  return result.error ? "error" : "ready";
+  if (!result) return 'loading';
+  return result.error ? 'error' : 'ready';
 }
 
 /** The loaded list, sorted like the team page so the two read in the same order. */
@@ -55,11 +59,16 @@ export function useProjectChecklistsViewModel(options: {
     checklistsRepository
       .listForProject(projectId)
       .then((data) => {
-        if (requestId === requestRef.current) setResult({ key, data, error: null });
+        if (requestId === requestRef.current)
+          setResult({ key, data, error: null });
       })
       .catch((cause: unknown) => {
         if (requestId !== requestRef.current) return;
-        setResult({ key, data: null, error: checklistErrorMessage(cause, LOAD_ERROR) });
+        setResult({
+          key,
+          data: null,
+          error: checklistErrorMessage(cause, LOAD_ERROR),
+        });
       });
   }, [enabled, projectId, key]);
 

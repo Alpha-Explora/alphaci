@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo } from 'react';
 
 import type {
   DeploymentProvisioningEnvSet,
@@ -11,7 +11,7 @@ import type {
   EnvOwnershipMode,
   CreatableEnvProvider,
   ProviderConnection,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 import {
   addVariableGroup,
   blankEnvSet,
@@ -29,13 +29,13 @@ import {
   updateEnvVar,
   updateVariableGroupAt,
   variableGroupsForValue,
-} from "../model/deployment-provisioning-rules";
-import { useProviderConnections } from "../view-models/use-provider-connections";
-import { DeploymentTargetCard } from "./deployment-target-card";
+} from '../model/deployment-provisioning-rules';
+import { useProviderConnections } from '../view-models/use-provider-connections';
+import { DeploymentTargetCard } from './deployment-target-card';
 
 interface DeploymentProvisioningSetupProps {
   repoShape: string;
-  selectedProjectKind?: "frontend" | "backend";
+  selectedProjectKind?: 'frontend' | 'backend';
   /**
    * Ownership mode this deployment offers (from capabilities). BYO is
    * archived, so this defaults to 'flowci_managed': deployments centralize on
@@ -78,10 +78,14 @@ function useByoConnectionDefaults(input: {
   onChange: (value: DeploymentProvisioningRequest) => void;
 }) {
   const { targets, value, onChange } = input;
-  const needsProviderConnections = targets.some((target) => target.ownershipMode === "byo");
-  const { connections, loading } = useProviderConnections(needsProviderConnections);
+  const needsProviderConnections = targets.some(
+    (target) => target.ownershipMode === 'byo',
+  );
+  const { connections, loading } = useProviderConnections(
+    needsProviderConnections,
+  );
   const activeConnections = useMemo(
-    () => connections.filter((connection) => connection.status === "active"),
+    () => connections.filter((connection) => connection.status === 'active'),
     [connections],
   );
 
@@ -95,7 +99,14 @@ function useByoConnectionDefaults(input: {
       return { ...target, providerConnectionId: nextId };
     });
     if (changed) onChange({ ...value, targets: nextTargets });
-  }, [activeConnections, loading, needsProviderConnections, onChange, targets, value]);
+  }, [
+    activeConnections,
+    loading,
+    needsProviderConnections,
+    onChange,
+    targets,
+    value,
+  ]);
 
   return { activeConnections, loading };
 }
@@ -104,9 +115,13 @@ function defaultConnectionId(
   target: DeploymentProvisioningTargetRequest,
   connections: ProviderConnection[],
 ): string | undefined {
-  if (target.ownershipMode !== "byo") return target.providerConnectionId;
-  const matching = connections.filter((connection) => connection.provider === target.provider);
-  if (matching.some((connection) => connection.id === target.providerConnectionId)) {
+  if (target.ownershipMode !== 'byo') return target.providerConnectionId;
+  const matching = connections.filter(
+    (connection) => connection.provider === target.provider,
+  );
+  if (
+    matching.some((connection) => connection.id === target.providerConnectionId)
+  ) {
     return target.providerConnectionId;
   }
   return matching[0]?.id;
@@ -120,7 +135,7 @@ function defaultConnectionId(
 export function DeploymentProvisioningSetup({
   repoShape,
   selectedProjectKind,
-  ownershipMode = "flowci_managed",
+  ownershipMode = 'flowci_managed',
   value,
   onChange,
 }: Readonly<DeploymentProvisioningSetupProps>) {
@@ -134,7 +149,10 @@ export function DeploymentProvisioningSetup({
   const connections = useByoConnectionDefaults({ targets, value, onChange });
 
   return (
-    <div className="deployment-provisioning-setup" data-testid="setup-hosted-targets">
+    <div
+      className="deployment-provisioning-setup"
+      data-testid="setup-hosted-targets"
+    >
       {targets.map((target, targetIndex) => (
         <DeploymentTargetCard
           key={`${target.slot}-${targetIndex}`}
@@ -166,33 +184,43 @@ function SharedDefaults({
   value: DeploymentProvisioningRequest;
   onChange: (value: DeploymentProvisioningRequest) => void;
 }>) {
-  const targetProviders = [...new Set(targets.map((target) => target.provider))];
+  const targetProviders = [
+    ...new Set(targets.map((target) => target.provider)),
+  ];
   const variableGroups = variableGroupsForValue(value, targetProviders);
   // A provider's groups stay visible even when no target uses it any more, so
   // editing a target never makes groups silently disappear.
   const displayProviders = [
-    ...new Set([...targetProviders, ...variableGroups.map((group) => group.provider)]),
+    ...new Set([
+      ...targetProviders,
+      ...variableGroups.map((group) => group.provider),
+    ]),
   ];
   const targetOptions: TargetOption[] = targets.map((target) => ({
     key: targetBranchKey(target),
     label: targetBranchLabel(target),
     provider: target.provider,
   }));
-  const groupVarCount = variableGroups.reduce((total, group) => total + countVars(group.env), 0);
+  const groupVarCount = variableGroups.reduce(
+    (total, group) => total + countVars(group.env),
+    0,
+  );
 
   return (
     <details className="wizard-shared-defaults">
       <summary>
         <span className="wizard-shared-defaults__title">Shared defaults</span>
         <span className="wizard-shared-defaults__meta">
-          Optional · {variableGroups.length} group{variableGroups.length === 1 ? "" : "s"},{" "}
-          {groupVarCount} variable{groupVarCount === 1 ? "" : "s"}
+          Optional · {variableGroups.length} group
+          {variableGroups.length === 1 ? '' : 's'}, {groupVarCount} variable
+          {groupVarCount === 1 ? '' : 's'}
         </span>
       </summary>
       <div className="wizard-shared-defaults__body">
         <div className="env-section-header">
           <p className="wizard-field__hint">
-            Use this only when the same key should be sent to more than one target.
+            Use this only when the same key should be sent to more than one
+            target.
           </p>
           <div className="deployment-variable-actions">
             {targetProviders.map((provider) => (
@@ -200,7 +228,9 @@ function SharedDefaults({
                 type="button"
                 className="ghost-button deployment-variable-panel__button"
                 key={provider}
-                onClick={() => onChange(addVariableGroup(value, variableGroups, provider))}
+                onClick={() =>
+                  onChange(addVariableGroup(value, variableGroups, provider))
+                }
               >
                 Add {providerLabel(provider)} group
               </button>
@@ -211,7 +241,9 @@ function SharedDefaults({
           <ProviderGroups
             key={provider}
             provider={provider}
-            providerTargets={targetOptions.filter((option) => option.provider === provider)}
+            providerTargets={targetOptions.filter(
+              (option) => option.provider === provider,
+            )}
             variableGroups={variableGroups}
             value={value}
             onChange={onChange}
@@ -247,7 +279,8 @@ function ProviderGroups({
           <strong>{label} shared defaults</strong>
           <p className="wizard-field__hint">
             Available to {providerTargets.length} {label} target
-            {providerTargets.length === 1 ? "" : "s"} unless you narrow the scope.
+            {providerTargets.length === 1 ? '' : 's'} unless you narrow the
+            scope.
           </p>
         </div>
       </div>
@@ -286,24 +319,36 @@ interface GroupPanelProps {
 }
 
 function scopedTargetBranches(
-  appliesTo: "all" | "selected",
+  appliesTo: 'all' | 'selected',
   group: DeploymentProvisioningVariableGroup,
   providerTargetKeys: string[],
 ): string[] | undefined {
-  if (appliesTo !== "selected") return undefined;
+  if (appliesTo !== 'selected') return undefined;
   if (!group.targetBranches?.length) return providerTargetKeys;
-  return group.targetBranches.filter((targetKey) => providerTargetKeys.includes(targetKey));
+  return group.targetBranches.filter((targetKey) =>
+    providerTargetKeys.includes(targetKey),
+  );
 }
 
 function VariableGroupPanel(props: Readonly<GroupPanelProps>) {
-  const { group, groupIndex, onlyGroup, provider, variableGroups, value, onChange } = props;
+  const {
+    group,
+    groupIndex,
+    onlyGroup,
+    provider,
+    variableGroups,
+    value,
+    onChange,
+  } = props;
   const envSet = group.env[0] ?? blankEnvSet();
   const sharedVars = envVarsForDisplay(envSet);
   const label = providerLabel(provider);
   const update = (next: DeploymentProvisioningVariableGroup) =>
     onChange(updateVariableGroupAt(value, variableGroups, groupIndex, next));
-  const updateEnv = (next: DeploymentProvisioningEnvSet) => update({ ...group, env: [next] });
-  const blankOnly = sharedVars.length === 1 && !sharedVars[0]?.key && !sharedVars[0]?.value;
+  const updateEnv = (next: DeploymentProvisioningEnvSet) =>
+    update({ ...group, env: [next] });
+  const blankOnly =
+    sharedVars.length === 1 && !sharedVars[0]?.key && !sharedVars[0]?.value;
 
   return (
     <div className="deployment-variable-panel">
@@ -321,12 +366,19 @@ function VariableGroupPanel(props: Readonly<GroupPanelProps>) {
           className="env-var-row__remove env-var-remove"
           aria-label={`Remove variable group ${groupIndex + 1}`}
           disabled={onlyGroup && blankOnly}
-          onClick={() => onChange(removeVariableGroup(value, variableGroups, groupIndex))}
+          onClick={() =>
+            onChange(removeVariableGroup(value, variableGroups, groupIndex))
+          }
         >
           <RemoveIcon />
         </button>
       </div>
-      <GroupScopeRow {...props} envSet={envSet} sharedVars={sharedVars} updateEnv={updateEnv} />
+      <GroupScopeRow
+        {...props}
+        envSet={envSet}
+        sharedVars={sharedVars}
+        updateEnv={updateEnv}
+      />
       <GroupTargets {...props} />
       {sharedVars.map((variable, variableIndex) => (
         <GroupVariableRow
@@ -369,14 +421,18 @@ function GroupScopeRow({
         <span>Where used</span>
         <select
           aria-label={`Variable group scope ${groupIndex + 1}`}
-          value={group.appliesTo ?? "all"}
+          value={group.appliesTo ?? 'all'}
           onChange={(event) => {
-            const appliesTo = event.target.value as "all" | "selected";
+            const appliesTo = event.target.value as 'all' | 'selected';
             onChange(
               updateVariableGroupAt(value, variableGroups, groupIndex, {
                 ...group,
                 appliesTo,
-                targetBranches: scopedTargetBranches(appliesTo, group, providerTargetKeys),
+                targetBranches: scopedTargetBranches(
+                  appliesTo,
+                  group,
+                  providerTargetKeys,
+                ),
               }),
             );
           }}
@@ -390,7 +446,9 @@ function GroupScopeRow({
         <select
           aria-label={`Variable group environment ${groupIndex + 1}`}
           value={envSet.lane}
-          onChange={(event) => updateEnv({ ...envSet, lane: event.target.value as EnvLane })}
+          onChange={(event) =>
+            updateEnv({ ...envSet, lane: event.target.value as EnvLane })
+          }
         >
           {lanes.map((lane) => (
             <option key={lane} value={lane}>
@@ -402,7 +460,12 @@ function GroupScopeRow({
       <button
         type="button"
         className="ghost-button deployment-variable-panel__button"
-        onClick={() => updateEnv({ ...envSet, vars: [...sharedVars, { key: "", value: "" }] })}
+        onClick={() =>
+          updateEnv({
+            ...envSet,
+            vars: [...sharedVars, { key: '', value: '' }],
+          })
+        }
       >
         Add key
       </button>
@@ -427,28 +490,34 @@ function GroupTargets({
       aria-label={`Variable group targets ${groupIndex + 1}`}
     >
       <span>
-        {group.appliesTo === "selected" ? `Selected ${label} targets` : `Every ${label} target`}
+        {group.appliesTo === 'selected'
+          ? `Selected ${label} targets`
+          : `Every ${label} target`}
       </span>
       <div className="deployment-flow-branches">
         {providerTargets.map((option) => (
           <button
             type="button"
             className={[
-              "deployment-flow-branch",
-              "deployment-flow-branch--button",
-              targetScopeIncludes(group, option.key) ? "active" : "",
+              'deployment-flow-branch',
+              'deployment-flow-branch--button',
+              targetScopeIncludes(group, option.key) ? 'active' : '',
             ]
               .filter(Boolean)
-              .join(" ")}
+              .join(' ')}
             key={option.key}
-            disabled={group.appliesTo !== "selected"}
+            disabled={group.appliesTo !== 'selected'}
             onClick={() =>
               onChange(
                 updateVariableGroupAt(
                   value,
                   variableGroups,
                   groupIndex,
-                  toggleGroupTargetBranch(group, option.key, providerTargetKeys),
+                  toggleGroupTargetBranch(
+                    group,
+                    option.key,
+                    providerTargetKeys,
+                  ),
                 ),
               )
             }
@@ -485,7 +554,11 @@ function GroupVariableRow({
           aria-label={`Group variable key ${position}`}
           value={variable.key}
           onChange={(event) =>
-            updateEnv(updateEnvVar(envSet, variableIndex, { key: event.target.value.toUpperCase() }))
+            updateEnv(
+              updateEnvVar(envSet, variableIndex, {
+                key: event.target.value.toUpperCase(),
+              }),
+            )
           }
           placeholder="DATABASE_URL"
         />
@@ -498,7 +571,11 @@ function GroupVariableRow({
           autoComplete="off"
           value={variable.value}
           onChange={(event) =>
-            updateEnv(updateEnvVar(envSet, variableIndex, { value: event.target.value }))
+            updateEnv(
+              updateEnvVar(envSet, variableIndex, {
+                value: event.target.value,
+              }),
+            )
           }
           placeholder="value"
         />
@@ -509,8 +586,13 @@ function GroupVariableRow({
         aria-label={`Remove group variable ${position}`}
         disabled={sharedVars.length === 1 && !variable.key && !variable.value}
         onClick={() => {
-          const nextVars = sharedVars.filter((_, currentIndex) => currentIndex !== variableIndex);
-          updateEnv({ ...envSet, vars: nextVars.length ? nextVars : [{ key: "", value: "" }] });
+          const nextVars = sharedVars.filter(
+            (_, currentIndex) => currentIndex !== variableIndex,
+          );
+          updateEnv({
+            ...envSet,
+            vars: nextVars.length ? nextVars : [{ key: '', value: '' }],
+          });
         }}
       >
         <RemoveIcon />

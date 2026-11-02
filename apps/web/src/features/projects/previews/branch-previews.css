@@ -427,7 +427,7 @@
   background: var(--layer-1-hover);
 }
 
-.deploy-envs__tab[aria-selected="true"] {
+.deploy-envs__tab[aria-selected='true'] {
   border-color: var(--border-brand);
   background: var(--layer-1);
   color: var(--text-primary);
@@ -584,12 +584,16 @@ a.deploy-card__sha:hover {
 
 /* Pinned, so a row without a pull request or a live address keeps its
    other cells under their neighbours'. */
-.active-branch__branch { grid-column: 1; }
+.active-branch__branch {
+  grid-column: 1;
+}
 .active-branch__status {
   grid-column: 2;
   white-space: nowrap;
 }
-.active-branch__commit { grid-column: 3; }
+.active-branch__commit {
+  grid-column: 3;
+}
 
 .active-branch + .active-branch {
   border-top: 1px solid var(--border-subtle);

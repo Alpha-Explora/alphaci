@@ -1,7 +1,7 @@
-import { disabledCapabilities } from "../../../../../../src/features/capabilities/current/data/capabilities-repository";
+import { disabledCapabilities } from '../../../../../../src/features/capabilities/current/data/capabilities-repository';
 
-describe("capability fallback", () => {
-  it("disables optional surfaces without exposing a backend failure", () => {
+describe('capability fallback', () => {
+  it('disables optional surfaces without exposing a backend failure', () => {
     const fallback = disabledCapabilities();
 
     expect(fallback.envProvisioning.enabled).toBe(false);
@@ -17,6 +17,9 @@ describe("capability fallback", () => {
     expect(fallback.workspaces.enabled).toBe(false);
     expect(fallback.auditEvents.enabled).toBe(false);
     expect(fallback.notifications.enabled).toBe(false);
-    expect(fallback.hierarchy).toEqual({ enabled: false, githubSyncMode: "stub" });
+    expect(fallback.hierarchy).toEqual({
+      enabled: false,
+      githubSyncMode: 'stub',
+    });
   });
 });

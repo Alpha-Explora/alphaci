@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { projectsRepository } from "../../data/projects-repository";
-import type { ProjectStatus } from "../../model/projects-types";
+import { projectsRepository } from '../../data/projects-repository';
+import type { ProjectStatus } from '../../model/projects-types';
 import type {
   AppRole,
   DeploymentTarget,
   DeploymentTargetActionsResponse,
   UpdateDeploymentTargetRequest,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 import {
   canReinstallDeploymentSecrets,
   emptyToNull,
@@ -17,9 +17,13 @@ import {
   reinstallSecretsSuccessMessage,
   targetDetachMessage,
   targetSyncMessage,
-} from "../model/project-detail-tab-rules";
-import { workspacePermissionErrorMessage } from "../model/workspace-permission-errors";
-import { resumeDoneMessage, rollbackDoneMessage, withRollbackHold } from "../model/deploy-rollback-rules";
+} from '../model/project-detail-tab-rules';
+import { workspacePermissionErrorMessage } from '../model/workspace-permission-errors';
+import {
+  resumeDoneMessage,
+  rollbackDoneMessage,
+  withRollbackHold,
+} from '../model/deploy-rollback-rules';
 
 export interface DeploymentTargetsViewModel {
   status: ProjectStatus;
@@ -68,8 +72,15 @@ export function useDeploymentTargetsViewModel(options: {
   /** Reads the deploy history again after a rollback or a resume changed what is live. */
   onDeploysChanged?: () => void;
 }): DeploymentTargetsViewModel {
-  const { projectId, targets, appRole, onTargetChanged, onDetached, onDeploysChanged } = options;
-  const [status, setStatus] = useState<ProjectStatus>("ready");
+  const {
+    projectId,
+    targets,
+    appRole,
+    onTargetChanged,
+    onDetached,
+    onDeploysChanged,
+  } = options;
+  const [status, setStatus] = useState<ProjectStatus>('ready');
   const [message, setMessage] = useState<string | null>(null);
   const [signInHref, setSignInHref] = useState<string | null>(null);
   const [savingTargetId, setSavingTargetId] = useState<string | null>(null);
@@ -80,7 +91,9 @@ export function useDeploymentTargetsViewModel(options: {
   const [reinstallingTargetId, setReinstallingTargetId] = useState<
     string | null
   >(null);
-  const [rollingBackTargetId, setRollingBackTargetId] = useState<string | null>(null);
+  const [rollingBackTargetId, setRollingBackTargetId] = useState<string | null>(
+    null,
+  );
   const [targetActions, setTargetActions] = useState<
     Record<string, DeploymentTargetActionsResponse>
   >({});
@@ -104,7 +117,10 @@ export function useDeploymentTargetsViewModel(options: {
         .targetActions(projectId, target.id)
         .then((response) => {
           if (!active) return;
-          setTargetActions((current) => ({ ...current, [target.id]: response }));
+          setTargetActions((current) => ({
+            ...current,
+            [target.id]: response,
+          }));
         })
         .catch(() => {
           // Leave it un-cached: the button just stays hidden for this target.
@@ -121,7 +137,7 @@ export function useDeploymentTargetsViewModel(options: {
   ): Promise<DeploymentTarget | null> {
     setSavingTargetId(targetId);
     setMessage(null);
-    setStatus("loading");
+    setStatus('loading');
     try {
       const updatedTarget = await projectsRepository.updateDeploymentTarget(
         projectId,
@@ -129,14 +145,17 @@ export function useDeploymentTargetsViewModel(options: {
         trimmedTargetValues(values),
       );
       onTargetChanged(updatedTarget);
-      setMessage("Target metadata updated.");
-      setStatus("ready");
+      setMessage('Target metadata updated.');
+      setStatus('ready');
       return updatedTarget;
     } catch (error) {
       setMessage(
-        workspacePermissionErrorMessage(error, "Unable to update target metadata."),
+        workspacePermissionErrorMessage(
+          error,
+          'Unable to update target metadata.',
+        ),
       );
-      setStatus("error");
+      setStatus('error');
       return null;
     } finally {
       setSavingTargetId(null);
@@ -148,7 +167,7 @@ export function useDeploymentTargetsViewModel(options: {
   ): Promise<DeploymentTarget | null> {
     setSyncingTargetId(target.id);
     setMessage(null);
-    setStatus("loading");
+    setStatus('loading');
     try {
       const response = await projectsRepository.syncDeploymentTarget(
         projectId,
@@ -156,13 +175,16 @@ export function useDeploymentTargetsViewModel(options: {
       );
       onTargetChanged(response.target);
       setMessage(targetSyncMessage(response));
-      setStatus("ready");
+      setStatus('ready');
       return response.target;
     } catch (error) {
       setMessage(
-        workspacePermissionErrorMessage(error, "Unable to sync target metadata."),
+        workspacePermissionErrorMessage(
+          error,
+          'Unable to sync target metadata.',
+        ),
       );
-      setStatus("error");
+      setStatus('error');
       return null;
     } finally {
       setSyncingTargetId(null);
@@ -175,7 +197,7 @@ export function useDeploymentTargetsViewModel(options: {
   ): Promise<boolean> {
     setDetachingTargetId(target.id);
     setMessage(null);
-    setStatus("loading");
+    setStatus('loading');
     try {
       const response = await projectsRepository.detachDeploymentTarget(
         projectId,
@@ -184,13 +206,16 @@ export function useDeploymentTargetsViewModel(options: {
       );
       onDetached(target.id);
       setMessage(targetDetachMessage(response, target));
-      setStatus("ready");
+      setStatus('ready');
       return true;
     } catch (error) {
       setMessage(
-        workspacePermissionErrorMessage(error, "Unable to detach deployment target."),
+        workspacePermissionErrorMessage(
+          error,
+          'Unable to detach deployment target.',
+        ),
       );
-      setStatus("error");
+      setStatus('error');
       return false;
     } finally {
       setDetachingTargetId(null);
@@ -201,20 +226,20 @@ export function useDeploymentTargetsViewModel(options: {
     setReinstallingTargetId(target.id);
     setMessage(null);
     setSignInHref(null);
-    setStatus("loading");
+    setStatus('loading');
     try {
       const response = await projectsRepository.reinstallDeploymentSecrets(
         projectId,
         target.id,
       );
       setMessage(reinstallSecretsSuccessMessage(response));
-      setStatus("ready");
+      setStatus('ready');
       return true;
     } catch (error) {
       const failure = reinstallSecretsFailure(error, projectId);
       setMessage(failure.message);
       setSignInHref(failure.signInHref);
-      setStatus("error");
+      setStatus('error');
       return false;
     } finally {
       setReinstallingTargetId(null);
@@ -229,32 +254,47 @@ export function useDeploymentTargetsViewModel(options: {
     setRollingBackTargetId(target.id);
     setMessage(null);
     try {
-      const response = await projectsRepository.rollbackDeploymentTarget(projectId, target.id, {
-        deployId: deploy.id,
-        reason: reason.trim(),
-      });
+      const response = await projectsRepository.rollbackDeploymentTarget(
+        projectId,
+        target.id,
+        {
+          deployId: deploy.id,
+          reason: reason.trim(),
+        },
+      );
       onTargetChanged(withRollbackHold(target, response.rollback));
       setMessage(rollbackDoneMessage(target, deploy.sha, response));
       onDeploysChanged?.();
       return null;
     } catch (error) {
-      return workspacePermissionErrorMessage(error, "Unable to roll back this deployment.");
+      return workspacePermissionErrorMessage(
+        error,
+        'Unable to roll back this deployment.',
+      );
     } finally {
       setRollingBackTargetId(null);
     }
   }
 
-  async function resumeDeploys(target: DeploymentTarget): Promise<string | null> {
+  async function resumeDeploys(
+    target: DeploymentTarget,
+  ): Promise<string | null> {
     setRollingBackTargetId(target.id);
     setMessage(null);
     try {
-      await projectsRepository.resumeDeploymentTargetDeploys(projectId, target.id);
+      await projectsRepository.resumeDeploymentTargetDeploys(
+        projectId,
+        target.id,
+      );
       onTargetChanged(withRollbackHold(target, null));
       setMessage(resumeDoneMessage(target));
       onDeploysChanged?.();
       return null;
     } catch (error) {
-      return workspacePermissionErrorMessage(error, "Unable to resume deploys.");
+      return workspacePermissionErrorMessage(
+        error,
+        'Unable to resume deploys.',
+      );
     } finally {
       setRollingBackTargetId(null);
     }

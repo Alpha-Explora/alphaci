@@ -1,21 +1,22 @@
-export type BuildProfile = "hosted" | "enterprise";
-export type BuildEdition = "saas" | "edu" | "enterprise" | "unknown";
+export type BuildProfile = 'hosted' | 'enterprise';
+export type BuildEdition = 'saas' | 'edu' | 'enterprise' | 'unknown';
 
 const BUILD_PROFILES = {
-  hosted: "hosted",
-  enterprise: "enterprise",
+  hosted: 'hosted',
+  enterprise: 'enterprise',
 } as const satisfies Record<BuildProfile, BuildProfile>;
 
 const BUILD_EDITIONS = {
-  saas: "saas",
-  edu: "edu",
-  enterprise: "enterprise",
-  unknown: "unknown",
+  saas: 'saas',
+  edu: 'edu',
+  enterprise: 'enterprise',
+  unknown: 'unknown',
 } as const satisfies Record<BuildEdition, BuildEdition>;
 
 function resolveBuildProfile(value: string | undefined): BuildProfile {
-  if (value === undefined || value === "") return BUILD_PROFILES.enterprise;
-  if (value === BUILD_PROFILES.hosted || value === BUILD_PROFILES.enterprise) return value;
+  if (value === undefined || value === '') return BUILD_PROFILES.enterprise;
+  if (value === BUILD_PROFILES.hosted || value === BUILD_PROFILES.enterprise)
+    return value;
   throw new Error(`Unknown build profile ${JSON.stringify(value)}`);
 }
 
@@ -31,7 +32,8 @@ function resolveBuildEdition(value: string | undefined): BuildEdition {
  * profile variable remains the source when the Next config itself loads.
  */
 export const BUILD_PROFILE = resolveBuildProfile(
-  process.env.NEXT_PUBLIC_ALPHACI_BUILD_PROFILE ?? process.env.ALPHACI_BUILD_PROFILE,
+  process.env.NEXT_PUBLIC_ALPHACI_BUILD_PROFILE ??
+    process.env.ALPHACI_BUILD_PROFILE,
 );
 
 export const BUILD_EDITION = resolveBuildEdition(

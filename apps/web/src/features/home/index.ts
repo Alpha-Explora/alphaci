@@ -7,7 +7,7 @@ export type {
   ProjectTone,
   RunStats,
   SectionStatus,
-} from "./model/home-types";
+} from './model/home-types';
 
 export {
   computeRunStats,
@@ -15,4 +15,4 @@ export {
   projectTone,
   shortRepoName,
   timeAgo,
-} from "./model/home-rules";
+} from './model/home-rules';

@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { projectsRepository } from "../../data/projects-repository";
+import { projectsRepository } from '../../data/projects-repository';
 import type {
   ProjectPreviewsResponse,
   ProjectStatus,
-} from "../../model/projects-types";
+} from '../../model/projects-types';
 
 export interface BranchPreviewsViewModel {
   previews: ProjectPreviewsResponse | null;
@@ -32,7 +32,7 @@ export function useBranchPreviewsViewModel(options: {
   const [previews, setPreviews] = useState<ProjectPreviewsResponse | null>(
     null,
   );
-  const [status, setStatus] = useState<ProjectStatus>("loading");
+  const [status, setStatus] = useState<ProjectStatus>('loading');
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
 
@@ -53,12 +53,12 @@ export function useBranchPreviewsViewModel(options: {
         if (!active || id !== req.current) return;
         setPreviews(response);
         setError(null);
-        setStatus("ready");
+        setStatus('ready');
       })
       .catch(() => {
         if (!active || id !== req.current) return;
-        setError("Could not load branch previews. Please retry.");
-        setStatus("error");
+        setError('Could not load branch previews. Please retry.');
+        setStatus('error');
       });
 
     return () => {
@@ -71,7 +71,7 @@ export function useBranchPreviewsViewModel(options: {
     status,
     error,
     reload: () => {
-      setStatus("loading");
+      setStatus('loading');
       setNonce((n) => n + 1);
     },
   };

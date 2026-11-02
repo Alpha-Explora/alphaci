@@ -58,7 +58,7 @@
   box-shadow: var(--shadow-soft);
 }
 
-.ihist-card[data-status="delivered"] {
+.ihist-card[data-status='delivered'] {
   --ihist-tone: var(--accent-violet);
 }
 
@@ -110,7 +110,7 @@
   transition: transform 160ms ease;
 }
 
-.ihist-card[data-open="true"] .ihist-card__chevron {
+.ihist-card[data-open='true'] .ihist-card__chevron {
   transform: rotate(180deg);
 }
 

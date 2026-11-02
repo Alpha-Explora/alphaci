@@ -1,1 +1,1 @@
-export { CiRunReportView as default } from "@/features/checklists/report";
+export { CiRunReportView as default } from '@/features/checklists/report';

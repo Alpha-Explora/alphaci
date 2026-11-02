@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { ProjectStatus } from "../../model/projects-types";
+import type { ProjectStatus } from '../../model/projects-types';
 import {
   addProjectBrowserTests,
   getProjectBrowserTests,
-} from "../data/project-browser-tests-api";
+} from '../data/project-browser-tests-api';
 import {
   browserTestsError,
   browserTestsVisual,
@@ -14,7 +14,7 @@ import {
   type BrowserTestsError,
   type BrowserTestsStatus,
   type BrowserTestsVisual,
-} from "../model/browser-test-rules";
+} from '../model/browser-test-rules';
 
 export interface BrowserTestsViewModel {
   /** The status read. "error" leaves the card hidden: it is an offer, not a report. */
@@ -40,10 +40,14 @@ export interface BrowserTestsViewModel {
  * is the one status here. A role refused by the server keeps its refusal on
  * screen and loses the button, rather than offering it again.
  */
-export function useBrowserTestsViewModel(options: { projectId: string }): BrowserTestsViewModel {
+export function useBrowserTestsViewModel(options: {
+  projectId: string;
+}): BrowserTestsViewModel {
   const { projectId } = options;
-  const [status, setStatus] = useState<ProjectStatus>("loading");
-  const [browserTests, setBrowserTests] = useState<BrowserTestsStatus | null>(null);
+  const [status, setStatus] = useState<ProjectStatus>('loading');
+  const [browserTests, setBrowserTests] = useState<BrowserTestsStatus | null>(
+    null,
+  );
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState<BrowserTestsAdded | null>(null);
   const [addError, setAddError] = useState<BrowserTestsError | null>(null);
@@ -55,11 +59,11 @@ export function useBrowserTestsViewModel(options: { projectId: string }): Browse
       .then((result) => {
         if (mine !== ticket.current) return;
         setBrowserTests(result);
-        setStatus("ready");
+        setStatus('ready');
       })
       .catch(() => {
         if (mine !== ticket.current) return;
-        setStatus("error");
+        setStatus('error');
       });
   }, [projectId]);
 
@@ -72,12 +76,22 @@ export function useBrowserTestsViewModel(options: { projectId: string }): Browse
       .catch((cause: unknown) => {
         const failure = browserTestsError(cause, projectId);
         setAddError(failure);
-        if (failure.kind === "forbidden") {
-          setBrowserTests((current) => (current ? { ...current, canAdd: false } : current));
+        if (failure.kind === 'forbidden') {
+          setBrowserTests((current) =>
+            current ? { ...current, canAdd: false } : current,
+          );
         }
       })
       .finally(() => setAdding(false));
   }, [adding, projectId]);
 
-  return { status, browserTests, visual: browserTestsVisual(browserTests), adding, added, addError, add };
+  return {
+    status,
+    browserTests,
+    visual: browserTestsVisual(browserTests),
+    adding,
+    added,
+    addError,
+    add,
+  };
 }

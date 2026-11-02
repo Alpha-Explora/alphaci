@@ -5,7 +5,7 @@ import {
   resetUserAppRoleToGithub,
   setUserAppRole,
   triageAdminFeedback,
-} from "@/features/admin/data/admin-api";
+} from '@/features/admin/data/admin-api';
 
 import type {
   AdminUserDetail,
@@ -13,7 +13,7 @@ import type {
   AppRole,
   FeedbackRecord,
   FeedbackStatus,
-} from "../model/admin-types";
+} from '../model/admin-types';
 
 /* The only place in this domain that performs I/O. View-models call these;
  * views never do. */
@@ -39,8 +39,8 @@ export const adminRepository = {
     return resetUserAppRoleToGithub(id);
   },
 
-  feedback(status: FeedbackStatus | "all"): Promise<FeedbackRecord[]> {
-    return getAdminFeedback(status === "all" ? undefined : status);
+  feedback(status: FeedbackStatus | 'all'): Promise<FeedbackRecord[]> {
+    return getAdminFeedback(status === 'all' ? undefined : status);
   },
 
   triageFeedback(id: string, status: FeedbackStatus): Promise<FeedbackRecord> {

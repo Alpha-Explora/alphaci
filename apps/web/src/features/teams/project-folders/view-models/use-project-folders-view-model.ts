@@ -1,24 +1,28 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useAuthSession } from "@/features/auth/session";
-import type { AppRole } from "@/shared/api/contracts";
-import { canManageRequirements, roleCanStartRun } from "@/features/checklists";
+import { useAuthSession } from '@/features/auth/session';
+import type { AppRole } from '@/shared/api/contracts';
+import { canManageRequirements, roleCanStartRun } from '@/features/checklists';
 import {
   canCreateRepositoryWithoutProject,
   resolveCanCreateProject,
   resolveCanCreateRepository,
-} from "@/features/groups";
+} from '@/features/groups';
 
-import { projectFoldersRepository } from "../data/project-folders-repository";
-import { findFolder, loadErrorMessage, withFeatureCounts } from "../model/project-folder-rules";
+import { projectFoldersRepository } from '../data/project-folders-repository';
+import {
+  findFolder,
+  loadErrorMessage,
+  withFeatureCounts,
+} from '../model/project-folder-rules';
 import type {
   ProjectFolder,
   ProjectFoldersSnapshot,
   ProjectFoldersStatus,
   UnfiledProject,
-} from "../model/project-folder-types";
+} from '../model/project-folder-types';
 
 export interface ProjectFoldersViewModel {
   groupId: string;
@@ -106,19 +110,26 @@ export function useProjectFoldersViewModel(options: {
   const { session } = useAuthSession();
   const appRole = session?.appRole;
 
-  const [snapshot, setSnapshot] = useState<Loaded<ProjectFoldersSnapshot> | null>(null);
+  const [snapshot, setSnapshot] =
+    useState<Loaded<ProjectFoldersSnapshot> | null>(null);
   const [failure, setFailure] = useState<Loaded<string> | null>(null);
-  const [counts, setCounts] = useState<Loaded<Record<string, number> | null> | null>(null);
+  const [counts, setCounts] = useState<Loaded<Record<
+    string,
+    number
+  > | null> | null>(null);
   // Kept with its team, like every other result here: switching teams closes
   // the open Project rather than reopening a same-id one elsewhere.
   const [selection, setSelection] = useState<Loaded<string> | null>(() =>
     initialFolderId ? { groupId, value: initialFolderId } : null,
   );
   const [nonce, setNonce] = useState(0);
-  const [featureRequest, setFeatureRequest] = useState<Loaded<NewFeatureRequest> | null>(null);
+  const [featureRequest, setFeatureRequest] =
+    useState<Loaded<NewFeatureRequest> | null>(null);
   // Feature counts read since the last load (a Feature just written or
   // archived), laid over the server's until the next load replaces them.
-  const [featureCounts, setFeatureCounts] = useState<Loaded<Record<string, number>> | null>(null);
+  const [featureCounts, setFeatureCounts] = useState<Loaded<
+    Record<string, number>
+  > | null>(null);
   const foldersRequest = useRef(0);
   const countsRequest = useRef(0);
 
@@ -199,14 +210,21 @@ export function useProjectFoldersViewModel(options: {
     status: statusOf(current, error),
     error,
     ...view,
-    canCreateProject: resolveCanCreateProject(current?.canCreateProject, appRole),
-    canCreateRepository: resolveCanCreateRepository(current?.canCreateRepository, appRole),
+    canCreateProject: resolveCanCreateProject(
+      current?.canCreateProject,
+      appRole,
+    ),
+    canCreateRepository: resolveCanCreateRepository(
+      current?.canCreateRepository,
+      appRole,
+    ),
     canCreateUnfiledRepository: canCreateRepositoryWithoutProject(appRole),
     canVerifyInQaStudio: qaChecklistsEnabled && roleCanStartRun(appRole),
     qaChecklistsEnabled,
     requirementCounts: qaChecklistsEnabled ? currentFor(counts, groupId) : null,
     appRole: appRole ?? null,
-    canManageRequirements: qaChecklistsEnabled && canManageRequirements(appRole),
+    canManageRequirements:
+      qaChecklistsEnabled && canManageRequirements(appRole),
     newFeatureRequest: currentFor(featureRequest, groupId),
     requestNewFeature,
     noteFeatureCount,
@@ -230,7 +248,9 @@ function snapshotFields(
     return { folders: [], unfiled: [], count: null, canManage: false };
   }
   return {
-    folders: featureCounts ? withFeatureCounts(current.folders, featureCounts) : current.folders,
+    folders: featureCounts
+      ? withFeatureCounts(current.folders, featureCounts)
+      : current.folders,
     unfiled: current.unfiled,
     count: current.folders.length,
     canManage: current.canManage,
@@ -242,6 +262,6 @@ function statusOf(
   current: ProjectFoldersSnapshot | null,
   error: string | null,
 ): ProjectFoldersStatus {
-  if (current) return "ready";
-  return error ? "error" : "loading";
+  if (current) return 'ready';
+  return error ? 'error' : 'loading';
 }

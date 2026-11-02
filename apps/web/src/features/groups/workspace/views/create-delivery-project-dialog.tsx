@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { createDeliveryProject, type DeliveryProject } from "@/features/groups";
-import { FormDialog } from "./primitives";
+import { createDeliveryProject, type DeliveryProject } from '@/features/groups';
+import { FormDialog } from './primitives';
 
 export function CreateDeliveryProjectDialog({
   open,
@@ -16,21 +16,21 @@ export function CreateDeliveryProjectDialog({
   onClose: () => void;
   onCreated: (deliveryProject: DeliveryProject) => void;
 }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function reset() {
-    setName("");
-    setDescription("");
+    setName('');
+    setDescription('');
     setError(null);
   }
 
   async function handleSubmit() {
     const trimmed = name.trim();
     if (!trimmed) {
-      setError("A delivery project name is required.");
+      setError('A delivery project name is required.');
       return;
     }
     setSubmitting(true);
@@ -44,7 +44,7 @@ export function CreateDeliveryProjectDialog({
       reset();
       onClose();
     } catch {
-      setError("The delivery project could not be created. Please try again.");
+      setError('The delivery project could not be created. Please try again.');
     } finally {
       setSubmitting(false);
     }

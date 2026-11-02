@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, type RefObject } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { FlowExplainer } from "@/features/guide/overview";
+import { useEffect, useRef, type RefObject } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { FlowExplainer } from '@/features/guide/overview';
 
-import { handleWelcomeModalKeyDown } from "./welcome-modal-focus";
+import { handleWelcomeModalKeyDown } from './welcome-modal-focus';
 
 export interface WelcomeModalProps {
   displayName: string;
@@ -14,21 +14,21 @@ export interface WelcomeModalProps {
 
 const FLOW_STEPS = [
   {
-    label: "Connect GitHub",
-    detail: "Install the GitHub App to grant ALPHACI access to your account.",
+    label: 'Connect GitHub',
+    detail: 'Install the GitHub App to grant ALPHACI access to your account.',
   },
   {
-    label: "Create a project",
-    detail: "Choose a repo shape, stack, and CI recipe in the Setup form.",
+    label: 'Create a project',
+    detail: 'Choose a repo shape, stack, and CI recipe in the Setup form.',
   },
   {
-    label: "We provision everything",
+    label: 'We provision everything',
     detail:
-      "ALPHACI creates the repo, branches, and commits the workflow file.",
+      'ALPHACI creates the repo, branches, and commits the workflow file.',
   },
   {
-    label: "Push and ship",
-    detail: "Open a pull request and your CI pipeline runs automatically.",
+    label: 'Push and ship',
+    detail: 'Open a pull request and your CI pipeline runs automatically.',
   },
 ] as const;
 
@@ -52,7 +52,7 @@ const panelVariants = {
     opacity: 0,
     scale: 0.97,
     y: 4,
-    transition: { duration: 0.18, ease: "easeIn" as const },
+    transition: { duration: 0.18, ease: 'easeIn' as const },
   },
 };
 
@@ -82,47 +82,49 @@ function presenceProps(
   }
   return {
     variants,
-    initial: "hidden" as const,
-    animate: "visible" as const,
-    exit: "exit" as const,
+    initial: 'hidden' as const,
+    animate: 'visible' as const,
+    exit: 'exit' as const,
   };
 }
 
-function WelcomeCloseButton({ onDismiss }: Readonly<{ onDismiss: () => void }>) {
+function WelcomeCloseButton({
+  onDismiss,
+}: Readonly<{ onDismiss: () => void }>) {
   return (
     <button
       type="button"
       aria-label="Close welcome dialog"
       onClick={onDismiss}
       style={{
-        position: "absolute",
-        top: "1rem",
-        right: "1rem",
-        background: "transparent",
-        border: "1px solid var(--border-soft)",
-        borderRadius: "0.5rem",
-        width: "2rem",
-        height: "2rem",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "pointer",
-        color: "var(--text-muted)",
+        position: 'absolute',
+        top: '1rem',
+        right: '1rem',
+        background: 'transparent',
+        border: '1px solid var(--border-soft)',
+        borderRadius: '0.5rem',
+        width: '2rem',
+        height: '2rem',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        color: 'var(--text-muted)',
         transition:
-          "background 0.15s ease, border-color 0.15s ease, color 0.15s ease",
+          'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
         flexShrink: 0,
       }}
       onMouseEnter={(e) => {
         const t = e.currentTarget;
-        t.style.background = "rgba(255,255,255,0.06)";
-        t.style.borderColor = "var(--border-strong)";
-        t.style.color = "var(--text-primary)";
+        t.style.background = 'rgba(255,255,255,0.06)';
+        t.style.borderColor = 'var(--border-strong)';
+        t.style.color = 'var(--text-primary)';
       }}
       onMouseLeave={(e) => {
         const t = e.currentTarget;
-        t.style.background = "transparent";
-        t.style.borderColor = "var(--border-soft)";
-        t.style.color = "var(--text-muted)";
+        t.style.background = 'transparent';
+        t.style.borderColor = 'var(--border-soft)';
+        t.style.color = 'var(--text-muted)';
       }}
     >
       <svg
@@ -160,15 +162,15 @@ function WelcomeFlowSteps({
     <motion.ol
       aria-label="How ALPHACI works"
       variants={prefersReducedMotion ? undefined : stepListVariants}
-      initial={prefersReducedMotion ? "visible" : "hidden"}
+      initial={prefersReducedMotion ? 'visible' : 'hidden'}
       animate="visible"
       style={{
-        listStyle: "none",
+        listStyle: 'none',
         margin: 0,
         padding: 0,
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.6rem",
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.6rem',
       }}
     >
       {FLOW_STEPS.map((step, index) => (
@@ -176,29 +178,29 @@ function WelcomeFlowSteps({
           key={step.label}
           variants={prefersReducedMotion ? undefined : stepItemVariants}
           style={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: "0.75rem",
-            padding: "0.65rem 0.8rem",
-            background: "rgba(88, 166, 255, 0.04)",
-            border: "1px solid rgba(88, 166, 255, 0.1)",
-            borderRadius: "0.6rem",
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.75rem',
+            padding: '0.65rem 0.8rem',
+            background: 'rgba(88, 166, 255, 0.04)',
+            border: '1px solid rgba(88, 166, 255, 0.1)',
+            borderRadius: '0.6rem',
           }}
         >
           <span
             aria-hidden="true"
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "1.5rem",
-              height: "1.5rem",
-              borderRadius: "50%",
-              background: "rgba(88, 166, 255, 0.12)",
-              border: "1px solid rgba(88, 166, 255, 0.3)",
-              fontSize: "0.72rem",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '1.5rem',
+              height: '1.5rem',
+              borderRadius: '50%',
+              background: 'rgba(88, 166, 255, 0.12)',
+              border: '1px solid rgba(88, 166, 255, 0.3)',
+              fontSize: '0.72rem',
               fontWeight: 800,
-              color: "var(--brand)",
+              color: 'var(--brand)',
               flexShrink: 0,
             }}
           >
@@ -206,24 +208,24 @@ function WelcomeFlowSteps({
           </span>
           <div
             style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.1rem",
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.1rem',
             }}
           >
             <span
               style={{
-                fontSize: "0.88rem",
+                fontSize: '0.88rem',
                 fontWeight: 700,
-                color: "var(--text-primary)",
+                color: 'var(--text-primary)',
               }}
             >
               {step.label}
             </span>
             <span
               style={{
-                fontSize: "0.78rem",
-                color: "var(--text-secondary)",
+                fontSize: '0.78rem',
+                color: 'var(--text-secondary)',
                 lineHeight: 1.45,
               }}
             >
@@ -246,12 +248,12 @@ function WelcomeModalActions({
   onDismiss: () => void;
 }>) {
   return (
-    <footer style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+    <footer style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
       <button
         type="button"
         className="primary-button"
         onClick={onTakeTour}
-        style={{ fontSize: "0.85rem" }}
+        style={{ fontSize: '0.85rem' }}
       >
         Take the guided tour
       </button>
@@ -259,7 +261,7 @@ function WelcomeModalActions({
         type="button"
         className="ghost-button"
         onClick={onOpenGuide}
-        style={{ fontSize: "0.85rem" }}
+        style={{ fontSize: '0.85rem' }}
       >
         Explore the guide
       </button>
@@ -267,23 +269,23 @@ function WelcomeModalActions({
         type="button"
         onClick={onDismiss}
         style={{
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          fontSize: "0.82rem",
-          color: "var(--text-muted)",
-          padding: "0.45rem 0.75rem",
-          borderRadius: "0.45rem",
-          transition: "color 0.15s ease, background 0.15s ease",
-          fontFamily: "inherit",
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          fontSize: '0.82rem',
+          color: 'var(--text-muted)',
+          padding: '0.45rem 0.75rem',
+          borderRadius: '0.45rem',
+          transition: 'color 0.15s ease, background 0.15s ease',
+          fontFamily: 'inherit',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.color = "var(--text-secondary)";
-          e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+          e.currentTarget.style.color = 'var(--text-secondary)';
+          e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.color = "var(--text-muted)";
-          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.color = 'var(--text-muted)';
+          e.currentTarget.style.background = 'transparent';
         }}
       >
         Skip for now
@@ -320,73 +322,73 @@ function WelcomeModalPanel({
       {...motionProps}
       onClick={(e) => e.stopPropagation()}
       style={{
-        position: "relative",
-        background: "rgba(17, 17, 22, 0.97)",
-        border: "1px solid var(--border-strong)",
-        borderRadius: "var(--radius-card)",
+        position: 'relative',
+        background: 'rgba(17, 17, 22, 0.97)',
+        border: '1px solid var(--border-strong)',
+        borderRadius: 'var(--radius-card)',
         boxShadow:
-          "0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(88, 166, 255, 0.08)",
-        width: "100%",
+          '0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(88, 166, 255, 0.08)',
+        width: '100%',
         maxWidth: 520,
-        display: "flex",
-        flexDirection: "column",
-        gap: "1.5rem",
-        overflow: "hidden",
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.5rem',
+        overflow: 'hidden',
       }}
     >
       <div
         aria-hidden="true"
         style={{
-          position: "absolute",
+          position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
-          height: "2px",
+          height: '2px',
           background:
-            "linear-gradient(90deg, var(--brand), var(--accent-violet))",
+            'linear-gradient(90deg, var(--brand), var(--accent-violet))',
         }}
       />
 
       <div
         style={{
-          padding: "clamp(1.75rem, 4vw, 2.25rem)",
-          paddingTop: "calc(clamp(1.75rem, 4vw, 2.25rem) + 2px)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "1.5rem",
+          padding: 'clamp(1.75rem, 4vw, 2.25rem)',
+          paddingTop: 'calc(clamp(1.75rem, 4vw, 2.25rem) + 2px)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.5rem',
         }}
       >
         <WelcomeCloseButton onDismiss={onDismiss} />
 
         <header
           style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem",
-            paddingRight: "2.5rem",
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem',
+            paddingRight: '2.5rem',
           }}
         >
           <span
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.35rem",
-              fontSize: "0.72rem",
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontSize: '0.72rem',
               fontWeight: 700,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "var(--brand)",
-              width: "fit-content",
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--brand)',
+              width: 'fit-content',
             }}
           >
             <span
               aria-hidden="true"
               style={{
-                width: "6px",
-                height: "6px",
-                borderRadius: "50%",
-                background: "var(--brand)",
-                boxShadow: "0 0 6px rgba(88, 166, 255, 0.7)",
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: 'var(--brand)',
+                boxShadow: '0 0 6px rgba(88, 166, 255, 0.7)',
               }}
             />
             New here
@@ -395,33 +397,31 @@ function WelcomeModalPanel({
           <h2
             id={headingId}
             style={{
-              fontFamily: "var(--font-dash-display, inherit)",
-              fontSize: "clamp(1.45rem, 3vw, 1.85rem)",
+              fontFamily: 'var(--font-dash-display, inherit)',
+              fontSize: 'clamp(1.45rem, 3vw, 1.85rem)',
               fontWeight: 800,
-              letterSpacing: "-0.025em",
-              color: "var(--text-primary)",
+              letterSpacing: '-0.025em',
+              color: 'var(--text-primary)',
               margin: 0,
               lineHeight: 1.15,
             }}
           >
-            {"Welcome to "}
-            <span style={{ color: "var(--brand)" }}>ALPHACI</span>
-            {", "}
-            <span style={{ color: "var(--text-primary)" }}>
-              @{displayName}
-            </span>
+            {'Welcome to '}
+            <span style={{ color: 'var(--brand)' }}>ALPHACI</span>
+            {', '}
+            <span style={{ color: 'var(--text-primary)' }}>@{displayName}</span>
           </h2>
 
           <p
             style={{
               margin: 0,
-              fontSize: "clamp(0.875rem, 1.2vw, 0.93rem)",
-              color: "var(--text-secondary)",
+              fontSize: 'clamp(0.875rem, 1.2vw, 0.93rem)',
+              color: 'var(--text-secondary)',
               lineHeight: 1.6,
             }}
           >
-            From a blank slate to a GitHub repository with CI/CD in one
-            step. Here is how it works:
+            From a blank slate to a GitHub repository with CI/CD in one step.
+            Here is how it works:
           </p>
         </header>
 
@@ -429,10 +429,10 @@ function WelcomeModalPanel({
 
         <div
           style={{
-            padding: "0.9rem 1rem",
-            borderRadius: "0.7rem",
-            background: "rgba(255, 255, 255, 0.02)",
-            border: "1px solid var(--border-soft)",
+            padding: '0.9rem 1rem',
+            borderRadius: '0.7rem',
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid var(--border-soft)',
           }}
         >
           <FlowExplainer
@@ -455,7 +455,7 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const dialogRef = useRef<HTMLDivElement>(null);
-  const headingId = "welcome-modal-heading";
+  const headingId = 'welcome-modal-heading';
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -475,18 +475,18 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
     function handleKeyDown(e: KeyboardEvent) {
       handleWelcomeModalKeyDown(e, dialogRef.current, onDismiss);
     }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onDismiss]);
 
   function handleTakeTour() {
     onDismiss();
-    router.push("/workflows?tour=1");
+    router.push('/workflows?tour=1');
   }
 
   function handleOpenGuide() {
     onDismiss();
-    router.push("/guide");
+    router.push('/guide');
   }
 
   const backdrop = presenceProps(prefersReducedMotion, backdropVariants);
@@ -500,16 +500,16 @@ export function WelcomeModal({ displayName, onDismiss }: WelcomeModalProps) {
         onClick={onDismiss}
         aria-hidden="true"
         style={{
-          position: "fixed",
+          position: 'fixed',
           inset: 0,
-          background: "rgba(10, 10, 14, 0.72)",
-          backdropFilter: "blur(4px)",
-          WebkitBackdropFilter: "blur(4px)",
+          background: 'rgba(10, 10, 14, 0.72)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
           zIndex: 500,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "clamp(1rem, 4vw, 2rem)",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 'clamp(1rem, 4vw, 2rem)',
         }}
       >
         <WelcomeModalPanel

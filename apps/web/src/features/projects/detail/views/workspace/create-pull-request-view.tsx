@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useId } from "react";
+import { useId } from 'react';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 import {
   selectableBaseBranches,
   selectableHeadBranches,
-} from "../../model/pull-request-compose-rules";
-import { DiffView } from "./diff-view";
-import { WorkspaceError, WorkspaceLoading } from "./workspace-states";
+} from '../../model/pull-request-compose-rules';
+import { DiffView } from './diff-view';
+import { WorkspaceError, WorkspaceLoading } from './workspace-states';
 import {
   useCreatePullRequestViewModel,
   type BranchComparisonResponse,
   type ComposeReadiness,
   type CreatePullRequestViewModel,
   type PullRequestSummary,
-} from "../../view-models/use-create-pull-request-view-model";
+} from '../../view-models/use-create-pull-request-view-model';
 
 /**
  * Propose merging one branch into another, without leaving the product.
@@ -63,11 +63,11 @@ export function CreatePullRequestView({
         </button>
       </div>
 
-      {appRole === "qa" ? (
+      {appRole === 'qa' ? (
         <p className="ws-hint" role="status">
           QA does not open pull requests.
         </p>
-      ) : vm.status === "loading" ? (
+      ) : vm.status === 'loading' ? (
         <WorkspaceLoading rows={3} />
       ) : (
         <>
@@ -88,22 +88,18 @@ export function CreatePullRequestView({
 function PresetPicker({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
   const groupId = useId();
   if (vm.presets.length === 0) return null;
-  const busy = vm.status === "submitting";
+  const busy = vm.status === 'submitting';
 
   return (
-    <div
-      className="ws-preset"
-      role="radiogroup"
-      aria-label="Pull request type"
-    >
+    <div className="ws-preset" role="radiogroup" aria-label="Pull request type">
       {vm.presets.map((preset) => {
         const reasonId = `${groupId}-${preset.id}-reason`;
         return (
           <label
             key={preset.id}
             className="ws-preset__option"
-            data-checked={vm.preset === preset.id ? "true" : "false"}
-            data-disabled={preset.available ? "false" : "true"}
+            data-checked={vm.preset === preset.id ? 'true' : 'false'}
+            data-disabled={preset.available ? 'false' : 'true'}
           >
             <input
               type="radio"
@@ -132,19 +128,19 @@ function BranchPickers({
   vm,
   appRole,
 }: Readonly<{ vm: CreatePullRequestViewModel; appRole?: AppRole }>) {
-  const busy = vm.status === "submitting";
+  const busy = vm.status === 'submitting';
   // A preset fixes the base; Feature → Dev leaves the head to the person, and
   // Dev → UAT fixes both. Only Custom (or no presets at all, e.g. QA) is free.
-  const presetOn = vm.presets.length > 0 && vm.preset !== "custom";
+  const presetOn = vm.presets.length > 0 && vm.preset !== 'custom';
   const baseLocked = presetOn;
-  const headLocked = presetOn && vm.preset === "dev-to-uat";
+  const headLocked = presetOn && vm.preset === 'dev-to-uat';
   // `main` is never a selectable base: Hop 3 is locked to the promotion
   // engine and QA Studio, not this composer, for every role.
   const baseOptions = selectableBaseBranches(vm.branches, appRole);
   // A Developer only picks a feature branch (into dev) or dev (into uat).
   const headOptions = selectableHeadBranches(vm.branches, appRole, vm.base);
   // Swapping only does something in Custom: a preset fixes the pair.
-  const canSwap = !presetOn && appRole !== "member";
+  const canSwap = !presetOn && appRole !== 'member';
 
   return (
     <div className="ws-compose__branches">
@@ -211,16 +207,16 @@ function ComposeBody({
   vm: CreatePullRequestViewModel;
   onViewExisting: (pullNumber: number) => void;
 }>) {
-  if (vm.status === "error") {
+  if (vm.status === 'error') {
     return (
       <WorkspaceError
-        message={vm.error ?? "Something went wrong."}
+        message={vm.error ?? 'Something went wrong.'}
         onRetry={vm.retry}
       />
     );
   }
 
-  if (vm.status === "choosing") {
+  if (vm.status === 'choosing') {
     return (
       <p className="ws-hint">
         Choose the branch that has your changes to see what the pull request
@@ -229,7 +225,7 @@ function ComposeBody({
     );
   }
 
-  if (vm.status === "comparing" || !vm.compare || !vm.readiness) {
+  if (vm.status === 'comparing' || !vm.compare || !vm.readiness) {
     return <WorkspaceLoading rows={3} />;
   }
 
@@ -244,7 +240,7 @@ function ComposeBody({
         onViewExisting={onViewExisting}
       />
       <div
-        className={`ws-compose__layout${canCreate ? " ws-compose__layout--split" : ""}`}
+        className={`ws-compose__layout${canCreate ? ' ws-compose__layout--split' : ''}`}
       >
         {canCreate && <ComposeForm vm={vm} />}
         <ComparisonSummary compare={vm.compare} />
@@ -277,15 +273,15 @@ function ReadinessBanner({
   return (
     <div
       className={`ws-compose__banner ws-compose__banner--${readiness.tone}`}
-      role={readiness.tone === "blocked" ? "alert" : "status"}
+      role={readiness.tone === 'blocked' ? 'alert' : 'status'}
     >
       <span>{readiness.message}</span>
-      {action?.kind === "swap" && (
+      {action?.kind === 'swap' && (
         <button type="button" className="ws-compose__fix" onClick={onSwap}>
           Swap branches
         </button>
       )}
-      {action?.kind === "open-existing" && (
+      {action?.kind === 'open-existing' && (
         <button
           type="button"
           className="ws-compose__fix"
@@ -311,9 +307,9 @@ function ComparisonSummary({
         This pull request
       </h4>
       <p className="ws-hint">
-        {plural(comparison.totalCommits, "commit")} ·{" "}
-        {plural(comparison.files.length, "file")} changed ·{" "}
-        <span className="ws-add">+{additions}</span>{" "}
+        {plural(comparison.totalCommits, 'commit')} ·{' '}
+        {plural(comparison.files.length, 'file')} changed ·{' '}
+        <span className="ws-add">+{additions}</span>{' '}
         <span className="ws-del">−{deletions}</span>
       </p>
       {comparison.commits.length > 0 && (
@@ -333,7 +329,7 @@ function ComparisonSummary({
 }
 
 function ComposeForm({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
-  const submitting = vm.status === "submitting";
+  const submitting = vm.status === 'submitting';
 
   return (
     <form
@@ -382,7 +378,7 @@ function ComposeForm({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
           className="primary-button"
           disabled={!vm.canSubmit}
         >
-          {submitting ? "Opening…" : "Create pull request"}
+          {submitting ? 'Opening…' : 'Create pull request'}
         </button>
       </div>
 
@@ -399,5 +395,5 @@ function ComposeForm({ vm }: Readonly<{ vm: CreatePullRequestViewModel }>) {
 }
 
 function plural(count: number, noun: string): string {
-  return `${String(count)} ${noun}${count === 1 ? "" : "s"}`;
+  return `${String(count)} ${noun}${count === 1 ? '' : 's'}`;
 }

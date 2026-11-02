@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * The three states every workspace tab shares.
@@ -8,7 +8,7 @@
  * fails differently reads as three separate products.
  */
 
-import { isFailedConclusion } from "../../model/github-conclusion";
+import { isFailedConclusion } from '../../model/github-conclusion';
 
 export function WorkspaceLoading({ rows = 4 }: { rows?: number }) {
   return (
@@ -64,13 +64,13 @@ export function WorkspaceError({
 export function statusTone(
   status: string,
   conclusion: string | null,
-): "success" | "failure" | "running" | "neutral" {
-  if (status !== "completed") {
-    return status === "queued" || status === "waiting" ? "neutral" : "running";
+): 'success' | 'failure' | 'running' | 'neutral' {
+  if (status !== 'completed') {
+    return status === 'queued' || status === 'waiting' ? 'neutral' : 'running';
   }
-  if (conclusion === "success") return "success";
-  if (isFailedConclusion(conclusion)) return "failure";
-  return "neutral";
+  if (conclusion === 'success') return 'success';
+  if (isFailedConclusion(conclusion)) return 'failure';
+  return 'neutral';
 }
 
 export function StatusPill({
@@ -81,11 +81,10 @@ export function StatusPill({
   conclusion: string | null;
 }) {
   const tone = statusTone(status, conclusion);
-  const label =
-    status === "completed" ? (conclusion ?? "completed") : status;
+  const label = status === 'completed' ? (conclusion ?? 'completed') : status;
   return (
     <span className={`ws-pill ws-pill--${tone}`}>
-      {label.replace(/_/g, " ")}
+      {label.replace(/_/g, ' ')}
     </span>
   );
 }

@@ -1,58 +1,58 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-import { discoverExistingRepo, generateWorkflow } from "@/features/workflows";
-import { createProject, setupProject } from "@/features/projects";
+import { discoverExistingRepo, generateWorkflow } from '@/features/workflows';
+import { createProject, setupProject } from '@/features/projects';
 import type {
   CreateProjectResult,
   DiscoverExistingRepoResponse,
   SetupProjectResponse,
   WorkspaceSummary,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 
 // Feature barrel, never a deep path into the slice.
-import { getMyWorkspaces } from "@/features/workspace";
+import { getMyWorkspaces } from '@/features/workspace';
 
-import { useCapabilities } from "@/features/capabilities/current";
-import { repositoryRequiresProject } from "@/features/groups";
-import { useCreateProjectForm } from "./use-create-project-form";
-import { useGithubInstallations } from "./use-github-installations";
-import { useOnpremHosting } from "./use-onprem-hosting";
-import { useProjectOptionsCatalog } from "./use-project-options-catalog";
-import { useProvisionedProjects } from "./use-provisioned-projects";
-import { useWorkflowCatalog } from "./use-workflow-catalog";
-import { useWorkflowHistory } from "./use-workflow-history";
-import { useOnboardingTour } from "./use-onboarding-tour";
-import { useCurrentProjectsTour } from "./use-current-projects-tour";
-import { useCreateTarget } from "./use-create-target";
-import { useTeamProjectOptions } from "./use-team-project-options";
-import { useWizardHosting } from "./use-wizard-hosting";
-import { roleGateErrorMessage } from "../model/role-gate-rules";
-import { ALWAYS_ON_TESTS } from "../model/create-project-payload";
+import { useCapabilities } from '@/features/capabilities/current';
+import { repositoryRequiresProject } from '@/features/groups';
+import { useCreateProjectForm } from './use-create-project-form';
+import { useGithubInstallations } from './use-github-installations';
+import { useOnpremHosting } from './use-onprem-hosting';
+import { useProjectOptionsCatalog } from './use-project-options-catalog';
+import { useProvisionedProjects } from './use-provisioned-projects';
+import { useWorkflowCatalog } from './use-workflow-catalog';
+import { useWorkflowHistory } from './use-workflow-history';
+import { useOnboardingTour } from './use-onboarding-tour';
+import { useCurrentProjectsTour } from './use-current-projects-tour';
+import { useCreateTarget } from './use-create-target';
+import { useTeamProjectOptions } from './use-team-project-options';
+import { useWizardHosting } from './use-wizard-hosting';
+import { roleGateErrorMessage } from '../model/role-gate-rules';
+import { ALWAYS_ON_TESTS } from '../model/create-project-payload';
 import {
   createRepositoryBlocker,
   preselectedWorkspaceId,
   projectChoiceEntries,
   projectFeaturesBlocker,
   scopeCreatePayload,
-} from "../model/create-target-rules";
+} from '../model/create-target-rules';
 import {
   formatApiError,
   searchWithoutTab,
   type WorkflowView,
-} from "../model/workflow-studio-rules";
+} from '../model/workflow-studio-rules';
 import {
   PROJECT_NAME_TAKEN_MESSAGE,
   isProjectNameTakenError,
   projectNameForRequest,
   validateProjectName,
-} from "../model/project-name-rules";
+} from '../model/project-name-rules';
 import {
   buildGenerateWorkflowPayload,
   buildSetupExistingRepoPayload,
-} from "../model/studio-command-payloads";
+} from '../model/studio-command-payloads';
 
 /**
  * ViewModel for the Workflow Studio surface.
@@ -64,7 +64,7 @@ import {
  */
 export function useWorkflowStudioViewModel(options: {
   guest: boolean;
-  session: import("@/shared/api/contracts").AuthMeResponse | null | undefined;
+  session: import('@/shared/api/contracts').AuthMeResponse | null | undefined;
   onboardingCompleted?: boolean;
 }) {
   const { guest, session, onboardingCompleted } = options;
@@ -76,26 +76,29 @@ export function useWorkflowStudioViewModel(options: {
   // Every "create a project" link in the app (home, the `n` shortcut, /teams,
   // group pages) relies on this, with an optional &group=<id>.
   const initialView: WorkflowView =
-    searchParams.get("tab") === "setup" ? "setup" : "current";
+    searchParams.get('tab') === 'setup' ? 'setup' : 'current';
   const [activeView, setActiveView] = useState<WorkflowView>(initialView);
 
   const [isCreatingProject, setIsCreatingProject] = useState(false);
-  const [isDiscoveringExistingRepo, setIsDiscoveringExistingRepo] = useState(false);
+  const [isDiscoveringExistingRepo, setIsDiscoveringExistingRepo] =
+    useState(false);
   const [isSettingUpExistingRepo, setIsSettingUpExistingRepo] = useState(false);
-  const [createResult, setCreateResult] = useState<CreateProjectResult | null>(null);
+  const [createResult, setCreateResult] = useState<CreateProjectResult | null>(
+    null,
+  );
   const [existingRepoDiscovery, setExistingRepoDiscovery] =
     useState<DiscoverExistingRepoResponse | null>(null);
   const [existingRepoResult, setExistingRepoResult] =
     useState<SetupProjectResponse | null>(null);
-  const [setupMode, setSetupMode] = useState<"new" | "existing">("new");
-  const [existingRepoFullName, setExistingRepoFullName] = useState("");
+  const [setupMode, setSetupMode] = useState<'new' | 'existing'>('new');
+  const [existingRepoFullName, setExistingRepoFullName] = useState('');
   /**
    * Empty means "ask the repository". Discovery resolves the repo's own
    * default branch when the caller sends nothing; defaulting this to "main"
    * meant the request always carried a branch, so that lookup never ran and a
    * master repo was scanned on a branch it does not have.
    */
-  const [existingRepoBaseBranch, setExistingRepoBaseBranch] = useState("");
+  const [existingRepoBaseBranch, setExistingRepoBaseBranch] = useState('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   /**
    * Teams the caller can create in. Every project belongs to a team, so the
@@ -104,15 +107,16 @@ export function useWorkflowStudioViewModel(options: {
    * workspace no teammate could see. null means "not loaded yet".
    */
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[] | null>(null);
-  const [selectedCreateWorkspaceId, setSelectedCreateWorkspaceId] =
-    useState<string | null>(null);
+  const [selectedCreateWorkspaceId, setSelectedCreateWorkspaceId] = useState<
+    string | null
+  >(null);
 
   const createTarget = useCreateTarget({
     guest,
     workspaces,
     selectedWorkspaceId: selectedCreateWorkspaceId,
     selectWorkspace: setSelectedCreateWorkspaceId,
-    openSetup: () => setActiveView("setup"),
+    openSetup: () => setActiveView('setup'),
   });
   const linkedGroupId = createTarget.initialGroupId;
   // The team the repository goes into: a known Project's own, else the pick.
@@ -122,12 +126,13 @@ export function useWorkflowStudioViewModel(options: {
   // link the wizard asks which, from the team's own Projects.
   const appRole = session?.appRole;
   const requiresProject = !guest && repositoryRequiresProject(appRole);
-  const asksForProject = requiresProject && createTarget.linkedProjectName === null;
+  const asksForProject =
+    requiresProject && createTarget.linkedProjectName === null;
   // Read for a linked Project too: its Feature count says whether a
   // Developer may create in it yet (Features before repositories).
   const teamProjects = useTeamProjectOptions({
     groupId: createWorkspaceId,
-    enabled: requiresProject && activeView === "setup",
+    enabled: requiresProject && activeView === 'setup',
   });
   const featuresBlocker = projectFeaturesBlocker(
     createTarget.deliveryProjectIdFor(createWorkspaceId),
@@ -143,26 +148,30 @@ export function useWorkflowStudioViewModel(options: {
   const { deploymentOwnershipMode, envProvisioningEnabled } = useCapabilities();
   const github = useGithubInstallations(setStatusMessage, () => undefined);
   // "On-prem host" in the Delivery step's Hosting choice: read when the wizard opens.
-  const onpremHosting = useOnpremHosting({ guest, open: activeView === "setup" });
+  const onpremHosting = useOnpremHosting({
+    guest,
+    open: activeView === 'setup',
+  });
   const wizardHosting = useWizardHosting({
     createForm,
     envProvisioningEnabled,
     onpremHosting,
     projectCatalog,
   });
-  const { deploymentProvisioning, hosting, renderVariablesMissing } = wizardHosting;
+  const { deploymentProvisioning, hosting, renderVariablesMissing } =
+    wizardHosting;
 
   const { startTour } = useOnboardingTour({
     session: session ?? null,
     guest,
-    isSetupTabActive: activeView === "setup",
+    isSetupTabActive: activeView === 'setup',
     onboardingCompleted,
   });
 
   const { startTour: startCurrentProjectsTour } = useCurrentProjectsTour({
     session: session ?? null,
     guest,
-    isCurrentTabActive: activeView === "current",
+    isCurrentTabActive: activeView === 'current',
     onboardingCompleted,
   });
 
@@ -198,14 +207,16 @@ export function useWorkflowStudioViewModel(options: {
    * the way, so a reload lands where the person is rather than on the form.
    */
   function showProjects() {
-    setActiveView("current");
-    if (searchParams.get("tab") === null) return;
+    setActiveView('current');
+    if (searchParams.get('tab') === null) return;
     const search = searchWithoutTab(searchParams.toString());
-    router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false });
+    router.replace(search ? `${pathname}?${search}` : pathname, {
+      scroll: false,
+    });
   }
 
   function openIndividualSetup() {
-    setActiveView("setup");
+    setActiveView('setup');
   }
 
   async function handleCreateProject(
@@ -224,7 +235,11 @@ export function useWorkflowStudioViewModel(options: {
       renderVariablesMissing,
       requiresProject,
       deliveryProjectId,
-      featuresBlocker: projectFeaturesBlocker(deliveryProjectId, teamProjects.options, appRole),
+      featuresBlocker: projectFeaturesBlocker(
+        deliveryProjectId,
+        teamProjects.options,
+        appRole,
+      ),
     });
     if (blocker) {
       setStatusMessage(blocker);
@@ -232,7 +247,10 @@ export function useWorkflowStudioViewModel(options: {
     }
 
     const payloadResult = createForm.buildPayload({
-      projectName: projectNameForRequest(createForm.projectName, deliveryProjectId),
+      projectName: projectNameForRequest(
+        createForm.projectName,
+        deliveryProjectId,
+      ),
       isMicroservicesShape: projectCatalog.isMicroservicesShape,
       isMultiRepoShape: projectCatalog.isMultiRepoShape,
       repoShapeId: projectCatalog.selectedRepoShapeId,
@@ -249,7 +267,9 @@ export function useWorkflowStudioViewModel(options: {
 
     setIsCreatingProject(true);
     createForm.setProjectNameError(null);
-    setStatusMessage("Creating GitHub repository, branches, and committing workflow...");
+    setStatusMessage(
+      'Creating GitHub repository, branches, and committing workflow...',
+    );
 
     try {
       const requestPayload = scopeCreatePayload(
@@ -260,7 +280,7 @@ export function useWorkflowStudioViewModel(options: {
       const response = await createProject(requestPayload);
 
       const outputFileName =
-        response.workflowPath.split("/").at(-1) ?? response.workflowPath;
+        response.workflowPath.split('/').at(-1) ?? response.workflowPath;
 
       const result: CreateProjectResult = {
         hostAssignments: response.hostAssignments,
@@ -300,7 +320,9 @@ export function useWorkflowStudioViewModel(options: {
         createForm.setProjectNameError(PROJECT_NAME_TAKEN_MESSAGE);
         setStatusMessage(PROJECT_NAME_TAKEN_MESSAGE);
       } else {
-        setStatusMessage(roleGateErrorMessage(error, "Project creation failed"));
+        setStatusMessage(
+          roleGateErrorMessage(error, 'Project creation failed'),
+        );
       }
     } finally {
       setIsCreatingProject(false);
@@ -310,12 +332,14 @@ export function useWorkflowStudioViewModel(options: {
   async function handleDiscoverExistingRepo() {
     const repoFullName = existingRepoFullName.trim();
     if (!repoFullName) {
-      setStatusMessage("Choose a linked repository before discovery.");
+      setStatusMessage('Choose a linked repository before discovery.');
       return;
     }
 
     setIsDiscoveringExistingRepo(true);
-    setStatusMessage(`Scanning ${repoFullName} for a matching workflow recipe...`);
+    setStatusMessage(
+      `Scanning ${repoFullName} for a matching workflow recipe...`,
+    );
 
     try {
       // Blank means "let the backend choose" (dev, else uat). Sending "main"
@@ -333,7 +357,9 @@ export function useWorkflowStudioViewModel(options: {
         projectCatalog.setSelectedProjectTypeId(response.detectedProjectTypeId);
       }
       if (response.recommendedWorkflowRecipeId) {
-        projectCatalog.setSelectedWorkflowRecipeId(response.recommendedWorkflowRecipeId);
+        projectCatalog.setSelectedWorkflowRecipeId(
+          response.recommendedWorkflowRecipeId,
+        );
       }
       if (response.serviceName) {
         createForm.setServiceName(response.serviceName);
@@ -342,10 +368,15 @@ export function useWorkflowStudioViewModel(options: {
         createForm.setServicePath(response.servicePath);
       }
 
-      const detected = response.detectedProjectTypeId ?? "manual selection required";
-      setStatusMessage(`Discovery complete for ${repoFullName}. Detected: ${detected}.`);
+      const detected =
+        response.detectedProjectTypeId ?? 'manual selection required';
+      setStatusMessage(
+        `Discovery complete for ${repoFullName}. Detected: ${detected}.`,
+      );
     } catch (error) {
-      setStatusMessage(roleGateErrorMessage(error, "Repository discovery failed"));
+      setStatusMessage(
+        roleGateErrorMessage(error, 'Repository discovery failed'),
+      );
     } finally {
       setIsDiscoveringExistingRepo(false);
     }
@@ -354,11 +385,11 @@ export function useWorkflowStudioViewModel(options: {
   async function handleSetupExistingRepo() {
     const repoFullName = existingRepoFullName.trim();
     if (!repoFullName) {
-      setStatusMessage("Choose a linked repository before setting up CI/CD.");
+      setStatusMessage('Choose a linked repository before setting up CI/CD.');
       return;
     }
     if (!projectCatalog.selectedProjectTypeId) {
-      setStatusMessage("Choose a project type before setting up CI/CD.");
+      setStatusMessage('Choose a project type before setting up CI/CD.');
       return;
     }
 
@@ -404,7 +435,9 @@ export function useWorkflowStudioViewModel(options: {
         createForm.setProjectNameError(PROJECT_NAME_TAKEN_MESSAGE);
         setStatusMessage(PROJECT_NAME_TAKEN_MESSAGE);
       } else {
-        setStatusMessage(roleGateErrorMessage(error, "Existing repository setup failed"));
+        setStatusMessage(
+          roleGateErrorMessage(error, 'Existing repository setup failed'),
+        );
       }
     } finally {
       setIsSettingUpExistingRepo(false);
@@ -428,7 +461,7 @@ export function useWorkflowStudioViewModel(options: {
     }
 
     setIsCreatingProject(true);
-    setStatusMessage("Generating workflow YAML...");
+    setStatusMessage('Generating workflow YAML...');
 
     try {
       await generateWorkflow(payloadResult.payload);
@@ -438,7 +471,7 @@ export function useWorkflowStudioViewModel(options: {
         `Workflow generated for "${payloadResult.payload.serviceName}". Copy or download it from the Generated YAML History section.`,
       );
     } catch (error) {
-      setStatusMessage(formatApiError(error, "Workflow generation failed"));
+      setStatusMessage(formatApiError(error, 'Workflow generation failed'));
     } finally {
       setIsCreatingProject(false);
     }
@@ -480,9 +513,11 @@ export function useWorkflowStudioViewModel(options: {
       ? {
           status: teamProjects.status,
           options: projectChoiceEntries(teamProjects.options, appRole),
-          selectedId: createTarget.chosenProjectId ?? "",
+          selectedId: createTarget.chosenProjectId ?? '',
           onSelect: (id: string) =>
-            createTarget.chooseProject(teamProjects.options.find((option) => option.id === id) ?? null),
+            createTarget.chooseProject(
+              teamProjects.options.find((option) => option.id === id) ?? null,
+            ),
           onRetry: teamProjects.retry,
         }
       : null,
@@ -515,7 +550,11 @@ function chosenProjectClearer(createTarget: {
   projectChosen: boolean;
   chooseProject: (option: null) => void;
 }): (() => void) | null {
-  return createTarget.projectChosen ? () => createTarget.chooseProject(null) : null;
+  return createTarget.projectChosen
+    ? () => createTarget.chooseProject(null)
+    : null;
 }
 
-export type WorkflowStudioViewModel = ReturnType<typeof useWorkflowStudioViewModel>;
+export type WorkflowStudioViewModel = ReturnType<
+  typeof useWorkflowStudioViewModel
+>;

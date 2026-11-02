@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { qaAttachmentsRepository } from "../../data/qa-attachments-repository";
-import { isRunLocked } from "../../model/project-run-rules";
-import type { ProjectQaRun } from "../../model/project-run-types";
+import { qaAttachmentsRepository } from '../../data/qa-attachments-repository';
+import { isRunLocked } from '../../model/project-run-rules';
+import type { ProjectQaRun } from '../../model/project-run-types';
 import {
   anyUrlExpired,
   attachmentErrorMessage,
   attachmentsByItem,
   canAddEvidence,
   showsEvidence,
-} from "../../model/qa-attachment-rules";
-import type { QaAttachment } from "../../model/qa-attachment-types";
+} from '../../model/qa-attachment-rules';
+import type { QaAttachment } from '../../model/qa-attachment-types';
 
 /**
  * `hidden`: the server has no screenshots (or storage is off), so nothing
  * shows; `loading` while the run's list is read (the previous list stays on
  * screen during a refresh); `error` when it could not be read.
  */
-export type RunEvidenceStatus = "hidden" | "loading" | "ready" | "error";
+export type RunEvidenceStatus = 'hidden' | 'loading' | 'ready' | 'error';
 
 export interface RunEvidenceViewModel {
   status: RunEvidenceStatus;
@@ -42,16 +42,19 @@ export interface RunEvidenceViewModel {
 }
 
 interface ListState {
-  status: Exclude<RunEvidenceStatus, "hidden">;
+  status: Exclude<RunEvidenceStatus, 'hidden'>;
   list: QaAttachment[] | null;
   error: string | null;
 }
 
-const LOAD_ERROR = "The screenshots could not be loaded. Try again in a moment.";
+const LOAD_ERROR =
+  'The screenshots could not be loaded. Try again in a moment.';
 
 /** The run says at least one item may hold a screenshot (an unknown count may, too). */
 function runMayHaveEvidence(run: ProjectQaRun): boolean {
-  return showsEvidence(run) && run.items.some((item) => item.attachmentCount !== 0);
+  return (
+    showsEvidence(run) && run.items.some((item) => item.attachmentCount !== 0)
+  );
 }
 
 /**
@@ -61,12 +64,17 @@ function runMayHaveEvidence(run: ProjectQaRun): boolean {
  * run body is keyed by run id). An older backend sends no `attachments`
  * answer and this stays `hidden` without a request.
  */
-export function useRunEvidenceViewModel(options: { deliveryProjectId: string; run: ProjectQaRun }): RunEvidenceViewModel {
+export function useRunEvidenceViewModel(options: {
+  deliveryProjectId: string;
+  run: ProjectQaRun;
+}): RunEvidenceViewModel {
   const { deliveryProjectId, run } = options;
   const visible = showsEvidence(run);
   const shouldLoad = runMayHaveEvidence(run);
   const [state, setState] = useState<ListState>(() =>
-    shouldLoad ? { status: "loading", list: null, error: null } : { status: "ready", list: [], error: null },
+    shouldLoad
+      ? { status: 'loading', list: null, error: null }
+      : { status: 'ready', list: [], error: null },
   );
   const [attempt, setAttempt] = useState(0);
   const requestId = useRef(0);
@@ -76,11 +84,16 @@ export function useRunEvidenceViewModel(options: { deliveryProjectId: string; ru
     const id = ++requestId.current;
     qaAttachmentsRepository.listForRun(deliveryProjectId, run.id).then(
       (list) => {
-        if (id === requestId.current) setState({ status: "ready", list, error: null });
+        if (id === requestId.current)
+          setState({ status: 'ready', list, error: null });
       },
       (cause: unknown) => {
         if (id !== requestId.current) return;
-        setState((previous) => ({ ...previous, status: "error", error: attachmentErrorMessage(cause, LOAD_ERROR) }));
+        setState((previous) => ({
+          ...previous,
+          status: 'error',
+          error: attachmentErrorMessage(cause, LOAD_ERROR),
+        }));
       },
     );
   }, [deliveryProjectId, run.id, shouldLoad, attempt]);
@@ -88,29 +101,35 @@ export function useRunEvidenceViewModel(options: { deliveryProjectId: string; ru
   const byItem = state.list ? attachmentsByItem(state.list) : null;
 
   function reload() {
-    setState((previous) => ({ ...previous, status: "loading", error: null }));
+    setState((previous) => ({ ...previous, status: 'loading', error: null }));
     setAttempt((value) => value + 1);
   }
 
   return {
-    status: visible ? state.status : "hidden",
+    status: visible ? state.status : 'hidden',
     error: visible ? state.error : null,
     deliveryProjectId,
     runId: run.id,
     canAdd: canAddEvidence(run),
     // A delivered iteration's run is frozen, even one left open.
-    open: run.status === "open" && !isRunLocked(run),
+    open: run.status === 'open' && !isRunLocked(run),
     forItem: (itemId) => (byItem ? (byItem[itemId] ?? []) : undefined),
     reload,
     refreshIfExpired: () => {
-      if (state.status !== "loading" && state.list && anyUrlExpired(state.list)) reload();
+      if (state.status !== 'loading' && state.list && anyUrlExpired(state.list))
+        reload();
     },
     added: (attachment) =>
-      setState((previous) => ({ ...previous, list: [...(previous.list ?? []), attachment] })),
+      setState((previous) => ({
+        ...previous,
+        list: [...(previous.list ?? []), attachment],
+      })),
     removed: (attachmentId) =>
       setState((previous) => ({
         ...previous,
-        list: previous.list ? previous.list.filter((entry) => entry.id !== attachmentId) : previous.list,
+        list: previous.list
+          ? previous.list.filter((entry) => entry.id !== attachmentId)
+          : previous.list,
       })),
   };
 }

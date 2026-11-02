@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 
-import { Dialog } from "@/features/groups/workspace";
+import { Dialog } from '@/features/groups/workspace';
 
-import type { ProjectQaRunItem } from "../../model/project-run-types";
-import type { RunTestCasesViewModel } from "../view-models/use-run-test-cases-view-model";
-import { RunTestCases } from "./run-test-cases";
+import type { ProjectQaRunItem } from '../../model/project-run-types';
+import type { RunTestCasesViewModel } from '../view-models/use-run-test-cases-view-model';
+import { RunTestCases } from './run-test-cases';
 
 interface FeatureGroup {
   key: string;
@@ -15,12 +15,19 @@ interface FeatureGroup {
 }
 
 /** The Feature user stories QA may write test cases for, grouped under their Feature in run order. */
-function featureGroups(items: ProjectQaRunItem[], vm: RunTestCasesViewModel): FeatureGroup[] {
+function featureGroups(
+  items: ProjectQaRunItem[],
+  vm: RunTestCasesViewModel,
+): FeatureGroup[] {
   const groups = new Map<string, FeatureGroup>();
   for (const item of items) {
-    if (item.requirementKind !== "functional" || !vm.canManage(item)) continue;
+    if (item.requirementKind !== 'functional' || !vm.canManage(item)) continue;
     const key = item.requirementId ?? `name:${item.requirementName}`;
-    const group = groups.get(key) ?? { key, name: item.requirementName, stories: [] };
+    const group = groups.get(key) ?? {
+      key,
+      name: item.requirementName,
+      stories: [],
+    };
     group.stories.push(item);
     groups.set(key, group);
   }
@@ -28,7 +35,10 @@ function featureGroups(items: ProjectQaRunItem[], vm: RunTestCasesViewModel): Fe
 }
 
 function testCaseTotal(item: ProjectQaRunItem): number {
-  return item.testCategories.reduce((sum, category) => sum + category.testCases.length, 0);
+  return item.testCategories.reduce(
+    (sum, category) => sum + category.testCases.length,
+    0,
+  );
 }
 
 function plural(count: number, one: string, many: string): string {
@@ -40,7 +50,11 @@ function SuiteRail({
   groups,
   selectedId,
   onSelect,
-}: Readonly<{ groups: FeatureGroup[]; selectedId: string; onSelect: (id: string) => void }>) {
+}: Readonly<{
+  groups: FeatureGroup[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+}>) {
   return (
     <nav className="pqa-suite__rail" aria-label="Features and user stories">
       <div className="pqa-suite__rail-list">
@@ -63,16 +77,20 @@ function SuiteRail({
                     <button
                       type="button"
                       className="pqa-suite__story"
-                      aria-current={selected ? "true" : undefined}
+                      aria-current={selected ? 'true' : undefined}
                       data-selected={String(selected)}
                       title={story.title}
                       onClick={() => onSelect(story.id)}
                     >
-                      <span className="pqa-suite__story-index">{String(index + 1)}</span>
-                      <span className="pqa-suite__story-title">{story.title}</span>
+                      <span className="pqa-suite__story-index">
+                        {String(index + 1)}
+                      </span>
+                      <span className="pqa-suite__story-title">
+                        {story.title}
+                      </span>
                       <span
                         className="pqa-suite__story-count"
-                        aria-label={plural(total, "test case", "test cases")}
+                        aria-label={plural(total, 'test case', 'test cases')}
                         data-empty={String(total === 0)}
                       >
                         {String(total)}
@@ -94,12 +112,18 @@ function SuitePane({
   story,
   vm,
   onReload,
-}: Readonly<{ story: ProjectQaRunItem; vm: RunTestCasesViewModel; onReload: () => void }>) {
+}: Readonly<{
+  story: ProjectQaRunItem;
+  vm: RunTestCasesViewModel;
+  onReload: () => void;
+}>) {
   const total = testCaseTotal(story);
   return (
     <div className="pqa-suite__pane">
       <header className="pqa-suite__story-head">
-        <p className="pqa-suite__eyebrow">User story · {story.requirementName}</p>
+        <p className="pqa-suite__eyebrow">
+          User story · {story.requirementName}
+        </p>
         <h3 className="pqa-suite__story-heading">{story.title}</h3>
         {story.acceptanceCriteria ? (
           <details className="pqa-suite__criteria">
@@ -108,7 +132,8 @@ function SuitePane({
           </details>
         ) : null}
         <p className="pqa-suite__stats">
-          {plural(story.testCategories.length, "category", "categories")} · {plural(total, "test case", "test cases")}
+          {plural(story.testCategories.length, 'category', 'categories')} ·{' '}
+          {plural(total, 'test case', 'test cases')}
         </p>
       </header>
       <RunTestCases item={story} vm={vm} onReload={onReload} managementOnly />
@@ -121,13 +146,17 @@ function DoneConfirm({
   unsaved,
   onCancel,
   onConfirm,
-}: Readonly<{ unsaved: boolean; onCancel: () => void; onConfirm: () => void }>) {
+}: Readonly<{
+  unsaved: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}>) {
   const confirmRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     confirmRef.current?.focus();
   }, []);
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key !== "Escape") return;
+    if (event.key !== 'Escape') return;
     // Keeps the sheet's own Escape handler from also firing.
     event.stopPropagation();
     onCancel();
@@ -146,14 +175,19 @@ function DoneConfirm({
         </h3>
         <p className="pqa-suite__confirm-text" id="pqa-suite-confirm-text">
           {unsaved
-            ? "A form is still open. What you typed in it has not been saved and will be lost. Everything else is already on the QA checklist."
-            : "Your categories and test cases are saved and already show on the QA checklist."}
+            ? 'A form is still open. What you typed in it has not been saved and will be lost. Everything else is already on the QA checklist.'
+            : 'Your categories and test cases are saved and already show on the QA checklist.'}
         </p>
         <div className="pqa-suite__confirm-actions">
           <button type="button" className="ghost-button" onClick={onCancel}>
             Keep editing
           </button>
-          <button ref={confirmRef} type="button" className="primary-button" onClick={onConfirm}>
+          <button
+            ref={confirmRef}
+            type="button"
+            className="primary-button"
+            onClick={onConfirm}
+          >
             Yes, I&apos;m done
           </button>
         </div>
@@ -186,7 +220,8 @@ export function TestCaseEditorDialog({
   const stories = groups.flatMap((group) => group.stories);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const selected = stories.find((story) => story.id === selectedId) ?? stories[0] ?? null;
+  const selected =
+    stories.find((story) => story.id === selectedId) ?? stories[0] ?? null;
   const saving = vm.busyKey !== null;
 
   function askDone() {
@@ -204,30 +239,52 @@ export function TestCaseEditorDialog({
       <div className="hier-dialog-form pqa-suite-shell">
         <div className="hier-dialog-body">
           <p className="hier-dialog-desc">
-            Pick a user story on the left, then add its test case categories and the test cases under each. Changes
-            save to the QA checklist as you make them.
+            Pick a user story on the left, then add its test case categories and
+            the test cases under each. Changes save to the QA checklist as you
+            make them.
           </p>
           {selected ? (
             <div className="pqa-suite">
-              <SuiteRail groups={groups} selectedId={selected.id} onSelect={setSelectedId} />
-              <SuitePane key={selected.id} story={selected} vm={vm} onReload={onReload} />
+              <SuiteRail
+                groups={groups}
+                selectedId={selected.id}
+                onSelect={setSelectedId}
+              />
+              <SuitePane
+                key={selected.id}
+                story={selected}
+                vm={vm}
+                onReload={onReload}
+              />
             </div>
           ) : (
-            <p className="pqa-note">There are no Feature user stories to write test cases for in this run.</p>
+            <p className="pqa-note">
+              There are no Feature user stories to write test cases for in this
+              run.
+            </p>
           )}
         </div>
         <div className="hier-dialog-footer">
           <div className="hier-dialog-actions pqa-suite__footer">
             <span className="pqa-suite__saved" role="status">
-              {saving ? "Saving…" : "All changes saved"}
+              {saving ? 'Saving…' : 'All changes saved'}
             </span>
-            <button type="button" className="primary-button" disabled={saving} onClick={askDone}>
+            <button
+              type="button"
+              className="primary-button"
+              disabled={saving}
+              onClick={askDone}
+            >
               Done
             </button>
           </div>
         </div>
         {confirming ? (
-          <DoneConfirm unsaved={vm.form !== null} onCancel={() => setConfirming(false)} onConfirm={finish} />
+          <DoneConfirm
+            unsaved={vm.form !== null}
+            onCancel={() => setConfirming(false)}
+            onConfirm={finish}
+          />
         ) : null}
       </div>
     </Dialog>

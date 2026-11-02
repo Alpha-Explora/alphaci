@@ -1,11 +1,14 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { projectQaRunsRepository } from "../../data/project-qa-runs-repository";
-import type { ProjectQaRun, ProjectQaRunItem } from "../../model/project-run-types";
-import { qaActionError } from "../../model/qa-run-rules";
-import type { QaActionError, QaDefectSeverity } from "../../model/qa-run-types";
+import { projectQaRunsRepository } from '../../data/project-qa-runs-repository';
+import type {
+  ProjectQaRun,
+  ProjectQaRunItem,
+} from '../../model/project-run-types';
+import { qaActionError } from '../../model/qa-run-rules';
+import type { QaActionError, QaDefectSeverity } from '../../model/qa-run-types';
 
 export interface PoFailDraft {
   itemId: string;
@@ -25,14 +28,15 @@ export interface PoAcceptanceViewModel {
   error: (QaActionError & { itemId: string }) | null;
   pass: (item: ProjectQaRunItem) => Promise<void>;
   openFail: (item: ProjectQaRunItem) => void;
-  updateFail: (patch: Partial<Pick<PoFailDraft, "notes" | "severity">>) => void;
+  updateFail: (patch: Partial<Pick<PoFailDraft, 'notes' | 'severity'>>) => void;
   cancelFail: () => void;
   submitFail: (item: ProjectQaRunItem) => Promise<void>;
   dismissError: () => void;
 }
 
-const WRITE_ERROR = "Your decision could not be saved. Try again in a moment.";
-export const PO_FAIL_NOTES_REQUIRED = "Say what is wrong, so the Developers know what to fix.";
+const WRITE_ERROR = 'Your decision could not be saved. Try again in a moment.';
+export const PO_FAIL_NOTES_REQUIRED =
+  'Say what is wrong, so the Developers know what to fix.';
 
 /**
  * ViewModel for the Product owner's check of a signed-off run: Pass records
@@ -49,24 +53,36 @@ export function usePoAcceptanceViewModel(options: {
   onReload: () => void;
   onChanged?: () => void;
 }): PoAcceptanceViewModel {
-  const { deliveryProjectId, run, canAccept, onRun, onReload, onChanged } = options;
+  const { deliveryProjectId, run, canAccept, onRun, onReload, onChanged } =
+    options;
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
   const [failing, setFailing] = useState<PoFailDraft | null>(null);
   const [attempted, setAttempted] = useState(false);
-  const [error, setError] = useState<(QaActionError & { itemId: string }) | null>(null);
+  const [error, setError] = useState<
+    (QaActionError & { itemId: string }) | null
+  >(null);
 
   async function decide(
     item: ProjectQaRunItem,
-    input: { decision: "passed" | "failed"; notes?: string; defectSeverity?: QaDefectSeverity },
+    input: {
+      decision: 'passed' | 'failed';
+      notes?: string;
+      defectSeverity?: QaDefectSeverity;
+    },
   ): Promise<boolean> {
     if (!canAccept || busyItemId || item.rowVersion === null) return false;
     setBusyItemId(item.id);
     setError(null);
     try {
-      const saved = await projectQaRunsRepository.acceptItem(deliveryProjectId, run.id, item.id, {
-        ...input,
-        expectedRowVersion: item.rowVersion,
-      });
+      const saved = await projectQaRunsRepository.acceptItem(
+        deliveryProjectId,
+        run.id,
+        item.id,
+        {
+          ...input,
+          expectedRowVersion: item.rowVersion,
+        },
+      );
       if (saved) onRun(saved);
       else onReload();
       onChanged?.();
@@ -88,24 +104,39 @@ export function usePoAcceptanceViewModel(options: {
     canAccept,
     busyItemId,
     failing,
-    failError: attempted && failing && !failing.notes.trim() ? PO_FAIL_NOTES_REQUIRED : null,
+    failError:
+      attempted && failing && !failing.notes.trim()
+        ? PO_FAIL_NOTES_REQUIRED
+        : null,
     error,
     pass: async (item) => {
-      await decide(item, { decision: "passed" });
+      await decide(item, { decision: 'passed' });
     },
     openFail: (item) => {
-      setFailing({ itemId: item.id, notes: "", severity: item.defectSeverity ?? "major" });
+      setFailing({
+        itemId: item.id,
+        notes: '',
+        severity: item.defectSeverity ?? 'major',
+      });
       setAttempted(false);
       setError(null);
     },
-    updateFail: (patch) => setFailing((current) => (current ? { ...current, ...patch } : current)),
+    updateFail: (patch) =>
+      setFailing((current) => (current ? { ...current, ...patch } : current)),
     cancelFail: closeFail,
     submitFail: async (item) => {
       if (!failing || failing.itemId !== item.id) return;
       setAttempted(true);
       const notes = failing.notes.trim();
       if (!notes) return;
-      if (await decide(item, { decision: "failed", notes, defectSeverity: failing.severity })) closeFail();
+      if (
+        await decide(item, {
+          decision: 'failed',
+          notes,
+          defectSeverity: failing.severity,
+        })
+      )
+        closeFail();
     },
     dismissError: () => setError(null),
   };

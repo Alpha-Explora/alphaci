@@ -1,4 +1,4 @@
-import type { LogWindow } from "./deployment-logs-types";
+import type { LogWindow } from './deployment-logs-types';
 
 /**
  * Formatting options. Both default to the viewer's own: the log's timestamps
@@ -10,14 +10,17 @@ export interface LogTimeOptions {
 }
 
 /** `14:03:07` in the viewer's timezone; the raw value if it does not parse. */
-export function formatLogTime(iso: string, options: LogTimeOptions = {}): string {
+export function formatLogTime(
+  iso: string,
+  options: LogTimeOptions = {},
+): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return new Intl.DateTimeFormat(options.locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
     timeZone: options.timeZone,
   }).format(date);
 }
@@ -30,8 +33,8 @@ export function formatLogDateTime(
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return new Intl.DateTimeFormat(options.locale, {
-    dateStyle: "medium",
-    timeStyle: "long",
+    dateStyle: 'medium',
+    timeStyle: 'long',
     timeZone: options.timeZone,
   }).format(date);
 }
@@ -45,12 +48,12 @@ export function timeZoneAbbreviation(
   options: LogTimeOptions = {},
 ): string {
   const part = new Intl.DateTimeFormat(options.locale, {
-    timeZoneName: "short",
+    timeZoneName: 'short',
     timeZone: options.timeZone,
   })
     .formatToParts(at)
-    .find((entry) => entry.type === "timeZoneName");
-  return part?.value ?? "";
+    .find((entry) => entry.type === 'timeZoneName');
+  return part?.value ?? '';
 }
 
 /**
@@ -61,7 +64,7 @@ export function timeZoneAbbreviation(
  */
 export function instanceTag(instance: string | null): string | null {
   if (!instance) return null;
-  const parts = instance.split("-").filter(Boolean);
+  const parts = instance.split('-').filter(Boolean);
   const tail = parts[parts.length - 1] ?? instance;
   return tail.slice(-5);
 }
@@ -71,35 +74,35 @@ export function instanceTag(instance: string | null): string | null {
 // the ESC char code so the source carries no literal control character.
 const ANSI_PATTERN = new RegExp(
   `${String.fromCharCode(27)}\\[[0-9;?]*[ -/]*[@-~]`,
-  "g",
+  'g',
 );
 
 export function stripAnsi(message: string): string {
-  return message.replace(ANSI_PATTERN, "");
+  return message.replace(ANSI_PATTERN, '');
 }
 
 /* ── Time range presets ─────────────────────────────────────────────────── */
 
-export type LogRangePreset = "deploy" | "15m" | "1h" | "6h" | "24h" | "7d";
+export type LogRangePreset = 'deploy' | '15m' | '1h' | '6h' | '24h' | '7d';
 
 export const LOG_RANGE_OPTIONS: ReadonlyArray<{
   value: LogRangePreset;
   label: string;
 }> = [
-  { value: "deploy", label: "This deploy" },
-  { value: "15m", label: "Last 15 minutes" },
-  { value: "1h", label: "Last hour" },
-  { value: "6h", label: "Last 6 hours" },
-  { value: "24h", label: "Last 24 hours" },
-  { value: "7d", label: "Last 7 days" },
+  { value: 'deploy', label: 'This deploy' },
+  { value: '15m', label: 'Last 15 minutes' },
+  { value: '1h', label: 'Last hour' },
+  { value: '6h', label: 'Last 6 hours' },
+  { value: '24h', label: 'Last 24 hours' },
+  { value: '7d', label: 'Last 7 days' },
 ];
 
-const RANGE_MINUTES: Record<Exclude<LogRangePreset, "deploy">, number> = {
-  "15m": 15,
-  "1h": 60,
-  "6h": 6 * 60,
-  "24h": 24 * 60,
-  "7d": 7 * 24 * 60,
+const RANGE_MINUTES: Record<Exclude<LogRangePreset, 'deploy'>, number> = {
+  '15m': 15,
+  '1h': 60,
+  '6h': 6 * 60,
+  '24h': 24 * 60,
+  '7d': 7 * 24 * 60,
 };
 
 /**
@@ -112,7 +115,7 @@ export function rangeWindow(
   now: number,
   deployWindow: LogWindow | null,
 ): LogWindow | null {
-  if (preset === "deploy") return deployWindow;
+  if (preset === 'deploy') return deployWindow;
   const minutes = RANGE_MINUTES[preset];
   return {
     startTime: new Date(now - minutes * 60_000).toISOString(),
@@ -124,5 +127,5 @@ export function rangeWindow(
 export function rangeOptions(deployWindow: LogWindow | null) {
   return deployWindow
     ? LOG_RANGE_OPTIONS
-    : LOG_RANGE_OPTIONS.filter((option) => option.value !== "deploy");
+    : LOG_RANGE_OPTIONS.filter((option) => option.value !== 'deploy');
 }

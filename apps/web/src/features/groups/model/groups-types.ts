@@ -23,5 +23,8 @@ export type {
   RepositoryAccessStatusResponse,
   RepositoryAssignment,
   UpdateGroupRequest,
-} from "@/features/groups/data/hierarchy-contracts";
-export type { AuthMeResponse, ProvisionedProject } from "@/shared/api/contracts";
+} from '@/features/groups/data/hierarchy-contracts';
+export type {
+  AuthMeResponse,
+  ProvisionedProject,
+} from '@/shared/api/contracts';

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import "./test-cases.css";
+import './test-cases.css';
 
-import { useId, type FormEvent, type ReactNode } from "react";
+import { useId, type FormEvent, type ReactNode } from 'react';
 
-import type { ProjectQaRunItem } from "../../model/project-run-types";
+import type { ProjectQaRunItem } from '../../model/project-run-types';
 import {
   countTestCases,
   testCasesAttentionLabel,
@@ -12,13 +12,21 @@ import {
   testCaseStatusChoices,
   testCaseStatusLabel,
   testCaseTone,
-} from "../../model/test-case-rules";
-import type { RunTestCase, RunTestCategory, TestCaseForm } from "../../model/test-case-types";
-import type { RunTestCasesViewModel } from "../view-models/use-run-test-cases-view-model";
+} from '../../model/test-case-rules';
+import type {
+  RunTestCase,
+  RunTestCategory,
+  TestCaseForm,
+} from '../../model/test-case-types';
+import type { RunTestCasesViewModel } from '../view-models/use-run-test-cases-view-model';
 
-type Props = Readonly<{ item: ProjectQaRunItem; vm: RunTestCasesViewModel; onReload: () => void }>;
+type Props = Readonly<{
+  item: ProjectQaRunItem;
+  vm: RunTestCasesViewModel;
+  onReload: () => void;
+}>;
 
-function formOf<M extends TestCaseForm["mode"]>(
+function formOf<M extends TestCaseForm['mode']>(
   vm: RunTestCasesViewModel,
   item: ProjectQaRunItem,
   mode: M,
@@ -37,14 +45,25 @@ function InlineForm({
   label,
   submitLabel,
   children,
-}: Readonly<{ item: ProjectQaRunItem; vm: RunTestCasesViewModel; label: string; submitLabel: string; children: ReactNode }>) {
-  const saving = vm.busyKey === "form";
+}: Readonly<{
+  item: ProjectQaRunItem;
+  vm: RunTestCasesViewModel;
+  label: string;
+  submitLabel: string;
+  children: ReactNode;
+}>) {
+  const saving = vm.busyKey === 'form';
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     void vm.submitForm(item);
   }
   return (
-    <form className="pqa-tests__form" aria-label={label} onSubmit={handleSubmit} noValidate>
+    <form
+      className="pqa-tests__form"
+      aria-label={label}
+      onSubmit={handleSubmit}
+      noValidate
+    >
       {children}
       {vm.formError ? (
         <p className="qa-form-error" role="alert">
@@ -53,9 +72,14 @@ function InlineForm({
       ) : null}
       <div className="pqa-tests__form-actions">
         <button type="submit" className="primary-button" disabled={saving}>
-          {saving ? "Saving…" : submitLabel}
+          {saving ? 'Saving…' : submitLabel}
         </button>
-        <button type="button" className="ghost-button" disabled={saving} onClick={vm.closeForm}>
+        <button
+          type="button"
+          className="ghost-button"
+          disabled={saving}
+          onClick={vm.closeForm}
+        >
           Cancel
         </button>
       </div>
@@ -109,32 +133,68 @@ function DeleteButton({
   confirmKey,
   label,
   onConfirm,
-}: Readonly<{ vm: RunTestCasesViewModel; confirmKey: string; label: string; onConfirm: () => void }>) {
+}: Readonly<{
+  vm: RunTestCasesViewModel;
+  confirmKey: string;
+  label: string;
+  onConfirm: () => void;
+}>) {
   const busy = vm.busyKey !== null;
   if (vm.confirmingDelete === confirmKey) {
     return (
-      <span className="pqa-tests__confirm" role="group" aria-label={`Confirm: ${label}`}>
+      <span
+        className="pqa-tests__confirm"
+        role="group"
+        aria-label={`Confirm: ${label}`}
+      >
         <span>Delete?</span>
-        <button type="button" className="qa-text-button pqa-tests__danger" disabled={busy} onClick={onConfirm}>
+        <button
+          type="button"
+          className="qa-text-button pqa-tests__danger"
+          disabled={busy}
+          onClick={onConfirm}
+        >
           Yes
         </button>
-        <button type="button" className="qa-text-button" disabled={busy} onClick={vm.cancelDelete}>
+        <button
+          type="button"
+          className="qa-text-button"
+          disabled={busy}
+          onClick={vm.cancelDelete}
+        >
           No
         </button>
       </span>
     );
   }
   return (
-    <button type="button" className="qa-text-button" aria-label={label} disabled={busy} onClick={() => vm.askDelete(confirmKey)}>
+    <button
+      type="button"
+      className="qa-text-button"
+      aria-label={label}
+      disabled={busy}
+      onClick={() => vm.askDelete(confirmKey)}
+    >
       Delete
     </button>
   );
 }
 
-function ResultControl({ item, testCase, vm }: Readonly<{ item: ProjectQaRunItem; testCase: RunTestCase; vm: RunTestCasesViewModel }>) {
+function ResultControl({
+  item,
+  testCase,
+  vm,
+}: Readonly<{
+  item: ProjectQaRunItem;
+  testCase: RunTestCase;
+  vm: RunTestCasesViewModel;
+}>) {
   if (!vm.canRecord || testCase.rowVersion === null) {
     return (
-      <span className="pqa-test__status" data-tone={testCaseTone(testCase.status)}>
+      <span
+        className="pqa-test__status"
+        data-tone={testCaseTone(testCase.status)}
+      >
         {testCaseStatusLabel(testCase.status)}
       </span>
     );
@@ -146,7 +206,13 @@ function ResultControl({ item, testCase, vm }: Readonly<{ item: ProjectQaRunItem
       aria-label={`Result of ${testCase.title}`}
       value={testCase.status}
       disabled={vm.busyKey !== null}
-      onChange={(event) => vm.setResult(item, testCase, event.target.value as RunTestCase["status"])}
+      onChange={(event) =>
+        vm.setResult(
+          item,
+          testCase,
+          event.target.value as RunTestCase['status'],
+        )
+      }
     >
       {testCaseStatusChoices(testCase.status).map((status) => (
         <option key={status} value={status}>
@@ -157,29 +223,59 @@ function ResultControl({ item, testCase, vm }: Readonly<{ item: ProjectQaRunItem
   );
 }
 
-function NoteArea({ item, testCase, vm }: Readonly<{ item: ProjectQaRunItem; testCase: RunTestCase; vm: RunTestCasesViewModel }>) {
-  const form = formOf(vm, item, "note", (open) => open.runTestCaseId === testCase.id);
+function NoteArea({
+  item,
+  testCase,
+  vm,
+}: Readonly<{
+  item: ProjectQaRunItem;
+  testCase: RunTestCase;
+  vm: RunTestCasesViewModel;
+}>) {
+  const form = formOf(
+    vm,
+    item,
+    'note',
+    (open) => open.runTestCaseId === testCase.id,
+  );
   if (form) {
     return (
-      <InlineForm item={item} vm={vm} label={`Note on ${testCase.title}`} submitLabel="Save note">
+      <InlineForm
+        item={item}
+        vm={vm}
+        label={`Note on ${testCase.title}`}
+        submitLabel="Save note"
+      >
         <TextField
           label="Note"
           value={form.notes}
           multiline
-          placeholder={testCase.status === "failed" ? "What went wrong" : "Anything worth knowing"}
+          placeholder={
+            testCase.status === 'failed'
+              ? 'What went wrong'
+              : 'Anything worth knowing'
+          }
           onChange={(notes) => vm.updateForm({ notes })}
         />
       </InlineForm>
     );
   }
-  return testCase.notes ? <p className="pqa-test__note">{testCase.notes}</p> : null;
+  return testCase.notes ? (
+    <p className="pqa-test__note">{testCase.notes}</p>
+  ) : null;
 }
 
-type RowProps = Readonly<{ item: ProjectQaRunItem; testCase: RunTestCase; vm: RunTestCasesViewModel }>;
+type RowProps = Readonly<{
+  item: ProjectQaRunItem;
+  testCase: RunTestCase;
+  vm: RunTestCasesViewModel;
+}>;
 
 /** Add note: anyone recording results, while no note form is open on it. */
 function NoteButton({ item, testCase, vm }: RowProps) {
-  const noting = formOf(vm, item, "note", (open) => open.runTestCaseId === testCase.id) !== null;
+  const noting =
+    formOf(vm, item, 'note', (open) => open.runTestCaseId === testCase.id) !==
+    null;
   const rowVersion = testCase.rowVersion;
   if (!vm.canRecord || noting || rowVersion === null) return null;
   return (
@@ -188,16 +284,27 @@ function NoteButton({ item, testCase, vm }: RowProps) {
       className="qa-text-button"
       disabled={vm.busyKey !== null}
       onClick={() =>
-        vm.openForm({ mode: "note", itemId: item.id, runTestCaseId: testCase.id, rowVersion, notes: testCase.notes ?? "" })
+        vm.openForm({
+          mode: 'note',
+          itemId: item.id,
+          runTestCaseId: testCase.id,
+          rowVersion,
+          notes: testCase.notes ?? '',
+        })
       }
     >
-      {testCase.notes ? "Edit note" : "Add note"}
+      {testCase.notes ? 'Edit note' : 'Add note'}
     </button>
   );
 }
 
 /** Edit and Delete: the QA Team and admins, on a test case whose definition still exists. */
-function ManageButtons({ item, testCase, vm, canEdit }: RowProps & Readonly<{ canEdit: boolean }>) {
+function ManageButtons({
+  item,
+  testCase,
+  vm,
+  canEdit,
+}: RowProps & Readonly<{ canEdit: boolean }>) {
   const sourceId = testCase.sourceTestCaseId;
   if (!canEdit || !vm.canManage(item) || sourceId === null) return null;
   const definitionRowVersion = testCase.definitionRowVersion;
@@ -210,12 +317,12 @@ function ManageButtons({ item, testCase, vm, canEdit }: RowProps & Readonly<{ ca
           disabled={vm.busyKey !== null}
           onClick={() =>
             vm.openForm({
-              mode: "edit-case",
+              mode: 'edit-case',
               itemId: item.id,
               testCaseId: sourceId,
               rowVersion: definitionRowVersion,
               title: testCase.title,
-              expectedResult: testCase.expectedResult ?? "",
+              expectedResult: testCase.expectedResult ?? '',
             })
           }
         >
@@ -232,7 +339,9 @@ function ManageButtons({ item, testCase, vm, canEdit }: RowProps & Readonly<{ ca
   );
 }
 
-function TestCaseActions(props: RowProps & Readonly<{ canEdit: boolean; managementOnly: boolean }>) {
+function TestCaseActions(
+  props: RowProps & Readonly<{ canEdit: boolean; managementOnly: boolean }>,
+) {
   const { managementOnly, ...rest } = props;
   return (
     <div className="pqa-test__actions">
@@ -247,11 +356,22 @@ function EditTestCase({
   testCase,
   vm,
   form,
-}: RowProps & Readonly<{ form: Extract<TestCaseForm, { mode: "edit-case" }> }>) {
+}: RowProps &
+  Readonly<{ form: Extract<TestCaseForm, { mode: 'edit-case' }> }>) {
   return (
     <li className="pqa-test pqa-test--editing">
-      <InlineForm item={item} vm={vm} label={`Edit ${testCase.title}`} submitLabel="Save test case">
-        <TextField label="Test case" value={form.title} autoFocus onChange={(title) => vm.updateForm({ title })} />
+      <InlineForm
+        item={item}
+        vm={vm}
+        label={`Edit ${testCase.title}`}
+        submitLabel="Save test case"
+      >
+        <TextField
+          label="Test case"
+          value={form.title}
+          autoFocus
+          onChange={(title) => vm.updateForm({ title })}
+        />
         <TextField
           label="Expected result (optional)"
           value={form.expectedResult}
@@ -270,37 +390,81 @@ function TestCaseRow({
   canEdit,
   managementOnly,
 }: RowProps & Readonly<{ canEdit: boolean; managementOnly: boolean }>) {
-  const editing = formOf(vm, item, "edit-case", (open) => open.testCaseId === testCase.sourceTestCaseId);
-  if (editing) return <EditTestCase item={item} testCase={testCase} vm={vm} form={editing} />;
+  const editing = formOf(
+    vm,
+    item,
+    'edit-case',
+    (open) => open.testCaseId === testCase.sourceTestCaseId,
+  );
+  if (editing)
+    return (
+      <EditTestCase item={item} testCase={testCase} vm={vm} form={editing} />
+    );
   return (
     <li className="pqa-test" data-status={testCase.status}>
       <div className="pqa-test__head">
         <span className="pqa-test__title">{testCase.title}</span>
-        {!managementOnly ? <ResultControl item={item} testCase={testCase} vm={vm} /> : null}
+        {!managementOnly ? (
+          <ResultControl item={item} testCase={testCase} vm={vm} />
+        ) : null}
       </div>
       {testCase.expectedResult ? (
         <p className="pqa-test__expected">
-          <span className="pqa-test__expected-label">Expected:</span> {testCase.expectedResult}
+          <span className="pqa-test__expected-label">Expected:</span>{' '}
+          {testCase.expectedResult}
         </p>
       ) : null}
-      {!managementOnly ? <NoteArea item={item} testCase={testCase} vm={vm} /> : null}
+      {!managementOnly ? (
+        <NoteArea item={item} testCase={testCase} vm={vm} />
+      ) : null}
       {vm.busyKey === testCase.id ? (
         <span className="qa-run-item__saving" role="status">
           Saving…
         </span>
       ) : null}
-      <TestCaseActions item={item} testCase={testCase} vm={vm} canEdit={canEdit} managementOnly={managementOnly} />
+      <TestCaseActions
+        item={item}
+        testCase={testCase}
+        vm={vm}
+        canEdit={canEdit}
+        managementOnly={managementOnly}
+      />
     </li>
   );
 }
 
-function CategoryHead({ item, category, vm, canEdit }: Readonly<{ item: ProjectQaRunItem; category: RunTestCategory; vm: RunTestCasesViewModel; canEdit: boolean }>) {
-  const renaming = formOf(vm, item, "rename-category", (open) => open.categoryId === category.id);
+function CategoryHead({
+  item,
+  category,
+  vm,
+  canEdit,
+}: Readonly<{
+  item: ProjectQaRunItem;
+  category: RunTestCategory;
+  vm: RunTestCasesViewModel;
+  canEdit: boolean;
+}>) {
+  const renaming = formOf(
+    vm,
+    item,
+    'rename-category',
+    (open) => open.categoryId === category.id,
+  );
   const manage = canEdit && vm.canManage(item) && category.id !== null;
   if (renaming) {
     return (
-      <InlineForm item={item} vm={vm} label={`Rename ${category.name}`} submitLabel="Rename">
-        <TextField label="Category" value={renaming.name} autoFocus onChange={(name) => vm.updateForm({ name })} />
+      <InlineForm
+        item={item}
+        vm={vm}
+        label={`Rename ${category.name}`}
+        submitLabel="Rename"
+      >
+        <TextField
+          label="Category"
+          value={renaming.name}
+          autoFocus
+          onChange={(name) => vm.updateForm({ name })}
+        />
       </InlineForm>
     );
   }
@@ -316,9 +480,9 @@ function CategoryHead({ item, category, vm, canEdit }: Readonly<{ item: ProjectQ
               disabled={vm.busyKey !== null}
               onClick={() =>
                 vm.openForm({
-                  mode: "rename-category",
+                  mode: 'rename-category',
                   itemId: item.id,
-                  categoryId: category.id ?? "",
+                  categoryId: category.id ?? '',
                   rowVersion: category.rowVersion ?? 0,
                   name: category.name,
                 })
@@ -329,7 +493,7 @@ function CategoryHead({ item, category, vm, canEdit }: Readonly<{ item: ProjectQ
           ) : null}
           <DeleteButton
             vm={vm}
-            confirmKey={`category:${category.id ?? ""}`}
+            confirmKey={`category:${category.id ?? ''}`}
             label={`Delete category ${category.name} and its test cases`}
             onConfirm={() => void vm.deleteCategory(item, category)}
           />
@@ -339,12 +503,32 @@ function CategoryHead({ item, category, vm, canEdit }: Readonly<{ item: ProjectQ
   );
 }
 
-function AddTestCase({ item, category, vm, canEdit }: Readonly<{ item: ProjectQaRunItem; category: RunTestCategory; vm: RunTestCasesViewModel; canEdit: boolean }>) {
-  const adding = formOf(vm, item, "add-case", (open) => open.categoryId === category.id);
+function AddTestCase({
+  item,
+  category,
+  vm,
+  canEdit,
+}: Readonly<{
+  item: ProjectQaRunItem;
+  category: RunTestCategory;
+  vm: RunTestCasesViewModel;
+  canEdit: boolean;
+}>) {
+  const adding = formOf(
+    vm,
+    item,
+    'add-case',
+    (open) => open.categoryId === category.id,
+  );
   if (!canEdit || !vm.canManage(item) || category.id === null) return null;
   if (adding) {
     return (
-      <InlineForm item={item} vm={vm} label={`New test case in ${category.name}`} submitLabel="Add test case">
+      <InlineForm
+        item={item}
+        vm={vm}
+        label={`New test case in ${category.name}`}
+        submitLabel="Add test case"
+      >
         <TextField
           label="Test case"
           value={adding.title}
@@ -368,7 +552,13 @@ function AddTestCase({ item, category, vm, canEdit }: Readonly<{ item: ProjectQa
       className="qa-text-button pqa-tests__add"
       disabled={vm.busyKey !== null}
       onClick={() =>
-        vm.openForm({ mode: "add-case", itemId: item.id, categoryId: category.id ?? "", title: "", expectedResult: "" })
+        vm.openForm({
+          mode: 'add-case',
+          itemId: item.id,
+          categoryId: category.id ?? '',
+          title: '',
+          expectedResult: '',
+        })
       }
     >
       + Add test case
@@ -376,12 +566,25 @@ function AddTestCase({ item, category, vm, canEdit }: Readonly<{ item: ProjectQa
   );
 }
 
-function AddCategory({ item, vm, canEdit }: Readonly<{ item: ProjectQaRunItem; vm: RunTestCasesViewModel; canEdit: boolean }>) {
-  const adding = formOf(vm, item, "add-category");
+function AddCategory({
+  item,
+  vm,
+  canEdit,
+}: Readonly<{
+  item: ProjectQaRunItem;
+  vm: RunTestCasesViewModel;
+  canEdit: boolean;
+}>) {
+  const adding = formOf(vm, item, 'add-category');
   if (!canEdit || !vm.canManage(item)) return null;
   if (adding) {
     return (
-      <InlineForm item={item} vm={vm} label="New test case category" submitLabel="Add category">
+      <InlineForm
+        item={item}
+        vm={vm}
+        label="New test case category"
+        submitLabel="Add category"
+      >
         <TextField
           label="Category"
           value={adding.name}
@@ -397,7 +600,9 @@ function AddCategory({ item, vm, canEdit }: Readonly<{ item: ProjectQaRunItem; v
       type="button"
       className="qa-text-button pqa-tests__add"
       disabled={vm.busyKey !== null}
-      onClick={() => vm.openForm({ mode: "add-category", itemId: item.id, name: "" })}
+      onClick={() =>
+        vm.openForm({ mode: 'add-category', itemId: item.id, name: '' })
+      }
     >
       + Add test case category
     </button>
@@ -415,7 +620,11 @@ function SectionError({ item, vm, onReload }: Props) {
           Reload run
         </button>
       ) : (
-        <button type="button" className="qa-text-button" onClick={vm.dismissError}>
+        <button
+          type="button"
+          className="qa-text-button"
+          onClick={vm.dismissError}
+        >
           Dismiss
         </button>
       )}
@@ -434,36 +643,54 @@ function CategoryList({
   const categories = item.testCategories;
   return (
     <>
-        {categories.length === 0 && managementOnly ? (
-          <p className="pqa-tests__empty pqa-tests__empty--suite">
-            No categories yet. Add a category, such as Happy path or Validation, then add its test cases.
-          </p>
-        ) : null}
-        {categories.map((category, index) => (
-          <section key={category.id ?? `name:${category.name}`} className="pqa-tests__category">
-            {managementOnly ? <p className="pqa-tests__category-index">Category {index + 1}</p> : null}
-            <CategoryHead item={item} category={category} vm={vm} canEdit={canEdit} />
-            {category.testCases.length > 0 ? (
-              <ul className="pqa-tests__list">
-                {category.testCases.map((testCase) => (
-                  <TestCaseRow
-                    key={testCase.id}
-                    item={item}
-                    testCase={testCase}
-                    vm={vm}
-                    canEdit={canEdit}
-                    managementOnly={managementOnly}
-                  />
-                ))}
-              </ul>
-            ) : (
-              <p className="pqa-tests__empty">No test cases in this category yet.</p>
-            )}
-            <AddTestCase item={item} category={category} vm={vm} canEdit={canEdit} />
-          </section>
-        ))}
-        <AddCategory item={item} vm={vm} canEdit={canEdit} />
-        <SectionError item={item} vm={vm} onReload={onReload} />
+      {categories.length === 0 && managementOnly ? (
+        <p className="pqa-tests__empty pqa-tests__empty--suite">
+          No categories yet. Add a category, such as Happy path or Validation,
+          then add its test cases.
+        </p>
+      ) : null}
+      {categories.map((category, index) => (
+        <section
+          key={category.id ?? `name:${category.name}`}
+          className="pqa-tests__category"
+        >
+          {managementOnly ? (
+            <p className="pqa-tests__category-index">Category {index + 1}</p>
+          ) : null}
+          <CategoryHead
+            item={item}
+            category={category}
+            vm={vm}
+            canEdit={canEdit}
+          />
+          {category.testCases.length > 0 ? (
+            <ul className="pqa-tests__list">
+              {category.testCases.map((testCase) => (
+                <TestCaseRow
+                  key={testCase.id}
+                  item={item}
+                  testCase={testCase}
+                  vm={vm}
+                  canEdit={canEdit}
+                  managementOnly={managementOnly}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="pqa-tests__empty">
+              No test cases in this category yet.
+            </p>
+          )}
+          <AddTestCase
+            item={item}
+            category={category}
+            vm={vm}
+            canEdit={canEdit}
+          />
+        </section>
+      ))}
+      <AddCategory item={item} vm={vm} canEdit={canEdit} />
+      <SectionError item={item} vm={vm} onReload={onReload} />
     </>
   );
 }
@@ -482,9 +709,10 @@ export function RunTestCases({
   onReload,
   canEditDefinitions = true,
   managementOnly = false,
-}: Props & Readonly<{ canEditDefinitions?: boolean; managementOnly?: boolean }>) {
+}: Props &
+  Readonly<{ canEditDefinitions?: boolean; managementOnly?: boolean }>) {
   const headingId = useId();
-  if (item.requirementKind !== "functional") return null;
+  if (item.requirementKind !== 'functional') return null;
   const manage = vm.canManage(item);
   if (item.testCategories.length === 0 && !manage) return null;
   const body = (
@@ -498,7 +726,11 @@ export function RunTestCases({
   );
   if (managementOnly) {
     return (
-      <div className="pqa-tests pqa-tests--manage" role="group" aria-label={`Test cases for ${item.title}`}>
+      <div
+        className="pqa-tests pqa-tests--manage"
+        role="group"
+        aria-label={`Test cases for ${item.title}`}
+      >
         {body}
       </div>
     );
@@ -509,8 +741,12 @@ export function RunTestCases({
     <details className="pqa-tests" open={counts.open > 0 || counts.total === 0}>
       <summary className="pqa-tests__summary" id={headingId}>
         <span className="pqa-tests__label">Test cases</span>
-        <span className="pqa-tests__count">{testCasesProgressLabel(counts)}</span>
-        {attention ? <span className="pqa-tests__attention">{attention}</span> : null}
+        <span className="pqa-tests__count">
+          {testCasesProgressLabel(counts)}
+        </span>
+        {attention ? (
+          <span className="pqa-tests__attention">{attention}</span>
+        ) : null}
       </summary>
       <div className="pqa-tests__body" role="group" aria-labelledby={headingId}>
         {body}

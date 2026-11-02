@@ -1,13 +1,16 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { projectQaRunsRepository } from "../../data/project-qa-runs-repository";
-import { projectReportBaseName } from "../../model/project-report-rules";
-import type { QaProjectReport } from "../../model/project-report-types";
-import { reportErrorCopy, type QaReportErrorCopy } from "../../model/qa-report-rules";
-import type { QaReportStatus } from "./use-qa-report-view-model";
-import { useAutoPrint } from "./use-qa-report-view-model";
+import { projectQaRunsRepository } from '../../data/project-qa-runs-repository';
+import { projectReportBaseName } from '../../model/project-report-rules';
+import type { QaProjectReport } from '../../model/project-report-types';
+import {
+  reportErrorCopy,
+  type QaReportErrorCopy,
+} from '../../model/qa-report-rules';
+import type { QaReportStatus } from './use-qa-report-view-model';
+import { useAutoPrint } from './use-qa-report-view-model';
 
 export interface ProjectReportViewModel {
   status: QaReportStatus;
@@ -23,7 +26,7 @@ interface ReportState {
   error: QaReportErrorCopy | null;
 }
 
-const LOADING: ReportState = { status: "loading", report: null, error: null };
+const LOADING: ReportState = { status: 'loading', report: null, error: null };
 
 /** The tab title doubles as the browser's "Save as PDF" file name. */
 function useDocumentTitle(report: QaProjectReport | null) {
@@ -56,15 +59,21 @@ export function useProjectReportViewModel(options: {
     const id = ++requestId.current;
     projectQaRunsRepository.report(deliveryProjectId, runId).then(
       (report) => {
-        if (id === requestId.current) setState({ status: "ready", report, error: null });
+        if (id === requestId.current)
+          setState({ status: 'ready', report, error: null });
       },
       (cause: unknown) => {
-        if (id === requestId.current) setState({ status: "error", report: null, error: reportErrorCopy(cause) });
+        if (id === requestId.current)
+          setState({
+            status: 'error',
+            report: null,
+            error: reportErrorCopy(cause),
+          });
       },
     );
   }, [deliveryProjectId, runId, attempt]);
 
-  useAutoPrint(autoPrint && state.status === "ready");
+  useAutoPrint(autoPrint && state.status === 'ready');
   useDocumentTitle(state.report);
 
   return {

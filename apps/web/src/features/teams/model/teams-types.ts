@@ -4,8 +4,8 @@
  * shapes still live in lib/api, shared with the unmigrated verticals;
  * re-exporting through this file gives the slice one type surface, so when
  * those contracts are decomposed per-domain only this file changes. */
-export type { GroupSummary as Team } from "@/features/groups";
-export type { ProvisionedProject } from "@/shared/api/contracts";
+export type { GroupSummary as Team } from '@/features/groups';
+export type { ProvisionedProject } from '@/shared/api/contracts';
 
 /** Lifecycle of the team detail surface, as the view-model reports it. */
-export type TeamsStatus = "idle" | "loading" | "ready" | "error";
+export type TeamsStatus = 'idle' | 'loading' | 'ready' | 'error';

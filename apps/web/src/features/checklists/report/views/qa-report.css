@@ -14,8 +14,10 @@
    ------------------------------------------------------------------------- */
 
 .qa-report-page {
-  --qa-report-mono: ui-monospace, "SFMono-Regular", "Cascadia Code", menlo, consolas, monospace;
-  --qa-report-display: var(--font-dash-display), outfit, var(--font-display), sans-serif;
+  --qa-report-mono:
+    ui-monospace, 'SFMono-Regular', 'Cascadia Code', menlo, consolas, monospace;
+  --qa-report-display:
+    var(--font-dash-display), outfit, var(--font-display), sans-serif;
   --qa-report-measure: 60rem;
 
   min-height: 100dvh;
@@ -23,7 +25,8 @@
   background-image: radial-gradient(var(--border-soft) 1px, transparent 1px);
   background-size: 22px 22px;
   color: var(--text-primary);
-  font-family: var(--font-dash-body), "Plus Jakarta Sans", var(--font-body), sans-serif;
+  font-family:
+    var(--font-dash-body), 'Plus Jakarta Sans', var(--font-body), sans-serif;
   letter-spacing: 0;
 }
 
@@ -34,7 +37,7 @@
 /* The light theme's muted grey (#a2a2ac) is ~2.4:1 on a white sheet — too
    faint for a document's labels. The paper-ink muted tone is the same role at
    AA contrast, so a light sheet borrows it. */
-[data-theme="light"] .qa-report-page {
+[data-theme='light'] .qa-report-page {
   --text-muted: var(--print-ink-muted);
 }
 
@@ -186,7 +189,12 @@
 .qa-report-skeleton {
   display: block;
   border-radius: 0.5rem;
-  background: linear-gradient(90deg, var(--layer-2) 0%, var(--layer-2-hover) 50%, var(--layer-2) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--layer-2) 0%,
+    var(--layer-2-hover) 50%,
+    var(--layer-2) 100%
+  );
   background-size: 200% 100%;
   animation: qa-report-shimmer 1.4s ease-in-out infinite;
 }
@@ -726,7 +734,7 @@
 
 /* An item's own screenshots, on a row under it. The item row above loses its
    rule so the two read as one entry. */
-.qa-report-table tr[data-evidence="true"] td {
+.qa-report-table tr[data-evidence='true'] td {
   border-bottom-color: transparent;
 }
 
@@ -1220,13 +1228,13 @@
   margin: 16mm 14mm 18mm;
 
   @bottom-left {
-    content: "ALPHACI · QA Report";
+    content: 'ALPHACI · QA Report';
     font-size: 8pt;
     color: var(--print-ink-muted);
   }
 
   @bottom-right {
-    content: "Page " counter(page) " of " counter(pages);
+    content: 'Page ' counter(page) ' of ' counter(pages);
     font-size: 8pt;
     color: var(--print-ink-muted);
   }
@@ -1273,7 +1281,7 @@
     -webkit-print-color-adjust: exact;
   }
 
-  [data-print="hide"] {
+  [data-print='hide'] {
     display: none;
   }
 

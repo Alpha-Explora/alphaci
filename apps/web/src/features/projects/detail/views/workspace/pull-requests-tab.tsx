@@ -1,48 +1,48 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 import {
   getProjectPullRequestFiles,
   getProjectPullRequests,
   type PullRequestFile,
   type PullRequestSummary,
-} from "@/features/projects";
+} from '@/features/projects';
 
-import { canOpenPoStudio } from "../../model/project-detail-tab-rules";
-import { CreatePullRequestView } from "./create-pull-request-view";
-import { DiffView } from "./diff-view";
-import { PullRequestChecks } from "./pull-request-checks";
+import { canOpenPoStudio } from '../../model/project-detail-tab-rules';
+import { CreatePullRequestView } from './create-pull-request-view';
+import { DiffView } from './diff-view';
+import { PullRequestChecks } from './pull-request-checks';
 import {
   WorkspaceEmpty,
   WorkspaceError,
   WorkspaceLoading,
-} from "./workspace-states";
+} from './workspace-states';
 import {
   usePullRequestReviewViewModel,
   type PullRequestDetail,
   type MergeMethod,
   type PullRequestDetailResponse,
   type PullRequestReviewViewModel,
-} from "../../view-models/use-pull-request-review-view-model";
+} from '../../view-models/use-pull-request-review-view-model';
 import {
   explainMergeState,
   mergeButtonLabel,
   workspaceMergeGate,
-} from "../../model/pull-request-merge-rules";
+} from '../../model/pull-request-merge-rules';
 
-type StateFilter = "open" | "closed" | "all";
+type StateFilter = 'open' | 'closed' | 'all';
 
 const FILTERS: ReadonlyArray<{ id: StateFilter; label: string }> = [
-  { id: "open", label: "Open" },
-  { id: "closed", label: "Closed" },
-  { id: "all", label: "All" },
+  { id: 'open', label: 'Open' },
+  { id: 'closed', label: 'Closed' },
+  { id: 'all', label: 'All' },
 ];
 
 /** Arriving on a pull request, the list starts on All: the one behind a commit is usually merged. */
 function startFilter(focus: number | null | undefined): StateFilter {
-  return focus == null ? "open" : "all";
+  return focus == null ? 'open' : 'all';
 }
 
 function startFocus(focus: number | null | undefined): number | null {
@@ -79,7 +79,9 @@ export function PullRequestsTab({
    */
   initialFocusNumber?: number | null;
 }) {
-  const [filter, setFilter] = useState<StateFilter>(() => startFilter(initialFocusNumber));
+  const [filter, setFilter] = useState<StateFilter>(() =>
+    startFilter(initialFocusNumber),
+  );
   const [composing, setComposing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   // Bumped to re-read the list when the filter did not change, e.g. after
@@ -88,7 +90,9 @@ export function PullRequestsTab({
   // The pull request to open expanded when the list next renders: the one
   // just created, so its merge controls are right there, or one the compose
   // screen pointed at because it already exists.
-  const [focusNumber, setFocusNumber] = useState<number | null>(() => startFocus(initialFocusNumber));
+  const [focusNumber, setFocusNumber] = useState<number | null>(() =>
+    startFocus(initialFocusNumber),
+  );
   const [items, setItems] = useState<PullRequestSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,9 +108,7 @@ export function PullRequestsTab({
         setItems(data.pullRequests);
         setError(null);
       })
-      .catch(() =>
-        setError("Pull requests could not be read from GitHub."),
-      )
+      .catch(() => setError('Pull requests could not be read from GitHub.'))
       .finally(() => setLoading(false));
   }, [projectId, filter]);
 
@@ -116,10 +118,12 @@ export function PullRequestsTab({
 
   const handleCreated = useCallback((pr: PullRequestSummary) => {
     setComposing(false);
-    setNotice(`Pull request #${String(pr.number)} opened: ${pr.headRef} → ${pr.baseRef}.`);
+    setNotice(
+      `Pull request #${String(pr.number)} opened: ${pr.headRef} → ${pr.baseRef}.`,
+    );
     setFocusNumber(pr.number);
     setLoading(true);
-    setFilter("open");
+    setFilter('open');
     setReloadKey((key) => key + 1);
   }, []);
 
@@ -137,7 +141,7 @@ export function PullRequestsTab({
     setNotice(null);
     setFocusNumber(pullNumber);
     setLoading(true);
-    setFilter("open");
+    setFilter('open');
     setReloadKey((key) => key + 1);
   }, []);
 
@@ -159,7 +163,10 @@ export function PullRequestsTab({
   return (
     <div className="ws-panel">
       {notice && (
-        <p className="ws-compose__banner ws-compose__banner--ready" role="status">
+        <p
+          className="ws-compose__banner ws-compose__banner--ready"
+          role="status"
+        >
           {notice}
         </p>
       )}
@@ -184,7 +191,7 @@ export function PullRequestsTab({
           </select>
         </label>
         <div className="ws-toolbar__end">
-          {appRole !== "qa" && (
+          {appRole !== 'qa' && (
             <button
               type="button"
               className="primary-button"
@@ -214,9 +221,9 @@ export function PullRequestsTab({
         <WorkspaceEmpty
           title="Nothing in flight"
           message={
-            filter === "open"
-              ? "There are no open pull requests on this repository."
-              : "No pull requests match this filter."
+            filter === 'open'
+              ? 'There are no open pull requests on this repository.'
+              : 'No pull requests match this filter.'
           }
         />
       ) : (
@@ -264,7 +271,7 @@ function PullRequestRow({
   const fetchFiles = useCallback(() => {
     return getProjectPullRequestFiles(projectId, pr.number)
       .then(setFiles)
-      .catch(() => setError("The changed files could not be read."))
+      .catch(() => setError('The changed files could not be read.'))
       .finally(() => setLoading(false));
   }, [projectId, pr.number]);
 
@@ -280,13 +287,13 @@ function PullRequestRow({
   // `loading` already started true for it, so nothing is set synchronously.
   useEffect(() => {
     if (!focused) return;
-    rowRef.current?.scrollIntoView?.({ block: "nearest" });
+    rowRef.current?.scrollIntoView?.({ block: 'nearest' });
     void fetchFiles();
   }, [focused, fetchFiles]);
 
   // Merged is a distinct state from closed, and conflating them loses the only
   // thing anyone wants to know about a finished pull request.
-  const stateLabel = pr.merged ? "merged" : pr.state;
+  const stateLabel = pr.merged ? 'merged' : pr.state;
 
   return (
     <li className="ws-pr" ref={rowRef}>
@@ -301,17 +308,17 @@ function PullRequestRow({
         }}
       >
         <span className="ws-pr__caret" aria-hidden="true">
-          {open ? "▾" : "▸"}
+          {open ? '▾' : '▸'}
         </span>
         <span className={`ws-pill ws-pill--${stateLabel}`}>
-          {pr.draft ? "draft" : stateLabel}
+          {pr.draft ? 'draft' : stateLabel}
         </span>
         <span className="ws-pr__title">
           <strong>#{pr.number}</strong> {pr.title}
         </span>
         <span className="ws-pr__meta">
           {pr.headRef} → {pr.baseRef}
-          {pr.author ? ` · ${pr.author}` : ""}
+          {pr.author ? ` · ${pr.author}` : ''}
         </span>
       </button>
 
@@ -389,14 +396,14 @@ function PullRequestReview({
     onMerged,
   });
 
-  if (review.status === "loading") {
+  if (review.status === 'loading') {
     return <p className="ws-hint">Reading the checks…</p>;
   }
 
-  if (review.status === "error") {
+  if (review.status === 'error') {
     return (
       <WorkspaceError
-        message={review.error ?? "This pull request could not be read."}
+        message={review.error ?? 'This pull request could not be read.'}
         onRetry={review.reload}
       />
     );
@@ -437,7 +444,7 @@ function MergeState({
   }
 
   const { tone, message } = explainMergeState(
-    detail.pullRequest.draft ? "draft" : detail.pullRequest.mergeableState,
+    detail.pullRequest.draft ? 'draft' : detail.pullRequest.mergeableState,
     detail.viewerIsAuthor,
   );
 
@@ -445,9 +452,9 @@ function MergeState({
 }
 
 const MERGE_METHODS: ReadonlyArray<{ id: MergeMethod; label: string }> = [
-  { id: "merge", label: "Create a merge commit" },
-  { id: "squash", label: "Squash and merge" },
-  { id: "rebase", label: "Rebase and merge" },
+  { id: 'merge', label: 'Create a merge commit' },
+  { id: 'squash', label: 'Squash and merge' },
+  { id: 'rebase', label: 'Rebase and merge' },
 ];
 
 /**
@@ -472,12 +479,12 @@ function MergeControl({
   appRole?: AppRole;
   onOpenPoStudio?: () => void;
 }>) {
-  if (pr.merged || pr.state === "closed") return null;
+  if (pr.merged || pr.state === 'closed') return null;
 
   const gate = workspaceMergeGate(appRole, pr.baseRef, pr.headRef);
   if (gate.allowed) return <MergeButton pr={pr} review={review} />;
-  if (gate.reason === "qa-role") return null;
-  if (gate.reason === "route-restricted") {
+  if (gate.reason === 'qa-role') return null;
+  if (gate.reason === 'route-restricted') {
     return (
       <p className="ws-hint" role="status">
         Developers merge feature → dev and dev → uat pull requests. Ask a Team
@@ -491,7 +498,7 @@ function MergeControl({
       Merges into main go through PO Studio — Ready for production.
       {canOpenPoStudio(appRole) && onOpenPoStudio ? (
         <>
-          {" "}
+          {' '}
           <button type="button" className="ws-link" onClick={onOpenPoStudio}>
             Go to PO Studio
           </button>
@@ -516,7 +523,7 @@ function MergeButton({
   pr: PullRequestDetail;
   review: PullRequestReviewViewModel;
 }>) {
-  if (pr.merged || pr.state === "closed") return null;
+  if (pr.merged || pr.state === 'closed') return null;
 
   return (
     <div className="ws-mergeaction">
@@ -543,7 +550,7 @@ function MergeButton({
         disabled={review.merging || pr.mergeable === false || pr.draft}
         onClick={() => void review.merge()}
       >
-        {review.merging ? "Merging…" : mergeButtonLabel(review.mergeMethod)}
+        {review.merging ? 'Merging…' : mergeButtonLabel(review.mergeMethod)}
       </button>
     </div>
   );
@@ -565,8 +572,8 @@ function MergeOutcome({
     <p
       className={
         review.mergeFailed
-          ? "ws-prreview__outcome ws-prreview__outcome--failed"
-          : "ws-prreview__outcome"
+          ? 'ws-prreview__outcome ws-prreview__outcome--failed'
+          : 'ws-prreview__outcome'
       }
     >
       {review.mergeMessage}

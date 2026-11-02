@@ -6,10 +6,14 @@
  * repository filed under a Project uses the Project's "My QA items" tab; any
  * other repository shows its list on its own Checklists tab. */
 
-import { MY_ITEMS_BUCKETS } from "./project-run-rules";
-import type { MyItemsBucket, ProjectMyItems } from "./project-run-types";
-import type { QaMyItemsResponse, QaReturnedItem, QaRunItemStatus } from "./qa-run-types";
-import type { QaScope } from "./qa-scope";
+import { MY_ITEMS_BUCKETS } from './project-run-rules';
+import type { MyItemsBucket, ProjectMyItems } from './project-run-types';
+import type {
+  QaMyItemsResponse,
+  QaReturnedItem,
+  QaRunItemStatus,
+} from './qa-run-types';
+import type { QaScope } from './qa-scope';
 
 /** One count per bucket, in MY_ITEMS_BUCKETS order. */
 export type MyQaItemsSummaryCounts = Readonly<Record<MyItemsBucket, number>>;
@@ -22,7 +26,9 @@ export const EMPTY_MY_QA_ITEMS_SUMMARY: MyQaItemsSummaryCounts = {
 };
 
 /** The Project-wide list is already bucketed by the server. */
-export function projectMyItemsSummary(data: ProjectMyItems): MyQaItemsSummaryCounts {
+export function projectMyItemsSummary(
+  data: ProjectMyItems,
+): MyQaItemsSummaryCounts {
   return {
     returned: data.returned.length,
     inProgress: data.inProgress.length,
@@ -36,14 +42,15 @@ export function projectMyItemsSummary(data: ProjectMyItems): MyQaItemsSummaryCou
  * recorded. Passed means the developer is done and QA has the next move.
  * Failed and blocked are still the developer's to resolve.
  */
-const DEVELOPER_ITEM_BUCKET: Readonly<Record<QaRunItemStatus, MyItemsBucket>> = {
-  pending: "todo",
-  in_progress: "inProgress",
-  failed: "inProgress",
-  blocked: "inProgress",
-  passed: "readyForQa",
-  returned_to_dev: "returned",
-};
+const DEVELOPER_ITEM_BUCKET: Readonly<Record<QaRunItemStatus, MyItemsBucket>> =
+  {
+    pending: 'todo',
+    in_progress: 'inProgress',
+    failed: 'inProgress',
+    blocked: 'inProgress',
+    passed: 'readyForQa',
+    returned_to_dev: 'returned',
+  };
 
 /**
  * A returned item is still "Returned" while QA's verdict stands; once the
@@ -51,7 +58,7 @@ const DEVELOPER_ITEM_BUCKET: Readonly<Record<QaRunItemStatus, MyItemsBucket>> = 
  * it waits on QA.
  */
 function returnedEntryBucket(entry: QaReturnedItem): MyItemsBucket {
-  return entry.item.status === "returned_to_dev" ? "returned" : "readyForQa";
+  return entry.item.status === 'returned_to_dev' ? 'returned' : 'readyForQa';
 }
 
 /**
@@ -60,10 +67,15 @@ function returnedEntryBucket(entry: QaReturnedItem): MyItemsBucket {
  * the same whichever list stands behind it. Every item lands in exactly one
  * bucket, so the counts add up to the list's own total.
  */
-export function repositoryMyItemsSummary(data: QaMyItemsResponse): MyQaItemsSummaryCounts {
-  const counts: Record<MyItemsBucket, number> = { ...EMPTY_MY_QA_ITEMS_SUMMARY };
+export function repositoryMyItemsSummary(
+  data: QaMyItemsResponse,
+): MyQaItemsSummaryCounts {
+  const counts: Record<MyItemsBucket, number> = {
+    ...EMPTY_MY_QA_ITEMS_SUMMARY,
+  };
   for (const entry of data.returned) counts[returnedEntryBucket(entry)] += 1;
-  for (const entry of data.developerItems) counts[DEVELOPER_ITEM_BUCKET[entry.item.status] ?? "todo"] += 1;
+  for (const entry of data.developerItems)
+    counts[DEVELOPER_ITEM_BUCKET[entry.item.status] ?? 'todo'] += 1;
   return counts;
 }
 
@@ -73,10 +85,10 @@ export function myQaItemsSummaryTotal(counts: MyQaItemsSummaryCounts): number {
 
 /** The summary's chip labels: short, the bucket titles of the full list. */
 const CHIP_LABELS: Readonly<Record<MyItemsBucket, string>> = {
-  returned: "Returned",
-  inProgress: "In progress",
-  todo: "To do",
-  readyForQa: "Ready for QA",
+  returned: 'Returned',
+  inProgress: 'In progress',
+  todo: 'To do',
+  readyForQa: 'Ready for QA',
 };
 
 export function summaryChipLabel(bucket: MyItemsBucket): string {
@@ -86,13 +98,13 @@ export function summaryChipLabel(bucket: MyItemsBucket): string {
 /* ── Where the full list lives ───────────────────────────────────────────── */
 
 /** `#my-qa-items` links to a Project page's QA workspace (it opens on the viewer's own view). */
-export const PROJECT_MY_QA_ITEMS_HASH = "my-qa-items";
+export const PROJECT_MY_QA_ITEMS_HASH = 'my-qa-items';
 
 export type MyQaItemsDestination =
   /** The repository's own Checklists tab, which carries the full list. */
-  | { kind: "checklists-tab" }
+  | { kind: 'checklists-tab' }
   /** The Project page, opened on its "My QA items" tab. */
-  | { kind: "project"; href: string };
+  | { kind: 'project'; href: string };
 
 /**
  * Where "Open checklist" goes. A scope that knows where its Project lives
@@ -103,13 +115,19 @@ export type MyQaItemsDestination =
  * Project, whose tab carries the per-repository list.
  */
 export function myQaItemsDestination(scope: QaScope): MyQaItemsDestination {
-  if (scope.kind === "project" && scope.projectHref) {
-    return { kind: "project", href: `${scope.projectHref}#${PROJECT_MY_QA_ITEMS_HASH}` };
+  if (scope.kind === 'project' && scope.projectHref) {
+    return {
+      kind: 'project',
+      href: `${scope.projectHref}#${PROJECT_MY_QA_ITEMS_HASH}`,
+    };
   }
-  return { kind: "checklists-tab" };
+  return { kind: 'checklists-tab' };
 }
 
 /** Whether the repository's Checklists tab should carry the full list itself. */
 export function checklistsTabShowsMyItems(scope: QaScope): boolean {
-  return scope.kind !== "pending" && myQaItemsDestination(scope).kind === "checklists-tab";
+  return (
+    scope.kind !== 'pending' &&
+    myQaItemsDestination(scope).kind === 'checklists-tab'
+  );
 }

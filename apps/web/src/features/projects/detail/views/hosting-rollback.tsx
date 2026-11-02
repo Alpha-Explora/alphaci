@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { FormDialog } from "@/features/groups/workspace";
+import { FormDialog } from '@/features/groups/workspace';
 import type {
   DeploymentRollbackHold,
   DeploymentTarget,
   ProjectDeploymentHistoryItem,
-} from "@/shared/api/contracts";
-import { deployedAgo, shortCommitSha } from "../../model/projects-rules";
+} from '@/shared/api/contracts';
+import { deployedAgo, shortCommitSha } from '../../model/projects-rules';
 import {
   ROLLBACK_REASON_MAX,
   rollbackConsequence,
   rollbackReasonProblem,
-} from "../model/deploy-rollback-rules";
+} from '../model/deploy-rollback-rules';
 
 /** What the Hosting card needs to offer Roll back and Resume deploys. */
 export interface RollbackControls {
@@ -25,7 +25,10 @@ export interface RollbackControls {
   canResume: boolean;
   busy: boolean;
   /** Null on success, else the sentence to show. */
-  rollback: (deploy: ProjectDeploymentHistoryItem, reason: string) => Promise<string | null>;
+  rollback: (
+    deploy: ProjectDeploymentHistoryItem,
+    reason: string,
+  ) => Promise<string | null>;
   resume: () => Promise<string | null>;
 }
 
@@ -33,13 +36,16 @@ export interface RollbackControls {
 export function RollbackButton({
   deploy,
   onSelect,
-}: Readonly<{ deploy: ProjectDeploymentHistoryItem; onSelect: (deploy: ProjectDeploymentHistoryItem) => void }>) {
+}: Readonly<{
+  deploy: ProjectDeploymentHistoryItem;
+  onSelect: (deploy: ProjectDeploymentHistoryItem) => void;
+}>) {
   const sha = shortCommitSha(deploy.commitSha);
   return (
     <button
       type="button"
       className="hosting-row__rollback"
-      aria-label={sha ? `Roll back to ${sha}` : "Roll back to this deploy"}
+      aria-label={sha ? `Roll back to ${sha}` : 'Roll back to this deploy'}
       onClick={() => onSelect(deploy)}
     >
       Roll back
@@ -47,13 +53,21 @@ export function RollbackButton({
   );
 }
 
-function DeployIdentity({ deploy }: Readonly<{ deploy: ProjectDeploymentHistoryItem }>) {
+function DeployIdentity({
+  deploy,
+}: Readonly<{ deploy: ProjectDeploymentHistoryItem }>) {
   const sha = shortCommitSha(deploy.commitSha);
   return (
     <p className="hosting-rollback__deploy">
       {sha ? <code className="hosting-mono">{sha}</code> : null}
-      {deploy.commitMessage ? <span className="hosting-rollback__message">{deploy.commitMessage}</span> : null}
-      <span className="hosting-quiet">deployed {deployedAgo(deploy.createdAt)}</span>
+      {deploy.commitMessage ? (
+        <span className="hosting-rollback__message">
+          {deploy.commitMessage}
+        </span>
+      ) : null}
+      <span className="hosting-quiet">
+        deployed {deployedAgo(deploy.createdAt)}
+      </span>
     </p>
   );
 }
@@ -73,7 +87,7 @@ export function RollbackDialog({
   controls: RollbackControls;
   onClose: () => void;
 }>) {
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const problem = rollbackReasonProblem(reason);
 
@@ -84,7 +98,7 @@ export function RollbackDialog({
       setError(failure);
       return;
     }
-    setReason("");
+    setReason('');
     setError(null);
     onClose();
   }
@@ -120,13 +134,20 @@ export function RollbackDialog({
           onChange={(event) => setReason(event.target.value)}
         />
       </label>
-      <p className="hosting-quiet">{rollbackConsequence(target.provider, deploy?.branch ?? target.branchName)}</p>
+      <p className="hosting-quiet">
+        {rollbackConsequence(
+          target.provider,
+          deploy?.branch ?? target.branchName,
+        )}
+      </p>
     </FormDialog>
   );
 }
 
 /** While a Vercel rollback holds production: what is live, why, and Resume deploys. */
-export function RollbackHoldBanner({ controls }: Readonly<{ controls: RollbackControls }>) {
+export function RollbackHoldBanner({
+  controls,
+}: Readonly<{ controls: RollbackControls }>) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hold = controls.hold;
@@ -146,12 +167,22 @@ export function RollbackHoldBanner({ controls }: Readonly<{ controls: RollbackCo
   return (
     <div className="hosting-hold" role="status">
       <p className="hosting-hold__text">
-        <strong>Rolled back</strong> to {sha ? <code className="hosting-mono">{sha}</code> : "an earlier deploy"}
-        {hold.rolledBackAt ? ` ${deployedAgo(hold.rolledBackAt)}` : ""}
-        {hold.reason ? `: ${hold.reason}` : ""}. New production deploys wait until deploys are resumed.
+        <strong>Rolled back</strong> to{' '}
+        {sha ? (
+          <code className="hosting-mono">{sha}</code>
+        ) : (
+          'an earlier deploy'
+        )}
+        {hold.rolledBackAt ? ` ${deployedAgo(hold.rolledBackAt)}` : ''}
+        {hold.reason ? `: ${hold.reason}` : ''}. New production deploys wait
+        until deploys are resumed.
       </p>
       {controls.canResume ? (
-        <button type="button" className="ghost-button hosting-hold__resume" onClick={() => setConfirming(true)}>
+        <button
+          type="button"
+          className="ghost-button hosting-hold__resume"
+          onClick={() => setConfirming(true)}
+        >
           Resume deploys
         </button>
       ) : null}
@@ -169,7 +200,8 @@ export function RollbackHoldBanner({ controls }: Readonly<{ controls: RollbackCo
         onSubmit={() => void resume()}
       >
         <p className="hosting-quiet">
-          If the newest deploy is the one you rolled back from, merge the fix or a revert first.
+          If the newest deploy is the one you rolled back from, merge the fix or
+          a revert first.
         </p>
       </FormDialog>
     </div>

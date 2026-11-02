@@ -1,1 +1,1 @@
-export { TeamChecklistsView as default } from "@/features/teams/checklists";
+export { TeamChecklistsView as default } from '@/features/teams/checklists';

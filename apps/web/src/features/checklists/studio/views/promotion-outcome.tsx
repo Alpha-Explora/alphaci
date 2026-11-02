@@ -1,11 +1,18 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
-import { MERGE_REFUSED_HINT, mergeErrorTitle, mergedLabel } from "../../model/qa-promotion-rules";
-import type { QaPromotionMergeError, QaPromotionMergeResult } from "../../model/qa-promotion-types";
-import type { QaPromotionViewModel } from "../view-models/use-qa-promotion-view-model";
-import { useShowRepositories } from "../view-models/repository-visibility";
+import {
+  MERGE_REFUSED_HINT,
+  mergeErrorTitle,
+  mergedLabel,
+} from '../../model/qa-promotion-rules';
+import type {
+  QaPromotionMergeError,
+  QaPromotionMergeResult,
+} from '../../model/qa-promotion-types';
+import type { QaPromotionViewModel } from '../view-models/use-qa-promotion-view-model';
+import { useShowRepositories } from '../view-models/repository-visibility';
 
 /**
  * Which pull request this is, as text. It names the PR without sending anyone to
@@ -21,24 +28,49 @@ function OutcomeFrame({
   title,
   onDismiss,
   children,
-}: Readonly<{ tone: "success" | "warning" | "danger"; title: string; onDismiss: () => void; children: ReactNode }>) {
+}: Readonly<{
+  tone: 'success' | 'warning' | 'danger';
+  title: string;
+  onDismiss: () => void;
+  children: ReactNode;
+}>) {
   return (
     <div className="qa-promo-outcome" data-tone={tone}>
       <p className="qa-promo-outcome__title">{title}</p>
       {children}
-      <button type="button" className="qa-text-button qa-promo-outcome__dismiss" onClick={onDismiss}>
+      <button
+        type="button"
+        className="qa-text-button qa-promo-outcome__dismiss"
+        onClick={onDismiss}
+      >
         Dismiss
       </button>
     </div>
   );
 }
 
-function Merged({ result, targetBranch, onDismiss }: Readonly<{ result: QaPromotionMergeResult; targetBranch: string; onDismiss: () => void }>) {
+function Merged({
+  result,
+  targetBranch,
+  onDismiss,
+}: Readonly<{
+  result: QaPromotionMergeResult;
+  targetBranch: string;
+  onDismiss: () => void;
+}>) {
   const showRepositories = useShowRepositories();
   return (
-    <OutcomeFrame tone="success" title={`Merged into ${targetBranch}`} onDismiss={onDismiss}>
+    <OutcomeFrame
+      tone="success"
+      title={`Merged into ${targetBranch}`}
+      onDismiss={onDismiss}
+    >
       {/* The merge commit and pull request are repository detail. */}
-      {showRepositories ? <p className="qa-promo-outcome__text">{mergedLabel(result, targetBranch)}</p> : null}
+      {showRepositories ? (
+        <p className="qa-promo-outcome__text">
+          {mergedLabel(result, targetBranch)}
+        </p>
+      ) : null}
       {showRepositories && result.pullRequest ? (
         <PullRequestRef label={`Pull request #${result.pullRequest.number}`} />
       ) : null}
@@ -47,11 +79,20 @@ function Merged({ result, targetBranch, onDismiss }: Readonly<{ result: QaPromot
 }
 
 /** GitHub said no: its words, verbatim, and what usually unblocks it. */
-function Refused({ result, onDismiss }: Readonly<{ result: QaPromotionMergeResult; onDismiss: () => void }>) {
+function Refused({
+  result,
+  onDismiss,
+}: Readonly<{ result: QaPromotionMergeResult; onDismiss: () => void }>) {
   const showRepositories = useShowRepositories();
   return (
-    <OutcomeFrame tone="warning" title="GitHub refused the merge" onDismiss={onDismiss}>
-      <blockquote className="qa-promo-outcome__quote">{result.message}</blockquote>
+    <OutcomeFrame
+      tone="warning"
+      title="GitHub refused the merge"
+      onDismiss={onDismiss}
+    >
+      <blockquote className="qa-promo-outcome__quote">
+        {result.message}
+      </blockquote>
       <p className="qa-promo-outcome__text">{MERGE_REFUSED_HINT}</p>
       {showRepositories && result.pullRequest ? (
         <PullRequestRef label={`Pull request #${result.pullRequest.number}`} />
@@ -64,9 +105,17 @@ function Failed({
   error,
   signInHref,
   onDismiss,
-}: Readonly<{ error: QaPromotionMergeError; signInHref: string; onDismiss: () => void }>) {
+}: Readonly<{
+  error: QaPromotionMergeError;
+  signInHref: string;
+  onDismiss: () => void;
+}>) {
   return (
-    <OutcomeFrame tone="danger" title={mergeErrorTitle(error.kind)} onDismiss={onDismiss}>
+    <OutcomeFrame
+      tone="danger"
+      title={mergeErrorTitle(error.kind)}
+      onDismiss={onDismiss}
+    >
       <p className="qa-promo-outcome__text">{error.message}</p>
       {error.reasons.length > 0 ? (
         <ul className="qa-promo-outcome__reasons">
@@ -92,9 +141,17 @@ function AlreadyInMain({
   result,
   targetBranch,
   onDismiss,
-}: Readonly<{ result: QaPromotionMergeResult; targetBranch: string; onDismiss: () => void }>) {
+}: Readonly<{
+  result: QaPromotionMergeResult;
+  targetBranch: string;
+  onDismiss: () => void;
+}>) {
   return (
-    <OutcomeFrame tone="success" title={`Already in ${targetBranch}`} onDismiss={onDismiss}>
+    <OutcomeFrame
+      tone="success"
+      title={`Already in ${targetBranch}`}
+      onDismiss={onDismiss}
+    >
       <p className="qa-promo-outcome__text">{result.message}</p>
     </OutcomeFrame>
   );
@@ -104,21 +161,49 @@ function AlreadyInMain({
  * A refusal is "already in main" when the reply says so, or when the status
  * read after it says this repository's main now holds the head.
  */
-function refusedAsAlreadyInMain(vm: QaPromotionViewModel, result: QaPromotionMergeResult): boolean {
+function refusedAsAlreadyInMain(
+  vm: QaPromotionViewModel,
+  result: QaPromotionMergeResult,
+): boolean {
   return result.alreadyInMain || vm.data?.repositoryDelivered === true;
 }
 
-function OutcomeBody({ vm, targetBranch }: Readonly<{ vm: QaPromotionViewModel; targetBranch: string }>) {
+function OutcomeBody({
+  vm,
+  targetBranch,
+}: Readonly<{ vm: QaPromotionViewModel; targetBranch: string }>) {
   const outcome = vm.outcome;
   if (!outcome) return null;
-  if (outcome.kind === "merged") {
-    return <Merged result={outcome.result} targetBranch={targetBranch} onDismiss={vm.dismissOutcome} />;
+  if (outcome.kind === 'merged') {
+    return (
+      <Merged
+        result={outcome.result}
+        targetBranch={targetBranch}
+        onDismiss={vm.dismissOutcome}
+      />
+    );
   }
-  if (outcome.kind === "refused" && refusedAsAlreadyInMain(vm, outcome.result)) {
-    return <AlreadyInMain result={outcome.result} targetBranch={targetBranch} onDismiss={vm.dismissOutcome} />;
+  if (
+    outcome.kind === 'refused' &&
+    refusedAsAlreadyInMain(vm, outcome.result)
+  ) {
+    return (
+      <AlreadyInMain
+        result={outcome.result}
+        targetBranch={targetBranch}
+        onDismiss={vm.dismissOutcome}
+      />
+    );
   }
-  if (outcome.kind === "refused") return <Refused result={outcome.result} onDismiss={vm.dismissOutcome} />;
-  return <Failed error={outcome.error} signInHref={vm.signInHref} onDismiss={vm.dismissOutcome} />;
+  if (outcome.kind === 'refused')
+    return <Refused result={outcome.result} onDismiss={vm.dismissOutcome} />;
+  return (
+    <Failed
+      error={outcome.error}
+      signInHref={vm.signInHref}
+      onDismiss={vm.dismissOutcome}
+    />
+  );
 }
 
 /**
@@ -131,7 +216,11 @@ export function PromotionOutcome({
   vm,
   targetBranch,
   children,
-}: Readonly<{ vm: QaPromotionViewModel; targetBranch: string; children?: ReactNode }>) {
+}: Readonly<{
+  vm: QaPromotionViewModel;
+  targetBranch: string;
+  children?: ReactNode;
+}>) {
   return (
     <div className="qa-promo__live" role="status" aria-live="polite">
       <OutcomeBody vm={vm} targetBranch={targetBranch} />

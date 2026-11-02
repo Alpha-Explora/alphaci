@@ -51,7 +51,7 @@
 }
 
 .qa-export__trigger:hover,
-.qa-export__trigger[aria-expanded="true"] {
+.qa-export__trigger[aria-expanded='true'] {
   border-color: var(--border-brand);
   background: var(--layer-2-hover);
   color: var(--text-primary);
@@ -68,7 +68,7 @@
   outline-offset: 2px;
 }
 
-.qa-export__trigger[aria-busy="true"] {
+.qa-export__trigger[aria-busy='true'] {
   cursor: progress;
 }
 
@@ -78,7 +78,7 @@
   transition: transform 160ms ease-out;
 }
 
-.qa-export__trigger[aria-expanded="true"] > .qa-glyph:last-child {
+.qa-export__trigger[aria-expanded='true'] > .qa-glyph:last-child {
   transform: rotate(180deg);
 }
 
@@ -145,7 +145,7 @@
   outline: none;
 }
 
-.qa-export__item[aria-disabled="true"] {
+.qa-export__item[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.55;
 }

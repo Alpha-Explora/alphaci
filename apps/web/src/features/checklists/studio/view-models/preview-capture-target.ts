@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { createContext, useContext, type RefObject } from "react";
+import { createContext, useContext, type RefObject } from 'react';
 
 /* Where a "Capture" screenshot is cropped to: QA Studio's preview iframe.
  *
@@ -20,7 +20,9 @@ export interface PreviewCaptureTarget extends RefObject<HTMLIFrameElement | null
   whileCapturing?: <T>(capture: () => Promise<T>) => Promise<T>;
 }
 
-export const PreviewCaptureContext = createContext<PreviewCaptureTarget | null>(null);
+export const PreviewCaptureContext = createContext<PreviewCaptureTarget | null>(
+  null,
+);
 
 export function usePreviewCaptureTarget(): PreviewCaptureTarget | null {
   return useContext(PreviewCaptureContext);

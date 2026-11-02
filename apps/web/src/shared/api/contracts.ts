@@ -3,14 +3,14 @@ import type {
   DeploymentSlot,
   EnvLane,
   EnvVarMetadata,
-} from "@alphaci/api-contracts";
+} from '@alphaci/api-contracts';
 import type {
   CapabilityKey,
   Edition as CapabilityEdition,
-} from "@alphaci/capability-catalog";
+} from '@alphaci/capability-catalog';
 
-export type SubscriptionPlan = "free" | "pro";
-export type SubscriptionStatus = "inactive" | "active" | "canceled";
+export type SubscriptionPlan = 'free' | 'pro';
+export type SubscriptionStatus = 'inactive' | 'active' | 'canceled';
 /**
  * The providers this app offers when the user chooses one: in the
  * create-project studio, when attaching hosting, and when connecting a
@@ -21,48 +21,36 @@ export type SubscriptionStatus = "inactive" | "active" | "canceled";
  * that names a provider uses that and needs a fallback label for an id this
  * list does not know.
  */
-export type CreatableEnvProvider = "render" | "vercel";
+export type CreatableEnvProvider = 'render' | 'vercel';
 /**
  * Providers a deployment target can name. On-prem hosts are attached to
  * environments, not chosen in the create-project studio, so they extend the
  * provisioning providers here only.
  */
-export type DeploymentTargetProvider = CreatableEnvProvider | "onprem-compose";
+export type DeploymentTargetProvider = CreatableEnvProvider | 'onprem-compose';
 /**
  * Render's own environment naming on a deployment target. NOT the env-var lane
  * — that is EnvLane. The two used to be one type, which made a Render service
  * name and an environment-variable scope move together.
  */
-export type EnvEnvironment = "test" | "uat" | "production";
+export type EnvEnvironment = 'test' | 'uat' | 'production';
 
-export type EnvOwnershipMode = "byo" | "flowci_managed";
+export type EnvOwnershipMode = 'byo' | 'flowci_managed';
 /** The role a deployment target fills; the API calls it DeploymentSlot. */
 export type EnvTargetSlot = DeploymentSlot;
 export type DeploymentStrategy =
-  | "provider_native"
-  | "vercel_git_connected"
-  | "vercel_ci_pushed"
-  | "render_git_connected"
-  | "render_image_pushed"
-  | "render_existing_service";
+  | 'provider_native'
+  | 'vercel_git_connected'
+  | 'vercel_ci_pushed'
+  | 'render_git_connected'
+  | 'render_image_pushed'
+  | 'render_existing_service';
 export type RenderServiceType =
-  | "web_service"
-  | "private_service"
-  | "background_worker"
-  | "cron_job";
+  'web_service' | 'private_service' | 'background_worker' | 'cron_job';
 export type RenderRuntime =
-  | "node"
-  | "python"
-  | "ruby"
-  | "go"
-  | "rust"
-  | "elixir"
-  | "docker";
+  'node' | 'python' | 'ruby' | 'go' | 'rust' | 'elixir' | 'docker';
 export type RenderDeployMethod =
-  | "managed_image"
-  | "byo_image"
-  | "native_git"
-  | "existing_service";
+  'managed_image' | 'byo_image' | 'native_git' | 'existing_service';
 
 export interface SessionUser {
   id: string;
@@ -82,23 +70,23 @@ export interface SessionUser {
 export interface SubscriptionInfo {
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
-  provider: "mock" | "supabase" | "manual" | "paymongo";
+  provider: 'mock' | 'supabase' | 'manual' | 'paymongo';
   updatedAt: string;
   planCode?: string;
   currentPeriodStart?: string | null;
   currentPeriodEnd?: string | null;
   cancelAtPeriodEnd?: boolean;
   amountPhp?: number;
-  interval?: "month" | "year";
+  interval?: 'month' | 'year';
 }
 
-export type PlatformRole = "admin" | "super_admin";
+export type PlatformRole = 'admin' | 'super_admin';
 
 /** Global hierarchy role — the single source of truth for create capabilities. */
-export type AppRole = "admin" | "lead" | "qa" | "member";
+export type AppRole = 'admin' | 'lead' | 'qa' | 'member';
 
 /** Provenance of {@link AppRole} — see AuthMeResponse.appRoleSource. */
-export type AppRoleSource = "github_team" | "manual";
+export type AppRoleSource = 'github_team' | 'manual';
 
 /**
  * User-facing labels for the global role: the product's persona names
@@ -107,10 +95,10 @@ export type AppRoleSource = "github_team" | "manual";
  * never see GitHub, so the label says what the role does in ALPHACI.
  */
 export const APP_ROLE_BADGE_LABELS: Record<AppRole, string> = {
-  admin: "Admin",
-  lead: "Product owner",
-  qa: "QA Team",
-  member: "Developer",
+  admin: 'Admin',
+  lead: 'Product owner',
+  qa: 'QA Team',
+  member: 'Developer',
 };
 
 export interface AuthMeResponse {
@@ -160,7 +148,7 @@ export interface CapabilitiesResponse {
     enabled: boolean;
     liveGithubEnabled?: boolean;
     liveProvidersEnabled?: boolean;
-    mode: "local_snapshot";
+    mode: 'local_snapshot';
   };
   workflowSettingsPreview: {
     enabled: boolean;
@@ -174,12 +162,12 @@ export interface CapabilitiesResponse {
   ciRunTracking?: {
     enabled: boolean;
     liveGithubEnabled: boolean;
-    mode: "local_mock";
+    mode: 'local_mock';
   };
   deploymentHistory?: {
     enabled: boolean;
     liveProvidersEnabled: boolean;
-    mode: "local_mock";
+    mode: 'local_mock';
   };
   previewDeployments?: {
     enabled: boolean;
@@ -189,12 +177,12 @@ export interface CapabilitiesResponse {
   driftDetection?: {
     enabled: boolean;
     liveProviderChecksEnabled?: boolean;
-    mode: "local_snapshot";
+    mode: 'local_snapshot';
   };
   driftRepair?: {
     enabled: boolean;
     liveRepairEnabled?: boolean;
-    mode: "local_safe";
+    mode: 'local_safe';
   };
   usageQuotas?: {
     enabled: boolean;
@@ -216,7 +204,7 @@ export interface CapabilitiesResponse {
    */
   hierarchy?: {
     enabled: boolean;
-    githubSyncMode: "stub" | "live";
+    githubSyncMode: 'stub' | 'live';
   };
   /**
    * Workspace-scoped QA checklists shared to projects (`projects.qa-checklists`).
@@ -232,7 +220,7 @@ export interface ProviderConnection {
   provider: DeploymentProvider;
   label: string;
   tokenLastFour: string;
-  status: "active" | "revoked" | "failed";
+  status: 'active' | 'revoked' | 'failed';
   metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -274,7 +262,7 @@ export interface DeploymentTarget {
   environmentMap: Record<string, unknown>;
   deploymentStrategy?: DeploymentStrategy;
   providerMetadata?: Record<string, unknown>;
-  status: "active" | "missing" | "failed";
+  status: 'active' | 'missing' | 'failed';
   /** Live service URL (e.g. https://demo-backend-main.onrender.com), computed by the BE. */
   publicUrl?: string | null;
   /** Provider dashboard URL, computed by the BE. */
@@ -282,7 +270,7 @@ export interface DeploymentTarget {
 }
 
 export interface CreateDeploymentTargetRequest {
-  action: "create" | "register_existing";
+  action: 'create' | 'register_existing';
   /** Project environment this target deploys; omitted for the legacy branch path. */
   environmentId?: string;
   slot: EnvTargetSlot;
@@ -319,11 +307,11 @@ export interface UpdateDeploymentTargetRequest {
 }
 
 export interface DeploymentTargetSyncResponse {
-  mode: "provider_live" | "local_metadata";
-  status: DeploymentTarget["status"];
+  mode: 'provider_live' | 'local_metadata';
+  status: DeploymentTarget['status'];
   findings: Array<{
     code: string;
-    severity: "warning" | "error";
+    severity: 'warning' | 'error';
     message: string;
   }>;
   target: DeploymentTarget;
@@ -370,7 +358,7 @@ export interface DeploymentTargetActionsResponse {
   actions: {
     sync: {
       enabled: boolean;
-      mode: "local_metadata";
+      mode: 'local_metadata';
     };
     detach: {
       enabled: boolean;
@@ -449,13 +437,13 @@ export interface DeploymentProvisioningEnvSet {
 export interface DeploymentProvisioningVariableGroup {
   name?: string;
   provider: CreatableEnvProvider;
-  appliesTo?: "all" | "selected";
+  appliesTo?: 'all' | 'selected';
   targetBranches?: string[];
   env: DeploymentProvisioningEnvSet[];
 }
 
 export interface DeploymentProvisioningTargetRequest {
-  action?: "create" | "register_existing";
+  action?: 'create' | 'register_existing';
   slot: EnvTargetSlot;
   provider: CreatableEnvProvider;
   ownershipMode: EnvOwnershipMode;
@@ -494,15 +482,15 @@ export interface DeploymentProvisioningRequest {
  */
 export interface OnpremProvisioningTargetRequest {
   slot: EnvTargetSlot;
-  provider: "onprem-compose";
-  ownershipMode: "byo";
+  provider: 'onprem-compose';
+  ownershipMode: 'byo';
   environmentSlug?: string;
 }
 
 /** What project creation accepts: the hosted targets plus on-prem ones. */
 export interface CreateDeploymentProvisioningRequest extends Omit<
   DeploymentProvisioningRequest,
-  "targets"
+  'targets'
 > {
   targets: Array<
     DeploymentProvisioningTargetRequest | OnpremProvisioningTargetRequest
@@ -510,13 +498,13 @@ export interface CreateDeploymentProvisioningRequest extends Omit<
 }
 
 export interface DeploymentProvisioningResult {
-  status: "skipped" | "completed" | "partial" | "failed";
+  status: 'skipped' | 'completed' | 'partial' | 'failed';
   targets: Array<{
     slot: EnvTargetSlot;
     provider: DeploymentProvider;
     ownershipMode?: EnvOwnershipMode;
     deploymentStrategy?: DeploymentStrategy | null;
-    status: "created" | "registered" | "failed";
+    status: 'created' | 'registered' | 'failed';
     deploymentTargetId: string | null;
     providerProjectId: string | null;
     providerProjectName: string | null;
@@ -535,8 +523,8 @@ export interface DeploymentProvisioningResult {
     env: Array<{
       lane: EnvLane;
       gitBranch: string | null;
-      provisioned: Array<{ key: string; status: "provisioned" }>;
-      failed: Array<{ key: string; status: "failed"; errorSummary: string }>;
+      provisioned: Array<{ key: string; status: 'provisioned' }>;
+      failed: Array<{ key: string; status: 'failed'; errorSummary: string }>;
     }>;
   }>;
 }
@@ -553,7 +541,7 @@ export interface CatalogTemplate {
   iconName: string;
   categories: string[];
   filePatterns: string[];
-  stack: "nextjs" | "react" | "react-native" | "expo" | "nestjs" | "nodejs";
+  stack: 'nextjs' | 'react' | 'react-native' | 'expo' | 'nestjs' | 'nodejs';
   propertiesPath: string;
   workflowPath: string;
 }
@@ -567,15 +555,9 @@ export interface CatalogCategoriesResponse {
 }
 
 export type ProjectOptionKey =
-  | "lint"
-  | "unit"
-  | "build"
-  | "coverage"
-  | "security"
-  | "docker"
-  | "e2e";
+  'lint' | 'unit' | 'build' | 'coverage' | 'security' | 'docker' | 'e2e';
 
-export type MvpProjectOptionKey = Exclude<ProjectOptionKey, "e2e">;
+export type MvpProjectOptionKey = Exclude<ProjectOptionKey, 'e2e'>;
 
 export type ProjectOptionSet = Partial<Record<ProjectOptionKey, boolean>>;
 
@@ -589,7 +571,7 @@ export interface RepoShapeOption {
 export interface ProjectTypeOption {
   id: string;
   label: string;
-  kind?: "frontend" | "backend";
+  kind?: 'frontend' | 'backend';
   runtime?: string;
   language: string;
   framework: string;
@@ -608,7 +590,7 @@ export interface ProjectTypeOption {
 
 /** What a scaffolded app's container serves: its slot, port and health path. */
 export interface ServiceRuntimeContract {
-  slot: "frontend" | "backend";
+  slot: 'frontend' | 'backend';
   containerPort: number;
   healthPath: string;
 }
@@ -639,12 +621,12 @@ export interface SubscriptionCheckoutStatusResponse {
 }
 
 export type UsageLimitCode =
-  | "projects"
-  | "managed_render_services"
-  | "managed_vercel_projects"
-  | "deployment_targets"
-  | "env_keys"
-  | "workflow_prs";
+  | 'projects'
+  | 'managed_render_services'
+  | 'managed_vercel_projects'
+  | 'deployment_targets'
+  | 'env_keys'
+  | 'workflow_prs';
 
 export interface UsageLimitItem {
   code: UsageLimitCode;
@@ -655,7 +637,7 @@ export interface UsageLimitItem {
 
 export interface UsageMeResponse {
   enabled: boolean;
-  plan: "free" | "pro";
+  plan: 'free' | 'pro';
   items: UsageLimitItem[];
 }
 
@@ -667,7 +649,7 @@ export interface WorkspaceSummary {
    * CHECK now permits nothing else. Kept as a single-member union because the
    * column is still selected and returned.
    */
-  kind: "team";
+  kind: 'team';
   role: WorkspaceRole;
 }
 
@@ -677,7 +659,7 @@ export interface WorkspaceSummary {
  * This is a different system from `identity.platform_admins` (platform-admin
  * tier) — same literal string, unrelated table/column. Do not conflate them.
  */
-export type WorkspaceRole = "admin" | "delegated_lead" | "member" | "viewer";
+export type WorkspaceRole = 'admin' | 'delegated_lead' | 'member' | 'viewer';
 
 export interface WorkspacesMeResponse {
   enabled: boolean;
@@ -716,7 +698,7 @@ export interface ProjectAuditEvent {
    * branches, tags), with the GitHub login in `actorLogin` or
    * `metadata.githubLogin`.
    */
-  scope?: "repository" | "project" | "github";
+  scope?: 'repository' | 'project' | 'github';
 }
 
 /**
@@ -724,7 +706,7 @@ export interface ProjectAuditEvent {
  * read of GitHub did not land, so the rows are what was saved before.
  */
 export interface ProjectAuditGithubSync {
-  status: "ok" | "stale" | "failed";
+  status: 'ok' | 'stale' | 'failed';
   syncedAt: string | null;
 }
 
@@ -802,10 +784,10 @@ export interface GenerateWorkflowRequest {
   nodeVersion?: string;
   coverageThreshold?: number;
   enhancements?: Array<
-    | "strictProductionApproval"
-    | "enableUatApproval"
-    | "disablePlaywright"
-    | "disableK6"
+    | 'strictProductionApproval'
+    | 'enableUatApproval'
+    | 'disablePlaywright'
+    | 'disableK6'
   >;
 }
 
@@ -829,7 +811,7 @@ export interface SetupProjectRequest extends GenerateWorkflowRequest {
     slug: string;
     displayName: string;
     sourceBranch: string;
-    role: "production" | "non_production";
+    role: 'production' | 'non_production';
   }>;
   /** Names the Project (folder) created for the repository: trimmed, 1..80 chars. */
   projectName?: string;
@@ -857,7 +839,7 @@ export interface GenerateWorkflowResponse {
 
 // "guard" is the standalone env-guard workflow seeded alongside the staged
 // access/quality/package chain; it never reports run stages (see StageId).
-export type WorkflowStage = "access" | "quality" | "package" | "guard";
+export type WorkflowStage = 'access' | 'quality' | 'package' | 'guard';
 
 export interface WorkflowFileMetadata {
   stage: WorkflowStage;
@@ -895,7 +877,7 @@ export interface GithubAppInstallUrlResponse {
 
 export interface LinkGithubInstallationResponse {
   reposLinked: number;
-  repositorySelection?: "all" | "selected";
+  repositorySelection?: 'all' | 'selected';
 }
 
 export interface LinkedGitHubRepo {
@@ -926,8 +908,8 @@ export interface GithubInstallationAccount {
   installationId: number;
   accountLogin: string | null;
   accountId: number | null;
-  accountType?: "Organization" | "User" | null;
-  repositorySelection: "all" | "selected";
+  accountType?: 'Organization' | 'User' | null;
+  repositorySelection: 'all' | 'selected';
 }
 
 export interface GithubInstallationAccountsResponse {
@@ -937,7 +919,7 @@ export interface GithubInstallationAccountsResponse {
 export interface SetupProjectResponse {
   id: string;
   repoFullName: string;
-  status: "provisioned";
+  status: 'provisioned';
   workflowPath: string;
   workflowFiles?: WorkflowFileMetadata[];
   githubCommitSha: string;
@@ -962,7 +944,7 @@ export interface MicroservicesConfig {
  * whose ingress mode is "tunnel"; null for every other mode.
  */
 export interface TunnelReport {
-  status: "waiting" | "starting" | "running" | "unavailable" | "failed";
+  status: 'waiting' | 'starting' | 'running' | 'unavailable' | 'failed';
   /** https URL the machine reported; present only while it is fresh. */
   publicUrl: string | null;
   /** One plain sentence for the user. */
@@ -977,26 +959,26 @@ export interface TunnelReport {
  */
 export interface OnpremAssignmentConfig {
   ports: Array<{
-    slot: "frontend" | "backend";
+    slot: 'frontend' | 'backend';
     hostPort: number;
     containerPort: number;
   }>;
-  health: Array<{ slot: "frontend" | "backend"; path: string | null }>;
+  health: Array<{ slot: 'frontend' | 'backend'; path: string | null }>;
   ingress: {
-    mode: "direct" | "configured" | "tunnel";
+    mode: 'direct' | 'configured' | 'tunnel';
     publicUrl: string | null;
   };
 }
 /** What a client asks for: host ports are chosen by the server. */
 export interface OnpremAssignmentRequestConfig {
-  ports: Array<{ slot: "frontend" | "backend"; containerPort: number }>;
-  health: OnpremAssignmentConfig["health"];
-  ingress: OnpremAssignmentConfig["ingress"];
+  ports: Array<{ slot: 'frontend' | 'backend'; containerPort: number }>;
+  health: OnpremAssignmentConfig['health'];
+  ingress: OnpremAssignmentConfig['ingress'];
 }
 export interface CreateProjectRequest {
   repoName: string;
-  visibility: "private" | "public";
-  ownerType?: "personal" | "organization";
+  visibility: 'private' | 'public';
+  ownerType?: 'personal' | 'organization';
   installationId?: number;
   repoShape?: string;
   projectTypeId: string;
@@ -1015,7 +997,7 @@ export interface CreateProjectRequest {
    * single application or two repositories (never for microservices). Omit it
    * to create the project on the fixed dev, uat, main branch path.
    */
-  environments?: SetupProjectRequest["environments"];
+  environments?: SetupProjectRequest['environments'];
   /** Group/workspace to create this project inside (from ?group=<id>). */
   workspaceId?: string;
   /**
@@ -1036,7 +1018,7 @@ export interface CreateProjectResponse {
   hostAssignmentError?: string;
   hostAssignments?: Array<{
     environmentId: string;
-    status: "assigned" | "failed";
+    status: 'assigned' | 'failed';
     assignmentId?: string;
     message?: string;
     /**
@@ -1044,12 +1026,12 @@ export interface CreateProjectResponse {
      * or `secondaryProjectId`) and the slot that repository deploys.
      */
     projectId?: string;
-    slot?: "backend" | "frontend";
+    slot?: 'backend' | 'frontend';
   }>;
   id: string;
   repoFullName: string;
   repoUrl: string;
-  status: "provisioned";
+  status: 'provisioned';
   workflowPath: string;
   workflowFiles?: WorkflowFileMetadata[];
   githubCommitSha: string;
@@ -1079,7 +1061,7 @@ export interface ProvisionedProject {
   serviceName: string;
   workflowPath: string;
   workflowFiles?: WorkflowFileMetadata[] | null;
-  status: "provisioning" | "provisioned" | "failed" | "orphaned";
+  status: 'provisioning' | 'provisioned' | 'failed' | 'orphaned';
   githubCommitSha: string | null;
   githubCommitUrl: string | null;
   failureReason: string | null;
@@ -1103,13 +1085,13 @@ export interface ProvisionedProject {
   isOwner?: boolean;
 }
 
-export type ProjectOverviewHealthStatus = "ok" | "warning" | "error";
+export type ProjectOverviewHealthStatus = 'ok' | 'warning' | 'error';
 
 export interface ProjectDashboardSnapshotFinding {
   code: string;
   severity: ProjectOverviewHealthStatus;
   message?: string;
-  source?: "local_snapshot";
+  source?: 'local_snapshot';
 }
 
 export interface ProjectDashboardSnapshot {
@@ -1145,7 +1127,7 @@ export interface ProjectOverviewResponse {
     failedCount: number;
   };
   ciAuth: {
-    status: "active" | "revoked" | "missing";
+    status: 'active' | 'revoked' | 'missing';
     tokenPresent: boolean;
     tokenPrefix: string | null;
     createdAt: string | null;
@@ -1163,7 +1145,7 @@ export interface ProjectOverviewResponse {
   };
   syncSnapshot: {
     enabled: boolean;
-    mode: "local_snapshot";
+    mode: 'local_snapshot';
     latest: ProjectDashboardSnapshot | null;
   };
   capabilities: {
@@ -1190,12 +1172,12 @@ export interface ProjectOverviewResponse {
 }
 
 export type ProjectCiRunStage =
-  | "access_gate"
-  | "quality"
-  | "package"
-  | "deploy_render"
-  | "deploy_vercel"
-  | "unknown";
+  | 'access_gate'
+  | 'quality'
+  | 'package'
+  | 'deploy_render'
+  | 'deploy_vercel'
+  | 'unknown';
 
 export interface ProjectCiRun {
   id: string;
@@ -1204,8 +1186,8 @@ export interface ProjectCiRun {
   branch: string;
   commitSha: string | null;
   actor: string;
-  status: "queued" | "in_progress" | "completed";
-  conclusion: "success" | "failure" | "cancelled" | "skipped" | null;
+  status: 'queued' | 'in_progress' | 'completed';
+  conclusion: 'success' | 'failure' | 'cancelled' | 'skipped' | null;
   createdAt: string;
   updatedAt: string;
   htmlUrl: string;
@@ -1214,7 +1196,7 @@ export interface ProjectCiRun {
 
 export interface ProjectCiRunsResponse {
   enabled: boolean;
-  mode: "local_mock";
+  mode: 'local_mock';
   liveGithubEnabled: boolean;
   githubActionsUrl: string;
   runs: ProjectCiRun[];
@@ -1246,7 +1228,7 @@ export type {
   DeploymentDriftStatus as ProjectDriftStatus,
   ProjectDriftRepairAction,
   ProjectDriftRepairResponse,
-} from "@alphaci/api-contracts";
+} from '@alphaci/api-contracts';
 
 /*
  * Environment variables and custom domains, also from @alphaci/api-contracts.
@@ -1266,7 +1248,7 @@ export type {
   RemoveCustomDomainResponse,
   ValidateEnvVarsRequest,
   ValidateEnvVarsResponse,
-} from "@alphaci/api-contracts";
+} from '@alphaci/api-contracts';
 
 export interface ProjectSyncSnapshotResponse {
   snapshot: ProjectDashboardSnapshot;
@@ -1281,7 +1263,7 @@ export interface WorkflowSettings {
   serviceName: string;
   servicePath: string;
   nodeVersion: string;
-  packageManager: "npm";
+  packageManager: 'npm';
   coverageThreshold: number;
   centralWorkflowRef: string;
   checks: {
@@ -1294,7 +1276,7 @@ export interface WorkflowSettings {
 
 export interface WorkflowSettingsResponse {
   enabled: boolean;
-  source: "stored" | "project_options";
+  source: 'stored' | 'project_options';
   settings: WorkflowSettings;
 }
 
@@ -1305,10 +1287,10 @@ export interface WorkflowSettingsPreviewRequest {
   serviceName?: string;
   servicePath?: string;
   nodeVersion?: string;
-  packageManager?: "npm";
+  packageManager?: 'npm';
   coverageThreshold?: number;
   centralWorkflowRef?: string;
-  checks?: Partial<WorkflowSettings["checks"]>;
+  checks?: Partial<WorkflowSettings['checks']>;
 }
 
 export interface WorkflowSettingsPreviewResponse {
@@ -1316,7 +1298,7 @@ export interface WorkflowSettingsPreviewResponse {
   workflowFiles: Array<WorkflowFileMetadata & { yaml: string }>;
   diffSummary: Array<{
     path: string;
-    status: "new" | "changed" | "unchanged";
+    status: 'new' | 'changed' | 'unchanged';
   }>;
   validationWarnings: Array<{
     field: string;
@@ -1332,7 +1314,7 @@ export interface WorkflowUpdatePullRequestResponse {
   workflowFiles: WorkflowFileMetadata[];
   pullRequestNumber: number;
   pullRequestUrl: string;
-  status: "created";
+  status: 'created';
 }
 
 export interface ProvisionedProjectsResponse {
@@ -1345,10 +1327,10 @@ export interface DiscoverExistingRepoRequest {
 }
 
 export type ExistingRepoWarningCode =
-  | "branch_protected"
-  | "sonar_already_configured"
-  | "uat_missing"
-  | "project_type_undetected";
+  | 'branch_protected'
+  | 'sonar_already_configured'
+  | 'uat_missing'
+  | 'project_type_undetected';
 
 export interface ExistingRepoWarning {
   code: ExistingRepoWarningCode;
@@ -1415,11 +1397,7 @@ export interface PendingAccountResponse {
 /* ── CI Runs ─────────────────────────────────────────────────────────────── */
 
 export type RunOverallStatus =
-  | "success"
-  | "failure"
-  | "running"
-  | "cancelled"
-  | "partial";
+  'success' | 'failure' | 'running' | 'cancelled' | 'partial';
 /**
  * Mirrors STAGE_ORDER in the backend's pipelines/ci/application/stages.ts, and
  * the CHECK constraint on workflow.ci_run_reports.stage. All three widen
@@ -1428,7 +1406,7 @@ export type RunOverallStatus =
  * `verify` is the only one that needs a running service: the first three read
  * source, and none of them can say whether what was deployed actually works.
  */
-export type StageId = "access" | "quality" | "package" | "verify";
+export type StageId = 'access' | 'quality' | 'package' | 'verify';
 /**
  * A stage's state.
  *
@@ -1441,14 +1419,14 @@ export type StageId = "access" | "quality" | "package" | "verify";
  *            workflow did not start, and never will
  */
 export type StageStatus =
-  | "success"
-  | "failure"
-  | "running"
-  | "cancelled"
-  | "pending"
-  | "blocked"
-  | "stalled";
-export type MessageSeverity = "info" | "warning" | "error" | "success";
+  | 'success'
+  | 'failure'
+  | 'running'
+  | 'cancelled'
+  | 'pending'
+  | 'blocked'
+  | 'stalled';
+export type MessageSeverity = 'info' | 'warning' | 'error' | 'success';
 
 export interface FriendlyMessage {
   severity: MessageSeverity;
@@ -1504,7 +1482,7 @@ export interface StageReport {
 
 /** What a stage reported about its tests, coverage, lint, security and Sonar. */
 /** How one browser test ended. `flaky` passed on a retry. */
-export type TestCaseStatus = "passed" | "failed" | "flaky" | "skipped";
+export type TestCaseStatus = 'passed' | 'failed' | 'flaky' | 'skipped';
 
 /**
  * One browser test as the suite ran it (Playwright's JSON report, summarised
@@ -1630,7 +1608,7 @@ export interface CreateProjectResult {
   id: string;
   repoFullName: string;
   repoUrl: string;
-  status: "provisioned";
+  status: 'provisioned';
   /** Full path of the committed workflow file, e.g. `.github/workflows/ci.yml`. */
   workflowPath: string;
   workflowFiles?: WorkflowFileMetadata[];

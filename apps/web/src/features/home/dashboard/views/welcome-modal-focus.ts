@@ -3,10 +3,13 @@ export function queryFocusable(root: HTMLElement): HTMLElement[] {
     root.querySelectorAll<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     ),
-  ).filter((node) => !node.hasAttribute("disabled"));
+  ).filter((node) => !node.hasAttribute('disabled'));
 }
 
-export function wrapFocus(event: KeyboardEvent, focusable: HTMLElement[]): void {
+export function wrapFocus(
+  event: KeyboardEvent,
+  focusable: HTMLElement[],
+): void {
   const first = focusable[0];
   const last = focusable[focusable.length - 1];
   if (event.shiftKey) {
@@ -27,11 +30,11 @@ export function handleWelcomeModalKeyDown(
   dialog: HTMLDivElement | null,
   onDismiss: () => void,
 ): void {
-  if (event.key === "Escape") {
+  if (event.key === 'Escape') {
     onDismiss();
     return;
   }
-  if (event.key !== "Tab" || !dialog) return;
+  if (event.key !== 'Tab' || !dialog) return;
   const focusable = queryFocusable(dialog);
   if (focusable.length === 0) return;
   wrapFocus(event, focusable);

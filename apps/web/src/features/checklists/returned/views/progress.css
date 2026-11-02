@@ -65,11 +65,11 @@
   box-shadow: var(--shadow-soft);
 }
 
-.rq-progress__option[data-tone="brand"]:has(input:checked) {
+.rq-progress__option[data-tone='brand']:has(input:checked) {
   color: var(--brand);
 }
 
-.rq-progress__option[data-tone="success"]:has(input:checked) {
+.rq-progress__option[data-tone='success']:has(input:checked) {
   color: var(--success);
 }
 

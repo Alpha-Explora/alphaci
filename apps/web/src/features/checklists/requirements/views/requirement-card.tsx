@@ -1,33 +1,50 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import type { ItemProgressViewModel } from "../../returned";
-import { itemMatches, NO_VERDICTS, type ChecklistFilter, type ItemVerdicts } from "../../model/checklist-filter-rules";
+import type { ItemProgressViewModel } from '../../returned';
+import {
+  itemMatches,
+  NO_VERDICTS,
+  type ChecklistFilter,
+  type ItemVerdicts,
+} from '../../model/checklist-filter-rules';
 import {
   donePercent,
   itemProgressEditable,
   kindCopy,
   progressSummaryLabel,
-} from "../../model/requirement-rules";
-import type { Requirement, RequirementItem } from "../../model/requirement-types";
-import type { RequirementPermissions } from "../../model/requirement-rules";
+} from '../../model/requirement-rules';
+import type {
+  Requirement,
+  RequirementItem,
+} from '../../model/requirement-types';
+import type { RequirementPermissions } from '../../model/requirement-rules';
 import {
   useRequirementItemsViewModel,
   type RequirementItemsViewModel,
-} from "../view-models/use-requirement-items-view-model";
-import { ChevronDownIcon, FeatureIcon, PlusIcon, SystemIcon } from "./requirement-icons";
-import { ItemForm, RequirementItemRow } from "./requirement-item-row";
+} from '../view-models/use-requirement-items-view-model';
+import {
+  ChevronDownIcon,
+  FeatureIcon,
+  PlusIcon,
+  SystemIcon,
+} from './requirement-icons';
+import { ItemForm, RequirementItemRow } from './requirement-item-row';
 
 /** Done's share as a quiet meter: the words beside it carry the number. */
-function ProgressMeter({ requirement }: Readonly<{ requirement: Requirement }>) {
+function ProgressMeter({
+  requirement,
+}: Readonly<{ requirement: Requirement }>) {
   const percent = donePercent(requirement.progressCounts);
   return (
     <span className="rq-meter">
       <span className="rq-meter__track" aria-hidden="true">
         <span className="rq-meter__fill" style={{ width: `${percent}%` }} />
       </span>
-      <span className="rq-meter__label">{progressSummaryLabel(requirement.progressCounts)}</span>
+      <span className="rq-meter__label">
+        {progressSummaryLabel(requirement.progressCounts)}
+      </span>
     </span>
   );
 }
@@ -60,23 +77,31 @@ function CardItems({
     );
   }
   return (
-    <ol className="rq-items" aria-label={`${copy.items} of ${requirement.name}`}>
+    <ol
+      className="rq-items"
+      aria-label={`${copy.items} of ${requirement.name}`}
+    >
       {/* A filter hides rows, never renumbers them: 03 stays the third story. */}
-      {requirement.items.map((item, index) => itemMatches(item, verdicts, filter) ? (
-        <RequirementItemRow
-          key={item.id}
-          item={item}
-          index={index}
-          count={requirement.items.length}
-          itemLabel={copy.item}
-          canManage={permissions.canManage}
-          progressEditable={itemProgressEditable(item, permissions.canSetProgress)}
-          items={items}
-          progress={progress}
-          onReload={onReload}
-          verdict={verdicts.get(item.id)}
-        />
-      ) : null)}
+      {requirement.items.map((item, index) =>
+        itemMatches(item, verdicts, filter) ? (
+          <RequirementItemRow
+            key={item.id}
+            item={item}
+            index={index}
+            count={requirement.items.length}
+            itemLabel={copy.item}
+            canManage={permissions.canManage}
+            progressEditable={itemProgressEditable(
+              item,
+              permissions.canSetProgress,
+            )}
+            items={items}
+            progress={progress}
+            onReload={onReload}
+            verdict={verdicts.get(item.id)}
+          />
+        ) : null,
+      )}
     </ol>
   );
 }
@@ -86,10 +111,20 @@ function AddItem({
   items,
   addLabel,
   itemLabel,
-}: Readonly<{ items: RequirementItemsViewModel; addLabel: string; itemLabel: string }>) {
-  if (items.editing?.mode === "add") return <ItemForm vm={items} itemLabel={itemLabel} submitLabel={addLabel} />;
+}: Readonly<{
+  items: RequirementItemsViewModel;
+  addLabel: string;
+  itemLabel: string;
+}>) {
+  if (items.editing?.mode === 'add')
+    return <ItemForm vm={items} itemLabel={itemLabel} submitLabel={addLabel} />;
   return (
-    <button type="button" className="rq-add" onClick={items.startAdd} disabled={items.status === "saving"}>
+    <button
+      type="button"
+      className="rq-add"
+      onClick={items.startAdd}
+      disabled={items.status === 'saving'}
+    >
       <PlusIcon />
       {addLabel}
     </button>
@@ -120,7 +155,7 @@ export function RequirementCard({
   onRequirement,
   onReload,
   verdicts = NO_VERDICTS,
-  filter = "all",
+  filter = 'all',
 }: Readonly<{
   requirement: Requirement;
   permissions: RequirementPermissions;
@@ -147,14 +182,22 @@ export function RequirementCard({
   const itemsId = `rq-${requirement.id}-items`;
   // Closed by default, open while a filter is on. A press holds only for the
   // filter it was made under: choosing another chip shows its matches again.
-  const [pressed, setPressed] = useState<{ filter: ChecklistFilter; open: boolean } | null>(null);
-  const open = pressed?.filter === filter ? pressed.open : filter !== "all";
+  const [pressed, setPressed] = useState<{
+    filter: ChecklistFilter;
+    open: boolean;
+  } | null>(null);
+  const open = pressed?.filter === filter ? pressed.open : filter !== 'all';
 
   return (
-    <article className="rq-card" data-kind={requirement.kind} data-open={String(open)} aria-labelledby={titleId}>
+    <article
+      className="rq-card"
+      data-kind={requirement.kind}
+      data-open={String(open)}
+      aria-labelledby={titleId}
+    >
       <header className="rq-card__head">
         <span className="rq-card__icon" aria-hidden="true">
-          {requirement.kind === "functional" ? <FeatureIcon /> : <SystemIcon />}
+          {requirement.kind === 'functional' ? <FeatureIcon /> : <SystemIcon />}
         </span>
         <div className="rq-card__titles">
           <span className="rq-card__eyebrow">{copy.singular}</span>
@@ -172,16 +215,26 @@ export function RequirementCard({
               </span>
             </button>
           </h4>
-          {requirement.description ? <p className="rq-card__desc">{requirement.description}</p> : null}
+          {requirement.description ? (
+            <p className="rq-card__desc">{requirement.description}</p>
+          ) : null}
         </div>
         <div className="rq-card__aside">
           <ProgressMeter requirement={requirement} />
           {canManage ? (
             <span className="rq-card__actions">
-              <button type="button" className="ghost-button" onClick={() => onEdit(requirement)}>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => onEdit(requirement)}
+              >
                 Edit
               </button>
-              <button type="button" className="rq-link rq-link--danger" onClick={() => onArchive(requirement)}>
+              <button
+                type="button"
+                className="rq-link rq-link--danger"
+                onClick={() => onArchive(requirement)}
+              >
                 Archive
               </button>
             </span>
@@ -199,7 +252,13 @@ export function RequirementCard({
           verdicts={verdicts}
           filter={filter}
         />
-        {canManage ? <AddItem items={items} addLabel={copy.addItem} itemLabel={copy.item} /> : null}
+        {canManage ? (
+          <AddItem
+            items={items}
+            addLabel={copy.addItem}
+            itemLabel={copy.item}
+          />
+        ) : null}
       </div>
     </article>
   );

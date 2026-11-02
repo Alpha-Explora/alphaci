@@ -8,11 +8,11 @@
  * Pure: no React, no fetch.
  */
 
-import { ApiError } from "@/shared/api/request";
+import { ApiError } from '@/shared/api/request';
 
-import { apiErrorReason } from "./api-error-reason";
-import { needsGithubSignIn } from "./github-read-failure";
-import { reinstallSecretsSignInHref } from "./project-detail-tab-rules";
+import { apiErrorReason } from './api-error-reason';
+import { needsGithubSignIn } from './github-read-failure';
+import { reinstallSecretsSignInHref } from './project-detail-tab-rules';
 
 /* ── Wire ───────────────────────────────────────────────────────────────── */
 
@@ -53,17 +53,22 @@ export interface BrowserTestsStatus {
  * already run, and that what is missing is ALPHACI's standard checks — not
  * that it has no browser tests.
  */
-export function browserTestsLead(status: Pick<BrowserTestsStatus, "ownTests"> | null, branch: string): string {
+export function browserTestsLead(
+  status: Pick<BrowserTestsStatus, 'ownTests'> | null,
+  branch: string,
+): string {
   const own = status?.ownTests?.count ?? 0;
   if (own > 0) {
-    const files = own === 1 ? "1 browser test file" : `${String(own)} browser test files`;
+    const files =
+      own === 1 ? '1 browser test file' : `${String(own)} browser test files`;
     return `Your ${files} on ${branch} run in the Verify stage. ALPHACI's standard checks are not added yet:`;
   }
   return `The Verify stage runs these against the deployed site. Missing on ${branch}:`;
 }
 
 /** In the Pipeline configuration: the update pull request is right here, not a page away. */
-export const VISUAL_UPDATE_HERE = "Open the workflow update pull request in the settings above: it turns visual testing on in dev.";
+export const VISUAL_UPDATE_HERE =
+  'Open the workflow update pull request in the settings above: it turns visual testing on in dev.';
 
 /** Per branch: whether the verify workflow takes screenshots; null when unknown. */
 export interface BrowserTestsVisual {
@@ -84,7 +89,8 @@ export interface BrowserTestsAdded {
 
 /* ── What the card shows ────────────────────────────────────────────────── */
 
-export const INSTALLED_LINE = "Browser tests installed: page loads, links, accessibility, visual";
+export const INSTALLED_LINE =
+  'Browser tests installed: page loads, links, accessibility, visual';
 
 /**
  * The backend's sentence for a repository with no Next.js or React
@@ -92,27 +98,34 @@ export const INSTALLED_LINE = "Browser tests installed: page loads, links, acces
  * The explicit flag wins, because `reason` reports the role or a missing dev
  * branch first and so cannot reliably identify a backend repository.
  */
-const NOT_FRONTEND_REASON = "This repository does not look like a frontend project";
+const NOT_FRONTEND_REASON =
+  'This repository does not look like a frontend project';
 
-export type BrowserTestsCardState = "hidden" | "installed" | "missing";
+export type BrowserTestsCardState = 'hidden' | 'installed' | 'missing';
 
 /** Hidden while loading, after a failed read, and for a non-frontend repository. */
-export function browserTestsCardState(status: BrowserTestsStatus | null): BrowserTestsCardState {
-  if (!status) return "hidden";
-  if (status.frontend === false) return "hidden";
-  if (status.installed) return "installed";
-  if (status.frontend === undefined && status.reason?.startsWith(NOT_FRONTEND_REASON)) return "hidden";
-  return "missing";
+export function browserTestsCardState(
+  status: BrowserTestsStatus | null,
+): BrowserTestsCardState {
+  if (!status) return 'hidden';
+  if (status.frontend === false) return 'hidden';
+  if (status.installed) return 'installed';
+  if (
+    status.frontend === undefined &&
+    status.reason?.startsWith(NOT_FRONTEND_REASON)
+  )
+    return 'hidden';
+  return 'missing';
 }
 
 /** The four checks and the setup they share, as someone reading the card says them. */
 const FILE_LABELS: Readonly<Record<string, string>> = {
-  "tests/e2e/pages.e2e-spec.ts": "Page loads",
-  "tests/e2e/links.e2e-spec.ts": "Links",
-  "tests/e2e/a11y.e2e-spec.ts": "Accessibility",
-  "tests/e2e/visual.e2e-spec.ts": "Visual snapshots",
-  "tests/e2e/support.ts": "Shared test setup",
-  "playwright.config.ts": "Playwright config",
+  'tests/e2e/pages.e2e-spec.ts': 'Page loads',
+  'tests/e2e/links.e2e-spec.ts': 'Links',
+  'tests/e2e/a11y.e2e-spec.ts': 'Accessibility',
+  'tests/e2e/visual.e2e-spec.ts': 'Visual snapshots',
+  'tests/e2e/support.ts': 'Shared test setup',
+  'playwright.config.ts': 'Playwright config',
 };
 
 const LABEL_ORDER = Object.values(FILE_LABELS);
@@ -131,10 +144,13 @@ function rank(label: string): number {
   return index === -1 ? LABEL_ORDER.length : index;
 }
 
-export const ADD_BUTTON_LABEL = "Add browser tests";
+export const ADD_BUTTON_LABEL = 'Add browser tests';
 
 /** "Pull request #12 opened into dev". */
-export function openedLabel(added: Pick<BrowserTestsAdded, "pullRequestNumber">, base: string): string {
+export function openedLabel(
+  added: Pick<BrowserTestsAdded, 'pullRequestNumber'>,
+  base: string,
+): string {
   return `Pull request #${String(added.pullRequestNumber)} opened into ${base}`;
 }
 
@@ -152,13 +168,16 @@ export interface BrowserTestsNote {
 export function splitNote(note: string): BrowserTestsNote {
   const match = /```[a-z]*\n([\s\S]*?)```/.exec(note);
   if (!match) return { text: note.trim(), code: null };
-  return { text: note.slice(0, match.index).trim(), code: (match[1] ?? "").trimEnd() };
+  return {
+    text: note.slice(0, match.index).trim(),
+    code: (match[1] ?? '').trimEnd(),
+  };
 }
 
 /* ── Visual testing in the workflow ─────────────────────────────────────── */
 
 function flag(value: unknown): boolean | null {
-  return typeof value === "boolean" ? value : null;
+  return typeof value === 'boolean' ? value : null;
 }
 
 /**
@@ -166,9 +185,12 @@ function flag(value: unknown): boolean | null {
  * not send it (an older backend) or sent something that is not an object, so
  * every caller falls back to today's wording rather than claiming "off".
  */
-export function browserTestsVisual(status: BrowserTestsStatus | null): BrowserTestsVisual | null {
+export function browserTestsVisual(
+  status: BrowserTestsStatus | null,
+): BrowserTestsVisual | null {
   const raw: unknown = status?.visual;
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw))
+    return null;
   const value = raw as Record<string, unknown>;
   return { dev: flag(value.dev), uat: flag(value.uat) };
 }
@@ -179,26 +201,32 @@ export function browserTestsVisual(status: BrowserTestsStatus | null): BrowserTe
  * an unreadable file, or main, which the status does not report (and dev,
  * which is never screenshotted).
  */
-export function visualCaptureOn(visual: BrowserTestsVisual | null, branch: string): boolean | null {
-  return branch === "uat" ? (visual?.uat ?? null) : null;
+export function visualCaptureOn(
+  visual: BrowserTestsVisual | null,
+  branch: string,
+): boolean | null {
+  return branch === 'uat' ? (visual?.uat ?? null) : null;
 }
 
-export const VISUAL_OFF_LINE = "Visual testing is off in this repository's workflow.";
+export const VISUAL_OFF_LINE =
+  "Visual testing is off in this repository's workflow.";
 
 export const VISUAL_OFF_ON_DEV_LINE =
   "Visual testing is off in this repository's workflow on dev, so uat stops capturing screenshots at the next promotion.";
 
-export const VISUAL_PROMOTE_LINE = "Turned on in dev. Promote to uat to start capturing screenshots.";
+export const VISUAL_PROMOTE_LINE =
+  'Turned on in dev. Promote to uat to start capturing screenshots.';
 
-export const VISUAL_UPDATE_LABEL = "Update the workflow";
+export const VISUAL_UPDATE_LABEL = 'Update the workflow';
 
-export const VISUAL_UPDATE_HINT = "Opens the Pipeline configuration, where the update pull request turns it on in dev.";
+export const VISUAL_UPDATE_HINT =
+  'Opens the Pipeline configuration, where the update pull request turns it on in dev.';
 
 /**
  * What fixes it: the workflow update pull request when dev is off, a
  * promotion when only uat is; `none` when uat is off and dev unreadable.
  */
-export type VisualOffFix = "update-workflow" | "promote" | "none";
+export type VisualOffFix = 'update-workflow' | 'promote' | 'none';
 
 export interface VisualOffNotice {
   line: string;
@@ -209,28 +237,36 @@ export interface VisualOffNotice {
  * The card's "visual testing is off" notice, or null when it is on, unknown,
  * or not reported by an older backend.
  */
-export function visualOffNotice(visual: BrowserTestsVisual | null): VisualOffNotice | null {
+export function visualOffNotice(
+  visual: BrowserTestsVisual | null,
+): VisualOffNotice | null {
   if (!visual) return null;
   if (visual.dev === false) {
-    return { line: visual.uat === false ? VISUAL_OFF_LINE : VISUAL_OFF_ON_DEV_LINE, fix: "update-workflow" };
+    return {
+      line: visual.uat === false ? VISUAL_OFF_LINE : VISUAL_OFF_ON_DEV_LINE,
+      fix: 'update-workflow',
+    };
   }
   if (visual.uat !== false) return null;
-  return { line: VISUAL_OFF_LINE, fix: visual.dev === true ? "promote" : "none" };
+  return {
+    line: VISUAL_OFF_LINE,
+    fix: visual.dev === true ? 'promote' : 'none',
+  };
 }
 
 /* ── An add that failed ─────────────────────────────────────────────────── */
 
 export type BrowserTestsErrorKind =
-  | "reauth"
-  | "pr-open"
-  | "forbidden"
-  | "write-forbidden"
-  | "no-dev-branch"
-  | "nothing-to-add"
-  | "branch-taken"
-  | "pr-refused"
-  | "not-frontend"
-  | "failed";
+  | 'reauth'
+  | 'pr-open'
+  | 'forbidden'
+  | 'write-forbidden'
+  | 'no-dev-branch'
+  | 'nothing-to-add'
+  | 'branch-taken'
+  | 'pr-refused'
+  | 'not-frontend'
+  | 'failed';
 
 export interface BrowserTestsError {
   kind: BrowserTestsErrorKind;
@@ -243,60 +279,81 @@ export interface BrowserTestsError {
 }
 
 const CODE_KINDS: Readonly<Record<string, BrowserTestsErrorKind>> = {
-  GITHUB_REAUTH: "reauth",
-  BROWSER_TESTS_PR_OPEN: "pr-open",
-  BROWSER_TESTS_ROLE_FORBIDDEN: "forbidden",
-  GITHUB_WRITE_FORBIDDEN: "write-forbidden",
-  BROWSER_TESTS_NO_DEV_BRANCH: "no-dev-branch",
-  BROWSER_TESTS_NOTHING_TO_ADD: "nothing-to-add",
-  BROWSER_TESTS_BRANCH_TAKEN: "branch-taken",
-  BROWSER_TESTS_PR_REFUSED: "pr-refused",
-  BROWSER_TESTS_NOT_FRONTEND: "not-frontend",
+  GITHUB_REAUTH: 'reauth',
+  BROWSER_TESTS_PR_OPEN: 'pr-open',
+  BROWSER_TESTS_ROLE_FORBIDDEN: 'forbidden',
+  GITHUB_WRITE_FORBIDDEN: 'write-forbidden',
+  BROWSER_TESTS_NO_DEV_BRANCH: 'no-dev-branch',
+  BROWSER_TESTS_NOTHING_TO_ADD: 'nothing-to-add',
+  BROWSER_TESTS_BRANCH_TAKEN: 'branch-taken',
+  BROWSER_TESTS_PR_REFUSED: 'pr-refused',
+  BROWSER_TESTS_NOT_FRONTEND: 'not-frontend',
 };
 
-const MESSAGES: Readonly<Record<Exclude<BrowserTestsErrorKind, "pr-open" | "pr-refused" | "failed">, string>> = {
-  reauth: "GitHub needs you to sign in again before ALPHACI can open this pull request.",
-  forbidden: "Only Developers, Product owners and admins can add browser tests.",
-  "write-forbidden":
-    "GitHub did not let your account write to this repository, so no pull request was opened. A Developer gets write access when the Product owner adds them to this Project; anyone else needs a repository admin to grant it.",
-  "no-dev-branch": "This repository has no dev branch yet, and browser tests are added there. Create dev, then try again.",
-  "nothing-to-add": "The browser tests are already in this repository, so there was nothing to add.",
-  "branch-taken":
-    "Every alphaci/browser-tests branch name is already taken. Delete an old one in the repository, then try again.",
-  "not-frontend":
+const MESSAGES: Readonly<
+  Record<
+    Exclude<BrowserTestsErrorKind, 'pr-open' | 'pr-refused' | 'failed'>,
+    string
+  >
+> = {
+  reauth:
+    'GitHub needs you to sign in again before ALPHACI can open this pull request.',
+  forbidden:
+    'Only Developers, Product owners and admins can add browser tests.',
+  'write-forbidden':
+    'GitHub did not let your account write to this repository, so no pull request was opened. A Developer gets write access when the Product owner adds them to this Project; anyone else needs a repository admin to grant it.',
+  'no-dev-branch':
+    'This repository has no dev branch yet, and browser tests are added there. Create dev, then try again.',
+  'nothing-to-add':
+    'The browser tests are already in this repository, so there was nothing to add.',
+  'branch-taken':
+    'Every alphaci/browser-tests branch name is already taken. Delete an old one in the repository, then try again.',
+  'not-frontend':
     "This repository doesn't look like a frontend project (no Next.js or React in package.json), so browser tests weren't added.",
 };
 
-const FALLBACK = "The pull request could not be opened. Try again in a moment.";
+const FALLBACK = 'The pull request could not be opened. Try again in a moment.';
 
 function details(cause: unknown): Record<string, unknown> | null {
   if (!(cause instanceof ApiError)) return null;
   const body = cause.details;
-  return typeof body === "object" && body !== null ? (body as Record<string, unknown>) : null;
+  return typeof body === 'object' && body !== null
+    ? (body as Record<string, unknown>)
+    : null;
 }
 
 function kindOf(cause: unknown): BrowserTestsErrorKind {
   const code = details(cause)?.code;
-  const known = typeof code === "string" ? CODE_KINDS[code.toUpperCase()] : undefined;
+  const known =
+    typeof code === 'string' ? CODE_KINDS[code.toUpperCase()] : undefined;
   if (known) return known;
-  return needsGithubSignIn(cause) ? "reauth" : "failed";
+  return needsGithubSignIn(cause) ? 'reauth' : 'failed';
 }
 
 function openNumber(cause: unknown): number | null {
   const value = details(cause)?.pullRequestNumber;
-  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+    ? value
+    : null;
 }
 
-function messageFor(kind: BrowserTestsErrorKind, cause: unknown, open: number | null): string {
-  if (kind === "pr-open") {
+function messageFor(
+  kind: BrowserTestsErrorKind,
+  cause: unknown,
+  open: number | null,
+): string {
+  if (kind === 'pr-open') {
     return open === null
-      ? "A browser-tests pull request is already open."
+      ? 'A browser-tests pull request is already open.'
       : `A browser-tests pull request is already open: #${String(open)}`;
   }
-  if (kind === "pr-refused") {
-    return apiErrorReason(cause, "The files were committed, but GitHub refused to open the pull request.");
+  if (kind === 'pr-refused') {
+    return apiErrorReason(
+      cause,
+      'The files were committed, but GitHub refused to open the pull request.',
+    );
   }
-  if (kind === "failed") return apiErrorReason(cause, FALLBACK);
+  if (kind === 'failed') return apiErrorReason(cause, FALLBACK);
   return MESSAGES[kind];
 }
 
@@ -304,13 +361,17 @@ function messageFor(kind: BrowserTestsErrorKind, cause: unknown, open: number | 
  * What a refused "Add browser tests" says, by the backend's `code`. A 401 or
  * `GITHUB_REAUTH` is the app's usual sign-in-again case, with its link.
  */
-export function browserTestsError(cause: unknown, projectId: string): BrowserTestsError {
+export function browserTestsError(
+  cause: unknown,
+  projectId: string,
+): BrowserTestsError {
   const kind = kindOf(cause);
-  const open = kind === "pr-open" ? openNumber(cause) : null;
+  const open = kind === 'pr-open' ? openNumber(cause) : null;
   return {
     kind,
     message: messageFor(kind, cause, open),
     pullRequestNumber: open,
-    signInHref: kind === "reauth" ? reinstallSecretsSignInHref(projectId) : null,
+    signInHref:
+      kind === 'reauth' ? reinstallSecretsSignInHref(projectId) : null,
   };
 }

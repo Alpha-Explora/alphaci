@@ -15,7 +15,7 @@ import type {
   ProjectFoldersSnapshot,
   RepoRole,
   UnfiledProject,
-} from "./project-folder-types";
+} from './project-folder-types';
 
 import {
   NO_PROJECT_YET_MESSAGE,
@@ -24,16 +24,16 @@ import {
   creationRefusalMessage,
   readFeatureCount,
   repositoryBlockedByFeatures,
-} from "@/features/groups";
-import { seesProjectAsProduct, studioTabFor } from "@/features/projects/detail";
-import type { AppRole } from "@/shared/api/contracts";
+} from '@/features/groups';
+import { seesProjectAsProduct, studioTabFor } from '@/features/projects/detail';
+import type { AppRole } from '@/shared/api/contracts';
 
 type Json = Record<string, unknown>;
 
 /* ── Primitive readers ──────────────────────────────────────────────────── */
 
 function asRecord(value: unknown): Json | null {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Json)
     : null;
 }
@@ -42,25 +42,30 @@ function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-function readString(value: unknown, fallback = ""): string {
-  return typeof value === "string" ? value : fallback;
+function readString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value : fallback;
 }
 
 /** An exact boolean, or null when the field is missing or anything else. */
 function readFlag(value: unknown): boolean | null {
-  return typeof value === "boolean" ? value : null;
+  return typeof value === 'boolean' ? value : null;
 }
 
 /** A non-empty string, or null. */
 function readOptionalString(value: unknown): string | null {
-  return typeof value === "string" && value.trim() !== "" ? value : null;
+  return typeof value === 'string' && value.trim() !== '' ? value : null;
 }
 
-const ROLES: ReadonlyArray<RepoRole> = ["frontend", "backend", "service", "app"];
+const ROLES: ReadonlyArray<RepoRole> = [
+  'frontend',
+  'backend',
+  'service',
+  'app',
+];
 
 /** Unknown or missing roles read as "app": the one role that claims nothing. */
 export function readRole(value: unknown): RepoRole {
-  return ROLES.includes(value as RepoRole) ? (value as RepoRole) : "app";
+  return ROLES.includes(value as RepoRole) ? (value as RepoRole) : 'app';
 }
 
 /* ── Normalisers ────────────────────────────────────────────────────────── */
@@ -72,7 +77,7 @@ function readFolderProject(value: unknown): FolderProject | null {
   return {
     id,
     role: readRole(raw.role),
-    status: readString(raw.status, "unknown"),
+    status: readString(raw.status, 'unknown'),
     repoShape: readOptionalString(raw.repoShape),
   };
 }
@@ -84,9 +89,9 @@ function readRepository(value: unknown): FolderRepository | null {
   const repoFullName = readOptionalString(raw.repoFullName);
   return {
     repositoryId,
-    name: readOptionalString(raw.name) ?? repoFullName ?? "Unnamed repository",
+    name: readOptionalString(raw.name) ?? repoFullName ?? 'Unnamed repository',
     repoFullName,
-    status: readString(raw.status, "unknown"),
+    status: readString(raw.status, 'unknown'),
     project: readFolderProject(raw.project),
   };
 }
@@ -102,11 +107,13 @@ function readFolder(value: unknown): ProjectFolder | null {
   return {
     deliveryProjectId,
     systemId: readString(raw.systemId),
-    name: readOptionalString(raw.name) ?? "Untitled Project",
+    name: readOptionalString(raw.name) ?? 'Untitled Project',
     createdAt: readOptionalString(raw.createdAt),
     featureCount: readFeatureCount(raw.featureCount),
     // Creation order, exactly as the server sends it.
-    repositories: asArray(raw.repositories).map(readRepository).filter(isPresent),
+    repositories: asArray(raw.repositories)
+      .map(readRepository)
+      .filter(isPresent),
   };
 }
 
@@ -117,10 +124,10 @@ function readUnfiled(value: unknown): UnfiledProject | null {
   const repoFullName = readOptionalString(raw.repoFullName);
   return {
     id,
-    name: readOptionalString(raw.name) ?? repoFullName ?? "Unnamed project",
+    name: readOptionalString(raw.name) ?? repoFullName ?? 'Unnamed project',
     repoFullName,
     role: readRole(raw.role),
-    status: readString(raw.status, "unknown"),
+    status: readString(raw.status, 'unknown'),
     repoShape: readOptionalString(raw.repoShape),
   };
 }
@@ -164,47 +171,59 @@ function readDeletedRepository(value: unknown): DeletedRepository | null {
   if (!raw || !repositoryId) return null;
   return {
     repositoryId,
-    name: readOptionalString(raw.name) ?? "Unnamed repository",
+    name: readOptionalString(raw.name) ?? 'Unnamed repository',
     projectId: readOptionalString(raw.projectId),
     githubRepoDeleted: raw.githubRepoDeleted === true,
   };
 }
 
 /** The 200 body of DELETE /delivery-projects/:id. */
-export function normaliseDeleteOutcome(value: unknown, requestedId: string): DeleteProjectOutcome {
+export function normaliseDeleteOutcome(
+  value: unknown,
+  requestedId: string,
+): DeleteProjectOutcome {
   const raw = asRecord(value) ?? {};
   return {
     deliveryProjectId: readOptionalString(raw.deliveryProjectId) ?? requestedId,
-    name: readOptionalString(raw.name) ?? "",
-    deletedRepositories: asArray(raw.deletedRepositories).map(readDeletedRepository).filter(isPresent),
+    name: readOptionalString(raw.name) ?? '',
+    deletedRepositories: asArray(raw.deletedRepositories)
+      .map(readDeletedRepository)
+      .filter(isPresent),
   };
 }
 
 /* ── Labels ─────────────────────────────────────────────────────────────── */
 
 const ROLE_LABELS: Record<RepoRole, string> = {
-  frontend: "Frontend",
-  backend: "Backend",
-  service: "Service",
-  app: "App",
+  frontend: 'Frontend',
+  backend: 'Backend',
+  service: 'Service',
+  app: 'App',
 };
 
 export function repoRoleLabel(role: RepoRole): string {
   return ROLE_LABELS[role];
 }
 
-function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
+function plural(
+  count: number,
+  singular: string,
+  pluralForm = `${singular}s`,
+): string {
   return `${count} ${count === 1 ? singular : pluralForm}`;
 }
 
 export function repositoryCountLabel(count: number): string {
-  return plural(count, "repository", "repositories");
+  return plural(count, 'repository', 'repositories');
 }
 
 /** The short repository name: "Org/testfinals-fe" -> "testfinals-fe". */
-export function repoDisplayName(repo: { name: string; repoFullName: string | null }): string {
+export function repoDisplayName(repo: {
+  name: string;
+  repoFullName: string | null;
+}): string {
   if (!repo.repoFullName) return repo.name;
-  return repo.repoFullName.split("/").at(-1) || repo.repoFullName;
+  return repo.repoFullName.split('/').at(-1) || repo.repoFullName;
 }
 
 /* ── Folder rules ───────────────────────────────────────────────────────── */
@@ -213,7 +232,8 @@ export function repoDisplayName(repo: { name: string; repoFullName: string | nul
 export function folderProjectIds(folder: ProjectFolder): string[] {
   const ids: string[] = [];
   for (const repo of folder.repositories) {
-    if (repo.project && !ids.includes(repo.project.id)) ids.push(repo.project.id);
+    if (repo.project && !ids.includes(repo.project.id))
+      ids.push(repo.project.id);
   }
   return ids;
 }
@@ -223,9 +243,11 @@ export function folderProjectIds(folder: ProjectFolder): string[] {
  * repository's, else an app's. A backend or service has nothing to preview.
  */
 export function verifyProjectId(folder: ProjectFolder): string | null {
-  const linked = folder.repositories.map((repo) => repo.project).filter(isPresent);
-  const frontend = linked.find((project) => project.role === "frontend");
-  const app = linked.find((project) => project.role === "app");
+  const linked = folder.repositories
+    .map((repo) => repo.project)
+    .filter(isPresent);
+  const frontend = linked.find((project) => project.role === 'frontend');
+  const app = linked.find((project) => project.role === 'app');
   return (frontend ?? app)?.id ?? null;
 }
 
@@ -235,8 +257,13 @@ export function verifyProjectId(folder: ProjectFolder): string | null {
  * and the card then opens the Project's detail instead.
  */
 export function folderLandingProjectId(folder: ProjectFolder): string | null {
-  const linked = folder.repositories.map((repo) => repo.project).filter(isPresent);
-  return (linked.find((project) => project.role === "frontend") ?? linked[0])?.id ?? null;
+  const linked = folder.repositories
+    .map((repo) => repo.project)
+    .filter(isPresent);
+  return (
+    (linked.find((project) => project.role === 'frontend') ?? linked[0])?.id ??
+    null
+  );
 }
 
 /** Every Project of the team except the one the repository is in. */
@@ -244,7 +271,9 @@ export function moveTargets(
   folders: ReadonlyArray<ProjectFolder>,
   currentFolderId: string,
 ): ProjectFolder[] {
-  return folders.filter((folder) => folder.deliveryProjectId !== currentFolderId);
+  return folders.filter(
+    (folder) => folder.deliveryProjectId !== currentFolderId,
+  );
 }
 
 export function findFolder(
@@ -252,16 +281,20 @@ export function findFolder(
   deliveryProjectId: string | null,
 ): ProjectFolder | null {
   if (!deliveryProjectId) return null;
-  return folders.find((folder) => folder.deliveryProjectId === deliveryProjectId) ?? null;
+  return (
+    folders.find((folder) => folder.deliveryProjectId === deliveryProjectId) ??
+    null
+  );
 }
 
 /* ── Features before repositories ───────────────────────────────────────── */
 
 export const FEATURES_REQUIRED_NOTE = PROJECT_FEATURES_REQUIRED_MESSAGE;
-export const FEATURE_NUDGE_MESSAGE = "Add a Feature so Developers can add repositories.";
+export const FEATURE_NUDGE_MESSAGE =
+  'Add a Feature so Developers can add repositories.';
 
 /** How a Project offers "Add repository": a link, a disabled control with the note, or nothing. */
-export type AddRepositoryState = "enabled" | "blocked" | "hidden";
+export type AddRepositoryState = 'enabled' | 'blocked' | 'hidden';
 
 export interface FolderFeatureGate {
   addRepository: AddRepositoryState;
@@ -277,16 +310,20 @@ export interface FolderFeatureGate {
  * first one. An unknown count changes nothing: the server decides.
  */
 export function folderFeatureGate(
-  folder: Pick<ProjectFolder, "featureCount">,
+  folder: Pick<ProjectFolder, 'featureCount'>,
   caller: {
     appRole: AppRole | null | undefined;
     canCreateRepository: boolean;
     canManageRequirements: boolean;
   },
 ): FolderFeatureGate {
-  const blocked = repositoryBlockedByFeatures(caller.appRole, folder.featureCount);
-  let addRepository: AddRepositoryState = "hidden";
-  if (caller.canCreateRepository) addRepository = blocked ? "blocked" : "enabled";
+  const blocked = repositoryBlockedByFeatures(
+    caller.appRole,
+    folder.featureCount,
+  );
+  let addRepository: AddRepositoryState = 'hidden';
+  if (caller.canCreateRepository)
+    addRepository = blocked ? 'blocked' : 'enabled';
   return {
     addRepository,
     featureNudge: folder.featureCount === 0 && caller.canManageRequirements,
@@ -300,8 +337,11 @@ export function folderFeatureGate(
  * it stays, so the Developer can read the Features before building the first
  * one. Every other role keeps it (a Product owner writes the Features here).
  */
-export function showsProjectQaWorkspace(appRole: AppRole | null | undefined, repositoryCount: number): boolean {
-  return !(appRole === "member" && repositoryCount > 0);
+export function showsProjectQaWorkspace(
+  appRole: AppRole | null | undefined,
+  repositoryCount: number,
+): boolean {
+  return !(appRole === 'member' && repositoryCount > 0);
 }
 
 /** The folders with locally known Feature counts (a Feature just written) laid over the server's. */
@@ -311,7 +351,9 @@ export function withFeatureCounts(
 ): ProjectFolder[] {
   return folders.map((folder) => {
     const known = counts[folder.deliveryProjectId];
-    return known === undefined || known === folder.featureCount ? folder : { ...folder, featureCount: known };
+    return known === undefined || known === folder.featureCount
+      ? folder
+      : { ...folder, featureCount: known };
   });
 }
 
@@ -328,8 +370,11 @@ export function projectDashboardHref(projectId: string): string {
  * backend chip would strand them on a repository that is not theirs, so for
  * them only a frontend chip is a link. Everyone else opens any repository.
  */
-export function repoChipOpens(appRole: AppRole | null | undefined, role: RepoRole | null): boolean {
-  return !seesProjectAsProduct(appRole) || role === "frontend";
+export function repoChipOpens(
+  appRole: AppRole | null | undefined,
+  role: RepoRole | null,
+): boolean {
+  return !seesProjectAsProduct(appRole) || role === 'frontend';
 }
 
 /**
@@ -345,21 +390,25 @@ export function studioLinkFor(
   const tab = studioTabFor(appRole);
   if (!tab) return null;
   return {
-    label: tab === "po" ? "Open PO Studio" : "Verify in QA Studio",
+    label: tab === 'po' ? 'Open PO Studio' : 'Verify in QA Studio',
     href: `${projectDashboardHref(projectId)}#${tab}`,
   };
 }
 
 /** The create-project wizard, pre-scoped to this team and Project. */
-export function createRepositoryHref(groupId: string, deliveryProjectId?: string): string {
-  const params = new URLSearchParams({ tab: "setup", group: groupId });
-  if (deliveryProjectId) params.set("project", deliveryProjectId);
+export function createRepositoryHref(
+  groupId: string,
+  deliveryProjectId?: string,
+): string {
+  const params = new URLSearchParams({ tab: 'setup', group: groupId });
+  if (deliveryProjectId) params.set('project', deliveryProjectId);
   return `/workflows?${params.toString()}`;
 }
 
 /* ── Role copy ──────────────────────────────────────────────────────────── */
 
-export const EMPTY_PROJECTS_CREATOR_LINE = "Create the first Project for this team.";
+export const EMPTY_PROJECTS_CREATOR_LINE =
+  'Create the first Project for this team.';
 export const EMPTY_PROJECTS_DEVELOPER_LINE = NO_PROJECT_YET_MESSAGE;
 
 /**
@@ -379,8 +428,8 @@ export function emptyProjectsCopy(caller: {
 /** Under an empty Project's repository list, by what the caller may do. */
 export function emptyRepositoriesCopy(canCreateRepository: boolean): string {
   return canCreateRepository
-    ? "No repositories in this Project yet. Add the first one and it lands here."
-    : "No repositories in this Project yet. Developers add them.";
+    ? 'No repositories in this Project yet. Add the first one and it lands here.'
+    : 'No repositories in this Project yet. Developers add them.';
 }
 
 /* ── Validation ─────────────────────────────────────────────────────────── */
@@ -390,7 +439,7 @@ export const PROJECT_NAME_MAX = 200;
 /** Why a Project name cannot be saved, or null when it can. */
 export function projectNameError(name: string): string | null {
   const trimmed = name.trim();
-  if (!trimmed) return "Give the Project a name.";
+  if (!trimmed) return 'Give the Project a name.';
   if (trimmed.length > PROJECT_NAME_MAX) {
     return `Keep the name under ${PROJECT_NAME_MAX} characters.`;
   }
@@ -401,7 +450,7 @@ export function projectNameError(name: string): string | null {
 
 function errorStatus(cause: unknown): number | null {
   const raw = asRecord(cause);
-  return typeof raw?.status === "number" ? raw.status : null;
+  return typeof raw?.status === 'number' ? raw.status : null;
 }
 
 /** The parsed JSON error body ApiError carries in `details`, or `{}`. */
@@ -415,28 +464,34 @@ function errorCode(cause: unknown): string | null {
 }
 
 const LOAD_MESSAGES: Record<number, string> = {
-  401: "Your session expired. Please sign in again.",
+  401: 'Your session expired. Please sign in again.',
   403: "You do not have access to this team's Projects.",
   // A non-member gets 404, as does a team that no longer exists.
   404: "This team's Projects are not available.",
 };
 
 export function loadErrorMessage(cause: unknown): string {
-  return LOAD_MESSAGES[errorStatus(cause) ?? 0] ?? "Projects could not be loaded. Try again in a moment.";
+  return (
+    LOAD_MESSAGES[errorStatus(cause) ?? 0] ??
+    'Projects could not be loaded. Try again in a moment.'
+  );
 }
 
 export const MOVE_CONFLICT_MESSAGE =
-  "This repository was moved by someone else. Refresh and try again.";
+  'This repository was moved by someone else. Refresh and try again.';
 
 const MOVE_MESSAGES: Record<number, string> = {
-  400: "Archived repositories and Projects cannot be moved.",
-  403: "Only a Product owner or admin can move repositories.",
-  404: "That Project no longer exists in this team. Refresh and try again.",
+  400: 'Archived repositories and Projects cannot be moved.',
+  403: 'Only a Product owner or admin can move repositories.',
+  404: 'That Project no longer exists in this team. Refresh and try again.',
   409: MOVE_CONFLICT_MESSAGE,
 };
 
 export function moveErrorMessage(cause: unknown): string {
-  return MOVE_MESSAGES[errorStatus(cause) ?? 0] ?? "The repository could not be moved. Try again in a moment.";
+  return (
+    MOVE_MESSAGES[errorStatus(cause) ?? 0] ??
+    'The repository could not be moved. Try again in a moment.'
+  );
 }
 
 export function isConflict(cause: unknown): boolean {
@@ -444,50 +499,60 @@ export function isConflict(cause: unknown): boolean {
 }
 
 const CREATE_MESSAGES: Record<number, string> = {
-  400: "That name cannot be used. Check it and try again.",
+  400: 'That name cannot be used. Check it and try again.',
   403: PROJECT_CREATE_FORBIDDEN_MESSAGE,
-  409: "A Project with that name already exists in this team.",
+  409: 'A Project with that name already exists in this team.',
 };
 
 export function createErrorMessage(cause: unknown): string {
   return (
     creationRefusalMessage(cause) ??
     CREATE_MESSAGES[errorStatus(cause) ?? 0] ??
-    "The Project could not be created. Try again in a moment."
+    'The Project could not be created. Try again in a moment.'
   );
 }
 
 /* ── Delete Project ─────────────────────────────────────────────────────── */
 
-export const DELETE_NAME_MISMATCH_MESSAGE = "That name doesn't match. Type it exactly to confirm.";
+export const DELETE_NAME_MISMATCH_MESSAGE =
+  "That name doesn't match. Type it exactly to confirm.";
 
 const DELETE_MESSAGES: Record<number, string> = {
-  403: "Only a Product owner or admin can delete this Project.",
-  404: "This Project no longer exists. Refresh and try again.",
-  429: "Too many requests. Try again in a moment.",
+  403: 'Only a Product owner or admin can delete this Project.',
+  404: 'This Project no longer exists. Refresh and try again.',
+  429: 'Too many requests. Try again in a moment.',
 };
 
 /** Display-string mapping for every non-409 delete failure. */
 export function deleteErrorMessage(cause: unknown): string {
   const status = errorStatus(cause);
-  if (status === 400 && errorCode(cause) === "DELIVERY_PROJECT_NAME_MISMATCH") {
+  if (status === 400 && errorCode(cause) === 'DELIVERY_PROJECT_NAME_MISMATCH') {
     return DELETE_NAME_MISMATCH_MESSAGE;
   }
-  return DELETE_MESSAGES[status ?? 0] ?? "The Project could not be deleted. Try again in a moment.";
+  return (
+    DELETE_MESSAGES[status ?? 0] ??
+    'The Project could not be deleted. Try again in a moment.'
+  );
 }
 
 export function isDeleteConflict(cause: unknown): boolean {
   return errorStatus(cause) === 409;
 }
 
-function readFailedRepository(value: unknown): { repositoryId: string; name: string } | null {
+function readFailedRepository(
+  value: unknown,
+): { repositoryId: string; name: string } | null {
   const raw = asRecord(value);
   const repositoryId = readOptionalString(raw?.repositoryId);
   if (!raw || !repositoryId) return null;
-  return { repositoryId, name: readOptionalString(raw.name) ?? "that repository" };
+  return {
+    repositoryId,
+    name: readOptionalString(raw.name) ?? 'that repository',
+  };
 }
 
-const DELETE_PARTIAL_FALLBACK = "Some repositories could not be deleted. Try again in a moment.";
+const DELETE_PARTIAL_FALLBACK =
+  'Some repositories could not be deleted. Try again in a moment.';
 
 /**
  * The 409 body: one repository failed (a provider call, most likely), so the
@@ -496,9 +561,11 @@ const DELETE_PARTIAL_FALLBACK = "Some repositories could not be deleted. Try aga
 export function deletePartialFailure(cause: unknown): DeleteProjectFailure {
   const details = errorDetails(cause);
   return {
-    code: readOptionalString(details.code) ?? "",
+    code: readOptionalString(details.code) ?? '',
     message: readOptionalString(details.message) ?? DELETE_PARTIAL_FALLBACK,
-    deletedRepositories: asArray(details.deletedRepositories).map(readDeletedRepository).filter(isPresent),
+    deletedRepositories: asArray(details.deletedRepositories)
+      .map(readDeletedRepository)
+      .filter(isPresent),
     failedRepository: readFailedRepository(details.failedRepository),
   };
 }

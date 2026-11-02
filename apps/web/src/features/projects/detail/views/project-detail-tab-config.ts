@@ -1,6 +1,6 @@
-import { type SideTabGroup } from "@/features/groups/workspace";
+import { type SideTabGroup } from '@/features/groups/workspace';
 
-import type { ProjectDetailTab } from "../model/project-detail-tab-rules";
+import type { ProjectDetailTab } from '../model/project-detail-tab-rules';
 
 /**
  * Grouped, and in a strip across the top rather than a SIDE rail.
@@ -25,38 +25,38 @@ export const PROJECT_DETAIL_TAB_GROUPS: ReadonlyArray<
   SideTabGroup<ProjectDetailTab>
 > = [
   {
-    heading: "Work",
+    heading: 'Work',
     items: [
-      { id: "overview", label: "Overview" },
-      { id: "code", label: "Code" },
-      { id: "commits", label: "Commits" },
-      { id: "pulls", label: "Pull requests" },
-      { id: "checklists", label: "Checklists" },
+      { id: 'overview', label: 'Overview' },
+      { id: 'code', label: 'Code' },
+      { id: 'commits', label: 'Commits' },
+      { id: 'pulls', label: 'Pull requests' },
+      { id: 'checklists', label: 'Checklists' },
     ],
   },
   {
     // One tab, two views (Runs, Configuration): see PipelineTab.
-    heading: "Pipeline",
-    items: [{ id: "pipeline", label: "Pipeline" }],
+    heading: 'Pipeline',
+    items: [{ id: 'pipeline', label: 'Pipeline' }],
   },
   {
-    heading: "Delivery",
+    heading: 'Delivery',
     items: [
-      { id: "hosting", label: "Hosting" },
-      { id: "qa", label: "QA Studio" },
-      { id: "po", label: "PO Studio" },
+      { id: 'hosting', label: 'Hosting' },
+      { id: 'qa', label: 'QA Studio' },
+      { id: 'po', label: 'PO Studio' },
     ],
   },
   {
-    heading: "Records",
+    heading: 'Records',
     items: [
-      { id: "audit", label: "Audit" },
-      { id: "history", label: "Release" },
+      { id: 'audit', label: 'Audit' },
+      { id: 'history', label: 'Release' },
     ],
   },
   {
-    heading: "Configuration",
-    items: [{ id: "settings", label: "Settings" }],
+    heading: 'Configuration',
+    items: [{ id: 'settings', label: 'Settings' }],
   },
 ];
 

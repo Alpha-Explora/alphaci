@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { WorkspaceChecklistsSection } from "@/features/checklists/manage";
-import { LoadingRows } from "@/features/groups/workspace";
-import { TeamPageShell, type TeamPageHeading } from "@/features/teams/shell";
+import { WorkspaceChecklistsSection } from '@/features/checklists/manage';
+import { LoadingRows } from '@/features/groups/workspace';
+import { TeamPageShell, type TeamPageHeading } from '@/features/teams/shell';
 
-import { linkedItemId } from "../../model/teams-rules";
+import { linkedItemId } from '../../model/teams-rules';
 
 const HEADING: TeamPageHeading = {
-  title: (team) => (team ? `Checklists · ${team.name}` : "Checklists"),
+  title: (team) => (team ? `Checklists · ${team.name}` : 'Checklists'),
 };
 
 /**
@@ -29,7 +29,10 @@ export function TeamChecklistsView() {
       {({ team, vm, deepLink }) => {
         if (vm.qaChecklistsEnabled) {
           return (
-            <section className="glass-panel team-detail-surface" aria-label={`Checklists for ${team.name}`}>
+            <section
+              className="glass-panel team-detail-surface"
+              aria-label={`Checklists for ${team.name}`}
+            >
               <WorkspaceChecklistsSection
                 key={team.id}
                 workspaceId={team.id}
@@ -38,7 +41,11 @@ export function TeamChecklistsView() {
                   name: project.repoFullName,
                   detail: project.serviceName,
                 }))}
-                initialChecklistId={linkedItemId(deepLink.checklistId, deepLink.workspaceId, team.id)}
+                initialChecklistId={linkedItemId(
+                  deepLink.checklistId,
+                  deepLink.workspaceId,
+                  team.id,
+                )}
               />
             </section>
           );

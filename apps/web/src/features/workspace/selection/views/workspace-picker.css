@@ -32,7 +32,7 @@
 }
 
 .team-switcher-trigger:hover,
-.team-switcher-trigger[aria-expanded="true"] {
+.team-switcher-trigger[aria-expanded='true'] {
   border-color: var(--border-brand);
 }
 
@@ -70,7 +70,7 @@
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.team-switcher-trigger[aria-expanded="true"] .team-switcher-chevron {
+.team-switcher-trigger[aria-expanded='true'] .team-switcher-chevron {
   color: var(--text-primary);
   transform: rotate(180deg);
 }

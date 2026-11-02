@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 
-import { HOME_SHORTCUTS } from "../../model/home-layout-rules";
-import type { HomeShortcutId } from "../../model/home-persona-types";
-import { sectionVariants } from "./motion";
+import { HOME_SHORTCUTS } from '../../model/home-layout-rules';
+import type { HomeShortcutId } from '../../model/home-persona-types';
+import { sectionVariants } from './motion';
 
 export function QuickActionRunIcon() {
   return (
@@ -29,14 +29,17 @@ export function QuickActionRunIcon() {
 export function KeyboardShortcuts({
   reduced,
   shortcuts,
-}: Readonly<{ reduced: boolean | null; shortcuts: ReadonlyArray<HomeShortcutId> }>) {
+}: Readonly<{
+  reduced: boolean | null;
+  shortcuts: ReadonlyArray<HomeShortcutId>;
+}>) {
   return (
     <motion.section
       className="dashboard-shortcuts"
       aria-label="Keyboard shortcuts"
       custom={3}
       variants={sectionVariants}
-      initial={reduced ? false : "hidden"}
+      initial={reduced ? false : 'hidden'}
       animate="visible"
     >
       <span className="dashboard-shortcuts-label">Keyboard shortcuts</span>

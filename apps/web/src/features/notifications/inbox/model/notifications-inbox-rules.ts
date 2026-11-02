@@ -1,8 +1,8 @@
-import type { NotificationItem } from "../../model/notifications-types";
+import type { NotificationItem } from '../../model/notifications-types';
 import type {
   NotificationsInboxGroup,
   NotificationsInboxRow,
-} from "./notifications-inbox-types";
+} from './notifications-inbox-types';
 
 /* Pure inbox rules — no React, no I/O, no JSX.
  *
@@ -20,10 +20,10 @@ export function groupNotificationsByDay(
   startOfWeek.setDate(startOfWeek.getDate() - 6);
 
   const groups: NotificationsInboxGroup[] = [
-    { label: "Today", items: [] },
-    { label: "Yesterday", items: [] },
-    { label: "This week", items: [] },
-    { label: "Earlier", items: [] },
+    { label: 'Today', items: [] },
+    { label: 'Yesterday', items: [] },
+    { label: 'This week', items: [] },
+    { label: 'Earlier', items: [] },
   ];
 
   for (const item of items) {
@@ -44,13 +44,15 @@ export function groupNotificationsByDay(
   return groups.filter((group) => group.items.length > 0);
 }
 
-export function flattenGroups(groups: NotificationsInboxGroup[]): NotificationsInboxRow[] {
+export function flattenGroups(
+  groups: NotificationsInboxGroup[],
+): NotificationsInboxRow[] {
   const rows: NotificationsInboxRow[] = [];
   let index = 0;
   for (const group of groups) {
-    rows.push({ type: "header", label: group.label });
+    rows.push({ type: 'header', label: group.label });
     for (const item of group.items) {
-      rows.push({ type: "item", item, index });
+      rows.push({ type: 'item', item, index });
       index += 1;
     }
   }

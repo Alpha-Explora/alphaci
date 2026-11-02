@@ -90,7 +90,10 @@ function errorMessage(error: unknown): string {
 
 function currentCommit(): string {
   if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA;
-  const git = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: WEB_ROOT, encoding: 'utf8' });
+  const git = spawnSync('git', ['rev-parse', 'HEAD'], {
+    cwd: WEB_ROOT,
+    encoding: 'utf8',
+  });
   return git.status === 0 ? git.stdout.trim() : 'unknown';
 }
 
@@ -130,18 +133,28 @@ function watchPage(
         url === `${baseUrl}${response.path}` &&
         (method === undefined || response.method === method),
     );
-  page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
+  page.on('pageerror', (error) =>
+    problems.push(`page error: ${error.message}`),
+  );
   page.on('console', (message) => {
     if (message.type() !== 'error') return;
-    const resourceStatus = /^Failed to load resource: .* status of (\d+)/.exec(message.text());
-    if (resourceStatus && isExpected(Number(resourceStatus[1]), message.location().url)) return;
+    const resourceStatus = /^Failed to load resource: .* status of (\d+)/.exec(
+      message.text(),
+    );
+    if (
+      resourceStatus &&
+      isExpected(Number(resourceStatus[1]), message.location().url)
+    )
+      return;
     problems.push(`console error: ${message.text()}`);
   });
   page.on('requestfailed', (request) => {
     const failure = request.failure()?.errorText ?? 'unknown';
     // Navigating away cancels in-flight requests and prefetches; not a failure.
     if (request.url().startsWith(baseUrl) && failure !== 'net::ERR_ABORTED') {
-      problems.push(`request failed: ${request.method()} ${request.url()} (${failure})`);
+      problems.push(
+        `request failed: ${request.method()} ${request.url()} (${failure})`,
+      );
     }
   });
   page.on('response', (response) => {
@@ -159,7 +172,9 @@ async function runJourneys(baseUrl: string): Promise<void> {
     await context.route(
       (url) => !isLoopback(url),
       (route) => {
-        report.egressAttempts.push(`browser: ${route.request().method()} ${route.request().url()}`);
+        report.egressAttempts.push(
+          `browser: ${route.request().method()} ${route.request().url()}`,
+        );
         return route.abort('blockedbyclient');
       },
     );
@@ -171,7 +186,11 @@ async function runJourneys(baseUrl: string): Promise<void> {
     let failed = false;
     for (const [index, journey] of journeys.entries()) {
       if (failed) {
-        report.journeys.push({ name: journey.name, result: 'skipped', problems: [] });
+        report.journeys.push({
+          name: journey.name,
+          result: 'skipped',
+          problems: [],
+        });
         continue;
       }
       problems.length = 0;
@@ -180,16 +199,27 @@ async function runJourneys(baseUrl: string): Promise<void> {
       try {
         await journey.run(page, baseUrl);
         // Let late requests land so they are charged to this journey.
-        await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => undefined);
+        await page
+          .waitForLoadState('networkidle', { timeout: 5_000 })
+          .catch(() => undefined);
       } catch (error) {
         problems.unshift(`assertion: ${errorMessage(error)}`);
       }
-      const result: JourneyResult = { name: journey.name, result: 'passed', problems: [...problems] };
+      const result: JourneyResult = {
+        name: journey.name,
+        result: 'passed',
+        problems: [...problems],
+      };
       if (problems.length > 0) {
         failed = true;
         result.result = 'failed';
         result.screenshot = `journey-${index + 1}.png`;
-        await page.screenshot({ path: join(REPORT_DIR, result.screenshot), fullPage: true }).catch(() => undefined);
+        await page
+          .screenshot({
+            path: join(REPORT_DIR, result.screenshot),
+            fullPage: true,
+          })
+          .catch(() => undefined);
       }
       report.journeys.push(result);
       log(`journey: ${journey.name}: ${result.result}`);
@@ -215,21 +245,27 @@ async function main(): Promise<void> {
   const recordServerEgress = () => {
     if (serverEgressRecorded || !egress) return;
     serverEgressRecorded = true;
-    report.egressAttempts.push(...egress.attempts.map((attempt) => `server: ${attempt}`));
+    report.egressAttempts.push(
+      ...egress.attempts.map((attempt) => `server: ${attempt}`),
+    );
   };
   const stopEverything = () =>
     (cleanup ??= (async () => {
       log('stopping the stack ...');
       await group.stopAll();
       await Promise.allSettled(pending);
-      await stopDatabase(REPORT_DIR).catch((error: unknown) => log(errorMessage(error)));
+      await stopDatabase(REPORT_DIR).catch((error: unknown) =>
+        log(errorMessage(error)),
+      );
       await egress?.close();
     })());
 
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     process.once(signal, () => {
       report.error = `Interrupted by ${signal}.`;
-      void stopEverything().finally(() => finish(signal === 'SIGINT' ? 130 : 143));
+      void stopEverything().finally(() =>
+        finish(signal === 'SIGINT' ? 130 : 143),
+      );
     });
   }
 
@@ -244,11 +280,19 @@ async function main(): Promise<void> {
     const apiReady = (async () => {
       await Promise.all([
         step('start Postgres', () => startDatabase(group)),
-        skipBuild ? Promise.resolve() : step('build API', () => buildApi(group)),
+        skipBuild
+          ? Promise.resolve()
+          : step('build API', () => buildApi(group)),
       ]);
       await step('migrate database', () => migrateDatabase(group));
       const api = startApi(group, ports, egressEnv, REPORT_DIR);
-      await step('start API', () => waitForHttp(`${loopbackOrigin(ports.api)}/api/v1/health`, api, SERVICE_READY_MS));
+      await step('start API', () =>
+        waitForHttp(
+          `${loopbackOrigin(ports.api)}/api/v1/health`,
+          api,
+          SERVICE_READY_MS,
+        ),
+      );
     })();
     const webBuilt = skipBuild
       ? step('check web build', () => assertWebBuildTargets(ports))
@@ -258,12 +302,16 @@ async function main(): Promise<void> {
 
     const baseUrl = loopbackOrigin(ports.web);
     const web = startWeb(group, ports, egressEnv);
-    await step('start web', () => waitForHttp(`${baseUrl}/healthz`, web, SERVICE_READY_MS));
+    await step('start web', () =>
+      waitForHttp(`${baseUrl}/healthz`, web, SERVICE_READY_MS),
+    );
     await step('journeys', () => runJourneys(baseUrl));
 
     recordServerEgress();
     if (report.egressAttempts.length > 0) {
-      throw new Error(`Requests tried to leave the runner:\n  ${report.egressAttempts.join('\n  ')}`);
+      throw new Error(
+        `Requests tried to leave the runner:\n  ${report.egressAttempts.join('\n  ')}`,
+      );
     }
     report.result = 'passed';
   } catch (error) {
@@ -282,8 +330,13 @@ async function main(): Promise<void> {
 
 function finish(code: number): never {
   report.seconds = elapsed(startedAt);
-  writeFileSync(join(REPORT_DIR, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
-  log(`${report.result.toUpperCase()} in ${report.seconds} s. Report: ${join(REPORT_DIR, 'report.json')}`);
+  writeFileSync(
+    join(REPORT_DIR, 'report.json'),
+    `${JSON.stringify(report, null, 2)}\n`,
+  );
+  log(
+    `${report.result.toUpperCase()} in ${report.seconds} s. Report: ${join(REPORT_DIR, 'report.json')}`,
+  );
   process.exit(code);
 }
 

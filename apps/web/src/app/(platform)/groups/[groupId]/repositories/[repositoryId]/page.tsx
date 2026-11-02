@@ -1,1 +1,1 @@
-export { RepositoryDetailView as default } from "@/features/groups/repository";
+export { RepositoryDetailView as default } from '@/features/groups/repository';

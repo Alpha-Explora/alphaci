@@ -17,9 +17,9 @@
  * Pure: no React, no fetch.
  */
 
-import type { JobLogSection } from "./job-log-sections";
+import type { JobLogSection } from './job-log-sections';
 
-export type ToolOutcome = "passed" | "failed" | "unknown";
+export type ToolOutcome = 'passed' | 'failed' | 'unknown';
 
 export interface ToolResult {
   /** Stable id, for keys and tests. */
@@ -60,30 +60,31 @@ function withCoverage(base: string, text: string): string {
 
 const READERS: ToolReader[] = [
   {
-    tool: "eslint",
-    label: "Format & style (ESLint)",
+    tool: 'eslint',
+    label: 'Format & style (ESLint)',
     matches: /eslint|run lint\b/i,
     read: (text) => {
-      const problems =
-        /\d+ problems? \((\d+) errors?, (\d+) warnings?\)/.exec(text);
+      const problems = /\d+ problems? \((\d+) errors?, (\d+) warnings?\)/.exec(
+        text,
+      );
       if (problems) {
-        return `${plural(Number(problems[1]), "error")}, ${plural(Number(problems[2]), "warning")}`;
+        return `${plural(Number(problems[1]), 'error')}, ${plural(Number(problems[2]), 'warning')}`;
       }
       return null;
     },
   },
   {
-    tool: "dotnet-format",
-    label: "Format & style (dotnet format)",
+    tool: 'dotnet-format',
+    label: 'Format & style (dotnet format)',
     matches: /dotnet format/i,
     read: (text) => {
       const files = text.match(/Formatted code file/g);
-      return files ? `${plural(files.length, "file")} need formatting` : null;
+      return files ? `${plural(files.length, 'file')} need formatting` : null;
     },
   },
   {
-    tool: "jest",
-    label: "Unit tests (Jest)",
+    tool: 'jest',
+    label: 'Unit tests (Jest)',
     // `(?!:)` keeps `npm run test:e2e` for Playwright: a matcher that claims a
     // step it cannot read leaves the row with no numbers at all.
     matches: /jest|(?:npm |run )test\b(?!:)/i,
@@ -97,14 +98,14 @@ const READERS: ToolReader[] = [
       const total = Number(tests[4]);
       const base =
         failed > 0
-          ? `${plural(failed, "test")} failed of ${String(total)}`
-          : `${plural(total, "test")} passed`;
+          ? `${plural(failed, 'test')} failed of ${String(total)}`
+          : `${plural(total, 'test')} passed`;
       return withCoverage(base, text);
     },
   },
   {
-    tool: "dotnet-test",
-    label: "Unit tests (dotnet test)",
+    tool: 'dotnet-test',
+    label: 'Unit tests (dotnet test)',
     matches: /dotnet test/i,
     read: (text) => {
       const result =
@@ -116,25 +117,25 @@ const READERS: ToolReader[] = [
       const total = Number(result[4]);
       const base =
         failed > 0
-          ? `${plural(failed, "test")} failed of ${String(total)}`
-          : `${plural(total, "test")} passed`;
+          ? `${plural(failed, 'test')} failed of ${String(total)}`
+          : `${plural(total, 'test')} passed`;
       return withCoverage(base, text);
     },
   },
   {
-    tool: "typecheck",
-    label: "Types (tsc)",
+    tool: 'typecheck',
+    label: 'Types (tsc)',
     matches: /tsc\b|typecheck/i,
     read: (text) => {
       const found = /Found (\d+) errors?/.exec(text);
-      if (found) return `${plural(Number(found[1]), "type error")}`;
+      if (found) return `${plural(Number(found[1]), 'type error')}`;
       const errors = text.match(/error TS\d+/g);
-      return errors ? plural(errors.length, "type error") : null;
+      return errors ? plural(errors.length, 'type error') : null;
     },
   },
   {
-    tool: "sonar",
-    label: "Code quality (Sonar)",
+    tool: 'sonar',
+    label: 'Code quality (Sonar)',
     matches: /sonar/i,
     read: (text) => {
       const gate = /QUALITY GATE STATUS:\s*(PASSED|FAILED)/i.exec(text);
@@ -145,66 +146,66 @@ const READERS: ToolReader[] = [
     },
   },
   {
-    tool: "audit",
-    label: "Dependency audit",
+    tool: 'audit',
+    label: 'Dependency audit',
     matches: /npm audit|dependency (audit|review)/i,
     read: (text) => {
-      if (/found 0 vulnerabilities/.test(text)) return "no advisories";
+      if (/found 0 vulnerabilities/.test(text)) return 'no advisories';
       const found = /(\d+) vulnerabilities?\s*\(([^)]*)\)/.exec(text);
       if (found) {
-        return `${plural(Number(found[1]), "advisory", "advisories")} (${found[2]})`;
+        return `${plural(Number(found[1]), 'advisory', 'advisories')} (${found[2]})`;
       }
       return null;
     },
   },
   {
-    tool: "trivy",
-    label: "Image scan (Trivy)",
+    tool: 'trivy',
+    label: 'Image scan (Trivy)',
     matches: /trivy/i,
     read: (text) => {
       const total = /Total:\s*(\d+)\s*\(([^)]*)\)/.exec(text);
       if (!total) return null;
       const count = Number(total[1]);
       return count === 0
-        ? "no findings"
-        : `${plural(count, "finding")} (${total[2]})`;
+        ? 'no findings'
+        : `${plural(count, 'finding')} (${total[2]})`;
     },
   },
   {
-    tool: "secrets",
-    label: "Secret scan",
+    tool: 'secrets',
+    label: 'Secret scan',
     matches: /gitleaks|secret scan|trufflehog/i,
     read: (text) => {
-      if (/no leaks found/i.test(text)) return "no secrets found";
+      if (/no leaks found/i.test(text)) return 'no secrets found';
       const leaks = /leaks found:\s*(\d+)/i.exec(text);
-      return leaks ? `${plural(Number(leaks[1]), "secret")} found` : null;
+      return leaks ? `${plural(Number(leaks[1]), 'secret')} found` : null;
     },
   },
   {
-    tool: "licenses",
-    label: "Licence scan",
+    tool: 'licenses',
+    label: 'Licence scan',
     matches: /licen[cs]e/i,
     read: (text) => {
       const disallowed = text.match(/disallowed licen[cs]e/gi);
       return disallowed
-        ? `${plural(disallowed.length, "disallowed licence")}`
+        ? `${plural(disallowed.length, 'disallowed licence')}`
         : null;
     },
   },
   {
-    tool: "sbom",
-    label: "SBOM export",
+    tool: 'sbom',
+    label: 'SBOM export',
     matches: /sbom|syft|cyclonedx/i,
     read: (text) => {
       const packages = /\b(\d+) packages?\b/.exec(text);
       return packages
-        ? `${plural(Number(packages[1]), "package")} inventoried`
+        ? `${plural(Number(packages[1]), 'package')} inventoried`
         : null;
     },
   },
   {
-    tool: "docker",
-    label: "Image build",
+    tool: 'docker',
+    label: 'Image build',
     matches: /docker|buildx/i,
     read: (text) => {
       const naming = /naming to (\S+)/.exec(text);
@@ -214,8 +215,8 @@ const READERS: ToolReader[] = [
     },
   },
   {
-    tool: "vercel",
-    label: "Vercel deploy",
+    tool: 'vercel',
+    label: 'Vercel deploy',
     matches: /vercel/i,
     read: (text) => {
       const alias = /https:\/\/[\w.-]+\.vercel\.app/.exec(text);
@@ -223,8 +224,8 @@ const READERS: ToolReader[] = [
     },
   },
   {
-    tool: "render",
-    label: "Render release",
+    tool: 'render',
+    label: 'Render release',
     matches: /render|release/i,
     read: (text) => {
       const url = /https:\/\/[\w.-]+\.onrender\.com/.exec(text);
@@ -232,8 +233,8 @@ const READERS: ToolReader[] = [
     },
   },
   {
-    tool: "bruno",
-    label: "API tests (Bruno)",
+    tool: 'bruno',
+    label: 'API tests (Bruno)',
     matches: /\bbru\b|bruno/i,
     read: (text) => {
       const requests = /Requests:\s+(\d+) passed,\s+(\d+) failed/.exec(text);
@@ -241,13 +242,13 @@ const READERS: ToolReader[] = [
       if (!requests) return null;
       const failed = Number(requests[2]) + Number(asserts?.[2] ?? 0);
       return failed > 0
-        ? `${plural(failed, "check")} failed`
-        : `${plural(Number(requests[1]), "request")}, ${asserts ? plural(Number(asserts[1]), "assertion") : "no assertions"} passed`;
+        ? `${plural(failed, 'check')} failed`
+        : `${plural(Number(requests[1]), 'request')}, ${asserts ? plural(Number(asserts[1]), 'assertion') : 'no assertions'} passed`;
     },
   },
   {
-    tool: "playwright",
-    label: "Browser tests (Playwright)",
+    tool: 'playwright',
+    label: 'Browser tests (Playwright)',
     matches: /playwright|test:e2e/i,
     read: (text) => {
       const failed = /(\d+) failed/.exec(text);
@@ -256,26 +257,26 @@ const READERS: ToolReader[] = [
       const parts: string[] = [];
       if (failed) parts.push(`${failed[1]} failed`);
       if (passed) parts.push(`${passed[1]} passed`);
-      return parts.join(", ");
+      return parts.join(', ');
     },
   },
 ];
 
 function sectionText(section: JobLogSection): string {
-  return section.lines.map((line) => line.text).join("\n");
+  return section.lines.map((line) => line.text).join('\n');
 }
 
 /** The step's own name, when no known tool claims it. */
 function generic(section: JobLogSection): ToolResult {
   const errors = section.lines.filter(
-    (line) => line.severity === "error",
+    (line) => line.severity === 'error',
   ).length;
 
   return {
-    tool: "step",
+    tool: 'step',
     label: section.title,
-    outcome: section.failed ? "failed" : "passed",
-    summary: errors > 0 ? `${plural(errors, "error line")}` : null,
+    outcome: section.failed ? 'failed' : 'passed',
+    summary: errors > 0 ? `${plural(errors, 'error line')}` : null,
   };
 }
 
@@ -286,14 +287,14 @@ function generic(section: JobLogSection): ToolResult {
  * that failed before producing any is still attributed to the right tool.
  */
 export function toolResultForSection(section: JobLogSection): ToolResult {
-  const haystack = `${section.title} ${section.command ?? ""}`;
+  const haystack = `${section.title} ${section.command ?? ''}`;
   const reader = READERS.find((candidate) => candidate.matches.test(haystack));
   if (!reader) return generic(section);
 
   return {
     tool: reader.tool,
     label: reader.label,
-    outcome: section.failed ? "failed" : "passed",
+    outcome: section.failed ? 'failed' : 'passed',
     summary: reader.read(sectionText(section)),
   };
 }

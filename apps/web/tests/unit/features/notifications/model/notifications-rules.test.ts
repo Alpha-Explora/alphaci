@@ -4,81 +4,112 @@ import {
   notificationAlertHref,
   qaAlertsToShow,
   qaRefusalHref,
-} from "../../../../../src/features/notifications/model/notifications-rules";
-import type { NotificationItem } from "../../../../../src/features/notifications/model/notifications-types";
+} from '../../../../../src/features/notifications/model/notifications-rules';
+import type { NotificationItem } from '../../../../../src/features/notifications/model/notifications-types';
 
-function notification(overrides: Partial<NotificationItem> = {}): NotificationItem {
+function notification(
+  overrides: Partial<NotificationItem> = {},
+): NotificationItem {
   return {
-    id: "n-1",
+    id: 'n-1',
     title: 'QA blocked "Log in" in Check',
-    body: "this wrong",
-    eventCode: "qa.item.blocked",
+    body: 'this wrong',
+    eventCode: 'qa.item.blocked',
     readAt: null,
-    createdAt: "2026-10-19T01:00:00.000Z",
-    projectId: "proj-1",
+    createdAt: '2026-10-19T01:00:00.000Z',
+    projectId: 'proj-1',
     groupId: null,
     deliveryProjectId: null,
     ...overrides,
   };
 }
 
-describe("QA refusal pop-ups", () => {
-  it("pops up unread refusals not shown before, newest first, at most three", () => {
+describe('QA refusal pop-ups', () => {
+  it('pops up unread refusals not shown before, newest first, at most three', () => {
     const items = [
-      notification({ id: "a", createdAt: "2026-10-19T01:00:00.000Z" }),
-      notification({ id: "b", eventCode: "qa.item.failed", createdAt: "2026-10-19T03:00:00.000Z" }),
-      notification({ id: "c", eventCode: "qa.item.returned_to_dev", createdAt: "2026-10-19T02:00:00.000Z" }),
-      notification({ id: "d", createdAt: "2026-10-19T00:30:00.000Z" }),
-      notification({ id: "read", readAt: "2026-10-19T04:00:00.000Z" }),
-      notification({ id: "other", eventCode: "project_created" }),
-      notification({ id: "seen", createdAt: "2026-10-19T05:00:00.000Z" }),
+      notification({ id: 'a', createdAt: '2026-10-19T01:00:00.000Z' }),
+      notification({
+        id: 'b',
+        eventCode: 'qa.item.failed',
+        createdAt: '2026-10-19T03:00:00.000Z',
+      }),
+      notification({
+        id: 'c',
+        eventCode: 'qa.item.returned_to_dev',
+        createdAt: '2026-10-19T02:00:00.000Z',
+      }),
+      notification({ id: 'd', createdAt: '2026-10-19T00:30:00.000Z' }),
+      notification({ id: 'read', readAt: '2026-10-19T04:00:00.000Z' }),
+      notification({ id: 'other', eventCode: 'project_created' }),
+      notification({ id: 'seen', createdAt: '2026-10-19T05:00:00.000Z' }),
     ];
 
-    expect(qaAlertsToShow(items, new Set(["seen"])).map((item) => item.id)).toEqual(["b", "c", "a"]);
+    expect(
+      qaAlertsToShow(items, new Set(['seen'])).map((item) => item.id),
+    ).toEqual(['b', 'c', 'a']);
   });
 
   it("links a refusal to the project's My QA items", () => {
-    expect(qaRefusalHref({ projectId: "proj 1" })).toBe("/projects/proj%201?focus=my-qa-items#overview");
+    expect(qaRefusalHref({ projectId: 'proj 1' })).toBe(
+      '/projects/proj%201?focus=my-qa-items#overview',
+    );
     expect(qaRefusalHref({ projectId: null })).toBeNull();
   });
 
   it("pops up QA's sign-off for the Product owner, and a Product owner's rejection for QA and the Developers", () => {
     const items = [
-      notification({ id: "signed", eventCode: "qa.run.signed_off", createdAt: "2026-10-19T02:00:00.000Z" }),
-      notification({ id: "rejected", eventCode: "qa.item.po_rejected", createdAt: "2026-10-19T03:00:00.000Z" }),
+      notification({
+        id: 'signed',
+        eventCode: 'qa.run.signed_off',
+        createdAt: '2026-10-19T02:00:00.000Z',
+      }),
+      notification({
+        id: 'rejected',
+        eventCode: 'qa.item.po_rejected',
+        createdAt: '2026-10-19T03:00:00.000Z',
+      }),
     ];
-    expect(qaAlertsToShow(items, new Set()).map((item) => item.id)).toEqual(["rejected", "signed"]);
+    expect(qaAlertsToShow(items, new Set()).map((item) => item.id)).toEqual([
+      'rejected',
+      'signed',
+    ]);
   });
 
   it("opens a sign-off in PO Studio and a Product owner's rejection in My QA items", () => {
-    expect(notificationAlertHref(notification({ eventCode: "qa.run.signed_off" }))).toBe("/projects/proj-1#po");
-    expect(notificationAlertHref(notification({ eventCode: "qa.item.po_rejected" }))).toBe(
-      "/projects/proj-1?focus=my-qa-items#overview",
-    );
-    expect(notificationAlertHref(notification({ eventCode: "qa.run.signed_off", projectId: null }))).toBeNull();
+    expect(
+      notificationAlertHref(notification({ eventCode: 'qa.run.signed_off' })),
+    ).toBe('/projects/proj-1#po');
+    expect(
+      notificationAlertHref(notification({ eventCode: 'qa.item.po_rejected' })),
+    ).toBe('/projects/proj-1?focus=my-qa-items#overview');
+    expect(
+      notificationAlertHref(
+        notification({ eventCode: 'qa.run.signed_off', projectId: null }),
+      ),
+    ).toBeNull();
   });
 });
 
-describe("feedUserId", () => {
+describe('feedUserId', () => {
   it("reads the account's feed only once the capability is reported on", () => {
-    expect(feedUserId("u-1", "enabled")).toBe("u-1");
-    expect(feedUserId("u-1", "pending")).toBeNull();
-    expect(feedUserId("u-1", "disabled")).toBeNull();
-    expect(feedUserId(null, "enabled")).toBeNull();
+    expect(feedUserId('u-1', 'enabled')).toBe('u-1');
+    expect(feedUserId('u-1', 'pending')).toBeNull();
+    expect(feedUserId('u-1', 'disabled')).toBeNull();
+    expect(feedUserId(null, 'enabled')).toBeNull();
   });
 });
 
-describe("gatedFeedStatus", () => {
-  it("loads while /capabilities is in flight", () => {
-    expect(gatedFeedStatus("pending", "idle")).toBe("loading");
+describe('gatedFeedStatus', () => {
+  it('loads while /capabilities is in flight', () => {
+    expect(gatedFeedStatus('pending', 'idle')).toBe('loading');
   });
 
-  it("is ready, not failed, while notifications are off", () => {
-    expect(gatedFeedStatus("disabled", "idle")).toBe("ready");
+  it('is ready, not failed, while notifications are off', () => {
+    expect(gatedFeedStatus('disabled', 'idle')).toBe('ready');
   });
 
   it("is the feed's own status while notifications are on", () => {
-    expect(gatedFeedStatus("enabled", "error")).toBe("error");
-    expect(gatedFeedStatus("enabled", "ready")).toBe("ready");
+    expect(gatedFeedStatus('enabled', 'error')).toBe('error');
+    expect(gatedFeedStatus('enabled', 'ready')).toBe('ready');
   });
 });

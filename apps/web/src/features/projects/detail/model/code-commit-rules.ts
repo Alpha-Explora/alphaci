@@ -1,9 +1,12 @@
 /* The Code tab's commit column. Pure: no React, no fetch. */
-import type { RepoFileCommits, RepoPathCommit } from "../data/project-workspace-api";
+import type {
+  RepoFileCommits,
+  RepoPathCommit,
+} from '../data/project-workspace-api';
 
 /** "1 Commit", "288 Commits": the count beside the latest commit. */
 export function commitCountLabel(count: number): string {
-  return `${count.toLocaleString("en-US")} ${count === 1 ? "Commit" : "Commits"}`;
+  return `${count.toLocaleString('en-US')} ${count === 1 ? 'Commit' : 'Commits'}`;
 }
 
 /**
@@ -18,7 +21,7 @@ export interface BrowseCommit {
 
 /** "Back to uat": leaves a browsed commit for the branch it was listed on. */
 export function browseCommitBackLabel(branch: string | null): string {
-  return branch ? `Back to ${branch}` : "Back to the branch";
+  return branch ? `Back to ${branch}` : 'Back to the branch';
 }
 
 /** The ref the Code tab asks for first: the browsed commit's SHA, else none (the server's default). */
@@ -41,8 +44,7 @@ export function entryCommit(
 
 /** Who to name for a commit: the GitHub login, else the git author name. */
 export function commitAuthorLabel(
-  commit: Pick<RepoPathCommit, "authorLogin" | "authorName">,
+  commit: Pick<RepoPathCommit, 'authorLogin' | 'authorName'>,
 ): string {
-  return commit.authorLogin ?? commit.authorName ?? "Unknown author";
+  return commit.authorLogin ?? commit.authorName ?? 'Unknown author';
 }
-

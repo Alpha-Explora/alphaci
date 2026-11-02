@@ -1,16 +1,19 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { useApiResource } from "@/features/groups";
+import { useApiResource } from '@/features/groups';
 
-import { groupsRepository } from "../../data/groups-repository";
-import { isGroupManagerRole } from "../../model/groups-rules";
-import type { GroupSummary, UpdateGroupRequest } from "../../model/groups-types";
+import { groupsRepository } from '../../data/groups-repository';
+import { isGroupManagerRole } from '../../model/groups-rules';
+import type {
+  GroupSummary,
+  UpdateGroupRequest,
+} from '../../model/groups-types';
 
 export interface GroupDetailViewModel {
   group: GroupSummary | null;
-  status: ReturnType<typeof useApiResource<GroupSummary>>["state"];
+  status: ReturnType<typeof useApiResource<GroupSummary>>['state'];
   reload: () => void;
   /** Whether the caller may edit this group. */
   canManage: boolean;
@@ -37,7 +40,7 @@ export function useGroupDetailViewModel(groupId: string): GroupDetailViewModel {
     setBusy(true);
     try {
       const updated =
-        data.status === "archived"
+        data.status === 'archived'
           ? await groupsRepository.reopenGroup(data.id)
           : await groupsRepository.archiveGroup(data.id);
       setData(() => updated);
@@ -50,14 +53,16 @@ export function useGroupDetailViewModel(groupId: string): GroupDetailViewModel {
     }
   }
 
-  async function saveGroup(payload: UpdateGroupRequest): Promise<string | null> {
-    if (!data) return "The group could not be updated.";
+  async function saveGroup(
+    payload: UpdateGroupRequest,
+  ): Promise<string | null> {
+    if (!data) return 'The group could not be updated.';
     try {
       const updated = await groupsRepository.updateGroup(data.id, payload);
       setData(() => updated);
       return null;
     } catch {
-      return "The group could not be updated.";
+      return 'The group could not be updated.';
     }
   }
 

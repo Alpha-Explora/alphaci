@@ -11,16 +11,18 @@
  * declared stack (never from the name): only a multi-repo Project's backend
  * is `backend`; a single repository is an `app`, a microservice a `service`.
  */
-export type RepositoryRole = "frontend" | "backend" | "service" | "app";
+export type RepositoryRole = 'frontend' | 'backend' | 'service' | 'app';
 
 /** Project id -> its role; a repository missing from it (or null) is not known. */
-export type RepositoryRoles = Readonly<Record<string, RepositoryRole | null | undefined>>;
+export type RepositoryRoles = Readonly<
+  Record<string, RepositoryRole | null | undefined>
+>;
 
 export type QaScope =
   /** The repository's Project is still being read: show nothing yet rather than the wrong screen. */
-  | { kind: "pending" }
+  | { kind: 'pending' }
   | {
-      kind: "project";
+      kind: 'project';
       deliveryProjectId: string;
       projectName: string;
       /** The Projects page opened on this Project, when the team is known. */
@@ -32,9 +34,9 @@ export type QaScope =
       repositoryRoles?: RepositoryRoles;
     }
   /** No Project, or it could not be read. */
-  | { kind: "repository" };
+  | { kind: 'repository' };
 
-export const REPOSITORY_SCOPE: QaScope = { kind: "repository" };
+export const REPOSITORY_SCOPE: QaScope = { kind: 'repository' };
 
 /**
  * The scope from the project page's folder read. `idle` (the read is not
@@ -42,27 +44,35 @@ export const REPOSITORY_SCOPE: QaScope = { kind: "repository" };
  * per-repository screens: they worked before Projects existed.
  */
 export function qaScopeFromFolder(
-  status: "idle" | "loading" | "ready" | "unavailable",
+  status: 'idle' | 'loading' | 'ready' | 'unavailable',
   folder: {
     deliveryProjectId: string | null;
     name: string | null;
     href: string | null;
-    repositories?: ReadonlyArray<{ projectId: string | null; role: RepositoryRole | null }>;
+    repositories?: ReadonlyArray<{
+      projectId: string | null;
+      role: RepositoryRole | null;
+    }>;
   } | null,
 ): QaScope {
-  if (status === "loading") return { kind: "pending" };
-  if (status !== "ready" || !folder?.deliveryProjectId) return REPOSITORY_SCOPE;
+  if (status === 'loading') return { kind: 'pending' };
+  if (status !== 'ready' || !folder?.deliveryProjectId) return REPOSITORY_SCOPE;
   return {
-    kind: "project",
+    kind: 'project',
     deliveryProjectId: folder.deliveryProjectId,
-    projectName: folder.name?.trim() || "this Project",
+    projectName: folder.name?.trim() || 'this Project',
     projectHref: folder.href,
     repositoryRoles: rolesOf(folder.repositories ?? []),
   };
 }
 
 /** Project id -> role, for the repositories that have an ALPHACI project. */
-function rolesOf(repositories: ReadonlyArray<{ projectId: string | null; role: RepositoryRole | null }>): RepositoryRoles {
+function rolesOf(
+  repositories: ReadonlyArray<{
+    projectId: string | null;
+    role: RepositoryRole | null;
+  }>,
+): RepositoryRoles {
   const roles: Record<string, RepositoryRole | null> = {};
   for (const repository of repositories) {
     if (repository.projectId) roles[repository.projectId] = repository.role;
@@ -77,5 +87,5 @@ function rolesOf(repositories: ReadonlyArray<{ projectId: string | null; role: R
  * `projectHref`, "Open checklist" stays on this page.
  */
 export function withProjectOnPage(scope: QaScope): QaScope {
-  return scope.kind === "project" ? { ...scope, projectHref: null } : scope;
+  return scope.kind === 'project' ? { ...scope, projectHref: null } : scope;
 }

@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
-import { notificationsRepository } from "../../data/notifications-repository";
-import { toUserError } from "../../model/notifications-rules";
+import { notificationsRepository } from '../../data/notifications-repository';
+import { toUserError } from '../../model/notifications-rules';
 import type {
   NotificationPreferences,
   NotificationsStatus,
-} from "../../model/notifications-types";
+} from '../../model/notifications-types';
 
 export interface NotificationsPreferencesViewModel {
   preferences: NotificationPreferences | null;
@@ -28,7 +28,7 @@ export function useNotificationsPreferencesViewModel(): NotificationsPreferences
   const [preferences, setPreferences] =
     useState<NotificationPreferences | null>(null);
   // The read below starts on mount, so the panel is loading from its first render.
-  const [status, setStatus] = useState<NotificationsStatus>("loading");
+  const [status, setStatus] = useState<NotificationsStatus>('loading');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,14 +39,14 @@ export function useNotificationsPreferencesViewModel(): NotificationsPreferences
       .then((next) => {
         if (!alive) return;
         setPreferences(next);
-        setStatus("ready");
+        setStatus('ready');
         setError(null);
       })
       .catch((e: unknown) => {
         if (!alive) return;
-        setStatus("error");
+        setStatus('error');
         setError(
-          toUserError(e, "Notification preferences are unavailable right now."),
+          toUserError(e, 'Notification preferences are unavailable right now.'),
         );
       });
     return () => {
@@ -67,7 +67,7 @@ export function useNotificationsPreferencesViewModel(): NotificationsPreferences
         }),
       );
     } catch (e) {
-      setError(toUserError(e, "Notification preferences could not be saved."));
+      setError(toUserError(e, 'Notification preferences could not be saved.'));
     } finally {
       setIsSaving(false);
     }

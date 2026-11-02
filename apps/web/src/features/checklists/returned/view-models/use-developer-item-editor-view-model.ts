@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { qaRunsRepository } from "../../data/qa-runs-repository";
-import { developerItemRun, myItemKey } from "../../model/qa-my-items-rules";
+import { qaRunsRepository } from '../../data/qa-runs-repository';
+import { developerItemRun, myItemKey } from '../../model/qa-my-items-rules';
 import {
   allowedItemStatuses,
   itemDraftError,
@@ -11,7 +11,7 @@ import {
   itemUpdatePayload,
   qaActionError,
   statusNeedsSeverity,
-} from "../../model/qa-run-rules";
+} from '../../model/qa-run-rules';
 import type {
   QaActionError,
   QaDeveloperItem,
@@ -19,11 +19,11 @@ import type {
   QaRun,
   QaRunItemStatus,
   UpdateQaRunItemInput,
-} from "../../model/qa-run-types";
+} from '../../model/qa-run-types';
 
 export interface DeveloperItemEditorViewModel {
   /** `saving` while one item's write is in flight. */
-  status: "idle" | "saving";
+  status: 'idle' | 'saving';
   /** The item being written (`runId:itemId`), so only its row shows "Saving…". */
   savingKey: string | null;
   /** The item whose details form is open, with what is typed into it. */
@@ -43,7 +43,7 @@ export interface DeveloperItemEditorViewModel {
   dismissError: () => void;
 }
 
-const SAVE_ERROR = "The change could not be saved. Try again in a moment.";
+const SAVE_ERROR = 'The change could not be saved. Try again in a moment.';
 
 function allowedFor(entry: QaDeveloperItem): QaRunItemStatus[] {
   return allowedItemStatuses(entry.item, developerItemRun(entry));
@@ -66,9 +66,14 @@ export function useDeveloperItemEditorViewModel(options: {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [draft, setDraft] = useState<QaItemDraft | null>(null);
   const [attempted, setAttempted] = useState(false);
-  const [error, setError] = useState<(QaActionError & { key: string }) | null>(null);
+  const [error, setError] = useState<(QaActionError & { key: string }) | null>(
+    null,
+  );
 
-  function open(entry: QaDeveloperItem, status: QaRunItemStatus = entry.item.status) {
+  function open(
+    entry: QaDeveloperItem,
+    status: QaRunItemStatus = entry.item.status,
+  ) {
     setOpenKey(myItemKey(entry));
     setDraft(itemDraftFrom(entry.item, status));
     setAttempted(false);
@@ -86,7 +91,14 @@ export function useDeveloperItemEditorViewModel(options: {
     setSavingKey(key);
     setError(null);
     try {
-      onRun(await qaRunsRepository.updateItem(projectId, entry.runId, entry.item.id, body));
+      onRun(
+        await qaRunsRepository.updateItem(
+          projectId,
+          entry.runId,
+          entry.item.id,
+          body,
+        ),
+      );
       if (openKey === key) closeDetails();
     } catch (cause) {
       setError({ key, ...qaActionError(cause, SAVE_ERROR) });
@@ -97,7 +109,12 @@ export function useDeveloperItemEditorViewModel(options: {
 
   function chooseStatus(entry: QaDeveloperItem, status: QaRunItemStatus) {
     // Never send a status this viewer cannot set, whatever the control offered.
-    if (savingKey || status === entry.item.status || !allowedFor(entry).includes(status)) return;
+    if (
+      savingKey ||
+      status === entry.item.status ||
+      !allowedFor(entry).includes(status)
+    )
+      return;
     if (statusNeedsSeverity(status)) {
       open(entry, status);
       return;
@@ -107,7 +124,9 @@ export function useDeveloperItemEditorViewModel(options: {
 
   async function saveDraft(entry: QaDeveloperItem) {
     if (!draft || savingKey) return;
-    const statusOk = draft.status === entry.item.status || allowedFor(entry).includes(draft.status);
+    const statusOk =
+      draft.status === entry.item.status ||
+      allowedFor(entry).includes(draft.status);
     if (!statusOk || !entry.item.canUpdate) return;
     setAttempted(true);
     if (itemDraftError(draft)) return;
@@ -120,7 +139,7 @@ export function useDeveloperItemEditorViewModel(options: {
   }
 
   return {
-    status: savingKey ? "saving" : "idle",
+    status: savingKey ? 'saving' : 'idle',
     savingKey,
     openKey,
     draft,
@@ -130,7 +149,8 @@ export function useDeveloperItemEditorViewModel(options: {
     chooseStatus,
     openDetails: (entry) => open(entry),
     closeDetails,
-    updateDraft: (patch) => setDraft((current) => (current ? { ...current, ...patch } : current)),
+    updateDraft: (patch) =>
+      setDraft((current) => (current ? { ...current, ...patch } : current)),
     saveDraft,
     dismissError: () => setError(null),
   };

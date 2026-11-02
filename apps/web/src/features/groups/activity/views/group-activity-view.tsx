@@ -1,5 +1,4 @@
-"use client";
-
+'use client';
 
 import {
   Breadcrumb,
@@ -7,20 +6,20 @@ import {
   HierarchyPageShell,
   PageHeader,
   ResourceBoundary,
-} from "@/features/groups/workspace";
+} from '@/features/groups/workspace';
 
-import type { GroupSummary } from "../../model/groups-types";
-import { useGroupRouteViewModel, useGroupViewModel } from "@/features/groups";
-import { GroupActivitySection } from "./group-activity-section";
+import type { GroupSummary } from '../../model/groups-types';
+import { useGroupRouteViewModel, useGroupViewModel } from '@/features/groups';
+import { GroupActivitySection } from './group-activity-section';
 
 function ActivityInner({ group }: Readonly<{ group: GroupSummary }>) {
   return (
     <>
       <Breadcrumb
         items={[
-          { label: "Projects", href: "/workflows" },
+          { label: 'Projects', href: '/workflows' },
           { label: group.name, href: `/groups/${group.id}` },
-          { label: "Activity" },
+          { label: 'Activity' },
         ]}
       />
       <PageHeader
@@ -38,13 +37,13 @@ function ActivityResolver() {
   const { groupId } = useGroupRouteViewModel();
   const vm = useGroupViewModel(groupId);
 
-  if (vm.status !== "ready" || !vm.group) {
+  if (vm.status !== 'ready' || !vm.group) {
     return (
       <>
         <Breadcrumb
           items={[
-            { label: "Projects", href: "/workflows" },
-            { label: "Activity" },
+            { label: 'Projects', href: '/workflows' },
+            { label: 'Activity' },
           ]}
         />
         <ResourceBoundary

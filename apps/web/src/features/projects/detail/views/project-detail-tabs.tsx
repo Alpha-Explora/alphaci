@@ -1,39 +1,47 @@
-"use client";
+'use client';
 
-import "./project-repo-switch.css";
+import './project-repo-switch.css';
 
-import { useState, type ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useState, type ReactNode } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
-import { qaScopeFromFolder, withProjectOnPage, type QaScope } from "@/features/checklists";
-import { IterationStatus } from "@/features/checklists/iteration";
+import {
+  qaScopeFromFolder,
+  withProjectOnPage,
+  type QaScope,
+} from '@/features/checklists';
+import { IterationStatus } from '@/features/checklists/iteration';
 
-import { projectStatusVariant } from "../../model/projects-rules";
-import type { ProvisionedProject } from "@/features/projects";
-import type { AppRole } from "@/shared/api/contracts";
-import { cloneValue } from "../model/clone-rules";
-import { isStudioTab, seesProjectAsProduct, type ProjectDetailTab } from "../model/project-detail-tab-rules";
-import type { ProjectFolderViewModel } from "../view-models/use-project-folder-view-model";
-import { useProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
-import { CloneCard } from "./clone-card";
-import { ProjectRepoSwitch } from "./project-repo-switch";
-import { projectDetailTabGroups } from "./project-detail-tab-config";
-import { ProjectDetailTopTabs } from "./project-detail-top-tabs";
-import { OverviewTab } from "./overview-tab";
-import { PipelineTab } from "./pipeline-tab";
-import { HostingTab } from "./hosting-tab";
-import { AuditTab } from "./audit-tab";
-import { SettingsTab } from "./settings-tab";
-import { CodeTabPanel } from "./code-tab-panel";
-import { CommitsTabPanel } from "./commits-tab-panel";
-import { PullsTabPanel } from "./pulls-tab-panel";
-import { ChecklistsTabPanel } from "./checklists-tab-panel";
-import { HistoryTabPanel } from "./history-tab-panel";
-import { QaStudioTabPanel } from "./qa-studio-tab-panel";
-import { PoStudioTabPanel } from "./po-studio-tab-panel";
+import { projectStatusVariant } from '../../model/projects-rules';
+import type { ProvisionedProject } from '@/features/projects';
+import type { AppRole } from '@/shared/api/contracts';
+import { cloneValue } from '../model/clone-rules';
+import {
+  isStudioTab,
+  seesProjectAsProduct,
+  type ProjectDetailTab,
+} from '../model/project-detail-tab-rules';
+import type { ProjectFolderViewModel } from '../view-models/use-project-folder-view-model';
+import { useProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
+import type { ProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
+import { CloneCard } from './clone-card';
+import { ProjectRepoSwitch } from './project-repo-switch';
+import { projectDetailTabGroups } from './project-detail-tab-config';
+import { ProjectDetailTopTabs } from './project-detail-top-tabs';
+import { OverviewTab } from './overview-tab';
+import { PipelineTab } from './pipeline-tab';
+import { HostingTab } from './hosting-tab';
+import { AuditTab } from './audit-tab';
+import { SettingsTab } from './settings-tab';
+import { CodeTabPanel } from './code-tab-panel';
+import { CommitsTabPanel } from './commits-tab-panel';
+import { PullsTabPanel } from './pulls-tab-panel';
+import { ChecklistsTabPanel } from './checklists-tab-panel';
+import { HistoryTabPanel } from './history-tab-panel';
+import { QaStudioTabPanel } from './qa-studio-tab-panel';
+import { PoStudioTabPanel } from './po-studio-tab-panel';
 
-export { WorkflowStageList } from "./workflow-stage-list";
+export { WorkflowStageList } from './workflow-stage-list';
 
 /**
  * ProjectDetailTabs — the tabbed project detail (Overview / Code / Pipeline /
@@ -114,7 +122,10 @@ export function ProjectDetailTabs({
   // keep the scrolling strip of their own. Every role's Checklists tab carries
   // the Project's QA, so nothing on the page links away to the Projects page.
   const productView = seesProjectAsProduct(appRole);
-  const folderScope = qaScopeFromFolder(folder?.status ?? "idle", folder?.project ?? null);
+  const folderScope = qaScopeFromFolder(
+    folder?.status ?? 'idle',
+    folder?.project ?? null,
+  );
   const qaScope = withProjectOnPage(folderScope);
   const tabs = (
     <ProjectDetailTopTabs
@@ -132,7 +143,9 @@ export function ProjectDetailTabs({
   // tabs and the repository switch), so the controls get the line under it.
   const [studioSlot, setStudioSlot] = useState<HTMLDivElement | null>(null);
   const studioControls = studioControlsSlot(vm.tab, setStudioSlot);
-  const headerTabs = productView ? <TitleRowTabs controls={studioControls} tabs={tabs} /> : undefined;
+  const headerTabs = productView ? (
+    <TitleRowTabs controls={studioControls} tabs={tabs} />
+  ) : undefined;
   const clone = overviewClone(vm.tab, project);
   const iteration = iterationStatusFor(folder, vm);
 
@@ -152,7 +165,7 @@ export function ProjectDetailTabs({
       />
       <div
         className="project-sections"
-        data-tour={productView ? undefined : "project-detail-tabs"}
+        data-tour={productView ? undefined : 'project-detail-tabs'}
       >
         {productView ? null : (
           <>
@@ -187,7 +200,10 @@ export function ProjectDetailTabs({
  * Where QA Studio and PO Studio draw their preview controls: an empty element
  * the studio portals its toolbar into (see QaStudioPanel). No other tab has one.
  */
-function studioControlsSlot(tab: ProjectDetailTab, ref: (element: HTMLDivElement | null) => void): ReactNode {
+function studioControlsSlot(
+  tab: ProjectDetailTab,
+  ref: (element: HTMLDivElement | null) => void,
+): ReactNode {
   if (!isStudioTab(tab)) return null;
   return <div className="project-studio-controls" ref={ref} />;
 }
@@ -198,7 +214,10 @@ function studioControlsSlot(tab: ProjectDetailTab, ref: (element: HTMLDivElement
  * so keyboard order follows the one-line row; when the two do not fit, CSS
  * keeps the tabs on the first line and wraps the controls under them.
  */
-function TitleRowTabs({ controls, tabs }: Readonly<{ controls: ReactNode; tabs: ReactNode }>) {
+function TitleRowTabs({
+  controls,
+  tabs,
+}: Readonly<{ controls: ReactNode; tabs: ReactNode }>) {
   return (
     <div className="project-tabs-bar">
       {controls}
@@ -221,7 +240,8 @@ function repoSwitchFor(
   productView: boolean,
   vm: ProjectDetailTabsViewModel,
 ): ReactNode {
-  if (!folder?.projectName || productView || folder.options.length < 2) return undefined;
+  if (!folder?.projectName || productView || folder.options.length < 2)
+    return undefined;
   return (
     <ProjectRepoSwitch
       options={folder.options}
@@ -238,7 +258,10 @@ function repoSwitchFor(
  * and the QA capability is on. It reads the iteration itself and renders
  * nothing on a backend without iterations.
  */
-function iterationStatusFor(folder: ProjectFolderViewModel | undefined, vm: ProjectDetailTabsViewModel): ReactNode {
+function iterationStatusFor(
+  folder: ProjectFolderViewModel | undefined,
+  vm: ProjectDetailTabsViewModel,
+): ReactNode {
   const deliveryProjectId = folder?.project?.deliveryProjectId ?? null;
   if (!deliveryProjectId || !vm.qaChecklistsEnabled) return undefined;
   return <IterationStatus deliveryProjectId={deliveryProjectId} enabled />;
@@ -249,11 +272,19 @@ function iterationStatusFor(folder: ProjectFolderViewModel | undefined, vm: Proj
  * Deployment is the panel's first row. A name that cannot be cloned gets no
  * empty column.
  */
-function overviewClone(tab: ProjectDetailTab, project: ProvisionedProject): ReactNode {
-  if (tab !== "overview" || !cloneValue("https", project.repoFullName, project.repoUrl)) {
+function overviewClone(
+  tab: ProjectDetailTab,
+  project: ProvisionedProject,
+): ReactNode {
+  if (
+    tab !== 'overview' ||
+    !cloneValue('https', project.repoFullName, project.repoUrl)
+  ) {
     return undefined;
   }
-  return <CloneCard repoFullName={project.repoFullName} repoUrl={project.repoUrl} />;
+  return (
+    <CloneCard repoFullName={project.repoFullName} repoUrl={project.repoUrl} />
+  );
 }
 
 /**
@@ -280,7 +311,7 @@ function ProjectPageHeader({
   /** The Project's iteration status, beside the repository on Overview. */
   iteration: ReactNode;
 }>) {
-  const identityShown = vm.tab === "overview";
+  const identityShown = vm.tab === 'overview';
   if (!folder?.projectName) {
     return (
       <ProjectDetailHeader
@@ -312,14 +343,20 @@ function ProjectPageHeader({
  * identity and Clone side by side under it. `--bare`: another tab, the aside
  * alone.
  */
-function headerClassName(base: string, tabs: ReactNode, identityShown: boolean): string {
+function headerClassName(
+  base: string,
+  tabs: ReactNode,
+  identityShown: boolean,
+): string {
   return [
     base,
-    tabs ? "project-detail-header--tabs" : "",
-    identityShown ? "project-detail-header--summary" : "project-detail-header--bare",
+    tabs ? 'project-detail-header--tabs' : '',
+    identityShown
+      ? 'project-detail-header--summary'
+      : 'project-detail-header--bare',
   ]
     .filter(Boolean)
-    .join(" ");
+    .join(' ');
 }
 
 /** Off Overview the title is still the route's h1, for screen readers only. */
@@ -357,7 +394,9 @@ function ProjectDetailHeader({
   // Nothing to show off Overview: no empty row, just the heading.
   if (!identityShown && !tabs) return <HiddenTitle title={title} />;
   return (
-    <div className={headerClassName("project-detail-header", tabs, identityShown)}>
+    <div
+      className={headerClassName('project-detail-header', tabs, identityShown)}
+    >
       {tabs ? <div className="project-detail-header__aside">{tabs}</div> : null}
       {identityShown ? (
         <div className="project-detail-header__identity">
@@ -425,7 +464,11 @@ function ProjectFolderHeader({
   const reduceMotion = useReducedMotion();
   return (
     <motion.div
-      className={headerClassName("project-detail-header project-folder-header", tabs, identityShown)}
+      className={headerClassName(
+        'project-detail-header project-folder-header',
+        tabs,
+        identityShown,
+      )}
       initial={reduceMotion ? false : { opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
@@ -435,7 +478,9 @@ function ProjectFolderHeader({
         <div className="project-folder-header__identity">
           <h1 className="workflow-page-title">{projectName}</h1>
           <p className="project-folder-header__repo">
-            <span className="project-folder-header__repo-name">{project.repoFullName}</span>
+            <span className="project-folder-header__repo-name">
+              {project.repoFullName}
+            </span>
             <ProjectStatusBadges project={project} external={external} />
             {iteration}
           </p>
@@ -450,12 +495,14 @@ function ProjectFolderHeader({
 
 function OverviewLoadBanner({
   status,
-}: Readonly<{ status: ProjectDetailTabsViewModel["status"] }>) {
-  if (status !== "loading") return null;
+}: Readonly<{ status: ProjectDetailTabsViewModel['status'] }>) {
+  if (status !== 'loading') return null;
   return <p className="env-empty-state">Loading project overview...</p>;
 }
 
-function OverviewErrorBanner({ message }: Readonly<{ message: string | null }>) {
+function OverviewErrorBanner({
+  message,
+}: Readonly<{ message: string | null }>) {
   if (!message) return null;
   return (
     <p className="error-text" style={{ margin: 0 }}>

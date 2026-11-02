@@ -1,5 +1,5 @@
-import { getApiBaseUrl } from "@/shared/api/request";
-import type { NotificationsResponse } from "../model/notifications-types";
+import { getApiBaseUrl } from '@/shared/api/request';
+import type { NotificationsResponse } from '../model/notifications-types';
 
 /** Stream identity is checked before a snapshot can enter an account's cache. */
 export function openNotificationsStream(
@@ -10,7 +10,7 @@ export function openNotificationsStream(
     onError: () => void;
   },
 ): { close: () => void } | null {
-  if (typeof EventSource === "undefined") return null;
+  if (typeof EventSource === 'undefined') return null;
   const source = new EventSource(`${getApiBaseUrl()}/notifications/stream`, {
     withCredentials: true,
   });
@@ -24,19 +24,19 @@ export function openNotificationsStream(
       };
       const next = value.notifications;
       if (
-        value.kind !== "snapshot" ||
+        value.kind !== 'snapshot' ||
         value.userId !== userId ||
         !next ||
-        typeof next.enabled !== "boolean" ||
+        typeof next.enabled !== 'boolean' ||
         !Number.isInteger(next.unreadCount) ||
         next.unreadCount < 0 ||
         !Array.isArray(next.items) ||
         !next.items.every(
           (item) =>
             item &&
-            typeof item.id === "string" &&
-            typeof item.eventCode === "string" &&
-            typeof item.createdAt === "string",
+            typeof item.id === 'string' &&
+            typeof item.eventCode === 'string' &&
+            typeof item.createdAt === 'string',
         )
       )
         return;

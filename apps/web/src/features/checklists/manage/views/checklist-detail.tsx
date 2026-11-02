@@ -1,9 +1,12 @@
-"use client";
+'use client';
 
-import Link from "next/link";
+import Link from 'next/link';
 
-import { ChecklistItemList } from "../../items";
-import type { ChecklistShareTarget, QaChecklist } from "../../model/checklist-types";
+import { ChecklistItemList } from '../../items';
+import type {
+  ChecklistShareTarget,
+  QaChecklist,
+} from '../../model/checklist-types';
 import {
   automatedItemCount,
   backendHasProjectRequirements,
@@ -12,11 +15,11 @@ import {
   itemCountLabel,
   projectRequirementsHref,
   updatedLabel,
-} from "../../model/checklist-rules";
-import { useArchiveChecklistViewModel } from "../view-models/use-archive-checklist-view-model";
-import { useShareChecklistViewModel } from "../view-models/use-share-checklist-view-model";
-import { ArchiveChecklistDialog } from "./archive-checklist-dialog";
-import { ShareChecklistDialog } from "./share-checklist-dialog";
+} from '../../model/checklist-rules';
+import { useArchiveChecklistViewModel } from '../view-models/use-archive-checklist-view-model';
+import { useShareChecklistViewModel } from '../view-models/use-share-checklist-view-model';
+import { ArchiveChecklistDialog } from './archive-checklist-dialog';
+import { ShareChecklistDialog } from './share-checklist-dialog';
 
 function sharedTargets(
   checklist: QaChecklist,
@@ -26,7 +29,7 @@ function sharedTargets(
   return checklist.sharedProjectIds.map((id) => ({
     id,
     // A project the viewer cannot see still counts; it just has no name here.
-    name: byId.get(id) ?? "Project outside your access",
+    name: byId.get(id) ?? 'Project outside your access',
   }));
 }
 
@@ -58,10 +61,14 @@ function SharedWith({
           No projects yet.
           {canShare ? (
             <>
-              {" "}
-              <button type="button" className="inline-link qa-link-button" onClick={onShare}>
+              {' '}
+              <button
+                type="button"
+                className="inline-link qa-link-button"
+                onClick={onShare}
+              >
                 Share it
-              </button>{" "}
+              </button>{' '}
               so it appears on a project&apos;s Checklists tab.
             </>
           ) : null}
@@ -79,8 +86,8 @@ function MovedToProject({ href }: Readonly<{ href: string }>) {
   return (
     <div className="qa-detail__moved">
       <p>
-        This checklist is now a System requirement of a Project. It applies to every repository in that Project and
-        is edited there.
+        This checklist is now a System requirement of a Project. It applies to
+        every repository in that Project and is edited there.
       </p>
       <Link className="ghost-button group-section-action" href={href}>
         Open the Project
@@ -89,7 +96,10 @@ function MovedToProject({ href }: Readonly<{ href: string }>) {
   );
 }
 
-function DetailItems({ checklist, editable }: Readonly<{ checklist: QaChecklist; editable: boolean }>) {
+function DetailItems({
+  checklist,
+  editable,
+}: Readonly<{ checklist: QaChecklist; editable: boolean }>) {
   return (
     <section className="qa-detail__items" aria-label="Checklist items">
       <h5 className="qa-subhead">Items</h5>
@@ -97,8 +107,8 @@ function DetailItems({ checklist, editable }: Readonly<{ checklist: QaChecklist;
         items={checklist.items}
         emptyMessage={
           editable
-            ? "No items yet. Edit the checklist to add the checks people should run."
-            : "This checklist has no items yet."
+            ? 'No items yet. Edit the checklist to add the checks people should run.'
+            : 'This checklist has no items yet.'
         }
       />
     </section>
@@ -115,7 +125,9 @@ function DetailTitles({
     <div className="qa-detail__titles">
       <h4 className="qa-detail__title">
         {checklist.name}
-        {archived ? <span className="hier-badge hier-badge--muted">Archived</span> : null}
+        {archived ? (
+          <span className="hier-badge hier-badge--muted">Archived</span>
+        ) : null}
       </h4>
       <p className="qa-detail__meta">
         <span>{itemCountLabel(checklist.items.length)}</span>
@@ -164,15 +176,27 @@ export function ChecklistDetail({
         <DetailTitles checklist={checklist} archived={archived} now={now} />
         {editable ? (
           <div className="qa-detail__actions">
-            <button type="button" className="primary-button group-section-action" onClick={onEdit}>
+            <button
+              type="button"
+              className="primary-button group-section-action"
+              onClick={onEdit}
+            >
               Edit checklist
             </button>
             {shareable ? (
-              <button type="button" className="ghost-button group-section-action" onClick={share.openDialog}>
+              <button
+                type="button"
+                className="ghost-button group-section-action"
+                onClick={share.openDialog}
+              >
                 Share
               </button>
             ) : null}
-            <button type="button" className="hier-btn-danger" onClick={archive.openDialog}>
+            <button
+              type="button"
+              className="hier-btn-danger"
+              onClick={archive.openDialog}
+            >
               Archive
             </button>
           </div>
@@ -184,16 +208,29 @@ export function ChecklistDetail({
       ) : null}
 
       {owningProjectId ? (
-        <MovedToProject href={projectRequirementsHref(workspaceId, owningProjectId)} />
+        <MovedToProject
+          href={projectRequirementsHref(workspaceId, owningProjectId)}
+        />
       ) : (
-        <SharedWith checklist={checklist} projects={projects} canShare={shareable} onShare={share.openDialog} />
+        <SharedWith
+          checklist={checklist}
+          projects={projects}
+          canShare={shareable}
+          onShare={share.openDialog}
+        />
       )}
 
       <DetailItems checklist={checklist} editable={editable} />
 
       {editable ? (
         <>
-          {shareable ? <ShareChecklistDialog checklist={checklist} projects={projects} vm={share} /> : null}
+          {shareable ? (
+            <ShareChecklistDialog
+              checklist={checklist}
+              projects={projects}
+              vm={share}
+            />
+          ) : null}
           <ArchiveChecklistDialog checklist={checklist} vm={archive} />
         </>
       ) : null}

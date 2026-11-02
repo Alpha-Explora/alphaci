@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import type { DeploymentLogFocus } from "@/features/projects/deployment-logs";
-import { useBranchPreviewsViewModel } from "../view-models/use-branch-previews-view-model";
-import { ProductionDeploymentView } from "./production-deployment-view";
+import type { DeploymentLogFocus } from '@/features/projects/deployment-logs';
+import { useBranchPreviewsViewModel } from '../view-models/use-branch-previews-view-model';
+import { ProductionDeploymentView } from './production-deployment-view';
 
 /**
  * Connected Production Deployment summary: owns its ViewModel, like

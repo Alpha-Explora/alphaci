@@ -5,17 +5,17 @@
  * all describe exactly what was signed, even if the checklist changed since.
  * The client renders it; it never recomputes counts the server already gave. */
 
-import type { ChecklistTargetPersona } from "./checklist-types";
-import type { QaRunAutomationWire } from "./qa-automation-types";
+import type { ChecklistTargetPersona } from './checklist-types';
+import type { QaRunAutomationWire } from './qa-automation-types';
 import type {
   QaActor,
   QaDefectSeverity,
   QaFixRequest,
   QaRun,
   QaVerdict,
-} from "./qa-run-types";
+} from './qa-run-types';
 
-export const QA_REPORT_SCHEMA_VERSION = "qa-report/v1";
+export const QA_REPORT_SCHEMA_VERSION = 'qa-report/v1';
 
 export interface QaReportProject {
   id: string;
@@ -38,7 +38,7 @@ export interface QaReportSummary {
   verdict: QaVerdict | null;
 }
 
-export type QaReportDefectStatus = "failed" | "blocked" | "returned_to_dev";
+export type QaReportDefectStatus = 'failed' | 'blocked' | 'returned_to_dev';
 
 /** One open defect. The server orders these by severity, then position. */
 export interface QaReportDefect {

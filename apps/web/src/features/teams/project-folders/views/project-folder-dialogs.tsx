@@ -1,14 +1,18 @@
-"use client";
+'use client';
 
-import type { FormEvent } from "react";
+import type { FormEvent } from 'react';
 
-import { Dialog, FormDialog } from "@/features/groups/workspace";
+import { Dialog, FormDialog } from '@/features/groups/workspace';
 
-import { PROJECT_NAME_MAX, folderProjectIds, repositoryCountLabel } from "../model/project-folder-rules";
-import type { ProjectFolder } from "../model/project-folder-types";
-import type { CreateProjectFolderViewModel } from "../view-models/use-create-project-folder-view-model";
-import type { DeleteProjectViewModel } from "../view-models/use-delete-project-view-model";
-import type { MoveRepositoryViewModel } from "../view-models/use-move-repository-view-model";
+import {
+  PROJECT_NAME_MAX,
+  folderProjectIds,
+  repositoryCountLabel,
+} from '../model/project-folder-rules';
+import type { ProjectFolder } from '../model/project-folder-types';
+import type { CreateProjectFolderViewModel } from '../view-models/use-create-project-folder-view-model';
+import type { DeleteProjectViewModel } from '../view-models/use-delete-project-view-model';
+import type { MoveRepositoryViewModel } from '../view-models/use-move-repository-view-model';
 
 /** New Project: an empty Project in this team, filled by creating or moving repositories. */
 export function NewProjectDialog({
@@ -22,7 +26,7 @@ export function NewProjectDialog({
       title="New Project"
       description={`A Project groups the repositories in ${teamName} that ship together. It starts empty.`}
       submitLabel="Create Project"
-      submitting={vm.status === "saving"}
+      submitting={vm.status === 'saving'}
       error={vm.error}
       canSubmit={vm.canSubmit}
       onSubmit={() => void vm.submit()}
@@ -55,33 +59,38 @@ export function NewProjectDialog({
 export function MoveRepositoryDialog({
   vm,
   targets,
-}: Readonly<{ vm: MoveRepositoryViewModel; targets: ReadonlyArray<ProjectFolder> }>) {
+}: Readonly<{
+  vm: MoveRepositoryViewModel;
+  targets: ReadonlyArray<ProjectFolder>;
+}>) {
   const repository = vm.repository;
   return (
     <FormDialog
       open={repository !== null}
       onClose={vm.close}
-      title={repository ? `Move ${repository.name}` : "Move repository"}
+      title={repository ? `Move ${repository.name}` : 'Move repository'}
       description={
         vm.source
           ? `It leaves ${vm.source.name}. Its dashboard, pipeline and history stay as they are.`
           : undefined
       }
       submitLabel="Move repository"
-      submitting={vm.status === "saving"}
+      submitting={vm.status === 'saving'}
       error={vm.error}
-      canSubmit={vm.targetId !== ""}
+      canSubmit={vm.targetId !== ''}
       onSubmit={() => void vm.submit(targets)}
     >
       {targets.length === 0 ? (
-        <p className="pf-note">This team has no other Project. Create one first.</p>
+        <p className="pf-note">
+          This team has no other Project. Create one first.
+        </p>
       ) : (
         <fieldset className="pf-targets">
           <legend className="hier-field-label">Move to</legend>
           {targets.map((folder) => (
             <label
               key={folder.deliveryProjectId}
-              className={`pf-target${vm.targetId === folder.deliveryProjectId ? " pf-target--on" : ""}`}
+              className={`pf-target${vm.targetId === folder.deliveryProjectId ? ' pf-target--on' : ''}`}
             >
               <input
                 type="radio"
@@ -92,7 +101,9 @@ export function MoveRepositoryDialog({
               />
               <span className="pf-target__text">
                 <span className="pf-target__name">{folder.name}</span>
-                <span className="pf-target__meta">{repositoryCountLabel(folder.repositories.length)}</span>
+                <span className="pf-target__meta">
+                  {repositoryCountLabel(folder.repositories.length)}
+                </span>
               </span>
             </label>
           ))}
@@ -106,20 +117,32 @@ function DeleteOptInRow({
   label,
   checked,
   onChange,
-}: Readonly<{ label: string; checked: boolean; onChange: (value: boolean) => void }>) {
+}: Readonly<{
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}>) {
   return (
     <label className="pf-delete-optin">
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+      />
       {label}
     </label>
   );
 }
 
 /** Delete a Project and every repository inside it. Irreversible. */
-export function DeleteProjectDialog({ vm }: Readonly<{ vm: DeleteProjectViewModel }>) {
+export function DeleteProjectDialog({
+  vm,
+}: Readonly<{ vm: DeleteProjectViewModel }>) {
   const folder = vm.folder;
-  const hasLinkedRepositories = folder ? folderProjectIds(folder).length > 0 : false;
-  const submitting = vm.status === "saving";
+  const hasLinkedRepositories = folder
+    ? folderProjectIds(folder).length > 0
+    : false;
+  const submitting = vm.status === 'saving';
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -130,7 +153,7 @@ export function DeleteProjectDialog({ vm }: Readonly<{ vm: DeleteProjectViewMode
     <Dialog
       open={folder !== null}
       onClose={vm.close}
-      title={folder ? `Delete ${folder.name}?` : "Delete Project"}
+      title={folder ? `Delete ${folder.name}?` : 'Delete Project'}
       description="This cannot be undone. Every repository inside this Project is removed from ALPHACI."
     >
       {folder ? (
@@ -141,9 +164,9 @@ export function DeleteProjectDialog({ vm }: Readonly<{ vm: DeleteProjectViewMode
                 <li key={repo.repositoryId} className="pf-delete-repos__row">
                   <span className="pf-delete-repos__name">{repo.name}</span>
                   <span
-                    className={`pf-delete-repos__link${repo.project ? "" : " pf-delete-repos__link--none"}`}
+                    className={`pf-delete-repos__link${repo.project ? '' : ' pf-delete-repos__link--none'}`}
                   >
-                    {repo.project ? "Linked" : "Not linked"}
+                    {repo.project ? 'Linked' : 'Not linked'}
                   </span>
                 </li>
               ))}
@@ -154,7 +177,9 @@ export function DeleteProjectDialog({ vm }: Readonly<{ vm: DeleteProjectViewMode
 
           {hasLinkedRepositories ? (
             <fieldset className="pf-delete-optins">
-              <legend className="hier-field-label">Also permanently delete</legend>
+              <legend className="hier-field-label">
+                Also permanently delete
+              </legend>
               <DeleteOptInRow
                 label="Also delete the GitHub repositories"
                 checked={vm.deleteGithubRepos}
@@ -192,11 +217,20 @@ export function DeleteProjectDialog({ vm }: Readonly<{ vm: DeleteProjectViewMode
           ) : null}
 
           <div className="hier-dialog-actions">
-            <button type="button" className="ghost-button" onClick={vm.close} disabled={submitting}>
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={vm.close}
+              disabled={submitting}
+            >
               Cancel
             </button>
-            <button type="submit" className="pf-delete-submit" disabled={submitting || !vm.canSubmit}>
-              {submitting ? "Deleting…" : "Delete Project"}
+            <button
+              type="submit"
+              className="pf-delete-submit"
+              disabled={submitting || !vm.canSubmit}
+            >
+              {submitting ? 'Deleting…' : 'Delete Project'}
             </button>
           </div>
         </form>

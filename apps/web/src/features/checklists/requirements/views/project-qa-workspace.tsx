@@ -1,22 +1,29 @@
-"use client";
+'use client';
 
-import "./requirements.css";
+import './requirements.css';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
-import { ProjectRunPanel, useProjectRunViewModel } from "../../studio";
-import { verdictsBySourceItem } from "../../model/checklist-filter-rules";
-import { CHECKLIST_VIEW_LABELS, checklistViewFor } from "../../model/checklist-view-rules";
-import { ProjectRequirementsPanel } from "./project-requirements-panel";
+import { ProjectRunPanel, useProjectRunViewModel } from '../../studio';
+import { verdictsBySourceItem } from '../../model/checklist-filter-rules';
+import {
+  CHECKLIST_VIEW_LABELS,
+  checklistViewFor,
+} from '../../model/checklist-view-rules';
+import { ProjectRequirementsPanel } from './project-requirements-panel';
 
 /** The QA run, with no line above it: the run's own box says who started it and where it stands. */
 function RunView({
   deliveryProjectId,
   appRole,
   onOpenHistory,
-}: Readonly<{ deliveryProjectId: string; appRole: AppRole | null | undefined; onOpenHistory?: () => void }>) {
+}: Readonly<{
+  deliveryProjectId: string;
+  appRole: AppRole | null | undefined;
+  onOpenHistory?: () => void;
+}>) {
   const vm = useProjectRunViewModel({ deliveryProjectId, enabled: true });
   return (
     <ProjectRunPanel
@@ -103,10 +110,18 @@ export function ProjectQaWorkspace({
   const view = checklistViewFor(appRole);
 
   return (
-    <section className="rq-workspace" aria-label={`QA for ${projectName}`} data-view={view}>
-      <div className="rq-tabpanel" role="region" aria-label={CHECKLIST_VIEW_LABELS[view]}>
+    <section
+      className="rq-workspace"
+      aria-label={`QA for ${projectName}`}
+      data-view={view}
+    >
+      <div
+        className="rq-tabpanel"
+        role="region"
+        aria-label={CHECKLIST_VIEW_LABELS[view]}
+      >
         {/* Between iterations the requirements say so themselves, with Start iteration N+1 for an author. */}
-        {view === "author" ? (
+        {view === 'author' ? (
           <ChecklistWithVerdicts
             deliveryProjectId={deliveryProjectId}
             appRole={appRole}
@@ -115,11 +130,19 @@ export function ProjectQaWorkspace({
             onOpenHistory={onOpenHistory}
           />
         ) : null}
-        {view === "qa" ? (
-          <RunView deliveryProjectId={deliveryProjectId} appRole={appRole} onOpenHistory={onOpenHistory} />
+        {view === 'qa' ? (
+          <RunView
+            deliveryProjectId={deliveryProjectId}
+            appRole={appRole}
+            onOpenHistory={onOpenHistory}
+          />
         ) : null}
-        {view === "developer" ? (
-          <ChecklistWithVerdicts deliveryProjectId={deliveryProjectId} appRole={appRole} onOpenHistory={onOpenHistory} />
+        {view === 'developer' ? (
+          <ChecklistWithVerdicts
+            deliveryProjectId={deliveryProjectId}
+            appRole={appRole}
+            onOpenHistory={onOpenHistory}
+          />
         ) : null}
       </div>
     </section>

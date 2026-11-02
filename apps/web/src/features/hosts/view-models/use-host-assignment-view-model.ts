@@ -1,13 +1,13 @@
-"use client";
-import { useEffect, useRef, useState } from "react";
-import { listHosts } from "../data/hosts-api";
+'use client';
+import { useEffect, useRef, useState } from 'react';
+import { listHosts } from '../data/hosts-api';
 import {
   assignHost,
   getAssignment,
   getAssignmentDefaults,
   getReadiness,
   unassignHost,
-} from "../data/assignments-api";
+} from '../data/assignments-api';
 import {
   fallbackAssignmentDefaults,
   healthyHosts,
@@ -16,12 +16,12 @@ import {
   type HostAssignment,
   type MachineSummary,
   type ReadinessCheck,
-} from "../model/host-types";
+} from '../model/host-types';
 export interface HostAssignmentOptions {
   projectId: string;
   environmentId: string;
   workspaceId: string;
-  slots: ReadonlyArray<"frontend" | "backend">;
+  slots: ReadonlyArray<'frontend' | 'backend'>;
   production: boolean;
   canManage: boolean;
 }
@@ -32,19 +32,19 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
     [current, setCurrent] = useState<HostAssignment | null>(null);
   const [checks, setChecks] = useState<ReadinessCheck[]>([]),
     [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">(
-      "loading",
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
+      'loading',
     ),
     [busy, setBusy] = useState(false),
     [reload, setReload] = useState(0);
-  const [selected, setSelected] = useState(""),
-    [confirmation, setConfirmation] = useState<"replace" | "unassign" | null>(
+  const [selected, setSelected] = useState(''),
+    [confirmation, setConfirmation] = useState<'replace' | 'unassign' | null>(
       null,
     );
   // Replaced on load by the backend's defaults for this environment.
   const [config, setConfig] = useState<AssignmentRequestConfig>(() => ({
     ...fallbackAssignmentDefaults(options.slots),
-    ingress: { mode: production ? "tunnel" : "direct", publicUrl: null },
+    ingress: { mode: production ? 'tunnel' : 'direct', publicUrl: null },
   }));
   const pending = useRef(false),
     active = useRef(true),
@@ -68,7 +68,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
     tunnelWatch.current = {
       projectId,
       environmentId,
-      tunnel: current?.config?.ingress.mode === "tunnel",
+      tunnel: current?.config?.ingress.mode === 'tunnel',
     };
   }, [projectId, environmentId, current]);
   useEffect(() => {
@@ -87,12 +87,12 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
         setHosts(
           machines.filter(
             (host) =>
-              host.status !== "revoked" && host.status !== "enrollment_pending",
+              host.status !== 'revoked' && host.status !== 'enrollment_pending',
           ),
         );
         setCurrent(assignment);
         setChecks(readiness.checks);
-        setStatus("ready");
+        setStatus('ready');
         setError(null);
         if (assignment?.config) {
           setSelected(assignment.machineId);
@@ -110,9 +110,9 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
           setError(
             cause instanceof Error
               ? cause.message
-              : "Unable to read host assignment.",
+              : 'Unable to read host assignment.',
           );
-          setStatus("error");
+          setStatus('error');
         }
       });
     return () => {
@@ -152,8 +152,8 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
           setHosts(
             machines.filter(
               (host) =>
-                host.status !== "revoked" &&
-                host.status !== "enrollment_pending",
+                host.status !== 'revoked' &&
+                host.status !== 'enrollment_pending',
             ),
           );
         })
@@ -168,12 +168,12 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
   // with exactly one, the server assigns it without a choice.
   const choices = healthyHosts(hosts);
   const automatic = choices.length === 1 ? choices[0]! : null;
-  const machineId = selected || automatic?.id || "";
+  const machineId = selected || automatic?.id || '';
   // A confirmation survives refreshes untouched, but it only sends for the
   // assignment it was opened against. If the server has since replaced or
   // removed that assignment, the click is refused and the user reviews again.
   // Returns true only when a confirmation is open for this assignment.
-  function confirmed(kind: "replace" | "unassign"): boolean {
+  function confirmed(kind: 'replace' | 'unassign'): boolean {
     if (confirmation !== kind) {
       confirmedFor.current = current?.id ?? null;
       setConfirmation(kind);
@@ -183,7 +183,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
     confirmedFor.current = null;
     setConfirmation(null);
     setError(
-      "The assignment changed on the server since you confirmed. Review it, then confirm again.",
+      'The assignment changed on the server since you confirmed. Review it, then confirm again.',
     );
     return false;
   }
@@ -195,7 +195,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
   async function assign() {
     if (!canManage || pending.current || !machineId) return;
     // A replacement is confirmed first: one click opens it, the next sends.
-    if ((current || confirmation === "replace") && !confirmed("replace"))
+    if ((current || confirmation === 'replace') && !confirmed('replace'))
       return;
     const requestId = requestIdFor(
       JSON.stringify({ machineId, current: current?.id, config }),
@@ -217,7 +217,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
   }
   async function unassign() {
     if (!canManage || !current || pending.current) return;
-    if (!confirmed("unassign")) return;
+    if (!confirmed('unassign')) return;
     pending.current = true;
     setBusy(true);
     try {
@@ -231,7 +231,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
     } catch (cause) {
       if (active.current)
         setError(
-          cause instanceof Error ? cause.message : "Unassignment failed.",
+          cause instanceof Error ? cause.message : 'Unassignment failed.',
         );
     } finally {
       pending.current = false;
@@ -249,14 +249,14 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
         setError(
           cause instanceof Error
             ? cause.message
-            : "Assignment failed. Reload after a conflict, or retry after a network error.",
+            : 'Assignment failed. Reload after a conflict, or retry after a network error.',
         );
     } finally {
       pending.current = false;
       if (active.current) setBusy(false);
     }
   }
-  function port(slot: "frontend" | "backend", value: string) {
+  function port(slot: 'frontend' | 'backend', value: string) {
     setConfig((old) => ({
       ...old,
       ports: old.ports.map((item) =>
@@ -265,7 +265,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
     }));
     setConfirmation(null);
   }
-  function health(slot: "frontend" | "backend", value: string) {
+  function health(slot: 'frontend' | 'backend', value: string) {
     setConfig((old) => ({
       ...old,
       health: old.health.map((item) =>

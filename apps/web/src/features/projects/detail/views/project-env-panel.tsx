@@ -1,74 +1,85 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
+import { useMemo, useState } from 'react';
 
-import { useCapabilities } from "@/features/capabilities/current";
-import { useProjectEnvProvisioning } from "../view-models/use-project-env-provisioning-view-model";
-import { useEnvVariablesEditor } from "../view-models/use-env-variables-editor-view-model";
+import { useCapabilities } from '@/features/capabilities/current';
+import { useProjectEnvProvisioning } from '../view-models/use-project-env-provisioning-view-model';
+import { useEnvVariablesEditor } from '../view-models/use-env-variables-editor-view-model';
 import type {
   DeploymentTarget,
   EnvVarMetadata,
   ProvisionedProject,
   RenderRuntime,
-} from "@/features/projects";
-import { formatApiError } from "@/features/workflows";
+} from '@/features/projects';
+import { formatApiError } from '@/features/workflows';
 import {
   filterEnvMetadata,
   hostingForProject,
   presentScopeOptions,
-} from "../model/env-panel-rules";
-import { EnvHostingSection } from "./env-hosting-section";
-import { EnvProvisionedTable } from "./env-provisioned-table";
-import { EnvVariablesForm } from "./env-variables-form";
+} from '../model/env-panel-rules';
+import { EnvHostingSection } from './env-hosting-section';
+import { EnvProvisionedTable } from './env-provisioned-table';
+import { EnvVariablesForm } from './env-variables-form';
 
 interface ProjectEnvPanelProps {
   project: ProvisionedProject;
   onTargetCreated?: (target: DeploymentTarget) => void;
-  section?: "all" | "hosting" | "variables";
+  section?: 'all' | 'hosting' | 'variables';
 }
 
 export function ProjectEnvPanel({
   onTargetCreated,
   project,
-  section = "all",
+  section = 'all',
 }: Readonly<ProjectEnvPanelProps>) {
   const env = useProjectEnvProvisioning(
     project.id,
-    project.status === "provisioned",
-    section !== "hosting",
+    project.status === 'provisioned',
+    section !== 'hosting',
   );
-  const { addTarget, loading, metadata, providerConnections, saving, targets, usageItems } = env;
+  const {
+    addTarget,
+    loading,
+    metadata,
+    providerConnections,
+    saving,
+    targets,
+    usageItems,
+  } = env;
   const editor = useEnvVariablesEditor(env);
   const [targetAction, setTargetAction] = useState<
-    "create" | "register_existing"
-  >("create");
+    'create' | 'register_existing'
+  >('create');
   const { deploymentOwnershipMode: ownershipMode } = useCapabilities();
   const hosting = useMemo(() => hostingForProject(project), [project]);
   const provider = hosting.provider;
   const slot = hosting.slot;
   const [projectName, setProjectName] = useState(`${project.serviceName}-uat`);
-  const [providerProjectId, setProviderProjectId] = useState("");
+  const [providerProjectId, setProviderProjectId] = useState('');
   const [providerProjectName, setProviderProjectName] = useState(
     project.serviceName,
   );
-  const [providerConnectionId, setProviderConnectionId] = useState("");
-  const [branchName, setBranchName] = useState("uat");
-  const [rootDirectory, setRootDirectory] = useState(".");
-  const [buildCommand, setBuildCommand] = useState("npm ci && npm run build");
-  const [startCommand, setStartCommand] = useState("npm run start:prod");
-  const [renderRuntime, setRenderRuntime] = useState<RenderRuntime>("docker");
-  const [filterTargetId, setFilterTargetId] = useState("all");
-  const [filterEnvironment, setFilterEnvironment] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<"all" | EnvVarMetadata["status"]>(
-    "all",
-  );
+  const [providerConnectionId, setProviderConnectionId] = useState('');
+  const [branchName, setBranchName] = useState('uat');
+  const [rootDirectory, setRootDirectory] = useState('.');
+  const [buildCommand, setBuildCommand] = useState('npm ci && npm run build');
+  const [startCommand, setStartCommand] = useState('npm run start:prod');
+  const [renderRuntime, setRenderRuntime] = useState<RenderRuntime>('docker');
+  const [filterTargetId, setFilterTargetId] = useState('all');
+  const [filterEnvironment, setFilterEnvironment] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<
+    'all' | EnvVarMetadata['status']
+  >('all');
 
-  const presentScopes = useMemo(() => presentScopeOptions(metadata), [metadata]);
+  const presentScopes = useMemo(
+    () => presentScopeOptions(metadata),
+    [metadata],
+  );
   const matchingConnections = providerConnections.filter(
     (connection) => connection.provider === provider,
   );
   const activeProviderConnectionId =
-    providerConnectionId || matchingConnections[0]?.id || "";
+    providerConnectionId || matchingConnections[0]?.id || '';
   const resourceUsageItems = useMemo(
     () => usageItems.filter((item) => item.limit > 0),
     [usageItems],
@@ -82,8 +93,8 @@ export function ProjectEnvPanel({
       }),
     [filterEnvironment, filterStatus, filterTargetId, metadata],
   );
-  const showHosting = section !== "variables";
-  const showVariables = section !== "hosting";
+  const showHosting = section !== 'variables';
+  const showVariables = section !== 'hosting';
 
   async function handleSaveTarget() {
     editor.setMessage(null);
@@ -93,20 +104,20 @@ export function ProjectEnvPanel({
       ownershipMode,
       provider,
       branchName,
-      ...(ownershipMode === "byo"
+      ...(ownershipMode === 'byo'
         ? { providerConnectionId: activeProviderConnectionId }
         : {}),
-      ...(targetAction === "create"
+      ...(targetAction === 'create'
         ? {
             projectName,
             rootDirectory,
             buildCommand,
-            ...(provider === "render" && startCommand ? { startCommand } : {}),
-            ...(provider === "render"
+            ...(provider === 'render' && startCommand ? { startCommand } : {}),
+            ...(provider === 'render'
               ? {
                   renderRuntime,
-                  renderServiceType: "web_service" as const,
-                  renderInstanceType: "free",
+                  renderServiceType: 'web_service' as const,
+                  renderInstanceType: 'free',
                 }
               : {}),
           }
@@ -120,12 +131,14 @@ export function ProjectEnvPanel({
       editor.setTargetId(target.id);
       onTargetCreated?.(target);
       editor.setMessage(
-        targetAction === "create"
-          ? "Deployment target created."
-          : "Deployment target registered.",
+        targetAction === 'create'
+          ? 'Deployment target created.'
+          : 'Deployment target registered.',
       );
     } catch (error) {
-      editor.setMessage(formatApiError(error, "Deployment target setup failed"));
+      editor.setMessage(
+        formatApiError(error, 'Deployment target setup failed'),
+      );
     }
   }
 

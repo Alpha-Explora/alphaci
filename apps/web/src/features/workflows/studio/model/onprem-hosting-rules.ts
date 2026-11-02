@@ -10,14 +10,17 @@ import type {
   CreateDeploymentProvisioningRequest,
   EnvTargetSlot,
   OnpremProvisioningTargetRequest,
-} from "@/shared/api/contracts";
-import type { EnvironmentDraft, EnvironmentRunsOn } from "./project-environments-rules";
-import { inferSingleProjectKind, projectKindToSlot } from "./setup-tab-rules";
+} from '@/shared/api/contracts';
+import type {
+  EnvironmentDraft,
+  EnvironmentRunsOn,
+} from './project-environments-rules';
+import { inferSingleProjectKind, projectKindToSlot } from './setup-tab-rules';
 
-export const ONPREM_PROVIDER_ID = "onprem-compose";
+export const ONPREM_PROVIDER_ID = 'onprem-compose';
 
 export const ONPREM_DISABLED_FALLBACK_REASON =
-  "On-prem hosting is not turned on for this deployment.";
+  'On-prem hosting is not turned on for this deployment.';
 
 export const ALL_ONPREM_DELIVERY_NOTICE =
   "Every environment runs on your on-prem host. After the project is created, register the host on the project's Hosting tab.";
@@ -37,24 +40,24 @@ export interface DeploymentProviderAvailability {
  * the server's reason. enabled: offered.
  */
 export type OnpremHosting =
-  | { status: "hidden" }
-  | { status: "disabled"; reason: string }
-  | { status: "enabled" };
+  | { status: 'hidden' }
+  | { status: 'disabled'; reason: string }
+  | { status: 'enabled' };
 
 export function onpremHostingFrom(
   providers: readonly DeploymentProviderAvailability[] | null,
 ): OnpremHosting {
   const onprem = providers?.find(({ id }) => id === ONPREM_PROVIDER_ID);
-  if (!onprem) return { status: "hidden" };
-  if (onprem.enabled === true) return { status: "enabled" };
+  if (!onprem) return { status: 'hidden' };
+  if (onprem.enabled === true) return { status: 'enabled' };
   return {
-    status: "disabled",
+    status: 'disabled',
     reason: onprem.reason?.trim() || ONPREM_DISABLED_FALLBACK_REASON,
   };
 }
 
 export function isOnpremEnvironment(environment: EnvironmentDraft): boolean {
-  return environment.runsOn === "onprem";
+  return environment.runsOn === 'onprem';
 }
 
 export function setEnvironmentRunsOn(
@@ -70,10 +73,13 @@ export function setEnvironmentRunsOn(
 export function runEveryEnvironmentOnprem(
   environments: readonly EnvironmentDraft[],
 ): EnvironmentDraft[] {
-  return environments.map((environment) => ({ ...environment, runsOn: "onprem" }));
+  return environments.map((environment) => ({
+    ...environment,
+    runsOn: 'onprem',
+  }));
 }
 
-export type HostingMode = "managed" | "mixed" | "onprem";
+export type HostingMode = 'managed' | 'mixed' | 'onprem';
 
 export interface EnvironmentHosting {
   mode: HostingMode;
@@ -99,23 +105,31 @@ export interface EnvironmentHostingInput {
   environmentsEnabled: boolean;
   isMicroservicesShape: boolean;
   isMultiRepoShape: boolean;
-  onpremStatus: OnpremHosting["status"];
+  onpremStatus: OnpremHosting['status'];
 }
 
 /**
  * Two services in one repository create no environments of their own; a
  * single application and a two-repository project do.
  */
-function definedEnvironments(input: EnvironmentHostingInput): readonly EnvironmentDraft[] {
+function definedEnvironments(
+  input: EnvironmentHostingInput,
+): readonly EnvironmentDraft[] {
   if (!input.environmentsEnabled) return [];
   return input.isMicroservicesShape ? [] : input.environments;
 }
 
-export function environmentHosting(input: EnvironmentHostingInput): EnvironmentHosting {
+export function environmentHosting(
+  input: EnvironmentHostingInput,
+): EnvironmentHosting {
   const environments = definedEnvironments(input);
   const onprem =
-    input.onpremStatus === "enabled" ? environments.filter(isOnpremEnvironment) : [];
-  const managed = environments.filter((environment) => !onprem.includes(environment));
+    input.onpremStatus === 'enabled'
+      ? environments.filter(isOnpremEnvironment)
+      : [];
+  const managed = environments.filter(
+    (environment) => !onprem.includes(environment),
+  );
   return {
     mode: hostingMode(onprem.length, managed.length),
     environments,
@@ -125,16 +139,19 @@ export function environmentHosting(input: EnvironmentHostingInput): EnvironmentH
 }
 
 function hostingMode(onpremCount: number, managedCount: number): HostingMode {
-  if (onpremCount === 0) return "managed";
-  return managedCount === 0 ? "onprem" : "mixed";
+  if (onpremCount === 0) return 'managed';
+  return managedCount === 0 ? 'onprem' : 'mixed';
 }
 
 /**
  * The Render-variable rule applies to managed hosting only. With every
  * environment on-prem there is no Render service to configure.
  */
-export function renderVariablesBlocking(missing: boolean, mode: HostingMode): boolean {
-  return missing && mode !== "onprem";
+export function renderVariablesBlocking(
+  missing: boolean,
+  mode: HostingMode,
+): boolean {
+  return missing && mode !== 'onprem';
 }
 
 /**
@@ -143,7 +160,7 @@ export function renderVariablesBlocking(missing: boolean, mode: HostingMode): bo
  */
 export function deployableSlots(
   deploymentProvisioning: CreateDeploymentProvisioningRequest | undefined,
-  selectedProjectKind: "frontend" | "backend",
+  selectedProjectKind: 'frontend' | 'backend',
 ): EnvTargetSlot[] {
   const slots = deploymentProvisioning?.enabled
     ? [...new Set(deploymentProvisioning.targets.map(({ slot }) => slot))]
@@ -156,12 +173,12 @@ export function deployableSlots(
  * does not offer on-prem (the payload then ignores every "Runs on").
  */
 export function onpremSlotsFor(input: {
-  status: OnpremHosting["status"];
+  status: OnpremHosting['status'];
   deploymentProvisioning: CreateDeploymentProvisioningRequest | undefined;
-  selectedProjectType: { kind?: "frontend" | "backend" } | null | undefined;
+  selectedProjectType: { kind?: 'frontend' | 'backend' } | null | undefined;
   selectedProjectTypeId: string;
 }): EnvTargetSlot[] | undefined {
-  if (input.status !== "enabled") return undefined;
+  if (input.status !== 'enabled') return undefined;
   const kind = inferSingleProjectKind({
     selectedProjectTypeKind: input.selectedProjectType?.kind,
     selectedProjectTypeId: input.selectedProjectTypeId,
@@ -173,7 +190,12 @@ function onpremTarget(
   slot: EnvTargetSlot,
   environmentSlug: string,
 ): OnpremProvisioningTargetRequest {
-  return { slot, provider: ONPREM_PROVIDER_ID, ownershipMode: "byo", environmentSlug };
+  return {
+    slot,
+    provider: ONPREM_PROVIDER_ID,
+    ownershipMode: 'byo',
+    environmentSlug,
+  };
 }
 
 /**
@@ -215,30 +237,32 @@ export function withOnpremTargets(
 }
 
 export function environmentName(environment: EnvironmentDraft): string {
-  return environment.displayName.trim() || environment.slug.trim() || "Environment";
+  return (
+    environment.displayName.trim() || environment.slug.trim() || 'Environment'
+  );
 }
 
 function listNames(environments: readonly EnvironmentDraft[]): string {
   const names = environments.map(environmentName);
-  if (names.length <= 1) return names.join("");
-  return names.slice(0, -1).join(", ") + " and " + names.at(-1);
+  if (names.length <= 1) return names.join('');
+  return names.slice(0, -1).join(', ') + ' and ' + names.at(-1);
 }
 
 /** The Delivery step's line for a project with some environments on-prem. */
 export function mixedHostingLine(hosting: EnvironmentHosting): string {
-  const verb = hosting.onprem.length === 1 ? "runs" : "run";
+  const verb = hosting.onprem.length === 1 ? 'runs' : 'run';
   return (
     listNames(hosting.onprem) +
-    " " +
+    ' ' +
     verb +
     " on your on-prem host; register the host on the project's Hosting tab after the project is created. The hosting below applies to " +
     listNames(hosting.managed) +
-    "."
+    '.'
   );
 }
 
 export function runsOnLabel(runsOn: EnvironmentRunsOn): string {
-  return runsOn === "onprem" ? "On-prem host" : "Managed hosting";
+  return runsOn === 'onprem' ? 'On-prem host' : 'Managed hosting';
 }
 
 /** The Review step's "where each environment runs" line, in promotion order. */
@@ -248,10 +272,10 @@ export function environmentsRunOnSummary(hosting: EnvironmentHosting): string {
     .map(
       (environment) =>
         environmentName(environment) +
-        ": " +
-        runsOnLabel(onprem.has(environment) ? "onprem" : "managed"),
+        ': ' +
+        runsOnLabel(onprem.has(environment) ? 'onprem' : 'managed'),
     )
-    .join(" · ");
+    .join(' · ');
 }
 
 /** The Review step's Delivery value. */
@@ -259,7 +283,11 @@ export function hostingDeliveryLabel(
   provisioningEnabled: boolean,
   mode: HostingMode,
 ): string {
-  if (mode === "onprem") return "On-prem host for every environment";
-  const hosted = provisioningEnabled ? "Deployment setup included" : "CI workflow only";
-  return mode === "mixed" ? hosted + " · on-prem host for some environments" : hosted;
+  if (mode === 'onprem') return 'On-prem host for every environment';
+  const hosted = provisioningEnabled
+    ? 'Deployment setup included'
+    : 'CI workflow only';
+  return mode === 'mixed'
+    ? hosted + ' · on-prem host for some environments'
+    : hosted;
 }

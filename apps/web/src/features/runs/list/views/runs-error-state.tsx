@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /* `message` is always the view-model's user-safe error, never a raw ApiError. */
 export function RunsErrorState({
@@ -33,9 +33,9 @@ export function RunsErrorState({
         onClick={onRetry}
         className="ghost-button"
         style={{
-          padding: "0.35rem 1rem",
-          fontSize: "0.82rem",
-          minHeight: "2rem",
+          padding: '0.35rem 1rem',
+          fontSize: '0.82rem',
+          minHeight: '2rem',
         }}
       >
         Retry

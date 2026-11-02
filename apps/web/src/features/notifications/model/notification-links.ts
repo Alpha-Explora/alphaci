@@ -3,22 +3,22 @@
  * that omits projectId/groupId/deliveryProjectId entirely behaves exactly
  * like one that sends them as null. */
 
-import type { AppRole } from "@/shared/api/contracts";
-import { studioTabFor } from "@/features/projects/detail";
+import type { AppRole } from '@/shared/api/contracts';
+import { studioTabFor } from '@/features/projects/detail';
 
 import {
   isQaRefusal,
   qaRefusalHref,
   isMembershipNotification,
-} from "./notifications-rules";
-import type { NotificationItem } from "./notifications-types";
+} from './notifications-rules';
+import type { NotificationItem } from './notifications-types';
 
 /** The event codes covered by §6's "Returned to Dev" loop and §5's promotion
  * flow: all land in the viewer's studio (QA Studio or PO Studio), else Overview. */
 const QA_STUDIO_DEEP_LINK_EVENTS: ReadonlySet<string> = new Set([
-  "qa.run.signed_off",
-  "qa.item.retest_requested",
-  "qa.promotion.merged",
+  'qa.run.signed_off',
+  'qa.item.retest_requested',
+  'qa.promotion.merged',
 ]);
 
 function projectPath(projectId: string): string {
@@ -44,7 +44,7 @@ function qaStudioDeepLinkHref(
   appRole: AppRole | null | undefined,
 ): string | null {
   if (!projectId) return null;
-  return `${projectPath(projectId)}#${studioTabFor(appRole) ?? "overview"}`;
+  return `${projectPath(projectId)}#${studioTabFor(appRole) ?? 'overview'}`;
 }
 
 /**
@@ -54,7 +54,7 @@ function qaStudioDeepLinkHref(
 export function notificationHref(
   item: Pick<
     NotificationItem,
-    "eventCode" | "projectId" | "groupId" | "deliveryProjectId"
+    'eventCode' | 'projectId' | 'groupId' | 'deliveryProjectId'
   >,
   appRole: AppRole | null | undefined,
 ): string | null {
@@ -67,7 +67,7 @@ export function notificationHref(
   if (isQaRefusal(item)) {
     return qaRefusalHref(item);
   }
-  if (item.eventCode === "project_created") {
+  if (item.eventCode === 'project_created') {
     return projectCreatedHref({
       projectId,
       groupId: item.groupId ?? null,

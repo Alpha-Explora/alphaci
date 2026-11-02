@@ -36,19 +36,23 @@ import type {
   WorkflowSettingsPreviewResponse,
   WorkflowSettingsResponse,
   WorkflowUpdatePullRequestResponse,
-} from "@/shared/api/contracts";
-import { request } from "@/shared/api/request";
+} from '@/shared/api/contracts';
+import { request } from '@/shared/api/request';
 
-export async function setupProject(payload: SetupProjectRequest): Promise<SetupProjectResponse> {
-  return request<SetupProjectResponse>("/projects/setup", {
-    method: "POST",
+export async function setupProject(
+  payload: SetupProjectRequest,
+): Promise<SetupProjectResponse> {
+  return request<SetupProjectResponse>('/projects/setup', {
+    method: 'POST',
     body: JSON.stringify(payload),
   });
 }
 
-export async function createProject(payload: CreateProjectRequest): Promise<CreateProjectResponse> {
-  return request<CreateProjectResponse>("/projects", {
-    method: "POST",
+export async function createProject(
+  payload: CreateProjectRequest,
+): Promise<CreateProjectResponse> {
+  return request<CreateProjectResponse>('/projects', {
+    method: 'POST',
     body: JSON.stringify(payload),
   });
 }
@@ -60,13 +64,17 @@ export async function getProjects(
   const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
   const params = new URLSearchParams({ limit: String(safeLimit) });
   if (input?.workspaceId) {
-    params.set("workspaceId", input.workspaceId);
+    params.set('workspaceId', input.workspaceId);
   }
   return request<ProvisionedProjectsResponse>(`/projects?${params.toString()}`);
 }
 
-export async function getProjectOverview(projectId: string): Promise<ProjectOverviewResponse> {
-  return request<ProjectOverviewResponse>(`/projects/${encodeURIComponent(projectId)}/overview`);
+export async function getProjectOverview(
+  projectId: string,
+): Promise<ProjectOverviewResponse> {
+  return request<ProjectOverviewResponse>(
+    `/projects/${encodeURIComponent(projectId)}/overview`,
+  );
 }
 
 /**
@@ -78,14 +86,23 @@ export async function getProjectFolder(projectId: string): Promise<unknown> {
   return request<unknown>(`/projects/${encodeURIComponent(projectId)}/folder`);
 }
 
-export async function syncProjectSnapshot(projectId: string): Promise<ProjectSyncSnapshotResponse> {
-  return request<ProjectSyncSnapshotResponse>(`/projects/${encodeURIComponent(projectId)}/sync`, {
-    method: "POST",
-  });
+export async function syncProjectSnapshot(
+  projectId: string,
+): Promise<ProjectSyncSnapshotResponse> {
+  return request<ProjectSyncSnapshotResponse>(
+    `/projects/${encodeURIComponent(projectId)}/sync`,
+    {
+      method: 'POST',
+    },
+  );
 }
 
-export async function getWorkflowSettings(projectId: string): Promise<WorkflowSettingsResponse> {
-  return request<WorkflowSettingsResponse>(`/projects/${encodeURIComponent(projectId)}/workflow-settings`);
+export async function getWorkflowSettings(
+  projectId: string,
+): Promise<WorkflowSettingsResponse> {
+  return request<WorkflowSettingsResponse>(
+    `/projects/${encodeURIComponent(projectId)}/workflow-settings`,
+  );
 }
 
 export async function previewWorkflowSettings(
@@ -95,7 +112,7 @@ export async function previewWorkflowSettings(
   return request<WorkflowSettingsPreviewResponse>(
     `/projects/${encodeURIComponent(projectId)}/workflow-settings/preview`,
     {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify(payload),
     },
   );
@@ -108,7 +125,7 @@ export async function createWorkflowUpdatePullRequest(
   return request<WorkflowUpdatePullRequestResponse>(
     `/projects/${encodeURIComponent(projectId)}/workflow-settings/pr`,
     {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify(payload),
     },
   );
@@ -138,7 +155,7 @@ export async function rerunProjectCiRun(
   return request<ProjectCiRunRerunResponse>(
     `/projects/${encodeURIComponent(projectId)}/ci-runs/${encodeURIComponent(runId)}/rerun`,
     {
-      method: "POST",
+      method: 'POST',
     },
   );
 }
@@ -165,7 +182,7 @@ export async function addProjectDomain(
 ): Promise<CustomDomain> {
   return request<CustomDomain>(
     `/projects/${encodeURIComponent(projectId)}/domains`,
-    { method: "POST", body: JSON.stringify(body) },
+    { method: 'POST', body: JSON.stringify(body) },
   );
 }
 
@@ -175,7 +192,7 @@ export async function verifyProjectDomain(
 ): Promise<CustomDomain> {
   return request<CustomDomain>(
     `/projects/${encodeURIComponent(projectId)}/domains/${encodeURIComponent(domainId)}/verify`,
-    { method: "POST" },
+    { method: 'POST' },
   );
 }
 
@@ -185,7 +202,7 @@ export async function removeProjectDomain(
 ): Promise<RemoveCustomDomainResponse> {
   return request<RemoveCustomDomainResponse>(
     `/projects/${encodeURIComponent(projectId)}/domains/${encodeURIComponent(domainId)}`,
-    { method: "DELETE" },
+    { method: 'DELETE' },
   );
 }
 
@@ -211,7 +228,7 @@ export async function runProjectDriftDetection(
   return request<ProjectDriftResponse>(
     `/projects/${encodeURIComponent(projectId)}/drift/run`,
     {
-      method: "POST",
+      method: 'POST',
     },
   );
 }
@@ -224,7 +241,7 @@ export async function repairProjectDriftFinding(
   return request<ProjectDriftRepairResponse>(
     `/projects/${encodeURIComponent(projectId)}/drift/${encodeURIComponent(findingId)}/repair`,
     {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify({ action }),
     },
   );
@@ -235,19 +252,24 @@ export async function getProjectAuditEvents(
   page: ProjectAuditPageRequest = {},
 ): Promise<ProjectAuditEventsResponse> {
   const params = new URLSearchParams();
-  if (page.limit !== undefined) params.set("limit", String(page.limit));
-  if (page.before) params.set("before", page.before);
+  if (page.limit !== undefined) params.set('limit', String(page.limit));
+  if (page.before) params.set('before', page.before);
   const query = params.toString();
   return request<ProjectAuditEventsResponse>(
-    `/projects/${encodeURIComponent(projectId)}/audit${query ? `?${query}` : ""}`,
+    `/projects/${encodeURIComponent(projectId)}/audit${query ? `?${query}` : ''}`,
   );
 }
 
 /** Asks the server to read GitHub activity into the trail now. The body is not read. */
-export async function syncProjectAuditEvents(projectId: string): Promise<unknown> {
-  return request<unknown>(`/projects/${encodeURIComponent(projectId)}/audit/sync`, {
-    method: "POST",
-  });
+export async function syncProjectAuditEvents(
+  projectId: string,
+): Promise<unknown> {
+  return request<unknown>(
+    `/projects/${encodeURIComponent(projectId)}/audit/sync`,
+    {
+      method: 'POST',
+    },
+  );
 }
 
 /** One page of a branch's commits, newest first. No `branch`: the server's default. */
@@ -256,12 +278,12 @@ export async function getProjectCommits(
   page: ProjectCommitsPageRequest = {},
 ): Promise<ProjectCommitsResponse> {
   const params = new URLSearchParams();
-  if (page.branch) params.set("branch", page.branch);
-  if (page.limit !== undefined) params.set("limit", String(page.limit));
-  if (page.before) params.set("before", page.before);
+  if (page.branch) params.set('branch', page.branch);
+  if (page.limit !== undefined) params.set('limit', String(page.limit));
+  if (page.before) params.set('before', page.before);
   const query = params.toString();
   return request<ProjectCommitsResponse>(
-    `/projects/${encodeURIComponent(projectId)}/commits${query ? `?${query}` : ""}`,
+    `/projects/${encodeURIComponent(projectId)}/commits${query ? `?${query}` : ''}`,
   );
 }
 
@@ -273,7 +295,7 @@ export async function updateDeploymentTarget(
   return request<DeploymentTarget>(
     `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}`,
     {
-      method: "PATCH",
+      method: 'PATCH',
       body: JSON.stringify(payload),
     },
   );
@@ -286,7 +308,7 @@ export async function syncDeploymentTarget(
   return request<DeploymentTargetSyncResponse>(
     `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/sync`,
     {
-      method: "POST",
+      method: 'POST',
     },
   );
 }
@@ -299,7 +321,7 @@ export async function detachDeploymentTarget(
   return request<DetachDeploymentTargetResponse>(
     `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}`,
     {
-      method: "DELETE",
+      method: 'DELETE',
       ...(payload ? { body: JSON.stringify(payload) } : {}),
     },
   );
@@ -326,7 +348,7 @@ export async function reinstallDeploymentSecrets(
   return request<ReinstallDeploymentSecretsResponse>(
     `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/reinstall-secrets`,
     {
-      method: "POST",
+      method: 'POST',
     },
   );
 }
@@ -339,7 +361,7 @@ export async function rollbackDeploymentTarget(
 ): Promise<RollbackDeploymentTargetResponse> {
   return request<RollbackDeploymentTargetResponse>(
     `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/rollback`,
-    { method: "POST", body: JSON.stringify(body) },
+    { method: 'POST', body: JSON.stringify(body) },
   );
 }
 
@@ -350,7 +372,7 @@ export async function resumeDeploymentTargetDeploys(
 ): Promise<ResumeDeploymentTargetDeploysResponse> {
   return request<ResumeDeploymentTargetDeploysResponse>(
     `/projects/${encodeURIComponent(projectId)}/deployment-targets/${encodeURIComponent(targetId)}/rollback/resume`,
-    { method: "POST" },
+    { method: 'POST' },
   );
 }
 
@@ -358,14 +380,24 @@ export async function disconnectProject(
   id: string,
   options?: DisconnectProjectRequest,
 ): Promise<DisconnectProjectResponse> {
-  return request<DisconnectProjectResponse>(`/projects/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-    ...(options ? { body: JSON.stringify(options) } : {}),
-  });
+  return request<DisconnectProjectResponse>(
+    `/projects/${encodeURIComponent(id)}`,
+    {
+      method: 'DELETE',
+      ...(options ? { body: JSON.stringify(options) } : {}),
+    },
+  );
 }
 
-export async function syncProjects(): Promise<{ orphaned: number; reachable: number; total: number }> {
-  return request<{ orphaned: number; reachable: number; total: number }>('/projects/sync', {
-    method: 'POST',
-  });
+export async function syncProjects(): Promise<{
+  orphaned: number;
+  reachable: number;
+  total: number;
+}> {
+  return request<{ orphaned: number; reachable: number; total: number }>(
+    '/projects/sync',
+    {
+      method: 'POST',
+    },
+  );
 }

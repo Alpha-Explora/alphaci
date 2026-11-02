@@ -1,13 +1,16 @@
-"use client";
+'use client';
 
-import type { RailWidthViewModel } from "../view-models/use-rail-width";
+import type { RailWidthViewModel } from '../view-models/use-rail-width';
 
 /**
  * The open panel's left edge: drag it towards the page to widen the panel,
  * back to narrow it. Arrow keys do the same; a double-click goes back to the
  * default width. A focusable separator, so the keyboard reaches it.
  */
-export function RailResizeHandle({ vm, label }: Readonly<{ vm: RailWidthViewModel; label: string }>) {
+export function RailResizeHandle({
+  vm,
+  label,
+}: Readonly<{ vm: RailWidthViewModel; label: string }>) {
   return (
     <div
       className="qa-rail__resize"

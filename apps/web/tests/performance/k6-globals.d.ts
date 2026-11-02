@@ -12,8 +12,13 @@ declare const __ENV: Record<string, string | undefined>;
 
 declare module 'k6/http' {
   const http: {
-    get: (url: string, params?: { tags?: Record<string, string> }) => K6Response;
-    expectedStatuses: (...statuses: number[]) => (response: K6Response) => boolean;
+    get: (
+      url: string,
+      params?: { tags?: Record<string, string> },
+    ) => K6Response;
+    expectedStatuses: (
+      ...statuses: number[]
+    ) => (response: K6Response) => boolean;
     setResponseCallback: (callback: (response: K6Response) => boolean) => void;
   };
 

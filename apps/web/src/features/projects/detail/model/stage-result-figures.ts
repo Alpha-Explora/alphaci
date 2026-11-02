@@ -12,34 +12,34 @@
  * than drawn as "NaN%".
  */
 
-import type { StageResults } from "@/shared/api/contracts";
-import { stripAnsi } from "@/shared/ui/strip-ansi";
+import type { StageResults } from '@/shared/api/contracts';
+import { stripAnsi } from '@/shared/ui/strip-ansi';
 
-export type FigureTone = "success" | "danger" | "warning" | "muted";
+export type FigureTone = 'success' | 'danger' | 'warning' | 'muted';
 
 export interface ResultFigure {
-  id: "tests" | "coverage" | "lint" | "security" | "sonar";
+  id: 'tests' | 'coverage' | 'lint' | 'security' | 'sonar';
   label: string;
   value: string;
   tone: FigureTone;
 }
 
 function isCount(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
+  return typeof value === 'number' && Number.isFinite(value);
 }
 
 function counted(count: number, one: string, many: string): string {
   return `${String(count)} ${count === 1 ? one : many}`;
 }
 
-function testsFigure(tests: StageResults["tests"]): ResultFigure | null {
+function testsFigure(tests: StageResults['tests']): ResultFigure | null {
   if (!tests || !isCount(tests.passed) || !isCount(tests.total)) return null;
   const failed = isCount(tests.failed) ? tests.failed : 0;
   return {
-    id: "tests",
-    label: "Tests",
+    id: 'tests',
+    label: 'Tests',
     value: `${String(tests.passed)} / ${String(tests.total)} passed`,
-    tone: failed > 0 ? "danger" : "success",
+    tone: failed > 0 ? 'danger' : 'success',
   };
 }
 
@@ -48,69 +48,88 @@ function percent(value: number): string {
   return `${String(Math.round(value * 10) / 10)}%`;
 }
 
-function coverageFigure(coverage: StageResults["coverage"]): ResultFigure | null {
+function coverageFigure(
+  coverage: StageResults['coverage'],
+): ResultFigure | null {
   if (!coverage || !isCount(coverage.pct)) return null;
-  const threshold = isCount(coverage.threshold) && coverage.threshold > 0 ? coverage.threshold : null;
+  const threshold =
+    isCount(coverage.threshold) && coverage.threshold > 0
+      ? coverage.threshold
+      : null;
   return {
-    id: "coverage",
-    label: "Coverage",
-    value: threshold === null ? percent(coverage.pct) : `${percent(coverage.pct)} (min ${percent(threshold)})`,
-    tone: threshold !== null && coverage.pct < threshold ? "danger" : "success",
+    id: 'coverage',
+    label: 'Coverage',
+    value:
+      threshold === null
+        ? percent(coverage.pct)
+        : `${percent(coverage.pct)} (min ${percent(threshold)})`,
+    tone: threshold !== null && coverage.pct < threshold ? 'danger' : 'success',
   };
 }
 
 function lintTone(errors: number, warnings: number): FigureTone {
-  if (errors > 0) return "danger";
-  return warnings > 0 ? "warning" : "success";
+  if (errors > 0) return 'danger';
+  return warnings > 0 ? 'warning' : 'success';
 }
 
-function lintFigure(lint: StageResults["lint"]): ResultFigure | null {
+function lintFigure(lint: StageResults['lint']): ResultFigure | null {
   if (!lint || !isCount(lint.errors)) return null;
   const warnings = isCount(lint.warnings) ? lint.warnings : 0;
   return {
-    id: "lint",
-    label: "Lint",
-    value: `${counted(lint.errors, "error", "errors")} · ${counted(warnings, "warning", "warnings")}`,
+    id: 'lint',
+    label: 'Lint',
+    value: `${counted(lint.errors, 'error', 'errors')} · ${counted(warnings, 'warning', 'warnings')}`,
     tone: lintTone(lint.errors, warnings),
   };
 }
 
-function securityFigure(security: StageResults["security"]): ResultFigure | null {
-  if (!security || !isCount(security.critical) || !isCount(security.high)) return null;
+function securityFigure(
+  security: StageResults['security'],
+): ResultFigure | null {
+  if (!security || !isCount(security.critical) || !isCount(security.high))
+    return null;
   return {
-    id: "security",
-    label: "Security",
+    id: 'security',
+    label: 'Security',
     value: `${String(security.critical)} critical · ${String(security.high)} high`,
-    tone: security.critical + security.high > 0 ? "danger" : "success",
+    tone: security.critical + security.high > 0 ? 'danger' : 'success',
   };
 }
 
 const SONAR_GATES: Record<string, { value: string; tone: FigureTone }> = {
-  OK: { value: "Gate passed", tone: "success" },
-  ERROR: { value: "Gate failed", tone: "danger" },
-  WARN: { value: "Gate warning", tone: "warning" },
-  UNKNOWN: { value: "Gate not read", tone: "warning" },
+  OK: { value: 'Gate passed', tone: 'success' },
+  ERROR: { value: 'Gate failed', tone: 'danger' },
+  WARN: { value: 'Gate warning', tone: 'warning' },
+  UNKNOWN: { value: 'Gate not read', tone: 'warning' },
 };
 
 /**
  * "Gate passed". An analysis a setting stopped is said as such, and is not a
  * gate result; a gate nobody could read is not a pass either.
  */
-function sonarFigure(sonar: StageResults["sonar"]): ResultFigure | null {
+function sonarFigure(sonar: StageResults['sonar']): ResultFigure | null {
   if (!sonar) return null;
-  if (sonar.blockedBy) return { id: "sonar", label: "Sonar", value: "Analysis blocked", tone: "warning" };
+  if (sonar.blockedBy)
+    return {
+      id: 'sonar',
+      label: 'Sonar',
+      value: 'Analysis blocked',
+      tone: 'warning',
+    };
   if (!sonar.gate) return null;
   const known = SONAR_GATES[sonar.gate.toUpperCase()];
   return {
-    id: "sonar",
-    label: "Sonar",
+    id: 'sonar',
+    label: 'Sonar',
     value: known?.value ?? `Gate ${sonar.gate.toLowerCase()}`,
-    tone: known?.tone ?? "muted",
+    tone: known?.tone ?? 'muted',
   };
 }
 
 /** The figures a stage reported, in reading order; empty when it sent none. */
-export function stageResultFigures(results: StageResults | undefined): ResultFigure[] {
+export function stageResultFigures(
+  results: StageResults | undefined,
+): ResultFigure[] {
   if (!results) return [];
   return [
     testsFigure(results.tests),
@@ -127,15 +146,15 @@ export interface TestFailure {
 }
 
 function isNamedFailure(value: unknown): value is TestFailure {
-  if (typeof value !== "object" || value === null) return false;
+  if (typeof value !== 'object' || value === null) return false;
   const name = (value as { name?: unknown }).name;
-  return typeof name === "string" && name !== "";
+  return typeof name === 'string' && name !== '';
 }
 
 /** Stored Playwright text keeps the runner's colour codes; the page shows plain text. */
 function plainFailure(failure: TestFailure): TestFailure {
   const name = stripAnsi(failure.name);
-  return typeof failure.message === "string"
+  return typeof failure.message === 'string'
     ? { name, message: stripAnsi(failure.message) }
     : { name };
 }

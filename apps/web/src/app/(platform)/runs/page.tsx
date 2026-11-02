@@ -1,1 +1,1 @@
-export { RunsListView as default } from "@/features/runs/list";
+export { RunsListView as default } from '@/features/runs/list';

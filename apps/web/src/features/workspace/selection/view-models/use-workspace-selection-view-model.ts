@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
 /* Preserve local-storage hydration and the initial workspace probe timing. */
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { CapabilityAvailability } from "@/features/capabilities/current";
+import type { CapabilityAvailability } from '@/features/capabilities/current';
 
-import { getVisibleTeams, getWorkspaces } from "../data/workspace-repository";
-import { useWorkspaceSelection } from "../views/workspace-selection-context";
+import { getVisibleTeams, getWorkspaces } from '../data/workspace-repository';
+import { useWorkspaceSelection } from '../views/workspace-selection-context';
 import {
   adminOtherTeams,
   WORKSPACES_OFF,
   type WorkspaceSummary,
   type WorkspacesMeResponse,
-} from "../model/workspace-types";
+} from '../model/workspace-types';
 
-export type WorkspaceSelectionStatus = "idle" | "loading" | "ready" | "error";
+export type WorkspaceSelectionStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 export interface WorkspaceSelectionViewModel {
   workspaces: WorkspacesMeResponse | null;
@@ -67,19 +67,20 @@ export function useWorkspaceSelectionViewModel(options: {
   includeOtherTeams?: boolean;
 }): WorkspaceSelectionViewModel {
   const { enabled, capability, includeOtherTeams = false } = options;
-  const shouldLoad = enabled && capability === "enabled";
-  const featureOff = enabled && capability === "disabled";
+  const shouldLoad = enabled && capability === 'enabled';
+  const featureOff = enabled && capability === 'disabled';
   const { setWorkspaces, registerWorkspaceRefresh } = useWorkspaceSelection();
-  const [workspaces, setWorkspacesState] = useState<WorkspacesMeResponse | null>(null);
+  const [workspaces, setWorkspacesState] =
+    useState<WorkspacesMeResponse | null>(null);
   const [otherTeams, setOtherTeams] = useState<WorkspaceSummary[]>(NO_TEAMS);
-  const [status, setStatus] = useState<WorkspaceSelectionStatus>("idle");
+  const [status, setStatus] = useState<WorkspaceSelectionStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const requestId = useRef(0);
 
   const loadWorkspaces = useCallback(async () => {
     if (!shouldLoad) return;
     const id = ++requestId.current;
-    setStatus("loading");
+    setStatus('loading');
     setError(null);
     const members = getWorkspaces();
     const others = loadOtherTeams(includeOtherTeams, members);
@@ -89,15 +90,15 @@ export function useWorkspaceSelectionViewModel(options: {
       setWorkspacesState(response);
       setOtherTeams(otherList);
       setWorkspaces(response, otherList);
-      setStatus("ready");
+      setStatus('ready');
     } catch {
       if (id !== requestId.current) return;
       const unavailable: WorkspacesMeResponse = { enabled: false, items: [] };
       setWorkspacesState(unavailable);
       setOtherTeams(NO_TEAMS);
       setWorkspaces(null, NO_TEAMS);
-      setStatus("error");
-      setError("Workspaces are unavailable right now.");
+      setStatus('error');
+      setError('Workspaces are unavailable right now.');
     }
   }, [shouldLoad, includeOtherTeams, setWorkspaces]);
 
@@ -117,7 +118,13 @@ export function useWorkspaceSelectionViewModel(options: {
   }, [featureOff, setWorkspaces]);
 
   if (featureOff) {
-    return { workspaces: WORKSPACES_OFF, otherTeams: NO_TEAMS, status: "ready", error: null, loadWorkspaces };
+    return {
+      workspaces: WORKSPACES_OFF,
+      otherTeams: NO_TEAMS,
+      status: 'ready',
+      error: null,
+      loadWorkspaces,
+    };
   }
   return { workspaces, otherTeams, status, error, loadWorkspaces };
 }

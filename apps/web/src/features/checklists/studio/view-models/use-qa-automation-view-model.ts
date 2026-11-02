@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
+import { useRef, useState } from 'react';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
-import { qaRunsRepository } from "../../data/qa-runs-repository";
+import { qaRunsRepository } from '../../data/qa-runs-repository';
 import {
   AUTOMATION_POLL_WINDOW_MS,
   dispatchBlockedReason,
@@ -18,17 +18,21 @@ import {
   roleCanDispatch,
   verifySettledSince,
   type QaDispatchError,
-} from "../../model/qa-automation-rules";
-import type { QaAutomationDispatch, QaRunAutomationResult } from "../../model/qa-automation-types";
-import type { QaRun } from "../../model/qa-run-types";
-import { useAutomationPoll, type PollWindow } from "./use-automation-poll";
+} from '../../model/qa-automation-rules';
+import type {
+  QaAutomationDispatch,
+  QaRunAutomationResult,
+} from '../../model/qa-automation-types';
+import type { QaRun } from '../../model/qa-run-types';
+import { useAutomationPoll, type PollWindow } from './use-automation-poll';
 
 /**
  * `watching` — started, and re-reading the run every 20 s so results land
  * without a manual refresh. `dispatched` — started, no longer watching (the
  * results arrived, or the 10-minute window closed).
  */
-export type QaAutomationStatus = "idle" | "dispatching" | "watching" | "dispatched" | "failed";
+export type QaAutomationStatus =
+  'idle' | 'dispatching' | 'watching' | 'dispatched' | 'failed';
 
 /**
  * "Run Playwright" and what it said, the same for a repository run and a
@@ -64,18 +68,18 @@ export interface QaAutomationViewModel extends AutomationDispatchControls {
 }
 
 type Outcome =
-  | { status: "idle" | "dispatching" }
-  | { status: "dispatched"; dispatch: QaAutomationDispatch; at: number }
-  | { status: "failed"; error: QaDispatchError };
+  | { status: 'idle' | 'dispatching' }
+  | { status: 'dispatched'; dispatch: QaAutomationDispatch; at: number }
+  | { status: 'failed'; error: QaDispatchError };
 
 /** When Run Playwright last started the workflow; null before. */
 function dispatchedAt(outcome: Outcome): number | null {
-  return outcome.status === "dispatched" ? outcome.at : null;
+  return outcome.status === 'dispatched' ? outcome.at : null;
 }
 
 function publicStatus(outcome: Outcome, watching: boolean): QaAutomationStatus {
-  if (outcome.status !== "dispatched") return outcome.status;
-  return watching ? "watching" : "dispatched";
+  if (outcome.status !== 'dispatched') return outcome.status;
+  return watching ? 'watching' : 'dispatched';
 }
 
 /**
@@ -94,7 +98,7 @@ export function useQaAutomationViewModel(options: {
   onRun: (run: QaRun) => void;
 }): QaAutomationViewModel {
   const { projectId, run, appRole, onRun } = options;
-  const [outcome, setOutcome] = useState<Outcome>({ status: "idle" });
+  const [outcome, setOutcome] = useState<Outcome>({ status: 'idle' });
   const [poll, setPoll] = useState<PollWindow | null>(null);
   const busy = useRef(false);
   const automation = normalizeRunAutomation(run.automation);
@@ -106,27 +110,30 @@ export function useQaAutomationViewModel(options: {
     poll,
     read: () => qaRunsRepository.get(projectId, run.id),
     onValue: onRun,
-    settled: (value, since) => verifySettledSince(normalizeRunAutomation(value.automation), since),
+    settled: (value, since) =>
+      verifySettledSince(normalizeRunAutomation(value.automation), since),
     onStop: () => setPoll(null),
   });
 
   async function dispatch() {
     if (!canDispatch || blockedReason || busy.current) return;
     busy.current = true;
-    setOutcome({ status: "dispatching" });
+    setOutcome({ status: 'dispatching' });
     try {
-      const started = normalizeDispatch(await qaRunsRepository.dispatchAutomation(projectId, run.id));
+      const started = normalizeDispatch(
+        await qaRunsRepository.dispatchAutomation(projectId, run.id),
+      );
       const at = Date.now();
-      setOutcome({ status: "dispatched", dispatch: started, at });
+      setOutcome({ status: 'dispatched', dispatch: started, at });
       setPoll({ since: at, until: at + AUTOMATION_POLL_WINDOW_MS });
     } catch (cause) {
-      setOutcome({ status: "failed", error: dispatchError(cause) });
+      setOutcome({ status: 'failed', error: dispatchError(cause) });
     } finally {
       busy.current = false;
     }
   }
 
-  const started = outcome.status === "dispatched" ? outcome.dispatch : null;
+  const started = outcome.status === 'dispatched' ? outcome.dispatch : null;
 
   return {
     status: publicStatus(outcome, poll !== null),
@@ -137,15 +144,21 @@ export function useQaAutomationViewModel(options: {
     confirmation: started ? dispatchConfirmation(started, run) : null,
     warning: started ? dispatchMovedWarning(started, run) : null,
     failures: [],
-    error: outcome.status === "failed" ? outcome.error : null,
+    error: outcome.status === 'failed' ? outcome.error : null,
     signInHref: qaSignInHref(projectId),
     dispatch,
     // Clears a failure only; a started workflow's confirmation stays.
-    dismiss: () => setOutcome((current) => (current.status === "failed" ? { status: "idle" } : current)),
+    dismiss: () =>
+      setOutcome((current) =>
+        current.status === 'failed' ? { status: 'idle' } : current,
+      ),
     startedAt: dispatchedAt(outcome),
     refresh: () => {
       // A missed read is not worth a message: the stage cards stay as they were.
-      qaRunsRepository.get(projectId, run.id).then(onRun).catch(() => undefined);
+      qaRunsRepository
+        .get(projectId, run.id)
+        .then(onRun)
+        .catch(() => undefined);
     },
   };
 }

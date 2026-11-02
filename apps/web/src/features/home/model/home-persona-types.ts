@@ -5,52 +5,53 @@
  * what is stuck. Anyone else, and the QA Team when the QA capability is off,
  * keeps the team dashboard ("team"). */
 
-import type { AppRole, RunGroup, StageStatus } from "@/shared/api/contracts";
+import type { AppRole, RunGroup, StageStatus } from '@/shared/api/contracts';
 import type {
   QaRunStatus,
   QaVerdict,
   TeamQaDefectCounts,
   TeamQaVerificationCounts,
-} from "@/features/checklists";
+} from '@/features/checklists';
 
-import type { RunStats, SectionStatus } from "./home-types";
+import type { RunStats, SectionStatus } from './home-types';
 
-export type HomePersona = "team" | "developer" | "qa" | "product-owner";
+export type HomePersona = 'team' | 'developer' | 'qa' | 'product-owner';
 
 export type HomeMetricId =
-  | "scope-projects"
-  | "repositories"
-  | "returned"
-  | "in-progress"
-  | "running"
-  | "failing-runs"
-  | "success-rate"
-  | "in-verification"
-  | "pending-items"
-  | "failed-or-blocked"
-  | "ready-for-retest"
-  | "uat-pass-rate"
-  | "projects"
-  | "awaiting-promotion"
-  | "need-attention"
-  | "failing-branches";
+  | 'scope-projects'
+  | 'repositories'
+  | 'returned'
+  | 'in-progress'
+  | 'running'
+  | 'failing-runs'
+  | 'success-rate'
+  | 'in-verification'
+  | 'pending-items'
+  | 'failed-or-blocked'
+  | 'ready-for-retest'
+  | 'uat-pass-rate'
+  | 'projects'
+  | 'awaiting-promotion'
+  | 'need-attention'
+  | 'failing-branches';
 
 export type HomeBlockId =
-  | "returned-by-qa"
-  | "scoped-runs"
-  | "my-work"
-  | "quality"
-  | "projects-in-verification"
-  | "uat-automation"
-  | "ready-for-retest"
-  | "defects"
-  | "ready-for-production"
-  | "branch-health"
-  | "needs-attention"
-  | "team-runs"
-  | "team-projects";
+  | 'returned-by-qa'
+  | 'scoped-runs'
+  | 'my-work'
+  | 'quality'
+  | 'projects-in-verification'
+  | 'uat-automation'
+  | 'ready-for-retest'
+  | 'defects'
+  | 'ready-for-production'
+  | 'branch-health'
+  | 'needs-attention'
+  | 'team-runs'
+  | 'team-projects';
 
-export type HomeShortcutId = "add-repository" | "create-project" | "projects" | "runs";
+export type HomeShortcutId =
+  'add-repository' | 'create-project' | 'projects' | 'runs';
 
 /** What a layout reads. Anything false is never requested. */
 export interface HomeDataNeeds {
@@ -88,9 +89,12 @@ export interface HomeShortcut {
 }
 
 /** The sections a block can wait on. */
-export type HomeSectionKey = "projects" | "runs" | "folders" | "qaOverview";
+export type HomeSectionKey = 'projects' | 'runs' | 'folders' | 'qaOverview';
 
-export type HomeSectionStates = Record<HomeSectionKey, { status: SectionStatus; error: string | null }>;
+export type HomeSectionStates = Record<
+  HomeSectionKey,
+  { status: SectionStatus; error: string | null }
+>;
 
 /** What a block renders while its data is in flight or after it failed. */
 export interface HomeBlockState {
@@ -105,7 +109,7 @@ export interface HomeBlockState {
  *   fallback  the viewer is a member of none, so the whole team, said so;
  *   team      membership is not known (QA off, or not read) or not asked for.
  */
-export type HomeScopeMode = "mine" | "fallback" | "team";
+export type HomeScopeMode = 'mine' | 'fallback' | 'team';
 
 export interface HomeScope {
   mode: HomeScopeMode;
@@ -130,7 +134,8 @@ export interface HomeRoleBadge {
 
 /* ── Block rows ─────────────────────────────────────────────────────────── */
 
-export type RepoRunTone = "success" | "failure" | "running" | "warning" | "none";
+export type RepoRunTone =
+  'success' | 'failure' | 'running' | 'warning' | 'none';
 
 export interface ReturnedRow {
   deliveryProjectId: string;
@@ -217,13 +222,13 @@ export interface LegacyRunRow {
 
 export interface ProductionView {
   /** full: latestRun fields present; legacy: only latestRunStatus; unavailable: no overview. */
-  mode: "full" | "legacy" | "unavailable";
+  mode: 'full' | 'legacy' | 'unavailable';
   ready: ReadyForProductionRow[];
   open: OpenRunRow[];
   legacy: LegacyRunRow[];
 }
 
-export type BranchName = "dev" | "uat" | "main";
+export type BranchName = 'dev' | 'uat' | 'main';
 
 export interface BranchHealthRow {
   repoFullName: string;

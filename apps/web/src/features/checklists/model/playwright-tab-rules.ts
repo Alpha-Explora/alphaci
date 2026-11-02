@@ -14,7 +14,7 @@ import type {
   QaRunAutomationResult,
   QaStageResult,
   QaTestFailure,
-} from "./qa-automation-types";
+} from './qa-automation-types';
 import {
   automatedBadgeLabel,
   automatedStatusTone,
@@ -24,26 +24,33 @@ import {
   normalizeRunAutomation,
   unlinkedSentence,
   verifySettledSince,
-} from "./qa-automation-rules";
-import { repoShortName } from "./project-run-rules";
-import type { ProjectDispatchResult, ProjectQaRun, RepositoryAutomation } from "./project-run-types";
-import type { QaTone } from "./qa-run-rules";
-import type { QaRun } from "./qa-run-types";
+} from './qa-automation-rules';
+import { repoShortName } from './project-run-rules';
+import type {
+  ProjectDispatchResult,
+  ProjectQaRun,
+  RepositoryAutomation,
+} from './project-run-types';
+import type { QaTone } from './qa-run-rules';
+import type { QaRun } from './qa-run-types';
 
 /* ── The tabs ───────────────────────────────────────────────────────────── */
 
-export type StudioColumnTab = "checklist" | "playwright";
+export type StudioColumnTab = 'checklist' | 'playwright';
 
-export const STUDIO_COLUMN_TABS: ReadonlyArray<StudioColumnTab> = ["checklist", "playwright"];
+export const STUDIO_COLUMN_TABS: ReadonlyArray<StudioColumnTab> = [
+  'checklist',
+  'playwright',
+];
 
 /** Per viewer, per studio, in this browser: the column tab they last chose. */
-export function studioColumnTabKey(studio: "qa" | "po"): string {
+export function studioColumnTabKey(studio: 'qa' | 'po'): string {
   return `alphaci.${studio}-studio.column-tab`;
 }
 
 /** What storage holds, as a tab: anything unknown opens the Checklist. */
 export function resolveStudioColumnTab(stored: string | null): StudioColumnTab {
-  return stored === "playwright" ? "playwright" : "checklist";
+  return stored === 'playwright' ? 'playwright' : 'checklist';
 }
 
 /* ── What the Playwright tab lists ──────────────────────────────────────── */
@@ -101,11 +108,17 @@ export interface PlaywrightResults {
 }
 
 /** The branch every Project run verifies. */
-export const PROJECT_RUN_BRANCH = "uat";
+export const PROJECT_RUN_BRANCH = 'uat';
 
-export const MERGED_RESULTS_NAME = "All repositories";
+export const MERGED_RESULTS_NAME = 'All repositories';
 
-const STATUS_ORDER: Record<QaAutomatedStatus, number> = { failed: 0, unknown: 1, unlinked: 2, not_run: 3, passed: 4 };
+const STATUS_ORDER: Record<QaAutomatedStatus, number> = {
+  failed: 0,
+  unknown: 1,
+  unlinked: 2,
+  not_run: 3,
+  passed: 4,
+};
 
 interface ItemSource {
   id: string;
@@ -119,7 +132,9 @@ interface ItemSource {
  * Failed first, then what CI could not tell, then items linked to no test
  * (checked by hand), then not run, then passed; run order within each.
  */
-export function playwrightItemRows(items: ReadonlyArray<ItemSource>): PlaywrightItemRow[] {
+export function playwrightItemRows(
+  items: ReadonlyArray<ItemSource>,
+): PlaywrightItemRow[] {
   return items
     .flatMap((item) => (item.result ? [{ item, result: item.result }] : []))
     .map(({ item, result }, index) => ({
@@ -134,20 +149,30 @@ export function playwrightItemRows(items: ReadonlyArray<ItemSource>): Playwright
         stage: result.stage,
         label: automatedBadgeLabel(result.status, result.inferred),
         tone: automatedStatusTone(result.status),
-        inferred: result.status === "passed" && result.inferred,
-        failure: result.status === "failed" ? result.failure : null,
-        note: result.status === "unlinked" ? unlinkedSentence(result) : null,
+        inferred: result.status === 'passed' && result.inferred,
+        failure: result.status === 'failed' ? result.failure : null,
+        note: result.status === 'unlinked' ? unlinkedSentence(result) : null,
       },
     }))
-    .sort((a, b) => STATUS_ORDER[a.row.status] - STATUS_ORDER[b.row.status] || a.index - b.index)
+    .sort(
+      (a, b) =>
+        STATUS_ORDER[a.row.status] - STATUS_ORDER[b.row.status] ||
+        a.index - b.index,
+    )
     .map(({ row }) => row);
 }
 
 function capturedHead(run: ProjectQaRun, projectId: string): string | null {
-  return run.repositories.find((head) => head.projectId === projectId)?.runSha ?? null;
+  return (
+    run.repositories.find((head) => head.projectId === projectId)?.runSha ??
+    null
+  );
 }
 
-function perRepository(run: ProjectQaRun, entry: RepositoryAutomation): PlaywrightRepository {
+function perRepository(
+  run: ProjectQaRun,
+  entry: RepositoryAutomation,
+): PlaywrightRepository {
   return {
     key: entry.projectId,
     projectId: entry.projectId,
@@ -161,9 +186,12 @@ function perRepository(run: ProjectQaRun, entry: RepositoryAutomation): Playwrig
   };
 }
 
-function merged(run: ProjectQaRun, automation: QaRunAutomationResult): PlaywrightRepository {
+function merged(
+  run: ProjectQaRun,
+  automation: QaRunAutomationResult,
+): PlaywrightRepository {
   return {
-    key: "merged",
+    key: 'merged',
     projectId: null,
     name: MERGED_RESULTS_NAME,
     repoFullName: null,
@@ -171,7 +199,10 @@ function merged(run: ProjectQaRun, automation: QaRunAutomationResult): Playwrigh
     branch: PROJECT_RUN_BRANCH,
     commitSha: null,
     automation,
-    checks: run.repositories.map((head) => ({ projectId: head.projectId, repoFullName: head.repoFullName })),
+    checks: run.repositories.map((head) => ({
+      projectId: head.projectId,
+      repoFullName: head.repoFullName,
+    })),
   };
 }
 
@@ -182,7 +213,8 @@ function merged(run: ProjectQaRun, automation: QaRunAutomationResult): Playwrigh
 export function projectPlaywrightResults(run: ProjectQaRun): PlaywrightResults {
   const byRepository = run.automationByRepository ?? [];
   let repositories: PlaywrightRepository[] = [];
-  if (byRepository.length > 0) repositories = byRepository.map((entry) => perRepository(run, entry));
+  if (byRepository.length > 0)
+    repositories = byRepository.map((entry) => perRepository(run, entry));
   else if (run.automation) repositories = [merged(run, run.automation)];
   return {
     supported: run.automation !== null || run.automationByRepository !== null,
@@ -204,7 +236,9 @@ export function repositoryPlaywrightResults(
   run: QaRun,
   repository: { projectId: string; repoFullName: string | null },
 ): PlaywrightResults {
-  const name = repository.repoFullName ? repoShortName(repository.repoFullName) : "This repository";
+  const name = repository.repoFullName
+    ? repoShortName(repository.repoFullName)
+    : 'This repository';
   return {
     supported: run.automation !== undefined,
     repositories: [
@@ -217,7 +251,12 @@ export function repositoryPlaywrightResults(
         branch: run.branch,
         commitSha: run.commitSha,
         automation: normalizeRunAutomation(run.automation),
-        checks: [{ projectId: repository.projectId, repoFullName: repository.repoFullName ?? name }],
+        checks: [
+          {
+            projectId: repository.projectId,
+            repoFullName: repository.repoFullName ?? name,
+          },
+        ],
       },
     ],
     items: playwrightItemRows(
@@ -239,25 +278,26 @@ export function repositoryPlaywrightResults(
  * a run); `unsupported` on a server that reports none; else `results`
  * (where each repository may still say it has not run).
  */
-export type PlaywrightPanelState = "loading" | "no-run" | "unsupported" | "results";
+export type PlaywrightPanelState =
+  'loading' | 'no-run' | 'unsupported' | 'results';
 
 export function playwrightPanelState(input: {
   ready: boolean;
   results: PlaywrightResults | null;
 }): PlaywrightPanelState {
-  if (!input.ready) return "loading";
-  if (!input.results) return "no-run";
-  return input.results.supported ? "results" : "unsupported";
+  if (!input.ready) return 'loading';
+  if (!input.results) return 'no-run';
+  return input.results.supported ? 'results' : 'unsupported';
 }
 
 export const UNSUPPORTED_TEXT = "This server doesn't report automated results.";
 
-export const NO_RUN_TITLE = "No QA run yet";
+export const NO_RUN_TITLE = 'No QA run yet';
 
 export function noRunText(project: boolean): string {
   return project
     ? "Playwright results attach to the Project's QA testing. Once it starts (in the Checklist tab), each repository's results on uat appear here."
-    : "Playwright results attach to a QA run. Once one starts (in the Checklist tab), its results appear here.";
+    : 'Playwright results attach to a QA run. Once one starts (in the Checklist tab), its results appear here.';
 }
 
 /** "Playwright hasn't run on uat yet". */
@@ -265,14 +305,16 @@ export function notRunText(branch: string): string {
   return `Playwright hasn't run on ${branch} yet`;
 }
 
-export function repositoryHasResults(repository: Pick<PlaywrightRepository, "automation">): boolean {
+export function repositoryHasResults(
+  repository: Pick<PlaywrightRepository, 'automation'>,
+): boolean {
   return hasStageResults(repository.automation);
 }
 
 /** "storefront-web", "storefront-web and orders-api", "a, b and c". */
 export function namesList(names: ReadonlyArray<string>): string {
-  if (names.length <= 1) return names[0] ?? "";
-  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  if (names.length <= 1) return names[0] ?? '';
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
 /** Under a merged result: which repositories it stands for. */
@@ -283,7 +325,7 @@ export function mergedNote(covers: ReadonlyArray<string>): string | null {
 
 /* ── The tab label ──────────────────────────────────────────────────────── */
 
-export type PlaywrightTabTone = "running" | "failed" | "passed" | "none";
+export type PlaywrightTabTone = 'running' | 'failed' | 'passed' | 'none';
 
 export interface PlaywrightTabStatus {
   /** After "Playwright · ": "22/24", "failing", "running", "passed"; null says nothing. */
@@ -293,7 +335,11 @@ export interface PlaywrightTabStatus {
   tone: PlaywrightTabTone;
 }
 
-const NO_STATUS: PlaywrightTabStatus = { text: null, spoken: null, tone: "none" };
+const NO_STATUS: PlaywrightTabStatus = {
+  text: null,
+  spoken: null,
+  tone: 'none',
+};
 
 function verifyStages(results: PlaywrightResults | null): QaStageResult[] {
   return (results?.repositories ?? [])
@@ -302,7 +348,9 @@ function verifyStages(results: PlaywrightResults | null): QaStageResult[] {
 }
 
 /** Summed counts, only when every reported stage sent both numbers. */
-function summedCounts(stages: ReadonlyArray<QaStageResult>): { passed: number; total: number } | null {
+function summedCounts(
+  stages: ReadonlyArray<QaStageResult>,
+): { passed: number; total: number } | null {
   let passed = 0;
   let total = 0;
   for (const stage of stages) {
@@ -314,11 +362,14 @@ function summedCounts(stages: ReadonlyArray<QaStageResult>): { passed: number; t
   return { passed, total };
 }
 
-function countsStatus(counts: { passed: number; total: number }, failing: boolean): PlaywrightTabStatus {
+function countsStatus(
+  counts: { passed: number; total: number },
+  failing: boolean,
+): PlaywrightTabStatus {
   return {
     text: `${String(counts.passed)}/${String(counts.total)}`,
     spoken: `${String(counts.passed)} of ${String(counts.total)} browser tests passed`,
-    tone: failing || counts.passed < counts.total ? "failed" : "passed",
+    tone: failing || counts.passed < counts.total ? 'failed' : 'passed',
   };
 }
 
@@ -327,18 +378,33 @@ function countsStatus(counts: { passed: number; total: number }, failing: boolea
  * every listed repository: running wins (results are on the way), then the
  * summed counts, then a bare verdict. Nothing when nothing reported.
  */
-export function playwrightTabStatus(results: PlaywrightResults | null): PlaywrightTabStatus {
+export function playwrightTabStatus(
+  results: PlaywrightResults | null,
+): PlaywrightTabStatus {
   const stages = verifyStages(results);
   if (stages.length === 0) return NO_STATUS;
-  if (stages.some((stage) => stage.status === "running")) {
-    return { text: "running", spoken: "Playwright is running", tone: "running" };
+  if (stages.some((stage) => stage.status === 'running')) {
+    return {
+      text: 'running',
+      spoken: 'Playwright is running',
+      tone: 'running',
+    };
   }
-  const failing = stages.some((stage) => stage.status === "failure");
+  const failing = stages.some((stage) => stage.status === 'failure');
   const counts = summedCounts(stages);
   if (counts && counts.total > 0) return countsStatus(counts, failing);
-  if (failing) return { text: "failing", spoken: "Playwright tests are failing", tone: "failed" };
-  if (stages.some((stage) => stage.status === "success")) {
-    return { text: "passed", spoken: "Playwright tests passed", tone: "passed" };
+  if (failing)
+    return {
+      text: 'failing',
+      spoken: 'Playwright tests are failing',
+      tone: 'failed',
+    };
+  if (stages.some((stage) => stage.status === 'success')) {
+    return {
+      text: 'passed',
+      spoken: 'Playwright tests passed',
+      tone: 'passed',
+    };
   }
   return NO_STATUS;
 }
@@ -346,9 +412,13 @@ export function playwrightTabStatus(results: PlaywrightResults | null): Playwrig
 /* ── Run Playwright on a Project run ────────────────────────────────────── */
 
 /** "Playwright started on uat in storefront-web and orders-api. …" */
-export function projectDispatchConfirmation(result: ProjectDispatchResult): string | null {
+export function projectDispatchConfirmation(
+  result: ProjectDispatchResult,
+): string | null {
   if (result.dispatched.length === 0) return null;
-  const names = namesList(result.dispatched.map((entry) => repoShortName(entry.repoFullName)));
+  const names = namesList(
+    result.dispatched.map((entry) => repoShortName(entry.repoFullName)),
+  );
   const ref = result.dispatched[0].ref ?? PROJECT_RUN_BRANCH;
   return `Playwright started on ${ref} in ${names}. Results appear here when the runs report.`;
 }
@@ -359,7 +429,9 @@ export function projectDispatchConfirmation(result: ProjectDispatchResult): stri
  * to this run). Null when none. Repositories it could not start in are
  * listed by `projectDispatchFailures`.
  */
-export function projectDispatchWarning(result: ProjectDispatchResult): string | null {
+export function projectDispatchWarning(
+  result: ProjectDispatchResult,
+): string | null {
   const moved = result.dispatched
     .filter((entry) => entry.targetsRunCommit === false)
     .map((entry) => repoShortName(entry.repoFullName));
@@ -369,12 +441,16 @@ export function projectDispatchWarning(result: ProjectDispatchResult): string | 
       `uat moved in ${namesList(moved)} since this run started — those results attach to the newer commit, not this run. Start a new Project run to verify it.`,
     );
   }
-  return parts.length > 0 ? parts.join(" ") : null;
+  return parts.length > 0 ? parts.join(' ') : null;
 }
 
 /** One "repo — reason" line per repository GitHub refused, beside a partial start. */
-export function projectDispatchFailures(result: ProjectDispatchResult): string[] {
-  return result.failed.map((failure) => dispatchFailureLine(failure.repoFullName, failure.message));
+export function projectDispatchFailures(
+  result: ProjectDispatchResult,
+): string[] {
+  return result.failed.map((failure) =>
+    dispatchFailureLine(failure.repoFullName, failure.message),
+  );
 }
 
 /**
@@ -382,9 +458,19 @@ export function projectDispatchFailures(result: ProjectDispatchResult): string[]
  * stage since `sinceMs`, so polling can stop. Without a per-repository
  * breakdown, the merged verify stage decides.
  */
-export function projectVerifySettledSince(run: ProjectQaRun, projectIds: ReadonlyArray<string>, sinceMs: number): boolean {
+export function projectVerifySettledSince(
+  run: ProjectQaRun,
+  projectIds: ReadonlyArray<string>,
+  sinceMs: number,
+): boolean {
   const byRepository = run.automationByRepository ?? [];
-  if (byRepository.length === 0) return run.automation ? verifySettledSince(run.automation, sinceMs) : false;
-  const watched = byRepository.filter((entry) => projectIds.length === 0 || projectIds.includes(entry.projectId));
-  return watched.length > 0 && watched.every((entry) => verifySettledSince(entry.automation, sinceMs));
+  if (byRepository.length === 0)
+    return run.automation ? verifySettledSince(run.automation, sinceMs) : false;
+  const watched = byRepository.filter(
+    (entry) => projectIds.length === 0 || projectIds.includes(entry.projectId),
+  );
+  return (
+    watched.length > 0 &&
+    watched.every((entry) => verifySettledSince(entry.automation, sinceMs))
+  );
 }

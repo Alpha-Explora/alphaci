@@ -1,10 +1,13 @@
-"use client";
+'use client';
 
-import "./iteration.css";
+import './iteration.css';
 
-import { iterationLockedText, iterationStatusLabel } from "../../model/iteration-rules";
-import type { ProjectIteration } from "../../model/iteration-types";
-import { useCurrentIterationViewModel } from "../view-models/use-current-iteration-view-model";
+import {
+  iterationLockedText,
+  iterationStatusLabel,
+} from '../../model/iteration-rules';
+import type { ProjectIteration } from '../../model/iteration-types';
+import { useCurrentIterationViewModel } from '../view-models/use-current-iteration-view-model';
 
 /** A padlock, decorative: it always sits beside the sentence it marks. */
 function LockGlyph() {
@@ -33,12 +36,18 @@ export function IterationStatusPill({
   iteration,
   locale,
 }: Readonly<{
-  iteration: Pick<ProjectIteration, "number" | "status" | "deliveredAt"> & { goal?: string | null };
+  iteration: Pick<ProjectIteration, 'number' | 'status' | 'deliveredAt'> & {
+    goal?: string | null;
+  };
   locale?: string;
 }>) {
   const label = iterationStatusLabel(iteration, locale);
   return (
-    <span className="iteration-status" data-status={iteration.status} title={label}>
+    <span
+      className="iteration-status"
+      data-status={iteration.status}
+      title={label}
+    >
       <span className="iteration-status__dot" aria-hidden="true" />
       <span className="iteration-status__label">{label}</span>
     </span>
@@ -56,7 +65,7 @@ export function IterationStatus({
   enabled,
 }: Readonly<{ deliveryProjectId: string | null; enabled: boolean }>) {
   const vm = useCurrentIterationViewModel({ deliveryProjectId, enabled });
-  if (vm.status !== "ready" || !vm.current) return null;
+  if (vm.status !== 'ready' || !vm.current) return null;
   return <IterationStatusPill iteration={vm.current.iteration} />;
 }
 
@@ -65,7 +74,9 @@ export function IterationStatus({
  * "Iteration 3 was delivered. Changes are locked." The controls themselves
  * are withheld by their screens; this says why.
  */
-export function IterationLockedNotice({ number }: Readonly<{ number: number }>) {
+export function IterationLockedNotice({
+  number,
+}: Readonly<{ number: number }>) {
   return (
     <div className="iteration-locked" role="status">
       <LockGlyph />

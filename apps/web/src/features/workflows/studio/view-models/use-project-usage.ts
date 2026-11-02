@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-import type { UsageLimitItem } from "@/shared/api/contracts";
-import { getMyUsage } from "@/features/projects";
+import type { UsageLimitItem } from '@/shared/api/contracts';
+import { getMyUsage } from '@/features/projects';
 
 export function useProjectUsage(): UsageLimitItem[] {
   const [usageItems, setUsageItems] = useState<UsageLimitItem[]>([]);

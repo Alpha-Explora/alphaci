@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from 'react';
 
 /** The nearest ancestor that scrolls, whose scroll must not count as distance from the top. */
 function scrollParent(element: HTMLElement): HTMLElement | null {
   for (let node = element.parentElement; node; node = node.parentElement) {
     const { overflowY } = getComputedStyle(node);
-    if (overflowY === "auto" || overflowY === "scroll") return node;
+    if (overflowY === 'auto' || overflowY === 'scroll') return node;
   }
   return null;
 }
@@ -33,22 +33,33 @@ export function useStudioFitHeight<T extends HTMLElement>() {
     if (!element) return;
     const scroller = scrollParent(element);
     const measure = () => {
-      const offset = element.getBoundingClientRect().top + (scroller?.scrollTop ?? 0);
+      const offset =
+        element.getBoundingClientRect().top + (scroller?.scrollTop ?? 0);
       // Rounded up: at worst a pixel short of the bottom, never a pixel over (that would scroll the page).
       setTop(Math.max(0, Math.ceil(offset)));
     };
     measure();
-    window.addEventListener("resize", measure);
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    for (let node: HTMLElement | null = element; node && node !== scroller; node = node.parentElement) {
+    window.addEventListener('resize', measure);
+    const observer =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(measure);
+    for (
+      let node: HTMLElement | null = element;
+      node && node !== scroller;
+      node = node.parentElement
+    ) {
       observer?.observe(node);
     }
     return () => {
-      window.removeEventListener("resize", measure);
+      window.removeEventListener('resize', measure);
       observer?.disconnect();
     };
   }, [element]);
 
-  const style = top === null ? undefined : ({ "--qa-pane-top": `${top}px` } as CSSProperties);
+  const style =
+    top === null
+      ? undefined
+      : ({ '--qa-pane-top': `${top}px` } as CSSProperties);
   return { attach: setElement, style };
 }

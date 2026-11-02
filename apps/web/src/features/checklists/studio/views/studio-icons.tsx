@@ -4,9 +4,12 @@
  * inside a control that carries its own label.
  */
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
-function Glyph({ children, size = 16 }: Readonly<{ children: ReactNode; size?: number }>) {
+function Glyph({
+  children,
+  size = 16,
+}: Readonly<{ children: ReactNode; size?: number }>) {
   return (
     <svg
       aria-hidden="true"
@@ -266,7 +269,18 @@ export function RailPinIcon({ pinned }: Readonly<{ pinned: boolean }>) {
     <Glyph>
       <rect x="1.75" y="2.5" width="12.5" height="11" rx="1.2" />
       <path d="M10.25 2.5v11" />
-      {pinned ? <rect x="10.25" y="2.5" width="4" height="11" rx="1" fill="currentColor" stroke="none" opacity="0.35" /> : null}
+      {pinned ? (
+        <rect
+          x="10.25"
+          y="2.5"
+          width="4"
+          height="11"
+          rx="1"
+          fill="currentColor"
+          stroke="none"
+          opacity="0.35"
+        />
+      ) : null}
     </Glyph>
   );
 }

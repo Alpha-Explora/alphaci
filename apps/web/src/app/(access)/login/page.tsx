@@ -1,7 +1,7 @@
-import { Suspense } from "react";
+import { Suspense } from 'react';
 
-import { OAuthLoginView } from "@/features/auth/login";
-import { PipelineLoader } from "@/shared/layout/pipeline-loader";
+import { OAuthLoginView } from '@/features/auth/login';
+import { PipelineLoader } from '@/shared/layout/pipeline-loader';
 
 export default function LoginPage() {
   return (

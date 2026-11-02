@@ -3,9 +3,12 @@
  * only — every use sits beside text that carries the meaning.
  */
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
-function Glyph({ children, size = 16 }: Readonly<{ children: ReactNode; size?: number }>) {
+function Glyph({
+  children,
+  size = 16,
+}: Readonly<{ children: ReactNode; size?: number }>) {
   return (
     <svg
       aria-hidden="true"

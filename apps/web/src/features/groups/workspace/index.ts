@@ -1,7 +1,7 @@
-export { ActivityFeed, ActivityFilters } from "./views/activity-feed";
-export { AddMemberDialog } from "./views/add-member-dialog";
-export { AssignDeveloperDialog } from "./views/assign-developer-dialog";
-export { AssignmentPanel } from "./views/assignment-panel";
+export { ActivityFeed, ActivityFilters } from './views/activity-feed';
+export { AddMemberDialog } from './views/add-member-dialog';
+export { AssignDeveloperDialog } from './views/assign-developer-dialog';
+export { AssignmentPanel } from './views/assignment-panel';
 export {
   AccessStatusBadge,
   GroupStatusBadge,
@@ -10,13 +10,17 @@ export {
   RepositoryStatusBadge,
   RoleBadge,
   SyncStateBadge,
-} from "./views/badges";
-export { ConfigurationPanel } from "./views/configuration-panel";
-export { CreateDeliveryProjectDialog } from "./views/create-delivery-project-dialog";
-export { HierarchyPageShell } from "./views/hierarchy-page-shell";
-export { MemberTable } from "./views/member-table";
-export { RepositoryTable } from "./views/repository-table";
-export { SideTabs, type SideTabGroup, type SideTabItem } from "./views/side-tabs";
+} from './views/badges';
+export { ConfigurationPanel } from './views/configuration-panel';
+export { CreateDeliveryProjectDialog } from './views/create-delivery-project-dialog';
+export { HierarchyPageShell } from './views/hierarchy-page-shell';
+export { MemberTable } from './views/member-table';
+export { RepositoryTable } from './views/repository-table';
+export {
+  SideTabs,
+  type SideTabGroup,
+  type SideTabItem,
+} from './views/side-tabs';
 export {
   Avatar,
   Breadcrumb,
@@ -27,4 +31,4 @@ export {
   PageHeader,
   ResourceBoundary,
   SectionHeader,
-} from "./views/primitives";
+} from './views/primitives';

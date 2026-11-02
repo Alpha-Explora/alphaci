@@ -42,4 +42,4 @@ export interface UpdateNotificationPreferencesRequest {
 }
 
 /** Every interactive view-model in this domain reports one of these. */
-export type NotificationsStatus = "idle" | "loading" | "ready" | "error";
+export type NotificationsStatus = 'idle' | 'loading' | 'ready' | 'error';

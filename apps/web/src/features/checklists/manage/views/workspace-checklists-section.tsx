@@ -1,37 +1,43 @@
-"use client";
+'use client';
 
-import "./checklist-manage.css";
+import './checklist-manage.css';
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
-import { LoadingRows } from "@/features/groups/workspace";
+import { LoadingRows } from '@/features/groups/workspace';
 
-import Link from "next/link";
+import Link from 'next/link';
 
-import { projectRequirementsHref } from "../../model/checklist-rules";
-import type { ChecklistShareTarget } from "../../model/checklist-types";
+import { projectRequirementsHref } from '../../model/checklist-rules';
+import type { ChecklistShareTarget } from '../../model/checklist-types';
 import {
   useWorkspaceChecklistsViewModel,
   type WorkspaceChecklistsViewModel,
-} from "../view-models/use-workspace-checklists-view-model";
-import { BackIcon, PlusIcon } from "./checklist-icons";
-import { ChecklistDetail } from "./checklist-detail";
-import { ChecklistEditor } from "./checklist-editor";
-import { ChecklistList } from "./checklist-list";
+} from '../view-models/use-workspace-checklists-view-model';
+import { BackIcon, PlusIcon } from './checklist-icons';
+import { ChecklistDetail } from './checklist-detail';
+import { ChecklistEditor } from './checklist-editor';
+import { ChecklistList } from './checklist-list';
 
 /** The list screen's header row: the same shape as every other team section. */
-function ListHead({ vm, projectsHref }: Readonly<{ vm: WorkspaceChecklistsViewModel; projectsHref: string }>) {
+function ListHead({
+  vm,
+  projectsHref,
+}: Readonly<{ vm: WorkspaceChecklistsViewModel; projectsHref: string }>) {
   return (
     <div className="group-section-head">
       <h2 className="group-section-title">
         Checklist templates
-        {vm.status === "ready" ? (
+        {vm.status === 'ready' ? (
           <span className="group-section-count">{vm.checklists.length}</span>
         ) : null}
       </h2>
       {vm.canManage && vm.checklists.length > 0 ? (
         // New requirements are written on a Project, where they apply to every repository.
-        <Link className="primary-button group-section-action" href={projectsHref}>
+        <Link
+          className="primary-button group-section-action"
+          href={projectsHref}
+        >
           <PlusIcon />
           Add requirements in a Project
         </Link>
@@ -69,7 +75,7 @@ function ScreenBody({
   projects: ReadonlyArray<ChecklistShareTarget>;
 }>) {
   const { screen, selected } = vm;
-  if (screen.kind === "create") {
+  if (screen.kind === 'create') {
     return (
       <SubScreen label="All checklists" onBack={vm.backToList}>
         <ChecklistEditor
@@ -84,9 +90,12 @@ function ScreenBody({
   }
   // A view or edit screen whose checklist is still loading.
   if (!selected) return <LoadingRows rows={3} />;
-  if (screen.kind === "edit") {
+  if (screen.kind === 'edit') {
     return (
-      <SubScreen label="Back to checklist" onBack={() => vm.openChecklist(selected.id)}>
+      <SubScreen
+        label="Back to checklist"
+        onBack={() => vm.openChecklist(selected.id)}
+      >
         <ChecklistEditor
           // Remount on a new version: a reload after a conflict starts a
           // fresh draft from what the other lead saved.
@@ -141,7 +150,7 @@ export function WorkspaceChecklistsSection({
     initialChecklistId,
   });
 
-  if (vm.screen.kind !== "list") {
+  if (vm.screen.kind !== 'list') {
     return (
       <div className="qa-section">
         <ScreenBody vm={vm} workspaceId={workspaceId} projects={projects} />

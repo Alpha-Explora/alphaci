@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useId, type ReactNode } from "react";
+import { useId, type ReactNode } from 'react';
 
-import { FormDialog } from "@/features/groups/workspace";
+import { FormDialog } from '@/features/groups/workspace';
 
-import { VerdictPill } from "../../items";
+import { VerdictPill } from '../../items';
 import {
   agoLabel,
   blockersLabel,
@@ -15,18 +15,21 @@ import {
   statusSegments,
   verdictLabel,
   verdictTone,
-} from "../../model/qa-run-rules";
-import type { QaRun, QaVerdict } from "../../model/qa-run-types";
-import type { QaReopenViewModel } from "../view-models/use-qa-reopen-view-model";
-import type { QaSignoffViewModel } from "../view-models/use-qa-signoff-view-model";
-import { SealIcon } from "./studio-icons";
+} from '../../model/qa-run-rules';
+import type { QaRun, QaVerdict } from '../../model/qa-run-types';
+import type { QaReopenViewModel } from '../view-models/use-qa-reopen-view-model';
+import type { QaSignoffViewModel } from '../view-models/use-qa-signoff-view-model';
+import { SealIcon } from './studio-icons';
 
 /* ── Summary ─────────────────────────────────────────────────────────────── */
 
-function segmentsLabel(run: Pick<QaRun, "summary">): string {
+function segmentsLabel(run: Pick<QaRun, 'summary'>): string {
   return statusSegments(run)
-    .map((segment) => `${segment.count} ${itemStatusLabel(segment.status).toLowerCase()}`)
-    .join(", ");
+    .map(
+      (segment) =>
+        `${segment.count} ${itemStatusLabel(segment.status).toLowerCase()}`,
+    )
+    .join(', ');
 }
 
 /** Passed out of total, the run's mix as one bar, and what is still open. */
@@ -34,11 +37,22 @@ function segmentsLabel(run: Pick<QaRun, "summary">): string {
  * The open defects and blockers under the bar. Inline, only those there are
  * (none at all when both are zero); in a card, both always.
  */
-function SummaryFacts({ summary, inline }: Readonly<{ summary: QaRun["summary"]; inline: boolean }>) {
+function SummaryFacts({
+  summary,
+  inline,
+}: Readonly<{ summary: QaRun['summary']; inline: boolean }>) {
   const { openDefects, blockers } = summary;
   const facts = [
-    { shown: !inline || openDefects > 0, tone: openDefects > 0 ? "qa-summary__fact--warn" : undefined, label: openDefectsLabel(openDefects) },
-    { shown: !inline || blockers > 0, tone: blockers > 0 ? "qa-summary__fact--danger" : undefined, label: blockersLabel(blockers) },
+    {
+      shown: !inline || openDefects > 0,
+      tone: openDefects > 0 ? 'qa-summary__fact--warn' : undefined,
+      label: openDefectsLabel(openDefects),
+    },
+    {
+      shown: !inline || blockers > 0,
+      tone: blockers > 0 ? 'qa-summary__fact--danger' : undefined,
+      label: blockersLabel(blockers),
+    },
   ].filter((fact) => fact.shown);
   if (facts.length === 0) return null;
   return (
@@ -60,28 +74,32 @@ function SummaryFacts({ summary, inline }: Readonly<{ summary: QaRun["summary"];
  */
 export function RunSummary({
   run,
-  variant = "card",
+  variant = 'card',
   children,
 }: Readonly<{
-  run: Pick<QaRun, "summary">;
-  variant?: "card" | "inline" | "compact";
+  run: Pick<QaRun, 'summary'>;
+  variant?: 'card' | 'inline' | 'compact';
   /** A closing line inside the box, such as who started the run. */
   children?: ReactNode;
 }>) {
   const segments = statusSegments(run);
-  const inline = variant === "inline";
-  const compact = variant === "compact";
+  const inline = variant === 'inline';
+  const compact = variant === 'compact';
   return (
-    <div className={`qa-summary${inline ? " qa-summary--inline" : ""}${compact ? " qa-summary--compact" : ""}`}>
+    <div
+      className={`qa-summary${inline ? ' qa-summary--inline' : ''}${compact ? ' qa-summary--compact' : ''}`}
+    >
       <p className="qa-summary__score">
-        <span className="qa-summary__passed">{run.summary.byStatus.passed ?? 0}</span>
+        <span className="qa-summary__passed">
+          {run.summary.byStatus.passed ?? 0}
+        </span>
         <span className="qa-summary__total">/{run.summary.total} passed</span>
         <span className="sr-only">{passedLabel(run)}</span>
       </p>
       <div
         className="qa-summary__bar"
         role="img"
-        aria-label={segments.length > 0 ? segmentsLabel(run) : "No items"}
+        aria-label={segments.length > 0 ? segmentsLabel(run) : 'No items'}
       >
         {segments.map((segment) => (
           <span
@@ -104,17 +122,19 @@ export function SignoffBanner({
   subject,
   reopen,
 }: Readonly<{
-  run: Pick<QaRun, "status" | "signoff">;
+  run: Pick<QaRun, 'status' | 'signoff'>;
   /** What was signed off: "uat @ 9f8e7d6", or the Project's repositories. */
   subject: string;
   reopen: QaReopenViewModel;
 }>) {
   const signoff = run.signoff;
-  if (run.status !== "signed_off" || !signoff) return null;
+  if (run.status !== 'signed_off' || !signoff) return null;
   const ago = agoLabel(signoff.signedAt);
   return (
     <>
-      <div className={`qa-signoff-banner qa-signoff-banner--${verdictTone(signoff.verdict)}`}>
+      <div
+        className={`qa-signoff-banner qa-signoff-banner--${verdictTone(signoff.verdict)}`}
+      >
         <span className="qa-signoff-banner__seal" aria-hidden="true">
           <SealIcon />
         </span>
@@ -124,18 +144,25 @@ export function SignoffBanner({
           </p>
           <p className="qa-signoff-banner__meta">
             by <strong>@{signoff.signedBy.login}</strong>
-            {ago ? ` · ${ago}` : ""} · {subject}
+            {ago ? ` · ${ago}` : ''} · {subject}
           </p>
-          {signoff.summary ? <p className="qa-signoff-banner__text">{signoff.summary}</p> : null}
+          {signoff.summary ? (
+            <p className="qa-signoff-banner__text">{signoff.summary}</p>
+          ) : null}
           {signoff.conditions ? (
             <div className="qa-signoff-banner__conditions">
               <span>Conditions</span>
               <p>{signoff.conditions}</p>
             </div>
           ) : null}
-          <p className="qa-signoff-banner__note">Signed-off runs are read-only.</p>
+          <p className="qa-signoff-banner__note">
+            Signed-off runs are read-only.
+          </p>
         </div>
-        <ReopenButton reopen={reopen} className="ghost-button qa-signoff-banner__reopen" />
+        <ReopenButton
+          reopen={reopen}
+          className="ghost-button qa-signoff-banner__reopen"
+        />
       </div>
       <ReopenDialog reopen={reopen} />
     </>
@@ -145,11 +172,19 @@ export function SignoffBanner({
 /* ── Reopen ──────────────────────────────────────────────────────────────── */
 
 /** "Reopen run", for viewers the server lets reopen: opens the confirmation. */
-export function ReopenButton({ reopen, className }: Readonly<{ reopen: QaReopenViewModel; className: string }>) {
+export function ReopenButton({
+  reopen,
+  className,
+}: Readonly<{ reopen: QaReopenViewModel; className: string }>) {
   if (!reopen.canReopen) return null;
   return (
-    <button type="button" className={className} disabled={reopen.status === "reopening"} onClick={reopen.ask}>
-      {reopen.status === "reopening" ? "Reopening…" : "Reopen run"}
+    <button
+      type="button"
+      className={className}
+      disabled={reopen.status === 'reopening'}
+      onClick={reopen.ask}
+    >
+      {reopen.status === 'reopening' ? 'Reopening…' : 'Reopen run'}
     </button>
   );
 }
@@ -159,7 +194,9 @@ export function ReopenButton({ reopen, className }: Readonly<{ reopen: QaReopenV
  * sign-off, so Merge to main is blocked until QA signs off again. A refusal
  * is shown here, to retry or cancel.
  */
-export function ReopenDialog({ reopen }: Readonly<{ reopen: QaReopenViewModel }>) {
+export function ReopenDialog({
+  reopen,
+}: Readonly<{ reopen: QaReopenViewModel }>) {
   return (
     <FormDialog
       open={reopen.confirming}
@@ -168,7 +205,7 @@ export function ReopenDialog({ reopen }: Readonly<{ reopen: QaReopenViewModel }>
       title={REOPEN_CONFIRM.title}
       description={REOPEN_CONFIRM.text}
       submitLabel="Reopen run"
-      submitting={reopen.status === "reopening"}
+      submitting={reopen.status === 'reopening'}
       error={reopen.error?.message ?? null}
       onSubmit={() => void reopen.reopen()}
     >
@@ -180,17 +217,19 @@ export function ReopenDialog({ reopen }: Readonly<{ reopen: QaReopenViewModel }>
 /* ── Signoff footer + dialog ─────────────────────────────────────────────── */
 
 const VERDICT_HINTS: Record<QaVerdict, string> = {
-  APPROVED: "Every item passed. Ship it.",
-  CONDITIONAL: "Ship, provided the conditions below are met.",
-  REJECTED: "Not ready. Send it back.",
+  APPROVED: 'Every item passed. Ship it.',
+  CONDITIONAL: 'Ship, provided the conditions below are met.',
+  REJECTED: 'Not ready. Send it back.',
 };
 
 function readinessText(vm: QaSignoffViewModel): string | null {
   if (vm.blockedReason) return vm.blockedReason;
-  const approved = vm.eligibility.find((entry) => entry.verdict === "APPROVED");
-  if (approved?.allowed) return "Every item passed — ready to approve.";
-  const reason = approved?.reason ?? "";
-  return /^\d+ items? (?:is|are) not passed yet\.$/.test(reason) ? null : reason || null;
+  const approved = vm.eligibility.find((entry) => entry.verdict === 'APPROVED');
+  if (approved?.allowed) return 'Every item passed — ready to approve.';
+  const reason = approved?.reason ?? '';
+  return /^\d+ items? (?:is|are) not passed yet\.$/.test(reason)
+    ? null
+    : reason || null;
 }
 
 export function SignoffFooter({ vm }: Readonly<{ vm: QaSignoffViewModel }>) {
@@ -221,7 +260,7 @@ export function SignoffFooter({ vm }: Readonly<{ vm: QaSignoffViewModel }>) {
 }
 
 function VerdictOptions({ vm }: Readonly<{ vm: QaSignoffViewModel }>) {
-  const busy = vm.status === "submitting";
+  const busy = vm.status === 'submitting';
   return (
     <fieldset className="qa-verdicts">
       <legend className="hier-field-label">Verdict</legend>
@@ -230,7 +269,7 @@ function VerdictOptions({ vm }: Readonly<{ vm: QaSignoffViewModel }>) {
         return (
           <label
             key={entry.verdict}
-            className={`qa-verdict qa-verdict--${verdictTone(entry.verdict)}${checked ? " qa-verdict--on" : ""}${entry.allowed ? "" : " qa-verdict--off"}`}
+            className={`qa-verdict qa-verdict--${verdictTone(entry.verdict)}${checked ? ' qa-verdict--on' : ''}${entry.allowed ? '' : ' qa-verdict--off'}`}
           >
             <input
               type="radio"
@@ -241,8 +280,12 @@ function VerdictOptions({ vm }: Readonly<{ vm: QaSignoffViewModel }>) {
               onChange={() => vm.setVerdict(entry.verdict)}
             />
             <span className="qa-verdict__text">
-              <span className="qa-verdict__name">{verdictLabel(entry.verdict)}</span>
-              <span className="qa-verdict__hint">{entry.reason ?? VERDICT_HINTS[entry.verdict]}</span>
+              <span className="qa-verdict__name">
+                {verdictLabel(entry.verdict)}
+              </span>
+              <span className="qa-verdict__hint">
+                {entry.reason ?? VERDICT_HINTS[entry.verdict]}
+              </span>
             </span>
           </label>
         );
@@ -254,12 +297,17 @@ function VerdictOptions({ vm }: Readonly<{ vm: QaSignoffViewModel }>) {
 export function SignoffDialog({
   vm,
   description,
-}: Readonly<{ vm: QaSignoffViewModel; /** What is being signed off, e.g. "Release smoke test on uat @ 9f8e7d6". */ description: string }>) {
-  const busy = vm.status === "submitting";
-  const allowed = vm.eligibility.some((entry) => entry.verdict === vm.verdict && entry.allowed);
+}: Readonly<{
+  vm: QaSignoffViewModel;
+  /** What is being signed off, e.g. "Release smoke test on uat @ 9f8e7d6". */ description: string;
+}>) {
+  const busy = vm.status === 'submitting';
+  const allowed = vm.eligibility.some(
+    (entry) => entry.verdict === vm.verdict && entry.allowed,
+  );
   return (
     <FormDialog
-      open={vm.status !== "closed"}
+      open={vm.status !== 'closed'}
       onClose={vm.closeDialog}
       // In <body>: inside the QA checklist panel the card was cut to the panel's width.
       portal
@@ -283,7 +331,7 @@ export function SignoffDialog({
           onChange={(event) => vm.setSummary(event.target.value)}
         />
       </label>
-      {vm.verdict === "CONDITIONAL" ? (
+      {vm.verdict === 'CONDITIONAL' ? (
         <label className="hier-field">
           <span className="hier-field-label">
             Conditions <span className="qa-required">(required)</span>

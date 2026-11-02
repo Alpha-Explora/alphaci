@@ -6,9 +6,9 @@
  * without it (or without storage configured) hides everything here, and the
  * rest of the run behaves exactly as before. */
 
-import { attachmentCodeMessage } from "./qa-error-messages";
-import { qaActionError } from "./qa-run-rules";
-import type { QaRunStatus } from "./qa-run-types";
+import { attachmentCodeMessage } from './qa-error-messages';
+import { qaActionError } from './qa-run-rules';
+import type { QaRunStatus } from './qa-run-types';
 import type {
   QaAttachment,
   QaAttachmentKind,
@@ -16,8 +16,8 @@ import type {
   QaAttachmentSource,
   QaImageType,
   QaRunAttachmentSettings,
-} from "./qa-attachment-types";
-import { oneOf, record, records, text } from "./wire-readers";
+} from './qa-attachment-types';
+import { oneOf, record, records, text } from './wire-readers';
 
 /** The most human attachments one item holds; the server refuses the sixth. */
 export const MAX_EVIDENCE_PER_ITEM = 5;
@@ -25,9 +25,22 @@ export const MAX_EVIDENCE_PER_ITEM = 5;
 /** The longest caption the server accepts. */
 export const MAX_CAPTION_LENGTH = 280;
 
-export const QA_IMAGE_TYPES: ReadonlyArray<QaImageType> = ["image/png", "image/jpeg", "image/webp"];
-const KINDS: ReadonlyArray<QaAttachmentKind> = ["evidence", "fix_proof", "automated"];
-const SOURCES: ReadonlyArray<QaAttachmentSource> = ["capture", "paste", "upload", "playwright"];
+export const QA_IMAGE_TYPES: ReadonlyArray<QaImageType> = [
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+];
+const KINDS: ReadonlyArray<QaAttachmentKind> = [
+  'evidence',
+  'fix_proof',
+  'automated',
+];
+const SOURCES: ReadonlyArray<QaAttachmentSource> = [
+  'capture',
+  'paste',
+  'upload',
+  'playwright',
+];
 
 /** A signed URL is refetched this long before it says it expires. */
 const EXPIRY_MARGIN_MS = 15_000;
@@ -35,10 +48,16 @@ const EXPIRY_MARGIN_MS = 15_000;
 /* ── Reading the wire ───────────────────────────────────────────────────── */
 
 function wholeOrNull(value: unknown): number | null {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0
+    ? value
+    : null;
 }
 
-const LOCAL_HOSTS: ReadonlySet<string> = new Set(["localhost", "127.0.0.1", "[::1]"]);
+const LOCAL_HOSTS: ReadonlySet<string> = new Set([
+  'localhost',
+  '127.0.0.1',
+  '[::1]',
+]);
 
 /**
  * An image URL the page may load: any https URL, or http on this machine (a
@@ -50,8 +69,10 @@ export function imageUrl(value: unknown): string | null {
   if (!candidate) return null;
   try {
     const url = new URL(candidate);
-    if (url.protocol === "https:") return url.toString();
-    return url.protocol === "http:" && LOCAL_HOSTS.has(url.hostname) ? url.toString() : null;
+    if (url.protocol === 'https:') return url.toString();
+    return url.protocol === 'http:' && LOCAL_HOSTS.has(url.hostname)
+      ? url.toString()
+      : null;
   } catch {
     return null;
   }
@@ -65,9 +86,9 @@ export function normalizeAttachment(value: unknown): QaAttachment | null {
   if (!raw || !id || !runItemId) return null;
   return {
     id,
-    runId: text(raw.runId) ?? "",
+    runId: text(raw.runId) ?? '',
     runItemId,
-    kind: oneOf(raw.kind, KINDS) ?? "evidence",
+    kind: oneOf(raw.kind, KINDS) ?? 'evidence',
     contentType: oneOf(raw.contentType, QA_IMAGE_TYPES),
     byteSize: wholeOrNull(raw.byteSize),
     width: wholeOrNull(raw.width),
@@ -92,14 +113,19 @@ export function normalizeAttachmentList(value: unknown): QaAttachment[] {
     .sort(byCreatedAt);
 }
 
-function byCreatedAt(a: Pick<QaAttachment, "createdAt">, b: Pick<QaAttachment, "createdAt">): number {
-  return (a.createdAt ?? "").localeCompare(b.createdAt ?? "");
+function byCreatedAt(
+  a: Pick<QaAttachment, 'createdAt'>,
+  b: Pick<QaAttachment, 'createdAt'>,
+): number {
+  return (a.createdAt ?? '').localeCompare(b.createdAt ?? '');
 }
 
 /** The run's `attachments` answer; null (feature hidden) when the server sent none. */
-export function attachmentSettingsFrom(value: unknown): QaRunAttachmentSettings | null {
+export function attachmentSettingsFrom(
+  value: unknown,
+): QaRunAttachmentSettings | null {
   const raw = record(value);
-  if (!raw || typeof raw.enabled !== "boolean") return null;
+  if (!raw || typeof raw.enabled !== 'boolean') return null;
   return { enabled: raw.enabled, canAdd: raw.canAdd === true };
 }
 
@@ -117,7 +143,7 @@ export function attachmentRefsFrom(value: unknown): QaAttachmentRef[] {
       {
         id,
         caption: text(raw.caption),
-        kind: oneOf(raw.kind, KINDS) ?? "evidence",
+        kind: oneOf(raw.kind, KINDS) ?? 'evidence',
         contentType: oneOf(raw.contentType, QA_IMAGE_TYPES),
       },
     ];
@@ -126,21 +152,33 @@ export function attachmentRefsFrom(value: unknown): QaAttachmentRef[] {
 
 /* ── Who may do what ────────────────────────────────────────────────────── */
 
-type RunAttachmentState = { status: QaRunStatus; attachments: QaRunAttachmentSettings | null };
+type RunAttachmentState = {
+  status: QaRunStatus;
+  attachments: QaRunAttachmentSettings | null;
+};
 
 /** The Evidence section exists: the server answered and storage is configured. */
-export function showsEvidence(run: Pick<RunAttachmentState, "attachments">): boolean {
+export function showsEvidence(
+  run: Pick<RunAttachmentState, 'attachments'>,
+): boolean {
   return run.attachments?.enabled === true;
 }
 
 /** Capture, Paste and Upload are offered: storage is on, the server says this viewer may, and the run is open. */
 export function canAddEvidence(run: RunAttachmentState): boolean {
-  return showsEvidence(run) && run.attachments?.canAdd === true && run.status === "open";
+  return (
+    showsEvidence(run) &&
+    run.attachments?.canAdd === true &&
+    run.status === 'open'
+  );
 }
 
 /** Delete is offered only where the server allows it, and never on a signed-off run. */
-export function canDeleteEvidence(attachment: Pick<QaAttachment, "canDelete">, run: Pick<RunAttachmentState, "status">): boolean {
-  return attachment.canDelete && run.status === "open";
+export function canDeleteEvidence(
+  attachment: Pick<QaAttachment, 'canDelete'>,
+  run: Pick<RunAttachmentState, 'status'>,
+): boolean {
+  return attachment.canDelete && run.status === 'open';
 }
 
 /** True once the item holds as many screenshots as it can. */
@@ -151,7 +189,9 @@ export function evidenceAtLimit(count: number): boolean {
 /* ── What the Evidence section says ─────────────────────────────────────── */
 
 /** The run's attachments, by item, oldest first. */
-export function attachmentsByItem(list: ReadonlyArray<QaAttachment>): Record<string, QaAttachment[]> {
+export function attachmentsByItem(
+  list: ReadonlyArray<QaAttachment>,
+): Record<string, QaAttachment[]> {
   const byItem: Record<string, QaAttachment[]> = {};
   for (const attachment of [...list].sort(byCreatedAt)) {
     const entries = byItem[attachment.runItemId] ?? [];
@@ -162,29 +202,46 @@ export function attachmentsByItem(list: ReadonlyArray<QaAttachment>): Record<str
 }
 
 /** What the badge counts: the loaded list once there is one, else the run's own count. */
-export function evidenceCount(loaded: ReadonlyArray<QaAttachment> | undefined, fromRun: number | null): number {
+export function evidenceCount(
+  loaded: ReadonlyArray<QaAttachment> | undefined,
+  fromRun: number | null,
+): number {
   return loaded ? loaded.length : (fromRun ?? 0);
 }
 
 /** "1 screenshot" / "3 screenshots". */
 export function evidenceCountLabel(count: number): string {
-  return `${count} ${count === 1 ? "screenshot" : "screenshots"}`;
+  return `${count} ${count === 1 ? 'screenshot' : 'screenshots'}`;
 }
 
 /** The image's alt text: its caption, else "Screenshot 2 of <item title>". */
-export function evidenceAlt(attachment: Pick<QaAttachment, "caption">, index: number, itemTitle: string): string {
-  return attachment.caption ?? `Screenshot ${String(index + 1)} of ${itemTitle}`;
+export function evidenceAlt(
+  attachment: Pick<QaAttachment, 'caption'>,
+  index: number,
+  itemTitle: string,
+): string {
+  return (
+    attachment.caption ?? `Screenshot ${String(index + 1)} of ${itemTitle}`
+  );
 }
 
 /** True when the signed URL is missing or about to stop working, so the list is read again. */
-export function urlExpired(attachment: Pick<QaAttachment, "url" | "urlExpiresAt">, now: number = Date.now()): boolean {
+export function urlExpired(
+  attachment: Pick<QaAttachment, 'url' | 'urlExpiresAt'>,
+  now: number = Date.now(),
+): boolean {
   if (!attachment.url) return true;
-  const expires = attachment.urlExpiresAt ? Date.parse(attachment.urlExpiresAt) : Number.NaN;
+  const expires = attachment.urlExpiresAt
+    ? Date.parse(attachment.urlExpiresAt)
+    : Number.NaN;
   return !Number.isNaN(expires) && expires - EXPIRY_MARGIN_MS <= now;
 }
 
 /** True when any loaded URL has expired (or is about to). */
-export function anyUrlExpired(list: ReadonlyArray<QaAttachment>, now: number = Date.now()): boolean {
+export function anyUrlExpired(
+  list: ReadonlyArray<QaAttachment>,
+  now: number = Date.now(),
+): boolean {
   return list.some((attachment) => urlExpired(attachment, now));
 }
 
@@ -201,7 +258,11 @@ export function captionPayload(caption: string): string | null {
 }
 
 /** The next image in the lightbox, wrapping at both ends. */
-export function stepIndex(index: number, delta: number, length: number): number {
+export function stepIndex(
+  index: number,
+  delta: number,
+  length: number,
+): number {
   if (length <= 0) return 0;
   return (((index + delta) % length) + length) % length;
 }
@@ -214,11 +275,15 @@ export function positionLabel(index: number, length: number): string {
 /* ── Errors ─────────────────────────────────────────────────────────────── */
 
 /** Any failed evidence write or read, as a sentence: an evidence code first, then the QA run rules. */
-export function attachmentErrorMessage(cause: unknown, fallback: string): string {
+export function attachmentErrorMessage(
+  cause: unknown,
+  fallback: string,
+): string {
   return attachmentCodeMessage(cause) ?? qaActionError(cause, fallback).message;
 }
 
-export const CAPTURE_FAILED = "The screen could not be captured. Paste or upload a screenshot instead.";
+export const CAPTURE_FAILED =
+  'The screen could not be captured. Paste or upload a screenshot instead.';
 
 /**
  * Why a capture failed, or null when the tester simply cancelled the
@@ -226,7 +291,7 @@ export const CAPTURE_FAILED = "The screen could not be captured. Paste or upload
  */
 export function captureErrorMessage(cause: unknown): string | null {
   const name = record(cause)?.name;
-  if (name === "NotAllowedError" || name === "AbortError") return null;
+  if (name === 'NotAllowedError' || name === 'AbortError') return null;
   return attachmentCodeMessage(cause) ?? CAPTURE_FAILED;
 }
 
@@ -240,6 +305,8 @@ export function reportEvidence(
 }
 
 /** True when any item of the report carries an image. */
-export function reportHasEvidence(items: ReadonlyArray<{ attachments: ReadonlyArray<QaAttachmentRef> }>): boolean {
+export function reportHasEvidence(
+  items: ReadonlyArray<{ attachments: ReadonlyArray<QaAttachmentRef> }>,
+): boolean {
   return items.some((item) => item.attachments.length > 0);
 }

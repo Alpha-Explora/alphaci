@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from 'react';
 
-import type { SideTabGroup } from "@/features/groups/workspace";
+import type { SideTabGroup } from '@/features/groups/workspace';
 
 /**
  * The project's sections, as a strip across the top of the page.
@@ -60,21 +60,24 @@ export function ProjectDetailTopTabs<T extends string>({
   useEffect(() => {
     // `nearest` in both axes: bring the tab into the strip without scrolling
     // the page itself. Optional call because jsdom has no implementation.
-    refs.current[value]?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    refs.current[value]?.scrollIntoView?.({
+      block: 'nearest',
+      inline: 'nearest',
+    });
   }, [value]);
 
   function handleKeyDown(event: React.KeyboardEvent) {
     const delta =
-      event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-    let next: SideTabGroup<T>["items"][number] | undefined;
+      event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    let next: SideTabGroup<T>['items'][number] | undefined;
 
     if (delta !== 0) {
       const at = flat.findIndex((item) => item.id === value);
       // Wrap: the ARIA pattern expects a ring, not a dead end.
       next = flat[(at + delta + flat.length) % flat.length];
-    } else if (event.key === "Home") {
+    } else if (event.key === 'Home') {
       next = flat[0];
-    } else if (event.key === "End") {
+    } else if (event.key === 'End') {
       next = flat[flat.length - 1];
     }
     if (!next) return;
@@ -118,7 +121,7 @@ export function ProjectDetailTopTabs<T extends string>({
                   // Only the selected tab is reachable by Tab; arrows do the rest.
                   tabIndex={selected ? 0 : -1}
                   onClick={() => onChange(item.id)}
-                  className={`project-tab${selected ? " project-tab--selected" : ""}`}
+                  className={`project-tab${selected ? ' project-tab--selected' : ''}`}
                 >
                   <span className="project-tab__label">{item.label}</span>
                   {item.badge !== undefined ? (

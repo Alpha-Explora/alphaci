@@ -1,16 +1,19 @@
-"use client";
+'use client';
 
-import { useRef, type KeyboardEvent } from "react";
+import { useRef, type KeyboardEvent } from 'react';
 
 import {
   nextTabIndex,
   type HostingEnvironment,
   type HostingEnvironmentKind,
-} from "../model/hosting-environment-rules";
-import { HostingDot } from "./hosting-status";
+} from '../model/hosting-environment-rules';
+import { HostingDot } from './hosting-status';
 
 /** The id of an environment's tab; its panel is labelled by it. */
-export function environmentTabId(idPrefix: string, kind: HostingEnvironmentKind): string {
+export function environmentTabId(
+  idPrefix: string,
+  kind: HostingEnvironmentKind,
+): string {
   return `${idPrefix}-env-${kind}`;
 }
 
@@ -79,6 +82,6 @@ export function HostingEnvironmentSwitcher({
 
 /** "Previews (2)"; the other two are their label. */
 function environmentTabName(environment: HostingEnvironment): string {
-  if (environment.kind !== "previews") return environment.label;
+  if (environment.kind !== 'previews') return environment.label;
   return `${environment.label} (${environment.previewBranches.length})`;
 }

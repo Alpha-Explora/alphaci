@@ -25,7 +25,7 @@
   max-width: min(100%, 26rem);
 }
 
-.iteration-status[data-status="delivered"] {
+.iteration-status[data-status='delivered'] {
   --iteration-tone: var(--accent-violet);
 
   border-color: var(--border-violet);

@@ -1,6 +1,9 @@
 /* Line icons for the project explorer. 16px, currentColor, decorative. */
 
-function Svg({ children, size = 16 }: Readonly<{ children: React.ReactNode; size?: number }>) {
+function Svg({
+  children,
+  size = 16,
+}: Readonly<{ children: React.ReactNode; size?: number }>) {
   return (
     <svg
       width={size}

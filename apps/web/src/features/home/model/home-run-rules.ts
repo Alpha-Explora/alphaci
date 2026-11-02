@@ -4,26 +4,30 @@
  * a Project through the repositories the Projects list files under it. Names
  * are matched without regard to case, as GitHub does. */
 
-import { projectPageHref } from "./home-persona-rules";
+import { projectPageHref } from './home-persona-rules';
 import type {
   BranchHealthRow,
   BranchName,
   HomeScope,
   RepoRunTone,
   UatAutomationRow,
-} from "./home-persona-types";
+} from './home-persona-types';
 import type {
   ProjectFolder,
   ProvisionedProject,
   RunGroup,
   RunOverallStatus,
-} from "./home-types";
+} from './home-types';
 
-export const HEALTH_BRANCHES: ReadonlyArray<BranchName> = ["dev", "uat", "main"];
+export const HEALTH_BRANCHES: ReadonlyArray<BranchName> = [
+  'dev',
+  'uat',
+  'main',
+];
 
 /** A run row without a name (malformed) keys as "" and is never matched or listed. */
 function repoKey(repoFullName: string): string {
-  return (repoFullName || "").toLowerCase();
+  return (repoFullName || '').toLowerCase();
 }
 
 function startedAt(run: RunGroup): number {
@@ -38,8 +42,8 @@ export function runsNewestFirst(runs: ReadonlyArray<RunGroup>): RunGroup[] {
 
 /** Failures first, each group in the order given. */
 export function runsFailuresFirst(runs: ReadonlyArray<RunGroup>): RunGroup[] {
-  const failing = runs.filter((run) => run.overallStatus === "failure");
-  return [...failing, ...runs.filter((run) => run.overallStatus !== "failure")];
+  const failing = runs.filter((run) => run.overallStatus === 'failure');
+  return [...failing, ...runs.filter((run) => run.overallStatus !== 'failure')];
 }
 
 /** The full names of the repositories filed under these Projects, keyed for matching. */
@@ -62,27 +66,31 @@ export function runsInScope(
   scope: HomeScope,
   scopedFolders: ReadonlyArray<ProjectFolder>,
 ): RunGroup[] {
-  if (scope.mode !== "mine") return [...runs];
+  if (scope.mode !== 'mine') return [...runs];
   const keys = repoKeysOf(scopedFolders);
   return runs.filter((run) => keys.has(repoKey(run.repoFullName)));
 }
 
 const RUN_TONES: Readonly<Record<RunOverallStatus, RepoRunTone>> = {
-  success: "success",
-  failure: "failure",
-  running: "running",
-  partial: "warning",
-  cancelled: "warning",
+  success: 'success',
+  failure: 'failure',
+  running: 'running',
+  partial: 'warning',
+  cancelled: 'warning',
 };
 
 /** A run's status as a dot. No run: "none". */
-export function runTone(run: Pick<RunGroup, "overallStatus"> | undefined): RepoRunTone {
-  if (!run) return "none";
-  return RUN_TONES[run.overallStatus] ?? "none";
+export function runTone(
+  run: Pick<RunGroup, 'overallStatus'> | undefined,
+): RepoRunTone {
+  if (!run) return 'none';
+  return RUN_TONES[run.overallStatus] ?? 'none';
 }
 
 /** The newest run of each repository, on any branch. */
-export function latestRunByRepo(runs: ReadonlyArray<RunGroup>): Map<string, RunGroup> {
+export function latestRunByRepo(
+  runs: ReadonlyArray<RunGroup>,
+): Map<string, RunGroup> {
   const latest = new Map<string, RunGroup>();
   for (const run of runsNewestFirst(runs)) {
     const key = repoKey(run.repoFullName);
@@ -91,7 +99,10 @@ export function latestRunByRepo(runs: ReadonlyArray<RunGroup>): Map<string, RunG
   return latest;
 }
 
-export function latestRunFor(latest: ReadonlyMap<string, RunGroup>, repoFullName: string | null): RunGroup | undefined {
+export function latestRunFor(
+  latest: ReadonlyMap<string, RunGroup>,
+  repoFullName: string | null,
+): RunGroup | undefined {
   return repoFullName ? latest.get(repoKey(repoFullName)) : undefined;
 }
 
@@ -102,7 +113,8 @@ export function repoProjectIds(
 ): Map<string, string> {
   const ids = new Map<string, string>();
   for (const project of projects) {
-    if (project.repoFullName) ids.set(repoKey(project.repoFullName), project.id);
+    if (project.repoFullName)
+      ids.set(repoKey(project.repoFullName), project.id);
   }
   for (const folder of folders) {
     for (const repository of folder.repositories) {
@@ -114,7 +126,10 @@ export function repoProjectIds(
   return ids;
 }
 
-function repoHref(ids: ReadonlyMap<string, string>, repoFullName: string): string | null {
+function repoHref(
+  ids: ReadonlyMap<string, string>,
+  repoFullName: string,
+): string | null {
   const id = ids.get(repoKey(repoFullName));
   return id ? projectPageHref(id) : null;
 }
@@ -123,14 +138,17 @@ function repoHref(ids: ReadonlyMap<string, string>, repoFullName: string): strin
 export function failureStreak(runs: ReadonlyArray<RunGroup>): number {
   let streak = 0;
   for (const run of runs) {
-    if (run.overallStatus !== "failure") break;
+    if (run.overallStatus !== 'failure') break;
     streak += 1;
   }
   return streak;
 }
 
 /** Every repository, as runs and the Projects list name it, once; runs first. */
-function repositoryNames(runs: ReadonlyArray<RunGroup>, folders: ReadonlyArray<ProjectFolder>): string[] {
+function repositoryNames(
+  runs: ReadonlyArray<RunGroup>,
+  folders: ReadonlyArray<ProjectFolder>,
+): string[] {
   const names = new Map<string, string>();
   const add = (name: string | null) => {
     if (name && !names.has(repoKey(name))) names.set(repoKey(name), name);
@@ -147,18 +165,26 @@ function healthRow(
   runs: ReadonlyArray<RunGroup>,
   ids: ReadonlyMap<string, string>,
 ): BranchHealthRow {
-  const own = runs.filter((run) => repoKey(run.repoFullName) === repoKey(repoFullName));
-  const latestOn = (branch: BranchName) => runTone(own.find((run) => run.branch === branch));
+  const own = runs.filter(
+    (run) => repoKey(run.repoFullName) === repoKey(repoFullName),
+  );
+  const latestOn = (branch: BranchName) =>
+    runTone(own.find((run) => run.branch === branch));
   return {
     repoFullName,
-    cells: { dev: latestOn("dev"), uat: latestOn("uat"), main: latestOn("main") },
+    cells: {
+      dev: latestOn('dev'),
+      uat: latestOn('uat'),
+      main: latestOn('main'),
+    },
     failureStreak: failureStreak(own),
     href: repoHref(ids, repoFullName),
   };
 }
 
 function failingCells(row: BranchHealthRow): number {
-  return HEALTH_BRANCHES.filter((branch) => row.cells[branch] === "failure").length;
+  return HEALTH_BRANCHES.filter((branch) => row.cells[branch] === 'failure')
+    .length;
 }
 
 /**
@@ -182,33 +208,38 @@ export function branchHealth(
 }
 
 /** dev / uat / main cells whose newest run failed. */
-export function failingBranchCount(rows: ReadonlyArray<BranchHealthRow>): number {
+export function failingBranchCount(
+  rows: ReadonlyArray<BranchHealthRow>,
+): number {
   return rows.reduce((sum, row) => sum + failingCells(row), 0);
 }
 
 /* ── UAT automation ─────────────────────────────────────────────────────── */
 
 export function uatRuns(runs: ReadonlyArray<RunGroup>): RunGroup[] {
-  return runs.filter((run) => run.branch === "uat");
+  return runs.filter((run) => run.branch === 'uat');
 }
 
 function verifyStage(run: RunGroup) {
-  return run.stages.find((stage) => stage.stage === "verify");
+  return run.stages.find((stage) => stage.stage === 'verify');
 }
 
-function testsOf(run: RunGroup): UatAutomationRow["tests"] {
+function testsOf(run: RunGroup): UatAutomationRow['tests'] {
   const tests = verifyStage(run)?.results?.tests;
   if (!tests) return null;
   return { passed: tests.passed, failed: tests.failed, total: tests.total };
 }
 
-function uatRow(run: RunGroup, ids: ReadonlyMap<string, string>): UatAutomationRow {
+function uatRow(
+  run: RunGroup,
+  ids: ReadonlyMap<string, string>,
+): UatAutomationRow {
   return {
     repoFullName: run.repoFullName,
-    verify: verifyStage(run)?.status ?? "pending",
+    verify: verifyStage(run)?.status ?? 'pending',
     tests: testsOf(run),
     startedAt: run.startedAt,
-    href: repoHref(ids, run.repoFullName) ?? "/runs",
+    href: repoHref(ids, run.repoFullName) ?? '/runs',
   };
 }
 
@@ -217,7 +248,9 @@ export function uatAutomationRows(
   runs: ReadonlyArray<RunGroup>,
   ids: ReadonlyMap<string, string>,
 ): UatAutomationRow[] {
-  const rows = [...latestRunByRepo(uatRuns(runs)).values()].map((run) => uatRow(run, ids));
-  const failing = rows.filter((row) => row.verify === "failure");
-  return [...failing, ...rows.filter((row) => row.verify !== "failure")];
+  const rows = [...latestRunByRepo(uatRuns(runs)).values()].map((run) =>
+    uatRow(run, ids),
+  );
+  const failing = rows.filter((row) => row.verify === 'failure');
+  return [...failing, ...rows.filter((row) => row.verify !== 'failure')];
 }

@@ -1,10 +1,15 @@
-"use client";
+'use client';
 
-import type { FormEvent } from "react";
+import type { FormEvent } from 'react';
 
-import { PersonaBadge, SeverityBadge, StatusPill, VerificationBadge } from "../../items";
-import { needsTestIdentifier } from "../../model/checklist-rules";
-import { myItemKey } from "../../model/qa-my-items-rules";
+import {
+  PersonaBadge,
+  SeverityBadge,
+  StatusPill,
+  VerificationBadge,
+} from '../../items';
+import { needsTestIdentifier } from '../../model/checklist-rules';
+import { myItemKey } from '../../model/qa-my-items-rules';
 import {
   agoLabel,
   itemStatusLabel,
@@ -12,26 +17,39 @@ import {
   severityLabel,
   statusNeedsSeverity,
   statusShowsDefect,
-} from "../../model/qa-run-rules";
-import type { QaDefectSeverity, QaDeveloperItem, QaItemDraft, QaRunItemStatus } from "../../model/qa-run-types";
-import type { DeveloperItemEditorViewModel } from "../view-models/use-developer-item-editor-view-model";
+} from '../../model/qa-run-rules';
+import type {
+  QaDefectSeverity,
+  QaDeveloperItem,
+  QaItemDraft,
+  QaRunItemStatus,
+} from '../../model/qa-run-types';
+import type { DeveloperItemEditorViewModel } from '../view-models/use-developer-item-editor-view-model';
 
-type RowProps = Readonly<{ entry: QaDeveloperItem; vm: DeveloperItemEditorViewModel; onReload: () => void }>;
+type RowProps = Readonly<{
+  entry: QaDeveloperItem;
+  vm: DeveloperItemEditorViewModel;
+  onReload: () => void;
+}>;
 
 /** "Passed by @miguel · 5m ago": who last set the status, when the server says. */
 function VerifiedLine({ entry }: Readonly<{ entry: QaDeveloperItem }>) {
   const { item } = entry;
-  if (!item.verifiedBy || item.status === "pending") return null;
+  if (!item.verifiedBy || item.status === 'pending') return null;
   const ago = agoLabel(item.verifiedAt);
   return (
     <span>
-      {itemStatusLabel(item.status)} by <strong>@{item.verifiedBy.login}</strong>
-      {ago ? ` · ${ago}` : ""}
+      {itemStatusLabel(item.status)} by{' '}
+      <strong>@{item.verifiedBy.login}</strong>
+      {ago ? ` · ${ago}` : ''}
     </span>
   );
 }
 
-function StatusControl({ entry, vm }: Readonly<{ entry: QaDeveloperItem; vm: DeveloperItemEditorViewModel }>) {
+function StatusControl({
+  entry,
+  vm,
+}: Readonly<{ entry: QaDeveloperItem; vm: DeveloperItemEditorViewModel }>) {
   const allowed = vm.allowedStatuses(entry);
   const draft = vm.openKey === myItemKey(entry) ? vm.draft : null;
   const value = draft?.status ?? entry.item.status;
@@ -44,10 +62,16 @@ function StatusControl({ entry, vm }: Readonly<{ entry: QaDeveloperItem; vm: Dev
         className="hier-select"
         value={value}
         disabled={vm.savingKey !== null}
-        onChange={(event) => vm.chooseStatus(entry, event.target.value as QaRunItemStatus)}
+        onChange={(event) =>
+          vm.chooseStatus(entry, event.target.value as QaRunItemStatus)
+        }
       >
         {options.map((status) => (
-          <option key={status} value={status} disabled={!allowed.includes(status)}>
+          <option
+            key={status}
+            value={status}
+            disabled={!allowed.includes(status)}
+          >
             {itemStatusLabel(status)}
           </option>
         ))}
@@ -56,20 +80,33 @@ function StatusControl({ entry, vm }: Readonly<{ entry: QaDeveloperItem; vm: Dev
   );
 }
 
-function SeverityField({ draft, onChange }: Readonly<{ draft: QaItemDraft; onChange: (value: QaDefectSeverity | "") => void }>) {
+function SeverityField({
+  draft,
+  onChange,
+}: Readonly<{
+  draft: QaItemDraft;
+  onChange: (value: QaDefectSeverity | '') => void;
+}>) {
   const required = statusNeedsSeverity(draft.status);
   return (
     <label className="hier-field qa-mine__field">
       <span className="hier-field-label">
-        Severity{required ? <span className="qa-mine__required"> (required)</span> : null}
+        Severity
+        {required ? (
+          <span className="qa-mine__required"> (required)</span>
+        ) : null}
       </span>
       <select
         className="hier-select"
         value={draft.defectSeverity}
         aria-required={required}
-        onChange={(event) => onChange(event.target.value as QaDefectSeverity | "")}
+        onChange={(event) =>
+          onChange(event.target.value as QaDefectSeverity | '')
+        }
       >
-        <option value="">{required ? "Choose a severity" : "No severity"}</option>
+        <option value="">
+          {required ? 'Choose a severity' : 'No severity'}
+        </option>
         {QA_SEVERITIES.map((severity) => (
           <option key={severity} value={severity}>
             {severityLabel(severity)}
@@ -80,12 +117,21 @@ function SeverityField({ draft, onChange }: Readonly<{ draft: QaItemDraft; onCha
   );
 }
 
-function saveLabel(entry: QaDeveloperItem, draft: QaItemDraft, saving: boolean): string {
-  if (saving) return "Saving…";
-  return draft.status === entry.item.status ? "Save" : `Mark ${itemStatusLabel(draft.status)}`;
+function saveLabel(
+  entry: QaDeveloperItem,
+  draft: QaItemDraft,
+  saving: boolean,
+): string {
+  if (saving) return 'Saving…';
+  return draft.status === entry.item.status
+    ? 'Save'
+    : `Mark ${itemStatusLabel(draft.status)}`;
 }
 
-function DetailsForm({ entry, vm }: Readonly<{ entry: QaDeveloperItem; vm: DeveloperItemEditorViewModel }>) {
+function DetailsForm({
+  entry,
+  vm,
+}: Readonly<{ entry: QaDeveloperItem; vm: DeveloperItemEditorViewModel }>) {
   const draft = vm.draft;
   if (vm.openKey !== myItemKey(entry) || !draft) return null;
   const saving = vm.savingKey === myItemKey(entry);
@@ -97,8 +143,18 @@ function DetailsForm({ entry, vm }: Readonly<{ entry: QaDeveloperItem; vm: Devel
   }
 
   return (
-    <form className="qa-mine__editor" onSubmit={handleSubmit} noValidate aria-label={`Record ${entry.item.title}`}>
-      {defect ? <SeverityField draft={draft} onChange={(value) => vm.updateDraft({ defectSeverity: value })} /> : null}
+    <form
+      className="qa-mine__editor"
+      onSubmit={handleSubmit}
+      noValidate
+      aria-label={`Record ${entry.item.title}`}
+    >
+      {defect ? (
+        <SeverityField
+          draft={draft}
+          onChange={(value) => vm.updateDraft({ defectSeverity: value })}
+        />
+      ) : null}
       <label className="hier-field qa-mine__field">
         <span className="hier-field-label">Notes</span>
         <textarea
@@ -106,7 +162,9 @@ function DetailsForm({ entry, vm }: Readonly<{ entry: QaDeveloperItem; vm: Devel
           rows={2}
           value={draft.notes}
           disabled={saving}
-          placeholder={defect ? "What went wrong" : "Anything worth knowing (optional)"}
+          placeholder={
+            defect ? 'What went wrong' : 'Anything worth knowing (optional)'
+          }
           onChange={(event) => vm.updateDraft({ notes: event.target.value })}
         />
       </label>
@@ -118,7 +176,9 @@ function DetailsForm({ entry, vm }: Readonly<{ entry: QaDeveloperItem; vm: Devel
             rows={3}
             value={draft.reproductionSteps}
             disabled={saving}
-            onChange={(event) => vm.updateDraft({ reproductionSteps: event.target.value })}
+            onChange={(event) =>
+              vm.updateDraft({ reproductionSteps: event.target.value })
+            }
           />
         </label>
       ) : null}
@@ -131,7 +191,12 @@ function DetailsForm({ entry, vm }: Readonly<{ entry: QaDeveloperItem; vm: Devel
         <button type="submit" className="primary-button" disabled={saving}>
           {saveLabel(entry, draft, saving)}
         </button>
-        <button type="button" className="ghost-button" disabled={saving} onClick={vm.closeDetails}>
+        <button
+          type="button"
+          className="ghost-button"
+          disabled={saving}
+          onClick={vm.closeDetails}
+        >
           Cancel
         </button>
       </div>
@@ -157,7 +222,11 @@ function RowError({ entry, vm, onReload }: RowProps) {
           Reload items
         </button>
       ) : (
-        <button type="button" className="qa-mine__text-button" onClick={vm.dismissError}>
+        <button
+          type="button"
+          className="qa-mine__text-button"
+          onClick={vm.dismissError}
+        >
           Dismiss
         </button>
       )}
@@ -165,7 +234,10 @@ function RowError({ entry, vm, onReload }: RowProps) {
   );
 }
 
-function Controls({ entry, vm }: Readonly<{ entry: QaDeveloperItem; vm: DeveloperItemEditorViewModel }>) {
+function Controls({
+  entry,
+  vm,
+}: Readonly<{ entry: QaDeveloperItem; vm: DeveloperItemEditorViewModel }>) {
   const key = myItemKey(entry);
   const editing = vm.openKey === key;
   if (!entry.item.canUpdate) {
@@ -181,7 +253,9 @@ function Controls({ entry, vm }: Readonly<{ entry: QaDeveloperItem; vm: Develope
           disabled={vm.savingKey !== null}
           onClick={() => vm.openDetails(entry)}
         >
-          {entry.item.notes || entry.item.reproductionSteps ? "Edit notes" : "Add notes"}
+          {entry.item.notes || entry.item.reproductionSteps
+            ? 'Edit notes'
+            : 'Add notes'}
         </button>
       )}
       {vm.savingKey === key && !editing ? (
@@ -219,7 +293,9 @@ export function DeveloperItemRow({ entry, vm, onReload }: RowProps) {
         <span className="qa-mine__title">{item.title}</span>
         <StatusPill status={item.status} />
       </div>
-      {item.description ? <p className="qa-mine__desc">{item.description}</p> : null}
+      {item.description ? (
+        <p className="qa-mine__desc">{item.description}</p>
+      ) : null}
       <div className="qa-mine__tags">
         <PersonaBadge persona={item.targetPersona} />
         <VerificationBadge type={item.verificationType} />

@@ -1,28 +1,42 @@
-"use client";
+'use client';
 
-import "./workspace/pipeline-runs.css";
-import "./workspace/pipeline-visual-checks.css";
-import "./studio-repository-checks.css";
+import './workspace/pipeline-runs.css';
+import './workspace/pipeline-visual-checks.css';
+import './studio-repository-checks.css';
 
-import Link from "next/link";
+import Link from 'next/link';
 
-import type { RenderRepositoryChecks, RepositoryRef } from "@/features/checklists/studio";
+import type {
+  RenderRepositoryChecks,
+  RepositoryRef,
+} from '@/features/checklists/studio';
 
-import { browserTestsCardState, visualCaptureOn, visualOffNotice } from "../model/browser-test-rules";
-import type { WorkflowUpdateAccess } from "../model/project-detail-tab-rules";
-import { studioVisualSummary, visualNeedsReview } from "../model/visual-check-rules";
-import { useBrowserTestsViewModel, type BrowserTestsViewModel } from "../view-models/use-browser-tests-view-model";
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
-import { useStudioVisualSummaryViewModel } from "../view-models/use-studio-visual-summary-view-model";
-import { BrowserTestsCard } from "./workspace/pipeline-browser-tests-card";
+import {
+  browserTestsCardState,
+  visualCaptureOn,
+  visualOffNotice,
+} from '../model/browser-test-rules';
+import type { WorkflowUpdateAccess } from '../model/project-detail-tab-rules';
+import {
+  studioVisualSummary,
+  visualNeedsReview,
+} from '../model/visual-check-rules';
+import {
+  useBrowserTestsViewModel,
+  type BrowserTestsViewModel,
+} from '../view-models/use-browser-tests-view-model';
+import type { ProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
+import { useStudioVisualSummaryViewModel } from '../view-models/use-studio-visual-summary-view-model';
+import { BrowserTestsCard } from './workspace/pipeline-browser-tests-card';
 
 /** The branch QA and PO Studio verify, whose screenshots the line summarises. */
-const STUDIO_BRANCH = "uat";
+const STUDIO_BRANCH = 'uat';
 
-export const REVIEW_VISUAL_LABEL = "Review in Pipeline";
+export const REVIEW_VISUAL_LABEL = 'Review in Pipeline';
 
 /** For a viewer without the Pipeline tab (QA Team, Product owners). */
-export const VISUAL_REVIEW_ELSEWHERE = "Developers and admins review visual changes in Pipeline.";
+export const VISUAL_REVIEW_ELSEWHERE =
+  'Developers and admins review visual changes in Pipeline.';
 
 /**
  * Where "Review in Pipeline" goes: this page's Pipeline tab on Runs, or the
@@ -32,16 +46,27 @@ function ReviewLink({
   repository,
   isCurrent,
   onOpenRuns,
-}: Readonly<{ repository: RepositoryRef; isCurrent: boolean; onOpenRuns: () => void }>) {
+}: Readonly<{
+  repository: RepositoryRef;
+  isCurrent: boolean;
+  onOpenRuns: () => void;
+}>) {
   if (isCurrent) {
     return (
-      <button type="button" className="pipe-link studio-checks__link" onClick={onOpenRuns}>
+      <button
+        type="button"
+        className="pipe-link studio-checks__link"
+        onClick={onOpenRuns}
+      >
         {REVIEW_VISUAL_LABEL}
       </button>
     );
   }
   return (
-    <Link className="pipe-link studio-checks__link" href={`/projects/${encodeURIComponent(repository.projectId)}#pipeline`}>
+    <Link
+      className="pipe-link studio-checks__link"
+      href={`/projects/${encodeURIComponent(repository.projectId)}#pipeline`}
+    >
       {REVIEW_VISUAL_LABEL}
     </Link>
   );
@@ -66,15 +91,32 @@ function VisualLine({
   onOpenRuns: () => void;
   browserTests: BrowserTestsViewModel;
 }>) {
-  const visual = useStudioVisualSummaryViewModel({ projectId: repository.projectId, branch: STUDIO_BRANCH });
-  if (visual.status !== "ready" || browserTests.status === "loading") return null;
+  const visual = useStudioVisualSummaryViewModel({
+    projectId: repository.projectId,
+    branch: STUDIO_BRANCH,
+  });
+  if (visual.status !== 'ready' || browserTests.status === 'loading')
+    return null;
   const review = visualNeedsReview(visual.checks);
   const captureOn = visualCaptureOn(browserTests.visual, STUDIO_BRANCH);
   return (
-    <p className="studio-checks__visual" data-review={review ? "true" : "false"}>
-      <span className="studio-checks__summary">{studioVisualSummary(visual.checks, STUDIO_BRANCH, captureOn)}</span>
-      {canOpenRuns ? <ReviewLink repository={repository} isCurrent={isCurrent} onOpenRuns={onOpenRuns} /> : null}
-      {!canOpenRuns && review ? <span className="studio-checks__note">{VISUAL_REVIEW_ELSEWHERE}</span> : null}
+    <p
+      className="studio-checks__visual"
+      data-review={review ? 'true' : 'false'}
+    >
+      <span className="studio-checks__summary">
+        {studioVisualSummary(visual.checks, STUDIO_BRANCH, captureOn)}
+      </span>
+      {canOpenRuns ? (
+        <ReviewLink
+          repository={repository}
+          isCurrent={isCurrent}
+          onOpenRuns={onOpenRuns}
+        />
+      ) : null}
+      {!canOpenRuns && review ? (
+        <span className="studio-checks__note">{VISUAL_REVIEW_ELSEWHERE}</span>
+      ) : null}
     </p>
   );
 }
@@ -97,8 +139,11 @@ function BrowserTests({
   onOpenWorkflow?: () => void;
   workflowHref?: string;
 }>) {
-  const state = browserTestsCardState(view.status === "ready" ? view.browserTests : null);
-  if (state !== "missing" && !view.added && !visualOffNotice(view.visual)) return null;
+  const state = browserTestsCardState(
+    view.status === 'ready' ? view.browserTests : null,
+  );
+  if (state !== 'missing' && !view.added && !visualOffNotice(view.visual))
+    return null;
   return (
     <BrowserTestsCard
       view={view}
@@ -124,7 +169,7 @@ export function StudioRepositoryChecks({
   canOpenRuns,
   onOpenRuns,
   onOpenPullRequest,
-  workflowAccess = "unavailable",
+  workflowAccess = 'unavailable',
   onOpenWorkflow,
 }: Readonly<{
   repository: RepositoryRef;
@@ -141,7 +186,9 @@ export function StudioRepositoryChecks({
   onOpenWorkflow?: () => void;
 }>) {
   // One status read for both lines: the browser-tests card and whether uat takes screenshots.
-  const browserTests = useBrowserTestsViewModel({ projectId: repository.projectId });
+  const browserTests = useBrowserTestsViewModel({
+    projectId: repository.projectId,
+  });
   return (
     <div className="studio-checks">
       <VisualLine
@@ -157,7 +204,11 @@ export function StudioRepositoryChecks({
         workflowAccess={workflowAccess}
         onOpenWorkflow={isCurrent ? onOpenWorkflow : undefined}
         // `#workflow` (the retired Workflow tab) opens Pipeline on Configuration.
-        workflowHref={isCurrent ? undefined : `/projects/${encodeURIComponent(repository.projectId)}#workflow`}
+        workflowHref={
+          isCurrent
+            ? undefined
+            : `/projects/${encodeURIComponent(repository.projectId)}#workflow`
+        }
       />
     </div>
   );
@@ -170,18 +221,23 @@ export function StudioRepositoryChecks({
  */
 export function studioChecksRenderer(
   currentProjectId: string,
-  vm: Pick<ProjectDetailTabsViewModel, "visibleTabs" | "openPipeline" | "openPullRequest" | "workflowUpdateAccess">,
+  vm: Pick<
+    ProjectDetailTabsViewModel,
+    'visibleTabs' | 'openPipeline' | 'openPullRequest' | 'workflowUpdateAccess'
+  >,
 ): RenderRepositoryChecks {
-  const canOpenRuns = vm.visibleTabs.includes("pipeline");
-  const onOpenPullRequest = vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined;
-  const onOpenWorkflow = () => vm.openPipeline("configuration");
+  const canOpenRuns = vm.visibleTabs.includes('pipeline');
+  const onOpenPullRequest = vm.visibleTabs.includes('pulls')
+    ? vm.openPullRequest
+    : undefined;
+  const onOpenWorkflow = () => vm.openPipeline('configuration');
   return function renderChecks(repository) {
     return (
       <StudioRepositoryChecks
         repository={repository}
         isCurrent={repository.projectId === currentProjectId}
         canOpenRuns={canOpenRuns}
-        onOpenRuns={() => vm.openPipeline("runs")}
+        onOpenRuns={() => vm.openPipeline('runs')}
         onOpenPullRequest={onOpenPullRequest}
         workflowAccess={vm.workflowUpdateAccess}
         onOpenWorkflow={onOpenWorkflow}

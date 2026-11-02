@@ -9,4 +9,4 @@ export const bashQuote = (value: string) =>
 /** One PowerShell single-quoted string. PowerShell also treats the curly
  * single quotes as string delimiters, so those are doubled as well. */
 export const psQuote = (value: string) =>
-  "'" + value.replace(/['‘’‚‛]/g, "$&$&") + "'";
+  "'" + value.replace(/['‘’‚‛]/g, '$&$&') + "'";

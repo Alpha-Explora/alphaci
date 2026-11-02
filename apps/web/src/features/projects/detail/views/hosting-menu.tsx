@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useId, useRef } from "react";
+import { useId, useRef } from 'react';
 
-import { useMenuButton } from "@/features/checklists/studio";
+import { useMenuButton } from '@/features/checklists/studio';
 
 export interface HostingMenuItem {
   /** Stable key and the item's text. */
@@ -16,14 +16,18 @@ export interface HostingMenuItem {
 }
 
 function itemClassName(item: HostingMenuItem): string {
-  return item.destructive ? "hosting-menu__item hosting-menu__item--danger" : "hosting-menu__item";
+  return item.destructive
+    ? 'hosting-menu__item hosting-menu__item--danger'
+    : 'hosting-menu__item';
 }
 
 function MenuItemBody({ item }: Readonly<{ item: HostingMenuItem }>) {
   return (
     <>
       <span className="hosting-menu__label">{item.label}</span>
-      {item.hint ? <span className="hosting-menu__hint">{item.hint}</span> : null}
+      {item.hint ? (
+        <span className="hosting-menu__hint">{item.hint}</span>
+      ) : null}
     </>
   );
 }
@@ -31,7 +35,10 @@ function MenuItemBody({ item }: Readonly<{ item: HostingMenuItem }>) {
 function MenuEntry({
   item,
   onClose,
-}: Readonly<{ item: HostingMenuItem; onClose: (returnFocus: boolean) => void }>) {
+}: Readonly<{
+  item: HostingMenuItem;
+  onClose: (returnFocus: boolean) => void;
+}>) {
   return (
     <button
       role="menuitem"

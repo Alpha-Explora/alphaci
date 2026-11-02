@@ -28,7 +28,7 @@
 
 /* The rail: behind the dots, from the first row to the last. */
 .audit-trail__list::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0.9rem;
   bottom: 0.9rem;
@@ -101,7 +101,7 @@
 }
 
 .audit-trail__meta > * + *::before {
-  content: "·";
+  content: '·';
   margin: 0 0.45rem;
   color: var(--border-strong);
 }
@@ -180,12 +180,12 @@
    without reading the label.
    ------------------------------------------------------------------------- */
 
-.audit-trail__row[data-scope="github"] .audit-trail__dot {
+.audit-trail__row[data-scope='github'] .audit-trail__dot {
   border-color: var(--border-brand);
   background: var(--surface-brand);
 }
 
-.audit-trail__row[data-scope="github"]:first-child .audit-trail__dot {
+.audit-trail__row[data-scope='github']:first-child .audit-trail__dot {
   border-color: var(--brand);
 }
 
@@ -214,7 +214,7 @@
   margin-left: auto;
 }
 
-.audit-trail__sync[data-tone="warning"] .audit-trail__sync-text {
+.audit-trail__sync[data-tone='warning'] .audit-trail__sync-text {
   color: var(--warning);
 }
 
@@ -228,12 +228,12 @@
   animation: audit-trail-breathe 2.8s ease-in-out infinite;
 }
 
-.audit-trail__sync[data-tone="warning"] .audit-trail__sync-dot {
+.audit-trail__sync[data-tone='warning'] .audit-trail__sync-dot {
   background: var(--accent-amber);
   animation: none;
 }
 
-.audit-trail__sync[data-tone="pending"] .audit-trail__sync-dot {
+.audit-trail__sync[data-tone='pending'] .audit-trail__sync-dot {
   background: var(--brand);
 }
 
@@ -312,7 +312,7 @@
   transition: transform 160ms ease-out;
 }
 
-.audit-trail__push-toggle[aria-expanded="true"] .audit-trail__push-caret {
+.audit-trail__push-toggle[aria-expanded='true'] .audit-trail__push-caret {
   transform: rotate(45deg);
 }
 

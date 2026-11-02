@@ -1,8 +1,8 @@
-import { Suspense } from "react";
+import { Suspense } from 'react';
 
-import { PipelineLoader } from "@/shared/layout/pipeline-loader";
+import { PipelineLoader } from '@/shared/layout/pipeline-loader';
 
-import { AuthCallbackView } from "@/features/auth/callback";
+import { AuthCallbackView } from '@/features/auth/callback';
 
 export default function AuthCallbackPage() {
   return (

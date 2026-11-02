@@ -1,22 +1,27 @@
-"use client";
+'use client';
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 import type {
   ChecklistItemDraft,
   ChecklistTargetPersona,
   ChecklistVerificationType,
-} from "../../model/checklist-types";
+} from '../../model/checklist-types';
 import {
   CHECKLIST_ITEM_TITLE_MAX,
   TARGET_PERSONA_OPTIONS,
   VERIFICATION_TYPE_OPTIONS,
   needsTestIdentifier,
   testIdentifierPlaceholder,
-} from "../../model/checklist-rules";
-import { ArrowDownIcon, ArrowUpIcon, PlusIcon, RemoveIcon } from "./checklist-icons";
+} from '../../model/checklist-rules';
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  PlusIcon,
+  RemoveIcon,
+} from './checklist-icons';
 
-type ItemPatch = Partial<Omit<ChecklistItemDraft, "key">>;
+type ItemPatch = Partial<Omit<ChecklistItemDraft, 'key'>>;
 
 const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
 
@@ -90,7 +95,9 @@ function ItemFields({
           disabled={disabled}
           aria-label={`Who runs item ${n}`}
           onChange={(event) =>
-            onChange({ targetPersona: event.target.value as ChecklistTargetPersona })
+            onChange({
+              targetPersona: event.target.value as ChecklistTargetPersona,
+            })
           }
         >
           {TARGET_PERSONA_OPTIONS.map((option) => (
@@ -108,7 +115,9 @@ function ItemFields({
           disabled={disabled}
           aria-label={`How item ${n} is verified`}
           onChange={(event) =>
-            onChange({ verificationType: event.target.value as ChecklistVerificationType })
+            onChange({
+              verificationType: event.target.value as ChecklistVerificationType,
+            })
           }
         >
           {VERIFICATION_TYPE_OPTIONS.map((option) => (
@@ -127,7 +136,9 @@ function ItemFields({
             disabled={disabled}
             placeholder={testIdentifierPlaceholder(item.verificationType)}
             aria-label={`Test identifier for item ${n}`}
-            onChange={(event) => onChange({ testIdentifier: event.target.value })}
+            onChange={(event) =>
+              onChange({ testIdentifier: event.target.value })
+            }
           />
         </label>
       ) : null}
@@ -156,9 +167,9 @@ function ItemRow({
 }>) {
   const n = index + 1;
   return (
-    <div className={`qa-edit-item${error ? " qa-edit-item--invalid" : ""}`}>
+    <div className={`qa-edit-item${error ? ' qa-edit-item--invalid' : ''}`}>
       <span className="qa-item__pos" aria-hidden="true">
-        {String(n).padStart(2, "0")}
+        {String(n).padStart(2, '0')}
       </span>
       <div className="qa-edit-item__body">
         <div className="qa-edit-item__top">
@@ -180,7 +191,12 @@ function ItemRow({
             onRemove={onRemove}
           />
         </div>
-        <ItemFields item={item} index={index} disabled={disabled} onChange={onChange} />
+        <ItemFields
+          item={item}
+          index={index}
+          disabled={disabled}
+          onChange={onChange}
+        />
         <textarea
           className="hier-textarea qa-edit-item__desc"
           rows={2}
@@ -256,7 +272,12 @@ export function ChecklistItemsEditor({
           </AnimatePresence>
         </ol>
       )}
-      <button type="button" className="qa-add-item" disabled={disabled} onClick={onAdd}>
+      <button
+        type="button"
+        className="qa-add-item"
+        disabled={disabled}
+        onClick={onAdd}
+      >
         <PlusIcon />
         Add item
       </button>

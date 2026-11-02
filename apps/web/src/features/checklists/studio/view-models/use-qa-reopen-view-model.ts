@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { qaRunsRepository } from "../../data/qa-runs-repository";
-import { isSignedOff, qaActionError } from "../../model/qa-run-rules";
-import type { QaActionError, QaRun } from "../../model/qa-run-types";
+import { qaRunsRepository } from '../../data/qa-runs-repository';
+import { isSignedOff, qaActionError } from '../../model/qa-run-rules';
+import type { QaActionError, QaRun } from '../../model/qa-run-types';
 
 export interface QaReopenViewModel {
-  status: "idle" | "reopening";
+  status: 'idle' | 'reopening';
   /** Server-decided, and only for a run that is signed off. */
   canReopen: boolean;
   /** The confirmation is open: reopening removes the sign-off the merge waits on. */
@@ -21,7 +21,7 @@ export interface QaReopenViewModel {
   reopen: () => Promise<void>;
 }
 
-const REOPEN_ERROR = "The run could not be reopened. Try again in a moment.";
+const REOPEN_ERROR = 'The run could not be reopened. Try again in a moment.';
 
 /**
  * Reopening any signed-off run (repository or Project), so its items can
@@ -54,7 +54,7 @@ export function useReopenRunViewModel(options: {
   }
 
   return {
-    status: reopening ? "reopening" : "idle",
+    status: reopening ? 'reopening' : 'idle',
     canReopen,
     confirming: canReopen && confirming,
     error,

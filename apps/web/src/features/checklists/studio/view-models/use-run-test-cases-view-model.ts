@@ -1,13 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { projectQaRunsRepository } from "../../data/project-qa-runs-repository";
-import { testCasesRepository } from "../../data/test-cases-repository";
-import type { ProjectQaRun, ProjectQaRunItem, ProjectQaRunPermissions } from "../../model/project-run-types";
-import { qaActionError } from "../../model/qa-run-rules";
-import { blankToNull, testCaseFormError } from "../../model/test-case-rules";
-import type { RunTestCase, RunTestCategory, TestCaseForm, TestCaseStatus } from "../../model/test-case-types";
+import { projectQaRunsRepository } from '../../data/project-qa-runs-repository';
+import { testCasesRepository } from '../../data/test-cases-repository';
+import type {
+  ProjectQaRun,
+  ProjectQaRunItem,
+  ProjectQaRunPermissions,
+} from '../../model/project-run-types';
+import { qaActionError } from '../../model/qa-run-rules';
+import { blankToNull, testCaseFormError } from '../../model/test-case-rules';
+import type {
+  RunTestCase,
+  RunTestCategory,
+  TestCaseForm,
+  TestCaseStatus,
+} from '../../model/test-case-types';
 
 export interface RunTestCasesError {
   itemId: string;
@@ -29,54 +38,98 @@ export interface RunTestCasesViewModel {
   error: RunTestCasesError | null;
   /** `category:<id>` or `case:<id>` while its Delete waits for a second click. */
   confirmingDelete: string | null;
-  setResult: (item: ProjectQaRunItem, testCase: RunTestCase, status: TestCaseStatus) => void;
+  setResult: (
+    item: ProjectQaRunItem,
+    testCase: RunTestCase,
+    status: TestCaseStatus,
+  ) => void;
   openForm: (form: TestCaseForm) => void;
-  updateForm: (patch: Partial<Record<"name" | "title" | "expectedResult" | "notes", string>>) => void;
+  updateForm: (
+    patch: Partial<
+      Record<'name' | 'title' | 'expectedResult' | 'notes', string>
+    >,
+  ) => void;
   closeForm: () => void;
   submitForm: (item: ProjectQaRunItem) => Promise<void>;
   askDelete: (key: string) => void;
   cancelDelete: () => void;
-  deleteCategory: (item: ProjectQaRunItem, category: RunTestCategory) => Promise<void>;
-  deleteTestCase: (item: ProjectQaRunItem, testCase: RunTestCase) => Promise<void>;
+  deleteCategory: (
+    item: ProjectQaRunItem,
+    category: RunTestCategory,
+  ) => Promise<void>;
+  deleteTestCase: (
+    item: ProjectQaRunItem,
+    testCase: RunTestCase,
+  ) => Promise<void>;
   dismissError: () => void;
 }
 
-const RESULT_ERROR = "The test case result could not be saved. Try again in a moment.";
-const WRITE_ERROR = "The test cases could not be saved. Try again in a moment.";
+const RESULT_ERROR =
+  'The test case result could not be saved. Try again in a moment.';
+const WRITE_ERROR = 'The test cases could not be saved. Try again in a moment.';
 
 /** The story behind a run item, when test cases can be written for it. */
-function storyOf(item: ProjectQaRunItem): { requirementId: string; itemId: string } | null {
-  if (item.requirementKind !== "functional" || !item.requirementId || !item.sourceItemId) return null;
+function storyOf(
+  item: ProjectQaRunItem,
+): { requirementId: string; itemId: string } | null {
+  if (
+    item.requirementKind !== 'functional' ||
+    !item.requirementId ||
+    !item.sourceItemId
+  )
+    return null;
   return { requirementId: item.requirementId, itemId: item.sourceItemId };
 }
 
 type Story = { requirementId: string; itemId: string };
 
 /** The definition write a form sends, or null for a note (a result write, not a definition). */
-function definitionWrite(form: TestCaseForm): ((story: Story) => Promise<unknown>) | null {
+function definitionWrite(
+  form: TestCaseForm,
+): ((story: Story) => Promise<unknown>) | null {
   switch (form.mode) {
-    case "add-category":
-      return (story) => testCasesRepository.addCategory(story.requirementId, story.itemId, form.name.trim());
-    case "rename-category":
+    case 'add-category':
       return (story) =>
-        testCasesRepository.renameCategory(story.requirementId, story.itemId, form.categoryId, {
-          name: form.name.trim(),
-          expectedRowVersion: form.rowVersion,
-        });
-    case "add-case":
+        testCasesRepository.addCategory(
+          story.requirementId,
+          story.itemId,
+          form.name.trim(),
+        );
+    case 'rename-category':
       return (story) =>
-        testCasesRepository.addTestCase(story.requirementId, story.itemId, form.categoryId, {
-          title: form.title.trim(),
-          expectedResult: blankToNull(form.expectedResult),
-        });
-    case "edit-case":
+        testCasesRepository.renameCategory(
+          story.requirementId,
+          story.itemId,
+          form.categoryId,
+          {
+            name: form.name.trim(),
+            expectedRowVersion: form.rowVersion,
+          },
+        );
+    case 'add-case':
       return (story) =>
-        testCasesRepository.updateTestCase(story.requirementId, story.itemId, form.testCaseId, {
-          title: form.title.trim(),
-          expectedResult: blankToNull(form.expectedResult),
-          expectedRowVersion: form.rowVersion,
-        });
-    case "note":
+        testCasesRepository.addTestCase(
+          story.requirementId,
+          story.itemId,
+          form.categoryId,
+          {
+            title: form.title.trim(),
+            expectedResult: blankToNull(form.expectedResult),
+          },
+        );
+    case 'edit-case':
+      return (story) =>
+        testCasesRepository.updateTestCase(
+          story.requirementId,
+          story.itemId,
+          form.testCaseId,
+          {
+            title: form.title.trim(),
+            expectedResult: blankToNull(form.expectedResult),
+            expectedRowVersion: form.rowVersion,
+          },
+        );
+    case 'note':
       return null;
   }
 }
@@ -105,17 +158,23 @@ export function useRunTestCasesViewModel(options: {
   const [error, setError] = useState<RunTestCasesError | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
-  const open = run.status === "open";
+  const open = run.status === 'open';
   // The QA Team records results; a Product owner reads them.
   const canRecord = open && permissions.canRecordTestCases;
-  const canManage = (item: ProjectQaRunItem) => open && permissions.canManageTestCases && storyOf(item) !== null;
+  const canManage = (item: ProjectQaRunItem) =>
+    open && permissions.canManageTestCases && storyOf(item) !== null;
 
   function closeForm() {
     setForm(null);
     setAttempted(false);
   }
 
-  async function write(item: ProjectQaRunItem, key: string, fallback: string, action: () => Promise<ProjectQaRun | null>) {
+  async function write(
+    item: ProjectQaRunItem,
+    key: string,
+    fallback: string,
+    action: () => Promise<ProjectQaRun | null>,
+  ) {
     setBusyKey(key);
     setError(null);
     try {
@@ -132,7 +191,11 @@ export function useRunTestCasesViewModel(options: {
   }
 
   /** A definition write: the reply is the story's set, so the run (which the server re-synced) is read again. */
-  async function define(item: ProjectQaRunItem, key: string, action: (story: Story) => Promise<unknown>) {
+  async function define(
+    item: ProjectQaRunItem,
+    key: string,
+    action: (story: Story) => Promise<unknown>,
+  ) {
     const story = storyOf(item);
     if (!story || !canManage(item)) return false;
     return write(item, key, WRITE_ERROR, async () => {
@@ -141,24 +204,49 @@ export function useRunTestCasesViewModel(options: {
     });
   }
 
-  function setResult(item: ProjectQaRunItem, testCase: RunTestCase, status: TestCaseStatus) {
-    if (!canRecord || busyKey || status === testCase.status || testCase.rowVersion === null) return;
+  function setResult(
+    item: ProjectQaRunItem,
+    testCase: RunTestCase,
+    status: TestCaseStatus,
+  ) {
+    if (
+      !canRecord ||
+      busyKey ||
+      status === testCase.status ||
+      testCase.rowVersion === null
+    )
+      return;
     const expectedRowVersion = testCase.rowVersion;
     void write(item, testCase.id, RESULT_ERROR, () =>
-      projectQaRunsRepository.setTestCaseResult(deliveryProjectId, run.id, item.id, testCase.id, {
-        status,
-        expectedRowVersion,
-      }),
+      projectQaRunsRepository.setTestCaseResult(
+        deliveryProjectId,
+        run.id,
+        item.id,
+        testCase.id,
+        {
+          status,
+          expectedRowVersion,
+        },
+      ),
     );
   }
 
-  async function saveNote(item: ProjectQaRunItem, form: Extract<TestCaseForm, { mode: "note" }>) {
+  async function saveNote(
+    item: ProjectQaRunItem,
+    form: Extract<TestCaseForm, { mode: 'note' }>,
+  ) {
     if (!canRecord) return false;
-    return write(item, "form", RESULT_ERROR, () =>
-      projectQaRunsRepository.setTestCaseResult(deliveryProjectId, run.id, item.id, form.runTestCaseId, {
-        notes: blankToNull(form.notes),
-        expectedRowVersion: form.rowVersion,
-      }),
+    return write(item, 'form', RESULT_ERROR, () =>
+      projectQaRunsRepository.setTestCaseResult(
+        deliveryProjectId,
+        run.id,
+        item.id,
+        form.runTestCaseId,
+        {
+          notes: blankToNull(form.notes),
+          expectedRowVersion: form.rowVersion,
+        },
+      ),
     );
   }
 
@@ -167,16 +255,28 @@ export function useRunTestCasesViewModel(options: {
     setAttempted(true);
     if (testCaseFormError(form)) return;
     const action = definitionWrite(form);
-    const saved = form.mode === "note" ? await saveNote(item, form) : action ? await define(item, "form", action) : false;
+    const saved =
+      form.mode === 'note'
+        ? await saveNote(item, form)
+        : action
+          ? await define(item, 'form', action)
+          : false;
     if (saved) closeForm();
   }
 
-  async function deleteCategory(item: ProjectQaRunItem, category: RunTestCategory) {
+  async function deleteCategory(
+    item: ProjectQaRunItem,
+    category: RunTestCategory,
+  ) {
     const categoryId = category.id;
     if (!categoryId) return;
     setConfirmingDelete(null);
     await define(item, `category:${categoryId}`, (story) =>
-      testCasesRepository.deleteCategory(story.requirementId, story.itemId, categoryId),
+      testCasesRepository.deleteCategory(
+        story.requirementId,
+        story.itemId,
+        categoryId,
+      ),
     );
   }
 
@@ -185,7 +285,11 @@ export function useRunTestCasesViewModel(options: {
     if (!testCaseId) return;
     setConfirmingDelete(null);
     await define(item, `case:${testCase.id}`, (story) =>
-      testCasesRepository.deleteTestCase(story.requirementId, story.itemId, testCaseId),
+      testCasesRepository.deleteTestCase(
+        story.requirementId,
+        story.itemId,
+        testCaseId,
+      ),
     );
   }
 
@@ -204,7 +308,10 @@ export function useRunTestCasesViewModel(options: {
       setError(null);
       setConfirmingDelete(null);
     },
-    updateForm: (patch) => setForm((current) => (current ? ({ ...current, ...patch } as TestCaseForm) : current)),
+    updateForm: (patch) =>
+      setForm((current) =>
+        current ? ({ ...current, ...patch } as TestCaseForm) : current,
+      ),
     closeForm,
     submitForm,
     askDelete: (key) => setConfirmingDelete(key),

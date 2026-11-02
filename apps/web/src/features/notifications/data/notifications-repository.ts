@@ -1,10 +1,10 @@
-import { request } from "@/shared/api/request";
+import { request } from '@/shared/api/request';
 
 import type {
   NotificationPreferences,
   NotificationsResponse,
   UpdateNotificationPreferencesRequest,
-} from "../model/notifications-types";
+} from '../model/notifications-types';
 
 /* The only place in this domain that performs I/O.
  *
@@ -13,25 +13,25 @@ import type {
 
 export const notificationsRepository = {
   async list(): Promise<NotificationsResponse> {
-    return request<NotificationsResponse>("/notifications");
+    return request<NotificationsResponse>('/notifications');
   },
 
   async markRead(id: string): Promise<{ id: string; read: true }> {
     return request<{ id: string; read: true }>(
       `/notifications/${encodeURIComponent(id)}/read`,
-      { method: "POST" },
+      { method: 'POST' },
     );
   },
 
   async getPreferences(): Promise<NotificationPreferences> {
-    return request<NotificationPreferences>("/notifications/preferences");
+    return request<NotificationPreferences>('/notifications/preferences');
   },
 
   async updatePreferences(
     payload: UpdateNotificationPreferencesRequest,
   ): Promise<NotificationPreferences> {
-    return request<NotificationPreferences>("/notifications/preferences", {
-      method: "PATCH",
+    return request<NotificationPreferences>('/notifications/preferences', {
+      method: 'PATCH',
       body: JSON.stringify(payload),
     });
   },

@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import "./qa-alerts.css";
+import './qa-alerts.css';
 
-import Link from "next/link";
+import Link from 'next/link';
 
 import {
   notificationAlertHref,
   isMembershipNotification,
   isQaSignoff,
-} from "../../model/notifications-rules";
-import type { NotificationItem } from "../../model/notifications-types";
+} from '../../model/notifications-rules';
+import type { NotificationItem } from '../../model/notifications-types';
 
 function alertLinkLabel(alert: NotificationItem): string {
-  if (isMembershipNotification(alert)) return "Open workspace";
-  if (isQaSignoff(alert)) return "Check it in PO Studio";
-  return "Open item";
+  if (isMembershipNotification(alert)) return 'Open workspace';
+  if (isQaSignoff(alert)) return 'Check it in PO Studio';
+  return 'Open item';
 }
 
 function AlertIcon() {

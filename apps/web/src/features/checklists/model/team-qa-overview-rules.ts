@@ -5,8 +5,8 @@
  * as a fact, and never a crash. A Project or requirement without an id is
  * dropped. */
 
-import type { QaRunStatus, QaVerdict } from "./qa-run-types";
-import type { ProgressCounts, RequirementKind } from "./requirement-types";
+import type { QaRunStatus, QaVerdict } from './qa-run-types';
+import type { ProgressCounts, RequirementKind } from './requirement-types';
 import type {
   TeamQaDefectCounts,
   TeamQaIteration,
@@ -19,17 +19,33 @@ import type {
   TeamQaPromotion,
   TeamQaRequirementSummary,
   TeamQaVerificationCounts,
-} from "./team-qa-overview-types";
-import { oneOf, positiveInt, record, records, text, type Loose } from "./wire-readers";
+} from './team-qa-overview-types';
+import {
+  oneOf,
+  positiveInt,
+  record,
+  records,
+  text,
+  type Loose,
+} from './wire-readers';
 
-const KINDS: ReadonlyArray<RequirementKind> = ["functional", "system"];
-const RUN_STATUSES: ReadonlyArray<QaRunStatus> = ["open", "signed_off"];
-const VERDICTS: ReadonlyArray<QaVerdict> = ["APPROVED", "REJECTED", "CONDITIONAL"];
-const MEMBERSHIPS: ReadonlyArray<TeamQaMembership> = ["developer", "qa"];
-const ITERATION_STATUSES: ReadonlyArray<TeamQaIteration["status"]> = ["active", "delivered"];
+const KINDS: ReadonlyArray<RequirementKind> = ['functional', 'system'];
+const RUN_STATUSES: ReadonlyArray<QaRunStatus> = ['open', 'signed_off'];
+const VERDICTS: ReadonlyArray<QaVerdict> = [
+  'APPROVED',
+  'REJECTED',
+  'CONDITIONAL',
+];
+const MEMBERSHIPS: ReadonlyArray<TeamQaMembership> = ['developer', 'qa'];
+const ITERATION_STATUSES: ReadonlyArray<TeamQaIteration['status']> = [
+  'active',
+  'delivered',
+];
 
 function countOrNull(value: unknown): number | null {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0
+    ? value
+    : null;
 }
 
 function count(value: unknown): number {
@@ -54,7 +70,11 @@ function verificationFrom(value: unknown): TeamQaVerificationCounts | null {
 
 function progressFrom(value: unknown): ProgressCounts {
   const raw = record(value) ?? {};
-  return { todo: count(raw.todo), in_progress: count(raw.in_progress), done: count(raw.done) };
+  return {
+    todo: count(raw.todo),
+    in_progress: count(raw.in_progress),
+    done: count(raw.done),
+  };
 }
 
 function requirementFrom(raw: Loose): TeamQaRequirementSummary | null {
@@ -62,8 +82,8 @@ function requirementFrom(raw: Loose): TeamQaRequirementSummary | null {
   if (!id) return null;
   return {
     id,
-    kind: oneOf(raw.kind, KINDS) ?? "system",
-    name: text(raw.name) ?? "Untitled requirement",
+    kind: oneOf(raw.kind, KINDS) ?? 'system',
+    name: text(raw.name) ?? 'Untitled requirement',
     itemCount: count(raw.itemCount),
     progressCounts: progressFrom(raw.progressCounts),
     verification: verificationFrom(raw.verification),
@@ -103,7 +123,7 @@ function defectsFrom(value: unknown): TeamQaDefectCounts | null {
   };
 }
 
-function membersFrom(value: unknown): TeamQaProjectCounts["members"] {
+function membersFrom(value: unknown): TeamQaProjectCounts['members'] {
   const raw = record(value);
   if (!raw) return null;
   return { developer: count(raw.developer), qa: count(raw.qa) };
@@ -142,8 +162,10 @@ function projectFrom(group: Loose): TeamQaProject | null {
   const id = text(deliveryProject.id);
   if (!id) return null;
   return {
-    deliveryProject: { id, name: text(deliveryProject.name) ?? "Project" },
-    requirements: records(group.requirements).map(requirementFrom).filter(isPresent),
+    deliveryProject: { id, name: text(deliveryProject.name) ?? 'Project' },
+    requirements: records(group.requirements)
+      .map(requirementFrom)
+      .filter(isPresent),
     latestRun: latestRunFrom(group.latestRun),
     counts: countsFrom(group.counts),
     promotion: promotionFrom(group.promotion),
@@ -154,10 +176,10 @@ function projectFrom(group: Loose): TeamQaProject | null {
 
 function supportsFrom(groups: ReadonlyArray<Loose>): TeamQaOverviewSupport {
   return {
-    latestRun: groups.some((group) => "latestRun" in group),
+    latestRun: groups.some((group) => 'latestRun' in group),
     counts: groups.some((group) => record(group.counts) !== null),
-    promotion: groups.some((group) => "promotion" in group),
-    viewerMembership: groups.some((group) => "viewerMembership" in group),
+    promotion: groups.some((group) => 'promotion' in group),
+    viewerMembership: groups.some((group) => 'viewerMembership' in group),
   };
 }
 

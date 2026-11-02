@@ -6,16 +6,24 @@
 export type Loose = Record<string, unknown>;
 
 export function record(value: unknown): Loose | null {
-  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Loose) : null;
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Loose)
+    : null;
 }
 
-export function oneOf<T extends string>(value: unknown, allowed: ReadonlyArray<T>): T | null {
-  return typeof value === "string" && (allowed as ReadonlyArray<string>).includes(value) ? (value as T) : null;
+export function oneOf<T extends string>(
+  value: unknown,
+  allowed: ReadonlyArray<T>,
+): T | null {
+  return typeof value === 'string' &&
+    (allowed as ReadonlyArray<string>).includes(value)
+    ? (value as T)
+    : null;
 }
 
 /** Trimmed, non-empty text; anything else is null. */
 export function text(value: unknown): string | null {
-  if (typeof value !== "string") return null;
+  if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed || null;
 }
@@ -28,7 +36,9 @@ export function texts(value: unknown): string[] {
 
 /** A whole, positive number (a PR number, a row version); else null. */
 export function positiveInt(value: unknown): number | null {
-  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+    ? value
+    : null;
 }
 
 /** Only an absolute https URL is ever rendered as a link. */
@@ -52,7 +62,7 @@ export function records(value: unknown): Loose[] {
 
 export function errorStatus(cause: unknown): number | null {
   const status = record(cause)?.status;
-  return typeof status === "number" ? status : null;
+  return typeof status === 'number' ? status : null;
 }
 
 export function errorDetails(cause: unknown): Loose | null {
@@ -63,12 +73,12 @@ export function errorDetails(cause: unknown): Loose | null {
 export function errorCode(cause: unknown): string {
   const details = errorDetails(cause);
   const code = details?.code ?? record(details?.error)?.code;
-  return typeof code === "string" ? code.toUpperCase() : "";
+  return typeof code === 'string' ? code.toUpperCase() : '';
 }
 
 /** The server's sentence. Nest sends validation messages as an array. */
 export function errorMessage(cause: unknown): string | null {
   const message = errorDetails(cause)?.message;
-  if (Array.isArray(message)) return text(texts(message).join(" "));
+  if (Array.isArray(message)) return text(texts(message).join(' '));
   return text(message);
 }

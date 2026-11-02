@@ -8,24 +8,27 @@
 import type {
   ChecklistTargetPersona,
   ChecklistVerificationType,
-} from "./checklist-types";
-import type { QaAutomatedResultWire, QaRunAutomationWire } from "./qa-automation-types";
+} from './checklist-types';
+import type {
+  QaAutomatedResultWire,
+  QaRunAutomationWire,
+} from './qa-automation-types';
 
 export type QaRunItemStatus =
-  | "pending"
-  | "in_progress"
-  | "passed"
-  | "failed"
-  | "blocked"
-  | "returned_to_dev";
+  | 'pending'
+  | 'in_progress'
+  | 'passed'
+  | 'failed'
+  | 'blocked'
+  | 'returned_to_dev';
 
-export type QaDefectSeverity = "blocker" | "major" | "minor";
+export type QaDefectSeverity = 'blocker' | 'major' | 'minor';
 
-export type QaVerdict = "APPROVED" | "REJECTED" | "CONDITIONAL";
+export type QaVerdict = 'APPROVED' | 'REJECTED' | 'CONDITIONAL';
 
-export type QaCommitSource = "deployment" | "branch_head";
+export type QaCommitSource = 'deployment' | 'branch_head';
 
-export type QaRunStatus = "open" | "signed_off";
+export type QaRunStatus = 'open' | 'signed_off';
 
 export interface QaActor {
   id: string;
@@ -193,7 +196,7 @@ export interface QaSignoffInput {
 export interface QaItemDraft {
   status: QaRunItemStatus;
   notes: string;
-  defectSeverity: QaDefectSeverity | "";
+  defectSeverity: QaDefectSeverity | '';
   reproductionSteps: string;
 }
 

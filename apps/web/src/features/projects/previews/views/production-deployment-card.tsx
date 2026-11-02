@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   useEffect,
@@ -7,18 +7,18 @@ import {
   useState,
   type CSSProperties,
   type ReactNode,
-} from "react";
+} from 'react';
 
 import {
   DeploymentLogTail,
   type DeploymentLogFocus,
-} from "@/features/projects/deployment-logs";
+} from '@/features/projects/deployment-logs';
 import {
   deployDurationLabel,
   deployDotTone,
   deployStatusWord,
   deployTriggerLabel,
-} from "../../model/deploy-facts-rules";
+} from '../../model/deploy-facts-rules';
 import {
   canFramePreview,
   createdLabel,
@@ -32,18 +32,14 @@ import {
   previewSurface,
   previewUnavailableReason,
   shortCommitSha,
-} from "../../model/projects-rules";
+} from '../../model/projects-rules';
 import type {
   ProjectBranchPreview,
   ProjectBranchPreviewSurface,
-} from "../../model/projects-types";
-import type { ProjectPreviewDeploy } from "@/shared/api/contracts";
-import { useDashboardOrigin } from "../view-models/use-dashboard-origin";
-import {
-  BranchIcon,
-  CommitIcon,
-  ExternalIcon,
-} from "./deployment-icons";
+} from '../../model/projects-types';
+import type { ProjectPreviewDeploy } from '@/shared/api/contracts';
+import { useDashboardOrigin } from '../view-models/use-dashboard-origin';
+import { BranchIcon, CommitIcon, ExternalIcon } from './deployment-icons';
 
 /** The width the framed page lays out at before it is scaled into the card. */
 const THUMBNAIL_LAYOUT_WIDTH = 1280;
@@ -72,7 +68,7 @@ function useThumbnailScale() {
 
   useEffect(() => {
     const box = ref.current;
-    if (!box || typeof ResizeObserver === "undefined") return;
+    if (!box || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(([entry]) => {
       if (entry) setScale(entry.contentRect.width / THUMBNAIL_LAYOUT_WIDTH);
     });
@@ -101,7 +97,7 @@ function FramedThumbnail({ url }: Readonly<{ url: string }>) {
     <div
       className="deploy-card__thumb"
       ref={ref}
-      style={{ "--thumb-scale": scale } as CSSProperties}
+      style={{ '--thumb-scale': scale } as CSSProperties}
     >
       {!loaded ? (
         <p className="deploy-card__thumb-status">Loading preview…</p>
@@ -152,7 +148,8 @@ function PageSurface({ preview }: SurfaceProps) {
  * deployed" state as the page surface stands in.
  */
 function LogsSurface({ preview, projectId, onOpenFullLogs }: SurfaceProps) {
-  if (!preview.logWindow || !projectId) return <EmptySurface preview={preview} />;
+  if (!preview.logWindow || !projectId)
+    return <EmptySurface preview={preview} />;
   return (
     <DeploymentLogTail
       logWindow={preview.logWindow}
@@ -182,7 +179,11 @@ function Fact({
   children,
 }: Readonly<{ label: string; wide?: boolean; children: React.ReactNode }>) {
   return (
-    <div className={wide ? "deploy-card__fact deploy-card__fact--wide" : "deploy-card__fact"}>
+    <div
+      className={
+        wide ? 'deploy-card__fact deploy-card__fact--wide' : 'deploy-card__fact'
+      }
+    >
       <dt>{label}</dt>
       <dd>{children}</dd>
     </div>
@@ -210,7 +211,7 @@ function ExternalLink({ href }: Readonly<{ href: string }>) {
  */
 function DomainValue({ preview }: CardProps) {
   if (!preview.previewUrl) return <>—</>;
-  if (preview.status === "not_deployed") {
+  if (preview.status === 'not_deployed') {
     return (
       <code className="branch-preview__pending-url">
         {displayHost(preview.previewUrl)}
@@ -287,7 +288,9 @@ function DeploymentFacts({ preview }: CardProps) {
 }
 
 /** One deploy: its status, commit, how it started and how long it took. */
-function RecentDeployRow({ deploy }: Readonly<{ deploy: ProjectPreviewDeploy }>) {
+function RecentDeployRow({
+  deploy,
+}: Readonly<{ deploy: ProjectPreviewDeploy }>) {
   const sha = shortCommitSha(deploy.commitSha);
   const trigger = deployTriggerLabel(deploy.trigger);
   const took = deployDurationLabel(deploy);
@@ -302,10 +305,16 @@ function RecentDeployRow({ deploy }: Readonly<{ deploy: ProjectPreviewDeploy }>)
       </span>
       <span className="deploy-card__deploy-commit">
         {sha ? <span className="deploy-card__sha">{sha}</span> : null}
-        {deploy.commitMessage ? <span className="deploy-card__commit-message">{deploy.commitMessage}</span> : null}
+        {deploy.commitMessage ? (
+          <span className="deploy-card__commit-message">
+            {deploy.commitMessage}
+          </span>
+        ) : null}
       </span>
       <span className="deploy-card__deploy-meta">
-        {[trigger, took, deployedAgo(deploy.createdAt)].filter(Boolean).join(" · ")}
+        {[trigger, took, deployedAgo(deploy.createdAt)]
+          .filter(Boolean)
+          .join(' · ')}
       </span>
     </li>
   );
@@ -332,7 +341,12 @@ function RecentDeploys({ preview }: CardProps) {
       >
         Recent deploys ({deploys.length})
       </button>
-      <ul aria-label="Recent deploys" className="deploy-card__deploys" hidden={!open} id={listId}>
+      <ul
+        aria-label="Recent deploys"
+        className="deploy-card__deploys"
+        hidden={!open}
+        id={listId}
+      >
         {deploys.map((deploy) => (
           <RecentDeployRow deploy={deploy} key={deploy.id} />
         ))}
@@ -343,7 +357,7 @@ function RecentDeploys({ preview }: CardProps) {
 
 /** Visit once something is live. No provider dashboard: those are ALPHACI's own accounts. */
 function DeploymentActions({ preview }: CardProps) {
-  const deployed = preview.status !== "not_deployed";
+  const deployed = preview.status !== 'not_deployed';
 
   return (
     <div className="deploy-card__actions">

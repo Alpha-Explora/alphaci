@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   compareProjectBranches,
@@ -8,10 +8,10 @@ import {
   getProjectBranches,
   type BranchComparisonResponse,
   type PullRequestSummary,
-} from "../data/project-workspace-api";
-import type { AppRole } from "@/shared/api/contracts";
-import { apiErrorReason } from "../model/api-error-reason";
-import { workspacePermissionErrorMessage } from "../model/workspace-permission-errors";
+} from '../data/project-workspace-api';
+import type { AppRole } from '@/shared/api/contracts';
+import { apiErrorReason } from '../model/api-error-reason';
+import { workspacePermissionErrorMessage } from '../model/workspace-permission-errors';
 import {
   applyPreset,
   canCreatePullRequest,
@@ -25,7 +25,7 @@ import {
   type ComposeReadiness,
   type PullRequestPreset,
   type PullRequestPresetId,
-} from "../model/pull-request-compose-rules";
+} from '../model/pull-request-compose-rules';
 
 /*
  * Re-exported so the compose View can name what it renders without importing
@@ -48,12 +48,7 @@ export type {
  * which of the two to repeat.
  */
 export type ComposeStatus =
-  | "loading"
-  | "choosing"
-  | "comparing"
-  | "ready"
-  | "submitting"
-  | "error";
+  'loading' | 'choosing' | 'comparing' | 'ready' | 'submitting' | 'error';
 
 export interface CreatePullRequestViewModel {
   status: ComposeStatus;
@@ -102,21 +97,19 @@ export function useCreatePullRequestViewModel(options: {
 }): CreatePullRequestViewModel {
   const { projectId, appRole, viewerLogin, onCreated } = options;
 
-  const [status, setStatus] = useState<ComposeStatus>("loading");
+  const [status, setStatus] = useState<ComposeStatus>('loading');
   const [error, setError] = useState<string | null>(null);
   const [branchesLoaded, setBranchesLoaded] = useState(false);
   const [branches, setBranches] = useState<string[]>([]);
-  const [base, setBaseState] = useState("");
-  const [head, setHeadState] = useState("");
-  const [preset, setPreset] = useState<PullRequestPresetId>("custom");
-  const [compare, setCompare] = useState<BranchComparisonResponse | null>(
-    null,
-  );
-  const [title, setTitleState] = useState("");
+  const [base, setBaseState] = useState('');
+  const [head, setHeadState] = useState('');
+  const [preset, setPreset] = useState<PullRequestPresetId>('custom');
+  const [compare, setCompare] = useState<BranchComparisonResponse | null>(null);
+  const [title, setTitleState] = useState('');
   // A ref, not state: reading it must not change `runCompare`'s identity, or
   // the branch list would be re-fetched every time the title is first typed.
   const titleEdited = useRef(false);
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState('');
   const [draft, setDraft] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
 
@@ -135,17 +128,17 @@ export function useCreatePullRequestViewModel(options: {
       setSubmitMessage(null);
 
       if (!nextBase || !nextHead || nextBase === nextHead) {
-        setStatus("choosing");
+        setStatus('choosing');
         return;
       }
 
-      setStatus("comparing");
+      setStatus('comparing');
       compareProjectBranches(projectId, nextBase, nextHead)
         .then((result) => {
           if (request !== compareRequest.current) return;
           setCompare(result);
           setError(null);
-          setStatus("ready");
+          setStatus('ready');
           // A title the person typed is theirs; only an untouched one follows
           // the branch they picked.
           if (!titleEdited.current) {
@@ -155,9 +148,9 @@ export function useCreatePullRequestViewModel(options: {
         .catch((cause: unknown) => {
           if (request !== compareRequest.current) return;
           setError(
-            apiErrorReason(cause, "The branches could not be compared."),
+            apiErrorReason(cause, 'The branches could not be compared.'),
           );
-          setStatus("error");
+          setStatus('error');
         });
     },
     [projectId],
@@ -180,18 +173,18 @@ export function useCreatePullRequestViewModel(options: {
         const applied = applyPreset(initial, context);
         setPreset(initial);
         setBaseState(applied?.base ?? defaultComposeBase(names, appRole));
-        setHeadState(applied?.head ?? "");
+        setHeadState(applied?.head ?? '');
         if (applied?.head) {
           runCompare(applied.base, applied.head);
         } else {
-          setStatus("choosing");
+          setStatus('choosing');
         }
       })
       .catch((cause: unknown) => {
         setError(
-          apiErrorReason(cause, "The branches could not be read from GitHub."),
+          apiErrorReason(cause, 'The branches could not be read from GitHub.'),
         );
-        setStatus("error");
+        setStatus('error');
       });
   }, [projectId, appRole, viewerLogin, runCompare]);
 
@@ -217,7 +210,7 @@ export function useCreatePullRequestViewModel(options: {
       isPullRequestRole(appRole)
         ? PULL_REQUEST_PRESET_IDS
             // Custom could produce feature -> uat, so a Developer never sees it.
-            .filter((id) => !(appRole === "member" && id === "custom"))
+            .filter((id) => !(appRole === 'member' && id === 'custom'))
             .map((id) => presetFor(id, context))
         : [],
     [appRole, context],
@@ -250,7 +243,7 @@ export function useCreatePullRequestViewModel(options: {
 
   const swapBranches = useCallback(() => {
     // A swap is a free choice of branches, whatever preset was on.
-    setPreset("custom");
+    setPreset('custom');
     setBaseState(head);
     setHeadState(base);
     runCompare(head, base);
@@ -262,7 +255,7 @@ export function useCreatePullRequestViewModel(options: {
   }, []);
 
   const retry = useCallback(() => {
-    setStatus("loading");
+    setStatus('loading');
     if (branchesLoaded) {
       runCompare(base, head);
     } else {
@@ -276,7 +269,7 @@ export function useCreatePullRequestViewModel(options: {
   );
 
   const canSubmit =
-    status === "ready" &&
+    status === 'ready' &&
     readiness?.canCreate === true &&
     title.trim().length > 0 &&
     canCreatePullRequest(appRole, base, head);
@@ -289,7 +282,7 @@ export function useCreatePullRequestViewModel(options: {
    */
   const submit = useCallback(async () => {
     if (!canSubmit) return;
-    setStatus("submitting");
+    setStatus('submitting');
     setSubmitMessage(null);
     try {
       const result = await createProjectPullRequest(projectId, {
@@ -304,15 +297,15 @@ export function useCreatePullRequestViewModel(options: {
         return;
       }
       setSubmitMessage(result.message);
-      setStatus("ready");
+      setStatus('ready');
     } catch (cause: unknown) {
       setSubmitMessage(
         workspacePermissionErrorMessage(
           cause,
-          "The pull request could not be opened.",
+          'The pull request could not be opened.',
         ),
       );
-      setStatus("ready");
+      setStatus('ready');
     }
   }, [canSubmit, projectId, base, head, title, body, draft, onCreated]);
 

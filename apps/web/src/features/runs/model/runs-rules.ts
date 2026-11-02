@@ -7,8 +7,8 @@ import {
   PIPELINE_BRANCHES,
   isPipelineBranch,
   pipelineBranchRank,
-} from "@/shared/api/pipeline-branches";
-import { ApiError } from "@/shared/api/request";
+} from '@/shared/api/pipeline-branches';
+import { ApiError } from '@/shared/api/request';
 
 import type {
   BranchRunGroup,
@@ -16,22 +16,22 @@ import type {
   RunGroup,
   RunOverallStatus,
   RunsSummary,
-} from "./runs-types";
+} from './runs-types';
 
 export const STATUS_LABELS: Record<RunOverallStatus, string> = {
-  success: "Passed",
-  failure: "Failed",
-  running: "Running",
-  cancelled: "Cancelled",
-  partial: "Partial",
+  success: 'Passed',
+  failure: 'Failed',
+  running: 'Running',
+  cancelled: 'Cancelled',
+  partial: 'Partial',
 };
 
 export const STATUS_COLORS: Record<RunOverallStatus, string> = {
-  success: "var(--accent-teal)",
-  failure: "var(--danger)",
-  running: "var(--brand)",
-  cancelled: "var(--text-muted)",
-  partial: "var(--accent-amber)",
+  success: 'var(--accent-teal)',
+  failure: 'var(--danger)',
+  running: 'var(--brand)',
+  cancelled: 'var(--text-muted)',
+  partial: 'var(--accent-amber)',
 };
 
 function startedAtMs(run: RunGroup): number {
@@ -172,7 +172,7 @@ export function summarizeRuns(runs: RunGroup[]): RunsSummary {
 }
 
 const GENERIC_LOAD_ERROR =
-  "Could not load pipeline runs. Check your connection and try again.";
+  'Could not load pipeline runs. Check your connection and try again.';
 
 /**
  * Map a thrown value to a message that is safe to render.
@@ -185,7 +185,7 @@ export function toUserError(err: unknown): string {
 
   switch (err.status) {
     case 401:
-      return "Your session expired. Please sign in again.";
+      return 'Your session expired. Please sign in again.';
     case 403:
       return "You don't have access to this repository's runs.";
     case 404:

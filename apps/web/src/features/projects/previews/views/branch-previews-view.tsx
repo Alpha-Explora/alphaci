@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { previewKey } from "../../model/projects-rules";
-import type { ProjectPreviewsResponse } from "../../model/projects-types";
-import { BranchPreviewCard } from "./branch-preview-card";
+import { previewKey } from '../../model/projects-rules';
+import type { ProjectPreviewsResponse } from '../../model/projects-types';
+import { BranchPreviewCard } from './branch-preview-card';
 
 export interface BranchPreviewsViewProps {
   previews: ProjectPreviewsResponse | null;
-  status: "loading" | "ready" | "error";
+  status: 'loading' | 'ready' | 'error';
   error: string | null;
   /** Caps how many branches render. Used for the Overview summary placement. */
   limit?: number;
@@ -25,13 +25,20 @@ export function BranchPreviewsView({
   if (unavailable) return unavailable;
 
   const readyPreviews = previews as ProjectPreviewsResponse;
-  const shown = typeof limit === "number" ? readyPreviews.branches.slice(0, limit) : readyPreviews.branches;
+  const shown =
+    typeof limit === 'number'
+      ? readyPreviews.branches.slice(0, limit)
+      : readyPreviews.branches;
   const hidden = readyPreviews.branches.length - shown.length;
 
   return (
     <div className="branch-previews">
-      {readyPreviews.providerError ? <p className="branch-previews__error">{readyPreviews.providerError}</p> : null}
-      {shown.map((preview) => <BranchPreviewCard key={previewKey(preview)} preview={preview} />)}
+      {readyPreviews.providerError ? (
+        <p className="branch-previews__error">{readyPreviews.providerError}</p>
+      ) : null}
+      {shown.map((preview) => (
+        <BranchPreviewCard key={previewKey(preview)} preview={preview} />
+      ))}
       {hidden > 0 ? <MoreBranches hidden={hidden} moreHref={moreHref} /> : null}
     </div>
   );
@@ -39,14 +46,14 @@ export function BranchPreviewsView({
 
 function previewUnavailableState(
   previews: ProjectPreviewsResponse | null,
-  status: BranchPreviewsViewProps["status"],
+  status: BranchPreviewsViewProps['status'],
   error: string | null,
 ) {
-  if (status === "error") {
+  if (status === 'error') {
     return <p className="branch-previews__error">{error}</p>;
   }
 
-  if (status === "loading" || !previews) {
+  if (status === 'loading' || !previews) {
     return <p className="env-empty-state">Loading branch previews…</p>;
   }
 
@@ -78,14 +85,22 @@ function previewUnavailableState(
   if (previews.branches.length === 0) {
     return (
       <p className="env-empty-state">
-        No hosting target yet. Add one and each branch gets its own
-        environment here.
+        No hosting target yet. Add one and each branch gets its own environment
+        here.
       </p>
     );
   }
   return null;
 }
 
-function MoreBranches({ hidden, moreHref }: Readonly<{ hidden: number; moreHref?: string }>) {
-  return <p className="branch-previews__more">{hidden} more {hidden === 1 ? "branch" : "branches"}{moreHref ? ` in ${moreHref}` : ""}.</p>;
+function MoreBranches({
+  hidden,
+  moreHref,
+}: Readonly<{ hidden: number; moreHref?: string }>) {
+  return (
+    <p className="branch-previews__more">
+      {hidden} more {hidden === 1 ? 'branch' : 'branches'}
+      {moreHref ? ` in ${moreHref}` : ''}.
+    </p>
+  );
 }

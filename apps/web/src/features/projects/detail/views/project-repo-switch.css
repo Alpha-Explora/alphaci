@@ -83,25 +83,25 @@
     box-shadow 0.15s ease-out;
 }
 
-.repo-switch__option[data-role="frontend"] {
+.repo-switch__option[data-role='frontend'] {
   --rs-role: var(--brand);
   --rs-tint: var(--brand-light);
   --rs-edge: var(--border-brand);
 }
 
-.repo-switch__option[data-role="backend"] {
+.repo-switch__option[data-role='backend'] {
   --rs-role: var(--accent-violet);
   --rs-tint: var(--accent-violet-light);
   --rs-edge: var(--border-violet);
 }
 
-.repo-switch__option[data-role="service"] {
+.repo-switch__option[data-role='service'] {
   --rs-role: var(--accent-amber);
   --rs-tint: var(--accent-amber-light);
   --rs-edge: var(--border-amber);
 }
 
-.repo-switch__option[data-role="app"] {
+.repo-switch__option[data-role='app'] {
   --rs-role: var(--accent-emerald);
   --rs-tint: var(--accent-emerald-light);
   --rs-edge: var(--border-strong);
@@ -120,7 +120,7 @@
 
 /* The role dot: solid on the page on screen, a ring elsewhere. */
 .repo-switch__role::before {
-  content: "";
+  content: '';
   width: 0.4rem;
   height: 0.4rem;
   border: 1.5px solid var(--rs-role);
@@ -156,21 +156,21 @@
   border-left: 1px solid var(--border);
 }
 
-.repo-switch__option:not([aria-disabled="true"]):not(
-    [aria-checked="true"]
+.repo-switch__option:not([aria-disabled='true']):not(
+    [aria-checked='true']
   ):hover {
   background: var(--layer-2-hover);
   color: var(--text-primary);
 }
 
-.repo-switch__option[aria-checked="true"] {
+.repo-switch__option[aria-checked='true'] {
   background: var(--rs-tint);
   box-shadow: inset 0 0 0 1px var(--rs-edge);
   color: var(--text-primary);
   cursor: default;
 }
 
-.repo-switch__option[aria-checked="true"] .repo-switch__role::before {
+.repo-switch__option[aria-checked='true'] .repo-switch__role::before {
   background: var(--rs-role);
 }
 
@@ -180,19 +180,19 @@
 }
 
 /* Dimmed by colour, not opacity: opacity would also fade the tooltip below. */
-.repo-switch__option[aria-disabled="true"] {
+.repo-switch__option[aria-disabled='true'] {
   --rs-role: var(--text-muted);
 
   color: var(--text-muted);
   cursor: not-allowed;
 }
 
-.repo-switch__option[aria-disabled="true"] .repo-switch__role::before {
+.repo-switch__option[aria-disabled='true'] .repo-switch__role::before {
   border-style: dashed;
 }
 
 /* Opening a sibling: the dot breathes until the next page takes over. */
-.repo-switch__option[data-pending="true"] .repo-switch__role::before {
+.repo-switch__option[data-pending='true'] .repo-switch__role::before {
   animation: repo-switch-pending 0.9s ease-in-out infinite alternate;
   background: var(--rs-role);
 }
@@ -432,7 +432,7 @@
     transition: none;
   }
 
-  .repo-switch__option[data-pending="true"] .repo-switch__role::before {
+  .repo-switch__option[data-pending='true'] .repo-switch__role::before {
     animation: none;
   }
 }

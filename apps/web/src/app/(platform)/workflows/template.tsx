@@ -1,8 +1,12 @@
-"use client";
+'use client';
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from 'framer-motion';
 
-export default function WorkflowsTemplate({ children }: { children: React.ReactNode }) {
+export default function WorkflowsTemplate({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div

@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
 import {
   getProjectFileCommits,
   type RepoFileCommits,
   type RepoPathCommit,
-} from "../data/project-workspace-api";
-import type { ProjectStatus } from "../../model/projects-types";
+} from '../data/project-workspace-api';
+import type { ProjectStatus } from '../../model/projects-types';
 
 /* Re-exported so the views name these shapes without reaching into `data/`. */
 export type { RepoFileCommits, RepoPathCommit };
 
 export interface FileCommitsViewModel {
   /** `loading` until the commits for the current path and ref arrive. */
-  status: ProjectStatus | "idle";
+  status: ProjectStatus | 'idle';
   commits: RepoFileCommits | null;
 }
 
@@ -55,10 +55,9 @@ export function useFileCommitsViewModel(input: {
       });
   }, [projectId, path, ref, key]);
 
-  if (key === null) return { status: "idle", commits: null };
-  if (answer?.key !== key) return { status: "loading", commits: null };
+  if (key === null) return { status: 'idle', commits: null };
+  if (answer?.key !== key) return { status: 'loading', commits: null };
   return answer.commits
-    ? { status: "ready", commits: answer.commits }
-    : { status: "error", commits: null };
+    ? { status: 'ready', commits: answer.commits }
+    : { status: 'error', commits: null };
 }
-

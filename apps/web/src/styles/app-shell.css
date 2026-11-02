@@ -7,7 +7,7 @@
  * Extracted one surface at a time; see src/features/README.md.
  */
 
-[data-theme="light"] .app-sidebar {
+[data-theme='light'] .app-sidebar {
   background: linear-gradient(180deg, #fafafb 0%, #f2f2f4 100%);
   box-shadow:
     inset -1px 0 0 rgba(0, 0, 0, 0.06),
@@ -15,12 +15,12 @@
     4px 0 12px rgba(0, 0, 0, 0.04);
 }
 
-[data-theme="light"] .sidebar-nav-item:hover {
+[data-theme='light'] .sidebar-nav-item:hover {
   background: rgba(79, 70, 229, 0.05);
   color: var(--text-primary);
 }
 
-[data-theme="light"] .sidebar-nav-item-bg {
+[data-theme='light'] .sidebar-nav-item-bg {
   background: linear-gradient(
     135deg,
     rgba(79, 70, 229, 0.1) 0%,
@@ -29,7 +29,7 @@
   border-left-color: var(--accent-indigo);
 }
 
-[data-theme="light"] .sidebar-signout-btn:hover:not(:disabled) {
+[data-theme='light'] .sidebar-signout-btn:hover:not(:disabled) {
   background: rgba(220, 38, 38, 0.06);
   border-color: rgba(220, 38, 38, 0.2);
   color: var(--danger);
@@ -45,7 +45,7 @@
    lay out ~200px wide inside the closed column and would raise a horizontal
    scrollbar along the rail's foot. Clipping is also what makes the closed
    state read as a reveal rather than as truncation. */
-html[data-sidebar-pinned="true"] {
+html[data-sidebar-pinned='true'] {
   --sidebar-width: var(--sidebar-open);
 }
 
@@ -218,7 +218,7 @@ html[data-sidebar-pinned="true"] {
    browser's own answer to that distinction: withheld after a pointer click,
    set on keyboard focus. This one is never suppressed. */
 .app-sidebar:has(:focus-visible),
-.app-sidebar:not([data-hover-suppressed="true"]):hover {
+.app-sidebar:not([data-hover-suppressed='true']):hover {
   width: var(--sidebar-open);
   box-shadow:
     inset -1px 0 0 rgba(255, 255, 255, 0.06),
@@ -234,18 +234,18 @@ html[data-sidebar-pinned="true"] {
   transition: opacity 0.15s ease-out;
 }
 
-html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-item-label,
-html[data-sidebar-pinned="true"] .app-sidebar .sidebar-user-info,
-html[data-sidebar-pinned="true"] .app-sidebar .sidebar-signout-label,
-html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-count,
+html[data-sidebar-pinned='true'] .app-sidebar .sidebar-nav-item-label,
+html[data-sidebar-pinned='true'] .app-sidebar .sidebar-user-info,
+html[data-sidebar-pinned='true'] .app-sidebar .sidebar-signout-label,
+html[data-sidebar-pinned='true'] .app-sidebar .sidebar-nav-count,
 .app-sidebar:has(:focus-visible) .sidebar-nav-item-label,
 .app-sidebar:has(:focus-visible) .sidebar-user-info,
 .app-sidebar:has(:focus-visible) .sidebar-signout-label,
 .app-sidebar:has(:focus-visible) .sidebar-nav-count,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-nav-item-label,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-user-info,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-signout-label,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-nav-count {
+.app-sidebar:not([data-hover-suppressed='true']):hover .sidebar-nav-item-label,
+.app-sidebar:not([data-hover-suppressed='true']):hover .sidebar-user-info,
+.app-sidebar:not([data-hover-suppressed='true']):hover .sidebar-signout-label,
+.app-sidebar:not([data-hover-suppressed='true']):hover .sidebar-nav-count {
   opacity: 1;
 }
 
@@ -287,7 +287,7 @@ html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-count,
   cursor: pointer;
 }
 
-.app-sidebar .app-sidebar-toggle[aria-pressed="true"] {
+.app-sidebar .app-sidebar-toggle[aria-pressed='true'] {
   color: var(--brand);
 }
 
@@ -308,9 +308,9 @@ html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-count,
   transition: opacity 0.15s ease-out;
 }
 
-html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-dot,
+html[data-sidebar-pinned='true'] .app-sidebar .sidebar-nav-dot,
 .app-sidebar:has(:focus-visible) .sidebar-nav-dot,
-.app-sidebar:not([data-hover-suppressed="true"]):hover .sidebar-nav-dot {
+.app-sidebar:not([data-hover-suppressed='true']):hover .sidebar-nav-dot {
   opacity: 0;
 }
 
@@ -471,11 +471,11 @@ html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-dot,
 }
 
 /* Collapsed sidebar: hide the workspace chip, stack the action buttons */
-.app-sidebar[data-collapsed="true"] .sidebar-bottom-utilities {
+.app-sidebar[data-collapsed='true'] .sidebar-bottom-utilities {
   align-items: center;
 }
 
-.app-sidebar[data-collapsed="true"] .sidebar-utility-actions {
+.app-sidebar[data-collapsed='true'] .sidebar-utility-actions {
   flex-direction: column;
 }
 
@@ -552,7 +552,6 @@ html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-dot,
    These classes render only inside .app-sidebar .sidebar-account-zone, so a
    single flat specificity level is enough — no need to chase cascade order. */
 
-
 .sidebar-user-avatar-img,
 
 
@@ -623,7 +622,9 @@ html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-dot,
   padding-bottom: 0.5rem;
 }
 
-.side-rail-kicker { margin: 0 0 0.55rem; }
+.side-rail-kicker {
+  margin: 0 0 0.55rem;
+}
 
 .side-rail-scroll {
   flex: 1 1 auto;
@@ -634,12 +635,19 @@ html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-dot,
   padding: 0.1rem 0.2rem 0;
 }
 
-.side-rail-scroll::-webkit-scrollbar { width: 6px; }
+.side-rail-scroll::-webkit-scrollbar {
+  width: 6px;
+}
 
-.side-rail-scroll::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--border); }
+.side-rail-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--border);
+}
 
 /* Sidebar block that stretches to fill available height (team, activity). */
-.side-rail-block--grow { flex: 1 1 auto; }
+.side-rail-block--grow {
+  flex: 1 1 auto;
+}
 
 .side-tabs {
   position: sticky;
@@ -763,7 +771,7 @@ html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-dot,
 
 .section-divider::before,
 .section-divider::after {
-  content: "";
+  content: '';
   flex: 1;
   height: 1px;
   background: var(--border);
@@ -772,7 +780,7 @@ html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-dot,
 @media (max-width: 768px) {
   /* No room to pin on a phone: the rail stays closed, the page keeps the
      width, and the toggle that would do nothing is not offered. */
-  html[data-sidebar-pinned="true"] {
+  html[data-sidebar-pinned='true'] {
     --sidebar-width: var(--sidebar-collapsed);
   }
 
@@ -780,14 +788,14 @@ html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-dot,
     display: none;
   }
 
-  html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-item-label,
-  html[data-sidebar-pinned="true"] .app-sidebar .sidebar-user-info,
-  html[data-sidebar-pinned="true"] .app-sidebar .sidebar-signout-label,
-  html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-count {
+  html[data-sidebar-pinned='true'] .app-sidebar .sidebar-nav-item-label,
+  html[data-sidebar-pinned='true'] .app-sidebar .sidebar-user-info,
+  html[data-sidebar-pinned='true'] .app-sidebar .sidebar-signout-label,
+  html[data-sidebar-pinned='true'] .app-sidebar .sidebar-nav-count {
     opacity: 0;
   }
 
-  html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-dot {
+  html[data-sidebar-pinned='true'] .app-sidebar .sidebar-nav-dot {
     opacity: 1;
   }
 
@@ -800,6 +808,6 @@ html[data-sidebar-pinned="true"] .app-sidebar .sidebar-nav-dot,
   }
 }
 
-.app-sidebar[data-collapsed="true"] .workspace-switcher {
+.app-sidebar[data-collapsed='true'] .workspace-switcher {
   display: none;
 }

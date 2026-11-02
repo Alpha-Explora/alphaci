@@ -5,7 +5,7 @@
 const SAFE_ID = /^[A-Za-z0-9_-]{1,100}$/;
 
 function safeId(value: string | null | undefined): string | null {
-  const trimmed = value?.trim() ?? "";
+  const trimmed = value?.trim() ?? '';
   return SAFE_ID.test(trimmed) ? trimmed : null;
 }
 
@@ -18,7 +18,8 @@ export function headerTeam<T extends { id: string }>(
   teams: readonly T[],
   headerWorkspaceId: string | null | undefined,
 ): T | null {
-  if (headerWorkspaceId) return teams.find((team) => team.id === headerWorkspaceId) ?? null;
+  if (headerWorkspaceId)
+    return teams.find((team) => team.id === headerWorkspaceId) ?? null;
   return teams[0] ?? null;
 }
 
@@ -44,10 +45,10 @@ export function readProjectsDeepLink(params: {
   get: (key: string) => string | null;
 }): ProjectsDeepLink {
   return {
-    groupId: safeId(params.get("group")),
-    projectId: safeId(params.get("project")),
-    opensSetup: params.get("tab") === "setup",
-    opensNewProject: params.get("new") === "project",
+    groupId: safeId(params.get('group')),
+    projectId: safeId(params.get('project')),
+    opensSetup: params.get('tab') === 'setup',
+    opensNewProject: params.get('new') === 'project',
   };
 }
 
@@ -59,8 +60,8 @@ export function teamProjectsHref(groupId: string): string {
 /** The Projects page link that opens the New Project dialog, on a team when one is named. */
 export function newProjectHref(groupId?: string | null): string {
   const params = new URLSearchParams();
-  if (groupId) params.set("group", groupId);
-  params.set("new", "project");
+  if (groupId) params.set('group', groupId);
+  params.set('new', 'project');
   return `/workflows?${params.toString()}`;
 }
 
@@ -87,7 +88,10 @@ export function nextNewProjectTeam(
  * must not open a same-id Project here, and a wizard link's `?project=` is a
  * create target, never something to open.
  */
-export function linkedProjectFolderId(link: ProjectsDeepLink, teamId: string): string | null {
+export function linkedProjectFolderId(
+  link: ProjectsDeepLink,
+  teamId: string,
+): string | null {
   if (link.opensSetup || !link.projectId) return null;
   if (link.groupId && link.groupId !== teamId) return null;
   return link.projectId;
@@ -98,11 +102,16 @@ export function linkedProjectFolderId(link: ProjectsDeepLink, teamId: string): s
  * key is not a menu movement. Up/Down wrap, as the WAI-ARIA menu pattern
  * expects; Home/End jump to the ends.
  */
-export function nextMenuIndex(key: string, current: number, count: number): number | null {
+export function nextMenuIndex(
+  key: string,
+  current: number,
+  count: number,
+): number | null {
   if (count <= 0) return null;
-  if (key === "ArrowDown") return current < 0 ? 0 : (current + 1) % count;
-  if (key === "ArrowUp") return current < 0 ? count - 1 : (current - 1 + count) % count;
-  if (key === "Home") return 0;
-  if (key === "End") return count - 1;
+  if (key === 'ArrowDown') return current < 0 ? 0 : (current + 1) % count;
+  if (key === 'ArrowUp')
+    return current < 0 ? count - 1 : (current - 1 + count) % count;
+  if (key === 'Home') return 0;
+  if (key === 'End') return count - 1;
   return null;
 }

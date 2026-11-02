@@ -1,15 +1,18 @@
-import { request } from "@/shared/api/request";
+import { request } from '@/shared/api/request';
 
-import { normalizeIterationHistory } from "../model/iteration-history-rules";
-import { normalizeCurrentIteration, normalizeMergeAll } from "../model/iteration-rules";
-import { normalizeStartedIteration } from "../model/iteration-start-rules";
+import { normalizeIterationHistory } from '../model/iteration-history-rules';
+import {
+  normalizeCurrentIteration,
+  normalizeMergeAll,
+} from '../model/iteration-rules';
+import { normalizeStartedIteration } from '../model/iteration-start-rules';
 import type {
   CurrentIteration,
   HistoryIteration,
   MergeAllResult,
   StartedIteration,
   StartIterationInput,
-} from "../model/iteration-types";
+} from '../model/iteration-types';
 
 /* The only place in the checklists domain that talks to the Project
  * iteration endpoints (Iterations phase 2). Its own module, so the screens
@@ -32,12 +35,18 @@ export const iterationsRepository = {
    * iteration: the caller shows nothing iteration-related.
    */
   async current(deliveryProjectId: string): Promise<CurrentIteration | null> {
-    return normalizeCurrentIteration(await request<unknown>(`${projectPath(deliveryProjectId)}/iterations/current`));
+    return normalizeCurrentIteration(
+      await request<unknown>(
+        `${projectPath(deliveryProjectId)}/iterations/current`,
+      ),
+    );
   },
 
   /** Every iteration of the Project, newest first (the History tab). */
   async list(deliveryProjectId: string): Promise<HistoryIteration[]> {
-    return normalizeIterationHistory(await request<unknown>(`${projectPath(deliveryProjectId)}/iterations`));
+    return normalizeIterationHistory(
+      await request<unknown>(`${projectPath(deliveryProjectId)}/iterations`),
+    );
   },
 
   /**
@@ -47,7 +56,10 @@ export const iterationsRepository = {
    */
   async mergeAll(deliveryProjectId: string): Promise<MergeAllResult> {
     return normalizeMergeAll(
-      await request<unknown>(`${projectPath(deliveryProjectId)}/promotion/merge-all`, { method: "POST" }),
+      await request<unknown>(
+        `${projectPath(deliveryProjectId)}/promotion/merge-all`,
+        { method: 'POST' },
+      ),
     );
   },
 
@@ -56,10 +68,13 @@ export const iterationsRepository = {
    * checklist: nothing is carried over. The server numbers it and refuses a
    * second start (409 ITERATION_ACTIVE).
    */
-  async start(deliveryProjectId: string, input: StartIterationInput): Promise<StartedIteration> {
+  async start(
+    deliveryProjectId: string,
+    input: StartIterationInput,
+  ): Promise<StartedIteration> {
     return normalizeStartedIteration(
       await request<unknown>(`${projectPath(deliveryProjectId)}/iterations`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify(input),
       }),
     );

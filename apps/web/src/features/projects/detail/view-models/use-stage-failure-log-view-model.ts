@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   getProjectRunFailureLog,
   type RunFailureLogResponse,
-} from "../data/project-workspace-api";
+} from '../data/project-workspace-api';
 
 /*
  * Re-exported so a View can name what it renders without importing from
@@ -14,7 +14,7 @@ import {
  * so the shape should come from it rather than from the transport beneath it.
  */
 export type { RunFailureLogResponse };
-import type { ProjectStatus } from "../../model/projects-types";
+import type { ProjectStatus } from '../../model/projects-types';
 
 export interface StageFailureLogViewModel {
   status: ProjectStatus;
@@ -45,7 +45,7 @@ export function useStageFailureLogViewModel(options: {
   const { projectId, runId, enabled } = options;
 
   const [status, setStatus] = useState<ProjectStatus>(
-    enabled ? "loading" : "ready",
+    enabled ? 'loading' : 'ready',
   );
   const [log, setLog] = useState<RunFailureLogResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,11 +55,11 @@ export function useStageFailureLogViewModel(options: {
       .then((result) => {
         setLog(result);
         setError(null);
-        setStatus("ready");
+        setStatus('ready');
       })
       .catch(() => {
-        setError("The error output could not be read from GitHub.");
-        setStatus("error");
+        setError('The error output could not be read from GitHub.');
+        setStatus('error');
       });
   }, [projectId, runId]);
 
@@ -69,7 +69,7 @@ export function useStageFailureLogViewModel(options: {
   }, [enabled, load]);
 
   const reload = useCallback(() => {
-    setStatus("loading");
+    setStatus('loading');
     void load();
   }, [load]);
 

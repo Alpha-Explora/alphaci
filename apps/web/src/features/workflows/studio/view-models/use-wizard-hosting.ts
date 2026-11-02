@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   hostedTargetSeeds,
@@ -7,12 +7,12 @@ import {
   renderVariablesBlockingFor,
   wizardShape,
   type HostingCreateFields,
-} from "../model/hosting-choice-rules";
-import type { OnpremHosting } from "../model/onprem-hosting-rules";
-import type { CreateProjectFormState } from "./use-create-project-form";
-import { useDeploymentProvisioningForm } from "./use-deployment-provisioning-form";
-import { useHostingChoice } from "./use-hosting-choice";
-import type { ProjectOptionsCatalogState } from "./use-project-options-catalog";
+} from '../model/hosting-choice-rules';
+import type { OnpremHosting } from '../model/onprem-hosting-rules';
+import type { CreateProjectFormState } from './use-create-project-form';
+import { useDeploymentProvisioningForm } from './use-deployment-provisioning-form';
+import { useHostingChoice } from './use-hosting-choice';
+import type { ProjectOptionsCatalogState } from './use-project-options-catalog';
 
 /**
  * The create wizard's hosting: the project-wide Hosting choice, the Vercel /
@@ -25,19 +25,24 @@ export function useWizardHosting(input: {
   onpremHosting: OnpremHosting;
   projectCatalog: ProjectOptionsCatalogState;
 }) {
-  const { createForm, envProvisioningEnabled, onpremHosting, projectCatalog } = input;
-  const { layout, isDualShape, selectedProjectKind } = wizardShape(projectCatalog);
+  const { createForm, envProvisioningEnabled, onpremHosting, projectCatalog } =
+    input;
+  const { layout, isDualShape, selectedProjectKind } =
+    wizardShape(projectCatalog);
   // The targets' own on/off stays off: the Hosting choice decides, and the
   // existing-repo path keeps sending no provisioning, as before.
-  const deploymentProvisioning = useDeploymentProvisioningForm(projectCatalog.selectedRepoShapeId, {
-    seeds: hostedTargetSeeds({
-      isDualShape,
-      repoName: createForm.repoName,
-      backendServiceName: createForm.backendServiceName,
-      frontendServiceName: createForm.frontendServiceName,
-      selectedProjectKind,
-    }),
-  });
+  const deploymentProvisioning = useDeploymentProvisioningForm(
+    projectCatalog.selectedRepoShapeId,
+    {
+      seeds: hostedTargetSeeds({
+        isDualShape,
+        repoName: createForm.repoName,
+        backendServiceName: createForm.backendServiceName,
+        frontendServiceName: createForm.frontendServiceName,
+        selectedProjectKind,
+      }),
+    },
+  );
   const hosting = useHostingChoice({
     onprem: onpremHosting,
     layout,
@@ -58,7 +63,9 @@ export function useWizardHosting(input: {
       choice: hosting.choice,
       // Without provisioning on this deployment, nothing is sent and the
       // backend adds its default target, as it always has.
-      hostedProvisioning: envProvisioningEnabled ? deploymentProvisioning.hostedPayload : undefined,
+      hostedProvisioning: envProvisioningEnabled
+        ? deploymentProvisioning.hostedPayload
+        : undefined,
       environments: createForm.environments,
       onpremSlots: hosting.onpremSlots,
       onpremRuntimes: hosting.onpremRuntimes,

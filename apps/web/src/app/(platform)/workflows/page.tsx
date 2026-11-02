@@ -1,1 +1,1 @@
-export { WorkflowStudioView as default } from "@/features/workflows/studio";
+export { WorkflowStudioView as default } from '@/features/workflows/studio';

@@ -1,20 +1,20 @@
-import { act, useLayoutEffect } from "react";
-import { hydrateRoot, type Root } from "react-dom/client";
+import { act, useLayoutEffect } from 'react';
+import { hydrateRoot, type Root } from 'react-dom/client';
 
-import { createGitHubLoginUrl } from "../../../../../../src/features/auth/session";
-import { useOAuthLoginViewModel } from "../../../../../../src/features/auth/login/view-models/use-oauth-login-view-model";
+import { createGitHubLoginUrl } from '../../../../../../src/features/auth/session';
+import { useOAuthLoginViewModel } from '../../../../../../src/features/auth/login/view-models/use-oauth-login-view-model';
 
-jest.mock("next/navigation", () => ({
+jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace: jest.fn() }),
   useSearchParams: () => ({
-    get: (key: string) => (key === "next" ? "/projects/active" : null),
+    get: (key: string) => (key === 'next' ? '/projects/active' : null),
   }),
 }));
 
-jest.mock("../../../../../../src/features/auth/session", () => ({
+jest.mock('../../../../../../src/features/auth/session', () => ({
   createGitHubLoginUrl: jest.fn((returnTo: string) => returnTo),
   useAuthSessionViewModel: jest.fn(() => ({
-    status: "loading",
+    status: 'loading',
     session: null,
   })),
   warmupBackend: jest.fn().mockResolvedValue(undefined),
@@ -28,7 +28,7 @@ const mockCreateGitHubLoginUrl = createGitHubLoginUrl as jest.MockedFunction<
 let committedHrefs: string[];
 
 function Probe() {
-  const { githubLoginHref } = useOAuthLoginViewModel("login");
+  const { githubLoginHref } = useOAuthLoginViewModel('login');
 
   useLayoutEffect(() => {
     committedHrefs.push(githubLoginHref);
@@ -37,7 +37,7 @@ function Probe() {
   return <a href={githubLoginHref}>Continue with GitHub</a>;
 }
 
-describe("useOAuthLoginViewModel", () => {
+describe('useOAuthLoginViewModel', () => {
   let container: HTMLDivElement;
   let root: Root;
 
@@ -45,7 +45,7 @@ describe("useOAuthLoginViewModel", () => {
     committedHrefs = [];
     mockCreateGitHubLoginUrl.mockClear();
 
-    container = document.createElement("div");
+    container = document.createElement('div');
     document.body.appendChild(container);
   });
 
@@ -58,11 +58,13 @@ describe("useOAuthLoginViewModel", () => {
 
   it("hydrates with the server's relative callback, then preserves the browser-origin OAuth href", async () => {
     const relativeReturnTo =
-      "/auth/callback?intent=login&next=%2Fprojects%2Factive&provider=github";
+      '/auth/callback?intent=login&next=%2Fprojects%2Factive&provider=github';
     // What the server rendered: it has no browser origin, so the callback is relative.
     container.innerHTML = `<a href="${relativeReturnTo}">Continue with GitHub</a>`;
     const recoverableErrors: unknown[] = [];
-    const consoleError = jest.spyOn(console, "error").mockImplementation(() => undefined);
+    const consoleError = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
 
     await act(async () => {
       root = hydrateRoot(container, <Probe />, {

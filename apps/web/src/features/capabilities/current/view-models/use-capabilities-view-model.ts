@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
 /* The initial capability probe intentionally transitions state from an effect
  * so the first render remains deterministic during the behavior-preserving
  * migration. */
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   disabledCapabilities,
   getCapabilities,
-} from "../data/capabilities-repository";
-import type { CapabilitiesResponse } from "@/shared/api/contracts";
-import { capabilityViewFlags } from "../model/capability-flags";
+} from '../data/capabilities-repository';
+import type { CapabilitiesResponse } from '@/shared/api/contracts';
+import { capabilityViewFlags } from '../model/capability-flags';
 
-export type CapabilitiesStatus = "loading" | "ready" | "error";
+export type CapabilitiesStatus = 'loading' | 'ready' | 'error';
 
 export interface CapabilitiesViewModel {
   capabilities: CapabilitiesResponse | null;
@@ -24,7 +24,7 @@ export interface CapabilitiesViewModel {
   loadCapabilities: () => Promise<void>;
   envProvisioningEnabled: boolean;
   clientCompositionEnabled: boolean;
-  deploymentOwnershipMode: "byo" | "flowci_managed";
+  deploymentOwnershipMode: 'byo' | 'flowci_managed';
   projectSyncSnapshotsEnabled: boolean;
   workflowSettingsPreviewEnabled: boolean;
   workflowUpdatePrEnabled: boolean;
@@ -41,26 +41,30 @@ export interface CapabilitiesViewModel {
   notificationsEnabled: boolean;
   publicSiteEnabled: boolean;
   hierarchyEnabled: boolean;
-  hierarchyGithubSyncMode: "stub" | "live";
+  hierarchyGithubSyncMode: 'stub' | 'live';
   /** Gates the team QA checklists section and the project Checklists tab. */
   qaChecklistsEnabled: boolean;
 }
 
 export function useCapabilitiesViewModel(): CapabilitiesViewModel {
-  const [capabilities, setCapabilities] = useState<CapabilitiesResponse | null>(null);
-  const [status, setStatus] = useState<CapabilitiesStatus>("loading");
+  const [capabilities, setCapabilities] = useState<CapabilitiesResponse | null>(
+    null,
+  );
+  const [status, setStatus] = useState<CapabilitiesStatus>('loading');
   const [error, setError] = useState<string | null>(null);
 
   const loadCapabilities = useCallback(async () => {
-    setStatus("loading");
+    setStatus('loading');
     setError(null);
     try {
       setCapabilities(await getCapabilities());
-      setStatus("ready");
+      setStatus('ready');
     } catch {
       setCapabilities(disabledCapabilities());
-      setStatus("error");
-      setError("Capabilities are unavailable right now; optional features are hidden.");
+      setStatus('error');
+      setError(
+        'Capabilities are unavailable right now; optional features are hidden.',
+      );
     }
   }, []);
 
@@ -72,7 +76,7 @@ export function useCapabilitiesViewModel(): CapabilitiesViewModel {
     capabilities,
     status,
     error,
-    loading: status === "loading",
+    loading: status === 'loading',
     ...capabilityViewFlags(capabilities),
     loadCapabilities,
   };

@@ -7,7 +7,7 @@
  * GitHub App made the commit); no login falls back to the author's name; a
  * row without a SHA is dropped. */
 
-import type { ProjectCommitsResponse } from "@/shared/api/contracts";
+import type { ProjectCommitsResponse } from '@/shared/api/contracts';
 
 /** Rows per request. */
 export const COMMITS_PAGE_SIZE = 30;
@@ -17,7 +17,7 @@ export const COMMITS_PAGE_SIZE = 30;
  * The Commits tab's selector offers exactly these (the ones that exist). A
  * commit on one of them without a pull request skipped review.
  */
-export const PROMOTION_BRANCHES: ReadonlyArray<string> = ["dev", "uat", "main"];
+export const PROMOTION_BRANCHES: ReadonlyArray<string> = ['dev', 'uat', 'main'];
 
 /** One commit as the list draws it. */
 export interface CommitRow {
@@ -46,31 +46,36 @@ export interface CommitsPage {
 }
 
 function record(value: unknown): Record<string, unknown> | null {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
 }
 
 function text(value: unknown): string | null {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
 function positiveInteger(value: unknown): number | null {
-  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+    ? value
+    : null;
 }
 
 /** The message's first non-empty line; "(no message)" when there is none. */
 export function commitTitle(message: string | null | undefined): string {
-  const line = (message ?? "")
+  const line = (message ?? '')
     .split(/\r?\n/)
     .map((part) => part.trim())
     .find((part) => part.length > 0);
-  return line ?? "(no message)";
+  return line ?? '(no message)';
 }
 
 /** The login, else the name, else "Unknown author". */
-export function commitAuthor(login: string | null | undefined, name: string | null | undefined): string {
-  return text(login) ?? text(name) ?? "Unknown author";
+export function commitAuthor(
+  login: string | null | undefined,
+  name: string | null | undefined,
+): string {
+  return text(login) ?? text(name) ?? 'Unknown author';
 }
 
 /** Seven characters, as git prints it, when the server sent no short form. */
@@ -87,8 +92,11 @@ export function shortShaOf(sha: string, shortSha?: string | null): string {
  */
 const ALPHACI_BOT = /^alphaci[\w.-]*\[bot\]$/i;
 
-export function isAlphaciBot(login: string | null | undefined, name: string | null | undefined): boolean {
-  return ALPHACI_BOT.test(text(login) ?? text(name) ?? "");
+export function isAlphaciBot(
+  login: string | null | undefined,
+  name: string | null | undefined,
+): boolean {
+  return ALPHACI_BOT.test(text(login) ?? text(name) ?? '');
 }
 
 /** A person's commit on a promotion branch with no pull request behind it. */
@@ -97,7 +105,12 @@ export function isDirectPush(
   pullRequestNumber: number | null,
   alphaciSetup = false,
 ): boolean {
-  return !alphaciSetup && pullRequestNumber === null && branch !== null && PROMOTION_BRANCHES.includes(branch);
+  return (
+    !alphaciSetup &&
+    pullRequestNumber === null &&
+    branch !== null &&
+    PROMOTION_BRANCHES.includes(branch)
+  );
 }
 
 function rowFrom(value: unknown, branch: string | null): CommitRow | null {
@@ -105,13 +118,16 @@ function rowFrom(value: unknown, branch: string | null): CommitRow | null {
   const sha = text(raw?.sha);
   if (!raw || !sha) return null;
   const pullRequestNumber = positiveInteger(raw.pullRequestNumber);
-  const alphaciSetup = isAlphaciBot(text(raw.authorLogin), text(raw.authorName));
+  const alphaciSetup = isAlphaciBot(
+    text(raw.authorLogin),
+    text(raw.authorName),
+  );
   return {
     sha,
     shortSha: shortShaOf(sha, text(raw.shortSha)),
     title: commitTitle(text(raw.message)),
     author: commitAuthor(text(raw.authorLogin), text(raw.authorName)),
-    authoredAt: text(raw.authoredAt) ?? "",
+    authoredAt: text(raw.authoredAt) ?? '',
     pullRequestNumber,
     directPush: isDirectPush(branch, pullRequestNumber, alphaciSetup),
     alphaciSetup: alphaciSetup && pullRequestNumber === null,
@@ -125,24 +141,34 @@ function branchNames(value: unknown): string[] {
 }
 
 /** One page of the response, read defensively. */
-export function normalizeCommitsPage(value: ProjectCommitsResponse | unknown): CommitsPage {
+export function normalizeCommitsPage(
+  value: ProjectCommitsResponse | unknown,
+): CommitsPage {
   const raw = record(value);
   const branch = text(raw?.branch);
   const items = Array.isArray(raw?.items) ? raw.items : [];
   return {
     branch,
     branches: branchNames(raw?.branches),
-    items: items.map((item) => rowFrom(item, branch)).filter((row): row is CommitRow => row !== null),
+    items: items
+      .map((item) => rowFrom(item, branch))
+      .filter((row): row is CommitRow => row !== null),
     next: text(raw?.next),
   };
 }
 
 /** A further page appended to what is shown, without repeating a commit. */
-export function appendCommitsPage(current: CommitsPage, page: CommitsPage): CommitsPage {
+export function appendCommitsPage(
+  current: CommitsPage,
+  page: CommitsPage,
+): CommitsPage {
   const seen = new Set(current.items.map((row) => row.sha));
   return {
     ...current,
-    items: [...current.items, ...page.items.filter((row) => !seen.has(row.sha))],
+    items: [
+      ...current.items,
+      ...page.items.filter((row) => !seen.has(row.sha)),
+    ],
     next: page.next,
   };
 }
@@ -152,18 +178,26 @@ export function appendCommitsPage(current: CommitsPage, page: CommitsPage): Comm
  * promotion order. The shown branch is always offered, even when it is not one
  * of them (a deep link) or an older backend sent no branch list.
  */
-export function branchOptions(branches: ReadonlyArray<string>, current: string | null): string[] {
-  const all = current && !branches.includes(current) ? [...branches, current] : [...branches];
+export function branchOptions(
+  branches: ReadonlyArray<string>,
+  current: string | null,
+): string[] {
+  const all =
+    current && !branches.includes(current)
+      ? [...branches, current]
+      : [...branches];
   const promotion = PROMOTION_BRANCHES.filter((name) => all.includes(name));
-  return current && !promotion.includes(current) ? [...promotion, current] : promotion;
+  return current && !promotion.includes(current)
+    ? [...promotion, current]
+    : promotion;
 }
 
 /** The label of ALPHACI's own setup commits, in place of a Direct push tag. */
-export const ALPHACI_SETUP_LABEL = "ALPHACI setup";
+export const ALPHACI_SETUP_LABEL = 'ALPHACI setup';
 
 /** What the list says when a branch has no commits. */
 export function commitsEmptyMessage(branch: string | null): string {
-  return branch ? `No commits on ${branch} yet.` : "No commits yet.";
+  return branch ? `No commits on ${branch} yet.` : 'No commits yet.';
 }
 
 /** The pull request link's accessible name. */
@@ -172,10 +206,10 @@ export function commitPullRequestLabel(pullRequestNumber: number): string {
 }
 
 export function commitsLoadMoreLabel(loading: boolean): string {
-  return loading ? "Loading..." : "Load more";
+  return loading ? 'Loading...' : 'Load more';
 }
 
 /** The copy button's text: the short SHA, or "Copied" for a moment after. */
 export function shaCopyLabel(shortSha: string, copied: boolean): string {
-  return copied ? "Copied" : shortSha;
+  return copied ? 'Copied' : shortSha;
 }

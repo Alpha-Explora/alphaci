@@ -1,1 +1,1 @@
-export { AdminUserDetailView as default } from "@/features/admin/user-detail";
+export { AdminUserDetailView as default } from '@/features/admin/user-detail';

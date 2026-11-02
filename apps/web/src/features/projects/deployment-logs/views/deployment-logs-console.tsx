@@ -1,20 +1,23 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import type { LogQueryFilters, LogWindow } from "../model/deployment-logs-types";
+import type {
+  LogQueryFilters,
+  LogWindow,
+} from '../model/deployment-logs-types';
 import {
   rangeOptions,
   rangeWindow,
   type LogRangePreset,
-} from "../model/log-format";
+} from '../model/log-format';
 import {
   useDeploymentLogsViewModel,
   type DeploymentLogsViewModel,
-} from "../view-models/use-deployment-logs-view-model";
-import { LogBody, LogSourceBadge, TimeZoneLabel } from "./log-parts";
+} from '../view-models/use-deployment-logs-view-model';
+import { LogBody, LogSourceBadge, TimeZoneLabel } from './log-parts';
 
-type TypeChoice = "" | NonNullable<LogQueryFilters["type"]>;
+type TypeChoice = '' | NonNullable<LogQueryFilters['type']>;
 
 export interface DeploymentLogsConsoleProps {
   projectId: string;
@@ -86,8 +89,8 @@ function ConsoleFilters({
     vm.supportedFilters.includes(key);
   return (
     <>
-      {supports("type") ? <TypeSelect onChange={onType} value={type} /> : null}
-      {supports("level") ? (
+      {supports('type') ? <TypeSelect onChange={onType} value={type} /> : null}
+      {supports('level') ? (
         <label className="deploy-logs__toggle">
           <input
             checked={vm.errorsOnly}
@@ -97,7 +100,7 @@ function ConsoleFilters({
           Errors only ({vm.errorCount})
         </label>
       ) : null}
-      {supports("text") ? (
+      {supports('text') ? (
         <input
           aria-label="Search logs"
           className="deploy-logs__control deploy-logs__control--search"
@@ -123,11 +126,13 @@ export function DeploymentLogsConsole({
   deployWindow = null,
   focusOnMount = false,
 }: Readonly<DeploymentLogsConsoleProps>) {
-  const [range, setRange] = useState<LogRangePreset>(deployWindow ? "deploy" : "1h");
-  const [logWindow, setLogWindow] = useState<LogWindow | null>(() =>
-    rangeWindow(deployWindow ? "deploy" : "1h", Date.now(), deployWindow),
+  const [range, setRange] = useState<LogRangePreset>(
+    deployWindow ? 'deploy' : '1h',
   );
-  const [type, setType] = useState<TypeChoice>("");
+  const [logWindow, setLogWindow] = useState<LogWindow | null>(() =>
+    rangeWindow(deployWindow ? 'deploy' : '1h', Date.now(), deployWindow),
+  );
+  const [type, setType] = useState<TypeChoice>('');
   const vm = useDeploymentLogsViewModel({
     projectId,
     targetId,
@@ -137,7 +142,7 @@ export function DeploymentLogsConsole({
 
   const root = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (focusOnMount) root.current?.scrollIntoView?.({ block: "start" });
+    if (focusOnMount) root.current?.scrollIntoView?.({ block: 'start' });
   }, [focusOnMount]);
 
   function chooseRange(preset: LogRangePreset) {
@@ -158,12 +163,22 @@ export function DeploymentLogsConsole({
         </h5>
         <div className="deploy-logs-console__controls">
           <ConsoleFilters onType={setType} type={type} vm={vm} />
-          <RangeSelect deployWindow={deployWindow} onChange={chooseRange} value={range} />
-          <TimeZoneLabel at={vm.lines[0]?.timestamp ?? logWindow?.startTime ?? null} />
+          <RangeSelect
+            deployWindow={deployWindow}
+            onChange={chooseRange}
+            value={range}
+          />
+          <TimeZoneLabel
+            at={vm.lines[0]?.timestamp ?? logWindow?.startTime ?? null}
+          />
         </div>
       </div>
       <div className="deploy-logs__body deploy-logs-console__lines">
-        <LogBody label={`Log lines for ${targetName}`} providerLabel={providerLabel} vm={vm} />
+        <LogBody
+          label={`Log lines for ${targetName}`}
+          providerLabel={providerLabel}
+          vm={vm}
+        />
       </div>
     </section>
   );

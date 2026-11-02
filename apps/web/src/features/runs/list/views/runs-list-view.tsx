@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { Suspense } from "react";
-import { useReducedMotion } from "framer-motion";
+import Link from 'next/link';
+import { Suspense } from 'react';
+import { useReducedMotion } from 'framer-motion';
 
-import { FlowBackground } from "@/shared/layout/flow-background";
-import { PipelineLoader } from "@/shared/layout/pipeline-loader";
+import { FlowBackground } from '@/shared/layout/flow-background';
+import { PipelineLoader } from '@/shared/layout/pipeline-loader';
 import {
   isGuest,
   useAuthSession,
   useSignOutAndRedirect,
-} from "@/features/auth/session";
+} from '@/features/auth/session';
 
-import { RunsListContent } from "./runs-list-content";
+import { RunsListContent } from './runs-list-content';
 
 /**
  * Public view for the runs list route.
@@ -29,11 +29,11 @@ export function RunsListView() {
 
   const handleLogout = signOutAndRedirect;
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return <PipelineLoader label="Loading pipeline runs" />;
   }
 
-  if (status === "error") {
+  if (status === 'error') {
     return (
       <main className="dash-shell">
         <FlowBackground />
@@ -42,8 +42,8 @@ export function RunsListView() {
             <div
               className="state-icon"
               style={{
-                background: "rgba(255,79,79,0.08)",
-                border: "1px solid rgba(255,79,79,0.2)",
+                background: 'rgba(255,79,79,0.08)',
+                border: '1px solid rgba(255,79,79,0.2)',
               }}
             >
               <svg
@@ -67,7 +67,7 @@ export function RunsListView() {
               We could not verify your session. Please retry or sign in again.
             </p>
             {sessionError && (
-              <p className="error-text" style={{ fontSize: "0.82rem" }}>
+              <p className="error-text" style={{ fontSize: '0.82rem' }}>
                 {sessionError}
               </p>
             )}

@@ -1,8 +1,8 @@
-import { act, useEffect } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act, useEffect } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 
-import { useAuthSession } from "@/features/auth/session";
-import type { AuthMeResponse } from "../../src/shared/api/contracts";
+import { useAuthSession } from '@/features/auth/session';
+import type { AuthMeResponse } from '../../src/shared/api/contracts';
 
 /* ── Mocks ───────────────────────────────────────────────────────────────── */
 
@@ -14,7 +14,7 @@ class MockApiError extends Error {
   }
 }
 
-jest.mock("../../../../../../src/features/auth/session/data/auth-api", () => ({
+jest.mock('../../../../../../src/features/auth/session/data/auth-api', () => ({
   getAuthSession: (...args: unknown[]) => mockGetAuthSession(...args),
   ApiError: class extends Error {
     constructor(public readonly status: number) {
@@ -25,13 +25,13 @@ jest.mock("../../../../../../src/features/auth/session/data/auth-api", () => ({
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 
-function makeSession(appRole: "admin" | "lead" | "member"): AuthMeResponse {
+function makeSession(appRole: 'admin' | 'lead' | 'member'): AuthMeResponse {
   return {
     authenticated: true,
-    user: { id: "u1", login: "ada" },
-    subscription: { plan: "pro", status: "active" },
+    user: { id: 'u1', login: 'ada' },
+    subscription: { plan: 'pro', status: 'active' },
     appRole,
-    appRoleSource: "github_team",
+    appRoleSource: 'github_team',
   } as unknown as AuthMeResponse;
 }
 
@@ -39,7 +39,11 @@ interface Harness {
   latest: ReturnType<typeof useAuthSession> | null;
 }
 
-function renderHook(): { harness: Harness; root: Root; container: HTMLElement } {
+function renderHook(): {
+  harness: Harness;
+  root: Root;
+  container: HTMLElement;
+} {
   const harness: Harness = { latest: null };
 
   // The hook result is published through an effect rather than assigned during
@@ -53,7 +57,7 @@ function renderHook(): { harness: Harness; root: Root; container: HTMLElement } 
     return null;
   }
 
-  const container = document.createElement("div");
+  const container = document.createElement('div');
   document.body.appendChild(container);
   const root = createRoot(container);
   act(() => {
@@ -71,61 +75,61 @@ async function flush() {
 
 /* ── Tests ───────────────────────────────────────────────────────────────── */
 
-describe("useAuthSession — role refresh on focus", () => {
+describe('useAuthSession — role refresh on focus', () => {
   beforeEach(() => {
     mockGetAuthSession.mockReset();
   });
 
-  it("picks up a role change when the tab regains focus", async () => {
+  it('picks up a role change when the tab regains focus', async () => {
     // A developer promoted to team-lead in GitHub while this tab sat open.
     mockGetAuthSession
-      .mockResolvedValueOnce(makeSession("member"))
-      .mockResolvedValueOnce(makeSession("lead"));
+      .mockResolvedValueOnce(makeSession('member'))
+      .mockResolvedValueOnce(makeSession('lead'));
 
     const { harness, root } = renderHook();
     await flush();
-    expect(harness.latest?.session?.appRole).toBe("member");
+    expect(harness.latest?.session?.appRole).toBe('member');
 
     await act(async () => {
-      window.dispatchEvent(new Event("focus"));
+      window.dispatchEvent(new Event('focus'));
       await Promise.resolve();
     });
     await flush();
 
-    expect(harness.latest?.session?.appRole).toBe("lead");
+    expect(harness.latest?.session?.appRole).toBe('lead');
     // The whole point of the background refresh: it must NOT bounce the UI
     // through a loading state on every tab switch.
-    expect(harness.latest?.status).toBe("signed-in");
+    expect(harness.latest?.status).toBe('signed-in');
 
     act(() => root.unmount());
   });
 
-  it("keeps the current session when the background refresh fails", async () => {
+  it('keeps the current session when the background refresh fails', async () => {
     mockGetAuthSession
-      .mockResolvedValueOnce(makeSession("lead"))
+      .mockResolvedValueOnce(makeSession('lead'))
       .mockRejectedValueOnce(new MockApiError(500));
 
     const { harness, root } = renderHook();
     await flush();
-    expect(harness.latest?.session?.appRole).toBe("lead");
+    expect(harness.latest?.session?.appRole).toBe('lead');
 
     await act(async () => {
-      window.dispatchEvent(new Event("focus"));
+      window.dispatchEvent(new Event('focus'));
       await Promise.resolve();
     });
     await flush();
 
     // A transient failure must never sign the user out or surface an error —
     // the next real request will handle a genuinely dead session.
-    expect(harness.latest?.status).toBe("signed-in");
-    expect(harness.latest?.session?.appRole).toBe("lead");
+    expect(harness.latest?.status).toBe('signed-in');
+    expect(harness.latest?.session?.appRole).toBe('lead');
     expect(harness.latest?.error).toBeNull();
 
     act(() => root.unmount());
   });
 
-  it("stops refreshing once unmounted", async () => {
-    mockGetAuthSession.mockResolvedValue(makeSession("member"));
+  it('stops refreshing once unmounted', async () => {
+    mockGetAuthSession.mockResolvedValue(makeSession('member'));
 
     const { root } = renderHook();
     await flush();
@@ -134,7 +138,7 @@ describe("useAuthSession — role refresh on focus", () => {
     act(() => root.unmount());
 
     await act(async () => {
-      window.dispatchEvent(new Event("focus"));
+      window.dispatchEvent(new Event('focus'));
       await Promise.resolve();
     });
 

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
 import {
   PROJECT_NAME_HELP,
   addingToProjectLine,
   projectNameFieldMessage,
-} from "../model/project-name-rules";
+} from '../model/project-name-rules';
 
 export interface ProjectNameFieldProps {
   /** The Project the repository joins: replaces the field with a read-only line. */
@@ -27,7 +27,10 @@ export function ProjectNameField({
 }: Readonly<ProjectNameFieldProps>) {
   if (joinedProjectName !== null) {
     return (
-      <p className="repo-creation-scope wizard-field__context" data-testid="setup-adding-to-project">
+      <p
+        className="repo-creation-scope wizard-field__context"
+        data-testid="setup-adding-to-project"
+      >
         <span className="repo-creation-scope__dot" aria-hidden="true" />
         <span>{addingToProjectLine(joinedProjectName)}</span>
       </p>
@@ -35,7 +38,9 @@ export function ProjectNameField({
   }
 
   const message = projectNameFieldMessage(value, serverError);
-  const describedBy = message ? "project-name-hint project-name-error" : "project-name-hint";
+  const describedBy = message
+    ? 'project-name-hint project-name-error'
+    : 'project-name-hint';
   return (
     <>
       <label className="wizard-field__label" htmlFor="project-name">

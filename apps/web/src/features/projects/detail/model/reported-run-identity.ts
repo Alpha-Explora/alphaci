@@ -26,7 +26,7 @@
  * one we know nothing better about.
  */
 
-import type { RunGroup } from "@/shared/api/contracts";
+import type { RunGroup } from '@/shared/api/contracts';
 
 /** Where a run really happened, as our own report recorded it. */
 export interface ReportedIdentity {

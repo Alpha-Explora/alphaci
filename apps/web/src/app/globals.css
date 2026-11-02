@@ -1,36 +1,35 @@
-@import "tailwindcss";
-@import "../shared/styles/tokens.css";
-@import "../shared/styles/reset.css";
-@import "../shared/styles/typography.css";
-@import "../styles/base.css";
-@import "../styles/keyframes.css";
-@import "../styles/theme.css";
-@import "../styles/auth.css";
-@import "../styles/public-site.css";
-@import "../styles/runs.css";
-@import "../styles/guide.css";
-@import "../styles/teams-workspaces.css";
-@import "../styles/inbox.css";
-@import "../styles/settings.css";
-@import "../styles/product-workflows.css";
-@import "../styles/dashboard-projects.css";
-@import "../styles/dashboard-home.css";
-@import "../styles/app-shell.css";
-@import "../styles/hierarchy.css";
-@import "../styles/admin.css";
+@import 'tailwindcss';
+@import '../shared/styles/tokens.css';
+@import '../shared/styles/reset.css';
+@import '../shared/styles/typography.css';
+@import '../styles/base.css';
+@import '../styles/keyframes.css';
+@import '../styles/theme.css';
+@import '../styles/auth.css';
+@import '../styles/public-site.css';
+@import '../styles/runs.css';
+@import '../styles/guide.css';
+@import '../styles/teams-workspaces.css';
+@import '../styles/inbox.css';
+@import '../styles/settings.css';
+@import '../styles/product-workflows.css';
+@import '../styles/dashboard-projects.css';
+@import '../styles/dashboard-home.css';
+@import '../styles/app-shell.css';
+@import '../styles/hierarchy.css';
+@import '../styles/admin.css';
 /* Feature-owned CSS. Sits before components.css, which must stay last so
    .glass-panel keeps beating .section-card on source order. */
-@import "../features/projects/previews/branch-previews.css";
-@import "../features/projects/deployment-logs/deployment-logs.css";
-@import "../features/projects/domains/project-domains.css";
-@import "../features/projects/detail/views/workspace/pull-request-authoring.css";
-@import "../styles/components.css";
+@import '../features/projects/previews/branch-previews.css';
+@import '../features/projects/deployment-logs/deployment-logs.css';
+@import '../features/projects/domains/project-domains.css';
+@import '../features/projects/detail/views/workspace/pull-request-authoring.css';
+@import '../styles/components.css';
 
 /* ── Light mode component overrides ────────────────────────────── */
-html[data-theme="light"] {
+html[data-theme='light'] {
   background: var(--bg-base);
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LIGHT MODE — comprehensive section polish (landing + dashboard + auth)
@@ -39,16 +38,13 @@ html[data-theme="light"] {
    inline style or an existing !important dark rule.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-
 /* Inner accent surfaces inside the hero main card (branch chip, badges, rows)
    read fine on dark but vanish on white — give them subtle tinted fills */
 
-
 /* ── Feature value cards (Source-backed generation, etc.) ── */
 
-
 @media (max-width: 700px) {
-  [data-theme="light"] .feature-strip-item {
+  [data-theme='light'] .feature-strip-item {
     border-right: 1px solid rgba(17, 17, 22, 0.09) !important;
   }
 }
@@ -60,7 +56,6 @@ html[data-theme="light"] {
    Badges use rgba(255,255,255,0.75) text + near-transparent dark fills —
    completely invisible on a light page background. ── */
 
-
 @theme inline {
   --color-background: var(--bg-base);
   --color-foreground: var(--text-primary);
@@ -69,7 +64,6 @@ html[data-theme="light"] {
 
 /* ── Shell layouts ─────────────────────────────────────────────────────── */
 .flow-shell,
-
 .marketing-shell,
 .page-shell {
   width: 100%;
@@ -121,7 +115,6 @@ html[data-theme="light"] {
 }
 
 @media (max-width: 640px) {
-
   .hero-proof-strip {
     margin-bottom: 1.6rem;
   }
@@ -178,7 +171,6 @@ html[data-theme="light"] {
   z-index: 1;
 }
 
-
 .hero-block,
 .section-card,
 .tab-content-panel {
@@ -205,7 +197,6 @@ html[data-theme="light"] {
   color: var(--text-secondary);
 }
 
-
 .landing-hero .hero-actions {
   justify-content: center;
 }
@@ -224,7 +215,6 @@ html[data-theme="light"] {
   margin: 0 auto;
 }
 
-
 .subscription-plan-card .hero-kicker {
   color: var(--text-muted);
 }
@@ -242,7 +232,6 @@ html[data-theme="light"] {
     0 0 0 3px rgba(240, 165, 0, 0.15),
     var(--shadow-card);
 }
-
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
 .primary-button,
@@ -283,7 +272,6 @@ html[data-theme="light"] {
   transform: none;
 }
 
-
 .github-status-dot.disconnected {
   color: var(--warning);
   background: rgba(240, 165, 0, 0.1);
@@ -300,11 +288,10 @@ html[data-theme="light"] {
 }
 
 .github-status-dot.disconnected::after {
-  content: " →";
+  content: ' →';
   font-size: 0.72rem;
   opacity: 0.65;
 }
-
 
 /* ── Panels ─────────────────────────────────────────────────────────────── */
 .intro-panel,
@@ -317,7 +304,6 @@ html[data-theme="light"] {
   background: var(--bg-surface);
   box-shadow: var(--shadow-soft);
 }
-
 
 .controls-panel,
 .templates-panel,
@@ -337,7 +323,6 @@ html[data-theme="light"] {
   font-size: 1.12rem;
   color: var(--text-primary);
 }
-
 
 .category-chip.active {
   border-color: var(--brand);
@@ -407,10 +392,8 @@ html[data-theme="light"] {
 .all-template-head h3,
 .history-card p,
 .all-template-card p,
-
 .history-head p,
 .history-head h3,
-
 .error-text {
   margin: 0;
   padding: 0.55rem 0.74rem;
@@ -426,7 +409,6 @@ html[data-theme="light"] {
   box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
 }
 
-
 /* Status colour comes from the semantic tokens so a node's state is
    unmistakable at a glance. Clean drop shadows, no neon halos. */
 
@@ -438,7 +420,6 @@ html[data-theme="light"] {
 }
 
 .pipeline-node.warning,
-
 .pipeline-node.failed,
 .pipeline-node.danger {
   background: rgba(239, 68, 68, 0.16); /* --danger */
@@ -469,21 +450,19 @@ html[data-theme="light"] {
   color: #ff8b8b;
 }
 
-
 /* ── Status banner prefix icons ──────────────────────────────────────────── */
 .status-banner.success::before {
-  content: "✓ ";
+  content: '✓ ';
   font-weight: 800;
 }
 .status-banner.info::before {
-  content: "ℹ ";
+  content: 'ℹ ';
   font-weight: 700;
 }
 .status-banner.error::before {
-  content: "✕ ";
+  content: '✕ ';
   font-weight: 800;
 }
-
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 1440px) {
@@ -549,7 +528,6 @@ html[data-theme="light"] {
   width: auto !important;
 }
 
-
 @media (max-width: 640px) {
   .pricing-table {
     grid-template-columns: 1fr;
@@ -559,7 +537,6 @@ html[data-theme="light"] {
     border-right: none !important;
   }
 }
-
 
 .pricing-table-cell.check {
   color: var(--success);
@@ -577,7 +554,7 @@ html[data-theme="light"] {
 }
 
 .file-path-label::before {
-  content: "./";
+  content: './';
   color: var(--brand);
 }
 
@@ -593,7 +570,6 @@ html[data-theme="light"] {
   color: var(--brand);
 }
 
-
 @media (max-width: 700px) {
   .features-strip {
     grid-template-columns: 1fr;
@@ -605,17 +581,15 @@ html[data-theme="light"] {
 }
 
 .guest-banner-text::before {
-  content: "↳";
+  content: '↳';
   font-size: 0.9em;
 }
-
 
 /* ── Error inline width when used as page-level sibling ──── */
 .page-shell > .error-inline {
   width: min(var(--layout-max), calc(100% - (var(--layout-gutter) * 2)));
   margin-inline: auto;
 }
-
 
 .pricing-comparison-check.active {
   color: var(--brand);
@@ -624,7 +598,6 @@ html[data-theme="light"] {
 .generate-workflow-row .ghost-button {
   flex-shrink: 0;
 }
-
 
 /* ── Reduced motion ──────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
@@ -652,13 +625,11 @@ html[data-theme="light"] {
   }
 }
 
-
 @media (max-width: 640px) {
   .deploy-providers-row {
     grid-template-columns: 1fr;
   }
 }
-
 
 @media (max-width: 768px) {
   .deploy-steps-row {
@@ -675,7 +646,6 @@ html[data-theme="light"] {
   }
 }
 
-
 @media (max-width: 860px) {
   .pricing-split {
     grid-template-columns: 1fr;
@@ -686,13 +656,12 @@ html[data-theme="light"] {
   }
 }
 
-
 .dash-tab-btn.active {
   color: var(--text-primary);
 }
 
 .dash-tab-btn.active::after {
-  content: "";
+  content: '';
   position: absolute;
   bottom: -1px;
   left: 0.6rem;
@@ -701,7 +670,6 @@ html[data-theme="light"] {
   border-radius: 999px 999px 0 0;
   background: var(--brand);
 }
-
 
 .repo-visibility-badge.public {
   color: var(--brand-accent);
@@ -740,14 +708,13 @@ html[data-theme="light"] {
   text-decoration-color: var(--brand);
 }
 
-
 .subtab-btn.active {
   background: var(--brand-light);
   border-color: var(--border-brand);
   color: var(--brand);
 }
 
-.enhancement-chip-label input[type="checkbox"] {
+.enhancement-chip-label input[type='checkbox'] {
   position: absolute;
   opacity: 0;
   width: 0;
@@ -846,7 +813,6 @@ html[data-theme="light"] {
   box-shadow: none;
 }
 
-
 /* The inner list panel is now the only container in the overview, so drop its
  * floating shadow — it should read as a grouped list, not a raised card. */
 .group-overview-section .hier-panel {
@@ -900,7 +866,6 @@ html[data-theme="light"] {
   transform: translateY(-1px);
   box-shadow: none;
 }
-
 
 .field-info:hover,
 
@@ -983,25 +948,19 @@ html[data-theme="light"] {
   color: var(--danger);
 }
 
-
 .provider-connection-fields .primary-button {
   min-height: 2.5rem;
   border-radius: 6px;
 }
 
-
 .provider-connections-table th,
-
-
 .provider-connections-table .ghost-button {
   min-height: 2rem;
   padding: 0.35rem 0.7rem;
   border-radius: 6px;
 }
 
-
 @media (max-width: 920px) {
-
   .group-overview-section {
     padding: 0.85rem;
   }
@@ -1103,16 +1062,13 @@ html[data-theme="light"] {
 
 /* ── Gradient shift animation (for top border accent) ────────────────────── */
 
-
 /* ── Shimmer sweep ───────────────────────────────────────────────────────── */
-
 
 @media (min-width: 768px) {
   .hero-br-desktop {
     display: inline;
   }
 }
-
 
 @media (max-width: 768px) {
   .subscribe-grid {
@@ -1177,7 +1133,6 @@ html[data-theme="light"] {
    refuses to shrink and blows the 2-column hero past the viewport width.
    Allow the tracks to shrink to fit. */
 
-
 @media (max-width: 768px) {
   .editorial-glass-panel {
     padding: 2.5rem 1.5rem;
@@ -1189,14 +1144,13 @@ html[data-theme="light"] {
   }
 }
 
-
 @media (max-width: 768px) {
   .hero-massive-text {
     font-size: clamp(6rem, 15vw, 12rem);
     letter-spacing: -0.02em;
   }
 }
-.enhancement-chip-label-premium input[type="checkbox"] {
+.enhancement-chip-label-premium input[type='checkbox'] {
   position: absolute;
   opacity: 0;
   width: 0;
@@ -1222,7 +1176,7 @@ html[data-theme="light"] {
   cursor: not-allowed;
 }
 .cp-section-heading::after {
-  content: "";
+  content: '';
   display: block;
   flex: 1;
   height: 1px;
@@ -1242,9 +1196,7 @@ html[data-theme="light"] {
   box-shadow: none !important;
 }
 
-
 /* Trailing action cluster on a provisioned-project row (browse + disconnect) */
-
 
 @media (max-width: 640px) {
   .dash-repo-row-desc {
@@ -1267,14 +1219,12 @@ html[data-theme="light"] {
    Title line (icon · name · chips) → description → metadata (stack dot ·
    workflow path · commit). One bordered list container, hairline-divided. */
 
-
 @media (max-width: 640px) {
   /* On narrow screens let the search take the full row under the filters. */
   .repositories-toolbar .repo-search {
     flex: 1 1 100%;
   }
 }
-
 
 .repo-filters button:hover,
 .repo-filters button.is-active {
@@ -1283,7 +1233,6 @@ html[data-theme="light"] {
   color: var(--brand);
 }
 
-
 /* Active page — solid brand fill so the current position reads at a glance. */
 .repo-pagination .repo-pagination-page.is-active {
   border-color: rgba(88, 166, 255, 0.55);
@@ -1291,7 +1240,6 @@ html[data-theme="light"] {
   color: var(--brand);
   font-weight: 700;
 }
-
 
 @media (max-width: 640px) {
   /* Touch devices have no hover — keep destructive action reachable */
@@ -1329,7 +1277,6 @@ html[data-theme="light"] {
 
 /* ── Tab panel stagger animation ────────────────────────────────────────── */
 
-
 @media (prefers-reduced-motion: reduce) {
   .dash-panel-enter {
     animation: none;
@@ -1340,7 +1287,6 @@ html[data-theme="light"] {
    APP NAV — floating pill dock redesign
    ════════════════════════════════════════════════════════════════════════════ */
 
-
 @media (prefers-reduced-motion: reduce) {
   .app-nav-dock {
     transition:
@@ -1348,7 +1294,6 @@ html[data-theme="light"] {
       box-shadow 0.25s ease;
   }
 }
-
 
 .nav-link:hover .nav-roll-top .nav-roll-char,
 .nav-link:focus-visible .nav-roll-top .nav-roll-char {
@@ -1367,10 +1312,7 @@ html[data-theme="light"] {
   }
 }
 
-
 @media (max-width: 520px) {
-  
-  
   .settings-preference-card,
   .notification-preferences-card {
     align-items: flex-start;
@@ -1381,18 +1323,16 @@ html[data-theme="light"] {
    BENTO GRID REDESIGN — data texture, multi-color accents, command rows
    ════════════════════════════════════════════════════════════════════════════ */
 
-
 @media (prefers-reduced-motion: reduce) {
   .bento-pulse-dot {
     animation: none;
   }
 }
 
-
 /* Dashboard counters use the dash display font — the global 'Sora' stack
    falls back to the dot-matrix Doto display font and looks broken here. */
 .dash-shell .bento-card-value {
-  font-family: var(--font-dash-display), "Outfit", sans-serif;
+  font-family: var(--font-dash-display), 'Outfit', sans-serif;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
@@ -1400,10 +1340,8 @@ html[data-theme="light"] {
 /* Mini sparkbar chart in the dominant card — ambient backdrop, right-anchored
    so it never collides with the value/description on the left. */
 
-
 /* Empty/loading state: a quiet, uniform baseline instead of a rising trend.
    Muted grey, no emphasized final bar — signals "no data yet", not growth. */
-
 
 @media (prefers-reduced-motion: reduce) {
   .bento-sparkbar-bar {
@@ -1419,7 +1357,6 @@ html[data-theme="light"] {
 }
 
 /* ── driver.js onboarding tour — dark glass theme overrides ────────────── */
-
 
 /* Highlighted element — crisp brand outline */
 
@@ -1478,7 +1415,6 @@ html[data-theme="light"] {
    desync it from --sidebar-width, which reserves the closed width, and the rail
    would sit on top of the content. */
 @media (max-width: 768px) {
-
   .app-sidebar:hover .sidebar-nav-item-label,
   .app-sidebar:hover .sidebar-user-info,
   .app-sidebar:hover .sidebar-signout-label,
@@ -1542,9 +1478,18 @@ html[data-theme="light"] {
   min-width: 9rem;
 }
 
-.dashboard-run-row .pipeline-dot { width: 0.45rem; height: 0.45rem; margin: 0; }
-.runs-empty:hover .dashboard-row-arrow { opacity: 1; transform: translateX(0); }
-.runs-empty .dashboard-row-arrow { color: var(--brand); }
+.dashboard-run-row .pipeline-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  margin: 0;
+}
+.runs-empty:hover .dashboard-row-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+.runs-empty .dashboard-row-arrow {
+  color: var(--brand);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .run-card,
@@ -1554,21 +1499,27 @@ html[data-theme="light"] {
   .getstarted-step,
   .getstarted-cta,
   .getstarted-cta span,
-  .getstarted-resource-links a { transition: none; }
+  .getstarted-resource-links a {
+    transition: none;
+  }
 }
 
 /* Reduced motion: kill the runs-hero ambient loops and hover transforms. */
 @media (prefers-reduced-motion: reduce) {
   .runs-live-dot,
   .run-status-live,
-  .run-track-seg--flowing::after { animation: none; }
+  .run-track-seg--flowing::after {
+    animation: none;
+  }
   .run-card,
   .run-card-cta,
   .run-card-cta svg,
   .runs-empty,
   .metric-cell--link,
   .runs-hero-chip,
-  .ops-spark-bar { transition: none; }
+  .ops-spark-bar {
+    transition: none;
+  }
 }
 
 .group-danger-zone strong {

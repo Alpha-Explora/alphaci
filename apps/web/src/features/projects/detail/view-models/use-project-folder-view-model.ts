@@ -1,15 +1,18 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { projectsRepository } from "../../data/projects-repository";
-import { manageProjectHref, repoSwitchPresentation } from "../model/project-folder-rules";
+import { projectsRepository } from '../../data/projects-repository';
+import {
+  manageProjectHref,
+  repoSwitchPresentation,
+} from '../model/project-folder-rules';
 import type {
   FolderRepoRole,
   ProjectFolderStatus,
   ProjectFolderSummary,
   RepoSwitchPresentation,
-} from "../model/project-folder-types";
+} from '../model/project-folder-types';
 
 export interface ProjectFolderViewModel extends RepoSwitchPresentation {
   status: ProjectFolderStatus;
@@ -23,7 +26,10 @@ export interface ProjectFolderViewModel extends RepoSwitchPresentation {
     name: string | null;
     href: string | null;
     /** Each repository's role (frontend, backend, …): what QA Studio's Playwright tab filters by. */
-    repositories: Array<{ projectId: string | null; role: FolderRepoRole | null }>;
+    repositories: Array<{
+      projectId: string | null;
+      role: FolderRepoRole | null;
+    }>;
   };
 }
 
@@ -33,14 +39,19 @@ interface Loaded {
   folder: ProjectFolderSummary | null;
 }
 
-function statusOf(active: boolean, current: Loaded | null): ProjectFolderStatus {
-  if (!active) return "idle";
-  if (!current) return "loading";
-  return current.folder ? "ready" : "unavailable";
+function statusOf(
+  active: boolean,
+  current: Loaded | null,
+): ProjectFolderStatus {
+  if (!active) return 'idle';
+  if (!current) return 'loading';
+  return current.folder ? 'ready' : 'unavailable';
 }
 
 /** The Project fields the QA screens need, whatever the Project's size. */
-function projectOf(folder: ProjectFolderSummary | null): ProjectFolderViewModel["project"] {
+function projectOf(
+  folder: ProjectFolderSummary | null,
+): ProjectFolderViewModel['project'] {
   return {
     deliveryProjectId: folder?.deliveryProjectId ?? null,
     name: folder?.name || null,

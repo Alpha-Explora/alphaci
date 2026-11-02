@@ -6,7 +6,7 @@
  * so a rule here can only hide a control the server would allow, never show
  * one it would refuse. */
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
 import type {
   QaActionError,
@@ -19,46 +19,54 @@ import type {
   QaVerdict,
   QaSignoffInput,
   UpdateQaRunItemInput,
-} from "./qa-run-types";
-import { isStaleCode, qaCodeMessage } from "./qa-error-messages";
+} from './qa-run-types';
+import { isStaleCode, qaCodeMessage } from './qa-error-messages';
 
 /* ── Labels ─────────────────────────────────────────────────────────────── */
 
 const STATUS_LABELS: Record<QaRunItemStatus, string> = {
-  pending: "Pending",
-  in_progress: "In progress",
-  passed: "Passed",
-  failed: "Failed",
-  blocked: "Blocked",
-  returned_to_dev: "Returned to dev",
+  pending: 'Pending',
+  in_progress: 'In progress',
+  passed: 'Passed',
+  failed: 'Failed',
+  blocked: 'Blocked',
+  returned_to_dev: 'Returned to dev',
 };
 
 const SEVERITY_LABELS: Record<QaDefectSeverity, string> = {
-  blocker: "Blocker",
-  major: "Major",
-  minor: "Minor",
+  blocker: 'Blocker',
+  major: 'Major',
+  minor: 'Minor',
 };
 
 const VERDICT_LABELS: Record<QaVerdict, string> = {
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
-  CONDITIONAL: "Conditional",
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  CONDITIONAL: 'Conditional',
 };
 
 /** Every status, in the order a tester moves through them. */
 export const QA_ITEM_STATUSES: ReadonlyArray<QaRunItemStatus> = [
-  "pending",
-  "in_progress",
-  "passed",
-  "failed",
-  "blocked",
-  "returned_to_dev",
+  'pending',
+  'in_progress',
+  'passed',
+  'failed',
+  'blocked',
+  'returned_to_dev',
 ];
 
-export const QA_SEVERITIES: ReadonlyArray<QaDefectSeverity> = ["blocker", "major", "minor"];
+export const QA_SEVERITIES: ReadonlyArray<QaDefectSeverity> = [
+  'blocker',
+  'major',
+  'minor',
+];
 
 /** In the order a signer weighs them: approve, approve with conditions, reject. */
-export const QA_VERDICTS: ReadonlyArray<QaVerdict> = ["APPROVED", "CONDITIONAL", "REJECTED"];
+export const QA_VERDICTS: ReadonlyArray<QaVerdict> = [
+  'APPROVED',
+  'CONDITIONAL',
+  'REJECTED',
+];
 
 export function itemStatusLabel(status: QaRunItemStatus): string {
   return STATUS_LABELS[status] ?? status;
@@ -72,45 +80,50 @@ export function verdictLabel(verdict: QaVerdict): string {
   return VERDICT_LABELS[verdict] ?? verdict;
 }
 
-export type QaTone = "success" | "danger" | "warning" | "brand" | "neutral";
+export type QaTone = 'success' | 'danger' | 'warning' | 'brand' | 'neutral';
 
 const STATUS_TONES: Record<QaRunItemStatus, QaTone> = {
-  pending: "neutral",
-  in_progress: "brand",
-  passed: "success",
-  failed: "danger",
-  blocked: "danger",
-  returned_to_dev: "warning",
+  pending: 'neutral',
+  in_progress: 'brand',
+  passed: 'success',
+  failed: 'danger',
+  blocked: 'danger',
+  returned_to_dev: 'warning',
 };
 
 export function itemStatusTone(status: QaRunItemStatus): QaTone {
-  return STATUS_TONES[status] ?? "neutral";
+  return STATUS_TONES[status] ?? 'neutral';
 }
 
 const VERDICT_TONES: Record<QaVerdict, QaTone> = {
-  APPROVED: "success",
-  CONDITIONAL: "warning",
-  REJECTED: "danger",
+  APPROVED: 'success',
+  CONDITIONAL: 'warning',
+  REJECTED: 'danger',
 };
 
 export function verdictTone(verdict: QaVerdict): QaTone {
-  return VERDICT_TONES[verdict] ?? "neutral";
+  return VERDICT_TONES[verdict] ?? 'neutral';
 }
 
 export function shortSha(sha: string | null | undefined): string {
-  return sha ? sha.slice(0, 7) : "";
+  return sha ? sha.slice(0, 7) : '';
 }
 
 /** "main @ abc1234". */
-export function commitLabel(branch: string, sha: string | null | undefined): string {
+export function commitLabel(
+  branch: string,
+  sha: string | null | undefined,
+): string {
   const short = shortSha(sha);
   return short ? `${branch} @ ${short}` : branch;
 }
 
 /** Whether the commit under test is what is actually deployed. */
-export function commitSourceLabel(source: QaCommitSource | null): string | null {
-  if (source === "deployment") return "deployed";
-  if (source === "branch_head") return "not deployed — testing the branch head";
+export function commitSourceLabel(
+  source: QaCommitSource | null,
+): string | null {
+  if (source === 'deployment') return 'deployed';
+  if (source === 'branch_head') return 'not deployed — testing the branch head';
   return null;
 }
 
@@ -124,9 +137,9 @@ export function agoLabel(
   now: number = Date.now(),
 ): string {
   const at = iso ? Date.parse(iso) : Number.NaN;
-  if (Number.isNaN(at)) return "";
+  if (Number.isNaN(at)) return '';
   const elapsed = Math.max(0, now - at);
-  if (elapsed < MINUTE) return "just now";
+  if (elapsed < MINUTE) return 'just now';
   if (elapsed < HOUR) return `${Math.floor(elapsed / MINUTE)}m ago`;
   if (elapsed < DAY) return `${Math.floor(elapsed / HOUR)}h ago`;
   return `${Math.floor(elapsed / DAY)}d ago`;
@@ -138,8 +151,8 @@ function plural(count: number, singular: string, pluralForm: string): string {
 
 /* ── What the viewer may do ─────────────────────────────────────────────── */
 
-export function isSignedOff(run: Pick<QaRun, "status">): boolean {
-  return run.status === "signed_off";
+export function isSignedOff(run: Pick<QaRun, 'status'>): boolean {
+  return run.status === 'signed_off';
 }
 
 /**
@@ -149,9 +162,9 @@ export function isSignedOff(run: Pick<QaRun, "status">): boolean {
  * merge to main is gated on.
  */
 export const REOPEN_CONFIRM = {
-  title: "Reopen this run?",
+  title: 'Reopen this run?',
   text: "Reopening removes this run's sign-off. Merge to main stays blocked until QA signs the run off Approved again.",
-  note: "Its items can change again and Playwright can run on it; the results already recorded stay.",
+  note: 'Its items can change again and Playwright can run on it; the results already recorded stay.',
 } as const;
 
 /**
@@ -159,7 +172,7 @@ export const REOPEN_CONFIRM = {
  * this only decides whether to offer the button or explain who can.
  */
 export function roleCanStartRun(role: AppRole | null | undefined): boolean {
-  return role === "qa" || role === "lead" || role === "admin";
+  return role === 'qa' || role === 'lead' || role === 'admin';
 }
 
 /**
@@ -168,8 +181,10 @@ export function roleCanStartRun(role: AppRole | null | undefined): boolean {
  * returned item are Developers, Team leads and Admins. QA Team members return
  * items; they do not mark their own returns fixed. The server still decides.
  */
-export function roleCanRequestRetest(role: AppRole | null | undefined): boolean {
-  return role === "member" || role === "lead" || role === "admin";
+export function roleCanRequestRetest(
+  role: AppRole | null | undefined,
+): boolean {
+  return role === 'member' || role === 'lead' || role === 'admin';
 }
 
 /**
@@ -195,8 +210,8 @@ export function lockLegacyRun(run: QaRun): QaRun {
 
 /** Whether this viewer may change this item at all, on this run. */
 export function canEditItem(
-  item: Pick<QaRunItem, "canUpdate">,
-  run: Pick<QaRun, "status" | "permissions">,
+  item: Pick<QaRunItem, 'canUpdate'>,
+  run: Pick<QaRun, 'status' | 'permissions'>,
 ): boolean {
   return !isSignedOff(run) && run.permissions.canUpdateItems && item.canUpdate;
 }
@@ -206,47 +221,52 @@ export function canEditItem(
  * read-only for them. "Returned to dev" only with the run's permission.
  */
 export function allowedItemStatuses(
-  item: Pick<QaRunItem, "canUpdate">,
-  run: Pick<QaRun, "status" | "permissions">,
+  item: Pick<QaRunItem, 'canUpdate'>,
+  run: Pick<QaRun, 'status' | 'permissions'>,
 ): QaRunItemStatus[] {
   if (!canEditItem(item, run)) return [];
   return QA_ITEM_STATUSES.filter(
-    (status) => status !== "returned_to_dev" || run.permissions.canReturnToDev,
+    (status) => status !== 'returned_to_dev' || run.permissions.canReturnToDev,
   );
 }
 
 /** Failed and Returned to dev must say how bad it is before they are sent. */
 export function statusNeedsSeverity(status: QaRunItemStatus): boolean {
-  return status === "failed" || status === "returned_to_dev";
+  return status === 'failed' || status === 'returned_to_dev';
 }
 
 /** Statuses that describe a defect, so severity and repro steps apply. */
 export function statusShowsDefect(status: QaRunItemStatus): boolean {
-  return status === "failed" || status === "blocked" || status === "returned_to_dev";
+  return (
+    status === 'failed' || status === 'blocked' || status === 'returned_to_dev'
+  );
 }
 
 export function canRequestRetest(
-  item: Pick<QaRunItem, "status">,
-  run: Pick<QaRun, "status" | "permissions">,
+  item: Pick<QaRunItem, 'status'>,
+  run: Pick<QaRun, 'status' | 'permissions'>,
 ): boolean {
   return (
     !isSignedOff(run) &&
     run.permissions.canRequestRetest &&
-    item.status === "returned_to_dev"
+    item.status === 'returned_to_dev'
   );
 }
 
 /* ── Item drafts ─────────────────────────────────────────────────────────── */
 
 export function itemDraftFrom(
-  item: Pick<QaRunItem, "status" | "notes" | "defectSeverity" | "reproductionSteps">,
+  item: Pick<
+    QaRunItem,
+    'status' | 'notes' | 'defectSeverity' | 'reproductionSteps'
+  >,
   status: QaRunItemStatus = item.status,
 ): QaItemDraft {
   return {
     status,
-    notes: item.notes ?? "",
-    defectSeverity: item.defectSeverity ?? "",
-    reproductionSteps: item.reproductionSteps ?? "",
+    notes: item.notes ?? '',
+    defectSeverity: item.defectSeverity ?? '',
+    reproductionSteps: item.reproductionSteps ?? '',
   };
 }
 
@@ -270,7 +290,7 @@ function textOrNull(value: string): string | null {
 export function itemUpdatePayload(
   item: Pick<
     QaRunItem,
-    "status" | "notes" | "defectSeverity" | "reproductionSteps" | "rowVersion"
+    'status' | 'notes' | 'defectSeverity' | 'reproductionSteps' | 'rowVersion'
   >,
   draft: QaItemDraft,
 ): UpdateQaRunItemInput | null {
@@ -280,28 +300,30 @@ export function itemUpdatePayload(
   const severity = draft.defectSeverity || null;
   if (draft.status !== item.status) body.status = draft.status;
   if (notes !== (item.notes ?? null)) body.notes = notes;
-  if (severity !== (item.defectSeverity ?? null)) body.defectSeverity = severity;
-  if (steps !== (item.reproductionSteps ?? null)) body.reproductionSteps = steps;
+  if (severity !== (item.defectSeverity ?? null))
+    body.defectSeverity = severity;
+  if (steps !== (item.reproductionSteps ?? null))
+    body.reproductionSteps = steps;
   return Object.keys(body).length > 1 ? body : null;
 }
 
 /* ── Summary ─────────────────────────────────────────────────────────────── */
 
-export function passedLabel(run: Pick<QaRun, "summary">): string {
+export function passedLabel(run: Pick<QaRun, 'summary'>): string {
   return `${run.summary.byStatus.passed ?? 0}/${run.summary.total} passed`;
 }
 
 export function openDefectsLabel(count: number): string {
-  return plural(count, "open defect", "open defects");
+  return plural(count, 'open defect', 'open defects');
 }
 
 export function blockersLabel(count: number): string {
-  return plural(count, "blocker", "blockers");
+  return plural(count, 'blocker', 'blockers');
 }
 
 /** Each status's share of the run, for the progress bar. Zero shares dropped. */
 export function statusSegments(
-  run: Pick<QaRun, "summary">,
+  run: Pick<QaRun, 'summary'>,
 ): Array<{ status: QaRunItemStatus; count: number; percent: number }> {
   const total = run.summary.total;
   if (total <= 0) return [];
@@ -312,7 +334,9 @@ export function statusSegments(
 }
 
 /** "Last run on abc1234: Failed", or null on a first run. */
-export function previousResultLabel(item: Pick<QaRunItem, "previous">): string | null {
+export function previousResultLabel(
+  item: Pick<QaRunItem, 'previous'>,
+): string | null {
   if (!item.previous) return null;
   return `Last run on ${shortSha(item.previous.commitSha)}: ${itemStatusLabel(item.previous.status)}`;
 }
@@ -321,7 +345,7 @@ export function previousResultLabel(item: Pick<QaRunItem, "previous">): string |
 
 /** What sign-off weighs: each item's status, on a repository run or a Project run. */
 export interface SignoffItems {
-  items: ReadonlyArray<Pick<QaRunItem, "status">>;
+  items: ReadonlyArray<Pick<QaRunItem, 'status'>>;
 }
 
 export interface VerdictEligibility {
@@ -332,23 +356,30 @@ export interface VerdictEligibility {
 }
 
 function countWhere(
-  items: ReadonlyArray<Pick<QaRunItem, "status">>,
+  items: ReadonlyArray<Pick<QaRunItem, 'status'>>,
   test: (status: QaRunItemStatus) => boolean,
 ): number {
   return items.filter((item) => test(item.status)).length;
 }
 
-function approvedReason(items: ReadonlyArray<Pick<QaRunItem, "status">>): string | null {
-  if (items.length === 0) return "This run has no items to approve.";
-  const notPassed = countWhere(items, (status) => status !== "passed");
+function approvedReason(
+  items: ReadonlyArray<Pick<QaRunItem, 'status'>>,
+): string | null {
+  if (items.length === 0) return 'This run has no items to approve.';
+  const notPassed = countWhere(items, (status) => status !== 'passed');
   if (notPassed === 0) return null;
-  return `${plural(notPassed, "item is", "items are")} not passed yet.`;
+  return `${plural(notPassed, 'item is', 'items are')} not passed yet.`;
 }
 
-function conditionalReason(items: ReadonlyArray<Pick<QaRunItem, "status">>): string | null {
-  const open = countWhere(items, (status) => status === "pending" || status === "in_progress");
+function conditionalReason(
+  items: ReadonlyArray<Pick<QaRunItem, 'status'>>,
+): string | null {
+  const open = countWhere(
+    items,
+    (status) => status === 'pending' || status === 'in_progress',
+  );
   if (open === 0) return null;
-  return `${plural(open, "item is", "items are")} still pending or in progress.`;
+  return `${plural(open, 'item is', 'items are')} still pending or in progress.`;
 }
 
 /**
@@ -360,10 +391,13 @@ function conditionalReason(items: ReadonlyArray<Pick<QaRunItem, "status">>): str
 export function signoffBlockedReason(run: SignoffItems): string | null {
   const open = countWhere(
     run.items,
-    (status) => status === "failed" || status === "blocked" || status === "returned_to_dev",
+    (status) =>
+      status === 'failed' ||
+      status === 'blocked' ||
+      status === 'returned_to_dev',
   );
   if (open === 0) return null;
-  return `${plural(open, "item is", "items are")} failed, blocked or returned to dev. Sign off once QA has verified the ${open === 1 ? "fix" : "fixes"}.`;
+  return `${plural(open, 'item is', 'items are')} failed, blocked or returned to dev. Sign off once QA has verified the ${open === 1 ? 'fix' : 'fixes'}.`;
 }
 
 /**
@@ -372,9 +406,7 @@ export function signoffBlockedReason(run: SignoffItems): string | null {
  * Conditional needs nothing left pending or in progress (and conditions,
  * checked on submit), and Rejected is open.
  */
-export function signoffEligibility(
-  run: SignoffItems,
-): VerdictEligibility[] {
+export function signoffEligibility(run: SignoffItems): VerdictEligibility[] {
   const blocked = signoffBlockedReason(run);
   const reasons: Record<QaVerdict, string | null> = {
     APPROVED: blocked ?? approvedReason(run.items),
@@ -390,7 +422,10 @@ export function signoffEligibility(
 
 /** The first verdict the run can take, preferring Approved. */
 export function defaultVerdict(run: SignoffItems): QaVerdict {
-  return signoffEligibility(run).find((entry) => entry.allowed)?.verdict ?? "REJECTED";
+  return (
+    signoffEligibility(run).find((entry) => entry.allowed)?.verdict ??
+    'REJECTED'
+  );
 }
 
 export function signoffError(
@@ -398,10 +433,12 @@ export function signoffError(
   verdict: QaVerdict,
   conditions: string,
 ): string | null {
-  const entry = signoffEligibility(run).find((candidate) => candidate.verdict === verdict);
+  const entry = signoffEligibility(run).find(
+    (candidate) => candidate.verdict === verdict,
+  );
   if (entry && !entry.allowed) return entry.reason;
-  if (verdict === "CONDITIONAL" && !conditions.trim()) {
-    return "Write the conditions this approval depends on.";
+  if (verdict === 'CONDITIONAL' && !conditions.trim()) {
+    return 'Write the conditions this approval depends on.';
   }
   return null;
 }
@@ -416,54 +453,57 @@ export function signoffPayload(
   const trimmedSummary = summary.trim();
   const trimmedConditions = conditions.trim();
   if (trimmedSummary) body.summary = trimmedSummary;
-  if (verdict === "CONDITIONAL" && trimmedConditions) body.conditions = trimmedConditions;
+  if (verdict === 'CONDITIONAL' && trimmedConditions)
+    body.conditions = trimmedConditions;
   return body;
 }
 
 /* ── Errors ──────────────────────────────────────────────────────────────── */
 
 function errorStatus(cause: unknown): number | null {
-  if (typeof cause !== "object" || cause === null) return null;
+  if (typeof cause !== 'object' || cause === null) return null;
   const status = (cause as { status?: unknown }).status;
-  return typeof status === "number" ? status : null;
+  return typeof status === 'number' ? status : null;
 }
 
 /** The server's own message, when it sent one. Nest sends arrays for validation. */
 function serverMessage(cause: unknown): string | null {
-  const details = (cause as { details?: { message?: unknown } } | null)?.details;
+  const details = (cause as { details?: { message?: unknown } } | null)
+    ?.details;
   const message = details?.message;
   if (Array.isArray(message)) {
-    const joined = message.filter((part) => typeof part === "string").join(" ");
+    const joined = message.filter((part) => typeof part === 'string').join(' ');
     return joined || null;
   }
-  return typeof message === "string" && message.trim() ? message.trim() : null;
+  return typeof message === 'string' && message.trim() ? message.trim() : null;
 }
 
 function serverCode(cause: unknown): string {
   const details = (cause as { details?: { code?: unknown } } | null)?.details;
-  return typeof details?.code === "string" ? details.code.toLowerCase() : "";
+  return typeof details?.code === 'string' ? details.code.toLowerCase() : '';
 }
 
 /** Codes the backend sends on the 409s a reload resolves (stale item, run changed mid-signoff). */
-const STALE_CODES = new Set(["qa_item_stale", "qa_run_changed"]);
+const STALE_CODES = new Set(['qa_item_stale', 'qa_run_changed']);
 
 /** Fallback for a backend that predates the codes. */
 const STALE_PATTERN = /row ?version|stale|changed since|modified|someone else/;
 
 export const STALE_RUN_MESSAGE =
-  "Someone else updated this item since you loaded the run. Reload the run to see their change, then try again.";
+  'Someone else updated this item since you loaded the run. Reload the run to see their change, then try again.';
 
 /** True for the 409 a reload fixes: the item moved on since the viewer read it. */
 export function isStaleRunConflict(cause: unknown): boolean {
   if (errorStatus(cause) !== 409) return false;
   if (STALE_CODES.has(serverCode(cause))) return true;
-  const text = `${serverCode(cause)} ${(serverMessage(cause) ?? "").toLowerCase()}`;
+  const text = `${serverCode(cause)} ${(serverMessage(cause) ?? '').toLowerCase()}`;
   return STALE_PATTERN.test(text);
 }
 
 function fallbackFor(status: number | null, fallback: string): string {
-  if (status === 403) return "Your role cannot make this change.";
-  if (status === 404) return "This QA run no longer exists, or you no longer have access to it.";
+  if (status === 403) return 'Your role cannot make this change.';
+  if (status === 404)
+    return 'This QA run no longer exists, or you no longer have access to it.';
   return fallback;
 }
 

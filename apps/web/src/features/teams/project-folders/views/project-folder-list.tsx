@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useId } from "react";
+import Link from 'next/link';
+import { useId } from 'react';
 
-import { requirementCountLabel } from "@/features/checklists";
-import { LoadingRows } from "@/features/groups/workspace";
-import type { AppRole } from "@/shared/api/contracts";
+import { requirementCountLabel } from '@/features/checklists';
+import { LoadingRows } from '@/features/groups/workspace';
+import type { AppRole } from '@/shared/api/contracts';
 
 import {
   createRepositoryHref,
@@ -15,10 +15,17 @@ import {
   projectDashboardHref,
   repositoryCountLabel,
   type FolderFeatureGate,
-} from "../model/project-folder-rules";
-import type { ProjectFolder, UnfiledProject } from "../model/project-folder-types";
-import type { ProjectFoldersViewModel } from "../view-models/use-project-folders-view-model";
-import { AddRepositoryAction, FeatureNudge, FeaturesRequiredNote } from "./feature-gate";
+} from '../model/project-folder-rules';
+import type {
+  ProjectFolder,
+  UnfiledProject,
+} from '../model/project-folder-types';
+import type { ProjectFoldersViewModel } from '../view-models/use-project-folders-view-model';
+import {
+  AddRepositoryAction,
+  FeatureNudge,
+  FeaturesRequiredNote,
+} from './feature-gate';
 import {
   ChecklistIcon,
   ChevronIcon,
@@ -26,19 +33,26 @@ import {
   InboxIcon,
   PlusIcon,
   SlidersIcon,
-} from "./project-folder-icons";
-import { RepoChip } from "./repo-chip";
+} from './project-folder-icons';
+import { RepoChip } from './repo-chip';
 
 function FolderMeta({
   folder,
   requirementCounts,
-}: Readonly<{ folder: ProjectFolder; requirementCounts: Record<string, number> | null }>) {
-  const count = requirementCounts ? (requirementCounts[folder.deliveryProjectId] ?? 0) : null;
+}: Readonly<{
+  folder: ProjectFolder;
+  requirementCounts: Record<string, number> | null;
+}>) {
+  const count = requirementCounts
+    ? (requirementCounts[folder.deliveryProjectId] ?? 0)
+    : null;
   return (
     <span className="pf-card__meta">
       <span>{repositoryCountLabel(folder.repositories.length)}</span>
       {count === null ? null : (
-        <span className={`pf-card__checklists${count === 0 ? " pf-card__checklists--none" : ""}`}>
+        <span
+          className={`pf-card__checklists${count === 0 ? ' pf-card__checklists--none' : ''}`}
+        >
           <ChecklistIcon />
           {requirementCountLabel(count)}
         </span>
@@ -100,7 +114,10 @@ function FolderCard({
     <li className="pf-card">
       <div className="pf-card__head">
         {landingId ? (
-          <Link className="pf-card__open" href={projectDashboardHref(landingId)}>
+          <Link
+            className="pf-card__open"
+            href={projectDashboardHref(landingId)}
+          >
             {face}
           </Link>
         ) : (
@@ -126,11 +143,18 @@ function FolderCard({
           showLabel={false}
         />
       </div>
-      {gate.addRepository === "blocked" ? (
-        <FeaturesRequiredNote id={noteId} className="pf-gate-note pf-card__foot" />
+      {gate.addRepository === 'blocked' ? (
+        <FeaturesRequiredNote
+          id={noteId}
+          className="pf-gate-note pf-card__foot"
+        />
       ) : null}
       {gate.featureNudge ? (
-        <FeatureNudge projectName={folder.name} onAddFeature={onAddFeature} className="pf-nudge pf-card__foot" />
+        <FeatureNudge
+          projectName={folder.name}
+          onAddFeature={onAddFeature}
+          className="pf-nudge pf-card__foot"
+        />
       ) : null}
     </li>
   );
@@ -195,9 +219,9 @@ function EmptyExplorer({
       </span>
       <h4 className="hier-state-title">No Projects yet</h4>
       <p className="hier-state-text">
-        A Project groups the repositories that ship together, such as a
-        frontend and its backend.
-        {lead ? ` ${lead}` : ""}
+        A Project groups the repositories that ship together, such as a frontend
+        and its backend.
+        {lead ? ` ${lead}` : ''}
       </p>
       {vm.canCreateProject ? (
         <button type="button" className="primary-button" onClick={onCreate}>
@@ -214,9 +238,9 @@ export function ProjectFolderList({
   vm,
   onCreate,
 }: Readonly<{ vm: ProjectFoldersViewModel; onCreate: () => void }>) {
-  if (vm.status === "loading") return <LoadingRows rows={3} />;
-  if (vm.status === "error") {
-    return <ExplorerError message={vm.error ?? ""} onRetry={vm.reload} />;
+  if (vm.status === 'loading') return <LoadingRows rows={3} />;
+  if (vm.status === 'error') {
+    return <ExplorerError message={vm.error ?? ''} onRetry={vm.reload} />;
   }
   if (vm.folders.length === 0 && vm.unfiled.length === 0) {
     return <EmptyExplorer vm={vm} onCreate={onCreate} />;
@@ -231,9 +255,14 @@ export function ProjectFolderList({
               folder={folder}
               requirementCounts={vm.requirementCounts}
               gate={folderFeatureGate(folder, vm)}
-              addRepositoryHref={createRepositoryHref(vm.groupId, folder.deliveryProjectId)}
+              addRepositoryHref={createRepositoryHref(
+                vm.groupId,
+                folder.deliveryProjectId,
+              )}
               onOpen={() => vm.openFolder(folder.deliveryProjectId)}
-              onAddFeature={() => vm.requestNewFeature(folder.deliveryProjectId)}
+              onAddFeature={() =>
+                vm.requestNewFeature(folder.deliveryProjectId)
+              }
             />
           ))}
         </ul>

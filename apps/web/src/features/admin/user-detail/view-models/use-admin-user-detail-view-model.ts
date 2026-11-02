@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { adminRepository } from "../../data/admin-repository";
-import { describeRoleError } from "../../model/admin-rules";
+import { adminRepository } from '../../data/admin-repository';
+import { describeRoleError } from '../../model/admin-rules';
 import {
   APP_ROLE_LABELS,
   type AdminStatus,
   type AdminUserDetail,
   type AppRole,
-} from "../../model/admin-types";
+} from '../../model/admin-types';
 
 export interface AdminUserDetailViewModel {
   detail: AdminUserDetail | null;
@@ -29,7 +29,7 @@ export function useAdminUserDetailViewModel(
   id: string,
 ): AdminUserDetailViewModel {
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
-  const [status, setStatus] = useState<AdminStatus>("loading");
+  const [status, setStatus] = useState<AdminStatus>('loading');
   const [error, setError] = useState<string | null>(null);
   const [roleBusy, setRoleBusy] = useState(false);
   const [roleMessage, setRoleMessage] = useState<string | null>(null);
@@ -48,12 +48,12 @@ export function useAdminUserDetailViewModel(
         if (!active || rid !== req.current) return;
         setDetail(next);
         setError(null);
-        setStatus("ready");
+        setStatus('ready');
       })
       .catch(() => {
         if (!active || rid !== req.current) return;
-        setError("Could not load this user.");
-        setStatus("error");
+        setError('Could not load this user.');
+        setStatus('error');
       });
 
     return () => {
@@ -92,7 +92,7 @@ export function useAdminUserDetailViewModel(
       await adminRepository.resetUserRoleToGithub(id);
       reload();
       setRoleMessage(
-        "Now following GitHub teams. The role updates on their next sign-in, or immediately if their team membership changes.",
+        'Now following GitHub teams. The role updates on their next sign-in, or immediately if their team membership changes.',
       );
     } catch (cause) {
       setRoleMessage(`Failed to reset role: ${describeRoleError(cause)}`);

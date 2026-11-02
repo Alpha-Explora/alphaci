@@ -1,4 +1,4 @@
-import type { EnvironmentDraft } from "./project-environments-rules";
+import type { EnvironmentDraft } from './project-environments-rules';
 
 /**
  * The problem with each environment's on-prem host assignment, in the order
@@ -24,8 +24,8 @@ export function setupHostAssignmentsProblem(
 function assignmentProblem(environment: EnvironmentDraft): string | null {
   const binding = environment.hostAssignment;
   if (!binding) return null;
-  if (environment.runsOn !== "onprem")
-    return "Assign machines only to on-prem environments.";
+  if (environment.runsOn !== 'onprem')
+    return 'Assign machines only to on-prem environments.';
   // Host ports are allocated by AlphaCI on the machine; only the
   // container's own port is chosen here.
   if (
@@ -36,32 +36,32 @@ function assignmentProblem(environment: EnvironmentDraft): string | null {
         port.containerPort > 65535,
     )
   )
-    return "Use whole container port numbers from 1 to 65535.";
+    return 'Use whole container port numbers from 1 to 65535.';
   if (
     binding.config.health.some(
-      (item) => !item.path?.startsWith("/") || item.path.startsWith("//"),
+      (item) => !item.path?.startsWith('/') || item.path.startsWith('//'),
     )
   )
-    return "Enter an application health path, or choose Assign later.";
+    return 'Enter an application health path, or choose Assign later.';
   return productionIngressProblem(environment);
 }
 
 function productionIngressProblem(environment: EnvironmentDraft) {
   const binding = environment.hostAssignment;
-  if (environment.role !== "production" || !binding) return null;
+  if (environment.role !== 'production' || !binding) return null;
   // AlphaCI provides the automatic HTTPS address, so the mode itself meets the
   // requirement (a permanent apps-domain address, or the machine's tunnel).
   const { mode, publicUrl } = binding.config.ingress;
-  if (mode === "tunnel") return null;
-  if (mode === "configured" && publicUrl?.startsWith("https://")) return null;
-  return "Add an HTTPS URL or choose the automatic HTTPS address for Production, or choose Assign later.";
+  if (mode === 'tunnel') return null;
+  if (mode === 'configured' && publicUrl?.startsWith('https://')) return null;
+  return 'Add an HTTPS URL or choose the automatic HTTPS address for Production, or choose Assign later.';
 }
 
 /** A slot an on-prem host runs: the backend or the frontend container. */
-export type HostSlot = "frontend" | "backend";
+export type HostSlot = 'frontend' | 'backend';
 
-type HostAssignment = NonNullable<EnvironmentDraft["hostAssignment"]>;
-type HostAssignmentConfig = HostAssignment["config"];
+type HostAssignment = NonNullable<EnvironmentDraft['hostAssignment']>;
+type HostAssignmentConfig = HostAssignment['config'];
 
 /** The container port and health path a slot's app serves. */
 export interface SlotRuntime {
@@ -81,11 +81,14 @@ export type SlotRuntimes = Partial<Record<HostSlot, SlotRuntime>>;
  * backend, or a type with no scaffold). The same fallback the backend uses.
  */
 function fallbackSlotRuntime(slot: HostSlot): SlotRuntime {
-  return { containerPort: slot === "frontend" ? 3000 : 4000, healthPath: "/" };
+  return { containerPort: slot === 'frontend' ? 3000 : 4000, healthPath: '/' };
 }
 
 /** The slot's defaults: its app's contract, or the fallback. */
-export function slotRuntime(slot: HostSlot, runtimes?: SlotRuntimes): SlotRuntime {
+export function slotRuntime(
+  slot: HostSlot,
+  runtimes?: SlotRuntimes,
+): SlotRuntime {
   return runtimes?.[slot] ?? fallbackSlotRuntime(slot);
 }
 
@@ -109,7 +112,10 @@ export function defaultHostAssignment(
         slot,
         containerPort: slotRuntime(slot, runtimes).containerPort,
       })),
-      health: slots.map((slot) => ({ slot, path: slotRuntime(slot, runtimes).healthPath })),
+      health: slots.map((slot) => ({
+        slot,
+        path: slotRuntime(slot, runtimes).healthPath,
+      })),
       // A frontend is what people open (QA Studio, reviewers), so it gets the
       // automatic HTTPS address; direct access only answers on the machine's
       // own network. Production gets it too: on a server with an apps domain
@@ -117,9 +123,9 @@ export function defaultHostAssignment(
       // stays direct.
       ingress: {
         mode:
-          slots.includes("frontend") || environment.role === "production"
-            ? "tunnel"
-            : "direct",
+          slots.includes('frontend') || environment.role === 'production'
+            ? 'tunnel'
+            : 'direct',
         publicUrl: null,
       },
     },
@@ -145,7 +151,7 @@ export function slotHealthPath(
   runtimes?: SlotRuntimes,
 ): string {
   const health = config.health.find((item) => item.slot === slot);
-  return health ? (health.path ?? "") : slotRuntime(slot, runtimes).healthPath;
+  return health ? (health.path ?? '') : slotRuntime(slot, runtimes).healthPath;
 }
 
 /** The config with one slot's container port changed; the other slots keep theirs. */
@@ -155,7 +161,9 @@ export function withSlotContainerPort(
   containerPort: number,
 ): HostAssignmentConfig {
   const ports = config.ports.some((port) => port.slot === slot)
-    ? config.ports.map((port) => (port.slot === slot ? { slot, containerPort } : port))
+    ? config.ports.map((port) =>
+        port.slot === slot ? { slot, containerPort } : port,
+      )
     : [...config.ports, { slot, containerPort }];
   return { ...config, ports };
 }
@@ -247,7 +255,10 @@ export function refitHostAssignmentDefaults(
     changed = true;
     return {
       ...environment,
-      hostAssignment: { ...binding, config: { ...binding.config, ports, health } },
+      hostAssignment: {
+        ...binding,
+        config: { ...binding.config, ports, health },
+      },
     };
   });
   return changed ? refitted : environments;

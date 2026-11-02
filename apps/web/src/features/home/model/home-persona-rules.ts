@@ -5,30 +5,33 @@
  * session with no role, keeps the team dashboard; it never inherits another
  * role's Home by being "not a member". */
 
-import { NO_PROJECT_YET_MESSAGE } from "@/features/groups";
-import { folderLandingProjectId } from "@/features/teams/project-folders";
-import { APP_ROLE_BADGE_LABELS } from "@/shared/api/contracts";
+import { NO_PROJECT_YET_MESSAGE } from '@/features/groups';
+import { folderLandingProjectId } from '@/features/teams/project-folders';
+import { APP_ROLE_BADGE_LABELS } from '@/shared/api/contracts';
 
 import type {
   HomePersona,
   HomeRoleBadge,
   HomeScope,
   HomeSectionStates,
-} from "./home-persona-types";
-import { isEmptyWorkspace } from "./home-rules";
+} from './home-persona-types';
+import { isEmptyWorkspace } from './home-rules';
 import type {
   AppRole,
   ProjectFolder,
   TeamQaOverview,
   TeamQaProject,
-} from "./home-types";
+} from './home-types';
 
-const ROLE_PERSONAS: ReadonlyMap<string, HomePersona> = new Map<string, HomePersona>([
-  ["member", "developer"],
-  ["qa", "qa"],
-  ["lead", "product-owner"],
+const ROLE_PERSONAS: ReadonlyMap<string, HomePersona> = new Map<
+  string,
+  HomePersona
+>([
+  ['member', 'developer'],
+  ['qa', 'qa'],
+  ['lead', 'product-owner'],
   // An admin holds every Product owner power; the Product owner Home is what they act on.
-  ["admin", "product-owner"],
+  ['admin', 'product-owner'],
 ]);
 
 /**
@@ -40,15 +43,19 @@ export function homePersonaFor(input: {
   appRole: AppRole | null | undefined;
   qaChecklistsEnabled: boolean;
 }): HomePersona {
-  const persona = ROLE_PERSONAS.get(input.appRole ?? "") ?? "team";
-  if (persona === "qa" && !input.qaChecklistsEnabled) return "team";
+  const persona = ROLE_PERSONAS.get(input.appRole ?? '') ?? 'team';
+  if (persona === 'qa' && !input.qaChecklistsEnabled) return 'team';
   return persona;
 }
 
-const BADGE_ROLES: ReadonlySet<string> = new Set(Object.keys(APP_ROLE_BADGE_LABELS));
+const BADGE_ROLES: ReadonlySet<string> = new Set(
+  Object.keys(APP_ROLE_BADGE_LABELS),
+);
 
 /** The role badge beside the Home greeting, or null for a session with no known role. */
-export function homeRoleBadge(appRole: AppRole | null | undefined): HomeRoleBadge | null {
+export function homeRoleBadge(
+  appRole: AppRole | null | undefined,
+): HomeRoleBadge | null {
   if (!appRole || !BADGE_ROLES.has(appRole)) return null;
   return { role: appRole, label: APP_ROLE_BADGE_LABELS[appRole] };
 }
@@ -56,18 +63,20 @@ export function homeRoleBadge(appRole: AppRole | null | undefined): HomeRoleBadg
 /* ── Scope: "my Projects" ───────────────────────────────────────────────── */
 
 /** The Project membership that makes a Project "mine". Product owners see the whole team. */
-const PERSONA_MEMBERSHIP: Readonly<Record<HomePersona, "developer" | "qa" | null>> = {
+const PERSONA_MEMBERSHIP: Readonly<
+  Record<HomePersona, 'developer' | 'qa' | null>
+> = {
   team: null,
-  developer: "developer",
-  qa: "qa",
-  "product-owner": null,
+  developer: 'developer',
+  qa: 'qa',
+  'product-owner': null,
 };
 
 const FALLBACK_LINES: Readonly<Record<HomePersona, string | null>> = {
   team: null,
   developer: "Your Product owner hasn't added you to a Project yet.",
   qa: "You haven't been added to a Project as QA yet.",
-  "product-owner": null,
+  'product-owner': null,
 };
 
 /** Every Project of the team: the Projects list first, then any only the overview names. */
@@ -76,7 +85,9 @@ export function teamProjectIds(
   overview: TeamQaOverview | null,
 ): string[] {
   const ids = folders.map((folder) => folder.deliveryProjectId);
-  const extra = (overview?.projects ?? []).map((project) => project.deliveryProject.id);
+  const extra = (overview?.projects ?? []).map(
+    (project) => project.deliveryProject.id,
+  );
   return [...new Set([...ids, ...extra])];
 }
 
@@ -94,17 +105,20 @@ export function homeScopeFor(input: {
 }): HomeScope {
   const team = teamProjectIds(input.folders, input.overview);
   const membership = PERSONA_MEMBERSHIP[input.persona];
-  if (!membership || !input.overview) return { mode: "team", projectIds: team };
+  if (!membership || !input.overview) return { mode: 'team', projectIds: team };
   const mine = input.overview.projects
     .filter((project) => project.viewerMembership === membership)
     .map((project) => project.deliveryProject.id);
-  if (mine.length > 0) return { mode: "mine", projectIds: mine };
-  return { mode: "fallback", projectIds: team };
+  if (mine.length > 0) return { mode: 'mine', projectIds: mine };
+  return { mode: 'fallback', projectIds: team };
 }
 
 /** The line a fallback scope carries, or null. */
-export function scopeFallbackLine(persona: HomePersona, scope: HomeScope): string | null {
-  return scope.mode === "fallback" ? FALLBACK_LINES[persona] : null;
+export function scopeFallbackLine(
+  persona: HomePersona,
+  scope: HomeScope,
+): string | null {
+  return scope.mode === 'fallback' ? FALLBACK_LINES[persona] : null;
 }
 
 export function foldersInScope(
@@ -115,16 +129,24 @@ export function foldersInScope(
   return folders.filter((folder) => ids.has(folder.deliveryProjectId));
 }
 
-export function qaProjectsInScope(overview: TeamQaOverview | null, scope: HomeScope): TeamQaProject[] {
+export function qaProjectsInScope(
+  overview: TeamQaOverview | null,
+  scope: HomeScope,
+): TeamQaProject[] {
   const ids = new Set(scope.projectIds);
-  return (overview?.projects ?? []).filter((project) => ids.has(project.deliveryProject.id));
+  return (overview?.projects ?? []).filter((project) =>
+    ids.has(project.deliveryProject.id),
+  );
 }
 
 /* ── Links (ALPHACI pages only) ─────────────────────────────────────────── */
 
 const enc = encodeURIComponent;
 
-export function deliveryProjectHref(groupId: string, deliveryProjectId: string): string {
+export function deliveryProjectHref(
+  groupId: string,
+  deliveryProjectId: string,
+): string {
   return `/groups/${enc(groupId)}/delivery-projects/${enc(deliveryProjectId)}`;
 }
 
@@ -138,8 +160,16 @@ export interface HomeLinkContext {
   folders: ReadonlyMap<string, ProjectFolder>;
 }
 
-export function homeLinkContext(groupId: string, folders: ReadonlyArray<ProjectFolder>): HomeLinkContext {
-  return { groupId, folders: new Map(folders.map((folder) => [folder.deliveryProjectId, folder])) };
+export function homeLinkContext(
+  groupId: string,
+  folders: ReadonlyArray<ProjectFolder>,
+): HomeLinkContext {
+  return {
+    groupId,
+    folders: new Map(
+      folders.map((folder) => [folder.deliveryProjectId, folder]),
+    ),
+  };
 }
 
 /**
@@ -151,7 +181,7 @@ export function homeLinkContext(groupId: string, folders: ReadonlyArray<ProjectF
 export function projectStudioHref(
   links: HomeLinkContext,
   deliveryProjectId: string,
-  tab: "qa" | "po",
+  tab: 'qa' | 'po',
 ): string {
   const folder = links.folders.get(deliveryProjectId);
   const landing = folder ? folderLandingProjectId(folder) : null;
@@ -161,7 +191,8 @@ export function projectStudioHref(
 
 /* ── An empty team ──────────────────────────────────────────────────────── */
 
-export const WAITING_FOR_FIRST_PROJECT = "Waiting for your Product owner to create the first Project.";
+export const WAITING_FOR_FIRST_PROJECT =
+  'Waiting for your Product owner to create the first Project.';
 
 /** "No Projects yet" under a Developer's empty My work. */
 export const MY_WORK_EMPTY_LINE = NO_PROJECT_YET_MESSAGE;
@@ -171,8 +202,8 @@ export const MY_WORK_EMPTY_LINE = NO_PROJECT_YET_MESSAGE;
  * (a Product owner or admin, and the team dashboard), one calm waiting card
  * to a Developer or the QA Team, who cannot create a Project.
  */
-export function homeEmptyStateFor(persona: HomePersona): "journey" | "waiting" {
-  return persona === "developer" || persona === "qa" ? "waiting" : "journey";
+export function homeEmptyStateFor(persona: HomePersona): 'journey' | 'waiting' {
+  return persona === 'developer' || persona === 'qa' ? 'waiting' : 'journey';
 }
 
 /**
@@ -181,14 +212,14 @@ export function homeEmptyStateFor(persona: HomePersona): "journey" | "waiting" {
  * nothing about emptiness, so it never shows the empty state.
  */
 export function isPersonaHomeEmpty(input: {
-  states: Pick<HomeSectionStates, "projects" | "folders">;
+  states: Pick<HomeSectionStates, 'projects' | 'folders'>;
   projectCount: number;
   teamProjectCount: number;
 }): boolean {
   const { projects, folders } = input.states;
-  if (folders.status === "error") return false;
+  if (folders.status === 'error') return false;
   return isEmptyWorkspace({
-    loading: projects.status === "loading" || folders.status === "loading",
+    loading: projects.status === 'loading' || folders.status === 'loading',
     projectCount: input.projectCount,
     deliveryProjectCount: input.teamProjectCount,
   });

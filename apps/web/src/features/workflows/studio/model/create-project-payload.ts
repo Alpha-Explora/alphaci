@@ -2,19 +2,18 @@ import type {
   CreateProjectRequest,
   EnvTargetSlot,
   MvpProjectOptionKey,
-} from "@/shared/api/contracts";
-import { withOnpremTargets } from "./onprem-hosting-rules";
-import { setupHostAssignmentsProblem } from "./setup-host-assignment-rules";
+} from '@/shared/api/contracts';
+import { withOnpremTargets } from './onprem-hosting-rules';
+import { setupHostAssignmentsProblem } from './setup-host-assignment-rules';
 import {
   environmentsProblem,
   type EnvironmentDraft,
-} from "./project-environments-rules";
-import { validateProjectName } from "./project-name-rules";
-import { toSlug } from "./workflow-studio-rules";
+} from './project-environments-rules';
+import { validateProjectName } from './project-name-rules';
+import { toSlug } from './workflow-studio-rules';
 
 export type CreateProjectPayloadResult =
-  | { ok: true; payload: CreateProjectRequest }
-  | { ok: false; message: string };
+  { ok: true; payload: CreateProjectRequest } | { ok: false; message: string };
 
 export interface CreateProjectPayloadInput {
   /**
@@ -23,7 +22,7 @@ export interface CreateProjectPayloadInput {
    */
   projectName: string | null;
   repoName: string;
-  visibility: CreateProjectRequest["visibility"];
+  visibility: CreateProjectRequest['visibility'];
   nodeVersion: string;
   coverageThreshold: string;
   outputFileName: string;
@@ -41,9 +40,9 @@ export interface CreateProjectPayloadInput {
   projectTypeId: string;
   workflowRecipeId: string;
   tests: Record<MvpProjectOptionKey, boolean>;
-  ownerType?: "personal" | "organization";
+  ownerType?: 'personal' | 'organization';
   installationId?: number;
-  deploymentProvisioning?: CreateProjectRequest["deploymentProvisioning"];
+  deploymentProvisioning?: CreateProjectRequest['deploymentProvisioning'];
   /** Set only when the project is created with its own environments (on-prem hosting). */
   environments?: readonly EnvironmentDraft[];
   /**
@@ -72,13 +71,13 @@ export const ALWAYS_ON_TESTS: Readonly<Record<MvpProjectOptionKey, boolean>> = {
 function sanitizeRepoNameInput(value: string): string {
   return value
     .toLowerCase()
-    .replace(/^\s+/, "")
-    .replaceAll(/\s+/g, "-")
-    .replaceAll(/[^a-z0-9._-]/g, "");
+    .replace(/^\s+/, '')
+    .replaceAll(/\s+/g, '-')
+    .replaceAll(/[^a-z0-9._-]/g, '');
 }
 
 export function normalizeRepoName(value: string): string {
-  return sanitizeRepoNameInput(value).replaceAll(/^[-._]+|[-._]+$/g, "");
+  return sanitizeRepoNameInput(value).replaceAll(/^[-._]+|[-._]+$/g, '');
 }
 
 export { sanitizeRepoNameInput };
@@ -93,13 +92,13 @@ export function multiRepoRepositoryNames(repoName: string): {
   frontend: string;
 } {
   const normalized = normalizeRepoName(repoName);
-  const backend = normalized.endsWith("-be") ? normalized : `${normalized}-be`;
-  return { backend, frontend: backend.replace(/-be$/, "-fe") };
+  const backend = normalized.endsWith('-be') ? normalized : `${normalized}-be`;
+  return { backend, frontend: backend.replace(/-be$/, '-fe') };
 }
 
 function invalidRepoName(repoName: string): CreateProjectPayloadResult | null {
   if (!normalizeRepoName(repoName)) {
-    return { ok: false, message: "Repository name is required." };
+    return { ok: false, message: 'Repository name is required.' };
   }
   return null;
 }
@@ -116,14 +115,14 @@ function invalidProjectName(
 
 function projectNameField(
   projectName: string | null,
-): Pick<CreateProjectRequest, "projectName"> {
+): Pick<CreateProjectRequest, 'projectName'> {
   const check = projectName === null ? null : validateProjectName(projectName);
   return check?.ok ? { projectName: check.name } : {};
 }
 
 function invalidShape(repoShapeId: string): CreateProjectPayloadResult | null {
   if (!repoShapeId) {
-    return { ok: false, message: "Choose a repository shape." };
+    return { ok: false, message: 'Choose a repository shape.' };
   }
   return null;
 }
@@ -135,7 +134,7 @@ function invalidCoverage(
   if (!Number.isInteger(coverage) || coverage < 0 || coverage > 100) {
     return {
       ok: false,
-      message: "Coverage threshold must be between 0 and 100.",
+      message: 'Coverage threshold must be between 0 and 100.',
     };
   }
   return null;
@@ -144,40 +143,40 @@ function invalidCoverage(
 function invalidOutputFileName(
   outputFileName: string,
 ): CreateProjectPayloadResult | null {
-  const normalized = outputFileName.trim() || "ci.yml";
-  if (normalized.includes("/") || normalized.includes("\\")) {
+  const normalized = outputFileName.trim() || 'ci.yml';
+  if (normalized.includes('/') || normalized.includes('\\')) {
     return {
       ok: false,
-      message: "Workflow file name must be a .yml or .yaml basename.",
+      message: 'Workflow file name must be a .yml or .yaml basename.',
     };
   }
   if (!/\.ya?ml$/i.test(normalized)) {
     return {
       ok: false,
-      message: "Workflow file name must be a .yml or .yaml basename.",
+      message: 'Workflow file name must be a .yml or .yaml basename.',
     };
   }
   return null;
 }
 
 function invalidOwner(
-  ownerType: "personal" | "organization" | undefined,
+  ownerType: 'personal' | 'organization' | undefined,
   installationId: number | undefined,
 ): CreateProjectPayloadResult | null {
-  if ((ownerType ?? "personal") === "organization" && !installationId) {
-    return { ok: false, message: "Choose a linked GitHub organization." };
+  if ((ownerType ?? 'personal') === 'organization' && !installationId) {
+    return { ok: false, message: 'Choose a linked GitHub organization.' };
   }
   return null;
 }
 
 function ownerFields(
-  ownerType: "personal" | "organization" | undefined,
+  ownerType: 'personal' | 'organization' | undefined,
   installationId: number | undefined,
-): Pick<CreateProjectRequest, "ownerType" | "installationId"> {
+): Pick<CreateProjectRequest, 'ownerType' | 'installationId'> {
   if (!ownerType) {
     return {};
   }
-  if (ownerType === "organization" && installationId) {
+  if (ownerType === 'organization' && installationId) {
     return { ownerType, installationId };
   }
   return { ownerType };
@@ -204,7 +203,7 @@ function sharedFields(
   outputFileName: string,
 ): Omit<
   CreateProjectRequest,
-  "projectTypeId" | "workflowRecipeId" | "serviceName" | "servicePath"
+  'projectTypeId' | 'workflowRecipeId' | 'serviceName' | 'servicePath'
 > {
   return {
     ...projectNameField(input.projectName),
@@ -212,7 +211,7 @@ function sharedFields(
     visibility: input.visibility,
     ...ownerFields(input.ownerType, input.installationId),
     repoShape: input.repoShapeId,
-    nodeVersion: input.nodeVersion.trim() || "24",
+    nodeVersion: input.nodeVersion.trim() || '24',
     coverageThreshold: coverage,
     tests: input.tests,
     outputFileName,
@@ -231,13 +230,13 @@ function dualSlotConfig(
       projectTypeId: input.backendProjectTypeId,
       workflowRecipeId: input.backendWorkflowRecipeId,
       serviceName: names.backend,
-      servicePath: input.backendServicePath.trim() || "backend/",
+      servicePath: input.backendServicePath.trim() || 'backend/',
     },
     frontend: {
       projectTypeId: input.frontendProjectTypeId,
       workflowRecipeId: input.frontendWorkflowRecipeId,
       serviceName: names.frontend,
-      servicePath: input.frontendServicePath.trim() || "frontend/",
+      servicePath: input.frontendServicePath.trim() || 'frontend/',
     },
   };
 }
@@ -249,17 +248,19 @@ function dualSlotConfig(
  */
 function dualShapePayload(
   input: CreateProjectPayloadInput,
-  kind: "microservices" | "multiRepo",
+  kind: 'microservices' | 'multiRepo',
 ): CreateProjectPayloadResult {
   const withEnvironments =
-    kind === "multiRepo" ? input : { ...input, environments: undefined };
-  const environmentsInvalid = invalidEnvironments(withEnvironments.environments);
+    kind === 'multiRepo' ? input : { ...input, environments: undefined };
+  const environmentsInvalid = invalidEnvironments(
+    withEnvironments.environments,
+  );
   if (environmentsInvalid) {
     return environmentsInvalid;
   }
   const normalizedRepoName = normalizeRepoName(input.repoName);
   const coverage = Number(input.coverageThreshold);
-  const outputFileName = input.outputFileName.trim() || "ci.yml";
+  const outputFileName = input.outputFileName.trim() || 'ci.yml';
   const names = dualSlotNames(input, normalizedRepoName);
   const slots = dualSlotConfig(input, names);
   const payload: CreateProjectRequest = {
@@ -275,8 +276,8 @@ function dualShapePayload(
     projectTypeId: input.backendProjectTypeId,
     workflowRecipeId: input.backendWorkflowRecipeId,
     serviceName: names.backend,
-    servicePath: input.backendServicePath.trim() || "backend/",
-    ...(kind === "microservices"
+    servicePath: input.backendServicePath.trim() || 'backend/',
+    ...(kind === 'microservices'
       ? { microservicesConfig: slots }
       : { multiRepoConfig: slots }),
     ...environmentsField(withEnvironments.environments),
@@ -296,7 +297,7 @@ function invalidEnvironments(
 
 function environmentsField(
   environments: readonly EnvironmentDraft[] | undefined,
-): Pick<CreateProjectRequest, "environments"> {
+): Pick<CreateProjectRequest, 'environments'> {
   return environments
     ? { environments: environments.map(trimmedEnvironment) }
     : {};
@@ -305,7 +306,7 @@ function environmentsField(
 /** Hosted targets, plus on-prem targets for the environments that run on-prem. */
 function provisioningWithOnprem(
   input: CreateProjectPayloadInput,
-): CreateProjectRequest["deploymentProvisioning"] {
+): CreateProjectRequest['deploymentProvisioning'] {
   if (!input.environments || !input.onpremSlots) {
     return input.deploymentProvisioning;
   }
@@ -320,10 +321,10 @@ function standalonePayload(
   input: CreateProjectPayloadInput,
 ): CreateProjectPayloadResult {
   if (!input.projectTypeId) {
-    return { ok: false, message: "Choose a project type." };
+    return { ok: false, message: 'Choose a project type.' };
   }
   if (!input.workflowRecipeId) {
-    return { ok: false, message: "Choose a workflow recipe." };
+    return { ok: false, message: 'Choose a workflow recipe.' };
   }
   const environmentsInvalid = invalidEnvironments(input.environments);
   if (environmentsInvalid) {
@@ -331,7 +332,7 @@ function standalonePayload(
   }
   const normalizedRepoName = normalizeRepoName(input.repoName);
   const coverage = Number(input.coverageThreshold);
-  const outputFileName = input.outputFileName.trim() || "ci.yml";
+  const outputFileName = input.outputFileName.trim() || 'ci.yml';
   return {
     ok: true,
     payload: {
@@ -347,7 +348,7 @@ function standalonePayload(
       // different name, and another path points the pipeline at a folder the
       // scaffold never creates.
       serviceName: toSlug(normalizedRepoName),
-      servicePath: ".",
+      servicePath: '.',
       ...environmentsField(input.environments),
     },
   };
@@ -379,10 +380,10 @@ export function buildCreateProjectPayload(
     return invalid;
   }
   if (input.isMicroservicesShape) {
-    return dualShapePayload(input, "microservices");
+    return dualShapePayload(input, 'microservices');
   }
   if (input.isMultiRepoShape) {
-    return dualShapePayload(input, "multiRepo");
+    return dualShapePayload(input, 'multiRepo');
   }
   return standalonePayload(input);
 }

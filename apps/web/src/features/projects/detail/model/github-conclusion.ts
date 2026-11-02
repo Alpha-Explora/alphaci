@@ -6,12 +6,14 @@
  * the neutral grey of "skipped" or "cancelled" hid broken pipelines. */
 
 const FAILED_CONCLUSIONS: ReadonlySet<string> = new Set([
-  "failure",
-  "timed_out",
-  "startup_failure",
+  'failure',
+  'timed_out',
+  'startup_failure',
 ]);
 
 /** True for a conclusion that means the run failed. Null (still going) is not. */
-export function isFailedConclusion(conclusion: string | null | undefined): boolean {
-  return FAILED_CONCLUSIONS.has(conclusion ?? "");
+export function isFailedConclusion(
+  conclusion: string | null | undefined,
+): boolean {
+  return FAILED_CONCLUSIONS.has(conclusion ?? '');
 }

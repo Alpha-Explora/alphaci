@@ -1,40 +1,49 @@
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 
-import { CodeTab } from "../../../../../../src/features/projects/detail/views/workspace/code-tab";
+import { CodeTab } from '../../../../../../src/features/projects/detail/views/workspace/code-tab';
 import {
   getProjectBranches,
   getProjectFileCommits,
   getProjectFiles,
-} from "../../../../../../src/features/projects/detail/data/project-workspace-api";
+} from '../../../../../../src/features/projects/detail/data/project-workspace-api';
 
-jest.mock("../../../../../../src/features/projects/detail/data/project-workspace-api", () => ({
-  getProjectBranches: jest.fn(),
-  getProjectFiles: jest.fn(),
-  getProjectFileCommits: jest.fn(),
-}));
+jest.mock(
+  '../../../../../../src/features/projects/detail/data/project-workspace-api',
+  () => ({
+    getProjectBranches: jest.fn(),
+    getProjectFiles: jest.fn(),
+    getProjectFileCommits: jest.fn(),
+  }),
+);
 
 const branches = getProjectBranches as jest.Mock;
 const files = getProjectFiles as jest.Mock;
 const fileCommits = getProjectFileCommits as jest.Mock;
 
-const commit = (message: string, committedAt = "2026-10-01T08:00:00Z") => ({
-  sha: "6a251c8aaaaaaa",
-  shortSha: "6a251c8",
+const commit = (message: string, committedAt = '2026-10-01T08:00:00Z') => ({
+  sha: '6a251c8aaaaaaa',
+  shortSha: '6a251c8',
   message,
   committedAt,
-  authorLogin: "antoneeeeems",
-  authorName: "Anton",
+  authorLogin: 'antoneeeeems',
+  authorName: 'Anton',
   authorAvatarUrl: null,
 });
 
 const ROOT = {
-  path: "",
-  ref: "main",
+  path: '',
+  ref: 'main',
   file: null,
   entries: [
-    { name: ".github", path: ".github", type: "dir", size: 0, sha: "d1" },
-    { name: "README.md", path: "README.md", type: "file", size: 1900, sha: "f1" },
+    { name: '.github', path: '.github', type: 'dir', size: 0, sha: 'd1' },
+    {
+      name: 'README.md',
+      path: 'README.md',
+      type: 'file',
+      size: 1900,
+      sha: 'f1',
+    },
   ],
 };
 
@@ -42,16 +51,22 @@ let root: Root | null = null;
 let container: HTMLElement;
 
 beforeEach(() => {
-  branches.mockResolvedValue({ branches: [{ name: "main" }], defaultBranch: "main" });
+  branches.mockResolvedValue({
+    branches: [{ name: 'main' }],
+    defaultBranch: 'main',
+  });
   files.mockResolvedValue(ROOT);
   fileCommits.mockResolvedValue({
-    path: "",
-    ref: "main",
-    latest: commit("Gate FE Sonar quality on main PRs"),
+    path: '',
+    ref: 'main',
+    latest: commit('Gate FE Sonar quality on main PRs'),
     totalCommits: 288,
     entries: {
-      ".github": commit("Gate FE Sonar quality on main PRs"),
-      "README.md": commit("docs: record trini hopecard service split correction", "2026-09-20T08:00:00Z"),
+      '.github': commit('Gate FE Sonar quality on main PRs'),
+      'README.md': commit(
+        'docs: record trini hopecard service split correction',
+        '2026-09-20T08:00:00Z',
+      ),
     },
   });
 });
@@ -59,7 +74,7 @@ beforeEach(() => {
 afterEach(() => {
   if (root) act(() => root?.unmount());
   root = null;
-  document.body.innerHTML = "";
+  document.body.innerHTML = '';
   jest.clearAllMocks();
 });
 
@@ -70,11 +85,11 @@ async function poll(check: () => boolean, attempts = 60): Promise<void> {
       await new Promise((resolve) => setTimeout(resolve, 5));
     });
   }
-  throw new Error("condition not met");
+  throw new Error('condition not met');
 }
 
 async function mount(): Promise<void> {
-  container = document.createElement("div");
+  container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
   await act(async () => {
@@ -83,132 +98,179 @@ async function mount(): Promise<void> {
 }
 
 const row = (name: string) =>
-  [...container.querySelectorAll<HTMLButtonElement>("button.code-tree__row")].find(
-    (button) => button.querySelector(".ws-tree__name")?.textContent === name,
+  [
+    ...container.querySelectorAll<HTMLButtonElement>('button.code-tree__row'),
+  ].find(
+    (button) => button.querySelector('.ws-tree__name')?.textContent === name,
   );
 
-describe("CodeTab commit column", () => {
+describe('CodeTab commit column', () => {
   it("shows each entry's last commit and when, and the folder's latest commit with the count", async () => {
     await mount();
-    await poll(() => container.textContent?.includes("288 Commits") ?? false);
+    await poll(() => container.textContent?.includes('288 Commits') ?? false);
 
-    expect(fileCommits).toHaveBeenCalledWith("p1", { path: "", ref: "main" });
+    expect(fileCommits).toHaveBeenCalledWith('p1', { path: '', ref: 'main' });
 
-    const readme = row("README.md")!;
-    expect(readme.querySelector(".code-tree__message")?.textContent).toBe(
-      "docs: record trini hopecard service split correction",
+    const readme = row('README.md')!;
+    expect(readme.querySelector('.code-tree__message')?.textContent).toBe(
+      'docs: record trini hopecard service split correction',
     );
-    expect(readme.querySelector("time")?.getAttribute("dateTime")).toBe("2026-09-20T08:00:00Z");
+    expect(readme.querySelector('time')?.getAttribute('dateTime')).toBe(
+      '2026-09-20T08:00:00Z',
+    );
 
-    const bar = container.querySelector(".code-commit-bar")!;
-    expect(bar.textContent).toContain("antoneeeeems");
-    expect(bar.textContent).toContain("Gate FE Sonar quality on main PRs");
-    expect(bar.textContent).toContain("6a251c8");
+    const bar = container.querySelector('.code-commit-bar')!;
+    expect(bar.textContent).toContain('antoneeeeems');
+    expect(bar.textContent).toContain('Gate FE Sonar quality on main PRs');
+    expect(bar.textContent).toContain('6a251c8');
     // ALPHACI is the only place people are sent: no GitHub links.
     expect(container.querySelector('a[href*="github.com"]')).toBeNull();
   });
 
-  it("lists the files first and fills the column in when the commits arrive", async () => {
+  it('lists the files first and fills the column in when the commits arrive', async () => {
     let resolveCommits: (value: unknown) => void = () => {};
-    fileCommits.mockReturnValue(new Promise((resolve) => (resolveCommits = resolve)));
+    fileCommits.mockReturnValue(
+      new Promise((resolve) => (resolveCommits = resolve)),
+    );
 
     await mount();
-    await poll(() => row("README.md") !== undefined);
-    expect(row("README.md")!.querySelector(".code-tree__message")?.textContent).toBe("");
-    expect(container.textContent).toContain("Loading the latest commit");
+    await poll(() => row('README.md') !== undefined);
+    expect(
+      row('README.md')!.querySelector('.code-tree__message')?.textContent,
+    ).toBe('');
+    expect(container.textContent).toContain('Loading the latest commit');
 
     await act(async () => {
       resolveCommits({
-        path: "",
-        ref: "main",
-        latest: commit("Gate FE Sonar quality on main PRs"),
+        path: '',
+        ref: 'main',
+        latest: commit('Gate FE Sonar quality on main PRs'),
         totalCommits: 1,
-        entries: { "README.md": commit("readme edit") },
+        entries: { 'README.md': commit('readme edit') },
       });
     });
-    await poll(() => container.textContent?.includes("1 Commit") ?? false);
-    expect(row("README.md")!.querySelector(".code-tree__message")?.textContent).toBe("readme edit");
+    await poll(() => container.textContent?.includes('1 Commit') ?? false);
+    expect(
+      row('README.md')!.querySelector('.code-tree__message')?.textContent,
+    ).toBe('readme edit');
   });
 
-  it("keeps the file list as it was when the commits cannot be read", async () => {
-    fileCommits.mockRejectedValue(new Error("GitHub path commits failed (502)"));
+  it('keeps the file list as it was when the commits cannot be read', async () => {
+    fileCommits.mockRejectedValue(
+      new Error('GitHub path commits failed (502)'),
+    );
 
     await mount();
     await poll(() => fileCommits.mock.calls.length > 0);
-    await poll(() => !container.textContent?.includes("Loading the latest commit"));
+    await poll(
+      () => !container.textContent?.includes('Loading the latest commit'),
+    );
 
-    expect(row("README.md")).toBeDefined();
-    expect(container.querySelector(".code-commit-bar")).toBeNull();
-    expect(container.textContent).not.toContain("could not be read");
+    expect(row('README.md')).toBeDefined();
+    expect(container.querySelector('.code-commit-bar')).toBeNull();
+    expect(container.textContent).not.toContain('could not be read');
   });
 
-  it("asks again for the folder that is opened", async () => {
+  it('asks again for the folder that is opened', async () => {
     await mount();
     await poll(() => fileCommits.mock.calls.length === 1);
     files.mockResolvedValue({
-      path: ".github",
-      ref: "main",
+      path: '.github',
+      ref: 'main',
       file: null,
-      entries: [{ name: "workflows", path: ".github/workflows", type: "dir", size: 0, sha: "d2" }],
+      entries: [
+        {
+          name: 'workflows',
+          path: '.github/workflows',
+          type: 'dir',
+          size: 0,
+          sha: 'd2',
+        },
+      ],
     });
 
-    await act(async () => row(".github")!.click());
+    await act(async () => row('.github')!.click());
     await poll(() => fileCommits.mock.calls.length === 2);
-    expect(fileCommits).toHaveBeenLastCalledWith("p1", { path: ".github", ref: "main" });
+    expect(fileCommits).toHaveBeenLastCalledWith('p1', {
+      path: '.github',
+      ref: 'main',
+    });
   });
 
-  it("shows no path at the top level, and an icon back to it inside a folder", async () => {
+  it('shows no path at the top level, and an icon back to it inside a folder', async () => {
     await mount();
-    await poll(() => row(".github") !== undefined);
-    expect(container.querySelector(".ws-crumbs")).toBeNull();
-    expect(container.textContent).not.toContain("root");
+    await poll(() => row('.github') !== undefined);
+    expect(container.querySelector('.ws-crumbs')).toBeNull();
+    expect(container.textContent).not.toContain('root');
 
     files.mockResolvedValue({
-      path: ".github",
-      ref: "main",
+      path: '.github',
+      ref: 'main',
       file: null,
-      entries: [{ name: "workflows", path: ".github/workflows", type: "dir", size: 0, sha: "d2" }],
+      entries: [
+        {
+          name: 'workflows',
+          path: '.github/workflows',
+          type: 'dir',
+          size: 0,
+          sha: 'd2',
+        },
+      ],
     });
-    await act(async () => row(".github")!.click());
-    await poll(() => container.querySelector(".ws-crumbs") !== null);
-    const home = container.querySelector<HTMLButtonElement>(".ws-crumb--home")!;
-    expect(home.getAttribute("aria-label")).toBe("Repository root");
-    expect(home.textContent).toBe("");
-    expect(container.querySelector(".ws-crumbs")?.textContent).toContain(".github");
+    await act(async () => row('.github')!.click());
+    await poll(() => container.querySelector('.ws-crumbs') !== null);
+    const home = container.querySelector<HTMLButtonElement>('.ws-crumb--home')!;
+    expect(home.getAttribute('aria-label')).toBe('Repository root');
+    expect(home.textContent).toBe('');
+    expect(container.querySelector('.ws-crumbs')?.textContent).toContain(
+      '.github',
+    );
 
     files.mockResolvedValue(ROOT);
     await act(async () => home.click());
-    await poll(() => container.querySelector(".ws-crumbs") === null);
+    await poll(() => container.querySelector('.ws-crumbs') === null);
   });
 
-  it("opens on a commit from the Commits tab, says so, and goes back to its branch", async () => {
-    const sha = "a".repeat(40);
-    branches.mockResolvedValue({ branches: [{ name: "main" }, { name: "uat" }], defaultBranch: "main" });
+  it('opens on a commit from the Commits tab, says so, and goes back to its branch', async () => {
+    const sha = 'a'.repeat(40);
+    branches.mockResolvedValue({
+      branches: [{ name: 'main' }, { name: 'uat' }],
+      defaultBranch: 'main',
+    });
     files.mockResolvedValue({ ...ROOT, ref: sha });
-    container = document.createElement("div");
+    container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
     await act(async () => {
-      root!.render(<CodeTab projectId="p1" commit={{ sha, shortSha: "aaaaaaa", branch: "uat" }} />);
+      root!.render(
+        <CodeTab
+          projectId="p1"
+          commit={{ sha, shortSha: 'aaaaaaa', branch: 'uat' }}
+        />,
+      );
     });
-    await poll(() => row("README.md") !== undefined);
+    await poll(() => row('README.md') !== undefined);
 
     // The commit is the ref asked for, for the files and their commit column.
-    expect(files).toHaveBeenCalledWith("p1", { path: "", ref: sha });
+    expect(files).toHaveBeenCalledWith('p1', { path: '', ref: sha });
     expect(files).toHaveBeenCalledTimes(1);
     await poll(() => fileCommits.mock.calls.length > 0);
-    expect(fileCommits).toHaveBeenCalledWith("p1", { path: "", ref: sha });
-    const marker = container.querySelector(".code-commit")!;
-    expect(marker.textContent).toContain("Browsing commit aaaaaaa");
-    expect(container.querySelector<HTMLSelectElement>(".ws-select")!.value).toBe(sha);
+    expect(fileCommits).toHaveBeenCalledWith('p1', { path: '', ref: sha });
+    const marker = container.querySelector('.code-commit')!;
+    expect(marker.textContent).toContain('Browsing commit aaaaaaa');
+    expect(
+      container.querySelector<HTMLSelectElement>('.ws-select')!.value,
+    ).toBe(sha);
 
-    files.mockResolvedValue({ ...ROOT, ref: "uat" });
-    const back = container.querySelector<HTMLButtonElement>(".code-commit__back")!;
-    expect(back.textContent).toBe("Back to uat");
+    files.mockResolvedValue({ ...ROOT, ref: 'uat' });
+    const back =
+      container.querySelector<HTMLButtonElement>('.code-commit__back')!;
+    expect(back.textContent).toBe('Back to uat');
     await act(async () => back.click());
-    await poll(() => container.querySelector(".code-commit") === null);
-    expect(files).toHaveBeenLastCalledWith("p1", { path: "", ref: "uat" });
-    expect(container.querySelector<HTMLSelectElement>(".ws-select")!.value).toBe("uat");
+    await poll(() => container.querySelector('.code-commit') === null);
+    expect(files).toHaveBeenLastCalledWith('p1', { path: '', ref: 'uat' });
+    expect(
+      container.querySelector<HTMLSelectElement>('.ws-select')!.value,
+    ).toBe('uat');
   });
 });
-

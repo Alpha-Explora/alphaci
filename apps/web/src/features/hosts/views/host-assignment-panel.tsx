@@ -1,21 +1,21 @@
-"use client";
-import "./host-assignment.css";
-import Link from "next/link";
-import { useWorkspaceSelection } from "@/features/workspace/selection";
+'use client';
+import './host-assignment.css';
+import Link from 'next/link';
+import { useWorkspaceSelection } from '@/features/workspace/selection';
 import {
   useHostAssignmentViewModel,
   type HostAssignmentOptions,
-} from "../view-models/use-host-assignment-view-model";
-import { AssignmentForm, AssignmentSummary } from "./host-assignment-form";
+} from '../view-models/use-host-assignment-view-model';
+import { AssignmentForm, AssignmentSummary } from './host-assignment-form';
 export function HostAssignmentPanel(options: HostAssignmentOptions) {
   const { workspaces } = useWorkspaceSelection();
   const membership = workspaces?.items.find(
     (workspace) => workspace.id === options.workspaceId,
   );
   const canManage =
-    options.canManage && Boolean(membership) && membership?.role !== "viewer";
+    options.canManage && Boolean(membership) && membership?.role !== 'viewer';
   const vm = useHostAssignmentViewModel({ ...options, canManage });
-  const failed = vm.checks.filter((check) => check.status === "failed");
+  const failed = vm.checks.filter((check) => check.status === 'failed');
   return (
     <div className="hassign" aria-label="Environment host assignment">
       <AssignmentSummary vm={vm} />
@@ -34,10 +34,10 @@ export function HostAssignmentPanel(options: HostAssignmentOptions) {
           </ul>
         </div>
       ) : null}
-      {canManage && vm.status === "ready" ? (
+      {canManage && vm.status === 'ready' ? (
         <details className="hassign-change" open={!vm.current}>
           <summary>
-            {vm.current ? "Change machine or ports" : "Assign a machine"}
+            {vm.current ? 'Change machine or ports' : 'Assign a machine'}
           </summary>
           <AssignmentForm vm={vm} />
         </details>
@@ -55,11 +55,11 @@ export function HostAssignmentPanel(options: HostAssignmentOptions) {
   );
 }
 type PanelVm = ReturnType<typeof useHostAssignmentViewModel>;
-const CHECK_ICON = { passed: "✓", failed: "✕", unverified: "•" } as const;
+const CHECK_ICON = { passed: '✓', failed: '✕', unverified: '•' } as const;
 function Prerequisites({ vm, failed }: { vm: PanelVm; failed: number }) {
-  let summary = "";
+  let summary = '';
   if (vm.checks.length)
-    summary = failed ? `(${failed} to fix)` : "(all passed)";
+    summary = failed ? `(${failed} to fix)` : '(all passed)';
   return (
     <details className="hassign-checks">
       <summary>Prerequisites {summary}</summary>
@@ -69,7 +69,7 @@ function Prerequisites({ vm, failed }: { vm: PanelVm; failed: number }) {
             key={check.id}
             className={`hassign-check hassign-check--${check.status}`}
           >
-            <span aria-hidden="true">{CHECK_ICON[check.status]}</span>{" "}
+            <span aria-hidden="true">{CHECK_ICON[check.status]}</span>{' '}
             {check.message}
           </li>
         ))}

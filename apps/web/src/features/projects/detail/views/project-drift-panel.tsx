@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 import type {
   AppRole,
   ProjectDriftFinding,
   ProjectDriftRepairAction,
-} from "@/shared/api/contracts";
-import { apiErrorReason } from "../model/api-error-reason";
+} from '@/shared/api/contracts';
+import { apiErrorReason } from '../model/api-error-reason';
 import {
   DRIFT_REPAIR_LEAD_ONLY_MESSAGE,
   canRunDriftRepair,
@@ -17,8 +17,8 @@ import {
   driftRepairBaseBranch,
   driftRepairMessage,
   driftRepairActionFor,
-} from "../model/drift-finding-rules";
-import { useProjectDriftViewModel } from "../view-models/use-project-drift-view-model";
+} from '../model/drift-finding-rules';
+import { useProjectDriftViewModel } from '../view-models/use-project-drift-view-model';
 
 type PendingRepair = {
   findingId: string;
@@ -64,10 +64,13 @@ export function ProjectDriftPanel({
     setNotice(null);
     try {
       const outcome = await vm.repair(finding.id, action);
-      setNotice({ text: driftRepairMessage(outcome.message), pullRequest: driftPullRequestNumber(outcome) });
+      setNotice({
+        text: driftRepairMessage(outcome.message),
+        pullRequest: driftPullRequestNumber(outcome),
+      });
     } catch (caught) {
       setNotice({
-        text: apiErrorReason(caught, "Unable to apply the repair."),
+        text: apiErrorReason(caught, 'Unable to apply the repair.'),
         pullRequest: null,
       });
     } finally {
@@ -81,24 +84,24 @@ export function ProjectDriftPanel({
       className="glass-panel"
       aria-label="Health findings"
       style={{
-        padding: "1rem",
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.85rem",
+        padding: '1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.85rem',
       }}
     >
       <header
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "0.75rem",
-          alignItems: "center",
-          flexWrap: "wrap",
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: '0.75rem',
+          alignItems: 'center',
+          flexWrap: 'wrap',
         }}
       >
         <div>
-          <h4 style={{ margin: 0, fontSize: "0.95rem" }}>Health findings</h4>
-          <p className="env-empty-state" style={{ margin: "0.25rem 0 0" }}>
+          <h4 style={{ margin: 0, fontSize: '0.95rem' }}>Health findings</h4>
+          <p className="env-empty-state" style={{ margin: '0.25rem 0 0' }}>
             Checked against the repository&apos;s CI workflows on each pipeline
             branch.
           </p>
@@ -106,21 +109,24 @@ export function ProjectDriftPanel({
         <button
           className="ghost-button"
           type="button"
-          disabled={vm.status !== "idle"}
+          disabled={vm.status !== 'idle'}
           onClick={() => void vm.check()}
           style={{
-            minHeight: "2rem",
-            padding: "0.35rem 0.85rem",
-            fontSize: "0.78rem",
+            minHeight: '2rem',
+            padding: '0.35rem 0.85rem',
+            fontSize: '0.78rem',
           }}
         >
-          {vm.status === "checking" ? "Checking..." : "Run check"}
+          {vm.status === 'checking' ? 'Checking...' : 'Run check'}
         </button>
       </header>
       {notice ? (
         <p className="env-empty-state" role="status" style={{ margin: 0 }}>
           {notice.text}
-          <RepairPullRequest number={notice.pullRequest} onOpen={onOpenPullRequest} />
+          <RepairPullRequest
+            number={notice.pullRequest}
+            onOpen={onOpenPullRequest}
+          />
         </p>
       ) : null}
       {vm.error ? (
@@ -207,8 +213,8 @@ function FindingRow({
 }>) {
   const files = driftAffectedFiles(finding);
   return (
-    <div className="env-metadata-row" style={{ alignItems: "flex-start" }}>
-      <span style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+    <div className="env-metadata-row" style={{ alignItems: 'flex-start' }}>
+      <span style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
         <strong>{driftFindingTitle(finding)}</strong>
         <small>
           {finding.severity} - {finding.source}
@@ -217,7 +223,7 @@ function FindingRow({
         {files.length > 0 ? (
           <ul
             className="env-empty-state"
-            style={{ margin: "0.2rem 0 0", paddingLeft: "1.1rem" }}
+            style={{ margin: '0.2rem 0 0', paddingLeft: '1.1rem' }}
           >
             {files.map((file) => (
               <li key={file}>
@@ -273,12 +279,12 @@ function RepairControl({
       disabled={repairingId !== null}
       onClick={() => onRepair(finding, action)}
       style={{
-        minHeight: "2rem",
-        padding: "0.35rem 0.7rem",
-        fontSize: "0.76rem",
+        minHeight: '2rem',
+        padding: '0.35rem 0.7rem',
+        fontSize: '0.76rem',
       }}
     >
-      {busy ? "Repairing..." : confirming ? "Confirm repair" : "Repair"}
+      {busy ? 'Repairing...' : confirming ? 'Confirm repair' : 'Repair'}
     </button>
   );
 }
@@ -287,13 +293,20 @@ function RepairControl({
 function RepairPullRequest({
   number,
   onOpen,
-}: Readonly<{ number: number | null; onOpen?: (pullRequestNumber: number) => void }>) {
+}: Readonly<{
+  number: number | null;
+  onOpen?: (pullRequestNumber: number) => void;
+}>) {
   if (number === null) return null;
   if (!onOpen) return <> Pull request #{number}.</>;
   return (
     <>
-      {" "}
-      <button type="button" className="inline-link" onClick={() => onOpen(number)}>
+      {' '}
+      <button
+        type="button"
+        className="inline-link"
+        onClick={() => onOpen(number)}
+      >
         Open pull request #{number}
       </button>
     </>

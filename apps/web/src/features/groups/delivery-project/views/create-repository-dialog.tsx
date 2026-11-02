@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import Link from "next/link";
+import Link from 'next/link';
 
-import type { HierarchyRepository } from "@/features/groups";
-import { Dialog, FormDialog } from "@/features/groups/workspace";
-import "./create-repository.css";
+import type { HierarchyRepository } from '@/features/groups';
+import { Dialog, FormDialog } from '@/features/groups/workspace';
+import './create-repository.css';
 import {
   useCreateRepositoryViewModel,
   type CreateRepositoryViewModel,
-} from "../view-models/use-create-repository-view-model";
-import type { RepositoryOutcomeView } from "../../model/add-repository-rules";
+} from '../view-models/use-create-repository-view-model';
+import type { RepositoryOutcomeView } from '../../model/add-repository-rules';
 
 interface CreateRepositoryDialogProps {
   open: boolean;
@@ -23,7 +23,9 @@ interface CreateRepositoryDialogProps {
  * (on by default). Mounted only while open, so every opening starts fresh and
  * the wizard catalog is read only when someone is about to use it.
  */
-export function CreateRepositoryDialog(props: Readonly<CreateRepositoryDialogProps>) {
+export function CreateRepositoryDialog(
+  props: Readonly<CreateRepositoryDialogProps>,
+) {
   if (!props.open) return null;
   return <CreateRepositoryDialogBody {...props} />;
 }
@@ -50,7 +52,7 @@ function CreateRepositoryDialogBody({
       title="Add repository"
       description="Creates a GitHub repository with its CI/CD pipeline in this Project, set up the same way as the create wizard."
       submitLabel="Add repository"
-      submitting={vm.status === "submitting"}
+      submitting={vm.status === 'submitting'}
       error={vm.error}
       canSubmit={vm.canSubmit}
       onSubmit={() => void vm.submit()}
@@ -89,8 +91,8 @@ function NameField({ vm }: FieldProps) {
 }
 
 function stackPlaceholder(vm: CreateRepositoryViewModel): string {
-  if (vm.stacksLoading) return "Loading stacks…";
-  return vm.stacks.length > 0 ? "Choose a stack" : "No stacks available";
+  if (vm.stacksLoading) return 'Loading stacks…';
+  return vm.stacks.length > 0 ? 'Choose a stack' : 'No stacks available';
 }
 
 function StackField({ vm }: FieldProps) {
@@ -115,9 +117,13 @@ function StackField({ vm }: FieldProps) {
         ))}
       </select>
       {vm.stacksError ? (
-        <span className="hier-field-hint create-repo__hint--danger">{vm.stacksError}</span>
+        <span className="hier-field-hint create-repo__hint--danger">
+          {vm.stacksError}
+        </span>
       ) : (
-        <span className="hier-field-hint">Sets the starter code, the pipeline and where it deploys.</span>
+        <span className="hier-field-hint">
+          Sets the starter code, the pipeline and where it deploys.
+        </span>
       )}
     </div>
   );
@@ -152,7 +158,17 @@ function VisibilityField() {
     <div className="hier-field">
       <span className="hier-field-label">Visibility</span>
       <span className="create-repo__private">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
           <rect x="3" y="11" width="18" height="11" rx="2" />
           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
@@ -163,7 +179,8 @@ function VisibilityField() {
 }
 
 function managedHint(provider: string | null): string {
-  const base = "Vercel for frontends, Render for backends, deployed from the uat branch.";
+  const base =
+    'Vercel for frontends, Render for backends, deployed from the uat branch.';
   return provider ? `${base} This stack deploys to ${provider}.` : base;
 }
 
@@ -180,7 +197,9 @@ function HostingField({ vm }: FieldProps) {
         />
         <span>
           <strong>ALPHACI-managed hosting</strong>
-          <span className="hier-field-hint">{managedHint(vm.hostingProvider)}</span>
+          <span className="hier-field-hint">
+            {managedHint(vm.hostingProvider)}
+          </span>
         </span>
       </label>
       <label className="create-repo__choice">
@@ -192,7 +211,9 @@ function HostingField({ vm }: FieldProps) {
         />
         <span>
           <strong>No hosting</strong>
-          <span className="hier-field-hint">Only the repository and its pipeline are created.</span>
+          <span className="hier-field-hint">
+            Only the repository and its pipeline are created.
+          </span>
         </span>
       </label>
     </fieldset>
@@ -215,7 +236,9 @@ function AdvancedFields({ vm }: FieldProps) {
             onChange={(event) => vm.setRecipeId(event.target.value)}
             disabled={vm.recipes.length === 0}
           >
-            {vm.recipes.length === 0 ? <option value="">Choose a stack first</option> : null}
+            {vm.recipes.length === 0 ? (
+              <option value="">Choose a stack first</option>
+            ) : null}
             {vm.recipes.map((recipe) => (
               <option key={recipe.id} value={recipe.id}>
                 {recipe.label}
@@ -264,7 +287,9 @@ function HostingOverrideFields({ vm }: FieldProps) {
           id="repo-root-dir"
           className="hier-input"
           value={vm.overrides.rootDirectory}
-          onChange={(event) => vm.setOverride("rootDirectory", event.target.value)}
+          onChange={(event) =>
+            vm.setOverride('rootDirectory', event.target.value)
+          }
           placeholder="."
           autoComplete="off"
         />
@@ -277,11 +302,15 @@ function HostingOverrideFields({ vm }: FieldProps) {
           id="repo-build-cmd"
           className="hier-input"
           value={vm.overrides.buildCommand}
-          onChange={(event) => vm.setOverride("buildCommand", event.target.value)}
+          onChange={(event) =>
+            vm.setOverride('buildCommand', event.target.value)
+          }
           placeholder="npm run build"
           autoComplete="off"
         />
-        <span className="hier-field-hint">Leave both empty to use the managed defaults.</span>
+        <span className="hier-field-hint">
+          Leave both empty to use the managed defaults.
+        </span>
       </div>
     </>
   );
@@ -294,7 +323,10 @@ export function RepositoryOutcome({
 }: Readonly<{ outcome: RepositoryOutcomeView; onClose: () => void }>) {
   return (
     <div className="create-repo">
-      <div className={`create-repo__outcome create-repo__outcome--${outcome.tone}`} role="status">
+      <div
+        className={`create-repo__outcome create-repo__outcome--${outcome.tone}`}
+        role="status"
+      >
         <p className="create-repo__outcome-message">{outcome.message}</p>
         {outcome.reasons.length > 0 ? (
           <ul className="create-repo__reasons">

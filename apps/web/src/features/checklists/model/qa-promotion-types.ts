@@ -8,9 +8,9 @@
  * crashing the studio. The server alone decides eligibility and who may
  * merge; the client only explains it. */
 
-import type { IterationRef } from "./iteration-types";
-import type { HeadStatus } from "./project-run-types";
-import type { QaRunStatus, QaVerdict } from "./qa-run-types";
+import type { IterationRef } from './iteration-types';
+import type { HeadStatus } from './project-run-types';
+import type { QaRunStatus, QaVerdict } from './qa-run-types';
 
 export interface QaPromotionChecklistWire {
   id?: unknown;
@@ -81,7 +81,7 @@ export interface QaPromotionPullRequest {
  * signed-off run decides. `unfiled`: it is not, so it is blocked
  * (QA_PROJECT_REQUIRED). Null: an older backend still gating per checklist.
  */
-export type QaPromotionScope = "project" | "unfiled";
+export type QaPromotionScope = 'project' | 'unfiled';
 
 /** The Project's latest signed-off QA run, as the gate weighs it. */
 export interface QaPromotionRun {
@@ -146,15 +146,15 @@ export interface QaPromotionMergeResult {
 
 /** A merge that did not go through, as the card explains it. */
 export type QaPromotionMergeErrorKind =
-  | "blocked"
-  | "moved"
-  | "reauth"
-  | "project_required"
-  | "delivered"
-  | "no_repositories"
-  | "forbidden"
-  | "not_found"
-  | "failed";
+  | 'blocked'
+  | 'moved'
+  | 'reauth'
+  | 'project_required'
+  | 'delivered'
+  | 'no_repositories'
+  | 'forbidden'
+  | 'not_found'
+  | 'failed';
 
 export interface QaPromotionMergeError {
   kind: QaPromotionMergeErrorKind;

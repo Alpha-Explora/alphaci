@@ -1,32 +1,32 @@
-"use client";
+'use client';
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from 'react';
 
 import {
   capabilityAvailability,
   useCapabilities,
-} from "@/features/capabilities/current";
+} from '@/features/capabilities/current';
 
-import { notificationsFeed } from "../../data/notifications-feed";
-import { useNotificationFeed } from "../../live";
+import { notificationsFeed } from '../../data/notifications-feed';
+import { useNotificationFeed } from '../../live';
 import {
   feedUserId,
   gatedFeedStatus,
   toUserError,
-} from "../../model/notifications-rules";
+} from '../../model/notifications-rules';
 import type {
   NotificationItem,
   NotificationsResponse,
   NotificationsStatus,
-} from "../../model/notifications-types";
+} from '../../model/notifications-types';
 import {
   flattenGroups,
   groupNotificationsByDay,
-} from "../model/notifications-inbox-rules";
+} from '../model/notifications-inbox-rules';
 import type {
   NotificationsInboxFilter,
   NotificationsInboxRow,
-} from "../model/notifications-inbox-types";
+} from '../model/notifications-inbox-types';
 
 export interface NotificationsInboxViewModel {
   rows: NotificationsInboxRow[];
@@ -71,7 +71,7 @@ export function useNotificationsInboxViewModel(
   );
   const response = feed.response ?? EMPTY_RESPONSE;
   const [commandError, setCommandError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<NotificationsInboxFilter>("all");
+  const [filter, setFilter] = useState<NotificationsInboxFilter>('all');
   const [markingId, setMarkingId] = useState<string | null>(null);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const unreadItems = useMemo(
@@ -82,7 +82,7 @@ export function useNotificationsInboxViewModel(
     () =>
       flattenGroups(
         groupNotificationsByDay(
-          filter === "unread" ? unreadItems : response.items,
+          filter === 'unread' ? unreadItems : response.items,
         ),
       ),
     [response, filter, unreadItems],
@@ -98,7 +98,7 @@ export function useNotificationsInboxViewModel(
       try {
         await notificationsFeed.markRead(userId, id);
       } catch (error) {
-        setCommandError(toUserError(error, "Notification update failed."));
+        setCommandError(toUserError(error, 'Notification update failed.'));
       } finally {
         setMarkingId(null);
       }
@@ -116,7 +116,7 @@ export function useNotificationsInboxViewModel(
       setCommandError(
         toUserError(
           error,
-          "Some notifications could not be marked as read. Please retry.",
+          'Some notifications could not be marked as read. Please retry.',
         ),
       );
     } finally {

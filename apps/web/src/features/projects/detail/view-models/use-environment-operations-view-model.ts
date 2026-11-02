@@ -1,9 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import type { AppRole, DeploymentTarget, EnvTargetSlot } from "@/shared/api/contracts";
-import type { ProjectStatus } from "../../model/projects-types";
+import type {
+  AppRole,
+  DeploymentTarget,
+  EnvTargetSlot,
+} from '@/shared/api/contracts';
+import type { ProjectStatus } from '../../model/projects-types';
 import {
   getDeploymentProviders,
   getProjectEnvironments,
@@ -11,8 +15,8 @@ import {
   createOnpremEnvironmentTarget,
   promoteRelease,
   registerOnpremHost,
-} from "../data/environments-api";
-import { apiErrorReason } from "../model/api-error-reason";
+} from '../data/environments-api';
+import { apiErrorReason } from '../model/api-error-reason';
 import {
   buildEnvironmentRows,
   onpremHostsEnabled,
@@ -21,11 +25,11 @@ import {
   type ProjectEnvironment,
   type ProjectRelease,
   canPromoteEnvironment,
-} from "../model/environment-operations";
+} from '../model/environment-operations';
 
 export interface EnvironmentMessage {
   environmentId: string;
-  tone: "error" | "info";
+  tone: 'error' | 'info';
   text: string;
 }
 
@@ -67,7 +71,7 @@ async function loadOperations(projectId: string): Promise<Loaded> {
       (items) => ({ items, note: null as string | null }),
       (error: unknown) => ({
         items: [] as ProjectRelease[],
-        note: apiErrorReason(error, "Release history is unavailable."),
+        note: apiErrorReason(error, 'Release history is unavailable.'),
       }),
     ),
     getDeploymentProviders().catch(() => [] as DeploymentProviderSummary[]),
@@ -87,7 +91,7 @@ export function useEnvironmentOperationsViewModel(options: {
   onTargetCreated?: (target: DeploymentTarget) => void;
 }): EnvironmentOperationsViewModel {
   const { projectId, targets, appRole, onTargetCreated } = options;
-  const [status, setStatus] = useState<ProjectStatus>("loading");
+  const [status, setStatus] = useState<ProjectStatus>('loading');
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloads, setReloads] = useState(0);
@@ -99,7 +103,7 @@ export function useEnvironmentOperationsViewModel(options: {
   >(null);
   const [message, setMessage] = useState<EnvironmentMessage | null>(null);
   const [hostToken, setHostToken] =
-    useState<EnvironmentOperationsViewModel["hostToken"]>(null);
+    useState<EnvironmentOperationsViewModel['hostToken']>(null);
   const requests = useRef(0);
 
   useEffect(() => {
@@ -110,12 +114,12 @@ export function useEnvironmentOperationsViewModel(options: {
         if (id !== requests.current) return;
         setLoaded(result);
         setLoadError(null);
-        setStatus("ready");
+        setStatus('ready');
       })
       .catch((error: unknown) => {
         if (id !== requests.current) return;
-        setLoadError(apiErrorReason(error, "Unable to load environments."));
-        setStatus("error");
+        setLoadError(apiErrorReason(error, 'Unable to load environments.'));
+        setStatus('error');
       });
   }, [projectId, reloads]);
 
@@ -125,15 +129,15 @@ export function useEnvironmentOperationsViewModel(options: {
   // and as soon as the viewer comes back to it.
   useEffect(() => {
     const refresh = () => {
-      if (document.visibilityState === "visible") setReloads((n) => n + 1);
+      if (document.visibilityState === 'visible') setReloads((n) => n + 1);
     };
     const timer = window.setInterval(refresh, 15_000);
-    document.addEventListener("visibilitychange", refresh);
-    window.addEventListener("focus", refresh);
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
     return () => {
       window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", refresh);
-      window.removeEventListener("focus", refresh);
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
     };
   }, []);
 
@@ -147,11 +151,11 @@ export function useEnvironmentOperationsViewModel(options: {
     : [];
 
   async function promote(row: EnvironmentRow) {
-    if (row.promotion.kind !== "available") return;
+    if (row.promotion.kind !== 'available') return;
     const environmentId = row.environment.id;
     // Production asks once more; the second click is the confirmation.
     if (
-      row.environment.role === "production" &&
+      row.environment.role === 'production' &&
       confirmingEnvironmentId !== environmentId
     ) {
       setConfirmingEnvironmentId(environmentId);
@@ -161,20 +165,24 @@ export function useEnvironmentOperationsViewModel(options: {
     setBusyEnvironmentId(environmentId);
     setMessage(null);
     try {
-      await promoteRelease(projectId, environmentId, row.promotion.release.releaseId);
+      await promoteRelease(
+        projectId,
+        environmentId,
+        row.promotion.release.releaseId,
+      );
       setMessage({
         environmentId,
-        tone: "info",
+        tone: 'info',
         text: row.hostDelivered
-          ? "Promotion started. The on-prem host will pick it up on its next poll."
-          : "Promotion started.",
+          ? 'Promotion started. The on-prem host will pick it up on its next poll.'
+          : 'Promotion started.',
       });
       setReloads((count) => count + 1);
     } catch (error) {
       setMessage({
         environmentId,
-        tone: "error",
-        text: apiErrorReason(error, "The promotion was refused."),
+        tone: 'error',
+        text: apiErrorReason(error, 'The promotion was refused.'),
       });
     } finally {
       setBusyEnvironmentId(null);
@@ -190,8 +198,8 @@ export function useEnvironmentOperationsViewModel(options: {
     } catch (error) {
       setMessage({
         environmentId,
-        tone: "error",
-        text: apiErrorReason(error, "Unable to register the host."),
+        tone: 'error',
+        text: apiErrorReason(error, 'Unable to register the host.'),
       });
     } finally {
       setBusyEnvironmentId(null);
@@ -214,15 +222,15 @@ export function useEnvironmentOperationsViewModel(options: {
       onTargetCreated?.(target);
       setMessage({
         environmentId,
-        tone: "info",
+        tone: 'info',
         text: `${slot} on-prem target added. Register a host to receive releases.`,
       });
       setReloads((count) => count + 1);
     } catch (error) {
       setMessage({
         environmentId,
-        tone: "error",
-        text: apiErrorReason(error, "Unable to add the on-prem target."),
+        tone: 'error',
+        text: apiErrorReason(error, 'Unable to add the on-prem target.'),
       });
     } finally {
       setBusyEnvironmentId(null);
@@ -235,14 +243,17 @@ export function useEnvironmentOperationsViewModel(options: {
     releasesNote: loaded?.releasesNote ?? null,
     rows,
     hostsEnabled: loaded ? onpremHostsEnabled(loaded.providers) : false,
-    canManageHosts: appRole === "member" || appRole === "admin",
+    canManageHosts: appRole === 'member' || appRole === 'admin',
     canPromote: (production) => canPromoteEnvironment(appRole, production),
     busyEnvironmentId,
     confirmingEnvironmentId,
     message,
     hostToken,
     promote: async (row) => {
-      if (!canPromoteEnvironment(appRole, row.environment.role === "production")) return;
+      if (
+        !canPromoteEnvironment(appRole, row.environment.role === 'production')
+      )
+        return;
       await promote(row);
     },
     cancelPromotion: () => setConfirmingEnvironmentId(null),

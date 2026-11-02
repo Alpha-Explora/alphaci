@@ -7,7 +7,7 @@
  * Client-only module — must never be imported in a Server Component.
  */
 
-import { driver, type DriveStep, type Driver } from "driver.js";
+import { driver, type DriveStep, type Driver } from 'driver.js';
 
 export interface TourCallbacks {
   /** Called once when the tour finishes (completed all steps or user skipped). */
@@ -27,81 +27,81 @@ function buildSteps(): DriveStep[] {
     {
       element: "[data-tour='repo-shape']",
       popover: {
-        title: "Repository shape",
+        title: 'Repository shape',
         description:
-          "Choose how your project is organised. Standalone is recommended for a single service. Microservices splits backend and frontend into sub-directories inside one repo; Multi-repo creates two separate GitHub repositories.",
-        side: "bottom",
-        align: "start",
+          'Choose how your project is organised. Standalone is recommended for a single service. Microservices splits backend and frontend into sub-directories inside one repo; Multi-repo creates two separate GitHub repositories.',
+        side: 'bottom',
+        align: 'start',
       },
     },
     {
-      element: "#project-type-select",
+      element: '#project-type-select',
       popover: {
-        title: "Language and framework",
+        title: 'Language and framework',
         description:
-          "Pick the tech stack for your project — for example NestJS for a backend API or Next.js for a frontend app. The workflow recipe and CI jobs will be tailored to this choice.",
-        side: "right",
-        align: "start",
+          'Pick the tech stack for your project — for example NestJS for a backend API or Next.js for a frontend app. The workflow recipe and CI jobs will be tailored to this choice.',
+        side: 'right',
+        align: 'start',
       },
     },
     {
-      element: "#workflow-recipe-select",
+      element: '#workflow-recipe-select',
       popover: {
-        title: "Workflow recipe",
+        title: 'Workflow recipe',
         description:
-          "A recipe is a preset combination of CI jobs — lint, test, build, security, and more. Standard CI covers most teams well.",
-        side: "right",
-        align: "start",
+          'A recipe is a preset combination of CI jobs — lint, test, build, security, and more. Standard CI covers most teams well.',
+        side: 'right',
+        align: 'start',
       },
     },
     {
-      element: "#repo-name",
+      element: '#repo-name',
       popover: {
-        title: "Name your repository",
+        title: 'Name your repository',
         description:
-          "This becomes your GitHub repository name, and the service takes the same name. Use lowercase words separated by hyphens — for example my-first-service. The name must be unique within your GitHub account or organisation.",
-        side: "bottom",
-        align: "start",
+          'This becomes your GitHub repository name, and the service takes the same name. Use lowercase words separated by hyphens — for example my-first-service. The name must be unique within your GitHub account or organisation.',
+        side: 'bottom',
+        align: 'start',
       },
     },
     {
-      element: "#repo-visibility",
+      element: '#repo-visibility',
       popover: {
-        title: "Visibility",
+        title: 'Visibility',
         description:
-          "Private keeps your code visible only to collaborators. Public makes the repository open to everyone on GitHub. You can change this later in GitHub repository settings.",
-        side: "bottom",
-        align: "start",
+          'Private keeps your code visible only to collaborators. Public makes the repository open to everyone on GitHub. You can change this later in GitHub repository settings.',
+        side: 'bottom',
+        align: 'start',
       },
     },
     {
-      element: "#node-version",
+      element: '#node-version',
       popover: {
-        title: "Node version",
+        title: 'Node version',
         description:
-          "The version of Node.js that the CI runner will use. Pick the same version your project targets locally. Node 22 LTS is a safe default for new projects.",
-        side: "bottom",
-        align: "start",
+          'The version of Node.js that the CI runner will use. Pick the same version your project targets locally. Node 22 LTS is a safe default for new projects.',
+        side: 'bottom',
+        align: 'start',
       },
     },
     {
-      element: "#coverage-threshold",
+      element: '#coverage-threshold',
       popover: {
-        title: "Coverage threshold",
+        title: 'Coverage threshold',
         description:
-          "The minimum percentage of code that must be covered by tests before the pipeline passes. Standard (80%) is a solid starting point. You can raise or lower this at any time.",
-        side: "bottom",
-        align: "start",
+          'The minimum percentage of code that must be covered by tests before the pipeline passes. Standard (80%) is a solid starting point. You can raise or lower this at any time.',
+        side: 'bottom',
+        align: 'start',
       },
     },
     {
       element: CREATE_BUTTON_SELECTOR,
       popover: {
-        title: "Ready to create",
+        title: 'Ready to create',
         description:
-          "When you are happy with the settings above, click this button to provision your GitHub repository, create the main, uat, and test branches, and commit the generated workflow file. This is the real action — no confirmation step.",
-        side: "top",
-        align: "center",
+          'When you are happy with the settings above, click this button to provision your GitHub repository, create the main, uat, and test branches, and commit the generated workflow file. This is the real action — no confirmation step.',
+        side: 'top',
+        align: 'center',
       },
     },
   ];
@@ -150,7 +150,7 @@ export function createProjectTour(callbacks: TourCallbacks): Driver {
     showProgress: true,
     allowClose: true,
     smoothScroll: true,
-    showButtons: ["next", "previous", "close"],
+    showButtons: ['next', 'previous', 'close'],
     steps,
     onDestroyed: finish,
   });

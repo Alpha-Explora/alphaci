@@ -5,11 +5,11 @@
  * host. Lines always arrive oldest to newest, whatever the query direction.
  */
 
-export type LogLevel = "error" | "warn" | "info" | "debug";
-export type LogType = "app" | "build" | "request";
-export type LogSource = "live" | "unavailable" | "simulated";
+export type LogLevel = 'error' | 'warn' | 'info' | 'debug';
+export type LogType = 'app' | 'build' | 'request';
+export type LogSource = 'live' | 'unavailable' | 'simulated';
 /** The filters a provider can apply server-side. The UI renders only these. */
-export type LogFilterKey = "level" | "type" | "text" | "instance";
+export type LogFilterKey = 'level' | 'type' | 'text' | 'instance';
 
 export interface DeploymentLogLine {
   /** Provider line id; the dedupe key. */
@@ -54,10 +54,10 @@ export interface DeploymentLogsResponse {
 
 /** One event of the `mode=append` stream. */
 export type DeploymentLogStreamEvent =
-  | ({ kind: "snapshot" } & DeploymentLogsResponse)
-  | { kind: "append"; source: LogSource; logs: DeploymentLogLine[] }
+  | ({ kind: 'snapshot' } & DeploymentLogsResponse)
+  | { kind: 'append'; source: LogSource; logs: DeploymentLogLine[] }
   | {
-      kind: "status";
+      kind: 'status';
       source: LogSource;
       reason?: string;
       /** The provider answered 429; the stream stays open and resumes after the cooldown. */
@@ -76,13 +76,13 @@ export interface LogWindow {
 
 /** Query filters the reader picks. Empty means everything. */
 export interface LogQueryFilters {
-  type?: Exclude<LogType, "request"> | null;
+  type?: Exclude<LogType, 'request'> | null;
 }
 
 export interface DeploymentLogsQuery {
   startTime?: string;
   endTime?: string | null;
-  direction?: "backward" | "forward";
+  direction?: 'backward' | 'forward';
   limit?: number;
   type?: readonly string[];
   level?: readonly LogLevel[];

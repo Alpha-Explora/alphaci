@@ -13,12 +13,16 @@
  * Any other role (a Developer never opens a studio) keeps the full view, as
  * before these rules. The server still decides every action. */
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
-import type { QaAutomationStage } from "./qa-automation-types";
-import { repoShortName } from "./project-run-rules";
-import type { PlaywrightItemRow, PlaywrightRepository, PlaywrightResults } from "./playwright-tab-rules";
-import type { RepositoryRole, RepositoryRoles } from "./qa-scope";
+import type { QaAutomationStage } from './qa-automation-types';
+import { repoShortName } from './project-run-rules';
+import type {
+  PlaywrightItemRow,
+  PlaywrightRepository,
+  PlaywrightResults,
+} from './playwright-tab-rules';
+import type { RepositoryRole, RepositoryRoles } from './qa-scope';
 
 export type { RepositoryRole, RepositoryRoles };
 
@@ -29,7 +33,7 @@ export type { RepositoryRole, RepositoryRoles };
  * repositories, keep them; so does a session with no known role, as before.
  */
 export function showsRepositories(role: AppRole | null | undefined): boolean {
-  return role !== "lead" && role !== "qa";
+  return role !== 'lead' && role !== 'qa';
 }
 
 export interface StudioColumnRules {
@@ -41,7 +45,11 @@ export interface StudioColumnRules {
   browserOnly: boolean;
 }
 
-const FULL: StudioColumnRules = { tabs: true, playwright: true, browserOnly: false };
+const FULL: StudioColumnRules = {
+  tabs: true,
+  playwright: true,
+  browserOnly: false,
+};
 
 const RULES: Partial<Record<AppRole, StudioColumnRules>> = {
   lead: { tabs: false, playwright: false, browserOnly: false },
@@ -49,13 +57,17 @@ const RULES: Partial<Record<AppRole, StudioColumnRules>> = {
   admin: FULL,
 };
 
-export function studioColumnRules(role: AppRole | null | undefined): StudioColumnRules {
+export function studioColumnRules(
+  role: AppRole | null | undefined,
+): StudioColumnRules {
   return (role ? RULES[role] : undefined) ?? FULL;
 }
 
 /** The stages the Playwright tab draws per repository. */
-export function visibleStages(rules: StudioColumnRules): ReadonlyArray<QaAutomationStage> {
-  return rules.browserOnly ? ["verify"] : ["verify", "quality"];
+export function visibleStages(
+  rules: StudioColumnRules,
+): ReadonlyArray<QaAutomationStage> {
+  return rules.browserOnly ? ['verify'] : ['verify', 'quality'];
 }
 
 /**
@@ -66,29 +78,39 @@ export function visibleStages(rules: StudioColumnRules): ReadonlyArray<QaAutomat
  * told apart from data the column has, so it stays listed rather than
  * hiding a frontend's results.
  */
-export function runsBrowserTests(role: RepositoryRole | null | undefined): boolean {
-  return role !== "backend";
+export function runsBrowserTests(
+  role: RepositoryRole | null | undefined,
+): boolean {
+  return role !== 'backend';
 }
 
-function browserRepository(repository: PlaywrightRepository, roles: RepositoryRoles): boolean {
+function browserRepository(
+  repository: PlaywrightRepository,
+  roles: RepositoryRoles,
+): boolean {
   // The server's merge of several repositories names none: keep it.
   if (repository.projectId === null) return true;
   return runsBrowserTests(roles[repository.projectId]);
 }
 
 /** Only the verify (browser) stage, and only the repositories it ran browser tests in. */
-function browserOnlyRepository(repository: PlaywrightRepository, roles: RepositoryRoles): PlaywrightRepository {
+function browserOnlyRepository(
+  repository: PlaywrightRepository,
+  roles: RepositoryRoles,
+): PlaywrightRepository {
   return {
     ...repository,
     automation: { verify: repository.automation.verify, quality: null },
-    checks: repository.checks.filter((ref) => runsBrowserTests(roles[ref.projectId])),
+    checks: repository.checks.filter((ref) =>
+      runsBrowserTests(roles[ref.projectId]),
+    ),
   };
 }
 
 /** A unit test or an API (Bruno) test is not a browser test; an unnamed source on verify may be. */
 function browserItem(row: PlaywrightItemRow): boolean {
-  if (row.source === "unit_test" || row.source === "bruno") return false;
-  return row.stage !== "quality";
+  if (row.source === 'unit_test' || row.source === 'bruno') return false;
+  return row.stage !== 'quality';
 }
 
 /**
@@ -121,15 +143,19 @@ export function liveRepositories(
   const out: Array<{ projectId: string; name: string }> = [];
   for (const repository of repositories) {
     for (const ref of repository.checks) {
-      if (seen.has(ref.projectId) || !runsBrowserTests(roles[ref.projectId])) continue;
+      if (seen.has(ref.projectId) || !runsBrowserTests(roles[ref.projectId]))
+        continue;
       seen.add(ref.projectId);
-      out.push({ projectId: ref.projectId, name: repoShortName(ref.repoFullName) });
+      out.push({
+        projectId: ref.projectId,
+        name: repoShortName(ref.repoFullName),
+      });
     }
   }
   return out;
 }
 
-export const NO_BROWSER_REPOSITORIES_TITLE = "No browser tests here";
+export const NO_BROWSER_REPOSITORIES_TITLE = 'No browser tests here';
 
 export const NO_BROWSER_REPOSITORIES_TEXT =
   "None of this Project's repositories run Playwright browser tests. API and unit tests are for developers and admins.";

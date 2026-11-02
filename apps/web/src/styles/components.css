@@ -442,7 +442,6 @@
    CREATE PROJECT REDESIGN — flat 2-column layout, no container boxes
    ══════════════════════════════════════════════════════════════════════════ */
 
-
 /* premium-input: clean, slightly softer radius for create-project fields */
 .premium-input {
   border-radius: 6px;
@@ -645,15 +644,25 @@
   box-shadow: none;
 }
 
-.ops-spark-bar--success { background: color-mix(in srgb, var(--success) 75%, transparent); }
+.ops-spark-bar--success {
+  background: color-mix(in srgb, var(--success) 75%, transparent);
+}
 
-.ops-spark-bar--failure { background: color-mix(in srgb, var(--danger) 80%, transparent); }
+.ops-spark-bar--failure {
+  background: color-mix(in srgb, var(--danger) 80%, transparent);
+}
 
-.ops-spark-bar--running { background: color-mix(in srgb, var(--accent-amber) 80%, transparent); }
+.ops-spark-bar--running {
+  background: color-mix(in srgb, var(--accent-amber) 80%, transparent);
+}
 
-.ops-spark-bar--partial { background: color-mix(in srgb, var(--accent-violet) 75%, transparent); }
+.ops-spark-bar--partial {
+  background: color-mix(in srgb, var(--accent-violet) 75%, transparent);
+}
 
-.ops-spark-bar--cancelled { background: color-mix(in srgb, var(--text-muted) 45%, transparent); }
+.ops-spark-bar--cancelled {
+  background: color-mix(in srgb, var(--text-muted) 45%, transparent);
+}
 
 /* ── Side tabs — a vertical rail beside its panel ─────────────────────────────
    The section list is a second COLUMN rather than a strip above the content.

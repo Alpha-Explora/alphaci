@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties } from 'react';
 
 /**
  * Existing-repository onboarding.
@@ -15,18 +15,18 @@ import type { CSSProperties } from "react";
 export const EXISTING_REPO_MODE_ENABLED = true;
 
 export const WIZARD_STEPS = [
-  { label: "Blueprint", detail: "Shape and stack" },
-  { label: "Repository", detail: "Name and visibility" },
-  { label: "Automation", detail: "Runtime and coverage" },
-  { label: "Delivery", detail: "Hosting" },
-  { label: "Review", detail: "Confirm and create" },
+  { label: 'Blueprint', detail: 'Shape and stack' },
+  { label: 'Repository', detail: 'Name and visibility' },
+  { label: 'Automation', detail: 'Runtime and coverage' },
+  { label: 'Delivery', detail: 'Hosting' },
+  { label: 'Review', detail: 'Confirm and create' },
 ] as const;
 
 export const labelAccentStyle: CSSProperties = {
-  borderLeft: "2px solid var(--brand)",
-  paddingLeft: "0.5rem",
-  color: "var(--text-secondary)",
-  fontSize: "0.72rem",
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
+  borderLeft: '2px solid var(--brand)',
+  paddingLeft: '0.5rem',
+  color: 'var(--text-secondary)',
+  fontSize: '0.72rem',
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
 };

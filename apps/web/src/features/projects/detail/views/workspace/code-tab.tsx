@@ -1,8 +1,14 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+} from 'react';
 
-import { Avatar } from "@/features/groups/workspace";
+import { Avatar } from '@/features/groups/workspace';
 import {
   createProjectBranch,
   getProjectBranches,
@@ -10,10 +16,10 @@ import {
   type RepoBranch,
   type RepoContentEntry,
   type RepoContentListing,
-} from "@/features/projects";
-import { relativeTime } from "@/features/runs";
+} from '@/features/projects';
+import { relativeTime } from '@/features/runs';
 
-import { browseRefFor } from "../../model/browse-ref";
+import { browseRefFor } from '../../model/browse-ref';
 import {
   browseCommitBackLabel,
   browseCommitBranch,
@@ -22,14 +28,18 @@ import {
   commitCountLabel,
   entryCommit,
   type BrowseCommit,
-} from "../../model/code-commit-rules";
+} from '../../model/code-commit-rules';
 import {
   useFileCommitsViewModel,
   type FileCommitsViewModel,
   type RepoPathCommit,
-} from "../../view-models/use-file-commits-view-model";
-import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-states";
-import "./code-tab.css";
+} from '../../view-models/use-file-commits-view-model';
+import {
+  WorkspaceEmpty,
+  WorkspaceError,
+  WorkspaceLoading,
+} from './workspace-states';
+import './code-tab.css';
 
 /**
  * Browse the repository's source at a branch, or at one commit when the
@@ -66,9 +76,13 @@ export function CodeTab({
    * open fetched the same listing twice. Separating "what was asked for" from
    * "what came back" is what makes one open cost one request.
    */
-  const [chosenRef, setChosenRef] = useState<string | null>(() => browseCommitRef(initialCommit));
-  const [resolvedRef, setResolvedRef] = useState<string | null>(() => browseCommitRef(initialCommit));
-  const [path, setPath] = useState("");
+  const [chosenRef, setChosenRef] = useState<string | null>(() =>
+    browseCommitRef(initialCommit),
+  );
+  const [resolvedRef, setResolvedRef] = useState<string | null>(() =>
+    browseCommitRef(initialCommit),
+  );
+  const [path, setPath] = useState('');
   const [listing, setListing] = useState<RepoContentListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,7 +141,7 @@ export function CodeTab({
         setResolvedRef(data.ref);
       })
       .catch(() => {
-        if (!cancelled) setError("This path could not be read from GitHub.");
+        if (!cancelled) setError('This path could not be read from GitHub.');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -150,10 +164,10 @@ export function CodeTab({
   // Breadcrumb segments, each carrying the path that leads back to it.
   const crumbs = useMemo(() => {
     if (!path) return [];
-    const parts = path.split("/").filter(Boolean);
+    const parts = path.split('/').filter(Boolean);
     return parts.map((label, index) => ({
       label,
-      path: parts.slice(0, index + 1).join("/"),
+      path: parts.slice(0, index + 1).join('/'),
     }));
   }, [path]);
 
@@ -167,7 +181,7 @@ export function CodeTab({
     // Only directories and files are navigable. A symlink or submodule points
     // somewhere this browser cannot follow, so it renders as a dead row rather
     // than a link that would 404.
-    if (entry.type === "dir" || entry.type === "file") goTo(entry.path);
+    if (entry.type === 'dir' || entry.type === 'file') goTo(entry.path);
   }
 
   const file = listing?.file ?? null;
@@ -178,7 +192,7 @@ export function CodeTab({
     setCommit(null);
     setChosenRef(nextRef);
     setResolvedRef(nextRef);
-    setPath("");
+    setPath('');
   }
 
   return (
@@ -245,7 +259,7 @@ function CodeToolbar({
           <span className="ws-branch__label">Branch</span>
           <select
             className="ws-select"
-            value={chosenRef ?? resolvedRef ?? ""}
+            value={chosenRef ?? resolvedRef ?? ''}
             onChange={(event) => onPickBranch(event.target.value)}
           >
             {commit ? (
@@ -261,7 +275,7 @@ function CodeToolbar({
           </select>
         </label>
       ) : null}
-      {canCreateBranch && branches.some((branch) => branch.name === "dev") ? (
+      {canCreateBranch && branches.some((branch) => branch.name === 'dev') ? (
         <BranchCreateControl onCreateBranch={onCreateBranch} />
       ) : null}
       {commit ? <CommitMarker commit={commit} onLeave={onLeaveCommit} /> : null}
@@ -269,38 +283,44 @@ function CodeToolbar({
       {/* At the top level there is no path to show; inside a folder, the
           first crumb is an icon back to the top instead of the word "root". */}
       {crumbs.length > 0 ? (
-      <nav className="ws-crumbs" aria-label="File path">
-        <button
-          type="button"
-          className="ws-crumb ws-crumb--home"
-          aria-label="Repository root"
-          title="Repository root"
-          onClick={() => onGoTo("")}
-        >
-          <svg aria-hidden="true" fill="none" height="14" viewBox="0 0 16 16" width="14">
-            <path
-              d="M1.75 4.25c0-.69.56-1.25 1.25-1.25h3.1l1.5 1.5H13c.69 0 1.25.56 1.25 1.25v6.5c0 .69-.56 1.25-1.25 1.25H3c-.69 0-1.25-.56-1.25-1.25v-8Z"
-              stroke="currentColor"
-              strokeLinejoin="round"
-              strokeWidth="1.4"
-            />
-          </svg>
-        </button>
-        {crumbs.map((crumb) => (
-          <span key={crumb.path}>
-            <span className="ws-crumb-sep" aria-hidden="true">
-              /
-            </span>
-            <button
-              type="button"
-              className="ws-crumb"
-              onClick={() => onGoTo(crumb.path)}
+        <nav className="ws-crumbs" aria-label="File path">
+          <button
+            type="button"
+            className="ws-crumb ws-crumb--home"
+            aria-label="Repository root"
+            title="Repository root"
+            onClick={() => onGoTo('')}
+          >
+            <svg
+              aria-hidden="true"
+              fill="none"
+              height="14"
+              viewBox="0 0 16 16"
+              width="14"
             >
-              {crumb.label}
-            </button>
-          </span>
-        ))}
-      </nav>
+              <path
+                d="M1.75 4.25c0-.69.56-1.25 1.25-1.25h3.1l1.5 1.5H13c.69 0 1.25.56 1.25 1.25v6.5c0 .69-.56 1.25-1.25 1.25H3c-.69 0-1.25-.56-1.25-1.25v-8Z"
+                stroke="currentColor"
+                strokeLinejoin="round"
+                strokeWidth="1.4"
+              />
+            </svg>
+          </button>
+          {crumbs.map((crumb) => (
+            <span key={crumb.path}>
+              <span className="ws-crumb-sep" aria-hidden="true">
+                /
+              </span>
+              <button
+                type="button"
+                className="ws-crumb"
+                onClick={() => onGoTo(crumb.path)}
+              >
+                {crumb.label}
+              </button>
+            </span>
+          ))}
+        </nav>
       ) : null}
     </div>
   );
@@ -310,7 +330,7 @@ function BranchCreateControl({
   onCreateBranch,
 }: Readonly<{ onCreateBranch: (branchName: string) => Promise<void> }>) {
   const [creating, setCreating] = useState(false);
-  const [branchName, setBranchName] = useState("");
+  const [branchName, setBranchName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -323,9 +343,11 @@ function BranchCreateControl({
     try {
       await onCreateBranch(name);
       setCreating(false);
-      setBranchName("");
+      setBranchName('');
     } catch {
-      setError("Branch could not be created. Check the name and your GitHub access.");
+      setError(
+        'Branch could not be created. Check the name and your GitHub access.',
+      );
     } finally {
       setSaving(false);
     }
@@ -333,7 +355,7 @@ function BranchCreateControl({
 
   function close() {
     setCreating(false);
-    setBranchName("");
+    setBranchName('');
     setError(null);
   }
 
@@ -354,7 +376,7 @@ function BranchCreateControl({
       className="ws-branch-create"
       onSubmit={submit}
       onKeyDown={(event) => {
-        if (event.key === "Escape" && !saving) close();
+        if (event.key === 'Escape' && !saving) close();
       }}
     >
       <label className="ws-branch-create__field">
@@ -375,7 +397,7 @@ function BranchCreateControl({
         className="ws-branch-create__submit"
         disabled={saving || !branchName.trim()}
       >
-        {saving ? "Creating…" : "Create"}
+        {saving ? 'Creating…' : 'Create'}
       </button>
       <button
         type="button"
@@ -385,17 +407,27 @@ function BranchCreateControl({
       >
         Cancel
       </button>
-      {error ? <span className="ws-branch-create__error" role="alert">{error}</span> : null}
+      {error ? (
+        <span className="ws-branch-create__error" role="alert">
+          {error}
+        </span>
+      ) : null}
     </form>
   );
 }
 
 /** Names the commit being browsed, read-only, and the way back to its branch. */
-function CommitMarker({ commit, onLeave }: Readonly<{ commit: BrowseCommit; onLeave: () => void }>) {
+function CommitMarker({
+  commit,
+  onLeave,
+}: Readonly<{ commit: BrowseCommit; onLeave: () => void }>) {
   return (
     <p className="code-commit" role="status">
       <span className="code-commit__label">
-        Browsing commit <code className="code-commit__sha" title={commit.sha}>{commit.shortSha}</code>
+        Browsing commit{' '}
+        <code className="code-commit__sha" title={commit.sha}>
+          {commit.shortSha}
+        </code>
       </span>
       <button type="button" className="code-commit__back" onClick={onLeave}>
         {browseCommitBackLabel(commit.branch)}
@@ -424,7 +456,7 @@ function CodeEntries({
           <button
             type="button"
             className="ws-tree__row code-tree__row"
-            onClick={() => onGoTo(path.split("/").slice(0, -1).join("/"))}
+            onClick={() => onGoTo(path.split('/').slice(0, -1).join('/'))}
           >
             <span className="ws-tree__icon" aria-hidden="true">
               ↰
@@ -462,11 +494,11 @@ function CodeEntryRow({
         onClick={() => onOpen(entry)}
       >
         <span className="ws-tree__icon" aria-hidden="true">
-          {entry.type === "dir" ? <FolderIcon /> : <FileIcon />}
+          {entry.type === 'dir' ? <FolderIcon /> : <FileIcon />}
         </span>
         <span className="ws-tree__name">{entry.name}</span>
         <span className="code-tree__message" title={commit?.message}>
-          {commit?.message ?? ""}
+          {commit?.message ?? ''}
         </span>
         <CommitTime commit={commit} className="code-tree__time" />
       </button>
@@ -496,16 +528,21 @@ function CommitTime({
  * message, which commit and when, and how many commits touched it. Nothing
  * at all when GitHub could not say: the files are what this tab is for.
  */
-function LatestCommitBar({ commits }: Readonly<{ commits: FileCommitsViewModel }>) {
-  if (commits.status === "loading") {
+function LatestCommitBar({
+  commits,
+}: Readonly<{ commits: FileCommitsViewModel }>) {
+  if (commits.status === 'loading') {
     return (
-      <div className="code-commit-bar code-commit-bar--loading" aria-busy="true">
+      <div
+        className="code-commit-bar code-commit-bar--loading"
+        aria-busy="true"
+      >
         Loading the latest commit…
       </div>
     );
   }
   const latest = commits.commits?.latest;
-  if (commits.status !== "ready" || !latest) return null;
+  if (commits.status !== 'ready' || !latest) return null;
   const total = commits.commits?.totalCommits ?? null;
   return (
     <div className="code-commit-bar">
@@ -514,7 +551,9 @@ function LatestCommitBar({ commits }: Readonly<{ commits: FileCommitsViewModel }
         name={latest.authorName}
         avatarUrl={latest.authorAvatarUrl}
       />
-      <strong className="code-commit-bar__author">{commitAuthorLabel(latest)}</strong>
+      <strong className="code-commit-bar__author">
+        {commitAuthorLabel(latest)}
+      </strong>
       <span className="code-commit-bar__message" title={latest.message}>
         {latest.message}
       </span>
@@ -546,7 +585,7 @@ function CodeBrowserBody({
 }: Readonly<{
   loading: boolean;
   error: string | null;
-  file: NonNullable<RepoContentListing["file"]> | null;
+  file: NonNullable<RepoContentListing['file']> | null;
   listing: RepoContentListing | null;
   path: string;
   commits: FileCommitsViewModel;
@@ -586,7 +625,7 @@ function CodeBrowserBody({
   );
 }
 
-function FileView({ file }: { file: NonNullable<RepoContentListing["file"]> }) {
+function FileView({ file }: { file: NonNullable<RepoContentListing['file']> }) {
   return (
     <div className="ws-file">
       <div className="ws-file__head">
@@ -598,8 +637,8 @@ function FileView({ file }: { file: NonNullable<RepoContentListing["file"]> }) {
           title="Not shown"
           message={
             file.truncated
-              ? "This file is binary or too large to preview here."
-              : "This file has no readable text content."
+              ? 'This file is binary or too large to preview here.'
+              : 'This file has no readable text content.'
           }
         />
       ) : (
@@ -621,7 +660,14 @@ function formatBytes(bytes: number): string {
 
 function FolderIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      focusable="false"
+    >
       <path d="M3 6a2 2 0 0 1 2-2h4.2a2 2 0 0 1 1.4.6L12 6h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
     </svg>
   );
@@ -629,7 +675,18 @@ function FolderIcon() {
 
 function FileIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
       <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
       <polyline points="14 3 14 9 20 9" />
     </svg>
@@ -638,7 +695,18 @@ function FileIcon() {
 
 function HistoryIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
       <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
       <polyline points="3 3 3 8 8 8" />
       <polyline points="12 7 12 12 15 14" />

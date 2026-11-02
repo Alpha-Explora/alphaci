@@ -5,8 +5,8 @@ import {
   PROJECT_FEATURES_REQUIRED_MESSAGE,
   PROJECT_REQUIRED_MESSAGE,
   repositoryBlockedByFeatures,
-} from "@/features/groups";
-import type { AppRole } from "@/shared/api/contracts";
+} from '@/features/groups';
+import type { AppRole } from '@/shared/api/contracts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -30,8 +30,8 @@ export interface ResolvedTargetProject {
 export function parseCreateTargetParams(params: {
   get: (key: string) => string | null;
 }): CreateTargetParams {
-  const group = params.get("group")?.trim() ?? "";
-  const project = params.get("project")?.trim() ?? "";
+  const group = params.get('group')?.trim() ?? '';
+  const project = params.get('project')?.trim() ?? '';
   return {
     groupId: SAFE_ID.test(group) ? group : null,
     deliveryProjectId: UUID.test(project) ? project : null,
@@ -45,7 +45,10 @@ export function preselectedWorkspaceId(
   workspaces: ReadonlyArray<{ id: string }>,
 ): string | null {
   if (current) return current;
-  if (linkedGroupId && workspaces.some((workspace) => workspace.id === linkedGroupId)) {
+  if (
+    linkedGroupId &&
+    workspaces.some((workspace) => workspace.id === linkedGroupId)
+  ) {
     return linkedGroupId;
   }
   return workspaces.length === 1 ? workspaces[0].id : null;
@@ -72,7 +75,7 @@ export function targetProjectLabel(
 ): string | null {
   if (!effectiveDeliveryProjectId(target, workspaceId) || !target) return null;
   const team = workspaces?.find((workspace) => workspace.id === target.groupId);
-  return `${team?.name ?? "Team"} / ${target.name}`;
+  return `${team?.name ?? 'Team'} / ${target.name}`;
 }
 
 /** The name of the Project the repository joins, or null when it joins none. */
@@ -85,16 +88,23 @@ export function joinedProjectName(
 }
 
 function text(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
+  return typeof value === 'string' ? value.trim() : '';
 }
 
 /** A getDeliveryProject reply, read defensively. Null when unusable. */
-export function readTargetProject(value: unknown, requestedId: string): ResolvedTargetProject | null {
-  if (typeof value !== "object" || value === null) return null;
+export function readTargetProject(
+  value: unknown,
+  requestedId: string,
+): ResolvedTargetProject | null {
+  if (typeof value !== 'object' || value === null) return null;
   const raw = value as Record<string, unknown>;
   const groupId = text(raw.groupId);
-  if (!groupId || raw.status === "archived") return null;
-  return { id: text(raw.id) || requestedId, name: text(raw.name) || "Project", groupId };
+  if (!groupId || raw.status === 'archived') return null;
+  return {
+    id: text(raw.id) || requestedId,
+    name: text(raw.name) || 'Project',
+    groupId,
+  };
 }
 
 /* ── A Developer's chosen Project ───────────────────────────────────────── */
@@ -105,10 +115,10 @@ export {
   NO_PROJECT_YET_MESSAGE,
   PROJECT_FEATURES_REQUIRED_MESSAGE,
   PROJECT_REQUIRED_MESSAGE,
-} from "@/features/groups";
+} from '@/features/groups';
 
 export const RENDER_VARIABLES_MISSING_MESSAGE =
-  "Add at least one Render environment variable before creating the repository.";
+  'Add at least one Render environment variable before creating the repository.';
 
 /**
  * Why Create cannot be sent yet, or null when it can: Render provisioning
@@ -124,7 +134,8 @@ export function createRepositoryBlocker(input: {
   featuresBlocker?: string | null;
 }): string | null {
   if (input.renderVariablesMissing) return RENDER_VARIABLES_MISSING_MESSAGE;
-  if (input.requiresProject && !input.deliveryProjectId) return PROJECT_REQUIRED_MESSAGE;
+  if (input.requiresProject && !input.deliveryProjectId)
+    return PROJECT_REQUIRED_MESSAGE;
   return input.featuresBlocker ?? null;
 }
 
@@ -138,7 +149,11 @@ export interface ProjectChoiceOption {
 
 /** The team's Projects as select options, in the order the server sent them. */
 export function projectChoiceOptions(
-  folders: ReadonlyArray<{ deliveryProjectId: string; name: string; featureCount: number | null }>,
+  folders: ReadonlyArray<{
+    deliveryProjectId: string;
+    name: string;
+    featureCount: number | null;
+  }>,
 ): ProjectChoiceOption[] {
   return folders.map((folder) => ({
     id: folder.deliveryProjectId,
@@ -154,7 +169,7 @@ export interface ProjectChoiceEntry {
   disabled: boolean;
 }
 
-export const NO_FEATURES_SUFFIX = "(no Features yet)";
+export const NO_FEATURES_SUFFIX = '(no Features yet)';
 
 export function projectChoiceEntries(
   options: ReadonlyArray<ProjectChoiceOption>,
@@ -162,7 +177,11 @@ export function projectChoiceEntries(
 ): ProjectChoiceEntry[] {
   return options.map((option) => {
     const disabled = repositoryBlockedByFeatures(appRole, option.featureCount);
-    return { id: option.id, label: disabled ? `${option.name} ${NO_FEATURES_SUFFIX}` : option.name, disabled };
+    return {
+      id: option.id,
+      label: disabled ? `${option.name} ${NO_FEATURES_SUFFIX}` : option.name,
+      disabled,
+    };
   });
 }
 
@@ -177,8 +196,11 @@ export function projectFeaturesBlocker(
   appRole: AppRole | null | undefined,
 ): string | null {
   if (!targetId) return null;
-  const featureCount = options.find((option) => option.id === targetId)?.featureCount ?? null;
-  return repositoryBlockedByFeatures(appRole, featureCount) ? PROJECT_FEATURES_REQUIRED_MESSAGE : null;
+  const featureCount =
+    options.find((option) => option.id === targetId)?.featureCount ?? null;
+  return repositoryBlockedByFeatures(appRole, featureCount)
+    ? PROJECT_FEATURES_REQUIRED_MESSAGE
+    : null;
 }
 
 /** A picked option as a target in the team it was picked in; null clears the choice. */
@@ -246,7 +268,11 @@ export function createTargetView(input: {
   workspaces: ReadonlyArray<{ id: string; name: string }> | null;
 }): CreateTargetView {
   const { linked, chosen, workspaces } = input;
-  const workspaceId = createWorkspaceId(linked, chosen, input.selectedWorkspaceId);
+  const workspaceId = createWorkspaceId(
+    linked,
+    chosen,
+    input.selectedWorkspaceId,
+  );
   const applicable = applicableTargetProject(linked, chosen, workspaceId);
   return {
     workspaceId,

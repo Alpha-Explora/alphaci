@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 import {
   canFramePreview,
@@ -10,9 +10,9 @@ import {
   previewStatusTone,
   previewUnavailableReason,
   shortCommitSha,
-} from "../../model/projects-rules";
-import type { ProjectBranchPreview } from "../../model/projects-types";
-import { useDashboardOrigin } from "../view-models/use-dashboard-origin";
+} from '../../model/projects-rules';
+import type { ProjectBranchPreview } from '../../model/projects-types';
+import { useDashboardOrigin } from '../view-models/use-dashboard-origin';
 
 /**
  * The framed preview.
@@ -27,7 +27,7 @@ function PreviewViewport({
 }: Readonly<{ preview: ProjectBranchPreview }>) {
   const [loaded, setLoaded] = useState(false);
   const origin = useDashboardOrigin();
-  const url = preview.previewUrl ?? "";
+  const url = preview.previewUrl ?? '';
 
   return (
     <div className="branch-preview__viewport">
@@ -83,7 +83,7 @@ function PreviewActions({
            * rather than an empty one. Copy still helps — it is the address
            * to configure things against.
            */}
-          {preview.status === "not_deployed" ? (
+          {preview.status === 'not_deployed' ? (
             <code className="branch-preview__pending-url">
               {preview.previewUrl}
             </code>
@@ -102,7 +102,7 @@ function PreviewActions({
             type="button"
             onClick={() => void copyUrl()}
           >
-            {copied ? "Copied" : "Copy URL"}
+            {copied ? 'Copied' : 'Copy URL'}
           </button>
         </>
       ) : null}
@@ -131,8 +131,8 @@ export function BranchPreviewCard({
             {previewHostLabel(preview)} · {preview.targetName}
             {preview.pullRequestNumber !== null
               ? ` · PR #${preview.pullRequestNumber}`
-              : ""}
-            {sha ? ` · ${sha}` : ""}
+              : ''}
+            {sha ? ` · ${sha}` : ''}
           </p>
           {preview.commitMessage ? (
             <p className="branch-preview__commit">{preview.commitMessage}</p>

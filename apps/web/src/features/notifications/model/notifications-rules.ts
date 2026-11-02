@@ -1,48 +1,51 @@
 /* Pure domain rules. No React, no I/O — directly unit-testable. */
 
-import type { CapabilityAvailability } from "@/features/capabilities/current";
+import type { CapabilityAvailability } from '@/features/capabilities/current';
 
-import type { NotificationItem, NotificationsStatus } from "./notifications-types";
+import type {
+  NotificationItem,
+  NotificationsStatus,
+} from './notifications-types';
 
 /**
  * QA (or, after QA's sign-off, the Product owner) refused an item: a
  * Developer acts on it from the "My QA items" card.
  */
 const QA_REFUSAL_EVENTS: ReadonlySet<string> = new Set([
-  "qa.item.returned_to_dev",
-  "qa.item.failed",
-  "qa.item.blocked",
-  "qa.item.po_rejected",
+  'qa.item.returned_to_dev',
+  'qa.item.failed',
+  'qa.item.blocked',
+  'qa.item.po_rejected',
 ]);
 
 /** QA signed a run off: the Product owner's turn to check it, in PO Studio. */
-const QA_SIGNED_OFF_EVENT = "qa.run.signed_off";
+const QA_SIGNED_OFF_EVENT = 'qa.run.signed_off';
 
 /** Whether a notification says QA (or the Product owner) failed, blocked or returned an item. */
 export function isQaRefusal(
-  item: Pick<NotificationItem, "eventCode">,
+  item: Pick<NotificationItem, 'eventCode'>,
 ): boolean {
   return QA_REFUSAL_EVENTS.has(item.eventCode);
 }
 
 /** Whether a notification pops up live: a refusal, or QA's sign-off. */
 export function isQaLiveAlert(
-  item: Pick<NotificationItem, "eventCode">,
+  item: Pick<NotificationItem, 'eventCode'>,
 ): boolean {
   return isQaRefusal(item) || item.eventCode === QA_SIGNED_OFF_EVENT;
 }
 
 /** Whether a notification is QA's sign-off of a run. */
 export function isQaSignoff(
-  item: Pick<NotificationItem, "eventCode">,
+  item: Pick<NotificationItem, 'eventCode'>,
 ): boolean {
   return item.eventCode === QA_SIGNED_OFF_EVENT;
 }
 
 export function isMembershipNotification(
-  item: Pick<NotificationItem, "eventCode">,
+  item: Pick<NotificationItem, 'eventCode'>,
 ): boolean {
-  return item.eventCode === "hierarchy.group.member_added";
+  return item.eventCode === 'hierarchy.group.member_added';
 }
 
 export function notificationAlertHref(item: NotificationItem): string | null {
@@ -64,7 +67,7 @@ export function notificationAlertHref(item: NotificationItem): string | null {
  * Null without a project to go to.
  */
 export function qaRefusalHref(
-  item: Pick<NotificationItem, "projectId">,
+  item: Pick<NotificationItem, 'projectId'>,
 ): string | null {
   const projectId = item.projectId ?? null;
   if (!projectId) return null;
@@ -104,7 +107,7 @@ export function feedUserId(
   userId: string | null,
   capability: CapabilityAvailability,
 ): string | null {
-  return capability === "enabled" ? userId : null;
+  return capability === 'enabled' ? userId : null;
 }
 
 /**
@@ -116,7 +119,7 @@ export function gatedFeedStatus(
   capability: CapabilityAvailability,
   feedStatus: NotificationsStatus,
 ): NotificationsStatus {
-  if (capability === "pending") return "loading";
-  if (capability === "disabled") return "ready";
+  if (capability === 'pending') return 'loading';
+  if (capability === 'disabled') return 'ready';
   return feedStatus;
 }

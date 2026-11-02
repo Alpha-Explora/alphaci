@@ -1,17 +1,20 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
+import { useRef, useState } from 'react';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
-import { projectQaRunsRepository } from "../../data/project-qa-runs-repository";
+import { projectQaRunsRepository } from '../../data/project-qa-runs-repository';
 import {
   projectDispatchConfirmation,
   projectDispatchFailures,
   projectDispatchWarning,
   projectVerifySettledSince,
-} from "../../model/playwright-tab-rules";
-import type { ProjectDispatchResult, ProjectQaRun } from "../../model/project-run-types";
+} from '../../model/playwright-tab-rules';
+import type {
+  ProjectDispatchResult,
+  ProjectQaRun,
+} from '../../model/project-run-types';
 import {
   AUTOMATION_POLL_WINDOW_MS,
   dispatchBlockedReason,
@@ -19,23 +22,28 @@ import {
   qaSignInHref,
   roleCanDispatch,
   type QaDispatchError,
-} from "../../model/qa-automation-rules";
-import { useAutomationPoll, type PollWindow } from "./use-automation-poll";
-import type { AutomationDispatchControls, QaAutomationStatus } from "./use-qa-automation-view-model";
+} from '../../model/qa-automation-rules';
+import { useAutomationPoll, type PollWindow } from './use-automation-poll';
+import type {
+  AutomationDispatchControls,
+  QaAutomationStatus,
+} from './use-qa-automation-view-model';
 
 type Outcome =
-  | { status: "idle" | "dispatching" }
-  | { status: "dispatched"; result: ProjectDispatchResult; at: number }
-  | { status: "failed"; error: QaDispatchError };
+  | { status: 'idle' | 'dispatching' }
+  | { status: 'dispatched'; result: ProjectDispatchResult; at: number }
+  | { status: 'failed'; error: QaDispatchError };
 
 function publicStatus(outcome: Outcome, watching: boolean): QaAutomationStatus {
-  if (outcome.status !== "dispatched") return outcome.status;
-  return watching ? "watching" : "dispatched";
+  if (outcome.status !== 'dispatched') return outcome.status;
+  return watching ? 'watching' : 'dispatched';
 }
 
 /** When Run Playwright last started the workflow somewhere; null before (or when it started nowhere). */
 function dispatchedAt(outcome: Outcome): number | null {
-  return outcome.status === "dispatched" && outcome.result.dispatched.length > 0 ? outcome.at : null;
+  return outcome.status === 'dispatched' && outcome.result.dispatched.length > 0
+    ? outcome.at
+    : null;
 }
 
 /**
@@ -43,9 +51,12 @@ function dispatchedAt(outcome: Outcome): number | null {
  * run the server says this viewer may not dispatch on — while it is still
  * open, so not for the sign-off it already explains — hides it too.
  */
-function offersDispatch(run: ProjectQaRun, appRole: AppRole | null | undefined): boolean {
+function offersDispatch(
+  run: ProjectQaRun,
+  appRole: AppRole | null | undefined,
+): boolean {
   if (!roleCanDispatch(appRole)) return false;
-  return run.status !== "open" || run.permissions.canDispatch !== false;
+  return run.status !== 'open' || run.permissions.canDispatch !== false;
 }
 
 /**
@@ -65,13 +76,15 @@ export function useProjectAutomationViewModel(options: {
   projectId: string;
 }): AutomationDispatchControls {
   const { deliveryProjectId, run, appRole, onRun, projectId } = options;
-  const [outcome, setOutcome] = useState<Outcome>({ status: "idle" });
+  const [outcome, setOutcome] = useState<Outcome>({ status: 'idle' });
   const [poll, setPoll] = useState<PollWindow | null>(null);
   const busy = useRef(false);
   const canDispatch = offersDispatch(run, appRole);
   const blockedReason = dispatchBlockedReason(run);
-  const started = outcome.status === "dispatched" ? outcome.result : null;
-  const watched = started ? started.dispatched.map((entry) => entry.projectId) : [];
+  const started = outcome.status === 'dispatched' ? outcome.result : null;
+  const watched = started
+    ? started.dispatched.map((entry) => entry.projectId)
+    : [];
 
   useAutomationPoll({
     key: `${deliveryProjectId}|${run.id}`,
@@ -85,14 +98,18 @@ export function useProjectAutomationViewModel(options: {
   async function dispatch() {
     if (!canDispatch || blockedReason || busy.current) return;
     busy.current = true;
-    setOutcome({ status: "dispatching" });
+    setOutcome({ status: 'dispatching' });
     try {
-      const result = await projectQaRunsRepository.dispatchAutomation(deliveryProjectId, run.id);
+      const result = await projectQaRunsRepository.dispatchAutomation(
+        deliveryProjectId,
+        run.id,
+      );
       const at = Date.now();
-      setOutcome({ status: "dispatched", result, at });
-      if (result.dispatched.length > 0) setPoll({ since: at, until: at + AUTOMATION_POLL_WINDOW_MS });
+      setOutcome({ status: 'dispatched', result, at });
+      if (result.dispatched.length > 0)
+        setPoll({ since: at, until: at + AUTOMATION_POLL_WINDOW_MS });
     } catch (cause) {
-      setOutcome({ status: "failed", error: dispatchError(cause) });
+      setOutcome({ status: 'failed', error: dispatchError(cause) });
     } finally {
       busy.current = false;
     }
@@ -105,15 +122,21 @@ export function useProjectAutomationViewModel(options: {
     confirmation: started ? projectDispatchConfirmation(started) : null,
     warning: started ? projectDispatchWarning(started) : null,
     failures: started ? projectDispatchFailures(started) : [],
-    error: outcome.status === "failed" ? outcome.error : null,
+    error: outcome.status === 'failed' ? outcome.error : null,
     signInHref: qaSignInHref(projectId),
     dispatch,
     // Clears a failure only; a started workflow's confirmation stays.
-    dismiss: () => setOutcome((current) => (current.status === "failed" ? { status: "idle" } : current)),
+    dismiss: () =>
+      setOutcome((current) =>
+        current.status === 'failed' ? { status: 'idle' } : current,
+      ),
     startedAt: dispatchedAt(outcome),
     refresh: () => {
       // A missed read is not worth a message: the stage cards stay as they were.
-      projectQaRunsRepository.get(deliveryProjectId, run.id).then(onRun).catch(() => undefined);
+      projectQaRunsRepository
+        .get(deliveryProjectId, run.id)
+        .then(onRun)
+        .catch(() => undefined);
     },
   };
 }

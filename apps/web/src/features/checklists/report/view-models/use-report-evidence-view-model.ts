@@ -1,18 +1,24 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { qaAttachmentsRepository } from "../../data/qa-attachments-repository";
-import type { QaProjectReport } from "../../model/project-report-types";
-import { reportEvidence, reportHasEvidence } from "../../model/qa-attachment-rules";
-import type { QaAttachment, QaAttachmentRef } from "../../model/qa-attachment-types";
+import { qaAttachmentsRepository } from '../../data/qa-attachments-repository';
+import type { QaProjectReport } from '../../model/project-report-types';
+import {
+  reportEvidence,
+  reportHasEvidence,
+} from '../../model/qa-attachment-rules';
+import type {
+  QaAttachment,
+  QaAttachmentRef,
+} from '../../model/qa-attachment-types';
 
 /**
  * `none`: the report has no per-item screenshots (or no report yet), so
  * nothing is read; `loading` while the run's signed URLs are read; `error`
  * when they could not be (the report still prints, with captions only).
  */
-export type ReportEvidenceStatus = "none" | "loading" | "ready" | "error";
+export type ReportEvidenceStatus = 'none' | 'loading' | 'ready' | 'error';
 
 export interface ReportEvidenceItem {
   ref: QaAttachmentRef;
@@ -35,22 +41,35 @@ interface Loaded {
 }
 
 /** The images the page will actually draw: refs the run's list has a URL for. */
-function expectedImageIds(report: QaProjectReport, list: ReadonlyArray<QaAttachment>): string[] {
+function expectedImageIds(
+  report: QaProjectReport,
+  list: ReadonlyArray<QaAttachment>,
+): string[] {
   return report.run.items.flatMap((item) =>
-    reportEvidence(item.attachments, list).flatMap((entry) => (entry.attachment?.url ? [entry.attachment.id] : [])),
+    reportEvidence(item.attachments, list).flatMap((entry) =>
+      entry.attachment?.url ? [entry.attachment.id] : [],
+    ),
   );
 }
 
-function statusOf(wanted: boolean, loaded: Loaded | null, key: string): ReportEvidenceStatus {
-  if (!wanted) return "none";
-  if (!loaded || loaded.key !== key) return "loading";
-  return loaded.list ? "ready" : "error";
+function statusOf(
+  wanted: boolean,
+  loaded: Loaded | null,
+  key: string,
+): ReportEvidenceStatus {
+  if (!wanted) return 'none';
+  if (!loaded || loaded.key !== key) return 'loading';
+  return loaded.list ? 'ready' : 'error';
 }
 
 /** Nothing to wait for, or every image the page draws has loaded or failed. */
-function isSettled(status: ReportEvidenceStatus, expected: ReadonlyArray<string>, settled: ReadonlySet<string>): boolean {
-  if (status === "loading") return false;
-  return status !== "ready" || expected.every((id) => settled.has(id));
+function isSettled(
+  status: ReportEvidenceStatus,
+  expected: ReadonlyArray<string>,
+  settled: ReadonlySet<string>,
+): boolean {
+  if (status === 'loading') return false;
+  return status !== 'ready' || expected.every((id) => settled.has(id));
 }
 
 /**
@@ -69,7 +88,9 @@ export function useReportEvidenceViewModel(options: {
   const key = `${deliveryProjectId}/${runId}`;
   const wanted = report !== null && reportHasEvidence(report.run.items);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const [settledIds, setSettledIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [settledIds, setSettledIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const requestId = useRef(0);
 
   useEffect(() => {
@@ -77,23 +98,29 @@ export function useReportEvidenceViewModel(options: {
     const id = ++requestId.current;
     qaAttachmentsRepository.listForRun(deliveryProjectId, runId).then(
       (list) => {
-        if (id === requestId.current) setLoaded({ key: `${deliveryProjectId}/${runId}`, list });
+        if (id === requestId.current)
+          setLoaded({ key: `${deliveryProjectId}/${runId}`, list });
       },
       () => {
-        if (id === requestId.current) setLoaded({ key: `${deliveryProjectId}/${runId}`, list: null });
+        if (id === requestId.current)
+          setLoaded({ key: `${deliveryProjectId}/${runId}`, list: null });
       },
     );
   }, [deliveryProjectId, runId, wanted]);
 
   const status = statusOf(wanted, loaded, key);
-  const list = (status === "ready" && loaded?.list) || [];
+  const list = (status === 'ready' && loaded?.list) || [];
   const expected = report ? expectedImageIds(report, list) : [];
 
   return {
     status,
     forItem: (refs) => reportEvidence(refs, list),
     imageSettled: (attachmentId) =>
-      setSettledIds((previous) => (previous.has(attachmentId) ? previous : new Set(previous).add(attachmentId))),
+      setSettledIds((previous) =>
+        previous.has(attachmentId)
+          ? previous
+          : new Set(previous).add(attachmentId),
+      ),
     settled: isSettled(status, expected, settledIds),
   };
 }

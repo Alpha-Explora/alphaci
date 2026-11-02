@@ -12,8 +12,8 @@
  * the error object, so views still receive display text only.
  */
 
-import { ApiError } from "@/shared/api/request";
-import { serverErrorMessage } from "@/shared/api/error-message";
+import { ApiError } from '@/shared/api/request';
+import { serverErrorMessage } from '@/shared/api/error-message';
 
 /**
  * Read the server's message out of an error, falling back when there isn't one.

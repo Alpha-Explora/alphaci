@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import "./pipeline-tab.css";
+import './pipeline-tab.css';
 
-import type { ProvisionedProject } from "@/features/projects";
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
-import { RunsTab } from "./runs-tab";
-import { WorkflowTab } from "./workflow-tab";
+import type { ProvisionedProject } from '@/features/projects';
+import type { ProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
+import { RunsTab } from './runs-tab';
+import { WorkflowTab } from './workflow-tab';
 
 /**
  * The Pipeline tab presents workflow execution and its configuration.
@@ -26,7 +26,7 @@ export function PipelineTab({
       aria-labelledby="project-detail-tab-pipeline"
       className="pipeline-tab"
     >
-      {vm.pipelineView === "configuration" ? (
+      {vm.pipelineView === 'configuration' ? (
         <>
           <div className="pipeline-tab__head">
             <h2 className="pipeline-tab__name">Workflows</h2>

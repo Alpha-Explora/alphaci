@@ -10,27 +10,27 @@
  * Pure, so the wording and the precedence are tested rather than eyeballed.
  */
 
-import type { StageId, StageReport } from "@/shared/api/contracts";
+import type { StageId, StageReport } from '@/shared/api/contracts';
 
-import { checkLabel, checkTone, summarizeChecks } from "@/features/runs";
+import { checkLabel, checkTone, summarizeChecks } from '@/features/runs';
 
-import { isFailedConclusion } from "./github-conclusion";
+import { isFailedConclusion } from './github-conclusion';
 
 /* ── Stage names ────────────────────────────────────────────────────────── */
 
 const STAGE_NAMES: Record<StageId, string> = {
-  access: "Access",
-  quality: "Quality",
-  package: "Package",
-  verify: "Verify",
+  access: 'Access',
+  quality: 'Quality',
+  package: 'Package',
+  verify: 'Verify',
 };
 
 /** What each stage covers, for the muted line under its name. */
 const STAGE_COVERAGE: Record<StageId, string> = {
-  access: "permissions & branch policy",
-  quality: "tests, lint & scans",
-  package: "build, deploy & promote",
-  verify: "post-deploy browser & API tests",
+  access: 'permissions & branch policy',
+  quality: 'tests, lint & scans',
+  package: 'build, deploy & promote',
+  verify: 'post-deploy browser & API tests',
 };
 
 export function stageName(stage: StageId): string {
@@ -38,7 +38,7 @@ export function stageName(stage: StageId): string {
 }
 
 export function stageCoverage(stage: StageId): string {
-  return STAGE_COVERAGE[stage] ?? "";
+  return STAGE_COVERAGE[stage] ?? '';
 }
 
 /* ── Check counts ───────────────────────────────────────────────────────── */
@@ -100,19 +100,20 @@ export function checkProgress(
 
 /* ── One stage's verdict ────────────────────────────────────────────────── */
 
-export type VerdictTone = "success" | "danger" | "warning" | "running" | "muted";
+export type VerdictTone =
+  'success' | 'danger' | 'warning' | 'running' | 'muted';
 
 export type VerdictState =
-  | "passed"
-  | "passed-with-findings"
-  | "finishing"
-  | "failed-after-report"
-  | "failed"
-  | "running"
-  | "cancelled"
-  | "waiting"
-  | "not-run"
-  | "did-not-start";
+  | 'passed'
+  | 'passed-with-findings'
+  | 'finishing'
+  | 'failed-after-report'
+  | 'failed'
+  | 'running'
+  | 'cancelled'
+  | 'waiting'
+  | 'not-run'
+  | 'did-not-start';
 
 export interface StageVerdict {
   state: VerdictState;
@@ -138,14 +139,16 @@ function culpritBefore(
   stage: StageReport,
   stages: readonly StageReport[],
 ): StageReport | undefined {
-  const index = stages.findIndex((candidate) => candidate.stage === stage.stage);
+  const index = stages.findIndex(
+    (candidate) => candidate.stage === stage.stage,
+  );
   return stages
     .slice(0, Math.max(0, index))
     .find(
       (earlier) =>
-        earlier.status === "failure" ||
-        earlier.status === "cancelled" ||
-        earlier.status === "stalled",
+        earlier.status === 'failure' ||
+        earlier.status === 'cancelled' ||
+        earlier.status === 'stalled',
     );
 }
 
@@ -153,14 +156,16 @@ function stageBefore(
   stage: StageReport,
   stages: readonly StageReport[],
 ): StageReport | undefined {
-  const index = stages.findIndex((candidate) => candidate.stage === stage.stage);
+  const index = stages.findIndex(
+    (candidate) => candidate.stage === stage.stage,
+  );
   return index > 0 ? stages[index - 1] : undefined;
 }
 
-function culpritVerb(status: StageReport["status"]): string {
-  if (status === "failure") return "failed";
-  if (status === "cancelled") return "was cancelled";
-  return "did not start";
+function culpritVerb(status: StageReport['status']): string {
+  if (status === 'failure') return 'failed';
+  if (status === 'cancelled') return 'was cancelled';
+  return 'did not start';
 }
 
 /**
@@ -195,112 +200,139 @@ function reconciledVerdict(
   running: readonly string[],
   liveRun: LiveRunState | null,
 ): StageVerdict | null {
-  const names = running.join(", ");
-  if (liveRun?.status === "completed" && isFailedConclusion(liveRun.conclusion)) {
+  const names = running.join(', ');
+  if (
+    liveRun?.status === 'completed' &&
+    isFailedConclusion(liveRun.conclusion)
+  ) {
     // The job that failed runs after the stage reports (the promotion, the
     // production gate), so its error is NOT in the report: the stage detail
     // loads the run's failure log for this state and shows it below.
-    const who = running.length > 0 ? names : "A job in this run";
+    const who = running.length > 0 ? names : 'A job in this run';
     return {
-      state: "failed-after-report",
-      label: "Failed after passing",
-      tone: "danger",
+      state: 'failed-after-report',
+      label: 'Failed after passing',
+      tone: 'danger',
       reason: `${who} failed after the stage reported success. Its error is below.`,
     };
   }
-  if (running.length === 0 || liveRun?.status === "completed") return null;
+  if (running.length === 0 || liveRun?.status === 'completed') return null;
   if (liveRun) {
     return {
-      state: "finishing",
-      label: "Finishing",
-      tone: "running",
-      reason: `The stage passed. ${names} ${plural(running.length, "is", "are")} still running.`,
+      state: 'finishing',
+      label: 'Finishing',
+      tone: 'running',
+      reason: `The stage passed. ${names} ${plural(running.length, 'is', 'are')} still running.`,
     };
   }
   return {
-    state: "passed-with-findings",
-    label: "Passed",
-    tone: "warning",
-    reason: `${names} ${plural(running.length, "was", "were")} still running when the stage reported, so ${plural(running.length, "its", "their")} result is not known here.`,
+    state: 'passed-with-findings',
+    label: 'Passed',
+    tone: 'warning',
+    reason: `${names} ${plural(running.length, 'was', 'were')} still running when the stage reported, so ${plural(running.length, 'its', 'their')} result is not known here.`,
   };
 }
 
 /** Rule 4: advisory findings inside a passing stage. */
 function findingsVerdict(stage: StageReport): StageVerdict | null {
-  const failed = checksNamed(stage, "failed");
+  const failed = checksNamed(stage, 'failed');
   if (failed.length > 0) {
     return {
-      state: "passed-with-findings",
-      label: "Passed with warnings",
-      tone: "warning",
-      reason: `${failed.join(", ")} failed, but ${plural(failed.length, "it does", "they do")} not block this branch.`,
+      state: 'passed-with-findings',
+      label: 'Passed with warnings',
+      tone: 'warning',
+      reason: `${failed.join(', ')} failed, but ${plural(failed.length, 'it does', 'they do')} not block this branch.`,
     };
   }
   const warned = stage.friendlyMessages.find(
-    (message) => message.severity === "warning" || message.severity === "error",
+    (message) => message.severity === 'warning' || message.severity === 'error',
   );
   return warned
-    ? { state: "passed-with-findings", label: "Passed with warnings", tone: "warning", reason: warned.title }
+    ? {
+        state: 'passed-with-findings',
+        label: 'Passed with warnings',
+        tone: 'warning',
+        reason: warned.title,
+      }
     : null;
 }
 
-const PASSED: StageVerdict = { state: "passed", label: "Passed", tone: "success", reason: null };
+const PASSED: StageVerdict = {
+  state: 'passed',
+  label: 'Passed',
+  tone: 'success',
+  reason: null,
+};
 
 function successVerdict(
   stage: StageReport,
   liveRun: LiveRunState | null,
 ): StageVerdict {
   return (
-    reconciledVerdict(checksNamed(stage, "running"), liveRun) ??
+    reconciledVerdict(checksNamed(stage, 'running'), liveRun) ??
     findingsVerdict(stage) ??
     PASSED
   );
 }
 
-function blockedVerdict(stage: StageReport, stages: readonly StageReport[]): StageVerdict {
+function blockedVerdict(
+  stage: StageReport,
+  stages: readonly StageReport[],
+): StageVerdict {
   const culprit = culpritBefore(stage, stages);
   return {
-    state: "not-run",
-    label: "Not run",
-    tone: "muted",
+    state: 'not-run',
+    label: 'Not run',
+    tone: 'muted',
     reason: culprit
       ? `Not run because ${stageName(culprit.stage)} ${culpritVerb(culprit.status)}.`
-      : "Not run because an earlier stage did not pass.",
+      : 'Not run because an earlier stage did not pass.',
   };
 }
 
-function stalledVerdict(stage: StageReport, stages: readonly StageReport[]): StageVerdict {
+function stalledVerdict(
+  stage: StageReport,
+  stages: readonly StageReport[],
+): StageVerdict {
   const before = stageBefore(stage, stages);
   const name = stageName(stage.stage);
   return {
-    state: "did-not-start",
-    label: "Did not start",
-    tone: "warning",
+    state: 'did-not-start',
+    label: 'Did not start',
+    tone: 'warning',
     reason:
-      before?.status === "success"
+      before?.status === 'success'
         ? `${stageName(before.stage)} passed, but ${name} never started.`
         : `${name} never started.`,
   };
 }
 
-function waitingVerdict(stage: StageReport, stages: readonly StageReport[]): StageVerdict {
+function waitingVerdict(
+  stage: StageReport,
+  stages: readonly StageReport[],
+): StageVerdict {
   const before = stageBefore(stage, stages);
   return {
-    state: "waiting",
-    label: "Waiting",
-    tone: "muted",
+    state: 'waiting',
+    label: 'Waiting',
+    tone: 'muted',
     reason: before ? `Starts when ${stageName(before.stage)} finishes.` : null,
   };
 }
 
-const FIXED_VERDICTS: Partial<Record<StageReport["status"], StageVerdict>> = {
-  failure: { state: "failed", label: "Failed", tone: "danger", reason: null },
-  running: { state: "running", label: "Running", tone: "running", reason: null },
+const FIXED_VERDICTS: Partial<Record<StageReport['status'], StageVerdict>> = {
+  failure: { state: 'failed', label: 'Failed', tone: 'danger', reason: null },
+  running: {
+    state: 'running',
+    label: 'Running',
+    tone: 'running',
+    reason: null,
+  },
   cancelled: {
-    state: "cancelled",
-    label: "Cancelled",
-    tone: "muted",
-    reason: "The run was cancelled before it finished.",
+    state: 'cancelled',
+    label: 'Cancelled',
+    tone: 'muted',
+    reason: 'The run was cancelled before it finished.',
   },
 };
 
@@ -319,9 +351,9 @@ export function stageVerdict(
 ): StageVerdict {
   const fixed = FIXED_VERDICTS[stage.status];
   if (fixed) return fixed;
-  if (stage.status === "success") return successVerdict(stage, liveRun);
-  if (stage.status === "blocked") return blockedVerdict(stage, stages);
-  if (stage.status === "stalled") return stalledVerdict(stage, stages);
+  if (stage.status === 'success') return successVerdict(stage, liveRun);
+  if (stage.status === 'blocked') return blockedVerdict(stage, stages);
+  if (stage.status === 'stalled') return stalledVerdict(stage, stages);
   return waitingVerdict(stage, stages);
 }
 
@@ -336,9 +368,9 @@ export function stageVerdict(
 export function defaultOpenStage(
   entries: readonly { stage: { stage: StageId }; verdict: StageVerdict }[],
 ): StageId | null {
-  const danger = entries.find((entry) => entry.verdict.tone === "danger");
+  const danger = entries.find((entry) => entry.verdict.tone === 'danger');
   if (danger) return danger.stage.stage;
-  const warning = entries.find((entry) => entry.verdict.tone === "warning");
+  const warning = entries.find((entry) => entry.verdict.tone === 'warning');
   return warning?.stage.stage ?? null;
 }
 
@@ -364,13 +396,19 @@ const BARE_SHA = /^[0-9a-f]{7,40}$/i;
  */
 export function commitTitle(runs: readonly TitledRun[]): string | null {
   const direct = [...runs]
-    .filter((run) => run.event === "push" || run.event === "pull_request")
-    .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt))[0];
+    .filter((run) => run.event === 'push' || run.event === 'pull_request')
+    .sort(
+      (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
+    )[0];
   const source = direct ?? runs[0];
   if (!source) return null;
 
-  const title = (direct ? source.displayTitle : source.displayTitle.replace(BRANCH_PREFIX, "")).trim();
-  if (title === "" || BARE_SHA.test(title)) return null;
+  const title = (
+    direct
+      ? source.displayTitle
+      : source.displayTitle.replace(BRANCH_PREFIX, '')
+  ).trim();
+  if (title === '' || BARE_SHA.test(title)) return null;
   return title;
 }
 
@@ -386,39 +424,44 @@ export function commitTitle(runs: readonly TitledRun[]): string | null {
 export function distinctCommitTitles(
   commits: readonly { commitSha: string; runs: readonly TitledRun[] }[],
 ): Map<string, string | null> {
-  const titles = commits.map((commit) => [commit.commitSha, commitTitle(commit.runs)] as const);
+  const titles = commits.map(
+    (commit) => [commit.commitSha, commitTitle(commit.runs)] as const,
+  );
   const uses = new Map<string, number>();
   for (const [, title] of titles) {
     if (title) uses.set(title, (uses.get(title) ?? 0) + 1);
   }
   return new Map(
-    titles.map(([sha, title]) => [sha, title && uses.get(title) === 1 ? title : null]),
+    titles.map(([sha, title]) => [
+      sha,
+      title && uses.get(title) === 1 ? title : null,
+    ]),
   );
 }
 
 /* ── Header chip ────────────────────────────────────────────────────────── */
 
 const HEADLINE_LABELS: Record<string, string> = {
-  success: "Passed",
-  failure: "Failed",
-  running: "Running",
-  in_progress: "Running",
-  cancelled: "Cancelled",
-  partial: "Partial",
-  attention: "Needs attention",
-  timed_out: "Timed out",
-  startup_failure: "Rejected",
-  skipped: "Skipped",
-  queued: "Queued",
-  waiting: "Waiting",
-  completed: "Completed",
+  success: 'Passed',
+  failure: 'Failed',
+  running: 'Running',
+  in_progress: 'Running',
+  cancelled: 'Cancelled',
+  partial: 'Partial',
+  attention: 'Needs attention',
+  timed_out: 'Timed out',
+  startup_failure: 'Rejected',
+  skipped: 'Skipped',
+  queued: 'Queued',
+  waiting: 'Waiting',
+  completed: 'Completed',
 };
 
 /** The commit headline's word, as the chip says it. */
 export function headlineChipLabel(label: string): string {
   const known = HEADLINE_LABELS[label];
   if (known) return known;
-  const spaced = label.replace(/_/g, " ");
+  const spaced = label.replace(/_/g, ' ');
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
@@ -452,10 +495,10 @@ export function workflowRunLabel(
 
 /** The event that started a run, as a reader says it. */
 export function runEventLabel(event: string): string {
-  if (event === "workflow_run") return "chained";
-  if (event === "workflow_dispatch") return "manual";
-  if (event === "pull_request") return "pull request";
-  return event.replace(/_/g, " ");
+  if (event === 'workflow_run') return 'chained';
+  if (event === 'workflow_dispatch') return 'manual';
+  if (event === 'pull_request') return 'pull request';
+  return event.replace(/_/g, ' ');
 }
 
 /** "2m 10s" for a finished run; null while it is still going or unparseable. */
@@ -464,7 +507,7 @@ export function runDuration(run: {
   createdAt: string;
   updatedAt: string;
 }): string | null {
-  if (run.status !== "completed") return null;
+  if (run.status !== 'completed') return null;
   const ms = Date.parse(run.updatedAt) - Date.parse(run.createdAt);
   if (!Number.isFinite(ms) || ms < 0) return null;
   const seconds = Math.round(ms / 1000);
@@ -517,13 +560,13 @@ export function showsVerdictReason(entry: StageEntry): boolean {
   if (!entry.verdict.reason) return false;
   const explained = entry.stage.friendlyMessages.length > 0;
   switch (entry.verdict.state) {
-    case "failed":
-    case "cancelled":
-    case "not-run":
-    case "did-not-start":
-    case "waiting":
+    case 'failed':
+    case 'cancelled':
+    case 'not-run':
+    case 'did-not-start':
+    case 'waiting':
       return !explained;
-    case "passed-with-findings":
+    case 'passed-with-findings':
       // A warning message already names the finding; the check-name sentence
       // is still new information when no message was captured.
       return !explained;
@@ -542,8 +585,9 @@ export function showsVerdictReason(entry: StageEntry): boolean {
  * asking GitHub for their log would be a wasted call.
  */
 export function loadsFailureLog(entry: StageEntry): boolean {
-  if (entry.stage.status === "failure" || entry.stage.status === "cancelled") return true;
-  return entry.verdict.state === "failed-after-report";
+  if (entry.stage.status === 'failure' || entry.stage.status === 'cancelled')
+    return true;
+  return entry.verdict.state === 'failed-after-report';
 }
 
 /**
@@ -554,17 +598,17 @@ export function githubStatusChip(
   status: string,
   conclusion: string | null,
 ): { tone: VerdictTone; label: string } {
-  if (status !== "completed") {
+  if (status !== 'completed') {
     return {
-      tone: status === "queued" || status === "waiting" ? "muted" : "running",
+      tone: status === 'queued' || status === 'waiting' ? 'muted' : 'running',
       label: headlineChipLabel(status),
     };
   }
   const tone: VerdictTone =
-    conclusion === "success"
-      ? "success"
+    conclusion === 'success'
+      ? 'success'
       : isFailedConclusion(conclusion)
-        ? "danger"
-        : "muted";
-  return { tone, label: headlineChipLabel(conclusion ?? "completed") };
+        ? 'danger'
+        : 'muted';
+  return { tone, label: headlineChipLabel(conclusion ?? 'completed') };
 }

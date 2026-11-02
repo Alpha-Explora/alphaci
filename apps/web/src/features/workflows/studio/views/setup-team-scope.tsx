@@ -1,13 +1,17 @@
-"use client";
+'use client';
 
-import type { WorkspaceSummary } from "@/shared/api/contracts";
-import { countWorkspaces, soleWorkspaceOf, teamChoiceState } from "../model/setup-tab-rules";
+import type { WorkspaceSummary } from '@/shared/api/contracts';
+import {
+  countWorkspaces,
+  soleWorkspaceOf,
+  teamChoiceState,
+} from '../model/setup-tab-rules';
 
 function InTeamScopeCopy() {
   return (
     <span>
-      <strong>Team repository</strong> This repository belongs to the
-      selected team, and every member of it can see the project.
+      <strong>Team repository</strong> This repository belongs to the selected
+      team, and every member of it can see the project.
     </span>
   );
 }
@@ -24,15 +28,13 @@ function TeamPicker({
   return (
     <label className="repo-creation-scope__picker">
       <span>
-        <strong>Team</strong> Every member of the team you choose can
-        see this project.
+        <strong>Team</strong> Every member of the team you choose can see this
+        project.
       </span>
       <select
-        value={selectedWorkspaceId ?? ""}
+        value={selectedWorkspaceId ?? ''}
         data-testid="setup-workspace-select"
-        onChange={(event) =>
-          onChangeWorkspace?.(event.target.value || null)
-        }
+        onChange={(event) => onChangeWorkspace?.(event.target.value || null)}
       >
         <option value="">Select a team…</option>
         {workspaces?.map((workspace) => (
@@ -48,8 +50,8 @@ function TeamPicker({
 function NoTeamCopy() {
   return (
     <span>
-      <strong>No team yet</strong> Every project belongs to a team.
-      Ask a team admin to add you to one before creating a project.
+      <strong>No team yet</strong> Every project belongs to a team. Ask a team
+      admin to add you to one before creating a project.
     </span>
   );
 }
@@ -60,15 +62,15 @@ function SoleOrDefaultTeamCopy({
   if (soleWorkspace) {
     return (
       <span>
-        <strong>Team repository</strong>{" "}
+        <strong>Team repository</strong>{' '}
         {`This repository belongs to ${soleWorkspace.name}, and every member of it can see the project.`}
       </span>
     );
   }
   return (
     <span>
-      <strong>Team repository</strong>{" "}
-      Every member of your team can see this project.
+      <strong>Team repository</strong> Every member of your team can see this
+      project.
     </span>
   );
 }
@@ -82,7 +84,7 @@ function TeamScopeMessage({
   soleWorkspace,
   workspaces,
 }: Readonly<{
-  creationScope: "choose-team" | "in-team";
+  creationScope: 'choose-team' | 'in-team';
   hasNoTeam: boolean;
   needsTeamChoice: boolean;
   onChangeWorkspace?: (workspaceId: string | null) => void;
@@ -90,7 +92,7 @@ function TeamScopeMessage({
   soleWorkspace: WorkspaceSummary | null;
   workspaces?: WorkspaceSummary[] | null;
 }>) {
-  if (creationScope === "in-team") {
+  if (creationScope === 'in-team') {
     return <InTeamScopeCopy />;
   }
   if (needsTeamChoice) {
@@ -123,11 +125,15 @@ function TargetProjectLine({
   onClearProject,
 }: Readonly<{ label: string; onClearProject: (() => void) | null }>) {
   return (
-    <div className="repo-creation-scope" role="status" data-testid="setup-target-project">
+    <div
+      className="repo-creation-scope"
+      role="status"
+      data-testid="setup-target-project"
+    >
       <span className="repo-creation-scope__dot" aria-hidden="true" />
       <span>
-        <strong>Project: {label}</strong> The new repository joins this
-        Project. For a frontend and backend pair, both do.
+        <strong>Project: {label}</strong> The new repository joins this Project.
+        For a frontend and backend pair, both do.
       </span>
       {onClearProject ? (
         <button
@@ -152,7 +158,7 @@ export function SetupTeamScope({
   workspaces,
   targetProjectLabel,
 }: Readonly<{
-  creationScope: "choose-team" | "in-team";
+  creationScope: 'choose-team' | 'in-team';
   isExistingMode: boolean;
   onChangeWorkspace?: (workspaceId: string | null) => void;
   /** Un-pick a Developer's Project (several teams only), or null. */
@@ -168,8 +174,14 @@ export function SetupTeamScope({
     return null;
   }
   if (projectKnown && targetProjectLabel) {
-    const canChangeTeam = countWorkspaces(workspaces) > 1 ? onClearProject : null;
-    return <TargetProjectLine label={targetProjectLabel} onClearProject={canChangeTeam} />;
+    const canChangeTeam =
+      countWorkspaces(workspaces) > 1 ? onClearProject : null;
+    return (
+      <TargetProjectLine
+        label={targetProjectLabel}
+        onClearProject={canChangeTeam}
+      />
+    );
   }
 
   const team = teamChoiceState({

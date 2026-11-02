@@ -1,33 +1,33 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 import {
   useGroupDeliveryProjectRouteViewModel,
   type HierarchyRepository,
   type ResourceState,
-} from "@/features/groups";
+} from '@/features/groups';
 import {
   HierarchyPageShell,
   LifecycleStatusBadge,
   RepositoryTable,
-} from "@/features/groups/workspace";
+} from '@/features/groups/workspace';
 import {
   Breadcrumb,
   LoadingRows,
   PageHeader,
   ResourceBoundary,
   SectionHeader,
-} from "@/features/groups/workspace";
+} from '@/features/groups/workspace';
 
-import { IterationHeader } from "@/features/checklists/iteration";
-import { ProjectQaWorkspace } from "@/features/checklists/requirements";
+import { IterationHeader } from '@/features/checklists/iteration';
+import { ProjectQaWorkspace } from '@/features/checklists/requirements';
 
-import { useDeliveryProjectViewModel } from "../view-models/use-delivery-project-view-model";
-import { useProjectMembersViewModel } from "../view-models/use-project-members-view-model";
-import type { AppRole } from "@/shared/api/contracts";
-import { CreateRepositoryDialog } from "./create-repository-dialog";
-import { ProjectMembersPanel } from "./project-members-panel";
-import { groupDisplayName } from "../../model/groups-rules";
+import { useDeliveryProjectViewModel } from '../view-models/use-delivery-project-view-model';
+import { useProjectMembersViewModel } from '../view-models/use-project-members-view-model';
+import type { AppRole } from '@/shared/api/contracts';
+import { CreateRepositoryDialog } from './create-repository-dialog';
+import { ProjectMembersPanel } from './project-members-panel';
+import { groupDisplayName } from '../../model/groups-rules';
 
 function HierarchyNotReady({
   crumb,
@@ -45,10 +45,7 @@ function HierarchyNotReady({
   return (
     <>
       <Breadcrumb
-        items={[
-          { label: "Projects", href: "/workflows" },
-          { label: crumb },
-        ]}
+        items={[{ label: 'Projects', href: '/workflows' }, { label: crumb }]}
       />
       <ResourceBoundary
         state={state}
@@ -75,7 +72,7 @@ function DeliveryProjectRepositories({
   createButton: ReactNode;
   onRetry: () => void;
 }>) {
-  if (status === "ready") {
+  if (status === 'ready') {
     return (
       <>
         <SectionHeader title="Repositories" count={repositories.length} />
@@ -83,7 +80,7 @@ function DeliveryProjectRepositories({
       </>
     );
   }
-  if (status === "loading") {
+  if (status === 'loading') {
     return <LoadingRows rows={2} />;
   }
   return (
@@ -93,7 +90,7 @@ function DeliveryProjectRepositories({
       emptyTitle="No repositories yet"
       emptyMessage={
         canManage
-          ? "Add a repository to provision a GitHub repo with its pipeline and hosting."
+          ? 'Add a repository to provision a GitHub repo with its pipeline and hosting.'
           : "You don't have access to any repositories in this delivery project yet."
       }
       emptyAction={createButton}
@@ -106,8 +103,16 @@ function ProjectMembersSection({
   groupId,
   deliveryProjectId,
   appRole,
-}: Readonly<{ groupId: string; deliveryProjectId: string; appRole: AppRole | null }>) {
-  const vm = useProjectMembersViewModel({ groupId, deliveryProjectId, appRole });
+}: Readonly<{
+  groupId: string;
+  deliveryProjectId: string;
+  appRole: AppRole | null;
+}>) {
+  const vm = useProjectMembersViewModel({
+    groupId,
+    deliveryProjectId,
+    appRole,
+  });
   return <ProjectMembersPanel vm={vm} />;
 }
 
@@ -117,7 +122,7 @@ function DeliveryProjectDetail({
 }: Readonly<{ groupId: string; deliveryProjectId: string }>) {
   const vm = useDeliveryProjectViewModel(groupId, deliveryProjectId);
 
-  if (vm.status !== "ready" || !vm.project) {
+  if (vm.status !== 'ready' || !vm.project) {
     return (
       <HierarchyNotReady
         crumb="Delivery project"
@@ -144,9 +149,9 @@ function DeliveryProjectDetail({
     <>
       <Breadcrumb
         items={[
-          { label: "Projects", href: "/workflows" },
+          { label: 'Projects', href: '/workflows' },
           { label: groupDisplayName(vm.group), href: `/groups/${groupId}` },
-          { label: "Projects", href: `/groups/${groupId}/systems` },
+          { label: 'Projects', href: `/groups/${groupId}/systems` },
           { label: project.name },
         ]}
       />
@@ -154,10 +159,14 @@ function DeliveryProjectDetail({
         title={project.name}
         subtitle={project.description ?? undefined}
         actions={
-          <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
             <LifecycleStatusBadge status={project.status} />
             {/* "Iteration 3 · Delivered 14 Oct", and Start iteration 4 for a Product owner or admin. */}
-            <IterationHeader deliveryProjectId={project.id} enabled={vm.qaEnabled} appRole={vm.appRole} />
+            <IterationHeader
+              deliveryProjectId={project.id}
+              enabled={vm.qaEnabled}
+              appRole={vm.appRole}
+            />
             {createButton}
           </div>
         }
@@ -181,7 +190,11 @@ function DeliveryProjectDetail({
       {vm.qaEnabled ? (
         <>
           <SectionHeader title="Requirements and QA" />
-          <ProjectQaWorkspace deliveryProjectId={project.id} projectName={project.name} appRole={vm.appRole} />
+          <ProjectQaWorkspace
+            deliveryProjectId={project.id}
+            projectName={project.name}
+            appRole={vm.appRole}
+          />
         </>
       ) : null}
 
@@ -199,7 +212,8 @@ function DeliveryProjectDetail({
 
 /** Public view for the delivery project route. */
 export function DeliveryProjectView() {
-  const { groupId, deliveryProjectId } = useGroupDeliveryProjectRouteViewModel();
+  const { groupId, deliveryProjectId } =
+    useGroupDeliveryProjectRouteViewModel();
   return (
     <HierarchyPageShell>
       {() => (

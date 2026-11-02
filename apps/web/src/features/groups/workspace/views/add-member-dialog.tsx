@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import type { GroupMember } from "@/features/groups";
-import { useAddMemberViewModel } from "../view-models/use-add-member-view-model";
-import { Avatar, FormDialog } from "./primitives";
+import type { GroupMember } from '@/features/groups';
+import { useAddMemberViewModel } from '../view-models/use-add-member-view-model';
+import { Avatar, FormDialog } from './primitives';
 
 /**
  * Adds someone to a group immediately. There is no invitation and nothing for
@@ -52,7 +52,7 @@ export function AddMemberDialog({
               <strong>{selectedUser.name ?? selectedUser.login}</strong>
               <span>
                 @{selectedUser.login}
-                {selectedUser.email ? ` · ${selectedUser.email}` : ""}
+                {selectedUser.email ? ` · ${selectedUser.email}` : ''}
               </span>
             </div>
             <button
@@ -111,7 +111,7 @@ export function AddMemberDialog({
                         {user.hasAccount
                           ? user.email
                             ? ` · ${user.email}`
-                            : ""
+                            : ''
                           : " · hasn't signed in yet"}
                       </span>
                     </div>
@@ -126,8 +126,8 @@ export function AddMemberDialog({
         )}
 
         <span className="hier-field-hint" role="status">
-          {vm.status === "loading"
-            ? "Loading organization members…"
+          {vm.status === 'loading'
+            ? 'Loading organization members…'
             : (vm.emptyMessage ??
               "Members without an AlphaCI account can't be added until they sign in.")}
         </span>

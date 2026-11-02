@@ -1,14 +1,18 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { getApiBaseUrl } from "@/shared/api/request";
+import { getApiBaseUrl } from '@/shared/api/request';
 
-import { getProjectVisualChecks } from "../data/project-visual-api";
-import { EVIDENCE_IMAGE_WAIT_MS, visualEvidenceOf, type VisualEvidence } from "../model/visual-evidence-rules";
-import { withImageUrls } from "../model/visual-check-rules";
+import { getProjectVisualChecks } from '../data/project-visual-api';
+import {
+  EVIDENCE_IMAGE_WAIT_MS,
+  visualEvidenceOf,
+  type VisualEvidence,
+} from '../model/visual-evidence-rules';
+import { withImageUrls } from '../model/visual-check-rules';
 
-export type VisualEvidenceStatus = "loading" | "ready" | "error";
+export type VisualEvidenceStatus = 'loading' | 'ready' | 'error';
 
 export interface VisualEvidenceViewModel {
   status: VisualEvidenceStatus;
@@ -31,8 +35,11 @@ export function useVisualEvidenceViewModel(options: {
   onSettled?: () => void;
 }): VisualEvidenceViewModel {
   const { projectId, headSha, onSettled } = options;
-  const [state, setState] = useState<{ status: VisualEvidenceStatus; evidence: VisualEvidence | null }>({
-    status: "loading",
+  const [state, setState] = useState<{
+    status: VisualEvidenceStatus;
+    evidence: VisualEvidence | null;
+  }>({
+    status: 'loading',
     evidence: null,
   });
   const settledOnce = useRef(false);
@@ -52,17 +59,20 @@ export function useVisualEvidenceViewModel(options: {
 
   useEffect(() => {
     let live = true;
-    getProjectVisualChecks(projectId, "uat", null).then(
+    getProjectVisualChecks(projectId, 'uat', null).then(
       (response) => {
         if (!live) return;
-        const evidence = visualEvidenceOf(withImageUrls(response, getApiBaseUrl()), headSha);
+        const evidence = visualEvidenceOf(
+          withImageUrls(response, getApiBaseUrl()),
+          headSha,
+        );
         remaining.current = evidence?.imageCount ?? 0;
-        setState({ status: "ready", evidence });
+        setState({ status: 'ready', evidence });
         if (remaining.current === 0) settle();
       },
       () => {
         if (!live) return;
-        setState({ status: "error", evidence: null });
+        setState({ status: 'error', evidence: null });
         settle();
       },
     );

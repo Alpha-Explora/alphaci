@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 
 /** Nothing useful has focus: the element that had it was hidden or removed. */
 function focusLost(): boolean {

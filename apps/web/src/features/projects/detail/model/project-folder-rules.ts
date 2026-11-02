@@ -12,36 +12,43 @@ import type {
   RepoSwitchOption,
   RepoSwitchOptionDisplay,
   RepoSwitchPresentation,
-} from "./project-folder-types";
-import { tabFromHash, type ProjectDetailTab } from "./project-detail-tab-rules";
+} from './project-folder-types';
+import { tabFromHash, type ProjectDetailTab } from './project-detail-tab-rules';
 
-const ROLE_ORDER: ReadonlyArray<FolderRepoRole> = ["frontend", "backend", "service", "app"];
+const ROLE_ORDER: ReadonlyArray<FolderRepoRole> = [
+  'frontend',
+  'backend',
+  'service',
+  'app',
+];
 
 const ROLE_LABELS: Record<FolderRepoRole, string> = {
-  frontend: "FRONTEND",
-  backend: "BACKEND",
-  service: "SERVICE",
-  app: "APP",
+  frontend: 'FRONTEND',
+  backend: 'BACKEND',
+  service: 'SERVICE',
+  app: 'APP',
 };
 
 /** Shown for a repository whose role the server did not report. */
-const UNKNOWN_ROLE_LABEL = "REPO";
+const UNKNOWN_ROLE_LABEL = 'REPO';
 
 /** The tooltip on a switch option with no AlphaCI project behind it. */
-export const UNLINKED_REPO_HINT = "Not linked to an AlphaCI project yet";
+export const UNLINKED_REPO_HINT = 'Not linked to an AlphaCI project yet';
 
 /* ── Normalising ────────────────────────────────────────────────────────── */
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function stringOrNull(value: unknown): string | null {
-  return typeof value === "string" && value.length > 0 ? value : null;
+  return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
 function readRole(value: unknown): FolderRepoRole | null {
-  return ROLE_ORDER.includes(value as FolderRepoRole) ? (value as FolderRepoRole) : null;
+  return ROLE_ORDER.includes(value as FolderRepoRole)
+    ? (value as FolderRepoRole)
+    : null;
 }
 
 function readRepository(value: unknown): ProjectFolderRepository | null {
@@ -67,18 +74,23 @@ function roleRank(role: FolderRepoRole | null): number {
  * dropped rather than failing the page; the rows are kept in role order
  * (frontend, backend, service, app, then unknown), stable within a role.
  */
-export function normaliseProjectFolder(raw: unknown): ProjectFolderSummary | null {
+export function normaliseProjectFolder(
+  raw: unknown,
+): ProjectFolderSummary | null {
   if (!isRecord(raw) || !Array.isArray(raw.repositories)) return null;
   const repositories = raw.repositories
     .map(readRepository)
     .filter((repo): repo is ProjectFolderRepository => repo !== null)
     .map((repo, index) => ({ repo, index }))
-    .sort((a, b) => roleRank(a.repo.role) - roleRank(b.repo.role) || a.index - b.index)
+    .sort(
+      (a, b) =>
+        roleRank(a.repo.role) - roleRank(b.repo.role) || a.index - b.index,
+    )
     .map(({ repo }) => repo);
   return {
     deliveryProjectId: stringOrNull(raw.deliveryProjectId),
     groupId: stringOrNull(raw.groupId),
-    name: typeof raw.name === "string" ? raw.name.trim() : "",
+    name: typeof raw.name === 'string' ? raw.name.trim() : '',
     repositories,
   };
 }
@@ -91,9 +103,11 @@ export function roleLabel(role: FolderRepoRole | null | undefined): string {
 }
 
 /** The short repository name: "Org/shop-fe" -> "shop-fe". */
-export function repoShortName(repo: Pick<ProjectFolderRepository, "name" | "repoFullName">): string {
+export function repoShortName(
+  repo: Pick<ProjectFolderRepository, 'name' | 'repoFullName'>,
+): string {
   if (!repo.repoFullName) return repo.name;
-  return repo.repoFullName.split("/").at(-1) || repo.repoFullName;
+  return repo.repoFullName.split('/').at(-1) || repo.repoFullName;
 }
 
 /**
@@ -101,14 +115,18 @@ export function repoShortName(repo: Pick<ProjectFolderRepository, "name" | "repo
  * linked repository, else null (nothing in the Project has a page yet).
  */
 export function defaultRepoForFolder(
-  folder: Pick<ProjectFolderSummary, "repositories"> | null | undefined,
+  folder: Pick<ProjectFolderSummary, 'repositories'> | null | undefined,
 ): ProjectFolderRepository | null {
-  const linked = (folder?.repositories ?? []).filter((repo) => repo.projectId !== null);
-  return linked.find((repo) => repo.role === "frontend") ?? linked[0] ?? null;
+  const linked = (folder?.repositories ?? []).filter(
+    (repo) => repo.projectId !== null,
+  );
+  return linked.find((repo) => repo.role === 'frontend') ?? linked[0] ?? null;
 }
 
 /** A switch is worth drawing only when the Project has two or more repositories. */
-export function hasRepoSwitch(folder: ProjectFolderSummary | null | undefined): folder is ProjectFolderSummary {
+export function hasRepoSwitch(
+  folder: ProjectFolderSummary | null | undefined,
+): folder is ProjectFolderSummary {
   return (folder?.repositories.length ?? 0) >= 2;
 }
 
@@ -149,7 +167,8 @@ export function switchHref(
   visibleTabs: ReadonlyArray<ProjectDetailTab>,
 ): string {
   const asked = tabFromHash(currentHash);
-  const tab: ProjectDetailTab = asked && visibleTabs.includes(asked) ? asked : "overview";
+  const tab: ProjectDetailTab =
+    asked && visibleTabs.includes(asked) ? asked : 'overview';
   return `/projects/${encodeURIComponent(targetProjectId)}#${tab}`;
 }
 
@@ -161,7 +180,10 @@ export function switchHref(
  * /teams still forwards such links here.)
  */
 export function manageProjectHref(
-  folder: Pick<ProjectFolderSummary, "groupId" | "deliveryProjectId"> | null | undefined,
+  folder:
+    | Pick<ProjectFolderSummary, 'groupId' | 'deliveryProjectId'>
+    | null
+    | undefined,
 ): string | null {
   if (!folder?.groupId || !folder.deliveryProjectId) return null;
   const params = new URLSearchParams({
@@ -183,7 +205,9 @@ const PAIR_SUFFIX = /-(fe|be)$/i;
 /** `shop-fe` -> `shop`; null for a name that is not one half of a pair. */
 function pairStem(repo: ProjectFolderRepository): string | null {
   const name = repoShortName(repo);
-  return PAIR_SUFFIX.test(name) ? name.replace(PAIR_SUFFIX, "").toLowerCase() : null;
+  return PAIR_SUFFIX.test(name)
+    ? name.replace(PAIR_SUFFIX, '').toLowerCase()
+    : null;
 }
 
 /**
@@ -220,11 +244,15 @@ function completePairs(
     const stem = pairStem(repo);
     if (stem) byStem.set(stem, [...(byStem.get(stem) ?? []), repo]);
   }
-  const pairs = new Map<string, [ProjectFolderRepository, ProjectFolderRepository]>();
+  const pairs = new Map<
+    string,
+    [ProjectFolderRepository, ProjectFolderRepository]
+  >();
   for (const [stem, members] of byStem) {
-    const frontend = members.find((repo) => repo.role === "frontend");
-    const backend = members.find((repo) => repo.role === "backend");
-    if (members.length === 2 && frontend && backend) pairs.set(stem, [frontend, backend]);
+    const frontend = members.find((repo) => repo.role === 'frontend');
+    const backend = members.find((repo) => repo.role === 'backend');
+    if (members.length === 2 && frontend && backend)
+      pairs.set(stem, [frontend, backend]);
   }
   return pairs;
 }
@@ -239,7 +267,7 @@ export function repoPairName(
 ): string | null {
   const stem = pairStem(repo);
   if (!stem || !completePairs(repositories).has(stem)) return null;
-  return repoShortName(repo).replace(PAIR_SUFFIX, "");
+  return repoShortName(repo).replace(PAIR_SUFFIX, '');
 }
 
 /**
@@ -277,10 +305,18 @@ export function repoSwitchOptionDisplay(
 
 function pairDisplay(
   option: RepoSwitchOption,
-): Pick<RepoSwitchOptionDisplay, "pairHeading" | "ariaLabel" | "paired" | "showName"> {
+): Pick<
+  RepoSwitchOptionDisplay,
+  'pairHeading' | 'ariaLabel' | 'paired' | 'showName'
+> {
   const { pairName } = option;
   if (!pairName) {
-    return { pairHeading: null, ariaLabel: undefined, paired: undefined, showName: true };
+    return {
+      pairHeading: null,
+      ariaLabel: undefined,
+      paired: undefined,
+      showName: true,
+    };
   }
   return {
     pairHeading: option.startsPair ? pairName : null,
@@ -293,8 +329,9 @@ function pairDisplay(
 function availabilityDisplay(
   option: RepoSwitchOption,
   pendingId: string | null,
-): Pick<RepoSwitchOptionDisplay, "pending" | "tooltip" | "title"> {
-  const pending = !option.current && pendingId !== null && option.projectId === pendingId;
+): Pick<RepoSwitchOptionDisplay, 'pending' | 'tooltip' | 'title'> {
+  const pending =
+    !option.current && pendingId !== null && option.projectId === pendingId;
   return {
     pending: pending || undefined,
     tooltip: option.disabled ? UNLINKED_REPO_HINT : undefined,
@@ -306,7 +343,7 @@ function availabilityDisplay(
 
 /** The next enabled option index from `from`, moving by `step`, wrapping. */
 export function nextEnabledIndex(
-  options: ReadonlyArray<Pick<RepoSwitchOption, "disabled">>,
+  options: ReadonlyArray<Pick<RepoSwitchOption, 'disabled'>>,
   from: number,
   step: 1 | -1,
 ): number {

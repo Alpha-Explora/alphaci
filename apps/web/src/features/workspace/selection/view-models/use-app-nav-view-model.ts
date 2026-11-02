@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { usePathname } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 
 import {
   capabilityAvailability,
   useCapabilities,
-} from "@/features/capabilities/current";
-import { useHostAvailability } from "@/features/hosts/availability";
-import { useNotificationsSummaryViewModel } from "@/features/notifications/summary";
+} from '@/features/capabilities/current';
+import { useHostAvailability } from '@/features/hosts/availability';
+import { useNotificationsSummaryViewModel } from '@/features/notifications/summary';
 
 import {
   canOpenTeamActivity,
   sidebarMainItems,
   type SidebarMainItem,
   type WorkspaceAppRole,
-} from "../model/workspace-types";
-import { pageWorkspaceToSelect } from "../model/workspace-switcher-rules";
-import { useWorkspaceSelection } from "../views/workspace-selection-context";
-import { useWorkspaceSelectionViewModel } from "./use-workspace-selection-view-model";
+} from '../model/workspace-types';
+import { pageWorkspaceToSelect } from '../model/workspace-switcher-rules';
+import { useWorkspaceSelection } from '../views/workspace-selection-context';
+import { useWorkspaceSelectionViewModel } from './use-workspace-selection-view-model';
 
 export interface AppNavViewModel {
   pathname: string;
-  status: ReturnType<typeof useWorkspaceSelectionViewModel>["status"];
+  status: ReturnType<typeof useWorkspaceSelectionViewModel>['status'];
   error: string | null;
   notifications: ReturnType<typeof useNotificationsSummaryViewModel>;
   workspaces: ReturnType<typeof useWorkspaceSelectionViewModel>;
@@ -77,14 +77,20 @@ export function useAppNavViewModel(options: {
   const capabilities = useCapabilities();
   const workspaces = useWorkspaceSelectionViewModel({
     enabled: !options.guest,
-    capability: capabilityAvailability(capabilities.status, capabilities.workspacesEnabled),
+    capability: capabilityAvailability(
+      capabilities.status,
+      capabilities.workspacesEnabled,
+    ),
     includeOtherTeams: Boolean(options.isPlatformAdmin),
   });
   useSelectPageWorkspace(options.pageWorkspaceId);
   const notifications = useNotificationsSummaryViewModel({
     guest: options.guest,
     userId: options.userId,
-    capability: capabilityAvailability(capabilities.status, capabilities.notificationsEnabled),
+    capability: capabilityAvailability(
+      capabilities.status,
+      capabilities.notificationsEnabled,
+    ),
   });
   const { refreshWorkspaces } = useWorkspaceSelection();
   useEffect(() => {
@@ -92,14 +98,14 @@ export function useAppNavViewModel(options: {
   }, [notifications.workspaceRevision, refreshWorkspaces]);
   useEffect(() => {
     const refresh = () => {
-      if (!options.guest && document.visibilityState !== "hidden")
+      if (!options.guest && document.visibilityState !== 'hidden')
         refreshWorkspaces();
     };
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
     return () => {
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
     };
   }, [options.guest, refreshWorkspaces]);
   const { qaChecklistsEnabled, envProvisioningEnabled } = capabilities;
@@ -126,7 +132,7 @@ export function useAppNavViewModel(options: {
       guest: options.guest,
       qaChecklistsEnabled,
       canOpenActivity,
-      hostsEnabled: hostAvailability === "enabled",
+      hostsEnabled: hostAvailability === 'enabled',
     }),
   };
 }

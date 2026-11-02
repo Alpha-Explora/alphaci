@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { useApiResource } from "@/features/groups";
-import { useAuthSession } from "@/features/auth/session";
-import { useCapabilities } from "@/features/capabilities/current";
+import { useApiResource } from '@/features/groups';
+import { useAuthSession } from '@/features/auth/session';
+import { useCapabilities } from '@/features/capabilities/current';
 
-import { groupsRepository } from "../../data/groups-repository";
-import { isGroupManagerRole } from "../../model/groups-rules";
-import { canWriteRepositoryConfiguration } from "../../model/role-gate-rules";
+import { groupsRepository } from '../../data/groups-repository';
+import { isGroupManagerRole } from '../../model/groups-rules';
+import { canWriteRepositoryConfiguration } from '../../model/role-gate-rules';
 import type {
   GroupSummary,
   HierarchyRepository,
-} from "../../model/groups-types";
+} from '../../model/groups-types';
 
-export type RepoTab = "access" | "configuration";
+export type RepoTab = 'access' | 'configuration';
 
 export interface RepositoryDetailViewModel {
   /** Only needed for the breadcrumb label and the manage check. */
   group: GroupSummary | null;
   repository: HierarchyRepository | null;
   /** The repository's own load state: it gates the whole surface. */
-  status: ReturnType<typeof useApiResource<HierarchyRepository>>["state"];
+  status: ReturnType<typeof useApiResource<HierarchyRepository>>['state'];
   reload: () => void;
   canManage: boolean;
   /** Developer or admin: the only roles that may write configuration. */
@@ -48,7 +48,7 @@ export function useRepositoryDetailViewModel(
   );
   const { hierarchyGithubSyncMode } = useCapabilities();
   const { session } = useAuthSession();
-  const [tab, setTab] = useState<RepoTab>("access");
+  const [tab, setTab] = useState<RepoTab>('access');
 
   const canManage = isGroupManagerRole(groupResource.data?.role);
 
@@ -59,8 +59,8 @@ export function useRepositoryDetailViewModel(
     reload: repoResource.reload,
     canManage,
     canWriteConfiguration: canWriteRepositoryConfiguration(session?.appRole),
-    tab: canManage ? tab : "configuration",
+    tab: canManage ? tab : 'configuration',
     setTab,
-    githubSyncLive: hierarchyGithubSyncMode === "live",
+    githubSyncLive: hierarchyGithubSyncMode === 'live',
   };
 }

@@ -24,15 +24,15 @@
   box-shadow: var(--shadow-soft);
 }
 
-.qa-promo[data-ready="true"] {
+.qa-promo[data-ready='true'] {
   --qa-promo-tone: var(--success);
 }
 
-.qa-promo[data-collapsed="true"] {
+.qa-promo[data-collapsed='true'] {
   padding-bottom: 0.6rem;
 }
 
-.qa-promo[aria-busy="true"] .qa-promo__body {
+.qa-promo[aria-busy='true'] .qa-promo__body {
   opacity: 0.7;
 }
 
@@ -68,7 +68,7 @@
   transition: transform 160ms ease-out;
 }
 
-.qa-promo__toggle[aria-expanded="false"] > .qa-glyph {
+.qa-promo__toggle[aria-expanded='false'] > .qa-glyph {
   transform: rotate(-90deg);
 }
 
@@ -94,7 +94,7 @@
   color: var(--text-muted);
 }
 
-.qa-promo[data-ready="true"] .qa-promo__mark {
+.qa-promo[data-ready='true'] .qa-promo__mark {
   border-color: var(--success);
   background: var(--accent-emerald-light);
   color: var(--success);
@@ -124,7 +124,7 @@
 }
 
 .qa-promo__route > * + *::before {
-  content: "·";
+  content: '·';
   margin: 0 0.4rem;
   color: var(--border-tile);
 }
@@ -197,19 +197,19 @@
   background: var(--bg-frost);
 }
 
-.qa-promo__row[data-tone="success"] {
+.qa-promo__row[data-tone='success'] {
   --qa-row-tone: var(--success);
 }
 
-.qa-promo__row[data-tone="danger"] {
+.qa-promo__row[data-tone='danger'] {
   --qa-row-tone: var(--danger);
 }
 
-.qa-promo__row[data-tone="warning"] {
+.qa-promo__row[data-tone='warning'] {
   --qa-row-tone: var(--warning);
 }
 
-.qa-promo__row[data-tone="brand"] {
+.qa-promo__row[data-tone='brand'] {
   --qa-row-tone: var(--brand);
 }
 
@@ -224,7 +224,7 @@
   color: var(--qa-row-tone);
 }
 
-.qa-promo__row[data-tone="success"] .qa-promo__tick {
+.qa-promo__row[data-tone='success'] .qa-promo__tick {
   background: var(--accent-emerald-light);
 }
 
@@ -340,13 +340,13 @@
     box-shadow 140ms ease-out;
 }
 
-.qa-promo-chip[data-tone="ready"] {
+.qa-promo-chip[data-tone='ready'] {
   --qa-chip-tone: var(--success);
   --qa-chip-fill: var(--accent-emerald-light);
   --qa-chip-edge: var(--success);
 }
 
-.qa-promo-chip[data-tone="blocked"] {
+.qa-promo-chip[data-tone='blocked'] {
   --qa-chip-tone: var(--warning);
   --qa-chip-fill: var(--accent-amber-light);
   --qa-chip-edge: var(--warning);
@@ -370,7 +370,7 @@
 }
 
 /* Unknown while it is being read: the dot breathes, nothing else moves. */
-.qa-promo-chip[data-tone="unknown"] .qa-promo-chip__dot {
+.qa-promo-chip[data-tone='unknown'] .qa-promo-chip__dot {
   animation: qa-promo-dot 1.4s ease-in-out infinite;
 }
 
@@ -392,7 +392,7 @@
   transition: transform 160ms ease-out;
 }
 
-.qa-promo-chip[aria-expanded="true"] > .qa-glyph {
+.qa-promo-chip[aria-expanded='true'] > .qa-glyph {
   transform: rotate(180deg);
 }
 
@@ -436,15 +436,15 @@
   display: none;
 }
 
-.qa-promo-pop[data-tone="ready"] {
+.qa-promo-pop[data-tone='ready'] {
   --qa-promo-tone: var(--success);
 }
 
-.qa-promo-pop[data-tone="blocked"] {
+.qa-promo-pop[data-tone='blocked'] {
   --qa-promo-tone: var(--warning);
 }
 
-.qa-promo-pop[aria-busy="true"] > :not(.qa-promo-pop__head) {
+.qa-promo-pop[aria-busy='true'] > :not(.qa-promo-pop__head) {
   opacity: 0.7;
 }
 
@@ -532,12 +532,12 @@
   background: var(--qa-outcome-fill);
 }
 
-.qa-promo-outcome[data-tone="warning"] {
+.qa-promo-outcome[data-tone='warning'] {
   --qa-outcome-tone: var(--warning);
   --qa-outcome-fill: var(--accent-amber-light);
 }
 
-.qa-promo-outcome[data-tone="danger"] {
+.qa-promo-outcome[data-tone='danger'] {
   --qa-outcome-tone: var(--danger);
   --qa-outcome-fill: var(--accent-rose-light);
 }
@@ -676,7 +676,7 @@
   }
 
   .qa-promo-pop,
-  .qa-promo-chip[data-tone="unknown"] .qa-promo-chip__dot {
+  .qa-promo-chip[data-tone='unknown'] .qa-promo-chip__dot {
     animation: none;
   }
 }
@@ -684,18 +684,18 @@
 /* ── Delivered (Iterations) ───────────────────────────────────────────────
    The Project's iteration reached main: no longer "ready", not "blocked"
    either. Violet, the one tone nothing else here uses. */
-.qa-promo-chip[data-tone="delivered"] {
+.qa-promo-chip[data-tone='delivered'] {
   --qa-chip-tone: var(--accent-violet);
   --qa-chip-fill: var(--accent-violet-light);
   --qa-chip-edge: var(--border-violet);
 }
 
-.qa-promo-pop[data-tone="delivered"],
-.qa-promo[data-ready="delivered"] {
+.qa-promo-pop[data-tone='delivered'],
+.qa-promo[data-ready='delivered'] {
   --qa-promo-tone: var(--accent-violet);
 }
 
-.qa-promo[data-ready="delivered"] .qa-promo__mark {
+.qa-promo[data-ready='delivered'] .qa-promo__mark {
   border-color: var(--border-violet);
   background: var(--accent-violet-light);
   color: var(--accent-violet);

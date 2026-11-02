@@ -1,6 +1,6 @@
-import { completeOnboarding } from "@/features/auth/session";
-import { requirementsRepository } from "@/features/checklists";
-import { projectFoldersRepository } from "@/features/teams/project-folders";
+import { completeOnboarding } from '@/features/auth/session';
+import { requirementsRepository } from '@/features/checklists';
+import { projectFoldersRepository } from '@/features/teams/project-folders';
 import {
   getDeliveryProjectRepositories,
   getGroupActivity,
@@ -8,11 +8,11 @@ import {
   getMyAssignedRepositories,
   getMyGroups,
   getSystemDeliveryProjects,
-} from "@/features/groups";
-import { getWorkflowHistory } from "@/features/workflows";
-import { getProjects } from "@/features/projects";
-import { getRuns } from "@/features/runs";
-import { isGroupManagerRole } from "@/features/groups";
+} from '@/features/groups';
+import { getWorkflowHistory } from '@/features/workflows';
+import { getProjects } from '@/features/projects';
+import { getRuns } from '@/features/runs';
+import { isGroupManagerRole } from '@/features/groups';
 
 import type {
   DeliveryPortfolioNode,
@@ -24,7 +24,7 @@ import type {
   RunGroup,
   TeamQaOverview,
   WorkflowHistoryItem,
-} from "../model/home-types";
+} from '../model/home-types';
 
 /* The only place in this domain that performs I/O. View-models call these;
  * views never do. */

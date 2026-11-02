@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import type { CiRunReportRef } from "../../model/ci-run-report-types";
-import { useCiRunReportExportViewModel } from "../view-models/use-qa-export-view-model";
-import { ExportMenu, ExportStatus } from "./export-menu";
+import type { CiRunReportRef } from '../../model/ci-run-report-types';
+import { useCiRunReportExportViewModel } from '../view-models/use-qa-export-view-model';
+import { ExportMenu, ExportStatus } from './export-menu';
 
 /**
  * "Export results" for one CI run, for the Project page's pipeline card: Download

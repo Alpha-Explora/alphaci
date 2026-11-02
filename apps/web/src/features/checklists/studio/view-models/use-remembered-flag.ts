@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 /* Per-viewer preferences (e.g. "automation panel collapsed", "studio layout"),
  * kept in this browser's localStorage. Storage is a convenience, never a
@@ -43,18 +43,21 @@ export function useRememberedChoice<T extends string>(
   return [value, choose];
 }
 
-type FlagValue = "1" | "0";
+type FlagValue = '1' | '0';
 
 function flagOf(value: boolean): FlagValue {
-  return value ? "1" : "0";
+  return value ? '1' : '0';
 }
 
 /** An on/off preference: a remembered choice between "1" and "0". */
-export function useRememberedFlag(key: string, fallback: boolean): [boolean, () => void] {
+export function useRememberedFlag(
+  key: string,
+  fallback: boolean,
+): [boolean, () => void] {
   const [stored, choose] = useRememberedChoice<FlagValue>(key, (raw) =>
-    raw === null ? flagOf(fallback) : flagOf(raw === "1"),
+    raw === null ? flagOf(fallback) : flagOf(raw === '1'),
   );
-  const value = stored === "1";
+  const value = stored === '1';
   return [value, () => choose(flagOf(!value))];
 }
 

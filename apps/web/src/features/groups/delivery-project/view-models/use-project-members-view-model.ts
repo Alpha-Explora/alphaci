@@ -1,19 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { useApiResource, type ResourceState } from "@/features/groups";
-import { useCapabilities } from "@/features/capabilities/current";
-import type { AppRole } from "@/shared/api/contracts";
+import { useApiResource, type ResourceState } from '@/features/groups';
+import { useCapabilities } from '@/features/capabilities/current';
+import type { AppRole } from '@/shared/api/contracts';
 
-import { groupsRepository } from "../../data/groups-repository";
-import type { DeliveryProjectMember, GroupMember } from "../../data/hierarchy-contracts";
+import { groupsRepository } from '../../data/groups-repository';
+import type {
+  DeliveryProjectMember,
+  GroupMember,
+} from '../../data/hierarchy-contracts';
 import {
   addProjectMember,
   getProjectMembers,
   removeProjectMember,
   syncProjectMembers,
-} from "../../data/project-members-api";
+} from '../../data/project-members-api';
 import {
   addedMessage,
   canManageProjectMembers,
@@ -21,9 +24,9 @@ import {
   projectMemberErrorMessage,
   removedMessage,
   resyncedMessage,
-} from "../../model/project-members-rules";
+} from '../../model/project-members-rules';
 
-type Busy = "add" | "remove" | "sync" | null;
+type Busy = 'add' | 'remove' | 'sync' | null;
 
 export interface ProjectMembersViewModel {
   /**
@@ -46,7 +49,7 @@ export interface ProjectMembersViewModel {
   openAdd: () => void;
   closeAdd: () => void;
   candidates: GroupMember[];
-  candidatesStatus: "loading" | "ready" | "error";
+  candidatesStatus: 'loading' | 'ready' | 'error';
   selectedUserId: string;
   setSelectedUserId: (userId: string) => void;
   addError: string | null;
@@ -68,17 +71,19 @@ interface Feedback {
 /** Team members who could join, read when the picker opens. */
 function useCandidates(groupId: string) {
   const [teamMembers, setTeamMembers] = useState<GroupMember[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
+    'loading',
+  );
 
   function load() {
-    setStatus("loading");
+    setStatus('loading');
     groupsRepository
       .members(groupId)
       .then((items) => {
         setTeamMembers(items);
-        setStatus("ready");
+        setStatus('ready');
       })
-      .catch(() => setStatus("error"));
+      .catch(() => setStatus('error'));
   }
 
   return { teamMembers, status, load };
@@ -97,20 +102,25 @@ export function useProjectMembersViewModel(input: {
   const { groupId, deliveryProjectId, appRole } = input;
   const canManage = canManageProjectMembers(appRole);
   const { hierarchyGithubSyncMode } = useCapabilities();
-  const syncLive = hierarchyGithubSyncMode === "live";
+  const syncLive = hierarchyGithubSyncMode === 'live';
 
   const resource = useApiResource<DeliveryProjectMember[]>(
-    () => getProjectMembers(deliveryProjectId).then((response) => response.items),
+    () =>
+      getProjectMembers(deliveryProjectId).then((response) => response.items),
     [deliveryProjectId],
     { enabled: canManage, emptyWhen: (items) => items.length === 0 },
   );
   const candidates = useCandidates(groupId);
-  const [feedback, setFeedback] = useState<Feedback>({ notice: null, error: null });
+  const [feedback, setFeedback] = useState<Feedback>({
+    notice: null,
+    error: null,
+  });
   const [busy, setBusy] = useState<Busy>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
-  const [removeTarget, setRemoveTarget] = useState<DeliveryProjectMember | null>(null);
+  const [removeTarget, setRemoveTarget] =
+    useState<DeliveryProjectMember | null>(null);
 
   const members = resource.data ?? [];
 
@@ -122,11 +132,13 @@ export function useProjectMembersViewModel(input: {
   }
 
   function dropMember(userId: string) {
-    resource.setData((current) => (current ?? []).filter((item) => item.userId !== userId));
+    resource.setData((current) =>
+      (current ?? []).filter((item) => item.userId !== userId),
+    );
   }
 
   function openAdd() {
-    setSelectedUserId("");
+    setSelectedUserId('');
     setAddError(null);
     setAddOpen(true);
     candidates.load();
@@ -134,18 +146,21 @@ export function useProjectMembersViewModel(input: {
 
   async function add() {
     if (!selectedUserId) {
-      setAddError("Choose a team member to add.");
+      setAddError('Choose a team member to add.');
       return;
     }
-    setBusy("add");
+    setBusy('add');
     setAddError(null);
     try {
       const change = await addProjectMember(deliveryProjectId, selectedUserId);
       upsert(change.member);
-      setFeedback({ notice: addedMessage(change.member, change.githubAccess), error: null });
+      setFeedback({
+        notice: addedMessage(change.member, change.githubAccess),
+        error: null,
+      });
       setAddOpen(false);
     } catch (cause) {
-      setAddError(projectMemberErrorMessage(cause, "add"));
+      setAddError(projectMemberErrorMessage(cause, 'add'));
     } finally {
       setBusy(null);
     }
@@ -153,13 +168,22 @@ export function useProjectMembersViewModel(input: {
 
   async function confirmRemove() {
     if (!removeTarget) return;
-    setBusy("remove");
+    setBusy('remove');
     try {
-      const change = await removeProjectMember(deliveryProjectId, removeTarget.userId);
+      const change = await removeProjectMember(
+        deliveryProjectId,
+        removeTarget.userId,
+      );
       dropMember(removeTarget.userId);
-      setFeedback({ notice: removedMessage(change.member, change.githubAccess), error: null });
+      setFeedback({
+        notice: removedMessage(change.member, change.githubAccess),
+        error: null,
+      });
     } catch (cause) {
-      setFeedback({ notice: null, error: projectMemberErrorMessage(cause, "remove") });
+      setFeedback({
+        notice: null,
+        error: projectMemberErrorMessage(cause, 'remove'),
+      });
     } finally {
       setRemoveTarget(null);
       setBusy(null);
@@ -167,20 +191,29 @@ export function useProjectMembersViewModel(input: {
   }
 
   async function resync() {
-    setBusy("sync");
+    setBusy('sync');
     try {
       const response = await syncProjectMembers(deliveryProjectId);
       resource.setData(() => response.items);
-      setFeedback({ notice: resyncedMessage(response.repositoriesQueued), error: null });
+      setFeedback({
+        notice: resyncedMessage(response.repositoriesQueued),
+        error: null,
+      });
     } catch (cause) {
-      setFeedback({ notice: null, error: projectMemberErrorMessage(cause, "sync") });
+      setFeedback({
+        notice: null,
+        error: projectMemberErrorMessage(cause, 'sync'),
+      });
     } finally {
       setBusy(null);
     }
   }
 
   return {
-    visible: canManage && resource.state !== "forbidden" && resource.state !== "notfound",
+    visible:
+      canManage &&
+      resource.state !== 'forbidden' &&
+      resource.state !== 'notfound',
     status: resource.state,
     reload: resource.reload,
     members,
@@ -191,7 +224,10 @@ export function useProjectMembersViewModel(input: {
     addOpen,
     openAdd,
     closeAdd: () => setAddOpen(false),
-    candidates: eligibleProjectMemberCandidates(candidates.teamMembers, members),
+    candidates: eligibleProjectMemberCandidates(
+      candidates.teamMembers,
+      members,
+    ),
     candidatesStatus: candidates.status,
     selectedUserId,
     setSelectedUserId,

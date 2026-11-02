@@ -1,5 +1,9 @@
-import type { AppRole, AppRoleSource, PlatformRole } from "@/shared/api/contracts";
-import { request } from "@/shared/api/request";
+import type {
+  AppRole,
+  AppRoleSource,
+  PlatformRole,
+} from '@/shared/api/contracts';
+import { request } from '@/shared/api/request';
 
 /* ── Types (mirror the BE admin view models) ─────────────────────────────── */
 
@@ -8,10 +12,10 @@ export type { AppRole, AppRoleSource };
 
 /** The product's persona names, as the badge and team roster show them. */
 export const APP_ROLE_LABELS: Record<AppRole, string> = {
-  admin: "Admin",
-  lead: "Product owner",
-  qa: "QA Team",
-  member: "Developer",
+  admin: 'Admin',
+  lead: 'Product owner',
+  qa: 'QA Team',
+  member: 'Developer',
 };
 
 export interface AdminUserListItem {
@@ -100,13 +104,9 @@ export interface PlatformAdminRecord {
   grantedAt: string;
 }
 
-export type FeedbackStatus = "open" | "in_review" | "resolved" | "dismissed";
+export type FeedbackStatus = 'open' | 'in_review' | 'resolved' | 'dismissed';
 export type FeedbackCategory =
-  | "general"
-  | "bug"
-  | "feature_request"
-  | "billing"
-  | "other";
+  'general' | 'bug' | 'feature_request' | 'billing' | 'other';
 
 export interface FeedbackRecord {
   id: string;
@@ -131,11 +131,11 @@ export async function getAdminUsers(params?: {
   offset?: number;
 }): Promise<AdminUsersPage> {
   const query = new URLSearchParams();
-  if (params?.search) query.set("search", params.search);
-  if (params?.limit != null) query.set("limit", String(params.limit));
-  if (params?.offset != null) query.set("offset", String(params.offset));
+  if (params?.search) query.set('search', params.search);
+  if (params?.limit != null) query.set('limit', String(params.limit));
+  if (params?.offset != null) query.set('offset', String(params.offset));
   const qs = query.toString();
-  return request<AdminUsersPage>(`/admin/users${qs ? `?${qs}` : ""}`);
+  return request<AdminUsersPage>(`/admin/users${qs ? `?${qs}` : ''}`);
 }
 
 export async function getAdminUser(id: string): Promise<AdminUserDetail> {
@@ -157,22 +157,19 @@ export async function grantPlatformRole(
   role: PlatformRole,
 ): Promise<void> {
   await request(`/admin/users/${id}/role`, {
-    method: "POST",
+    method: 'POST',
     body: JSON.stringify({ role }),
   });
 }
 
 export async function revokePlatformRole(id: string): Promise<void> {
-  await request(`/admin/users/${id}/role`, { method: "DELETE" });
+  await request(`/admin/users/${id}/role`, { method: 'DELETE' });
 }
 
 /** Sets a user's global hierarchy role (Admin / Lead / Member). Super-admin only. */
-export async function setUserAppRole(
-  id: string,
-  role: AppRole,
-): Promise<void> {
+export async function setUserAppRole(id: string, role: AppRole): Promise<void> {
   await request(`/admin/users/${id}/app-role`, {
-    method: "PATCH",
+    method: 'PATCH',
     body: JSON.stringify({ role }),
   });
 }
@@ -185,13 +182,13 @@ export async function setUserAppRole(
  * to read the teams with.
  */
 export async function resetUserAppRoleToGithub(id: string): Promise<void> {
-  await request(`/admin/users/${id}/app-role/reset`, { method: "POST" });
+  await request(`/admin/users/${id}/app-role/reset`, { method: 'POST' });
 }
 
 export async function getAdminFeedback(
   status?: FeedbackStatus,
 ): Promise<FeedbackRecord[]> {
-  const qs = status ? `?status=${status}` : "";
+  const qs = status ? `?status=${status}` : '';
   return request<FeedbackRecord[]>(`/admin/feedback${qs}`);
 }
 
@@ -200,7 +197,7 @@ export async function triageAdminFeedback(
   body: { status?: FeedbackStatus; adminResponse?: string },
 ): Promise<FeedbackRecord> {
   return request<FeedbackRecord>(`/admin/feedback/${id}`, {
-    method: "PATCH",
+    method: 'PATCH',
     body: JSON.stringify(body),
   });
 }

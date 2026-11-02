@@ -1,10 +1,13 @@
-"use client";
+'use client';
 
-import { githubOrgLogin, repoNamePlaceholder } from "../model/setup-tab-rules";
-import type { GithubInstallationsState } from "../view-models/use-github-installations";
-import { ProjectBlockerNote, ProjectChoiceField } from "./setup-project-choice-field";
-import { ProjectNameField } from "./setup-project-name-field";
-import type { WizardStepProps } from "./setup-wizard-props";
+import { githubOrgLogin, repoNamePlaceholder } from '../model/setup-tab-rules';
+import type { GithubInstallationsState } from '../view-models/use-github-installations';
+import {
+  ProjectBlockerNote,
+  ProjectChoiceField,
+} from './setup-project-choice-field';
+import { ProjectNameField } from './setup-project-name-field';
+import type { WizardStepProps } from './setup-wizard-props';
 
 /**
  * Where the repository is created. Read-only: every repository goes to the
@@ -19,9 +22,10 @@ function RepositoryOwnerField({
       <span className="wizard-field__label">Repository owner</span>
       <span className="wizard-field__static">{owner} organization</span>
       <p className="wizard-field__hint">
-        All repositories are created in the <strong>{owner}</strong> organization,
-        from the <strong>cicd-workflow</strong> source. This needs this
-        environment&apos;s GitHub App installed there with all-repositories access.
+        All repositories are created in the <strong>{owner}</strong>{' '}
+        organization, from the <strong>cicd-workflow</strong> source. This needs
+        this environment&apos;s GitHub App installed there with all-repositories
+        access.
       </p>
     </div>
   );
@@ -42,7 +46,12 @@ function ProjectRow({
   joinedProjectName,
   projectChoice,
   projectBlocker,
-}: Readonly<Pick<WizardStepProps, "form" | "joinedProjectName" | "projectChoice" | "projectBlocker">>) {
+}: Readonly<
+  Pick<
+    WizardStepProps,
+    'form' | 'joinedProjectName' | 'projectChoice' | 'projectBlocker'
+  >
+>) {
   const askForName = projectChoice === null && joinedProjectName === null;
   if (!projectChoice && !askForName && !projectBlocker) return null;
   return (
@@ -88,14 +97,17 @@ export function SetupWizardRepository({
           id="repo-name"
           value={form.repoName}
           onChange={(event) => form.setRepoName(event.target.value)}
-          placeholder={repoNamePlaceholder(projectCatalog.selectedProjectType?.runtime)}
+          placeholder={repoNamePlaceholder(
+            projectCatalog.selectedProjectType?.runtime,
+          )}
           className="premium-input"
           aria-describedby="repo-name-hint"
           autoComplete="off"
         />
         <p id="repo-name-hint" className="wizard-field__hint">
-          Lowercase letters, numbers, and <code>-</code> <code>_</code> <code>.</code>;
-          spaces become hyphens. The service takes the same name.
+          Lowercase letters, numbers, and <code>-</code> <code>_</code>{' '}
+          <code>.</code>; spaces become hyphens. The service takes the same
+          name.
         </p>
       </div>
       <div className="wizard-field">
@@ -105,7 +117,9 @@ export function SetupWizardRepository({
         <select
           id="repo-visibility"
           value={form.visibility}
-          onChange={(event) => form.setVisibility(event.target.value as "private" | "public")}
+          onChange={(event) =>
+            form.setVisibility(event.target.value as 'private' | 'public')
+          }
           className="premium-input"
         >
           <option value="private">Private</option>

@@ -7,7 +7,7 @@
  * Client-only module — must never be imported in a Server Component.
  */
 
-import { driver, type DriveStep, type Driver } from "driver.js";
+import { driver, type DriveStep, type Driver } from 'driver.js';
 
 export interface TourCallbacks {
   /** Called once when the tour finishes (completed all steps or user dismissed). */
@@ -31,20 +31,20 @@ function buildSteps(): DriveStep[] {
         title: "Your team's Projects",
         description:
           "These are the Projects of the team selected in the header — switch team there. Each card opens its Project; Manage opens its repositories and checklists. A Product owner's Create project starts a new, empty Project; a Developer's Add repository, on a card or in Manage, puts a repository in one.",
-        side: "bottom",
-        align: "start",
+        side: 'bottom',
+        align: 'start',
       },
     },
     {
       element: "[data-tour='project-detail-tabs']",
       popover: {
-        title: "Project sections",
+        title: 'Project sections',
         description:
-          "Everything about this project lives here, grouped by what you came to do. Work holds Overview, Code and Pull requests. Pipeline holds the runs and the workflow configuration behind them. Delivery holds Hosting and Environment. Records is the audit trail, and Configuration is Settings — including deleting the project. Nothing sits outside these sections.",
+          'Everything about this project lives here, grouped by what you came to do. Work holds Overview, Code and Pull requests. Pipeline holds the runs and the workflow configuration behind them. Delivery holds Hosting and Environment. Records is the audit trail, and Configuration is Settings — including deleting the project. Nothing sits outside these sections.',
         // A vertical rail on the left: the popover belongs beside it, not
         // under it. This said "bottom" while it was still a horizontal strip.
-        side: "right",
-        align: "start",
+        side: 'right',
+        align: 'start',
       },
     },
     {
@@ -53,11 +53,11 @@ function buildSteps(): DriveStep[] {
       // otherwise rather than pointing at nothing.
       element: "[data-tour='deployment-targets']",
       popover: {
-        title: "Deployment targets",
+        title: 'Deployment targets',
         description:
-          "Deployment targets link your repository to a hosting provider such as Render. Each target shows which slot (test/uat/main) and branch it tracks. Use Edit to update settings, Sync to pull the latest provider state, or Detach to disconnect ALPHACI from a provider project.",
-        side: "top",
-        align: "start",
+          'Deployment targets link your repository to a hosting provider such as Render. Each target shows which slot (test/uat/main) and branch it tracks. Use Edit to update settings, Sync to pull the latest provider state, or Detach to disconnect ALPHACI from a provider project.',
+        side: 'top',
+        align: 'start',
       },
     },
   ];
@@ -104,7 +104,7 @@ export function createCurrentProjectsTour(callbacks: TourCallbacks): Driver {
     showProgress: true,
     allowClose: true,
     smoothScroll: true,
-    showButtons: ["next", "previous", "close"],
+    showButtons: ['next', 'previous', 'close'],
     steps,
     onDestroyed: finish,
   });

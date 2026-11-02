@@ -1,6 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useState, type FocusEvent, type KeyboardEvent, type RefObject } from "react";
+import {
+  useEffect,
+  useState,
+  type FocusEvent,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react';
 
 /* A disclosure button with a non-modal panel under it (WAI-ARIA disclosure),
  * as behaviour only: the view renders button[aria-expanded][aria-controls]
@@ -31,7 +37,10 @@ export interface DisclosurePopover {
   onBlur: (event: FocusEvent<HTMLElement>) => void;
 }
 
-export function useDisclosurePopover({ triggerRef, rootRef }: DisclosurePopoverRefs): DisclosurePopover {
+export function useDisclosurePopover({
+  triggerRef,
+  rootRef,
+}: DisclosurePopoverRefs): DisclosurePopover {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -40,8 +49,8 @@ export function useDisclosurePopover({ triggerRef, rootRef }: DisclosurePopoverR
       if (rootRef.current?.contains(event.target as Node | null)) return;
       setOpen(false);
     }
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [open, rootRef]);
 
   function close(returnFocus = true) {
@@ -50,7 +59,7 @@ export function useDisclosurePopover({ triggerRef, rootRef }: DisclosurePopoverR
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLElement>) {
-    if (!open || event.key !== "Escape") return;
+    if (!open || event.key !== 'Escape') return;
     event.preventDefault();
     close(true);
   }
@@ -63,5 +72,11 @@ export function useDisclosurePopover({ triggerRef, rootRef }: DisclosurePopoverR
     setOpen(false);
   }
 
-  return { open, toggle: () => setOpen((value) => !value), close, onKeyDown, onBlur };
+  return {
+    open,
+    toggle: () => setOpen((value) => !value),
+    close,
+    onKeyDown,
+    onBlur,
+  };
 }

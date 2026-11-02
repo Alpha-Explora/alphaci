@@ -3,7 +3,7 @@ import type {
   GenerateWorkflowRequest,
   SetupProjectRequest,
   WorkflowRecipeOption,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 
 export function clampCoverageThreshold(raw: string): number {
   const coverage = Number(raw);
@@ -18,13 +18,11 @@ export function resolveSetupTemplateId(
   selectedWorkflowRecipeId: string,
   recipesForSelectedProject: Pick<
     WorkflowRecipeOption,
-    "id" | "templateByProjectType"
+    'id' | 'templateByProjectType'
   >[],
 ): string {
-  const recipeId = selectedWorkflowRecipeId || "standard";
-  const recipe = recipesForSelectedProject.find(
-    (item) => item.id === recipeId,
-  );
+  const recipeId = selectedWorkflowRecipeId || 'standard';
+  const recipe = recipesForSelectedProject.find((item) => item.id === recipeId);
   return (
     recipe?.templateByProjectType[selectedProjectTypeId] ??
     `${selectedProjectTypeId}-${recipeId}`
@@ -37,7 +35,7 @@ export interface SetupExistingRepoPayloadInput {
   selectedWorkflowRecipeId: string;
   recipesForSelectedProject: Pick<
     WorkflowRecipeOption,
-    "id" | "templateByProjectType"
+    'id' | 'templateByProjectType'
   >[];
   serviceName: string;
   discoveredServiceName?: string | null;
@@ -46,7 +44,7 @@ export interface SetupExistingRepoPayloadInput {
   nodeVersion: string;
   coverageThreshold: string;
   outputFileName: string;
-  deploymentProvisioning: SetupProjectRequest["deploymentProvisioning"];
+  deploymentProvisioning: SetupProjectRequest['deploymentProvisioning'];
   /** Trimmed and already validated by the caller; the existing-repo path never joins a Project. */
   projectName: string;
 }
@@ -54,7 +52,7 @@ export interface SetupExistingRepoPayloadInput {
 export function buildSetupExistingRepoPayload(
   input: SetupExistingRepoPayloadInput,
 ): SetupProjectRequest {
-  const fallbackServiceName = input.repoFullName.split("/").at(-1) ?? "service";
+  const fallbackServiceName = input.repoFullName.split('/').at(-1) ?? 'service';
   return {
     templateId: resolveSetupTemplateId(
       input.selectedProjectTypeId,
@@ -63,13 +61,11 @@ export function buildSetupExistingRepoPayload(
     ),
     repoFullName: input.repoFullName,
     serviceName:
-      input.serviceName ||
-      input.discoveredServiceName ||
-      fallbackServiceName,
-    servicePath: input.servicePath || input.discoveredServicePath || ".",
-    nodeVersion: input.nodeVersion || "24",
+      input.serviceName || input.discoveredServiceName || fallbackServiceName,
+    servicePath: input.servicePath || input.discoveredServicePath || '.',
+    nodeVersion: input.nodeVersion || '24',
     coverageThreshold: clampCoverageThreshold(input.coverageThreshold),
-    outputFileName: input.outputFileName || "ci.yml",
+    outputFileName: input.outputFileName || 'ci.yml',
     deploymentProvisioning: input.deploymentProvisioning,
     projectName: input.projectName.trim(),
   };
@@ -83,7 +79,7 @@ export interface GenerateWorkflowPayloadInput {
   serviceName: string;
   repoName: string;
   selectedTemplateId?: string;
-  allTemplates: Pick<CatalogTemplate, "id" | "stack">[];
+  allTemplates: Pick<CatalogTemplate, 'id' | 'stack'>[];
   selectedProjectTypeId?: string;
   servicePath: string;
   nodeVersion: string;
@@ -92,7 +88,7 @@ export interface GenerateWorkflowPayloadInput {
 
 export function resolveGenerateTemplateId(
   selectedTemplateId: string | undefined,
-  allTemplates: Pick<CatalogTemplate, "id" | "stack">[],
+  allTemplates: Pick<CatalogTemplate, 'id' | 'stack'>[],
   selectedProjectTypeId: string | undefined,
 ): string | undefined {
   return (
@@ -110,7 +106,7 @@ export function buildGenerateWorkflowPayload(
   if (!serviceName) {
     return {
       ok: false,
-      message: "Enter a service name to generate a workflow.",
+      message: 'Enter a service name to generate a workflow.',
     };
   }
   const templateId = resolveGenerateTemplateId(
@@ -121,7 +117,7 @@ export function buildGenerateWorkflowPayload(
   if (!templateId) {
     return {
       ok: false,
-      message: "No workflow templates available. Check catalog configuration.",
+      message: 'No workflow templates available. Check catalog configuration.',
     };
   }
   return {
@@ -129,8 +125,8 @@ export function buildGenerateWorkflowPayload(
     payload: {
       templateId,
       serviceName,
-      servicePath: input.servicePath || ".",
-      nodeVersion: input.nodeVersion || "24",
+      servicePath: input.servicePath || '.',
+      nodeVersion: input.nodeVersion || '24',
       coverageThreshold: clampCoverageThreshold(input.coverageThreshold),
     },
   };

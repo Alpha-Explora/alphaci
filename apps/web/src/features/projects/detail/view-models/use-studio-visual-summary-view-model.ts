@@ -1,13 +1,16 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { getProjectVisualChecks } from "../data/project-visual-api";
-import type { VisualBranch, VisualChecksResponse } from "../model/visual-check-types";
+import { getProjectVisualChecks } from '../data/project-visual-api';
+import type {
+  VisualBranch,
+  VisualChecksResponse,
+} from '../model/visual-check-types';
 
 export interface StudioVisualSummaryViewModel {
   /** "error" leaves the line out: it is a pointer to Pipeline runs, not a report. */
-  status: "loading" | "ready" | "error";
+  status: 'loading' | 'ready' | 'error';
   checks: VisualChecksResponse | null;
 }
 
@@ -23,7 +26,10 @@ export function useStudioVisualSummaryViewModel(options: {
   branch: VisualBranch;
 }): StudioVisualSummaryViewModel {
   const { projectId, branch } = options;
-  const [result, setResult] = useState<{ key: string; value: StudioVisualSummaryViewModel } | null>(null);
+  const [result, setResult] = useState<{
+    key: string;
+    value: StudioVisualSummaryViewModel;
+  } | null>(null);
   const ticket = useRef(0);
   const key = `${projectId}|${branch}`;
 
@@ -31,12 +37,16 @@ export function useStudioVisualSummaryViewModel(options: {
     const mine = ++ticket.current;
     getProjectVisualChecks(projectId, branch, null)
       .then((checks) => {
-        if (mine === ticket.current) setResult({ key, value: { status: "ready", checks } });
+        if (mine === ticket.current)
+          setResult({ key, value: { status: 'ready', checks } });
       })
       .catch(() => {
-        if (mine === ticket.current) setResult({ key, value: { status: "error", checks: null } });
+        if (mine === ticket.current)
+          setResult({ key, value: { status: 'error', checks: null } });
       });
   }, [projectId, branch, key]);
 
-  return result?.key === key ? result.value : { status: "loading", checks: null };
+  return result?.key === key
+    ? result.value
+    : { status: 'loading', checks: null };
 }

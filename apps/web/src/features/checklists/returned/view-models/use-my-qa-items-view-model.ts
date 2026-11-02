@@ -1,12 +1,16 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
-import { qaRunsRepository } from "../../data/qa-runs-repository";
-import type { ChecklistsStatus } from "../../model/checklist-types";
-import { applyRunToMyItems, myItemsFromReturned, normalizeMyQaItems } from "../../model/qa-my-items-rules";
-import type { QaMyItemsResponse, QaRun } from "../../model/qa-run-types";
-import { errorStatus } from "../../model/wire-readers";
+import { qaRunsRepository } from '../../data/qa-runs-repository';
+import type { ChecklistsStatus } from '../../model/checklist-types';
+import {
+  applyRunToMyItems,
+  myItemsFromReturned,
+  normalizeMyQaItems,
+} from '../../model/qa-my-items-rules';
+import type { QaMyItemsResponse, QaRun } from '../../model/qa-run-types';
+import { errorStatus } from '../../model/wire-readers';
 
 export interface MyQaItemsViewModel {
   status: ChecklistsStatus;
@@ -25,12 +29,12 @@ interface LoadResult {
   error: string | null;
 }
 
-const LOAD_ERROR = "Your QA items could not be loaded. Try again in a moment.";
+const LOAD_ERROR = 'Your QA items could not be loaded. Try again in a moment.';
 const EMPTY: QaMyItemsResponse = { returned: [], developerItems: [] };
 
 function loadStatus(result: LoadResult | null): ChecklistsStatus {
-  if (!result) return "loading";
-  return result.error ? "error" : "ready";
+  if (!result) return 'loading';
+  return result.error ? 'error' : 'ready';
 }
 
 /**
@@ -51,7 +55,10 @@ async function loadMyItems(projectId: string): Promise<QaMyItemsResponse> {
  * ViewModel for the Overview's "My QA items" card: what QA returned on this
  * project, and the developer items of the current uat run.
  */
-export function useMyQaItemsViewModel(options: { projectId: string; enabled: boolean }): MyQaItemsViewModel {
+export function useMyQaItemsViewModel(options: {
+  projectId: string;
+  enabled: boolean;
+}): MyQaItemsViewModel {
   const { projectId, enabled } = options;
   const [nonce, setNonce] = useState(0);
   const [result, setResult] = useState<LoadResult | null>(null);
@@ -66,10 +73,12 @@ export function useMyQaItemsViewModel(options: { projectId: string; enabled: boo
     const requestId = requestRef.current;
     loadMyItems(projectId)
       .then((data) => {
-        if (requestId === requestRef.current) setResult({ key, data, error: null });
+        if (requestId === requestRef.current)
+          setResult({ key, data, error: null });
       })
       .catch(() => {
-        if (requestId === requestRef.current) setResult({ key, data: null, error: LOAD_ERROR });
+        if (requestId === requestRef.current)
+          setResult({ key, data: null, error: LOAD_ERROR });
       });
   }, [enabled, projectId, key, nonce]);
 
@@ -82,7 +91,9 @@ export function useMyQaItemsViewModel(options: { projectId: string; enabled: boo
     reload: () => setNonce((value) => value + 1),
     applyRun: (run) =>
       setResult((previous) =>
-        previous?.data ? { ...previous, data: applyRunToMyItems(previous.data, run) } : previous,
+        previous?.data
+          ? { ...previous, data: applyRunToMyItems(previous.data, run) }
+          : previous,
       ),
   };
 }

@@ -1,13 +1,15 @@
-import { act, useEffect } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act, useEffect } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 
-import { useAuthSession } from "@/features/auth/session";
-import { getAuthSession } from "../../../../../../src/features/auth/session/data/auth-api";
-import { ApiError } from "../../../../../../src/shared/api/request";
-import type { AuthMeResponse } from "../../src/shared/api/contracts";
+import { useAuthSession } from '@/features/auth/session';
+import { getAuthSession } from '../../../../../../src/features/auth/session/data/auth-api';
+import { ApiError } from '../../../../../../src/shared/api/request';
+import type { AuthMeResponse } from '../../src/shared/api/contracts';
 
-jest.mock("../../../../../../src/features/auth/session/data/auth-api", () => {
-  const actual = jest.requireActual("../../../../../../src/features/auth/session/data/auth-api");
+jest.mock('../../../../../../src/features/auth/session/data/auth-api', () => {
+  const actual = jest.requireActual(
+    '../../../../../../src/features/auth/session/data/auth-api',
+  );
 
   return {
     ...actual,
@@ -15,19 +17,21 @@ jest.mock("../../../../../../src/features/auth/session/data/auth-api", () => {
   };
 });
 
-const mockedGetAuthSession = getAuthSession as jest.MockedFunction<typeof getAuthSession>;
+const mockedGetAuthSession = getAuthSession as jest.MockedFunction<
+  typeof getAuthSession
+>;
 
 const baseSession: AuthMeResponse = {
   authenticated: true,
   user: {
-    id: "user-1",
-    login: "tone",
+    id: 'user-1',
+    login: 'tone',
   },
   subscription: {
-    plan: "pro",
-    status: "active",
-    provider: "mock",
-    updatedAt: "2026-01-01T00:00:00.000Z",
+    plan: 'pro',
+    status: 'active',
+    provider: 'mock',
+    updatedAt: '2026-01-01T00:00:00.000Z',
   },
 };
 
@@ -87,17 +91,17 @@ async function waitForCondition(condition: () => boolean, attempts = 30) {
     await flushMicrotasks();
   }
 
-  throw new Error("Condition not met in time.");
+  throw new Error('Condition not met in time.');
 }
 
-describe("useAuthSession", () => {
+describe('useAuthSession', () => {
   let container: HTMLDivElement;
   let root: Root;
 
   beforeEach(() => {
     latestSnapshot = null;
     mockedGetAuthSession.mockReset();
-    container = document.createElement("div");
+    container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
   });
@@ -117,95 +121,99 @@ describe("useAuthSession", () => {
     await waitForCondition(() => latestSnapshot !== null);
   }
 
-  it("loads a signed-in session when API confirms authentication", async () => {
+  it('loads a signed-in session when API confirms authentication', async () => {
     mockedGetAuthSession.mockResolvedValue(buildSession());
 
     await mountProbe();
-    await waitForCondition(() => latestSnapshot?.status === "signed-in");
+    await waitForCondition(() => latestSnapshot?.status === 'signed-in');
 
-    expect(latestSnapshot?.session?.user.login).toBe("tone");
+    expect(latestSnapshot?.session?.user.login).toBe('tone');
     expect(latestSnapshot?.error).toBeNull();
   });
 
-  it("marks user as signed-out when API returns unauthenticated session", async () => {
-    mockedGetAuthSession.mockResolvedValue(buildSession({ authenticated: false }));
+  it('marks user as signed-out when API returns unauthenticated session', async () => {
+    mockedGetAuthSession.mockResolvedValue(
+      buildSession({ authenticated: false }),
+    );
 
     await mountProbe();
-    await waitForCondition(() => latestSnapshot?.status === "signed-out");
+    await waitForCondition(() => latestSnapshot?.status === 'signed-out');
 
     expect(latestSnapshot?.session).toBeNull();
     expect(latestSnapshot?.error).toBeNull();
   });
 
-  it("marks user as signed-out for 401/403 session errors", async () => {
-    mockedGetAuthSession.mockRejectedValue(new ApiError("Unauthorized", 401));
+  it('marks user as signed-out for 401/403 session errors', async () => {
+    mockedGetAuthSession.mockRejectedValue(new ApiError('Unauthorized', 401));
 
     await mountProbe();
-    await waitForCondition(() => latestSnapshot?.status === "signed-out");
+    await waitForCondition(() => latestSnapshot?.status === 'signed-out');
 
     expect(latestSnapshot?.session).toBeNull();
     expect(latestSnapshot?.error).toBeNull();
   });
 
-  it("surfaces friendly message for unexpected session errors", async () => {
-    mockedGetAuthSession.mockRejectedValue(new Error("Network broke"));
+  it('surfaces friendly message for unexpected session errors', async () => {
+    mockedGetAuthSession.mockRejectedValue(new Error('Network broke'));
 
     await mountProbe();
-    await waitForCondition(() => latestSnapshot?.status === "error");
+    await waitForCondition(() => latestSnapshot?.status === 'error');
 
-    expect(latestSnapshot?.error).toBe("Unable to verify your session right now.");
+    expect(latestSnapshot?.error).toBe(
+      'Unable to verify your session right now.',
+    );
   });
 
-  it("refresh transitions from signed-out to signed-in", async () => {
+  it('refresh transitions from signed-out to signed-in', async () => {
     mockedGetAuthSession
       .mockResolvedValueOnce(buildSession({ authenticated: false }))
       .mockResolvedValueOnce(buildSession());
 
     await mountProbe();
-    await waitForCondition(() => latestSnapshot?.status === "signed-out");
+    await waitForCondition(() => latestSnapshot?.status === 'signed-out');
 
     await act(async () => {
       await latestSnapshot?.refresh();
     });
 
-    await waitForCondition(() => latestSnapshot?.status === "signed-in");
+    await waitForCondition(() => latestSnapshot?.status === 'signed-in');
     expect(latestSnapshot?.session?.authenticated).toBe(true);
   });
 
-  it("refresh maps non-auth ApiError to explicit status message", async () => {
+  it('refresh maps non-auth ApiError to explicit status message', async () => {
     mockedGetAuthSession
       .mockResolvedValueOnce(buildSession())
-      .mockRejectedValueOnce(new ApiError("Server issue", 500));
+      .mockRejectedValueOnce(new ApiError('Server issue', 500));
 
     await mountProbe();
-    await waitForCondition(() => latestSnapshot?.status === "signed-in");
+    await waitForCondition(() => latestSnapshot?.status === 'signed-in');
 
     await act(async () => {
       await latestSnapshot?.refresh();
     });
 
-    await waitForCondition(() => latestSnapshot?.status === "error");
-    expect(latestSnapshot?.error).toBe("Session check failed with status 500.");
+    await waitForCondition(() => latestSnapshot?.status === 'error');
+    expect(latestSnapshot?.error).toBe('Session check failed with status 500.');
   });
 
-  it("refresh marks signed-out for 403 errors", async () => {
+  it('refresh marks signed-out for 403 errors', async () => {
     mockedGetAuthSession
       .mockResolvedValueOnce(buildSession())
-      .mockRejectedValueOnce(new ApiError("Forbidden", 403));
+      .mockRejectedValueOnce(new ApiError('Forbidden', 403));
 
     await mountProbe();
-    await waitForCondition(() => latestSnapshot?.status === "signed-in");
+    await waitForCondition(() => latestSnapshot?.status === 'signed-in');
 
     await act(async () => {
       await latestSnapshot?.refresh();
     });
 
-    await waitForCondition(() => latestSnapshot?.status === "signed-out");
+    await waitForCondition(() => latestSnapshot?.status === 'signed-out');
     expect(latestSnapshot?.session).toBeNull();
     expect(latestSnapshot?.error).toBeNull();
   });
 
-  it("ignores stale initial request result when a newer refresh finishes first", async () => {
+  it('ignores stale initial request result when a newer refresh finishes first', async () => {
     const pendingInitial = createDeferred<AuthMeResponse>();
 
     mockedGetAuthSession
@@ -213,20 +221,20 @@ describe("useAuthSession", () => {
       .mockResolvedValueOnce(buildSession());
 
     await mountProbe();
-    expect(latestSnapshot?.status).toBe("loading");
+    expect(latestSnapshot?.status).toBe('loading');
 
     await act(async () => {
       await latestSnapshot?.refresh();
     });
 
-    await waitForCondition(() => latestSnapshot?.status === "signed-in");
+    await waitForCondition(() => latestSnapshot?.status === 'signed-in');
 
     await act(async () => {
       pendingInitial.resolve(buildSession({ authenticated: false }));
       await Promise.resolve();
     });
 
-    expect(latestSnapshot?.status).toBe("signed-in");
+    expect(latestSnapshot?.status).toBe('signed-in');
     expect(latestSnapshot?.session?.authenticated).toBe(true);
   });
 });

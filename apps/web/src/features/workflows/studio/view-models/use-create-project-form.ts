@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { useCallback, useState } from "react";
+import { useCallback, useState } from 'react';
 
 import type {
   CreateProjectRequest,
   EnvTargetSlot,
   MvpProjectOptionKey,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 import {
   buildCreateProjectPayload,
   sanitizeRepoNameInput,
-} from "../model/create-project-payload";
+} from '../model/create-project-payload';
 import {
   ENVIRONMENT_TEMPLATE,
   type EnvironmentDraft,
-} from "../model/project-environments-rules";
-import { effectiveDualServiceName } from "../model/setup-tab-rules";
-import { toSlug } from "../model/workflow-studio-rules";
+} from '../model/project-environments-rules';
+import { effectiveDualServiceName } from '../model/setup-tab-rules';
+import { toSlug } from '../model/workflow-studio-rules';
 
 interface BuildPayloadInput {
   /** null when the repository joins an existing Project (no name is sent). */
@@ -27,9 +27,9 @@ interface BuildPayloadInput {
   projectTypeId: string;
   workflowRecipeId: string;
   tests: Record<MvpProjectOptionKey, boolean>;
-  ownerType?: "personal" | "organization";
+  ownerType?: 'personal' | 'organization';
   installationId?: number;
-  deploymentProvisioning?: CreateProjectRequest["deploymentProvisioning"];
+  deploymentProvisioning?: CreateProjectRequest['deploymentProvisioning'];
   /** The project's own environments, sent only with on-prem hosting. */
   environments?: readonly EnvironmentDraft[];
   /** The deployable slots, only when the deployment offers on-prem hosting. */
@@ -39,15 +39,16 @@ interface BuildPayloadInput {
 export function useCreateProjectForm() {
   // Typed as-is: never derived from the repository or service names, and
   // never rewritten. Trimming happens when the payload is built.
-  const [projectName, setProjectNameState] = useState("");
+  const [projectName, setProjectNameState] = useState('');
   const [projectNameError, setProjectNameError] = useState<string | null>(null);
-  const [repoName, setRepoNameState] = useState("");
-  const [visibility, setVisibility] = useState<CreateProjectRequest["visibility"]>("private");
-  const [serviceName, setServiceNameState] = useState("");
-  const [servicePath, setServicePath] = useState(".");
-  const [nodeVersion, setNodeVersion] = useState("24");
-  const [coverageThreshold, setCoverageThreshold] = useState("80");
-  const [outputFileName, setOutputFileName] = useState("ci.yml");
+  const [repoName, setRepoNameState] = useState('');
+  const [visibility, setVisibility] =
+    useState<CreateProjectRequest['visibility']>('private');
+  const [serviceName, setServiceNameState] = useState('');
+  const [servicePath, setServicePath] = useState('.');
+  const [nodeVersion, setNodeVersion] = useState('24');
+  const [coverageThreshold, setCoverageThreshold] = useState('80');
+  const [outputFileName, setOutputFileName] = useState('ci.yml');
   const [serviceNameTouched, setServiceNameTouched] = useState(false);
   // The fixed dev, uat, main path. The wizard shows it read-only and sends it
   // only with on-prem hosting; the editing rules stay in the model.
@@ -56,16 +57,20 @@ export function useCreateProjectForm() {
   ]);
 
   // Microservices dual-slot state
-  const [backendProjectTypeId, setBackendProjectTypeId] = useState("nestjs");
-  const [backendWorkflowRecipeId, setBackendWorkflowRecipeId] = useState("standard");
-  const [backendServiceName, setBackendServiceNameState] = useState("");
-  const [backendServicePath, setBackendServicePath] = useState("backend/");
-  const [backendServiceNameTouched, setBackendServiceNameTouched] = useState(false);
-  const [frontendProjectTypeId, setFrontendProjectTypeId] = useState("nextjs");
-  const [frontendWorkflowRecipeId, setFrontendWorkflowRecipeId] = useState("standard");
-  const [frontendServiceName, setFrontendServiceNameState] = useState("");
-  const [frontendServicePath, setFrontendServicePath] = useState("frontend/");
-  const [frontendServiceNameTouched, setFrontendServiceNameTouched] = useState(false);
+  const [backendProjectTypeId, setBackendProjectTypeId] = useState('nestjs');
+  const [backendWorkflowRecipeId, setBackendWorkflowRecipeId] =
+    useState('standard');
+  const [backendServiceName, setBackendServiceNameState] = useState('');
+  const [backendServicePath, setBackendServicePath] = useState('backend/');
+  const [backendServiceNameTouched, setBackendServiceNameTouched] =
+    useState(false);
+  const [frontendProjectTypeId, setFrontendProjectTypeId] = useState('nextjs');
+  const [frontendWorkflowRecipeId, setFrontendWorkflowRecipeId] =
+    useState('standard');
+  const [frontendServiceName, setFrontendServiceNameState] = useState('');
+  const [frontendServicePath, setFrontendServicePath] = useState('frontend/');
+  const [frontendServiceNameTouched, setFrontendServiceNameTouched] =
+    useState(false);
 
   const setRepoName = useCallback(
     (value: string) => {
@@ -105,13 +110,13 @@ export function useCreateProjectForm() {
     backendServiceNameTouched,
     backendServiceName,
     repoName,
-    "backend",
+    'backend',
   );
   const effectiveFrontendServiceName = effectiveDualServiceName(
     frontendServiceNameTouched,
     frontendServiceName,
     repoName,
-    "frontend",
+    'frontend',
   );
 
   function buildPayload(input: BuildPayloadInput) {

@@ -10,9 +10,9 @@ export {
   /* Who may create a Project (an empty one, from Create project): Product
    * owner (lead) or admin. A Developer adds repositories to one instead. */
   canCreateProjectFolder,
-} from "@/features/groups";
+} from '@/features/groups';
 /* "Create project" from Home: the Projects page, New Project dialog open. */
-export { newProjectHref } from "@/features/workflows";
+export { newProjectHref } from '@/features/workflows';
 
 import type {
   ConnectorTone,
@@ -25,20 +25,20 @@ import type {
   StageId,
   StageStatus,
   WorkspaceAttentionItem,
-} from "./home-types";
+} from './home-types';
 
 export const RUN_STAGE_ORDER: StageId[] = [
-  "access",
-  "quality",
-  "package",
-  "verify",
+  'access',
+  'quality',
+  'package',
+  'verify',
 ];
 
 export const RUN_STAGE_LABELS: Record<StageId, string> = {
-  access: "Access",
-  quality: "Quality",
-  package: "Package",
-  verify: "Verify",
+  access: 'Access',
+  quality: 'Quality',
+  package: 'Package',
+  verify: 'Verify',
 };
 
 /**
@@ -48,7 +48,7 @@ export const RUN_STAGE_LABELS: Record<StageId, string> = {
  */
 export function timeAgo(iso: string, now: number = Date.now()): string {
   const minutes = Math.floor((now - new Date(iso).getTime()) / 60000);
-  if (minutes < 1) return "just now";
+  if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
@@ -57,23 +57,23 @@ export function timeAgo(iso: string, now: number = Date.now()): string {
 
 /** "acme/orders-api" -> "orders-api". Falls back to the whole string. */
 export function shortRepoName(repoFullName: string | null | undefined): string {
-  if (!repoFullName) return "Repository";
-  return repoFullName.split("/")[1] ?? repoFullName;
+  if (!repoFullName) return 'Repository';
+  return repoFullName.split('/')[1] ?? repoFullName;
 }
 
 /** Status-badge tone for a provisioned project. */
-export function projectTone(status: ProvisionedProject["status"]): ProjectTone {
-  if (status === "provisioned") return "ok";
-  if (status === "provisioning") return "warn";
-  if (status === "failed") return "danger";
-  return "muted"; // orphaned
+export function projectTone(status: ProvisionedProject['status']): ProjectTone {
+  if (status === 'provisioned') return 'ok';
+  if (status === 'provisioning') return 'warn';
+  if (status === 'failed') return 'danger';
+  return 'muted'; // orphaned
 }
 
 export function failedDeliveryProjects(
   projects: ProvisionedProject[],
 ): ProvisionedProject[] {
   return projects.filter(
-    (project) => project.status === "failed" || project.status === "orphaned",
+    (project) => project.status === 'failed' || project.status === 'orphaned',
   );
 }
 
@@ -82,9 +82,9 @@ export function syncingAccessAssignments(
 ): MyAssignedRepository[] {
   return assignments.filter(
     (assignment) =>
-      assignment.effectiveState === "failed" ||
-      assignment.effectiveState === "pending" ||
-      assignment.effectiveState === "unknown",
+      assignment.effectiveState === 'failed' ||
+      assignment.effectiveState === 'pending' ||
+      assignment.effectiveState === 'unknown',
   );
 }
 
@@ -146,27 +146,34 @@ export function buildWorkspaceAttentionItems(input: {
   const items: WorkspaceAttentionItem[] = [];
   if (input.failedProjectCount) {
     items.push({
-      tone: "danger",
-      label: `${input.failedProjectCount} project${countSuffix(input.failedProjectCount, "", "s")} need attention`,
-      detail: "Review failed or disconnected delivery work.",
-      href: "/workflows?tab=current",
+      tone: 'danger',
+      label: `${input.failedProjectCount} project${countSuffix(input.failedProjectCount, '', 's')} need attention`,
+      detail: 'Review failed or disconnected delivery work.',
+      href: '/workflows?tab=current',
     });
   }
   if (input.syncingAssignmentCount) {
     items.push({
-      tone: "warning",
-      label: `${input.syncingAssignmentCount} access update${countSuffix(input.syncingAssignmentCount, "", "s")} in progress`,
-      detail: "GitHub permissions are still being verified.",
-      href: input.groupId ? `/groups/${input.groupId}` : "/workflows?tab=current",
+      tone: 'warning',
+      label: `${input.syncingAssignmentCount} access update${countSuffix(input.syncingAssignmentCount, '', 's')} in progress`,
+      detail: 'GitHub permissions are still being verified.',
+      href: input.groupId
+        ? `/groups/${input.groupId}`
+        : '/workflows?tab=current',
     });
   }
   return items;
 }
 
-export function dashboardWelcomeName(session: {
-  user: { login?: string; name?: string };
-} | null | undefined): string {
-  return session?.user.login ?? session?.user.name ?? "there";
+export function dashboardWelcomeName(
+  session:
+    | {
+        user: { login?: string; name?: string };
+      }
+    | null
+    | undefined,
+): string {
+  return session?.user.login ?? session?.user.name ?? 'there';
 }
 
 export function dashboardOverviewBusy(
@@ -201,11 +208,13 @@ export function shouldShowWelcomeModal(input: {
 }
 
 /** Human label for a provisioned-project status. */
-export function projectBadgeLabel(status: ProvisionedProject["status"]): string {
-  if (status === "provisioned") return "Active";
-  if (status === "provisioning") return "Provisioning";
-  if (status === "failed") return "Failed";
-  return "Idle"; // orphaned
+export function projectBadgeLabel(
+  status: ProvisionedProject['status'],
+): string {
+  if (status === 'provisioned') return 'Active';
+  if (status === 'provisioning') return 'Provisioning';
+  if (status === 'failed') return 'Failed';
+  return 'Idle'; // orphaned
 }
 
 /**
@@ -216,10 +225,10 @@ export function connectorTone(
   prev: StageStatus,
   next: StageStatus,
 ): ConnectorTone {
-  if (next === "failure") return "danger";
-  if (prev === "success" && next === "success") return "success";
-  if (prev === "success" && next === "running") return "flowing";
-  return "pending";
+  if (next === 'failure') return 'danger';
+  if (prev === 'success' && next === 'success') return 'success';
+  if (prev === 'success' && next === 'running') return 'flowing';
+  return 'pending';
 }
 
 /**
@@ -231,18 +240,18 @@ export function connectorTone(
  */
 export function computeRunStats(runs: RunGroup[]): RunStats {
   const sample = runs.slice(0, 10);
-  const finished = sample.filter((run) => run.overallStatus !== "running");
+  const finished = sample.filter((run) => run.overallStatus !== 'running');
   const successes = sample.filter(
-    (run) => run.overallStatus === "success",
+    (run) => run.overallStatus === 'success',
   ).length;
   const failures = sample.filter(
-    (run) => run.overallStatus === "failure",
+    (run) => run.overallStatus === 'failure',
   ).length;
-  const running = runs.filter((run) => run.overallStatus === "running").length;
+  const running = runs.filter((run) => run.overallStatus === 'running').length;
 
   const successRate = finished.length
     ? Math.round(
-        (finished.filter((run) => run.overallStatus === "success").length /
+        (finished.filter((run) => run.overallStatus === 'success').length /
           finished.length) *
           100,
       )
@@ -256,7 +265,7 @@ export function computeRunStats(runs: RunGroup[]): RunStats {
   };
   for (const run of sample) {
     for (const stage of run.stages) {
-      if (stage.status === "failure") stageFailures[stage.stage] += 1;
+      if (stage.status === 'failure') stageFailures[stage.stage] += 1;
     }
   }
   const rankedStages = (
@@ -269,7 +278,7 @@ export function computeRunStats(runs: RunGroup[]): RunStats {
 
   let failureStreak = 0;
   for (const run of runs) {
-    if (run.overallStatus === "failure") failureStreak += 1;
+    if (run.overallStatus === 'failure') failureStreak += 1;
     else break;
   }
 

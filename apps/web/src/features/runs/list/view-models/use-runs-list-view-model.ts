@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { runsRepository } from "../../data/runs-repository";
+import { runsRepository } from '../../data/runs-repository';
 import {
   groupRunsByProject,
   summarizeRuns,
   toUserError,
-} from "../../model/runs-rules";
+} from '../../model/runs-rules';
 import type {
   ProjectRunGroup,
   RunGroup,
   RunsStatus,
   RunsSummary,
-} from "../../model/runs-types";
+} from '../../model/runs-types';
 
 export interface RunsListViewModel {
   /** Repository filter taken from ?repoFullName, or undefined for all. */
@@ -49,10 +49,10 @@ export function useRunsListViewModel(options: {
 }): RunsListViewModel {
   const { guest } = options;
   const searchParams = useSearchParams();
-  const repoFullName = searchParams.get("repoFullName") ?? undefined;
+  const repoFullName = searchParams.get('repoFullName') ?? undefined;
 
   const [runs, setRuns] = useState<RunGroup[]>([]);
-  const [fetchStatus, setFetchStatus] = useState<RunsStatus>("loading");
+  const [fetchStatus, setFetchStatus] = useState<RunsStatus>('loading');
   const [error, setError] = useState<string | null>(null);
 
   // Expanded, not collapsed — an empty set means every repository starts
@@ -86,12 +86,12 @@ export function useRunsListViewModel(options: {
         if (!active || id !== requestId.current) return;
         setRuns(loaded);
         setError(null);
-        setFetchStatus("ready");
+        setFetchStatus('ready');
       })
       .catch((err: unknown) => {
         if (!active || id !== requestId.current) return;
         setError(toUserError(err));
-        setFetchStatus("error");
+        setFetchStatus('error');
       });
 
     return () => {
@@ -117,17 +117,17 @@ export function useRunsListViewModel(options: {
   );
 
   const reload = useCallback(() => {
-    setFetchStatus("loading");
+    setFetchStatus('loading');
     setReloadNonce((n) => n + 1);
   }, []);
 
   return {
     repoFullName,
-    visibleRepoName: repoFullName?.split("/")[1] ?? repoFullName,
+    visibleRepoName: repoFullName?.split('/')[1] ?? repoFullName,
     runs,
     grouped,
     summary,
-    status: guest ? "idle" : fetchStatus,
+    status: guest ? 'idle' : fetchStatus,
     error,
     isCollapsed,
     toggleRepo,

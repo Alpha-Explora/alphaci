@@ -1,22 +1,35 @@
-"use client";
+'use client';
 
-import { SeverityBadge, StatusPill, VerdictPill } from "../../items";
-import { targetPersonaLabel, verificationTypeLabel } from "../../model/checklist-rules";
+import { SeverityBadge, StatusPill, VerdictPill } from '../../items';
+import {
+  targetPersonaLabel,
+  verificationTypeLabel,
+} from '../../model/checklist-rules';
 import {
   actorLabel,
   formatReportDate,
   orderedItems,
   previousSignoffs,
   reportSeverityLabel,
-} from "../../model/qa-report-rules";
-import type { QaReport, QaReportDefect, QaReportSignoffEntry } from "../../model/qa-report-types";
-import type { QaDefectSeverity, QaFixRequest, QaRunItem } from "../../model/qa-run-types";
-import { ItemAutomatedCell } from "./qa-report-automation";
+} from '../../model/qa-report-rules';
+import type {
+  QaReport,
+  QaReportDefect,
+  QaReportSignoffEntry,
+} from '../../model/qa-report-types';
+import type {
+  QaDefectSeverity,
+  QaFixRequest,
+  QaRunItem,
+} from '../../model/qa-run-types';
+import { ItemAutomatedCell } from './qa-report-automation';
 
 /* ── Shared ──────────────────────────────────────────────────────────────── */
 
 /** A severity badge, or a neutral "Unrated" for a defect filed without one. */
-function Severity({ severity }: Readonly<{ severity: QaDefectSeverity | null }>) {
+function Severity({
+  severity,
+}: Readonly<{ severity: QaDefectSeverity | null }>) {
   if (severity) return <SeverityBadge severity={severity} />;
   return (
     <span className="qa-severity">
@@ -27,7 +40,10 @@ function Severity({ severity }: Readonly<{ severity: QaDefectSeverity | null }>)
 }
 
 /** Multi-line text with its line breaks kept (repro steps, notes, conditions). */
-function Prose({ text, className = "" }: Readonly<{ text: string; className?: string }>) {
+function Prose({
+  text,
+  className = '',
+}: Readonly<{ text: string; className?: string }>) {
   return <p className={`qa-report-prose ${className}`.trim()}>{text}</p>;
 }
 
@@ -39,7 +55,9 @@ function ItemRow({ item }: Readonly<{ item: QaRunItem }>) {
       <td className="qa-report-table__num">{item.position + 1}</td>
       <td>
         <span className="qa-report-table__title">{item.title}</span>
-        {item.description ? <span className="qa-report-table__sub">{item.description}</span> : null}
+        {item.description ? (
+          <span className="qa-report-table__sub">{item.description}</span>
+        ) : null}
       </td>
       <td>{targetPersonaLabel(item.targetPersona)}</td>
       <td>
@@ -50,19 +68,29 @@ function ItemRow({ item }: Readonly<{ item: QaRunItem }>) {
       </td>
       <td>
         <StatusPill status={item.status} />
-        {item.verifiedBy ? <span className="qa-report-table__sub">{actorLabel(item.verifiedBy)}</span> : null}
+        {item.verifiedBy ? (
+          <span className="qa-report-table__sub">
+            {actorLabel(item.verifiedBy)}
+          </span>
+        ) : null}
         <ItemAutomatedCell item={item} />
       </td>
       <td>
-        {item.defectSeverity ? <Severity severity={item.defectSeverity} /> : null}
+        {item.defectSeverity ? (
+          <Severity severity={item.defectSeverity} />
+        ) : null}
         {item.notes ? <Prose text={item.notes} /> : null}
-        {!item.notes && !item.defectSeverity ? <span className="qa-report-muted">—</span> : null}
+        {!item.notes && !item.defectSeverity ? (
+          <span className="qa-report-muted">—</span>
+        ) : null}
       </td>
     </tr>
   );
 }
 
-export function ChecklistTable({ items }: Readonly<{ items: ReadonlyArray<QaRunItem> }>) {
+export function ChecklistTable({
+  items,
+}: Readonly<{ items: ReadonlyArray<QaRunItem> }>) {
   if (items.length === 0) {
     return <p className="qa-report-muted">This run has no checklist items.</p>;
   }
@@ -103,18 +131,24 @@ function FixRequest({ fix }: Readonly<{ fix: QaFixRequest | null }>) {
   if (!fix) return <span className="qa-report-muted">Not requested yet</span>;
   return (
     <>
-      Re-test requested by {actorLabel(fix.requestedBy)} · {formatReportDate(fix.requestedAt)}
-      {fix.note ? <Prose text={fix.note} className="qa-report-prose--quote" /> : null}
+      Re-test requested by {actorLabel(fix.requestedBy)} ·{' '}
+      {formatReportDate(fix.requestedAt)}
+      {fix.note ? (
+        <Prose text={fix.note} className="qa-report-prose--quote" />
+      ) : null}
     </>
   );
 }
 
 function DefectBlock({ defect }: Readonly<{ defect: QaReportDefect }>) {
   return (
-    <article className={`qa-report-defect qa-report-defect--${defect.severity ?? "unrated"}`}>
+    <article
+      className={`qa-report-defect qa-report-defect--${defect.severity ?? 'unrated'}`}
+    >
       <header className="qa-report-defect__head">
         <h3 className="qa-report-defect__title">
-          <span className="qa-report-defect__num">#{defect.position + 1}</span> {defect.title}
+          <span className="qa-report-defect__num">#{defect.position + 1}</span>{' '}
+          {defect.title}
         </h3>
         <span className="qa-report-defect__tags">
           <Severity severity={defect.severity} />
@@ -128,13 +162,22 @@ function DefectBlock({ defect }: Readonly<{ defect: QaReportDefect }>) {
         </div>
         <div>
           <dt>Notes</dt>
-          <dd>{defect.notes ? <Prose text={defect.notes} /> : <span className="qa-report-muted">None</span>}</dd>
+          <dd>
+            {defect.notes ? (
+              <Prose text={defect.notes} />
+            ) : (
+              <span className="qa-report-muted">None</span>
+            )}
+          </dd>
         </div>
         <div>
           <dt>Reproduction steps</dt>
           <dd>
             {defect.reproductionSteps ? (
-              <Prose text={defect.reproductionSteps} className="qa-report-prose--steps" />
+              <Prose
+                text={defect.reproductionSteps}
+                className="qa-report-prose--steps"
+              />
             ) : (
               <span className="qa-report-muted">None recorded</span>
             )}
@@ -151,7 +194,9 @@ function DefectBlock({ defect }: Readonly<{ defect: QaReportDefect }>) {
   );
 }
 
-export function DefectLog({ defects }: Readonly<{ defects: ReadonlyArray<QaReportDefect> }>) {
+export function DefectLog({
+  defects,
+}: Readonly<{ defects: ReadonlyArray<QaReportDefect> }>) {
   if (defects.length === 0) {
     return (
       <div className="qa-report-empty">
@@ -164,7 +209,10 @@ export function DefectLog({ defects }: Readonly<{ defects: ReadonlyArray<QaRepor
   return (
     <div className="qa-report-defects">
       {defects.map((defect) => (
-        <DefectBlock key={`${defect.position}-${defect.title}`} defect={defect} />
+        <DefectBlock
+          key={`${defect.position}-${defect.title}`}
+          defect={defect}
+        />
       ))}
     </div>
   );
@@ -172,7 +220,9 @@ export function DefectLog({ defects }: Readonly<{ defects: ReadonlyArray<QaRepor
 
 /* ── 6. Sign-off ─────────────────────────────────────────────────────────── */
 
-function SignoffText({ entry }: Readonly<{ entry: Pick<QaReportSignoffEntry, "summary" | "conditions"> }>) {
+function SignoffText({
+  entry,
+}: Readonly<{ entry: Pick<QaReportSignoffEntry, 'summary' | 'conditions'> }>) {
   return (
     <>
       {entry.summary ? <Prose text={entry.summary} /> : null}
@@ -192,11 +242,12 @@ function PreviousSignoff({ entry }: Readonly<{ entry: QaReportSignoffEntry }>) {
       <div className="qa-report-history__line">
         <VerdictPill verdict={entry.verdict} />
         <span>
-          Signed by {actorLabel(entry.signedBy)} · {formatReportDate(entry.signedAt)}
+          Signed by {actorLabel(entry.signedBy)} ·{' '}
+          {formatReportDate(entry.signedAt)}
         </span>
         <span className="qa-report-muted">
           Superseded {formatReportDate(entry.supersededAt)}
-          {entry.supersededBy ? ` by ${actorLabel(entry.supersededBy)}` : ""}
+          {entry.supersededBy ? ` by ${actorLabel(entry.supersededBy)}` : ''}
         </span>
       </div>
       <SignoffText entry={entry} />
@@ -206,8 +257,8 @@ function PreviousSignoff({ entry }: Readonly<{ entry: QaReportSignoffEntry }>) {
 
 /** What the sign-off block reads, so a repository report and a Project report both fit. */
 export interface SignoffSource {
-  run: { signoff: QaReport["run"]["signoff"] };
-  signoffHistory: QaReport["signoffHistory"];
+  run: { signoff: QaReport['run']['signoff'] };
+  signoffHistory: QaReport['signoffHistory'];
 }
 
 function CurrentSignoff({ report }: Readonly<{ report: SignoffSource }>) {
@@ -216,7 +267,10 @@ function CurrentSignoff({ report }: Readonly<{ report: SignoffSource }>) {
     return (
       <div className="qa-report-empty">
         <p className="qa-report-empty__title">Not signed off</p>
-        <p>This run has not been signed off. The results above are live and may still change.</p>
+        <p>
+          This run has not been signed off. The results above are live and may
+          still change.
+        </p>
       </div>
     );
   }
@@ -225,7 +279,8 @@ function CurrentSignoff({ report }: Readonly<{ report: SignoffSource }>) {
       <div className="qa-report-signoff__line">
         <VerdictPill verdict={signoff.verdict} />
         <span>
-          Signed by <strong>{actorLabel(signoff.signedBy)}</strong> · {formatReportDate(signoff.signedAt)}
+          Signed by <strong>{actorLabel(signoff.signedBy)}</strong> ·{' '}
+          {formatReportDate(signoff.signedAt)}
         </span>
       </div>
       <SignoffText entry={signoff} />
@@ -240,10 +295,15 @@ export function SignoffRecord({ report }: Readonly<{ report: SignoffSource }>) {
       <CurrentSignoff report={report} />
       {previous.length > 0 ? (
         <div className="qa-report-history">
-          <h3 className="qa-report-history__title">Previous sign-offs ({previous.length})</h3>
+          <h3 className="qa-report-history__title">
+            Previous sign-offs ({previous.length})
+          </h3>
           <ol className="qa-report-history__list">
             {previous.map((entry) => (
-              <PreviousSignoff key={`${entry.signedAt}-${entry.signedBy.id}`} entry={entry} />
+              <PreviousSignoff
+                key={`${entry.signedAt}-${entry.signedBy.id}`}
+                entry={entry}
+              />
             ))}
           </ol>
         </div>

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
-import { iterationsRepository } from "../../data/iterations-repository";
+import { iterationsRepository } from '../../data/iterations-repository';
 import {
   ITERATION_GOAL_MAX,
   iterationGoalError,
@@ -14,9 +14,13 @@ import {
   startIterationErrorMessage,
   startIterationInput,
   startIterationLabel,
-} from "../../model/iteration-start-rules";
-import type { CurrentIteration, IterationNextStep, StartedIteration } from "../../model/iteration-types";
-import { announceIterationChanged } from "./iteration-epoch";
+} from '../../model/iteration-start-rules';
+import type {
+  CurrentIteration,
+  IterationNextStep,
+  StartedIteration,
+} from '../../model/iteration-types';
+import { announceIterationChanged } from './iteration-epoch';
 
 export interface StartIterationViewModel {
   /** What this viewer sees about the next iteration: nothing, the waiting sentence, or Start. */
@@ -47,14 +51,15 @@ interface DialogState {
   refreshOnClose: boolean;
 }
 
-const CLOSED: DialogState = { goal: "", error: null, refreshOnClose: false };
+const CLOSED: DialogState = { goal: '', error: null, refreshOnClose: false };
 
 /** Everything the dialog shows, from its state. */
 function dialogView(step: IterationNextStep, state: DialogState) {
   return {
     step,
-    label: step.kind === "start" ? startIterationLabel(step.nextNumber) : "",
-    description: step.kind === "start" ? startIterationDescription(step.nextNumber) : "",
+    label: step.kind === 'start' ? startIterationLabel(step.nextNumber) : '',
+    description:
+      step.kind === 'start' ? startIterationDescription(step.nextNumber) : '',
     goal: state.goal,
     goalMax: ITERATION_GOAL_MAX,
     goalError: iterationGoalError(state.goal),
@@ -96,18 +101,26 @@ export function useStartIterationViewModel(options: {
   }
 
   async function submit() {
-    if (!dialog || submitting || step.kind !== "start" || view.goalError) return;
+    if (!dialog || submitting || step.kind !== 'start' || view.goalError)
+      return;
     const input = startIterationInput(dialog.goal);
     setSubmitting(true);
     update((state) => ({ ...state, error: null }));
     try {
-      const started = await iterationsRepository.start(deliveryProjectId, input);
+      const started = await iterationsRepository.start(
+        deliveryProjectId,
+        input,
+      );
       setDialog(null);
       announceIterationChanged(deliveryProjectId);
       onStarted?.(started);
     } catch (cause) {
       const refreshOnClose = startErrorRefreshesOnClose(cause);
-      update((state) => ({ ...state, error: startIterationErrorMessage(cause), refreshOnClose }));
+      update((state) => ({
+        ...state,
+        error: startIterationErrorMessage(cause),
+        refreshOnClose,
+      }));
     } finally {
       setSubmitting(false);
     }
@@ -115,10 +128,10 @@ export function useStartIterationViewModel(options: {
 
   return {
     ...view,
-    open: dialog !== null && step.kind === "start",
+    open: dialog !== null && step.kind === 'start',
     submitting,
     openDialog: () => {
-      if (step.kind === "start" && !dialog) setDialog(CLOSED);
+      if (step.kind === 'start' && !dialog) setDialog(CLOSED);
     },
     close,
     setGoal: (goal) => update((state) => ({ ...state, goal })),

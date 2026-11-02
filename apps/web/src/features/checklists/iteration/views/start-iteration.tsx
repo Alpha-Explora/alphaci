@@ -1,16 +1,19 @@
-"use client";
+'use client';
 
-import "./iteration.css";
+import './iteration.css';
 
-import { useId } from "react";
+import { useId } from 'react';
 
-import { FormDialog } from "@/features/groups/workspace";
-import type { AppRole } from "@/shared/api/contracts";
+import { FormDialog } from '@/features/groups/workspace';
+import type { AppRole } from '@/shared/api/contracts';
 
-import { useCurrentIterationViewModel } from "../view-models/use-current-iteration-view-model";
-import { useNextIterationViewModel } from "../view-models/use-next-iteration-view-model";
-import { useStartIterationViewModel, type StartIterationViewModel } from "../view-models/use-start-iteration-view-model";
-import { IterationStatusPill } from "./iteration-status";
+import { useCurrentIterationViewModel } from '../view-models/use-current-iteration-view-model';
+import { useNextIterationViewModel } from '../view-models/use-next-iteration-view-model';
+import {
+  useStartIterationViewModel,
+  type StartIterationViewModel,
+} from '../view-models/use-start-iteration-view-model';
+import { IterationStatusPill } from './iteration-status';
 
 /* "Start iteration N+1" with its dialog (a goal; the new iteration starts
  * with an empty checklist), and the sentence everyone else reads while the
@@ -60,7 +63,7 @@ function GoalField({ vm }: Readonly<{ vm: StartIterationViewModel }>) {
         maxLength={vm.goalMax}
         placeholder="Loyalty points"
         disabled={vm.submitting}
-        aria-invalid={vm.goalError ? "true" : undefined}
+        aria-invalid={vm.goalError ? 'true' : undefined}
         aria-describedby={vm.goalError ? errorId : undefined}
         data-autofocus
         onChange={(event) => vm.setGoal(event.target.value)}
@@ -78,8 +81,10 @@ function GoalField({ vm }: Readonly<{ vm: StartIterationViewModel }>) {
 }
 
 /** The dialog: an optional goal. The new iteration starts with an empty checklist. */
-export function StartIterationDialog({ vm }: Readonly<{ vm: StartIterationViewModel }>) {
-  if (vm.step.kind !== "start") return null;
+export function StartIterationDialog({
+  vm,
+}: Readonly<{ vm: StartIterationViewModel }>) {
+  if (vm.step.kind !== 'start') return null;
   return (
     <FormDialog
       open={vm.open}
@@ -101,11 +106,17 @@ export function StartIterationDialog({ vm }: Readonly<{ vm: StartIterationViewMo
 }
 
 /** "Start iteration 4", and its dialog. Nothing unless this viewer is offered it. */
-export function StartIterationAction({ vm }: Readonly<{ vm: StartIterationViewModel }>) {
-  if (vm.step.kind !== "start") return null;
+export function StartIterationAction({
+  vm,
+}: Readonly<{ vm: StartIterationViewModel }>) {
+  if (vm.step.kind !== 'start') return null;
   return (
     <>
-      <button type="button" className="primary-button iteration-start-button" onClick={vm.openDialog}>
+      <button
+        type="button"
+        className="primary-button iteration-start-button"
+        onClick={vm.openDialog}
+      >
         <span aria-hidden="true">+</span>
         {vm.label}
       </button>
@@ -120,9 +131,12 @@ export function StartIterationAction({ vm }: Readonly<{ vm: StartIterationViewMo
  * otherwise. For screens that carry the next step in their body (the QA run,
  * My QA items).
  */
-export function IterationNextStepView({ vm }: Readonly<{ vm: StartIterationViewModel }>) {
-  if (vm.step.kind === "waiting") return <IterationWaitingNotice text={vm.step.text} />;
-  if (vm.step.kind !== "start") return null;
+export function IterationNextStepView({
+  vm,
+}: Readonly<{ vm: StartIterationViewModel }>) {
+  if (vm.step.kind === 'waiting')
+    return <IterationWaitingNotice text={vm.step.text} />;
+  if (vm.step.kind !== 'start') return null;
   return (
     <div className="iteration-next">
       <p className="iteration-next__text">{vm.step.text}</p>
@@ -136,7 +150,11 @@ export function IterationNextStep({
   deliveryProjectId,
   enabled,
   appRole,
-}: Readonly<{ deliveryProjectId: string | null; enabled: boolean; appRole: AppRole | null | undefined }>) {
+}: Readonly<{
+  deliveryProjectId: string | null;
+  enabled: boolean;
+  appRole: AppRole | null | undefined;
+}>) {
   const vm = useNextIterationViewModel({ deliveryProjectId, enabled, appRole });
   return <IterationNextStepView vm={vm} />;
 }
@@ -150,14 +168,21 @@ export function IterationHeader({
   deliveryProjectId,
   enabled,
   appRole,
-}: Readonly<{ deliveryProjectId: string | null; enabled: boolean; appRole: AppRole | null | undefined }>) {
-  const iteration = useCurrentIterationViewModel({ deliveryProjectId, enabled });
+}: Readonly<{
+  deliveryProjectId: string | null;
+  enabled: boolean;
+  appRole: AppRole | null | undefined;
+}>) {
+  const iteration = useCurrentIterationViewModel({
+    deliveryProjectId,
+    enabled,
+  });
   const start = useStartIterationViewModel({
-    deliveryProjectId: deliveryProjectId ?? "",
+    deliveryProjectId: deliveryProjectId ?? '',
     current: iteration.current,
     appRole,
   });
-  if (iteration.status !== "ready" || !iteration.current) return null;
+  if (iteration.status !== 'ready' || !iteration.current) return null;
   return (
     <>
       <IterationStatusPill iteration={iteration.current.iteration} />

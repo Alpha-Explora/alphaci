@@ -100,7 +100,9 @@
   font-weight: 600;
   color: var(--text-secondary);
   text-decoration: none;
-  transition: color 0.18s ease, background 0.18s ease;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease;
   white-space: nowrap;
 }
 
@@ -115,7 +117,7 @@ button.hier-subnav-link {
   color: var(--text-primary);
 }
 
-.hier-subnav-link[aria-current="page"] {
+.hier-subnav-link[aria-current='page'] {
   color: var(--text-primary);
   background: var(--accent-indigo-light);
   border: 1px solid var(--accent-indigo-glow);
@@ -178,7 +180,9 @@ button.hier-subnav-link {
   box-shadow: var(--shadow-soft);
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.18s ease, transform 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease;
 }
 
 a.hier-card:hover {
@@ -606,7 +610,9 @@ a.hier-card:hover {
   border: 1px solid var(--border-strong);
   border-radius: 0.55rem;
   padding: 0.55rem 0.7rem;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 .hier-textarea {
@@ -898,7 +904,9 @@ a.hier-card:hover {
   color: var(--danger);
   background: var(--accent-rose-light);
   border: 1px solid rgba(244, 63, 94, 0.3);
-  transition: background 0.16s ease, border-color 0.16s ease;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
 }
 
 .hier-btn-danger:hover:not(:disabled) {
@@ -924,7 +932,9 @@ a.hier-card:hover {
   color: var(--text-secondary);
   background: var(--bg-frost);
   border: 1px solid var(--border-soft);
-  transition: color 0.16s ease, border-color 0.16s ease;
+  transition:
+    color 0.16s ease,
+    border-color 0.16s ease;
 }
 
 .hier-btn-sm:hover:not(:disabled) {

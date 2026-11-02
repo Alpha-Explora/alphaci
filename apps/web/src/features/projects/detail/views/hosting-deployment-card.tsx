@@ -1,15 +1,19 @@
-"use client";
+'use client';
 
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode } from 'react';
 
 import type {
   DeploymentTarget,
   ProjectBranchPreview,
   ProjectDeploymentHistoryItem,
   ProjectDeploymentsResponse,
-} from "@/shared/api/contracts";
-import { deployedAgo, shortCommitSha } from "../../model/projects-rules";
-import { deployDurationLabel, deployStatusWord, deployTriggerLabel } from "../../model/deploy-facts-rules";
+} from '@/shared/api/contracts';
+import { deployedAgo, shortCommitSha } from '../../model/projects-rules';
+import {
+  deployDurationLabel,
+  deployStatusWord,
+  deployTriggerLabel,
+} from '../../model/deploy-facts-rules';
 import {
   deployTone,
   environmentAddress,
@@ -22,14 +26,20 @@ import {
   undeployedSentence,
   type EnvironmentDeploys,
   type HostingEnvironment,
-} from "../model/hosting-environment-rules";
-import { providerPublicUrl } from "../model/provider-urls";
-import { RollbackButton, RollbackDialog, RollbackHoldBanner, type RollbackControls } from "./hosting-rollback";
-import { HostingDot, HostingPill } from "./hosting-status";
+} from '../model/hosting-environment-rules';
+import { providerPublicUrl } from '../model/provider-urls';
+import {
+  RollbackButton,
+  RollbackDialog,
+  RollbackHoldBanner,
+  type RollbackControls,
+} from './hosting-rollback';
+import { HostingDot, HostingPill } from './hosting-status';
 
 type OpenPullRequest = ((pullRequestNumber: number) => void) | undefined;
 /** Something to show at the end of a deploy row: Roll back, for those who may. */
-type RowAction = ((deploy: ProjectDeploymentHistoryItem) => ReactNode) | undefined;
+type RowAction =
+  ((deploy: ProjectDeploymentHistoryItem) => ReactNode) | undefined;
 
 export interface DeploymentHistoryState {
   /** The deployment history capability is on for this deployment and project. */
@@ -66,20 +76,30 @@ export function HostingDeploymentCard({
   rollback?: RollbackControls | null;
 }>) {
   const previewsKnown = previews !== null;
-  const [rollingBackTo, setRollingBackTo] = useState<ProjectDeploymentHistoryItem | null>(null);
+  const [rollingBackTo, setRollingBackTo] =
+    useState<ProjectDeploymentHistoryItem | null>(null);
   const rowAction: RowAction = rollback
-    ? (deploy) => (rollback.offers(deploy) ? <RollbackButton deploy={deploy} onSelect={setRollingBackTo} /> : null)
+    ? (deploy) =>
+        rollback.offers(deploy) ? (
+          <RollbackButton deploy={deploy} onSelect={setRollingBackTo} />
+        ) : null
     : undefined;
   return (
-    <section className="hosting-card hosting-deploy" aria-labelledby="hosting-deploy-heading">
+    <section
+      className="hosting-card hosting-deploy"
+      aria-labelledby="hosting-deploy-heading"
+    >
       <div className="hosting-card__head">
         <h4 className="hosting-card__title" id="hosting-deploy-heading">
           Deployment
         </h4>
-        <HostingPill tone={environment.tone} label={environmentPillLabel(environment, previewsKnown)} />
+        <HostingPill
+          tone={environment.tone}
+          label={environmentPillLabel(environment, previewsKnown)}
+        />
       </div>
       {rollback ? <RollbackHoldBanner controls={rollback} /> : null}
-      {environment.kind === "previews" ? (
+      {environment.kind === 'previews' ? (
         <PreviewBranchList
           branches={environment.previewBranches}
           previews={previews}
@@ -87,7 +107,11 @@ export function HostingDeploymentCard({
           onOpenPullRequest={onOpenPullRequest}
         />
       ) : (
-        <EnvironmentAddress environment={environment} target={target} previewsKnown={previewsKnown} />
+        <EnvironmentAddress
+          environment={environment}
+          target={target}
+          previewsKnown={previewsKnown}
+        />
       )}
       <RecentDeploys
         environment={environment}
@@ -100,7 +124,7 @@ export function HostingDeploymentCard({
       {domains}
       {rollback ? (
         <RollbackDialog
-          key={rollingBackTo?.id ?? "closed"}
+          key={rollingBackTo?.id ?? 'closed'}
           target={target}
           deploy={rollingBackTo}
           controls={rollback}
@@ -115,20 +139,29 @@ function EnvironmentAddress({
   environment,
   target,
   previewsKnown,
-}: Readonly<{ environment: HostingEnvironment; target: DeploymentTarget; previewsKnown: boolean }>) {
+}: Readonly<{
+  environment: HostingEnvironment;
+  target: DeploymentTarget;
+  previewsKnown: boolean;
+}>) {
   const address = environmentAddress(environment, providerPublicUrl(target));
   const undeployed = isKnownUndeployed(environment, previewsKnown);
   return (
     <div className="hosting-address">
       {address ? <AddressLine address={address} live={!undeployed} /> : null}
       {undeployed ? (
-        <p className="hosting-quiet">{undeployedSentence(environment.branch ?? "", Boolean(address))}</p>
+        <p className="hosting-quiet">
+          {undeployedSentence(environment.branch ?? '', Boolean(address))}
+        </p>
       ) : null}
     </div>
   );
 }
 
-function AddressLine({ address, live }: Readonly<{ address: string; live: boolean }>) {
+function AddressLine({
+  address,
+  live,
+}: Readonly<{ address: string; live: boolean }>) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -145,10 +178,15 @@ function AddressLine({ address, live }: Readonly<{ address: string; live: boolea
     <div className="hosting-address__line">
       <code className="hosting-mono hosting-address__url">{address}</code>
       <button type="button" className="hosting-btn" onClick={() => void copy()}>
-        {copied ? "Copied" : "Copy"}
+        {copied ? 'Copied' : 'Copy'}
       </button>
       {live ? (
-        <a className="hosting-btn hosting-btn--primary" href={address} target="_blank" rel="noreferrer noopener">
+        <a
+          className="hosting-btn hosting-btn--primary"
+          href={address}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
           Open site
         </a>
       ) : null}
@@ -161,7 +199,8 @@ function PullRequestChip({
   onOpenPullRequest,
 }: Readonly<{ number: number | null; onOpenPullRequest: OpenPullRequest }>) {
   if (number === null) return null;
-  if (!onOpenPullRequest) return <span className="hosting-chip">#{number}</span>;
+  if (!onOpenPullRequest)
+    return <span className="hosting-chip">#{number}</span>;
   return (
     <button
       type="button"
@@ -197,7 +236,10 @@ function PreviewBranchList({
               <HostingDot tone={environmentTone(preview)} />
               {environmentStatusWord(preview, previews !== null)}
             </span>
-            <PullRequestChip number={preview?.pullRequestNumber ?? null} onOpenPullRequest={onOpenPullRequest} />
+            <PullRequestChip
+              number={preview?.pullRequestNumber ?? null}
+              onOpenPullRequest={onOpenPullRequest}
+            />
             <PreviewOpenLink preview={preview} />
           </li>
         );
@@ -206,10 +248,17 @@ function PreviewBranchList({
   );
 }
 
-function PreviewOpenLink({ preview }: Readonly<{ preview: ProjectBranchPreview | null }>) {
-  if (preview?.status !== "ready" || !preview.previewUrl) return null;
+function PreviewOpenLink({
+  preview,
+}: Readonly<{ preview: ProjectBranchPreview | null }>) {
+  if (preview?.status !== 'ready' || !preview.previewUrl) return null;
   return (
-    <a className="hosting-row__link" href={preview.previewUrl} target="_blank" rel="noreferrer noopener">
+    <a
+      className="hosting-row__link"
+      href={preview.previewUrl}
+      target="_blank"
+      rel="noreferrer noopener"
+    >
       Open
     </a>
   );
@@ -232,14 +281,16 @@ function RecentDeploys({
 }>) {
   const [showAll, setShowAll] = useState(false);
   const recent = deploys.items.slice(0, RECENT_DEPLOY_LIMIT);
-  const showBranch = !deploys.byBranch || environment.kind === "previews";
+  const showBranch = !deploys.byBranch || environment.kind === 'previews';
   const notes = <HistoryNotes history={history} />;
   // Nothing to list (an outage, or a branch never deployed): no empty heading.
   // The address line or the header notice already says why.
   if (!recent.length && !allDeploys.length) return notes;
   return (
     <div className="hosting-section">
-      {recent.length ? <h5 className="hosting-section__title">Recent deploys</h5> : null}
+      {recent.length ? (
+        <h5 className="hosting-section__title">Recent deploys</h5>
+      ) : null}
       {notes}
       <DeployList
         items={recent}
@@ -256,7 +307,9 @@ function RecentDeploys({
             aria-expanded={showAll}
             onClick={() => setShowAll((open) => !open)}
           >
-            {showAll ? "Hide all deploys" : `All deploys (${allDeploys.length})`}
+            {showAll
+              ? 'Hide all deploys'
+              : `All deploys (${allDeploys.length})`}
           </button>
           {showAll ? (
             <DeployList
@@ -274,18 +327,21 @@ function RecentDeploys({
 }
 
 /** Why there is no history, said once: off, simulated, or not live. Never the provider error. */
-function HistoryNotes({ history }: Readonly<{ history: DeploymentHistoryState }>) {
-  if (!history.enabled) return <p className="hosting-quiet">Deployment history is not enabled.</p>;
+function HistoryNotes({
+  history,
+}: Readonly<{ history: DeploymentHistoryState }>) {
+  if (!history.enabled)
+    return <p className="hosting-quiet">Deployment history is not enabled.</p>;
   const response = history.response;
   if (!response) return null;
   if (!response.liveProvidersEnabled) {
     return <p className="hosting-quiet">Live deployment sync is not enabled</p>;
   }
-  if (response.mode !== "local_mock") return null;
+  if (response.mode !== 'local_mock') return null;
   return (
     <p className="hosting-quiet">
-      Live sync is enabled, but no provider integration is connected yet — the deployments below are simulated, not
-      live.
+      Live sync is enabled, but no provider integration is connected yet — the
+      deployments below are simulated, not live.
     </p>
   );
 }
@@ -331,7 +387,9 @@ function DeployRow({
   action: ReactNode;
 }>) {
   const sha = shortCommitSha(deploy.commitSha);
-  const how = [deployTriggerLabel(deploy.trigger), deployDurationLabel(deploy)].filter(Boolean).join(" · ");
+  const how = [deployTriggerLabel(deploy.trigger), deployDurationLabel(deploy)]
+    .filter(Boolean)
+    .join(' · ');
   return (
     <li className="hosting-row">
       <span className="hosting-row__status">
@@ -340,10 +398,17 @@ function DeployRow({
       </span>
       <span className="hosting-row__main">
         {sha ? <code className="hosting-mono">{sha}</code> : null}
-        {deploy.commitMessage ? <span className="hosting-row__message">{deploy.commitMessage}</span> : null}
+        {deploy.commitMessage ? (
+          <span className="hosting-row__message">{deploy.commitMessage}</span>
+        ) : null}
       </span>
-      {showBranch && deploy.branch ? <code className="hosting-mono hosting-chip">{deploy.branch}</code> : null}
-      <PullRequestChip number={deploy.pullRequestNumber} onOpenPullRequest={onOpenPullRequest} />
+      {showBranch && deploy.branch ? (
+        <code className="hosting-mono hosting-chip">{deploy.branch}</code>
+      ) : null}
+      <PullRequestChip
+        number={deploy.pullRequestNumber}
+        onOpenPullRequest={onOpenPullRequest}
+      />
       {how ? <span className="hosting-row__how">{how}</span> : null}
       <span className="hosting-row__time">{deployedAgo(deploy.createdAt)}</span>
       {action}

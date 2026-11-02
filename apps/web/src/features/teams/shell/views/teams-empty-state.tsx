@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { CreateGroupDialog } from "@/features/groups/create";
+import { CreateGroupDialog } from '@/features/groups/create';
 
 /**
  * Shown when the caller belongs to no team at all.
@@ -29,19 +29,19 @@ export function TeamsEmptyState({
     <div
       className="glass-panel"
       style={{
-        padding: "2.5rem 1.5rem",
-        textAlign: "center",
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.75rem",
-        alignItems: "center",
+        padding: '2.5rem 1.5rem',
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.75rem',
+        alignItems: 'center',
       }}
     >
       <p
         style={{
-          color: "var(--text-primary)",
+          color: 'var(--text-primary)',
           margin: 0,
-          fontSize: "0.95rem",
+          fontSize: '0.95rem',
           fontWeight: 700,
         }}
       >
@@ -49,15 +49,15 @@ export function TeamsEmptyState({
       </p>
       <p
         style={{
-          color: "var(--text-secondary)",
+          color: 'var(--text-secondary)',
           margin: 0,
-          fontSize: "0.85rem",
-          maxWidth: "32rem",
+          fontSize: '0.85rem',
+          maxWidth: '32rem',
         }}
       >
         {canCreate
-          ? "A workspace is a team. Create one to start adding people and projects to it."
-          : "A team lead has to add you to one. Once they do, their projects appear here."}
+          ? 'A workspace is a team. Create one to start adding people and projects to it.'
+          : 'A team lead has to add you to one. Once they do, their projects appear here.'}
       </p>
 
       {canCreate ? (
@@ -66,7 +66,7 @@ export function TeamsEmptyState({
             type="button"
             className="primary-button"
             data-testid="teams-create-workspace-button"
-            style={{ marginTop: "0.5rem" }}
+            style={{ marginTop: '0.5rem' }}
             onClick={() => setCreateOpen(true)}
           >
             + Create workspace

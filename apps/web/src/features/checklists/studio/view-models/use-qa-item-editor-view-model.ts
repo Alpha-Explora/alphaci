@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { qaRunsRepository } from "../../data/qa-runs-repository";
+import { qaRunsRepository } from '../../data/qa-runs-repository';
 import {
   allowedItemStatuses,
   canEditItem,
@@ -11,7 +11,7 @@ import {
   itemUpdatePayload,
   qaActionError,
   statusNeedsSeverity,
-} from "../../model/qa-run-rules";
+} from '../../model/qa-run-rules';
 import type {
   QaActionError,
   QaItemDraft,
@@ -19,9 +19,9 @@ import type {
   QaRunItem,
   QaRunItemStatus,
   UpdateQaRunItemInput,
-} from "../../model/qa-run-types";
+} from '../../model/qa-run-types';
 
-export type QaItemEditorStatus = "idle" | "saving";
+export type QaItemEditorStatus = 'idle' | 'saving';
 
 export interface QaItemEditorViewModel {
   /** `saving` while one item's write is in flight. */
@@ -44,12 +44,18 @@ export interface QaItemEditorViewModel {
   dismissError: () => void;
 }
 
-const SAVE_ERROR = "The change could not be saved. Try again in a moment.";
+const SAVE_ERROR = 'The change could not be saved. Try again in a moment.';
 
 /** An unchanged status is always saveable with the item; a new one must be allowed. */
-function canSaveStatus(item: QaRunItem, run: QaRun, status: QaRunItemStatus): boolean {
+function canSaveStatus(
+  item: QaRunItem,
+  run: QaRun,
+  status: QaRunItemStatus,
+): boolean {
   if (!canEditItem(item, run)) return false;
-  return status === item.status || allowedItemStatuses(item, run).includes(status);
+  return (
+    status === item.status || allowedItemStatuses(item, run).includes(status)
+  );
 }
 
 /**
@@ -72,7 +78,9 @@ export function useQaItemEditorViewModel(options: {
   const [openItemId, setOpenItemId] = useState<string | null>(null);
   const [draft, setDraft] = useState<QaItemDraft | null>(null);
   const [attempted, setAttempted] = useState(false);
-  const [error, setError] = useState<(QaActionError & { itemId: string }) | null>(null);
+  const [error, setError] = useState<
+    (QaActionError & { itemId: string }) | null
+  >(null);
 
   function open(item: QaRunItem, status: QaRunItemStatus = item.status) {
     setOpenItemId(item.id);
@@ -91,7 +99,12 @@ export function useQaItemEditorViewModel(options: {
     setSavingItemId(item.id);
     setError(null);
     try {
-      const next = await qaRunsRepository.updateItem(projectId, run.id, item.id, body);
+      const next = await qaRunsRepository.updateItem(
+        projectId,
+        run.id,
+        item.id,
+        body,
+      );
       onRun(next);
       if (openItemId === item.id) closeDetails();
     } catch (cause) {
@@ -103,7 +116,8 @@ export function useQaItemEditorViewModel(options: {
 
   function chooseStatus(item: QaRunItem, status: QaRunItemStatus) {
     // Never send a status this viewer cannot set, whatever the control offered.
-    if (savingItemId || !allowedItemStatuses(item, run).includes(status)) return;
+    if (savingItemId || !allowedItemStatuses(item, run).includes(status))
+      return;
     if (status === item.status) return;
     if (statusNeedsSeverity(status)) {
       open(item, status);
@@ -113,7 +127,8 @@ export function useQaItemEditorViewModel(options: {
   }
 
   async function saveDraft(item: QaRunItem) {
-    if (!draft || savingItemId || !canSaveStatus(item, run, draft.status)) return;
+    if (!draft || savingItemId || !canSaveStatus(item, run, draft.status))
+      return;
     setAttempted(true);
     if (itemDraftError(draft)) return;
     const body = itemUpdatePayload(item, draft);
@@ -125,7 +140,7 @@ export function useQaItemEditorViewModel(options: {
   }
 
   return {
-    status: savingItemId ? "saving" : "idle",
+    status: savingItemId ? 'saving' : 'idle',
     savingItemId,
     openItemId,
     draft,
@@ -134,7 +149,8 @@ export function useQaItemEditorViewModel(options: {
     chooseStatus,
     openDetails: (item) => open(item),
     closeDetails,
-    updateDraft: (patch) => setDraft((current) => (current ? { ...current, ...patch } : current)),
+    updateDraft: (patch) =>
+      setDraft((current) => (current ? { ...current, ...patch } : current)),
     saveDraft,
     dismissError: () => setError(null),
   };

@@ -1,16 +1,16 @@
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 
-import { PipelineRunsTab } from "../../../../../../src/features/projects/detail/views/workspace/pipeline-runs-tab";
+import { PipelineRunsTab } from '../../../../../../src/features/projects/detail/views/workspace/pipeline-runs-tab';
 import {
   getProjectWorkflowRuns,
   getProjectRunFailureLog,
-} from "../../../../../../src/features/projects/detail/data/project-workspace-api";
-import { getRuns } from "../../../../../../src/features/runs";
-import { getProjectBrowserTests } from "../../../../../../src/features/projects/detail/data/project-browser-tests-api";
+} from '../../../../../../src/features/projects/detail/data/project-workspace-api';
+import { getRuns } from '../../../../../../src/features/runs';
+import { getProjectBrowserTests } from '../../../../../../src/features/projects/detail/data/project-browser-tests-api';
 
 jest.mock(
-  "../../../../../../src/features/projects/detail/data/project-workspace-api",
+  '../../../../../../src/features/projects/detail/data/project-workspace-api',
   () => ({
     getProjectWorkflowRuns: jest.fn(),
     getProjectRunJobs: jest.fn(),
@@ -25,17 +25,32 @@ jest.mock(
  * mock that erases more of a module than the test needs breaks on the next
  * thing that module legitimately grows. */
 // Not under test here: the tab reads these once on open.
-jest.mock("../../../../../../src/features/projects/detail/data/project-browser-tests-api", () => ({
-  getProjectBrowserTests: jest.fn(() => Promise.reject(new Error("not under test"))),
-  addProjectBrowserTests: jest.fn(),
-}));
-jest.mock("../../../../../../src/features/projects/detail/data/project-visual-api", () => ({
-  getProjectVisualChecks: jest.fn(() => Promise.resolve({ branch: "uat", runId: null, canApprove: false, snapshots: [] })),
-  approveProjectVisualChecks: jest.fn(),
-}));
+jest.mock(
+  '../../../../../../src/features/projects/detail/data/project-browser-tests-api',
+  () => ({
+    getProjectBrowserTests: jest.fn(() =>
+      Promise.reject(new Error('not under test')),
+    ),
+    addProjectBrowserTests: jest.fn(),
+  }),
+);
+jest.mock(
+  '../../../../../../src/features/projects/detail/data/project-visual-api',
+  () => ({
+    getProjectVisualChecks: jest.fn(() =>
+      Promise.resolve({
+        branch: 'uat',
+        runId: null,
+        canApprove: false,
+        snapshots: [],
+      }),
+    ),
+    approveProjectVisualChecks: jest.fn(),
+  }),
+);
 
-jest.mock("../../../../../../src/features/runs", () => ({
-  ...jest.requireActual("../../../../../../src/features/runs"),
+jest.mock('../../../../../../src/features/runs', () => ({
+  ...jest.requireActual('../../../../../../src/features/runs'),
   getRuns: jest.fn(),
 }));
 
@@ -54,33 +69,33 @@ const mockedFailureLog = getProjectRunFailureLog as jest.MockedFunction<
  * dropdown to a single option and made it impossible to switch branches at
  * all, since the only other entry was "All branches".
  */
-describe("PipelineRunsTab branch picker", () => {
+describe('PipelineRunsTab branch picker', () => {
   let root: Root | null = null;
   let host: HTMLDivElement;
 
   beforeEach(() => {
-    host = document.createElement("div");
+    host = document.createElement('div');
     document.body.appendChild(host);
 
     mockedRuns.mockResolvedValue({
-      repoFullName: "org/repo",
-      actionsUrl: "https://github.com/org/repo/actions",
+      repoFullName: 'org/repo',
+      actionsUrl: 'https://github.com/org/repo/actions',
       runs: [
         {
           id: 1,
-          name: "ALPHACI Access Gate",
-          displayTitle: "ci: add ALPHACI workflow",
-          headBranch: "dev",
-          headSha: "a98cf829",
-          event: "push",
-          status: "completed",
-          conclusion: "success",
+          name: 'ALPHACI Access Gate',
+          displayTitle: 'ci: add ALPHACI workflow',
+          headBranch: 'dev',
+          headSha: 'a98cf829',
+          event: 'push',
+          status: 'completed',
+          conclusion: 'success',
           runNumber: 1,
           runAttempt: 1,
-          htmlUrl: "https://github.com/org/repo/actions/runs/1",
-          actor: "bot",
-          createdAt: "2026-09-09T08:00:00Z",
-          updatedAt: "2026-09-09T08:01:00Z",
+          htmlUrl: 'https://github.com/org/repo/actions/runs/1',
+          actor: 'bot',
+          createdAt: '2026-09-09T08:00:00Z',
+          updatedAt: '2026-09-09T08:01:00Z',
         },
       ],
     });
@@ -94,11 +109,11 @@ describe("PipelineRunsTab branch picker", () => {
     jest.clearAllMocks();
   });
 
-  it("has no Browser tests setup card, even with the starter tests missing on dev", async () => {
+  it('has no Browser tests setup card, even with the starter tests missing on dev', async () => {
     (getProjectBrowserTests as jest.Mock).mockResolvedValueOnce({
       installed: false,
-      branch: "dev",
-      missingFiles: ["playwright.config.ts", "tests/e2e/pages.e2e-spec.ts"],
+      branch: 'dev',
+      missingFiles: ['playwright.config.ts', 'tests/e2e/pages.e2e-spec.ts'],
       presentFiles: [],
       hasLockfile: true,
       playwrightVersion: null,
@@ -112,48 +127,52 @@ describe("PipelineRunsTab branch picker", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    expect(host.textContent).not.toContain("Browser tests");
-    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Add browser tests")).toBe(false);
+    expect(host.textContent).not.toContain('Browser tests');
+    expect(
+      [...host.querySelectorAll('button')].some(
+        (button) => button.textContent === 'Add browser tests',
+      ),
+    ).toBe(false);
   });
 
-  it("heads the runs with Workflows, the branch picker beside it", async () => {
+  it('heads the runs with Workflows, the branch picker beside it', async () => {
     await act(async () => {
       root = createRoot(host);
       root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
-    const head = host.querySelector(".pipeline-tab__head");
-    expect(head?.querySelector("h2")?.textContent).toBe("Workflows");
-    expect(head?.querySelector(".ws-branchpick select")).not.toBeNull();
+    const head = host.querySelector('.pipeline-tab__head');
+    expect(head?.querySelector('h2')?.textContent).toBe('Workflows');
+    expect(head?.querySelector('.ws-branchpick select')).not.toBeNull();
   });
 
-  it("lists every declared branch, not just the selected one", async () => {
+  it('lists every declared branch, not just the selected one', async () => {
     await act(async () => {
       root = createRoot(host);
       root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
-    const options = [...host.querySelectorAll("option")].map(
+    const options = [...host.querySelectorAll('option')].map(
       (option) => option.value,
     );
 
     expect(options).toEqual(
-      expect.arrayContaining(["dev", "uat", "main", "all"]),
+      expect.arrayContaining(['dev', 'uat', 'main', 'all']),
     );
   });
 
-  it("marks the branches that recorded nothing", async () => {
+  it('marks the branches that recorded nothing', async () => {
     await act(async () => {
       root = createRoot(host);
       root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
-    const labels = [...host.querySelectorAll("option")].map(
-      (option) => option.textContent ?? "",
+    const labels = [...host.querySelectorAll('option')].map(
+      (option) => option.textContent ?? '',
     );
 
-    expect(labels.some((l) => l.includes("dev (1)"))).toBe(true);
-    expect(labels.some((l) => l.includes("uat") && l.includes("no runs"))).toBe(
+    expect(labels.some((l) => l.includes('dev (1)'))).toBe(true);
+    expect(labels.some((l) => l.includes('uat') && l.includes('no runs'))).toBe(
       true,
     );
   });
@@ -163,33 +182,33 @@ describe("PipelineRunsTab branch picker", () => {
  * The change this whole feature exists for: the card must contain the error,
  * not an instruction to go and read it on GitHub.
  */
-describe("PipelineRunsTab failure output", () => {
+describe('PipelineRunsTab failure output', () => {
   let root: Root | null = null;
   let host: HTMLDivElement;
 
   beforeEach(() => {
-    host = document.createElement("div");
+    host = document.createElement('div');
     document.body.appendChild(host);
 
     mockedRuns.mockResolvedValue({
-      repoFullName: "org/repo",
-      actionsUrl: "https://github.com/org/repo/actions",
+      repoFullName: 'org/repo',
+      actionsUrl: 'https://github.com/org/repo/actions',
       runs: [
         {
           id: 1,
-          name: "ALPHACI Quality",
-          displayTitle: "ci: add ALPHACI workflow",
-          headBranch: "dev",
-          headSha: "a98cf829",
-          event: "push",
-          status: "completed",
-          conclusion: "failure",
+          name: 'ALPHACI Quality',
+          displayTitle: 'ci: add ALPHACI workflow',
+          headBranch: 'dev',
+          headSha: 'a98cf829',
+          event: 'push',
+          status: 'completed',
+          conclusion: 'failure',
           runNumber: 1,
           runAttempt: 1,
-          htmlUrl: "https://github.com/org/repo/actions/runs/1",
-          actor: "bot",
-          createdAt: "2026-09-09T08:00:00Z",
-          updatedAt: "2026-09-09T08:01:00Z",
+          htmlUrl: 'https://github.com/org/repo/actions/runs/1',
+          actor: 'bot',
+          createdAt: '2026-09-09T08:00:00Z',
+          updatedAt: '2026-09-09T08:01:00Z',
         },
       ],
     });
@@ -198,19 +217,19 @@ describe("PipelineRunsTab failure output", () => {
       runs: [
         {
           runId: 999,
-          repoFullName: "org/repo",
-          branch: "dev",
-          commitSha: "a98cf829",
-          startedAt: "2026-09-09T08:00:00Z",
-          overallStatus: "failure",
+          repoFullName: 'org/repo',
+          branch: 'dev',
+          commitSha: 'a98cf829',
+          startedAt: '2026-09-09T08:00:00Z',
+          overallStatus: 'failure',
           stages: [
             {
-              stage: "quality",
-              status: "failure",
+              stage: 'quality',
+              status: 'failure',
               runId: 999,
               friendlyMessages: [],
-              githubRunUrl: "https://github.com/org/repo/actions/runs/999",
-              updatedAt: "2026-09-09T08:01:00Z",
+              githubRunUrl: 'https://github.com/org/repo/actions/runs/999',
+              updatedAt: '2026-09-09T08:01:00Z',
             },
           ],
         },
@@ -219,9 +238,9 @@ describe("PipelineRunsTab failure output", () => {
 
     mockedFailureLog.mockResolvedValue({
       available: true,
-      jobName: "sonar / SonarCloud .NET Analysis",
-      stepName: "Run SonarSource/sonarcloud-github-action",
-      jobUrl: "https://github.com/org/repo/actions/runs/999/job/1",
+      jobName: 'sonar / SonarCloud .NET Analysis',
+      stepName: 'Run SonarSource/sonarcloud-github-action',
+      jobUrl: 'https://github.com/org/repo/actions/runs/999/job/1',
       truncated: false,
       foundErrorMarker: true,
       // Shaped like the real excerpt: 30 lines of analyzer provisioning, then
@@ -231,9 +250,9 @@ describe("PipelineRunsTab failure output", () => {
           { length: 30 },
           (_, i) => `Processing plugin: noise-${String(i)}`,
         ),
-        "sonar-project.properties files are not understood by the SonarScanner for .NET.",
-        "Post-processing failed. Exit code: 1",
-        "##[error]Process completed with exit code 1.",
+        'sonar-project.properties files are not understood by the SonarScanner for .NET.',
+        'Post-processing failed. Exit code: 1',
+        '##[error]Process completed with exit code 1.',
       ],
     });
   });
@@ -244,58 +263,60 @@ describe("PipelineRunsTab failure output", () => {
     jest.clearAllMocks();
   });
 
-  it("shows the real error output, not a note telling you to go read it", async () => {
+  it('shows the real error output, not a note telling you to go read it', async () => {
     await act(async () => {
       root = createRoot(host);
       root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
-    const text = host.textContent ?? "";
-    expect(text).toContain("sonar-project.properties files are not understood");
-    expect(text).toContain("Post-processing failed");
-    expect(text).not.toContain("Open the workflow logs");
+    const text = host.textContent ?? '';
+    expect(text).toContain('sonar-project.properties files are not understood');
+    expect(text).toContain('Post-processing failed');
+    expect(text).not.toContain('Open the workflow logs');
   });
 
-  it("never sends the reader to GitHub: no stage run link, no full-log link", async () => {
+  it('never sends the reader to GitHub: no stage run link, no full-log link', async () => {
     await act(async () => {
       root = createRoot(host);
       root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
     // The fixtures carry githubRunUrl and jobUrl; the view must not render them.
-    expect(host.textContent).toContain("sonar-project.properties files are not understood");
+    expect(host.textContent).toContain(
+      'sonar-project.properties files are not understood',
+    );
     expect(host.querySelector('a[href*="github.com"]')).toBeNull();
-    expect(host.textContent).not.toContain("View run");
-    expect(host.textContent).not.toContain("Full log");
+    expect(host.textContent).not.toContain('View run');
+    expect(host.textContent).not.toContain('Full log');
   });
 
-  it("names the job and step the output came from", async () => {
+  it('names the job and step the output came from', async () => {
     await act(async () => {
       root = createRoot(host);
       root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
-    expect(host.textContent).toContain("SonarCloud .NET Analysis");
+    expect(host.textContent).toContain('SonarCloud .NET Analysis');
   });
 
-  it("does not ask GitHub for a log when the stage never ran", async () => {
+  it('does not ask GitHub for a log when the stage never ran', async () => {
     mockedReports.mockResolvedValue({
       runs: [
         {
           runId: 999,
-          repoFullName: "org/repo",
-          branch: "dev",
-          commitSha: "a98cf829",
-          startedAt: "2026-09-09T08:00:00Z",
-          overallStatus: "failure",
+          repoFullName: 'org/repo',
+          branch: 'dev',
+          commitSha: 'a98cf829',
+          startedAt: '2026-09-09T08:00:00Z',
+          overallStatus: 'failure',
           stages: [
             {
-              stage: "package",
-              status: "blocked",
+              stage: 'package',
+              status: 'blocked',
               runId: 999,
               friendlyMessages: [],
-              githubRunUrl: "https://github.com/org/repo/actions/runs/999",
-              updatedAt: "2026-09-09T08:01:00Z",
+              githubRunUrl: 'https://github.com/org/repo/actions/runs/999',
+              updatedAt: '2026-09-09T08:01:00Z',
             },
           ],
         },
@@ -316,33 +337,33 @@ describe("PipelineRunsTab failure output", () => {
  * out of sight unless the tail is what gets shown. Showing lots of context and
  * hiding the conclusion is the same failure as saying nothing.
  */
-describe("PipelineRunsTab log excerpt", () => {
+describe('PipelineRunsTab log excerpt', () => {
   let root: Root | null = null;
   let host: HTMLDivElement;
 
   beforeEach(() => {
-    host = document.createElement("div");
+    host = document.createElement('div');
     document.body.appendChild(host);
 
     mockedRuns.mockResolvedValue({
-      repoFullName: "org/repo",
-      actionsUrl: "https://github.com/org/repo/actions",
+      repoFullName: 'org/repo',
+      actionsUrl: 'https://github.com/org/repo/actions',
       runs: [
         {
           id: 1,
-          name: "ALPHACI Quality",
-          displayTitle: "ci: add ALPHACI workflow",
-          headBranch: "dev",
-          headSha: "a98cf829",
-          event: "push",
-          status: "completed",
-          conclusion: "failure",
+          name: 'ALPHACI Quality',
+          displayTitle: 'ci: add ALPHACI workflow',
+          headBranch: 'dev',
+          headSha: 'a98cf829',
+          event: 'push',
+          status: 'completed',
+          conclusion: 'failure',
           runNumber: 1,
           runAttempt: 1,
-          htmlUrl: "https://github.com/org/repo/actions/runs/1",
-          actor: "bot",
-          createdAt: "2026-09-09T08:00:00Z",
-          updatedAt: "2026-09-09T08:01:00Z",
+          htmlUrl: 'https://github.com/org/repo/actions/runs/1',
+          actor: 'bot',
+          createdAt: '2026-09-09T08:00:00Z',
+          updatedAt: '2026-09-09T08:01:00Z',
         },
       ],
     });
@@ -351,19 +372,19 @@ describe("PipelineRunsTab log excerpt", () => {
       runs: [
         {
           runId: 999,
-          repoFullName: "org/repo",
-          branch: "dev",
-          commitSha: "a98cf829",
-          startedAt: "2026-09-09T08:00:00Z",
-          overallStatus: "failure",
+          repoFullName: 'org/repo',
+          branch: 'dev',
+          commitSha: 'a98cf829',
+          startedAt: '2026-09-09T08:00:00Z',
+          overallStatus: 'failure',
           stages: [
             {
-              stage: "quality",
-              status: "failure",
+              stage: 'quality',
+              status: 'failure',
               runId: 999,
               friendlyMessages: [],
-              githubRunUrl: "https://github.com/org/repo/actions/runs/999",
-              updatedAt: "2026-09-09T08:01:00Z",
+              githubRunUrl: 'https://github.com/org/repo/actions/runs/999',
+              updatedAt: '2026-09-09T08:01:00Z',
             },
           ],
         },
@@ -372,9 +393,9 @@ describe("PipelineRunsTab log excerpt", () => {
 
     mockedFailureLog.mockResolvedValue({
       available: true,
-      jobName: "sonar / SonarCloud .NET Analysis",
-      stepName: "Run SonarSource/sonarcloud-github-action",
-      jobUrl: "https://github.com/org/repo/actions/runs/999/job/1",
+      jobName: 'sonar / SonarCloud .NET Analysis',
+      stepName: 'Run SonarSource/sonarcloud-github-action',
+      jobUrl: 'https://github.com/org/repo/actions/runs/999/job/1',
       truncated: false,
       foundErrorMarker: true,
       lines: [
@@ -382,9 +403,9 @@ describe("PipelineRunsTab log excerpt", () => {
           { length: 30 },
           (_, i) => `Processing plugin: noise-${String(i)}`,
         ),
-        "sonar-project.properties files are not understood by the SonarScanner for .NET.",
-        "Post-processing failed. Exit code: 1",
-        "##[error]Process completed with exit code 1.",
+        'sonar-project.properties files are not understood by the SonarScanner for .NET.',
+        'Post-processing failed. Exit code: 1',
+        '##[error]Process completed with exit code 1.',
       ],
     });
   });
@@ -395,39 +416,39 @@ describe("PipelineRunsTab log excerpt", () => {
     jest.clearAllMocks();
   });
 
-  it("shows the error without anyone expanding anything", async () => {
+  it('shows the error without anyone expanding anything', async () => {
     await act(async () => {
       root = createRoot(host);
       root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
-    const shown = host.querySelector("pre")?.textContent ?? "";
-    expect(shown).toContain("Post-processing failed");
+    const shown = host.querySelector('pre')?.textContent ?? '';
+    expect(shown).toContain('Post-processing failed');
     expect(shown).toContain(
-      "sonar-project.properties files are not understood",
+      'sonar-project.properties files are not understood',
     );
   });
 
-  it("keeps the provisioning noise out of the way until asked", async () => {
+  it('keeps the provisioning noise out of the way until asked', async () => {
     await act(async () => {
       root = createRoot(host);
       root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
-    const shown = host.querySelector("pre")?.textContent ?? "";
-    expect(shown).not.toContain("noise-0");
-    expect(host.textContent).toContain("earlier lines");
+    const shown = host.querySelector('pre')?.textContent ?? '';
+    expect(shown).not.toContain('noise-0');
+    expect(host.textContent).toContain('earlier lines');
   });
 
-  it("marks the error line so it is findable at a glance", async () => {
+  it('marks the error line so it is findable at a glance', async () => {
     await act(async () => {
       root = createRoot(host);
       root.render(<PipelineRunsTab projectId="p1" appRole="member" />);
     });
 
-    const errorLine = host.querySelector(".ws-console__line--error");
+    const errorLine = host.querySelector('.ws-console__line--error');
     expect(errorLine?.textContent).toContain(
-      "Process completed with exit code 1",
+      'Process completed with exit code 1',
     );
   });
 });

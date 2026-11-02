@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   useCallback,
@@ -6,28 +6,28 @@ import {
   useMemo,
   useState,
   useSyncExternalStore,
-} from "react";
+} from 'react';
 
 import {
   getProjectWorkflowRuns,
   type WorkflowRunSummary,
-} from "../data/project-workspace-api";
-import type { ProjectStatus } from "../../model/projects-types";
-import { getRuns } from "@/features/runs";
-import type { RunGroup } from "@/shared/api/contracts";
-import { WORKING_BRANCH } from "@/shared/api/pipeline-branches";
+} from '../data/project-workspace-api';
+import type { ProjectStatus } from '../../model/projects-types';
+import { getRuns } from '@/features/runs';
+import type { RunGroup } from '@/shared/api/contracts';
+import { WORKING_BRANCH } from '@/shared/api/pipeline-branches';
 import {
   groupRunsByPipelineBranch,
   type BranchRunSection,
-} from "../model/runs-by-branch";
+} from '../model/runs-by-branch';
 
 /* Re-exported so the views name the run shape without importing from `data/`. */
 export type { WorkflowRunSummary };
 
 /** The picker value meaning "do not filter". */
-export const ALL_BRANCHES = "all";
+export const ALL_BRANCHES = 'all';
 
-const STORAGE_PREFIX = "alphaci.runs.branch.";
+const STORAGE_PREFIX = 'alphaci.runs.branch.';
 
 /**
  * The branch this project was last looked at on.
@@ -42,7 +42,9 @@ const STORAGE_PREFIX = "alphaci.runs.branch.";
  */
 function readStoredBranch(projectId: string): string {
   try {
-    return window.localStorage.getItem(STORAGE_PREFIX + projectId) ?? WORKING_BRANCH;
+    return (
+      window.localStorage.getItem(STORAGE_PREFIX + projectId) ?? WORKING_BRANCH
+    );
   } catch {
     return WORKING_BRANCH;
   }
@@ -142,7 +144,7 @@ export function usePipelineRunsViewModel(options: {
   const [reports, setReports] = useState<RunGroup[]>([]);
   const [reportsUnavailable, setReportsUnavailable] = useState(false);
   const [repoFullName, setRepoFullName] = useState<string | null>(null);
-  const [status, setStatus] = useState<ProjectStatus>("loading");
+  const [status, setStatus] = useState<ProjectStatus>('loading');
   const [error, setError] = useState<string | null>(null);
 
   /*
@@ -171,7 +173,7 @@ export function usePipelineRunsViewModel(options: {
         setRuns(data.runs);
         setRepoFullName(data.repoFullName);
         setError(null);
-        setStatus("ready");
+        setStatus('ready');
 
         try {
           const graded = await getRuns(data.repoFullName);
@@ -182,8 +184,8 @@ export function usePipelineRunsViewModel(options: {
         }
       })
       .catch(() => {
-        setError("The run list could not be read from GitHub.");
-        setStatus("error");
+        setError('The run list could not be read from GitHub.');
+        setStatus('error');
       });
   }, [projectId]);
 
@@ -194,7 +196,7 @@ export function usePipelineRunsViewModel(options: {
   }, [load]);
 
   const reload = useCallback(() => {
-    setStatus("loading");
+    setStatus('loading');
     void load();
   }, [load]);
 

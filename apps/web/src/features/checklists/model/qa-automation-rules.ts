@@ -13,11 +13,14 @@
  * Automated results inform the tester; they never change or recommend
  * changing an item's recorded status. Sign-off stays manual. */
 
-import { casesFromPasses, normalizeTestCases } from "@/features/runs/test-report";
-import type { TestCase } from "@/shared/api/contracts";
-import { stripAnsi } from "@/shared/ui/strip-ansi";
+import {
+  casesFromPasses,
+  normalizeTestCases,
+} from '@/features/runs/test-report';
+import type { TestCase } from '@/shared/api/contracts';
+import { stripAnsi } from '@/shared/ui/strip-ansi';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
 import type {
   QaAutomatedItemResult,
@@ -31,35 +34,50 @@ import type {
   QaStageRunStatus,
   QaStageTests,
   QaTestFailure,
-} from "./qa-automation-types";
-import { commitLabel, roleCanStartRun, shortSha, type QaTone } from "./qa-run-rules";
-import type { QaRun, QaRunItemStatus } from "./qa-run-types";
+} from './qa-automation-types';
+import {
+  commitLabel,
+  roleCanStartRun,
+  shortSha,
+  type QaTone,
+} from './qa-run-rules';
+import type { QaRun, QaRunItemStatus } from './qa-run-types';
 
 /* ── Reading untrusted input ─────────────────────────────────────────────── */
 
 type Loose = Record<string, unknown>;
 
 function record(value: unknown): Loose | null {
-  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Loose) : null;
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Loose)
+    : null;
 }
 
-function oneOf<T extends string>(value: unknown, allowed: ReadonlyArray<T>): T | null {
-  return typeof value === "string" && (allowed as ReadonlyArray<string>).includes(value) ? (value as T) : null;
+function oneOf<T extends string>(
+  value: unknown,
+  allowed: ReadonlyArray<T>,
+): T | null {
+  return typeof value === 'string' &&
+    (allowed as ReadonlyArray<string>).includes(value)
+    ? (value as T)
+    : null;
 }
 
 function text(value: unknown): string | null {
-  if (typeof value !== "string") return null;
+  if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed || null;
 }
 
 /** A whole, non-negative count; anything else is "not known". */
 function count(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? Math.trunc(value) : null;
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? Math.trunc(value)
+    : null;
 }
 
 function runNumber(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 /** Only an absolute http(s) URL is ever rendered as a link. */
@@ -79,11 +97,26 @@ function isoDate(value: unknown): string | null {
   return candidate && !Number.isNaN(Date.parse(candidate)) ? candidate : null;
 }
 
-const STAGES: ReadonlyArray<QaAutomationStage> = ["verify", "quality"];
-const STAGE_RUN_STATUSES: ReadonlyArray<QaStageRunStatus> = ["success", "failure", "running", "cancelled"];
-const SOURCES: ReadonlyArray<QaAutomatedSource> = ["playwright", "unit_test", "bruno"];
-const AUTOMATED_STATUSES: ReadonlyArray<QaAutomatedStatus> = ["passed", "failed", "unknown", "not_run", "unlinked"];
-const SCOPES: ReadonlyArray<QaAutomatedScope> = ["spec", "suite", "stage"];
+const STAGES: ReadonlyArray<QaAutomationStage> = ['verify', 'quality'];
+const STAGE_RUN_STATUSES: ReadonlyArray<QaStageRunStatus> = [
+  'success',
+  'failure',
+  'running',
+  'cancelled',
+];
+const SOURCES: ReadonlyArray<QaAutomatedSource> = [
+  'playwright',
+  'unit_test',
+  'bruno',
+];
+const AUTOMATED_STATUSES: ReadonlyArray<QaAutomatedStatus> = [
+  'passed',
+  'failed',
+  'unknown',
+  'not_run',
+  'unlinked',
+];
+const SCOPES: ReadonlyArray<QaAutomatedScope> = ['spec', 'suite', 'stage'];
 
 /* ── Normalising ─────────────────────────────────────────────────────────── */
 
@@ -92,12 +125,14 @@ export function normalizeFailure(raw: unknown): QaTestFailure | null {
   const value = record(raw);
   const name = plainText(value?.name);
   if (!value || !name) return null;
-  return { name, message: plainText(value.message) ?? "" };
+  return { name, message: plainText(value.message) ?? '' };
 }
 
 function normalizeFailures(raw: unknown): QaTestFailure[] {
   if (!Array.isArray(raw)) return [];
-  return raw.map(normalizeFailure).filter((failure): failure is QaTestFailure => failure !== null);
+  return raw
+    .map(normalizeFailure)
+    .filter((failure): failure is QaTestFailure => failure !== null);
 }
 
 function normalizeTests(raw: unknown): QaStageTests | null {
@@ -109,7 +144,9 @@ function normalizeTests(raw: unknown): QaStageTests | null {
     failed: count(value.failed),
     failures: normalizeFailures(value.failures),
     failuresTruncated: value.failuresTruncated === true,
-    passes: Array.isArray(value.passes) ? value.passes.filter((name): name is string => typeof name === "string") : null,
+    passes: Array.isArray(value.passes)
+      ? value.passes.filter((name): name is string => typeof name === 'string')
+      : null,
     cases: normalizeTestCases(value.cases),
   };
 }
@@ -126,7 +163,7 @@ export function stageTestCases(tests: QaStageTests | null): TestCase[] | null {
   if (!tests.passes) return null;
   const failed: TestCase[] = tests.failures.map((failure) => ({
     title: failure.name,
-    status: "failed",
+    status: 'failed',
     error: failure.message ? { message: failure.message } : undefined,
   }));
   return [...failed, ...casesFromPasses(tests.passes)];
@@ -134,7 +171,7 @@ export function stageTestCases(tests: QaStageTests | null): TestCase[] | null {
 
 /** Plain text: trimmed, terminal colour codes removed; null when nothing is left. */
 function plainText(value: unknown): string | null {
-  return typeof value === "string" ? text(stripAnsi(value)) : null;
+  return typeof value === 'string' ? text(stripAnsi(value)) : null;
 }
 
 function messageText(message: Loose): string | null {
@@ -144,8 +181,11 @@ function messageText(message: Loose): string | null {
 /** The first error among the stage's friendly messages, else the first message. */
 function leadMessageText(raw: unknown): string | null {
   if (!Array.isArray(raw)) return null;
-  const messages = raw.map(record).filter((message): message is Loose => message !== null);
-  const lead = messages.find((message) => message.severity === "error") ?? messages[0];
+  const messages = raw
+    .map(record)
+    .filter((message): message is Loose => message !== null);
+  const lead =
+    messages.find((message) => message.severity === 'error') ?? messages[0];
   return lead ? messageText(lead) : null;
 }
 
@@ -154,7 +194,10 @@ function stageReasonOf(value: Loose): string | null {
   return leadMessageText(value.friendlyMessages) ?? plainText(value.reason);
 }
 
-function normalizeStage(raw: unknown, stage: QaAutomationStage): QaStageResult | null {
+function normalizeStage(
+  raw: unknown,
+  stage: QaAutomationStage,
+): QaStageResult | null {
   const value = record(raw);
   if (!value) return null;
   const reason = stageReasonOf(value);
@@ -174,12 +217,15 @@ function normalizeStage(raw: unknown, stage: QaAutomationStage): QaStageResult |
  * said why shows its reason ("Quality gate failed: coverage 61% < 80%");
  * anything else keeps "No test counts reported".
  */
-export function stageNoCountsLine(result: Pick<QaStageResult, "status" | "reason">): {
+export function stageNoCountsLine(
+  result: Pick<QaStageResult, 'status' | 'reason'>,
+): {
   text: string;
   isReason: boolean;
 } {
-  if (result.status === "failure" && result.reason) return { text: result.reason, isReason: true };
-  return { text: "No test counts reported", isReason: false };
+  if (result.status === 'failure' && result.reason)
+    return { text: result.reason, isReason: true };
+  return { text: 'No test counts reported', isReason: false };
 }
 
 /**
@@ -194,12 +240,12 @@ export function stageMissingLine(
   upstream: QaStageResult | null,
 ): string {
   const short = shortSha(commitSha);
-  const on = short ? ` on ${short}` : "";
-  if (stage === "verify" && upstream?.status === "failure") {
-    const why = upstream.reason ? ` (${upstream.reason})` : "";
-    return `Not run: ${stageName("quality")} failed${on} first${why}`;
+  const on = short ? ` on ${short}` : '';
+  if (stage === 'verify' && upstream?.status === 'failure') {
+    const why = upstream.reason ? ` (${upstream.reason})` : '';
+    return `Not run: ${stageName('quality')} failed${on} first${why}`;
   }
-  return short ? `Not reported for ${short} yet` : "Not reported yet";
+  return short ? `Not reported for ${short} yet` : 'Not reported yet';
 }
 
 /**
@@ -209,8 +255,8 @@ export function stageMissingLine(
 export function normalizeRunAutomation(raw: unknown): QaRunAutomationResult {
   const value = record(raw);
   return {
-    verify: normalizeStage(value?.verify, "verify"),
-    quality: normalizeStage(value?.quality, "quality"),
+    verify: normalizeStage(value?.verify, 'verify'),
+    quality: normalizeStage(value?.quality, 'quality'),
   };
 }
 
@@ -238,13 +284,15 @@ export function stageResultFor(
  * is not an object. An object with no recognisable status reads as `unknown`
  * rather than disappearing: CI said something about this item.
  */
-export function normalizeAutomatedResult(raw: unknown): QaAutomatedItemResult | null {
+export function normalizeAutomatedResult(
+  raw: unknown,
+): QaAutomatedItemResult | null {
   const value = record(raw);
   if (!value) return null;
   return {
     source: oneOf(value.source, SOURCES),
     stage: oneOf(value.stage, STAGES),
-    status: oneOf(value.status, AUTOMATED_STATUSES) ?? "unknown",
+    status: oneOf(value.status, AUTOMATED_STATUSES) ?? 'unknown',
     scope: oneOf(value.scope, SCOPES),
     matchedSpec: text(value.matchedSpec),
     failure: normalizeFailure(value.failure),
@@ -261,63 +309,69 @@ export function normalizeDispatch(raw: unknown): QaAutomationDispatch {
     workflowFile: text(value?.workflowFile),
     ref: text(value?.ref),
     headSha: text(value?.headSha),
-    targetsRunCommit: typeof value?.targetsRunCommit === "boolean" ? value.targetsRunCommit : null,
+    targetsRunCommit:
+      typeof value?.targetsRunCommit === 'boolean'
+        ? value.targetsRunCommit
+        : null,
   };
 }
 
 /* ── Labels ──────────────────────────────────────────────────────────────── */
 
 const AUTOMATED_STATUS_LABELS: Record<QaAutomatedStatus, string> = {
-  passed: "Passed",
-  failed: "Failed",
-  unknown: "Unknown",
-  not_run: "Not run",
-  unlinked: "Not linked",
+  passed: 'Passed',
+  failed: 'Failed',
+  unknown: 'Unknown',
+  not_run: 'Not run',
+  unlinked: 'Not linked',
 };
 
 const AUTOMATED_STATUS_TONES: Record<QaAutomatedStatus, QaTone> = {
-  passed: "success",
-  failed: "danger",
-  unknown: "neutral",
-  not_run: "neutral",
-  unlinked: "neutral",
+  passed: 'success',
+  failed: 'danger',
+  unknown: 'neutral',
+  not_run: 'neutral',
+  unlinked: 'neutral',
 };
 
 const SCOPE_LABELS: Record<QaAutomatedScope, string> = {
-  spec: "This spec",
-  suite: "Whole suite",
-  stage: "Stage result",
+  spec: 'This spec',
+  suite: 'Whole suite',
+  stage: 'Stage result',
 };
 
 const SOURCE_LABELS: Record<QaAutomatedSource, string> = {
-  playwright: "Playwright E2E",
-  unit_test: "Unit test",
-  bruno: "Bruno API",
+  playwright: 'Playwright E2E',
+  unit_test: 'Unit test',
+  bruno: 'Bruno API',
 };
 
-const STAGE_NAMES: Record<QaAutomationStage, string> = { verify: "Verify", quality: "Quality" };
+const STAGE_NAMES: Record<QaAutomationStage, string> = {
+  verify: 'Verify',
+  quality: 'Quality',
+};
 
 const STAGE_COVERAGE: Record<QaAutomationStage, string> = {
-  verify: "browser & API tests",
-  quality: "unit tests",
+  verify: 'browser & API tests',
+  quality: 'unit tests',
 };
 
 const STAGE_RUN_LABELS: Record<QaStageRunStatus, string> = {
-  success: "Passed",
-  failure: "Failed",
-  running: "Running",
-  cancelled: "Cancelled",
+  success: 'Passed',
+  failure: 'Failed',
+  running: 'Running',
+  cancelled: 'Cancelled',
 };
 
 const STAGE_RUN_TONES: Record<QaStageRunStatus, QaTone> = {
-  success: "success",
-  failure: "danger",
-  running: "brand",
-  cancelled: "neutral",
+  success: 'success',
+  failure: 'danger',
+  running: 'brand',
+  cancelled: 'neutral',
 };
 
 export function automatedStatusLabel(status: QaAutomatedStatus): string {
-  return AUTOMATED_STATUS_LABELS[status] ?? "Unknown";
+  return AUTOMATED_STATUS_LABELS[status] ?? 'Unknown';
 }
 
 /**
@@ -325,39 +379,54 @@ export function automatedStatusLabel(status: QaAutomatedStatus): string {
  * backend inferred this one from the test's absence in that list. Only a pass
  * can be unconfirmed — an inferred flag on anything else is ignored.
  */
-export function isUnconfirmedPass(result: Pick<QaAutomatedItemResult, "status" | "inferred">): boolean {
-  return result.status === "passed" && result.inferred;
+export function isUnconfirmedPass(
+  result: Pick<QaAutomatedItemResult, 'status' | 'inferred'>,
+): boolean {
+  return result.status === 'passed' && result.inferred;
 }
 
-export const UNCONFIRMED_PASS_LABEL = "Passed (not confirmed)";
+export const UNCONFIRMED_PASS_LABEL = 'Passed (not confirmed)';
 
 export const UNCONFIRMED_PASS_HINT =
   "Older pipeline: this test wasn't in the failure list, but its pass wasn't reported. Update the pipeline to confirm passes.";
 
 /** The badge's word: "Passed", or "Passed (not confirmed)" for an inferred pass. */
-export function automatedBadgeLabel(status: QaAutomatedStatus, inferred = false): string {
-  return isUnconfirmedPass({ status, inferred }) ? UNCONFIRMED_PASS_LABEL : automatedStatusLabel(status);
+export function automatedBadgeLabel(
+  status: QaAutomatedStatus,
+  inferred = false,
+): string {
+  return isUnconfirmedPass({ status, inferred })
+    ? UNCONFIRMED_PASS_LABEL
+    : automatedStatusLabel(status);
 }
 
 export function automatedStatusTone(status: QaAutomatedStatus): QaTone {
-  return AUTOMATED_STATUS_TONES[status] ?? "neutral";
+  return AUTOMATED_STATUS_TONES[status] ?? 'neutral';
 }
 
 /** "This spec" / "Whole suite" / "Stage result"; null when CI gave no scope. */
-export function automatedScopeLabel(scope: QaAutomatedScope | null): string | null {
-  return scope ? SCOPE_LABELS[scope] ?? null : null;
+export function automatedScopeLabel(
+  scope: QaAutomatedScope | null,
+): string | null {
+  return scope ? (SCOPE_LABELS[scope] ?? null) : null;
 }
 
 /**
  * The scope beside an item's badge. Null for an unlinked item: "Stage result"
  * there would read as though the stage's verdict were the item's.
  */
-export function itemScopeLabel(result: Pick<QaAutomatedItemResult, "status" | "scope">): string | null {
-  return result.status === "unlinked" ? null : automatedScopeLabel(result.scope);
+export function itemScopeLabel(
+  result: Pick<QaAutomatedItemResult, 'status' | 'scope'>,
+): string | null {
+  return result.status === 'unlinked'
+    ? null
+    : automatedScopeLabel(result.scope);
 }
 
 export function automatedSourceLabel(source: QaAutomatedSource | null): string {
-  return source ? SOURCE_LABELS[source] ?? "Automated test" : "Automated test";
+  return source
+    ? (SOURCE_LABELS[source] ?? 'Automated test')
+    : 'Automated test';
 }
 
 /** "Verify" / "Quality". */
@@ -367,7 +436,7 @@ export function stageName(stage: QaAutomationStage): string {
 
 /** What a stage runs: "browser & API tests" / "unit tests". */
 export function stageCoverage(stage: QaAutomationStage): string {
-  return STAGE_COVERAGE[stage] ?? "tests";
+  return STAGE_COVERAGE[stage] ?? 'tests';
 }
 
 /** "Verify — browser & API tests". */
@@ -376,11 +445,11 @@ export function stageTitle(stage: QaAutomationStage): string {
 }
 
 export function stageRunLabel(status: QaStageRunStatus | null): string {
-  return status ? STAGE_RUN_LABELS[status] ?? "Unknown" : "Unknown";
+  return status ? (STAGE_RUN_LABELS[status] ?? 'Unknown') : 'Unknown';
 }
 
 export function stageRunTone(status: QaStageRunStatus | null): QaTone {
-  return status ? STAGE_RUN_TONES[status] ?? "neutral" : "neutral";
+  return status ? (STAGE_RUN_TONES[status] ?? 'neutral') : 'neutral';
 }
 
 /* ── The one-sentence description ────────────────────────────────────────── */
@@ -393,56 +462,71 @@ export interface AutomatedSentenceContext {
 }
 
 function stageWord(stage: QaAutomationStage | null): string {
-  return stage ?? "CI";
+  return stage ?? 'CI';
 }
 
-function verdictSentence(result: QaAutomatedItemResult, verb: "passed" | "failed"): string {
-  if (result.scope === "spec") {
+function verdictSentence(
+  result: QaAutomatedItemResult,
+  verb: 'passed' | 'failed',
+): string {
+  if (result.scope === 'spec') {
     return result.matchedSpec
       ? `Automated: ${verb} in ${result.matchedSpec}`
       : `Automated: ${verb} (this spec)`;
   }
-  if (result.scope === "suite") {
-    return verb === "passed"
-      ? "Automated: passed (whole suite green)"
-      : "Automated: failed (whole suite has failures)";
+  if (result.scope === 'suite') {
+    return verb === 'passed'
+      ? 'Automated: passed (whole suite green)'
+      : 'Automated: failed (whole suite has failures)';
   }
-  if (result.scope === "stage") return `Automated: ${stageWord(result.stage)} stage ${verb}`;
+  if (result.scope === 'stage')
+    return `Automated: ${stageWord(result.stage)} stage ${verb}`;
   return `Automated: ${verb}`;
 }
 
-function unknownSentence(result: QaAutomatedItemResult, stageResult: QaStageResult | null): string {
-  if (stageResult?.status === "running") {
+function unknownSentence(
+  result: QaAutomatedItemResult,
+  stageResult: QaStageResult | null,
+): string {
+  if (stageResult?.status === 'running') {
     return `Automated: unknown — ${stageWord(result.stage)} is still running`;
   }
-  if (stageResult?.tests?.failuresTruncated) return "Automated: unknown — more failures than listed";
-  return "Automated: unknown — CI could not tell for this item";
+  if (stageResult?.tests?.failuresTruncated)
+    return 'Automated: unknown — more failures than listed';
+  return 'Automated: unknown — CI could not tell for this item';
 }
 
 function notRunSentence(commitSha: string | null | undefined): string {
   const short = shortSha(commitSha);
-  return short ? `Automated: not run for ${short} yet` : "Automated: not run for this commit yet";
+  return short
+    ? `Automated: not run for ${short} yet`
+    : 'Automated: not run for this commit yet';
 }
 
 /** The kind of test an unlinked item lacks: quality-stage items are unit tests. */
-function unlinkedTestKind(result: Pick<QaAutomatedItemResult, "source" | "stage">): string {
-  if (result.stage === "quality" || result.source === "unit_test") return "a unit test";
-  return result.source === "bruno" ? "an API test" : "a Playwright test";
+function unlinkedTestKind(
+  result: Pick<QaAutomatedItemResult, 'source' | 'stage'>,
+): string {
+  if (result.stage === 'quality' || result.source === 'unit_test')
+    return 'a unit test';
+  return result.source === 'bruno' ? 'an API test' : 'a Playwright test';
 }
 
 /**
  * "Not linked to a Playwright test. Check this by hand." — the item names no
  * test, so no CI result speaks for it, whatever its stage did.
  */
-export function unlinkedSentence(result: Pick<QaAutomatedItemResult, "source" | "stage">): string {
+export function unlinkedSentence(
+  result: Pick<QaAutomatedItemResult, 'source' | 'stage'>,
+): string {
   return `Not linked to ${unlinkedTestKind(result)}. Check this by hand.`;
 }
 
 const STAGE_CONTEXT_VERBS: Record<QaStageRunStatus, string> = {
-  success: "passed",
-  failure: "failed",
-  running: "is still running",
-  cancelled: "was cancelled",
+  success: 'passed',
+  failure: 'failed',
+  running: 'is still running',
+  cancelled: 'was cancelled',
 };
 
 /**
@@ -451,10 +535,11 @@ const STAGE_CONTEXT_VERBS: Record<QaStageRunStatus, string> = {
  * status, and when the stage's verdict is not known.
  */
 export function unlinkedStageNote(
-  result: Pick<QaAutomatedItemResult, "status" | "stage">,
+  result: Pick<QaAutomatedItemResult, 'status' | 'stage'>,
   stageResult: QaStageResult | null,
 ): string | null {
-  if (result.status !== "unlinked" || !result.stage || !stageResult?.status) return null;
+  if (result.status !== 'unlinked' || !result.stage || !stageResult?.status)
+    return null;
   const verb = STAGE_CONTEXT_VERBS[stageResult.status] ?? stageResult.status;
   return `For context: the ${stageName(result.stage)} stage ${verb}, but no test in it is linked to this item.`;
 }
@@ -463,8 +548,12 @@ export function unlinkedStageNote(
  * What a report's checklist table prints under an item's badge: the unlinked
  * sentence, else the scope ("This spec"); null when CI gave no scope.
  */
-export function automatedCellNote(result: QaAutomatedItemResult): string | null {
-  return result.status === "unlinked" ? unlinkedSentence(result) : automatedScopeLabel(result.scope);
+export function automatedCellNote(
+  result: QaAutomatedItemResult,
+): string | null {
+  return result.status === 'unlinked'
+    ? unlinkedSentence(result)
+    : automatedScopeLabel(result.scope);
 }
 
 /**
@@ -478,26 +567,31 @@ export function automatedSentence(
   result: QaAutomatedItemResult,
   context: AutomatedSentenceContext = {},
 ): string {
-  if (result.status === "unlinked") return unlinkedSentence(result);
-  if (isUnconfirmedPass(result)) return `${verdictSentence(result, "passed")} (not confirmed)`;
-  if (result.status === "passed" || result.status === "failed") {
+  if (result.status === 'unlinked') return unlinkedSentence(result);
+  if (isUnconfirmedPass(result))
+    return `${verdictSentence(result, 'passed')} (not confirmed)`;
+  if (result.status === 'passed' || result.status === 'failed') {
     return verdictSentence(result, result.status);
   }
-  if (result.status === "not_run") return notRunSentence(context.commitSha);
+  if (result.status === 'not_run') return notRunSentence(context.commitSha);
   return unknownSentence(result, context.stageResult ?? null);
 }
 
-export const AUTOMATED_DIFFERS_HINT = "Automated result differs from the recorded status";
+export const AUTOMATED_DIFFERS_HINT =
+  'Automated result differs from the recorded status';
 
 /**
  * True only when both sides are a verdict and they disagree: recorded Passed
  * with automated Failed, or the reverse. Informational — the recorded status
  * is the tester's and stays as they set it.
  */
-export function automatedDiffers(recorded: QaRunItemStatus, automated: QaAutomatedStatus): boolean {
+export function automatedDiffers(
+  recorded: QaRunItemStatus,
+  automated: QaAutomatedStatus,
+): boolean {
   return (
-    (recorded === "passed" && automated === "failed") ||
-    (recorded === "failed" && automated === "passed")
+    (recorded === 'passed' && automated === 'failed') ||
+    (recorded === 'failed' && automated === 'passed')
   );
 }
 
@@ -524,36 +618,49 @@ export function listedFailures(tests: QaStageTests | null): QaTestFailure[] {
 
 function unlistedCount(tests: QaStageTests): number {
   const listed = Math.min(tests.failures.length, MAX_LISTED_FAILURES);
-  return Math.max(tests.failures.length - listed, (tests.failed ?? 0) - listed, 0);
+  return Math.max(
+    tests.failures.length - listed,
+    (tests.failed ?? 0) - listed,
+    0,
+  );
 }
 
 /**
  * "3 more failures not listed" when CI truncated the list (or sent more than
  * the page shows). Null when every failure is listed.
  */
-export function unlistedFailuresNote(tests: QaStageTests | null): string | null {
+export function unlistedFailuresNote(
+  tests: QaStageTests | null,
+): string | null {
   if (!tests) return null;
   const hidden = unlistedCount(tests);
   if (!tests.failuresTruncated && hidden === 0) return null;
-  if (hidden === 0) return "More failures than listed — open the run for the full list.";
-  return `${hidden} more ${hidden === 1 ? "failure" : "failures"} not listed.`;
+  if (hidden === 0)
+    return 'More failures than listed — open the run for the full list.';
+  return `${hidden} more ${hidden === 1 ? 'failure' : 'failures'} not listed.`;
 }
 
 /**
  * The stage's failures disclosure: "Show 2 failures", "Show 20 of 23
  * failures", "Hide …" once open. Null when nothing is listed.
  */
-export function failuresToggleLabel(tests: QaStageTests | null, open: boolean): string | null {
+export function failuresToggleLabel(
+  tests: QaStageTests | null,
+  open: boolean,
+): string | null {
   const listed = listedFailures(tests).length;
   if (listed === 0) return null;
-  const verb = open ? "Hide" : "Show";
+  const verb = open ? 'Hide' : 'Show';
   const failed = tests?.failed ?? 0;
   if (failed > listed) return `${verb} ${listed} of ${failed} failures`;
-  return `${verb} ${listed} ${listed === 1 ? "failure" : "failures"}`;
+  return `${verb} ${listed} ${listed === 1 ? 'failure' : 'failures'}`;
 }
 
 /** "No automated results for main @ a1b2c3d yet." */
-export function noAutomationText(branch: string, commitSha: string | null | undefined): string {
+export function noAutomationText(
+  branch: string,
+  commitSha: string | null | undefined,
+): string {
   return `No automated results for ${commitLabel(branch, commitSha)} yet.`;
 }
 
@@ -572,18 +679,21 @@ export function roleCanDispatch(role: AppRole | null | undefined): boolean {
  * Why the button is disabled on this run, or null when it is not. Said to
  * everyone offered the button, including viewers who cannot reopen the run.
  */
-export function dispatchBlockedReason(run: Pick<QaRun, "status">): string | null {
-  return run.status === "signed_off"
-    ? "This run is signed off, so Playwright cannot run on it until it is reopened."
+export function dispatchBlockedReason(
+  run: Pick<QaRun, 'status'>,
+): string | null {
+  return run.status === 'signed_off'
+    ? 'This run is signed off, so Playwright cannot run on it until it is reopened.'
     : null;
 }
 
 /** The same, beside the "Reopen run" button a viewer who may reopen is offered. */
-export const REOPEN_TO_RUN_PLAYWRIGHT = "This run is signed off. Reopen it to run Playwright.";
+export const REOPEN_TO_RUN_PLAYWRIGHT =
+  'This run is signed off. Reopen it to run Playwright.';
 
 export function dispatchConfirmation(
   dispatch: QaAutomationDispatch,
-  run: Pick<QaRun, "branch">,
+  run: Pick<QaRun, 'branch'>,
 ): string {
   return `Playwright started on ${dispatch.ref ?? run.branch}. Results appear here when the run reports.`;
 }
@@ -595,10 +705,15 @@ function sameCommit(a: string, b: string): boolean {
 }
 
 /** Whether the workflow will test a newer commit than the run's. */
-function branchMoved(dispatch: QaAutomationDispatch, runSha: string | null): boolean {
+function branchMoved(
+  dispatch: QaAutomationDispatch,
+  runSha: string | null,
+): boolean {
   if (dispatch.targetsRunCommit !== null) return !dispatch.targetsRunCommit;
   // An older backend without the flag: compare the shas it did send.
-  return Boolean(dispatch.headSha && runSha && !sameCommit(dispatch.headSha, runSha));
+  return Boolean(
+    dispatch.headSha && runSha && !sameCommit(dispatch.headSha, runSha),
+  );
 }
 
 /**
@@ -607,7 +722,7 @@ function branchMoved(dispatch: QaAutomationDispatch, runSha: string | null): boo
  */
 export function dispatchMovedWarning(
   dispatch: QaAutomationDispatch,
-  run: Pick<QaRun, "commitSha">,
+  run: Pick<QaRun, 'commitSha'>,
 ): string | null {
   if (!branchMoved(dispatch, run.commitSha ?? null)) return null;
   const runSha = shortSha(run.commitSha);
@@ -622,9 +737,12 @@ export function dispatchMovedWarning(
  * Whether the verify stage has reported for this run since `sinceMs`, so
  * polling can stop early. A report still marked running does not count.
  */
-export function verifySettledSince(automation: QaRunAutomationResult, sinceMs: number): boolean {
+export function verifySettledSince(
+  automation: QaRunAutomationResult,
+  sinceMs: number,
+): boolean {
   const verify = automation.verify;
-  if (!verify?.reportedAt || verify.status === "running") return false;
+  if (!verify?.reportedAt || verify.status === 'running') return false;
   return Date.parse(verify.reportedAt) >= sinceMs;
 }
 
@@ -638,7 +756,7 @@ export interface QaDispatchError {
 
 function errorStatus(cause: unknown): number | null {
   const status = record(cause)?.status;
-  return typeof status === "number" ? status : null;
+  return typeof status === 'number' ? status : null;
 }
 
 function errorDetails(cause: unknown): Loose | null {
@@ -648,21 +766,21 @@ function errorDetails(cause: unknown): Loose | null {
 function errorCode(cause: unknown): string {
   const details = errorDetails(cause);
   const code = details?.code ?? record(details?.error)?.code;
-  return typeof code === "string" ? code.toUpperCase() : "";
+  return typeof code === 'string' ? code.toUpperCase() : '';
 }
 
 const MAX_SERVER_MESSAGE = 240;
 /** The framework's stock reason phrases say nothing the status does not. */
 const GENERIC_HTTP_TEXT: ReadonlySet<string> = new Set([
-  "forbidden",
-  "forbidden resource",
-  "unauthorized",
-  "conflict",
-  "bad request",
-  "unprocessable entity",
+  'forbidden',
+  'forbidden resource',
+  'unauthorized',
+  'conflict',
+  'bad request',
+  'unprocessable entity',
 ]);
 const MAX_FAILURE_LINES = 20;
-const REFUSED_FALLBACK = "GitHub refused to start Playwright.";
+const REFUSED_FALLBACK = 'GitHub refused to start Playwright.';
 
 /**
  * A server sentence that is safe to show: one short line of plain text.
@@ -671,21 +789,29 @@ const REFUSED_FALLBACK = "GitHub refused to start Playwright.";
  */
 function plainMessage(raw: string | null): string | null {
   if (!raw || /<\s*\/?\s*[a-z!]/i.test(raw)) return null;
-  const line = raw.replace(/\s+/g, " ").trim();
+  const line = raw.replace(/\s+/g, ' ').trim();
   if (!line || GENERIC_HTTP_TEXT.has(line.toLowerCase())) return null;
-  return line.length > MAX_SERVER_MESSAGE ? `${line.slice(0, MAX_SERVER_MESSAGE - 1)}…` : line;
+  return line.length > MAX_SERVER_MESSAGE
+    ? `${line.slice(0, MAX_SERVER_MESSAGE - 1)}…`
+    : line;
 }
 
 function errorMessage(cause: unknown): string | null {
   const message = errorDetails(cause)?.message;
-  if (Array.isArray(message)) return plainMessage(text(message.filter((part) => typeof part === "string").join(" ")));
+  if (Array.isArray(message))
+    return plainMessage(
+      text(message.filter((part) => typeof part === 'string').join(' ')),
+    );
   return plainMessage(text(message));
 }
 
 /** "logistics2cicd-fe — GitHub refused: no write access" */
-export function dispatchFailureLine(repoFullName: string | null | undefined, message: string | null | undefined): string {
+export function dispatchFailureLine(
+  repoFullName: string | null | undefined,
+  message: string | null | undefined,
+): string {
   const reason = plainMessage(text(message)) ?? REFUSED_FALLBACK;
-  const name = text(repoFullName)?.split("/").pop();
+  const name = text(repoFullName)?.split('/').pop();
   return name ? `${name} — ${reason}` : reason;
 }
 
@@ -696,12 +822,15 @@ function failureLines(cause: unknown): string[] {
     .map(record)
     .filter((entry): entry is Loose => entry !== null)
     .slice(0, MAX_FAILURE_LINES)
-    .map((entry) => dispatchFailureLine(text(entry.repoFullName), text(entry.message)));
+    .map((entry) =>
+      dispatchFailureLine(text(entry.repoFullName), text(entry.message)),
+    );
 }
 
-const CODE_ERRORS: Record<string, Omit<QaDispatchError, "failures">> = {
+const CODE_ERRORS: Record<string, Omit<QaDispatchError, 'failures'>> = {
   GITHUB_REAUTH: {
-    message: "GitHub needs you to sign in again before ALPHACI can start Playwright for you.",
+    message:
+      'GitHub needs you to sign in again before ALPHACI can start Playwright for you.',
     signIn: true,
   },
   VERIFY_WORKFLOW_MISSING: {
@@ -712,12 +841,14 @@ const CODE_ERRORS: Record<string, Omit<QaDispatchError, "failures">> = {
 };
 
 const STATUS_ERRORS: Record<number, string> = {
-  401: "Your session has ended. Sign in again to start Playwright.",
-  404: "This QA run no longer exists, or you no longer have access to it.",
+  401: 'Your session has ended. Sign in again to start Playwright.',
+  404: 'This QA run no longer exists, or you no longer have access to it.',
 };
 
-const SIGNED_OFF_ERROR = "This run is signed off, so Playwright cannot be started on it. Reopen it first.";
-const DISPATCH_FALLBACK = "Playwright could not be started. Try again in a moment.";
+const SIGNED_OFF_ERROR =
+  'This run is signed off, so Playwright cannot be started on it. Reopen it first.';
+const DISPATCH_FALLBACK =
+  'Playwright could not be started. Try again in a moment.';
 
 /** Statuses where the server's own sentence is the explanation worth showing. */
 function usesServerMessage(status: number | null): boolean {
@@ -727,7 +858,12 @@ function usesServerMessage(status: number | null): boolean {
 function dispatchMessage(status: number | null, cause: unknown): string {
   if (status !== null && STATUS_ERRORS[status]) return STATUS_ERRORS[status];
   if (usesServerMessage(status)) {
-    const fallback = status === 409 ? SIGNED_OFF_ERROR : status === 403 ? REFUSED_FALLBACK : DISPATCH_FALLBACK;
+    const fallback =
+      status === 409
+        ? SIGNED_OFF_ERROR
+        : status === 403
+          ? REFUSED_FALLBACK
+          : DISPATCH_FALLBACK;
     return errorMessage(cause) ?? fallback;
   }
   return DISPATCH_FALLBACK;
@@ -739,7 +875,11 @@ export function dispatchError(cause: unknown): QaDispatchError {
   const known = CODE_ERRORS[errorCode(cause)];
   if (known) return { ...known, failures };
   const status = errorStatus(cause);
-  return { message: dispatchMessage(status, cause), signIn: status === 401, failures };
+  return {
+    message: dispatchMessage(status, cause),
+    signIn: status === 401,
+    failures,
+  };
 }
 
 /**

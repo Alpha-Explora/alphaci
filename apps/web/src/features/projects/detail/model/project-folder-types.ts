@@ -7,7 +7,7 @@
  * present those pages as one Project with a switch between them. */
 
 /** Derived by the server from the declared stack, never from the name. */
-export type FolderRepoRole = "frontend" | "backend" | "service" | "app";
+export type FolderRepoRole = 'frontend' | 'backend' | 'service' | 'app';
 
 /** GET /projects/:projectId/folder — the wire shape, before normalising. */
 export interface ProjectFolderWire {
@@ -95,4 +95,4 @@ export interface RepoSwitchPresentation {
  * without the route, or a project the caller cannot see) and any failure: the
  * page then renders exactly as it did before Projects existed.
  */
-export type ProjectFolderStatus = "idle" | "loading" | "ready" | "unavailable";
+export type ProjectFolderStatus = 'idle' | 'loading' | 'ready' | 'unavailable';

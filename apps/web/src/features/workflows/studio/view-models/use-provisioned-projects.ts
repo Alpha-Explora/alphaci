@@ -1,17 +1,19 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
-import { getProjects } from "@/features/projects";
+import { getProjects } from '@/features/projects';
 import type {
   CreateProjectRequest,
   CreateProjectResponse,
   ProvisionedProject,
   SetupProjectRequest,
   SetupProjectResponse,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 
-export function useProvisionedProjects(setStatusMessage: (message: string) => void) {
+export function useProvisionedProjects(
+  setStatusMessage: (message: string) => void,
+) {
   const [projects, setProjects] = useState<ProvisionedProject[]>([]);
   // The mount effect starts the first read, so the list is loading from the first render.
   const [loadingProjects, setLoadingProjects] = useState(true);
@@ -33,9 +35,13 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
             setProjectsError(null);
           },
           () => {
-            setProjectsError("Provisioned project history is temporarily unavailable.");
+            setProjectsError(
+              'Provisioned project history is temporarily unavailable.',
+            );
             if (!silent) {
-              setStatusMessage("Provisioned project history is temporarily unavailable.");
+              setStatusMessage(
+                'Provisioned project history is temporarily unavailable.',
+              );
             }
           },
         )
@@ -51,14 +57,20 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
     void readProjects(false);
   }, [readProjects]);
 
-  const loadProjects = useCallback(async (silent = false) => {
-    if (!silent) {
-      setLoadingProjects(true);
-    }
-    await readProjects(silent);
-  }, [readProjects]);
+  const loadProjects = useCallback(
+    async (silent = false) => {
+      if (!silent) {
+        setLoadingProjects(true);
+      }
+      await readProjects(silent);
+    },
+    [readProjects],
+  );
 
-  function prependSetupResult(response: SetupProjectResponse, payload: SetupProjectRequest) {
+  function prependSetupResult(
+    response: SetupProjectResponse,
+    payload: SetupProjectRequest,
+  ) {
     setProjects((current) => [
       {
         id: response.id,
@@ -77,7 +89,10 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
     ]);
   }
 
-  function prependCreateResult(response: CreateProjectResponse, payload: CreateProjectRequest) {
+  function prependCreateResult(
+    response: CreateProjectResponse,
+    payload: CreateProjectRequest,
+  ) {
     setProjects((current) => [
       {
         id: response.id,
@@ -85,7 +100,7 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
         repoFullName: response.repoFullName,
         repoUrl: response.repoUrl,
         visibility: payload.visibility,
-        repoShape: payload.repoShape ?? "single-app",
+        repoShape: payload.repoShape ?? 'single-app',
         projectTypeId: response.projectTypeId,
         workflowRecipeId: response.workflowRecipeId,
         projectOptions: payload.tests ?? {},
@@ -106,7 +121,7 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
     loadProjects,
     loadingProjects,
     /** Uniform status field per the VM contract. */
-    status: loadingProjects ? ("loading" as const) : ("ready" as const),
+    status: loadingProjects ? ('loading' as const) : ('ready' as const),
     /** User-safe load error. */
     error: projectsError,
     prependCreateResult,
@@ -115,4 +130,6 @@ export function useProvisionedProjects(setStatusMessage: (message: string) => vo
   };
 }
 
-export type ProvisionedProjectsState = ReturnType<typeof useProvisionedProjects>;
+export type ProvisionedProjectsState = ReturnType<
+  typeof useProvisionedProjects
+>;

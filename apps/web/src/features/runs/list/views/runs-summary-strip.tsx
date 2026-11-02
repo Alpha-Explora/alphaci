@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { STATUS_LABELS } from "../../model/runs-rules";
-import { relativeTime } from "../../model/runs-presentation";
-import type { RunsSummary } from "../../model/runs-types";
+import { STATUS_LABELS } from '../../model/runs-rules';
+import { relativeTime } from '../../model/runs-presentation';
+import type { RunsSummary } from '../../model/runs-types';
 
 /* Counts arrive computed. The view used to derive them in a useMemo, which put
  * a reduce over run statuses inside JSX; summarizeRuns() is now a pure function
@@ -16,7 +16,7 @@ export function RunsSummaryStrip({
 }>) {
   const latestStatus = summary.latestRun
     ? STATUS_LABELS[summary.latestRun.overallStatus]
-    : "None";
+    : 'None';
 
   return (
     <section className="runs-summary-strip" aria-label="Pipeline run summary">
@@ -24,7 +24,7 @@ export function RunsSummaryStrip({
         <span>Tracked commits</span>
         <strong>{summary.total}</strong>
         <p>
-          {repoFullName ? "Filtered repository" : "Across all repositories"}
+          {repoFullName ? 'Filtered repository' : 'Across all repositories'}
         </p>
       </div>
       <div className="runs-summary-card">
@@ -43,7 +43,7 @@ export function RunsSummaryStrip({
         <p>
           {summary.latestRun
             ? relativeTime(summary.latestRun.startedAt)
-            : "No runs yet"}
+            : 'No runs yet'}
         </p>
       </div>
     </section>

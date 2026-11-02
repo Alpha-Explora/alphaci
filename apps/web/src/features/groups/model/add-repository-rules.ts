@@ -9,16 +9,16 @@ import type {
   CreateProjectRequest,
   DeploymentProvisioningRequest,
   DeploymentProvisioningTargetRequest,
-} from "@/shared/api/contracts";
-import { ApiError } from "@/shared/api/request";
+} from '@/shared/api/contracts';
+import { ApiError } from '@/shared/api/request';
 
 import type {
   CreateRepositoryRequest,
   CreatedRepositoryResponse,
   RepositoryHostingFailure,
-} from "../data/hierarchy-contracts";
-import { creationRefusalMessage } from "./creation-role-rules";
-import { apiErrorCode } from "./project-members-rules";
+} from '../data/hierarchy-contracts';
+import { creationRefusalMessage } from './creation-role-rules';
+import { apiErrorCode } from './project-members-rules';
 
 /* ── Hosting ──────────────────────────────────────────────────────────── */
 
@@ -29,21 +29,30 @@ import { apiErrorCode } from "./project-members-rules";
  * the body sends the wizard form's request. `off`: no hosting.
  */
 export type HostingChoice =
-  | { mode: "managed" }
-  | { mode: "custom"; request: DeploymentProvisioningRequest }
-  | { mode: "off" };
+  | { mode: 'managed' }
+  | { mode: 'custom'; request: DeploymentProvisioningRequest }
+  | { mode: 'off' };
 
-export const HOSTING_OFF_REQUEST: DeploymentProvisioningRequest = { enabled: false, targets: [] };
+export const HOSTING_OFF_REQUEST: DeploymentProvisioningRequest = {
+  enabled: false,
+  targets: [],
+};
 
 export interface HostingOverrides {
   rootDirectory: string;
   buildCommand: string;
 }
 
-export const NO_HOSTING_OVERRIDES: HostingOverrides = { rootDirectory: "", buildCommand: "" };
+export const NO_HOSTING_OVERRIDES: HostingOverrides = {
+  rootDirectory: '',
+  buildCommand: '',
+};
 
 export function hasHostingOverrides(overrides: HostingOverrides): boolean {
-  return overrides.rootDirectory.trim() !== "" || overrides.buildCommand.trim() !== "";
+  return (
+    overrides.rootDirectory.trim() !== '' ||
+    overrides.buildCommand.trim() !== ''
+  );
 }
 
 function overrideTarget(
@@ -70,31 +79,42 @@ export function resolveHostingChoice(input: {
   overrides: HostingOverrides;
   formPayload: DeploymentProvisioningRequest | undefined;
 }): HostingChoice {
-  if (!input.hostingEnabled) return { mode: "off" };
-  if (!hasHostingOverrides(input.overrides) || !input.formPayload) return { mode: "managed" };
+  if (!input.hostingEnabled) return { mode: 'off' };
+  if (!hasHostingOverrides(input.overrides) || !input.formPayload)
+    return { mode: 'managed' };
   return {
-    mode: "custom",
+    mode: 'custom',
     request: {
       ...input.formPayload,
-      targets: input.formPayload.targets.map((target) => overrideTarget(target, input.overrides)),
+      targets: input.formPayload.targets.map((target) =>
+        overrideTarget(target, input.overrides),
+      ),
     },
   };
 }
 
-function hostingField(choice: HostingChoice): Pick<CreateRepositoryRequest, "deploymentProvisioning"> {
-  if (choice.mode === "off") return { deploymentProvisioning: HOSTING_OFF_REQUEST };
-  if (choice.mode === "custom") return { deploymentProvisioning: choice.request };
+function hostingField(
+  choice: HostingChoice,
+): Pick<CreateRepositoryRequest, 'deploymentProvisioning'> {
+  if (choice.mode === 'off')
+    return { deploymentProvisioning: HOSTING_OFF_REQUEST };
+  if (choice.mode === 'custom')
+    return { deploymentProvisioning: choice.request };
   return {};
 }
 
-export function hostingProviderName(kind: "frontend" | "backend"): string {
-  return kind === "frontend" ? "Vercel" : "Render";
+export function hostingProviderName(kind: 'frontend' | 'backend'): string {
+  return kind === 'frontend' ? 'Vercel' : 'Render';
 }
 
 /* ── Request body ─────────────────────────────────────────────────────── */
 
-function repoShapeField(repoShape: string | undefined): Pick<CreateRepositoryRequest, "repoShape"> {
-  return repoShape === "mono" || repoShape === "monorepo" ? { repoShape } : { repoShape: "standalone" };
+function repoShapeField(
+  repoShape: string | undefined,
+): Pick<CreateRepositoryRequest, 'repoShape'> {
+  return repoShape === 'mono' || repoShape === 'monorepo'
+    ? { repoShape }
+    : { repoShape: 'standalone' };
 }
 
 /**
@@ -112,10 +132,14 @@ export function addRepositoryRequest(
     visibility: wizard.visibility,
     serviceName: wizard.serviceName,
     ...repoShapeField(wizard.repoShape),
-    ...(wizard.workflowRecipeId ? { workflowRecipeId: wizard.workflowRecipeId } : {}),
+    ...(wizard.workflowRecipeId
+      ? { workflowRecipeId: wizard.workflowRecipeId }
+      : {}),
     ...(wizard.servicePath ? { servicePath: wizard.servicePath } : {}),
     ...(wizard.nodeVersion ? { nodeVersion: wizard.nodeVersion } : {}),
-    ...(wizard.coverageThreshold === undefined ? {} : { coverageThreshold: wizard.coverageThreshold }),
+    ...(wizard.coverageThreshold === undefined
+      ? {}
+      : { coverageThreshold: wizard.coverageThreshold }),
     ...(wizard.tests ? { tests: wizard.tests } : {}),
     ...(wizard.outputFileName ? { outputFileName: wizard.outputFileName } : {}),
     ...hostingField(hosting),
@@ -123,18 +147,23 @@ export function addRepositoryRequest(
 }
 
 /** Repository shapes "Add repository" can offer: one repository, never a pair. */
-const SINGLE_REPOSITORY_SHAPES: ReadonlySet<string> = new Set(["standalone", "mono"]);
+const SINGLE_REPOSITORY_SHAPES: ReadonlySet<string> = new Set([
+  'standalone',
+  'mono',
+]);
 
-export function singleRepositoryShapes<T extends { id: string; enabled: boolean }>(
-  shapes: ReadonlyArray<T>,
-): T[] {
-  return shapes.filter((shape) => shape.enabled && SINGLE_REPOSITORY_SHAPES.has(shape.id));
+export function singleRepositoryShapes<
+  T extends { id: string; enabled: boolean },
+>(shapes: ReadonlyArray<T>): T[] {
+  return shapes.filter(
+    (shape) => shape.enabled && SINGLE_REPOSITORY_SHAPES.has(shape.id),
+  );
 }
 
 /* ── Outcome ──────────────────────────────────────────────────────────── */
 
 export interface RepositoryOutcomeView {
-  tone: "success" | "warning";
+  tone: 'success' | 'warning';
   title: string;
   message: string;
   /** One line per hosting target or variable that failed. */
@@ -146,8 +175,8 @@ export interface RepositoryOutcomeView {
 }
 
 function providerName(provider: string): string {
-  if (provider === "vercel") return "Vercel";
-  if (provider === "render") return "Render";
+  if (provider === 'vercel') return 'Vercel';
+  if (provider === 'render') return 'Render';
   return provider;
 }
 
@@ -156,35 +185,37 @@ function failureLine(failure: RepositoryHostingFailure): string {
 }
 
 /** How the create went, for the dialog's result step. */
-export function repositoryOutcome(created: CreatedRepositoryResponse): RepositoryOutcomeView {
+export function repositoryOutcome(
+  created: CreatedRepositoryResponse,
+): RepositoryOutcomeView {
   const { projectId, hosting } = created.provisioning;
   const repositoryHref = `/projects/${encodeURIComponent(projectId)}`;
   const base = { reasons: [] as string[], hostingHref: null, repositoryHref };
-  if (hosting.outcome === "provisioned") {
+  if (hosting.outcome === 'provisioned') {
     return {
       ...base,
-      tone: "success",
-      title: "Repository created",
+      tone: 'success',
+      title: 'Repository created',
       message: `${created.name} is ready, and its hosting is set up. The first deploy runs after its pipeline's first build.`,
     };
   }
-  if (hosting.outcome === "skipped") {
+  if (hosting.outcome === 'skipped') {
     return {
       ...base,
-      tone: "success",
-      title: "Repository created",
+      tone: 'success',
+      title: 'Repository created',
       message: `${created.name} is ready. No hosting was set up for it.`,
     };
   }
   const reasons = hosting.failures.map(failureLine);
   return {
-    tone: "warning",
-    title: "Hosting needs attention",
+    tone: 'warning',
+    title: 'Hosting needs attention',
     message:
-      hosting.outcome === "partial"
+      hosting.outcome === 'partial'
         ? "Repository created; hosting couldn't be fully set up:"
         : "Repository created; hosting couldn't be set up:",
-    reasons: reasons.length > 0 ? reasons : ["No reason was reported."],
+    reasons: reasons.length > 0 ? reasons : ['No reason was reported.'],
     hostingHref: `${repositoryHref}#hosting`,
     repositoryHref,
   };
@@ -197,14 +228,15 @@ export const HOSTING_INVALID_MESSAGE =
 
 /** One clear sentence for a failed "Add repository". */
 export function addRepositoryErrorMessage(cause: unknown): string {
-  if (apiErrorCode(cause) === "DEPLOYMENT_PROVISIONING_INVALID") return HOSTING_INVALID_MESSAGE;
+  if (apiErrorCode(cause) === 'DEPLOYMENT_PROVISIONING_INVALID')
+    return HOSTING_INVALID_MESSAGE;
   const refusal = creationRefusalMessage(cause);
   if (refusal) return refusal;
   if (cause instanceof ApiError && cause.status === 409) {
-    return "A repository with that name already exists.";
+    return 'A repository with that name already exists.';
   }
   if (cause instanceof ApiError && cause.status === 400) {
-    return "The repository could not be created. Check the name and stack, then try again.";
+    return 'The repository could not be created. Check the name and stack, then try again.';
   }
-  return "The repository could not be created. Please try again.";
+  return 'The repository could not be created. Please try again.';
 }

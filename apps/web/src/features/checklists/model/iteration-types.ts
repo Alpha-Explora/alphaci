@@ -6,7 +6,7 @@
  * status; the readers in iteration-rules.ts turn that into null, and every
  * screen then renders exactly as it did before iterations existed. */
 
-export type IterationStatus = "active" | "delivered";
+export type IterationStatus = 'active' | 'delivered';
 
 /** The slice of an Iteration that rides along on run payloads. */
 export interface IterationRef {
@@ -33,7 +33,7 @@ export interface HistoryIteration extends ProjectIteration {
 }
 
 /** How a repository's signed-off uat head reached main. */
-export type DeliveryHow = "merged" | "already_in_main";
+export type DeliveryHow = 'merged' | 'already_in_main';
 
 /** One repository's stored delivery state (the iteration's `delivery_json`). */
 export interface DeliveredRepository {
@@ -90,9 +90,9 @@ export interface StartedIteration {
  * delivered: nothing, "waiting for the Product owner", or Start.
  */
 export type IterationNextStep =
-  | { kind: "none" }
-  | { kind: "waiting"; text: string }
-  | { kind: "start"; nextNumber: number; text: string };
+  | { kind: 'none' }
+  | { kind: 'waiting'; text: string }
+  | { kind: 'start'; nextNumber: number; text: string };
 
 /** One repository's answer from Merge all repositories. */
 export interface MergeAllRepositoryResult {
@@ -115,13 +115,13 @@ export interface MergeAllResult {
 
 /** A Merge all repositories that was refused before anything merged. */
 export type MergeAllErrorKind =
-  | "delivered"
-  | "blocked"
-  | "no_repositories"
-  | "forbidden"
-  | "reauth"
-  | "not_found"
-  | "failed";
+  | 'delivered'
+  | 'blocked'
+  | 'no_repositories'
+  | 'forbidden'
+  | 'reauth'
+  | 'not_found'
+  | 'failed';
 
 export interface MergeAllError {
   kind: MergeAllErrorKind;

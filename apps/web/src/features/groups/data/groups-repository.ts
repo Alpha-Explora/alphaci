@@ -14,8 +14,8 @@ import {
   reopenGroup,
   searchEligibleGroupUsers,
   updateGroup,
-} from "@/features/groups/data/hierarchy-api";
-import { getProjects } from "@/features/projects";
+} from '@/features/groups/data/hierarchy-api';
+import { getProjects } from '@/features/projects';
 
 import type {
   AddGroupMemberRequest,
@@ -31,7 +31,7 @@ import type {
   RepositoryAccessStatusResponse,
   RepositoryAssignment,
   UpdateGroupRequest,
-} from "../model/groups-types";
+} from '../model/groups-types';
 
 /* The only place in this domain that performs I/O. View-models call these;
  * views never do.
@@ -113,9 +113,7 @@ export const groupsRepository = {
     return getRepository(repositoryId);
   },
 
-  repositoryAssignments(
-    repositoryId: string,
-  ): Promise<RepositoryAssignment[]> {
+  repositoryAssignments(repositoryId: string): Promise<RepositoryAssignment[]> {
     return getRepositoryAssignments(repositoryId);
   },
 

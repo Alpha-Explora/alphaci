@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 
-import { AUTOMATION_POLL_INTERVAL_MS } from "../../model/qa-automation-rules";
-import { usePageVisible } from "./use-page-visible";
+import { AUTOMATION_POLL_INTERVAL_MS } from '../../model/qa-automation-rules';
+import { usePageVisible } from './use-page-visible';
 
 /** After "Run Playwright": re-read from `since` until `until` (epoch ms). */
 export interface PollWindow {
@@ -51,7 +51,8 @@ export function useAutomationPoll<T>(options: {
         .then((value) => {
           if (requestId !== requestRef.current) return;
           callbacks.current.onValue(value);
-          if (callbacks.current.settled(value, poll.since)) callbacks.current.onStop();
+          if (callbacks.current.settled(value, poll.since))
+            callbacks.current.onStop();
         })
         .catch(() => undefined);
     }, AUTOMATION_POLL_INTERVAL_MS);

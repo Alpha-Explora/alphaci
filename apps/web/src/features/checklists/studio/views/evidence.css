@@ -432,11 +432,11 @@
   background: var(--layer-2);
 }
 
-.qa-lightbox__step[data-side="previous"] {
+.qa-lightbox__step[data-side='previous'] {
   grid-column: 1;
 }
 
-.qa-lightbox__step[data-side="next"] {
+.qa-lightbox__step[data-side='next'] {
   grid-column: 3;
 }
 

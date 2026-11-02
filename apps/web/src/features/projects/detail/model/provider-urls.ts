@@ -1,4 +1,4 @@
-import type { DeploymentTarget } from "@/shared/api/contracts";
+import type { DeploymentTarget } from '@/shared/api/contracts';
 
 /**
  * The live URL the deployed service answers on. Prefers the BE-computed value
@@ -8,13 +8,13 @@ import type { DeploymentTarget } from "@/shared/api/contracts";
  * dashboard, which are ALPHACI's own accounts.
  */
 export function providerPublicUrl(target: DeploymentTarget): string | null {
-  if (typeof target.publicUrl === "string" && target.publicUrl.trim()) {
+  if (typeof target.publicUrl === 'string' && target.publicUrl.trim()) {
     return target.publicUrl.trim();
   }
 
-  if (target.provider === "render") {
+  if (target.provider === 'render') {
     const metadataUrl = target.providerMetadata?.renderServiceUrl;
-    if (typeof metadataUrl === "string" && metadataUrl.trim()) {
+    if (typeof metadataUrl === 'string' && metadataUrl.trim()) {
       return metadataUrl.trim();
     }
     return target.providerProjectName
@@ -22,7 +22,7 @@ export function providerPublicUrl(target: DeploymentTarget): string | null {
       : null;
   }
 
-  if (target.provider === "vercel") {
+  if (target.provider === 'vercel') {
     return target.providerProjectName
       ? `https://${target.providerProjectName}.vercel.app`
       : null;
@@ -32,9 +32,9 @@ export function providerPublicUrl(target: DeploymentTarget): string | null {
 }
 
 export function providerDisplayName(
-  provider: DeploymentTarget["provider"],
+  provider: DeploymentTarget['provider'],
 ): string {
-  if (provider === "vercel") return "Vercel";
-  if (provider === "onprem-compose") return "On-prem host";
-  return "Render";
+  if (provider === 'vercel') return 'Vercel';
+  if (provider === 'onprem-compose') return 'On-prem host';
+  return 'Render';
 }

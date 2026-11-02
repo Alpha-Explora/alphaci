@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore } from 'react';
 
 function subscribeVisibility(onChange: () => void): () => void {
-  document.addEventListener("visibilitychange", onChange);
-  return () => document.removeEventListener("visibilitychange", onChange);
+  document.addEventListener('visibilitychange', onChange);
+  return () => document.removeEventListener('visibilitychange', onChange);
 }
 
 function pageVisible(): boolean {
-  return document.visibilityState !== "hidden";
+  return document.visibilityState !== 'hidden';
 }
 
 function serverVisible(): boolean {

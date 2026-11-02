@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useCapabilities } from "@/features/capabilities/current";
-import { useWorkspaceSelection } from "@/features/workspace/selection";
+import { useCapabilities } from '@/features/capabilities/current';
+import { useWorkspaceSelection } from '@/features/workspace/selection';
 
-import { teamsRepository } from "../../data/teams-repository";
-import { resolveSelectedTeam, toUserError } from "../../model/teams-rules";
+import { teamsRepository } from '../../data/teams-repository';
+import { resolveSelectedTeam, toUserError } from '../../model/teams-rules';
 import type {
   ProvisionedProject,
   Team,
   TeamsStatus,
-} from "../../model/teams-types";
+} from '../../model/teams-types';
 
 export interface SelectedTeamViewModel {
   /** The team on screen, or null when the caller is in none. */
@@ -64,7 +64,7 @@ export function useSelectedTeamViewModel(options: {
     teamId: string;
     items: ProvisionedProject[];
   } | null>(null);
-  const [fetchStatus, setFetchStatus] = useState<TeamsStatus>("loading");
+  const [fetchStatus, setFetchStatus] = useState<TeamsStatus>('loading');
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
 
@@ -90,13 +90,13 @@ export function useSelectedTeamViewModel(options: {
         if (!active || id !== teamsRequest.current) return;
         setTeams(loadedTeams);
         setError(null);
-        setFetchStatus("ready");
+        setFetchStatus('ready');
       })
       .catch((err: unknown) => {
         if (!active || id !== teamsRequest.current) return;
         setTeams([]);
         setError(toUserError(err));
-        setFetchStatus("error");
+        setFetchStatus('error');
       });
 
     return () => {
@@ -143,11 +143,11 @@ export function useSelectedTeamViewModel(options: {
   return {
     team,
     projects: loaded && loaded.teamId === teamId ? loaded.items : [],
-    status: guest || !enabled ? "idle" : fetchStatus,
+    status: guest || !enabled ? 'idle' : fetchStatus,
     error,
     reload,
     refreshTeam,
     qaChecklistsEnabled,
-    capabilitiesKnown: capabilitiesStatus !== "loading",
+    capabilitiesKnown: capabilitiesStatus !== 'loading',
   };
 }

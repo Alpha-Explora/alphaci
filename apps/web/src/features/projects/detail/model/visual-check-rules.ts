@@ -7,20 +7,20 @@
  * are tested. Pure: no React, no fetch.
  */
 
-import type { AppRole } from "@/shared/api/contracts";
-import { ApiError } from "@/shared/api/request";
+import type { AppRole } from '@/shared/api/contracts';
+import { ApiError } from '@/shared/api/request';
 
-import { apiErrorReason } from "./api-error-reason";
+import { apiErrorReason } from './api-error-reason';
 import type {
   VisualBranch,
   VisualChecksResponse,
   VisualSnapshot,
   VisualSnapshotStatus,
-} from "./visual-check-types";
+} from './visual-check-types';
 
 /* ── Where visual checks exist ───────────────────────────────────────────── */
 
-const VISUAL_BRANCHES: readonly string[] = ["uat", "main"];
+const VISUAL_BRANCHES: readonly string[] = ['uat', 'main'];
 
 /**
  * Only the hosted tiers are screenshotted: the generated pipelines run the
@@ -34,8 +34,12 @@ export function isVisualBranch(branch: string): branch is VisualBranch {
  * The GitHub run to ask about: the Verify stage's own run, or null (the
  * branch's latest) when the report carries no usable run id.
  */
-export function visualRequestRunId(runId: number | null | undefined): number | null {
-  return typeof runId === "number" && Number.isInteger(runId) && runId > 0 ? runId : null;
+export function visualRequestRunId(
+  runId: number | null | undefined,
+): number | null {
+  return typeof runId === 'number' && Number.isInteger(runId) && runId > 0
+    ? runId
+    : null;
 }
 
 /* ── Image URLs ──────────────────────────────────────────────────────────── */
@@ -48,9 +52,12 @@ export function visualRequestRunId(runId: number | null | undefined): number | n
  * browser somewhere this product does not control. Anything else is null and
  * the pane says there is no image.
  */
-export function visualImageUrl(apiBaseUrl: string, path: string | null): string | null {
-  if (!path || !path.startsWith("/") || path.startsWith("//")) return null;
-  return `${apiBaseUrl.replace(/\/+$/, "")}${path}`;
+export function visualImageUrl(
+  apiBaseUrl: string,
+  path: string | null,
+): string | null {
+  if (!path || !path.startsWith('/') || path.startsWith('//')) return null;
+  return `${apiBaseUrl.replace(/\/+$/, '')}${path}`;
 }
 
 /** The response with every image path resolved to a full URL. */
@@ -72,18 +79,21 @@ export function withImageUrls(
 
 /* ── Downloading an image ────────────────────────────────────────────────── */
 
-export type VisualImageKind = "reference" | "new" | "diff";
+export type VisualImageKind = 'reference' | 'new' | 'diff';
 
 export const VISUAL_IMAGE_LABEL: Record<VisualImageKind, string> = {
-  reference: "reference",
-  new: "new",
-  diff: "diff",
+  reference: 'reference',
+  new: 'new',
+  diff: 'diff',
 };
 
 /** The URL of one of a snapshot's three images, or null when it has none. */
-export function visualImageFor(snapshot: VisualSnapshot, kind: VisualImageKind): string | null {
-  if (kind === "reference") return snapshot.baselineUrl;
-  return kind === "new" ? snapshot.actualUrl : snapshot.diffUrl;
+export function visualImageFor(
+  snapshot: VisualSnapshot,
+  kind: VisualImageKind,
+): string | null {
+  if (kind === 'reference') return snapshot.baselineUrl;
+  return kind === 'new' ? snapshot.actualUrl : snapshot.diffUrl;
 }
 
 /** Identifies one image's download, for "downloading" bookkeeping. */
@@ -94,11 +104,11 @@ export function visualDownloadKey(name: string, kind: VisualImageKind): string {
 const FILE_PART_MAX = 60;
 
 function filePart(raw: string | null | undefined): string {
-  return (raw ?? "")
+  return (raw ?? '')
     .toLowerCase()
-    .replace(/\.(png|jpe?g|webp)$/, "")
-    .replace(/[^a-z0-9._-]+/g, "-")
-    .replace(/^[-.]+|[-.]+$/g, "")
+    .replace(/\.(png|jpe?g|webp)$/, '')
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/^[-.]+|[-.]+$/g, '')
     .slice(0, FILE_PART_MAX);
 }
 
@@ -113,12 +123,20 @@ export function visualDownloadFileName(input: {
   name: string;
   kind: VisualImageKind;
 }): string {
-  const repo = filePart(input.repoFullName?.split("/").pop());
-  const parts = [repo, filePart(input.branch), filePart(input.name) || "snapshot", input.kind];
-  return `${parts.filter(Boolean).join("-")}.png`;
+  const repo = filePart(input.repoFullName?.split('/').pop());
+  const parts = [
+    repo,
+    filePart(input.branch),
+    filePart(input.name) || 'snapshot',
+    input.kind,
+  ];
+  return `${parts.filter(Boolean).join('-')}.png`;
 }
 
-export function visualDownloadError(name: string, kind: VisualImageKind): string {
+export function visualDownloadError(
+  name: string,
+  kind: VisualImageKind,
+): string {
   return `The ${VISUAL_IMAGE_LABEL[kind]} image of ${name} could not be downloaded. Try again.`;
 }
 
@@ -140,10 +158,16 @@ function byName(a: VisualSnapshot, b: VisualSnapshot): number {
  * needs a first reference; a passing one needs nothing. Names sort within a
  * group so the list does not reshuffle between runs.
  */
-export function groupSnapshots(snapshots: readonly VisualSnapshot[]): VisualGroups {
+export function groupSnapshots(
+  snapshots: readonly VisualSnapshot[],
+): VisualGroups {
   const pick = (status: VisualSnapshotStatus) =>
     snapshots.filter((snapshot) => snapshot.status === status).sort(byName);
-  return { changed: pick("changed"), added: pick("new"), passed: pick("passed") };
+  return {
+    changed: pick('changed'),
+    added: pick('new'),
+    passed: pick('passed'),
+  };
 }
 
 export interface VisualCounts {
@@ -152,7 +176,9 @@ export interface VisualCounts {
   passed: number;
 }
 
-export function visualCounts(snapshots: readonly VisualSnapshot[]): VisualCounts {
+export function visualCounts(
+  snapshots: readonly VisualSnapshot[],
+): VisualCounts {
   const groups = groupSnapshots(snapshots);
   return {
     changed: groups.changed.length,
@@ -172,10 +198,13 @@ export function visualHeader(counts: VisualCounts): string {
     counts.added > 0 ? `${String(counts.added)} new` : null,
     counts.passed > 0 ? `${String(counts.passed)} unchanged` : null,
   ].filter((part): part is string => part !== null);
-  return ["Visual checks", ...(parts.length > 0 ? parts : ["no screenshots captured"])].join(" · ");
+  return [
+    'Visual checks',
+    ...(parts.length > 0 ? parts : ['no screenshots captured']),
+  ].join(' · ');
 }
 
-export const VISUAL_OFF_LABEL = "Visual: off for this repo";
+export const VISUAL_OFF_LABEL = 'Visual: off for this repo';
 
 /**
  * Whether to say the repository's workflow takes no screenshots: it says so
@@ -183,9 +212,14 @@ export const VISUAL_OFF_LABEL = "Visual: off for this repo";
  * captured for what is shown. Screenshots a run did capture keep their counts.
  * Unknown (`null`, an older backend) never reads as off.
  */
-function showsVisualOff(response: VisualChecksResponse | null, captureOn: boolean | null): boolean {
+function showsVisualOff(
+  response: VisualChecksResponse | null,
+  captureOn: boolean | null,
+): boolean {
   if (captureOn !== false) return false;
-  return !response || response.runId === null || response.snapshots.length === 0;
+  return (
+    !response || response.runId === null || response.snapshots.length === 0
+  );
 }
 
 /**
@@ -203,15 +237,20 @@ export function visualChipLabel(
 }
 
 /** True when any `main` screenshot is still compared with uat's reference. */
-export function inheritsUatReferences(snapshots: readonly VisualSnapshot[]): boolean {
-  return snapshots.some((snapshot) => snapshot.inheritedFrom === "uat");
+export function inheritsUatReferences(
+  snapshots: readonly VisualSnapshot[],
+): boolean {
+  return snapshots.some((snapshot) => snapshot.inheritedFrom === 'uat');
 }
 
 /**
  * "No visual checks reported for uat yet. They run …", or, when the workflow
  * takes no screenshots there, that it is off rather than pending.
  */
-export function visualEmptyMessage(branch: string, captureOn: boolean | null = null): string {
+export function visualEmptyMessage(
+  branch: string,
+  captureOn: boolean | null = null,
+): string {
   if (captureOn === false) {
     return `Visual testing is off in this repository's workflow, so no screenshots are taken on ${branch}.`;
   }
@@ -234,18 +273,23 @@ export function studioVisualSummary(
   captureOn: boolean | null = null,
 ): string {
   if (showsVisualOff(response, captureOn)) return VISUAL_OFF_LABEL;
-  if (!response || response.runId === null) return `Visual: not captured on ${branch} yet`;
+  if (!response || response.runId === null)
+    return `Visual: not captured on ${branch} yet`;
   const counts = visualCounts(response.snapshots);
   const parts = [
     counts.changed > 0 ? `${String(counts.changed)} changed` : null,
     counts.added > 0 ? `${String(counts.added)} new` : null,
   ].filter((part): part is string => part !== null);
-  if (parts.length > 0) return `Visual: ${parts.join(" · ")}`;
-  return response.snapshots.length > 0 ? "Visual: no changes" : "Visual: no screenshots captured";
+  if (parts.length > 0) return `Visual: ${parts.join(' · ')}`;
+  return response.snapshots.length > 0
+    ? 'Visual: no changes'
+    : 'Visual: no screenshots captured';
 }
 
 /** Whether the summary asks for a look: something changed or is new. */
-export function visualNeedsReview(response: VisualChecksResponse | null): boolean {
+export function visualNeedsReview(
+  response: VisualChecksResponse | null,
+): boolean {
   if (!response) return false;
   const counts = visualCounts(response.snapshots);
   return counts.changed + counts.added > 0;
@@ -259,13 +303,21 @@ export function visualNeedsReview(response: VisualChecksResponse | null): boolea
  * whole batch if any name fails this, so the client must not offer it.
  */
 export function isApprovable(snapshot: VisualSnapshot): boolean {
-  return snapshot.status !== "passed" && !snapshot.approved && snapshot.actualUrl !== null;
+  return (
+    snapshot.status !== 'passed' &&
+    !snapshot.approved &&
+    snapshot.actualUrl !== null
+  );
 }
 
 /** Every name "Approve all" sends: changed, then new, each approvable. */
-export function approvableNames(snapshots: readonly VisualSnapshot[]): string[] {
+export function approvableNames(
+  snapshots: readonly VisualSnapshot[],
+): string[] {
   const groups = groupSnapshots(snapshots);
-  return [...groups.changed, ...groups.added].filter(isApprovable).map((snapshot) => snapshot.name);
+  return [...groups.changed, ...groups.added]
+    .filter(isApprovable)
+    .map((snapshot) => snapshot.name);
 }
 
 /**
@@ -276,16 +328,18 @@ export function approveAllLabel(count: number): string {
   return `Approve all (${String(count)})`;
 }
 
-export const APPROVE_ONE_LABEL = "Approve new look";
+export const APPROVE_ONE_LABEL = 'Approve new look';
 
-export const NEW_SNAPSHOT_NOTE = "No reference yet — approve to make this the reference.";
+export const NEW_SNAPSHOT_NOTE =
+  'No reference yet — approve to make this the reference.';
 
-const APPROVER_ROLES: readonly AppRole[] = ["member", "lead", "admin"];
+const APPROVER_ROLES: readonly AppRole[] = ['member', 'lead', 'admin'];
 
-export const VISUAL_ROLE_NOTE = "Only Developers, Product owners and admins can approve visual changes.";
+export const VISUAL_ROLE_NOTE =
+  'Only Developers, Product owners and admins can approve visual changes.';
 
 /** Why a panel is read-only: the viewer's role, or a run that is not the latest. */
-export type VisualReadOnlyReason = "role" | "not-latest";
+export type VisualReadOnlyReason = 'role' | 'not-latest';
 
 /**
  * Why approve buttons are hidden, or null when they show.
@@ -301,14 +355,18 @@ export function visualReadOnlyReason(input: {
   /** The server answered an approval with VISUAL_APPROVE_ROLE_FORBIDDEN. */
   roleForbidden: boolean;
 }): VisualReadOnlyReason | null {
-  const roleMayApprove = input.appRole != null && APPROVER_ROLES.includes(input.appRole);
-  if (input.roleForbidden || !roleMayApprove) return "role";
-  return input.canApprove ? null : "not-latest";
+  const roleMayApprove =
+    input.appRole != null && APPROVER_ROLES.includes(input.appRole);
+  if (input.roleForbidden || !roleMayApprove) return 'role';
+  return input.canApprove ? null : 'not-latest';
 }
 
 /** The read-only note's sentence. */
-export function visualReadOnlyNote(reason: VisualReadOnlyReason, branch: string): string {
-  return reason === "role"
+export function visualReadOnlyNote(
+  reason: VisualReadOnlyReason,
+  branch: string,
+): string {
+  return reason === 'role'
     ? VISUAL_ROLE_NOTE
     : `This is not the latest visual run for ${branch}, so it can't be approved here.`;
 }
@@ -334,11 +392,7 @@ export function markApproved(
 /* ── An approval that failed ─────────────────────────────────────────────── */
 
 export type VisualApproveErrorKind =
-  | "superseded"
-  | "not-approvable"
-  | "forbidden"
-  | "not-found"
-  | "failed";
+  'superseded' | 'not-approvable' | 'forbidden' | 'not-found' | 'failed';
 
 export interface VisualApproveError {
   kind: VisualApproveErrorKind;
@@ -352,39 +406,46 @@ export interface VisualApproveError {
 function errorBody(cause: unknown): Record<string, unknown> | null {
   if (!(cause instanceof ApiError)) return null;
   const body = cause.details;
-  return typeof body === "object" && body !== null ? (body as Record<string, unknown>) : null;
+  return typeof body === 'object' && body !== null
+    ? (body as Record<string, unknown>)
+    : null;
 }
 
 function bodyCode(body: Record<string, unknown> | null): string {
-  return typeof body?.code === "string" ? body.code.toUpperCase() : "";
+  return typeof body?.code === 'string' ? body.code.toUpperCase() : '';
 }
 
 function bodyNames(body: Record<string, unknown> | null): string[] {
   const names = body?.names;
-  return Array.isArray(names) ? names.filter((name): name is string => typeof name === "string") : [];
+  return Array.isArray(names)
+    ? names.filter((name): name is string => typeof name === 'string')
+    : [];
 }
 
 function bodyRunId(body: Record<string, unknown> | null): number | null {
-  return typeof body?.latestRunId === "number" ? body.latestRunId : null;
+  return typeof body?.latestRunId === 'number' ? body.latestRunId : null;
 }
 
 function notApprovableMessage(names: readonly string[]): string {
-  const subject = names.length === 0 ? "some screenshots" : names.join(", ");
+  const subject = names.length === 0 ? 'some screenshots' : names.join(', ');
   return `Nothing was approved: ${subject} can't be approved — already passing, unknown, or without a captured screenshot.`;
 }
 
 const CODE_KINDS: Readonly<Record<string, VisualApproveErrorKind>> = {
-  VISUAL_RUN_SUPERSEDED: "superseded",
-  VISUAL_NOT_APPROVABLE: "not-approvable",
-  VISUAL_APPROVE_ROLE_FORBIDDEN: "forbidden",
-  VISUAL_RUN_NOT_FOUND: "not-found",
+  VISUAL_RUN_SUPERSEDED: 'superseded',
+  VISUAL_NOT_APPROVABLE: 'not-approvable',
+  VISUAL_APPROVE_ROLE_FORBIDDEN: 'forbidden',
+  VISUAL_RUN_NOT_FOUND: 'not-found',
 };
 
-const FIXED_MESSAGES: Readonly<Record<Exclude<VisualApproveErrorKind, "not-approvable" | "failed">, string>> = {
+const FIXED_MESSAGES: Readonly<
+  Record<Exclude<VisualApproveErrorKind, 'not-approvable' | 'failed'>, string>
+> = {
   superseded:
-    "Not approved: a newer visual run has been reported for this branch. Load it and approve its screenshots instead.",
+    'Not approved: a newer visual run has been reported for this branch. Load it and approve its screenshots instead.',
   forbidden: VISUAL_ROLE_NOTE,
-  "not-found": "Not approved: that visual run is no longer available. Load the latest run and try again.",
+  'not-found':
+    'Not approved: that visual run is no longer available. Load the latest run and try again.',
 };
 
 /**
@@ -394,21 +455,25 @@ const FIXED_MESSAGES: Readonly<Record<Exclude<VisualApproveErrorKind, "not-appro
  */
 export function visualApproveError(cause: unknown): VisualApproveError {
   const body = errorBody(cause);
-  const kind = CODE_KINDS[bodyCode(body)] ?? "failed";
-  const names = kind === "not-approvable" ? bodyNames(body) : [];
+  const kind = CODE_KINDS[bodyCode(body)] ?? 'failed';
+  const names = kind === 'not-approvable' ? bodyNames(body) : [];
   let message: string;
-  if (kind === "not-approvable") message = notApprovableMessage(names);
-  else if (kind === "failed") message = apiErrorReason(cause, "The approval could not be saved. Try again in a moment.");
+  if (kind === 'not-approvable') message = notApprovableMessage(names);
+  else if (kind === 'failed')
+    message = apiErrorReason(
+      cause,
+      'The approval could not be saved. Try again in a moment.',
+    );
   else message = FIXED_MESSAGES[kind];
   return {
     kind,
     message,
-    latestRunId: kind === "superseded" ? bodyRunId(body) : null,
+    latestRunId: kind === 'superseded' ? bodyRunId(body) : null,
     names,
   };
 }
 
 /** Whether a refusal is answered with a "Load latest run" button. */
 export function offersLoadLatest(error: VisualApproveError | null): boolean {
-  return error?.kind === "superseded" || error?.kind === "not-found";
+  return error?.kind === 'superseded' || error?.kind === 'not-found';
 }

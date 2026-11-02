@@ -11,7 +11,12 @@ export function json(route: Route, body: unknown, status = 200) {
   });
 }
 
-export function text(route: Route, status: number, body: string, contentType = 'text/plain') {
+export function text(
+  route: Route,
+  status: number,
+  body: string,
+  contentType = 'text/plain',
+) {
   return route.fulfill({
     status,
     contentType,
@@ -26,9 +31,11 @@ export async function expectVisibleText(page: Page, textValue: string) {
       timeout: 15_000,
     });
   } catch (error) {
-    const visibleText = await page.locator('body').evaluate((element) =>
-      element instanceof HTMLElement ? element.innerText.slice(0, 2000) : '',
-    );
+    const visibleText = await page
+      .locator('body')
+      .evaluate((element) =>
+        element instanceof HTMLElement ? element.innerText.slice(0, 2000) : '',
+      );
     throw new Error(
       `Expected visible text not found: ${textValue}\nVisible text snapshot:\n${visibleText}`,
       { cause: error },

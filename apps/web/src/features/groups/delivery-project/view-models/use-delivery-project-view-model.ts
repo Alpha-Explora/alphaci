@@ -1,31 +1,31 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { useApiResource } from "@/features/groups";
-import { useAuthSession } from "@/features/auth/session";
-import { useCapabilities } from "@/features/capabilities/current";
-import type { AppRole } from "@/shared/api/contracts";
+import { useApiResource } from '@/features/groups';
+import { useAuthSession } from '@/features/auth/session';
+import { useCapabilities } from '@/features/capabilities/current';
+import type { AppRole } from '@/shared/api/contracts';
 
-import { groupsRepository } from "../../data/groups-repository";
-import { canCreateRepositoryInProject } from "../../model/creation-role-rules";
+import { groupsRepository } from '../../data/groups-repository';
+import { canCreateRepositoryInProject } from '../../model/creation-role-rules';
 import type {
   DeliveryProject,
   GroupSummary,
   HierarchyRepository,
-} from "../../model/groups-types";
+} from '../../model/groups-types';
 
 export interface DeliveryProjectViewModel {
   /** Only needed for the breadcrumb label, so its failure is not fatal. */
   group: GroupSummary | null;
   project: DeliveryProject | null;
   /** The delivery project's own load state: it gates the whole surface. */
-  status: ReturnType<typeof useApiResource<DeliveryProject>>["state"];
+  status: ReturnType<typeof useApiResource<DeliveryProject>>['state'];
   reload: () => void;
   repositories: HierarchyRepository[];
   repositoriesStatus: ReturnType<
     typeof useApiResource<HierarchyRepository[]>
-  >["state"];
+  >['state'];
   reloadRepositories: () => void;
   /** Whether the caller may create a repository here (Developer, admin). */
   canCreateRepository: boolean;

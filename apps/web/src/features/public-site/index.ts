@@ -1,3 +1,2 @@
-export { LandingView } from "./landing";
-export { LandingView as default } from "./landing";
-
+export { LandingView } from './landing';
+export { LandingView as default } from './landing';

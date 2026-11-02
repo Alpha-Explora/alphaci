@@ -1,13 +1,10 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { projectsRepository } from "../../data/projects-repository";
-import { workspacePermissionErrorMessage } from "../../detail/model/workspace-permission-errors";
-import type {
-  CustomDomain,
-  ProjectStatus,
-} from "../../model/projects-types";
+import { projectsRepository } from '../../data/projects-repository';
+import { workspacePermissionErrorMessage } from '../../detail/model/workspace-permission-errors';
+import type { CustomDomain, ProjectStatus } from '../../model/projects-types';
 
 export interface ProjectDomainsViewModel {
   domains: CustomDomain[];
@@ -35,7 +32,7 @@ export function useProjectDomainsViewModel(options: {
   const { projectId, enabled } = options;
 
   const [domains, setDomains] = useState<CustomDomain[]>([]);
-  const [status, setStatus] = useState<ProjectStatus>("loading");
+  const [status, setStatus] = useState<ProjectStatus>('loading');
   const [error, setError] = useState<string | null>(null);
   const [busyDomainId, setBusyDomainId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -58,12 +55,12 @@ export function useProjectDomainsViewModel(options: {
         if (!active || id !== req.current) return;
         setDomains(response);
         setError(null);
-        setStatus("ready");
+        setStatus('ready');
       })
       .catch(() => {
         if (!active || id !== req.current) return;
-        setError("Could not load domains. Please retry.");
-        setStatus("error");
+        setError('Could not load domains. Please retry.');
+        setStatus('error');
       });
 
     return () => {
@@ -96,7 +93,7 @@ export function useProjectDomainsViewModel(options: {
       reload();
       return true;
     } catch (cause) {
-      setError(messageFor(cause, "Could not add that domain."));
+      setError(messageFor(cause, 'Could not add that domain.'));
       return false;
     } finally {
       setIsAdding(false);
@@ -115,7 +112,7 @@ export function useProjectDomainsViewModel(options: {
         current.map((domain) => (domain.id === domainId ? updated : domain)),
       );
     } catch (cause) {
-      setError(messageFor(cause, "Could not check that domain."));
+      setError(messageFor(cause, 'Could not check that domain.'));
     } finally {
       setBusyDomainId(null);
     }
@@ -137,7 +134,7 @@ export function useProjectDomainsViewModel(options: {
         );
       }
     } catch (cause) {
-      setError(messageFor(cause, "Could not remove that domain."));
+      setError(messageFor(cause, 'Could not remove that domain.'));
     } finally {
       setBusyDomainId(null);
     }
@@ -162,8 +159,8 @@ export function useProjectDomainsViewModel(options: {
  * exposes on `message` for this endpoint family.
  */
 function messageFor(cause: unknown, fallback: string): string {
-  const mapped = workspacePermissionErrorMessage(cause, "");
+  const mapped = workspacePermissionErrorMessage(cause, '');
   if (mapped) return mapped;
   const message = (cause as { message?: unknown })?.message;
-  return typeof message === "string" && message.trim() ? message : fallback;
+  return typeof message === 'string' && message.trim() ? message : fallback;
 }

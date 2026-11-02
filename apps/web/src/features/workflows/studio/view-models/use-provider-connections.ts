@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   createProviderConnection,
   listProviderConnections,
   revokeProviderConnection,
-} from "@/features/workflows/studio/data/env-provisioning-api";
+} from '@/features/workflows/studio/data/env-provisioning-api';
 import type {
   CreateProviderConnectionRequest,
   ProviderConnection,
-} from "@/shared/api/contracts";
+} from '@/shared/api/contracts';
 
 export function useProviderConnections(enabled = true) {
   const [connections, setConnections] = useState<ProviderConnection[]>([]);
@@ -56,7 +56,9 @@ export function useProviderConnections(enabled = true) {
     await revokeProviderConnection(id);
     setConnections((current) =>
       current.map((connection) =>
-        connection.id === id ? { ...connection, status: "revoked" } : connection,
+        connection.id === id
+          ? { ...connection, status: 'revoked' }
+          : connection,
       ),
     );
   }

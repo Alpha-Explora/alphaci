@@ -26,31 +26,32 @@
  * so a backend that has not shipped a code yet still shows something useful.
  */
 
-import { ApiError } from "@/shared/api/request";
-import { apiErrorReason } from "./api-error-reason";
+import { ApiError } from '@/shared/api/request';
+import { apiErrorReason } from './api-error-reason';
 
 const WORKSPACE_PERMISSION_MESSAGES: Readonly<Record<string, string>> = {
   main_merge_via_qa_studio:
-    "Merges into main go through PO Studio — Ready for production.",
-  pr_role_forbidden: "QA does not open or merge pull requests.",
+    'Merges into main go through PO Studio — Ready for production.',
+  pr_role_forbidden: 'QA does not open or merge pull requests.',
   main_pr_restricted:
-    "Pull requests into main are restricted to the PO Studio promotion flow.",
+    'Pull requests into main are restricted to the PO Studio promotion flow.',
   pr_route_restricted:
-    "Developers open pull requests from a feature branch into dev, and from dev into uat.",
-  env_vars_lead_only: "Developers and admins can change environment variables.",
-  project_role_forbidden: "Only Product owners and admins can make this change.",
+    'Developers open pull requests from a feature branch into dev, and from dev into uat.',
+  env_vars_lead_only: 'Developers and admins can change environment variables.',
+  project_role_forbidden:
+    'Only Product owners and admins can make this change.',
   hosting_lead_only:
-    "Developers and admins can change hosting services and custom domains.",
+    'Developers and admins can change hosting services and custom domains.',
   pr_base_branch_missing:
-    "This repository has no dev or uat branch to open the pull request against. Create one, then try again.",
+    'This repository has no dev or uat branch to open the pull request against. Create one, then try again.',
 };
 
 function errorCode(cause: unknown): string {
-  if (!(cause instanceof ApiError)) return "";
+  if (!(cause instanceof ApiError)) return '';
   const body = cause.details;
-  if (typeof body !== "object" || body === null || !("code" in body)) return "";
+  if (typeof body !== 'object' || body === null || !('code' in body)) return '';
   const { code } = body as { code: unknown };
-  return typeof code === "string" ? code.toLowerCase() : "";
+  return typeof code === 'string' ? code.toLowerCase() : '';
 }
 
 /**

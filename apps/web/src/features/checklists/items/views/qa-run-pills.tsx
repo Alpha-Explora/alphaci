@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import "./qa-run-pills.css";
+import './qa-run-pills.css';
 
 import {
   UNCONFIRMED_PASS_HINT,
   automatedBadgeLabel,
   automatedStatusTone,
   isUnconfirmedPass,
-} from "../../model/qa-automation-rules";
-import type { QaAutomatedStatus } from "../../model/qa-automation-types";
+} from '../../model/qa-automation-rules';
+import type { QaAutomatedStatus } from '../../model/qa-automation-types';
 import {
   itemStatusLabel,
   itemStatusTone,
@@ -16,12 +16,12 @@ import {
   verdictLabel,
   verdictTone,
   type QaTone,
-} from "../../model/qa-run-rules";
+} from '../../model/qa-run-rules';
 import type {
   QaDefectSeverity,
   QaRunItemStatus,
   QaVerdict,
-} from "../../model/qa-run-types";
+} from '../../model/qa-run-types';
 
 /**
  * An item's status in words and colour. The colour follows the app's semantic
@@ -39,7 +39,9 @@ export function StatusPill({ status }: Readonly<{ status: QaRunItemStatus }>) {
 }
 
 /** How bad a defect is. Blocker reads as danger; major and minor step down. */
-export function SeverityBadge({ severity }: Readonly<{ severity: QaDefectSeverity }>) {
+export function SeverityBadge({
+  severity,
+}: Readonly<{ severity: QaDefectSeverity }>) {
   return (
     <span className={`qa-severity qa-severity--${severity}`}>
       <span className="sr-only">Severity: </span>
@@ -58,7 +60,10 @@ export function VerdictPill({ verdict }: Readonly<{ verdict: QaVerdict }>) {
 }
 
 /** Any label in a status tone — for states that are not an item's status (a CI stage's result). */
-export function TonePill({ tone, label }: Readonly<{ tone: QaTone; label: string }>) {
+export function TonePill({
+  tone,
+  label,
+}: Readonly<{ tone: QaTone; label: string }>) {
   return (
     <span className={`qa-pill qa-pill--${tone}`}>
       <span className="qa-pill__dot" aria-hidden="true" />
@@ -105,12 +110,14 @@ export function AutomatedBadge({
   const unconfirmed = isUnconfirmedPass({ status, inferred });
   return (
     <span
-      className={`qa-auto-badge qa-auto-badge--${automatedStatusTone(status)}${unconfirmed ? " qa-auto-badge--unconfirmed" : ""}`}
+      className={`qa-auto-badge qa-auto-badge--${automatedStatusTone(status)}${unconfirmed ? ' qa-auto-badge--unconfirmed' : ''}`}
       title={unconfirmed ? UNCONFIRMED_PASS_HINT : undefined}
     >
       <FlaskGlyph />
       <span className="qa-auto-badge__label">Automated</span>
-      <span className="qa-auto-badge__status">{automatedBadgeLabel(status, inferred)}</span>
+      <span className="qa-auto-badge__status">
+        {automatedBadgeLabel(status, inferred)}
+      </span>
     </span>
   );
 }

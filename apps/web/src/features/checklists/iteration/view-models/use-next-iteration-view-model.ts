@@ -1,9 +1,12 @@
-"use client";
+'use client';
 
-import type { AppRole } from "@/shared/api/contracts";
+import type { AppRole } from '@/shared/api/contracts';
 
-import { useCurrentIterationViewModel } from "./use-current-iteration-view-model";
-import { useStartIterationViewModel, type StartIterationViewModel } from "./use-start-iteration-view-model";
+import { useCurrentIterationViewModel } from './use-current-iteration-view-model';
+import {
+  useStartIterationViewModel,
+  type StartIterationViewModel,
+} from './use-start-iteration-view-model';
 
 /**
  * The next iteration, for a screen that does not read the Project's iteration
@@ -18,9 +21,12 @@ export function useNextIterationViewModel(options: {
   appRole: AppRole | null | undefined;
 }): StartIterationViewModel {
   const { deliveryProjectId, enabled, appRole } = options;
-  const iteration = useCurrentIterationViewModel({ deliveryProjectId, enabled });
+  const iteration = useCurrentIterationViewModel({
+    deliveryProjectId,
+    enabled,
+  });
   return useStartIterationViewModel({
-    deliveryProjectId: deliveryProjectId ?? "",
+    deliveryProjectId: deliveryProjectId ?? '',
     current: iteration.current,
     appRole,
   });

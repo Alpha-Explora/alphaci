@@ -28,7 +28,7 @@
   color: var(--text-secondary);
 }
 
-.studio-checks__visual[data-review="true"] {
+.studio-checks__visual[data-review='true'] {
   border-color: var(--border-amber);
 }
 

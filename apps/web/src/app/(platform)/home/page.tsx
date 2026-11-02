@@ -1,1 +1,1 @@
-export { HomeDashboardView as default } from "@/features/home/dashboard";
+export { HomeDashboardView as default } from '@/features/home/dashboard';

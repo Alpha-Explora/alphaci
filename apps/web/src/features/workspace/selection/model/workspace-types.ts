@@ -1,11 +1,11 @@
-import { APP_ROLE_BADGE_LABELS, type AppRole } from "@/shared/api/contracts";
+import { APP_ROLE_BADGE_LABELS, type AppRole } from '@/shared/api/contracts';
 
-export type WorkspaceRole = "admin" | "delegated_lead" | "member" | "viewer";
+export type WorkspaceRole = 'admin' | 'delegated_lead' | 'member' | 'viewer';
 
 export interface WorkspaceSummary {
   id: string;
   name: string;
-  kind: "personal" | "team";
+  kind: 'personal' | 'team';
   role: WorkspaceRole;
 }
 
@@ -18,7 +18,10 @@ export interface WorkspacesMeResponse {
  * The list while the API reports workspaces off. `/workspaces/me` answers 404
  * then, so this is never fetched: the header renders its "disabled" slot.
  */
-export const WORKSPACES_OFF: WorkspacesMeResponse = { enabled: false, items: [] };
+export const WORKSPACES_OFF: WorkspacesMeResponse = {
+  enabled: false,
+  items: [],
+};
 
 /** The global app role; one definition, owned by the API contract. */
 export type WorkspaceAppRole = AppRole;
@@ -26,17 +29,14 @@ export type WorkspaceAppRole = AppRole;
 export { APP_ROLE_BADGE_LABELS };
 
 /** Only Team leads and Admins create workspaces; QA Team and Developers cannot. */
-export function canCreateWorkspace(appRole: WorkspaceAppRole | null | undefined) {
-  return appRole === "admin" || appRole === "lead";
+export function canCreateWorkspace(
+  appRole: WorkspaceAppRole | null | undefined,
+) {
+  return appRole === 'admin' || appRole === 'lead';
 }
 
 export type WorkspaceSwitcherKind =
-  | "error"
-  | "disabled"
-  | "loading"
-  | "no-team"
-  | "create"
-  | "picker";
+  'error' | 'disabled' | 'loading' | 'no-team' | 'create' | 'picker';
 
 /**
  * Which header slot to show. Order is the product rule: a failed load must
@@ -44,24 +44,26 @@ export type WorkspaceSwitcherKind =
  * the developer notice.
  */
 export function workspaceSwitcherKind(
-  status: "idle" | "loading" | "ready" | "error",
+  status: 'idle' | 'loading' | 'ready' | 'error',
   workspaces: WorkspacesMeResponse | null,
   /** Every selectable team, an admin's other teams included. */
   itemCount: number,
   canCreate: boolean,
 ): WorkspaceSwitcherKind {
-  if (status === "error") return "error";
-  if (workspaces?.enabled === false) return "disabled";
-  if (status === "loading" || workspaces === null) return "loading";
-  if (itemCount === 0 && !canCreate) return "no-team";
-  if (itemCount === 0) return "create";
-  return "picker";
+  if (status === 'error') return 'error';
+  if (workspaces?.enabled === false) return 'disabled';
+  if (status === 'loading' || workspaces === null) return 'loading';
+  if (itemCount === 0 && !canCreate) return 'no-team';
+  if (itemCount === 0) return 'create';
+  return 'picker';
 }
 
-export function navAvatarInitial(session: {
-  user: { name?: string; login?: string };
-} | null): string {
-  return (session?.user.name ?? session?.user.login ?? "U")
+export function navAvatarInitial(
+  session: {
+    user: { name?: string; login?: string };
+  } | null,
+): string {
+  return (session?.user.name ?? session?.user.login ?? 'U')
     .slice(0, 1)
     .toUpperCase();
 }
@@ -71,7 +73,9 @@ export function isPlatformAdminUser(
   session: { appRole?: string; platformRole?: string | null } | null,
 ): boolean {
   if (guest) return false;
-  return session?.appRole === "admin" || session?.platformRole === "super_admin";
+  return (
+    session?.appRole === 'admin' || session?.platformRole === 'super_admin'
+  );
 }
 
 /**
@@ -85,13 +89,18 @@ export function isPlatformAdminUser(
  * reports for an admin on a team they do not belong to.
  */
 export function adminOtherTeams(
-  memberTeams: readonly Pick<WorkspaceSummary, "id">[],
+  memberTeams: readonly Pick<WorkspaceSummary, 'id'>[],
   allTeams: readonly { id: string; name: string }[],
 ): WorkspaceSummary[] {
   const memberIds = new Set(memberTeams.map((team) => team.id));
   return allTeams
     .filter((team) => !memberIds.has(team.id))
-    .map((team) => ({ id: team.id, name: team.name, kind: "team" as const, role: "admin" as const }))
+    .map((team) => ({
+      id: team.id,
+      name: team.name,
+      kind: 'team' as const,
+      role: 'admin' as const,
+    }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -104,15 +113,18 @@ export function selectableWorkspaces(
 }
 
 /** The primary sidebar entries, in order. */
-export type SidebarMainItem = "home" | "projects" | "teams" | "checklists" | "activity" | "inbox" | "hosts";
-
+export type SidebarMainItem =
+  'home' | 'projects' | 'teams' | 'checklists' | 'activity' | 'inbox' | 'hosts';
 
 /**
  * The platform roles the backend treats as a platform admin
  * (HierarchyAccessService.isPlatformAdmin): any platform_admins row, whatever
  * its role. Kept as an explicit list for the same reason as above.
  */
-const PLATFORM_ADMIN_ROLES: ReadonlySet<string> = new Set(["admin", "super_admin"]);
+const PLATFORM_ADMIN_ROLES: ReadonlySet<string> = new Set([
+  'admin',
+  'super_admin',
+]);
 
 /**
  * Whether the caller can open /activity for the team selected in the header.
@@ -129,14 +141,15 @@ export function canOpenTeamActivity(input: {
   teamRole?: WorkspaceRole | null;
 }): boolean {
   if (input.guest) return false;
-  if (input.appRole === "admin") return true;
-  if (input.platformRole && PLATFORM_ADMIN_ROLES.has(input.platformRole)) return true;
+  if (input.appRole === 'admin') return true;
+  if (input.platformRole && PLATFORM_ADMIN_ROLES.has(input.platformRole))
+    return true;
   // The backend derives the team role from the global app role (lead/admin ->
   // team admin) for active members, so the stored per-team role must not
   // decide: a stored delegated_lead whose app role is member is refused, and a
   // lead whose stored role is member is allowed. teamRole only proves the user
   // belongs to the selected team.
-  return input.appRole === "lead" && Boolean(input.teamRole);
+  return input.appRole === 'lead' && Boolean(input.teamRole);
 }
 
 /**
@@ -176,22 +189,22 @@ export function sidebarMainItems(input: {
   showActivity?: boolean;
   hostsEnabled?: boolean;
 }): SidebarMainItem[] {
-  const items: SidebarMainItem[] = ["home", "projects"];
+  const items: SidebarMainItem[] = ['home', 'projects'];
   if (input.guest) return items;
-  items.push("teams");
-  if(input.hostsEnabled)items.push("hosts");
+  items.push('teams');
+  if (input.hostsEnabled) items.push('hosts');
   const showChecklists = input.showChecklists ?? SIDEBAR_SHOWS_CHECKLISTS;
-  if (showChecklists && input.qaChecklistsEnabled) items.push("checklists");
+  if (showChecklists && input.qaChecklistsEnabled) items.push('checklists');
   const showActivity = input.showActivity ?? SIDEBAR_SHOWS_ACTIVITY;
-  if (showActivity && input.canOpenActivity) items.push("activity");
-  items.push("inbox");
+  if (showActivity && input.canOpenActivity) items.push('activity');
+  items.push('inbox');
   return items;
 }
 
 export function sessionAppRole(
   session: { appRole?: WorkspaceAppRole } | null,
 ): WorkspaceAppRole {
-  return session?.appRole ?? "member";
+  return session?.appRole ?? 'member';
 }
 
 export function reducedMotionEnabled(value: boolean | null): boolean {

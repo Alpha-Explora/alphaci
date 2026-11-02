@@ -4,13 +4,13 @@
  * as the Checklists page does). Verification comes from the Project's newest
  * run, so a Project with no run has none: it is "not verified", not zero. */
 
-import { PROJECT_MY_QA_ITEMS_HASH } from "@/features/checklists";
+import { PROJECT_MY_QA_ITEMS_HASH } from '@/features/checklists';
 
 import {
   deliveryProjectHref,
   projectStudioHref,
   type HomeLinkContext,
-} from "./home-persona-rules";
+} from './home-persona-rules';
 import type {
   LegacyRunRow,
   OpenRunRow,
@@ -19,7 +19,7 @@ import type {
   RetestRow,
   ReturnedRow,
   VerificationRow,
-} from "./home-persona-types";
+} from './home-persona-types';
 import type {
   TeamQaDefectCounts,
   TeamQaLatestRun,
@@ -28,10 +28,10 @@ import type {
   TeamQaPromotion,
   TeamQaRequirementSummary,
   TeamQaVerificationCounts,
-} from "./home-types";
+} from './home-types';
 
-type QaRunStatus = VerificationRow["status"];
-type QaVerdict = ReadyForProductionRow["verdict"];
+type QaRunStatus = VerificationRow['status'];
+type QaVerdict = ReadyForProductionRow['verdict'];
 
 const ZERO_VERIFICATION: TeamQaVerificationCounts = {
   pending: 0,
@@ -41,10 +41,19 @@ const ZERO_VERIFICATION: TeamQaVerificationCounts = {
   returned_to_dev: 0,
 };
 
-const ZERO_DEFECTS: TeamQaDefectCounts = { blocker: 0, major: 0, minor: 0, unrated: 0 };
+const ZERO_DEFECTS: TeamQaDefectCounts = {
+  blocker: 0,
+  major: 0,
+  minor: 0,
+  unrated: 0,
+};
 
-export function liveRequirements(project: TeamQaProject): TeamQaRequirementSummary[] {
-  return project.requirements.filter((requirement) => requirement.archivedAt === null);
+export function liveRequirements(
+  project: TeamQaProject,
+): TeamQaRequirementSummary[] {
+  return project.requirements.filter(
+    (requirement) => requirement.archivedAt === null,
+  );
 }
 
 function addVerification(
@@ -61,7 +70,9 @@ function addVerification(
 }
 
 /** The Project's Verification on its newest run, over live requirements; null with no run. */
-export function verificationTotals(project: TeamQaProject): TeamQaVerificationCounts | null {
+export function verificationTotals(
+  project: TeamQaProject,
+): TeamQaVerificationCounts | null {
   const counted = liveRequirements(project)
     .map((requirement) => requirement.verification)
     .filter((counts): counts is TeamQaVerificationCounts => counts !== null);
@@ -84,17 +95,25 @@ export function failedOrBlockedCount(project: TeamQaProject): number {
 
 /** Items a Developer has In progress, over live requirements. */
 export function inProgressCount(project: TeamQaProject): number {
-  return liveRequirements(project).reduce((sum, requirement) => sum + requirement.progressCounts.in_progress, 0);
+  return liveRequirements(project).reduce(
+    (sum, requirement) => sum + requirement.progressCounts.in_progress,
+    0,
+  );
 }
 
 /** The newest run's state: `latestRun` when the server sent it, else any requirement's `latestRunStatus`. */
 export function projectRunStatus(project: TeamQaProject): QaRunStatus | null {
   if (project.latestRun) return project.latestRun.status;
-  const withRun = project.requirements.find((requirement) => requirement.latestRunStatus !== null);
+  const withRun = project.requirements.find(
+    (requirement) => requirement.latestRunStatus !== null,
+  );
   return withRun ? withRun.latestRunStatus : null;
 }
 
-export function sumOver(projects: ReadonlyArray<TeamQaProject>, pick: (project: TeamQaProject) => number): number {
+export function sumOver(
+  projects: ReadonlyArray<TeamQaProject>,
+  pick: (project: TeamQaProject) => number,
+): number {
   return projects.reduce((sum, project) => sum + pick(project), 0);
 }
 
@@ -118,7 +137,10 @@ function byName<T extends { name: string }>(a: T, b: T): number {
  * row opens the Project page on its "My QA items" tab: the team works one
  * list per Project, so this is "returned in my Projects", not "to me".
  */
-export function returnedRows(projects: ReadonlyArray<TeamQaProject>, links: HomeLinkContext): ReturnedRow[] {
+export function returnedRows(
+  projects: ReadonlyArray<TeamQaProject>,
+  links: HomeLinkContext,
+): ReturnedRow[] {
   return projects
     .map((project) => ({
       deliveryProjectId: project.deliveryProject.id,
@@ -133,10 +155,16 @@ export function returnedRows(projects: ReadonlyArray<TeamQaProject>, links: Home
 
 /* ── QA Team ────────────────────────────────────────────────────────────── */
 
-const RUN_STATUS_ORDER: Readonly<Record<QaRunStatus, number>> = { open: 0, signed_off: 1 };
+const RUN_STATUS_ORDER: Readonly<Record<QaRunStatus, number>> = {
+  open: 0,
+  signed_off: 1,
+};
 
 /** Every Project with a run: open runs first, then signed off; each opens QA Studio. */
-export function verificationRows(projects: ReadonlyArray<TeamQaProject>, links: HomeLinkContext): VerificationRow[] {
+export function verificationRows(
+  projects: ReadonlyArray<TeamQaProject>,
+  links: HomeLinkContext,
+): VerificationRow[] {
   const rows: VerificationRow[] = [];
   for (const project of projects) {
     const status = projectRunStatus(project);
@@ -147,10 +175,13 @@ export function verificationRows(projects: ReadonlyArray<TeamQaProject>, links: 
       status,
       verdict: project.latestRun?.verdict ?? null,
       counts: verificationTotals(project) ?? ZERO_VERIFICATION,
-      href: projectStudioHref(links, project.deliveryProject.id, "qa"),
+      href: projectStudioHref(links, project.deliveryProject.id, 'qa'),
     });
   }
-  return rows.sort((a, b) => RUN_STATUS_ORDER[a.status] - RUN_STATUS_ORDER[b.status] || byName(a, b));
+  return rows.sort(
+    (a, b) =>
+      RUN_STATUS_ORDER[a.status] - RUN_STATUS_ORDER[b.status] || byName(a, b),
+  );
 }
 
 /** Projects with items ready for a re-test; null when the server sent no counts (an older backend). */
@@ -165,13 +196,16 @@ export function retestRows(
       deliveryProjectId: project.deliveryProject.id,
       name: project.deliveryProject.name,
       ready: project.counts.readyForQa ?? 0,
-      href: projectStudioHref(links, project.deliveryProject.id, "qa"),
+      href: projectStudioHref(links, project.deliveryProject.id, 'qa'),
     }))
     .filter((row) => row.ready > 0)
     .sort((a, b) => b.ready - a.ready || byName(a, b));
 }
 
-function addDefects(a: TeamQaDefectCounts, b: TeamQaDefectCounts): TeamQaDefectCounts {
+function addDefects(
+  a: TeamQaDefectCounts,
+  b: TeamQaDefectCounts,
+): TeamQaDefectCounts {
   return {
     blocker: a.blocker + b.blocker,
     major: a.major + b.major,
@@ -181,7 +215,9 @@ function addDefects(a: TeamQaDefectCounts, b: TeamQaDefectCounts): TeamQaDefectC
 }
 
 /** Open defects by severity over these Projects; null when the server sent none. */
-export function defectTotals(projects: ReadonlyArray<TeamQaProject>): TeamQaDefectCounts | null {
+export function defectTotals(
+  projects: ReadonlyArray<TeamQaProject>,
+): TeamQaDefectCounts | null {
   const counted = projects
     .map((project) => project.counts.openDefects)
     .filter((counts): counts is TeamQaDefectCounts => counts !== null);
@@ -192,7 +228,9 @@ export function defectTotals(projects: ReadonlyArray<TeamQaProject>): TeamQaDefe
 /* ── Product owner: Ready for production ────────────────────────────────── */
 
 /* Only Approved ships: the merge gate refuses Conditional (decision D3). */
-const SHIPPABLE_VERDICTS: ReadonlySet<QaVerdict> = new Set<QaVerdict>(["APPROVED"]);
+const SHIPPABLE_VERDICTS: ReadonlySet<QaVerdict> = new Set<QaVerdict>([
+  'APPROVED',
+]);
 
 interface Shippable {
   run: TeamQaLatestRun;
@@ -202,9 +240,9 @@ interface Shippable {
 
 function shippable(project: TeamQaProject): Shippable | null {
   const { latestRun: run, promotion } = project;
-  if (run?.status !== "signed_off" || !run.verdict || !promotion) return null;
+  if (run?.status !== 'signed_off' || !run.verdict || !promotion) return null;
   // A delivered iteration is already in main: nothing left to promote.
-  if (project.iteration?.status === "delivered") return null;
+  if (project.iteration?.status === 'delivered') return null;
   if (!SHIPPABLE_VERDICTS.has(run.verdict)) return null;
   if (promotion.mergedRepositories >= promotion.totalRepositories) return null;
   return { run, verdict: run.verdict, promotion };
@@ -220,7 +258,10 @@ export function isReadyForProduction(project: TeamQaProject): boolean {
   return shippable(project) !== null;
 }
 
-function readyRows(projects: ReadonlyArray<TeamQaProject>, links: HomeLinkContext): ReadyForProductionRow[] {
+function readyRows(
+  projects: ReadonlyArray<TeamQaProject>,
+  links: HomeLinkContext,
+): ReadyForProductionRow[] {
   const rows: ReadyForProductionRow[] = [];
   for (const project of projects) {
     const ready = shippable(project);
@@ -233,24 +274,30 @@ function readyRows(projects: ReadonlyArray<TeamQaProject>, links: HomeLinkContex
       signedOffAt: ready.run.signedOffAt,
       mergedRepositories: ready.promotion.mergedRepositories,
       totalRepositories: ready.promotion.totalRepositories,
-      href: projectStudioHref(links, project.deliveryProject.id, "po"),
+      href: projectStudioHref(links, project.deliveryProject.id, 'po'),
     });
   }
   return rows.sort(byName);
 }
 
-function openRunRow(project: TeamQaProject, links: HomeLinkContext): OpenRunRow {
+function openRunRow(
+  project: TeamQaProject,
+  links: HomeLinkContext,
+): OpenRunRow {
   const totals = verificationTotals(project) ?? ZERO_VERIFICATION;
   return {
     deliveryProjectId: project.deliveryProject.id,
     name: project.deliveryProject.name,
     failed: totals.failed,
     blocked: totals.blocked,
-    href: projectStudioHref(links, project.deliveryProject.id, "po"),
+    href: projectStudioHref(links, project.deliveryProject.id, 'po'),
   };
 }
 
-function legacyRows(projects: ReadonlyArray<TeamQaProject>, links: HomeLinkContext): LegacyRunRow[] {
+function legacyRows(
+  projects: ReadonlyArray<TeamQaProject>,
+  links: HomeLinkContext,
+): LegacyRunRow[] {
   const rows: LegacyRunRow[] = [];
   for (const project of projects) {
     const status = projectRunStatus(project);
@@ -259,10 +306,13 @@ function legacyRows(projects: ReadonlyArray<TeamQaProject>, links: HomeLinkConte
       deliveryProjectId: project.deliveryProject.id,
       name: project.deliveryProject.name,
       status,
-      href: projectStudioHref(links, project.deliveryProject.id, "po"),
+      href: projectStudioHref(links, project.deliveryProject.id, 'po'),
     });
   }
-  return rows.sort((a, b) => RUN_STATUS_ORDER[b.status] - RUN_STATUS_ORDER[a.status] || byName(a, b));
+  return rows.sort(
+    (a, b) =>
+      RUN_STATUS_ORDER[b.status] - RUN_STATUS_ORDER[a.status] || byName(a, b),
+  );
 }
 
 /**
@@ -270,19 +320,30 @@ function legacyRows(projects: ReadonlyArray<TeamQaProject>, links: HomeLinkConte
  * still being verified. A backend that sent no `latestRun` gives only each
  * Project's open or signed-off state.
  */
-export function productionView(overview: TeamQaOverview | null, links: HomeLinkContext): ProductionView {
-  if (!overview) return { mode: "unavailable", ready: [], open: [], legacy: [] };
+export function productionView(
+  overview: TeamQaOverview | null,
+  links: HomeLinkContext,
+): ProductionView {
+  if (!overview)
+    return { mode: 'unavailable', ready: [], open: [], legacy: [] };
   const projects = overview.projects;
   if (!overview.supports.latestRun) {
-    return { mode: "legacy", ready: [], open: [], legacy: legacyRows(projects, links) };
+    return {
+      mode: 'legacy',
+      ready: [],
+      open: [],
+      legacy: legacyRows(projects, links),
+    };
   }
   return {
-    mode: "full",
+    mode: 'full',
     ready: readyRows(projects, links),
     open: projects
-      .filter((project) => project.latestRun?.status === "open")
+      .filter((project) => project.latestRun?.status === 'open')
       .map((project) => openRunRow(project, links))
-      .sort((a, b) => b.failed + b.blocked - (a.failed + a.blocked) || byName(a, b)),
+      .sort(
+        (a, b) => b.failed + b.blocked - (a.failed + a.blocked) || byName(a, b),
+      ),
     legacy: [],
   };
 }

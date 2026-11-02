@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { motion, useReducedMotion } from "framer-motion";
-import Image from "next/image";
+import { motion, useReducedMotion } from 'framer-motion';
+import Image from 'next/image';
 
-import { DitherBackground } from "@/shared/layout/dither-background";
+import { DitherBackground } from '@/shared/layout/dither-background';
 
 interface PipelineLoaderProps {
   label?: string;
@@ -12,7 +12,7 @@ interface PipelineLoaderProps {
 const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
 
 export function PipelineLoader({
-  label = "Loading",
+  label = 'Loading',
 }: Readonly<PipelineLoaderProps>) {
   const prefersReducedMotion = useReducedMotion();
 
@@ -20,7 +20,11 @@ export function PipelineLoader({
     <main className="pipeline-loader-shell">
       <DitherBackground className="pipeline-loader-dither" />
 
-      <section className="pipeline-loader-center" role="status" aria-label={label}>
+      <section
+        className="pipeline-loader-center"
+        role="status"
+        aria-label={label}
+      >
         <motion.div
           className="pipeline-loader-mark"
           initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.96 }}
@@ -63,10 +67,10 @@ export function PipelineLoader({
               prefersReducedMotion
                 ? false
                 : {
-                    x: ["-35%", "110%"],
+                    x: ['-35%', '110%'],
                   }
             }
-            transition={{ duration: 1.55, ease: "easeInOut", repeat: Infinity }}
+            transition={{ duration: 1.55, ease: 'easeInOut', repeat: Infinity }}
           />
         </motion.div>
       </section>

@@ -1,11 +1,11 @@
-import type { EnvOwnershipMode, UsageLimitItem } from "@/shared/api/contracts";
-import type { CreateProjectFormState } from "../view-models/use-create-project-form";
-import type { DeploymentProvisioningFormState } from "../view-models/use-deployment-provisioning-form";
-import type { GithubInstallationsState } from "../view-models/use-github-installations";
-import type { HostingChoiceState } from "../view-models/use-hosting-choice";
-import type { ProjectOptionsCatalogState } from "../view-models/use-project-options-catalog";
-import type { TeamProjectOptionsStatus } from "../view-models/use-team-project-options";
-import type { useSetupHostSelection } from "../view-models/use-setup-host-selection";
+import type { EnvOwnershipMode, UsageLimitItem } from '@/shared/api/contracts';
+import type { CreateProjectFormState } from '../view-models/use-create-project-form';
+import type { DeploymentProvisioningFormState } from '../view-models/use-deployment-provisioning-form';
+import type { GithubInstallationsState } from '../view-models/use-github-installations';
+import type { HostingChoiceState } from '../view-models/use-hosting-choice';
+import type { ProjectOptionsCatalogState } from '../view-models/use-project-options-catalog';
+import type { TeamProjectOptionsStatus } from '../view-models/use-team-project-options';
+import type { useSetupHostSelection } from '../view-models/use-setup-host-selection';
 
 /** The machine list the Delivery step's host rows choose from. */
 type HostSelectionState = ReturnType<typeof useSetupHostSelection>;
@@ -58,5 +58,5 @@ export interface WizardStepProps {
   hostSelection: HostSelectionState;
   projectCatalog: ProjectOptionsCatalogState;
   projectQuota: UsageLimitItem | null;
-  selectedProjectKind: "frontend" | "backend";
+  selectedProjectKind: 'frontend' | 'backend';
 }

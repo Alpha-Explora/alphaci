@@ -1,15 +1,15 @@
-import { request, requestBlob, requestText } from "@/shared/api/request";
+import { request, requestBlob, requestText } from '@/shared/api/request';
 
-import { normalizeProjectReport } from "../model/project-report-rules";
-import { XLSX_TYPE } from "../model/qa-report-rules";
-import type { QaProjectReport } from "../model/project-report-types";
-import { normalizeProjectDispatch } from "../model/project-run-automation-rules";
+import { normalizeProjectReport } from '../model/project-report-rules';
+import { XLSX_TYPE } from '../model/qa-report-rules';
+import type { QaProjectReport } from '../model/project-report-types';
+import { normalizeProjectDispatch } from '../model/project-run-automation-rules';
 import {
   normalizeProjectMyItems,
   normalizeProjectRun,
   normalizeProjectRunCurrent,
   runFromReply,
-} from "../model/project-run-rules";
+} from '../model/project-run-rules';
 import type {
   ProjectDispatchResult,
   ProjectMyItems,
@@ -17,10 +17,10 @@ import type {
   ProjectRunCurrent,
   PoAcceptanceInput,
   SetVerificationInput,
-} from "../model/project-run-types";
-import type { QaSignoffInput } from "../model/qa-run-types";
-import type { SetTestCaseResultInput } from "../model/test-case-types";
-import { record } from "../model/wire-readers";
+} from '../model/project-run-types';
+import type { QaSignoffInput } from '../model/qa-run-types';
+import type { SetTestCaseResultInput } from '../model/test-case-types';
+import { record } from '../model/wire-readers';
 
 /* The only place in the checklists domain that talks to the Project QA run
  * endpoints (docs/design/project-requirements.md, sections 2.4 and 2.5).
@@ -41,18 +41,20 @@ function runPath(deliveryProjectId: string, runId: string): string {
 }
 
 function post(body?: unknown): RequestInit {
-  return body === undefined ? { method: "POST" } : { method: "POST", body: JSON.stringify(body) };
+  return body === undefined
+    ? { method: 'POST' }
+    : { method: 'POST', body: JSON.stringify(body) };
 }
 
 function runOrThrow(value: unknown): ProjectQaRun {
   const run = runFromReply(value);
-  if (!run) throw new Error("The server did not return the QA run.");
+  if (!run) throw new Error('The server did not return the QA run.');
   return run;
 }
 
 function projectReportOrThrow(raw: unknown): QaProjectReport {
   const report = normalizeProjectReport(raw);
-  if (!report) throw new Error("The server did not return the QA report.");
+  if (!report) throw new Error('The server did not return the QA report.');
   return report;
 }
 
@@ -64,7 +66,9 @@ export interface ProjectRunStart {
 
 export const projectQaRunsRepository = {
   async current(deliveryProjectId: string): Promise<ProjectRunCurrent> {
-    return normalizeProjectRunCurrent(await request<unknown>(`${runsPath(deliveryProjectId)}/current`));
+    return normalizeProjectRunCurrent(
+      await request<unknown>(`${runsPath(deliveryProjectId)}/current`),
+    );
   },
 
   async start(deliveryProjectId: string): Promise<ProjectRunStart> {
@@ -73,8 +77,10 @@ export const projectQaRunsRepository = {
   },
 
   async get(deliveryProjectId: string, runId: string): Promise<ProjectQaRun> {
-    const run = normalizeProjectRun(await request<unknown>(runPath(deliveryProjectId, runId)));
-    if (!run) throw new Error("The server did not return the QA run.");
+    const run = normalizeProjectRun(
+      await request<unknown>(runPath(deliveryProjectId, runId)),
+    );
+    if (!run) throw new Error('The server did not return the QA run.');
     return run;
   },
 
@@ -88,10 +94,13 @@ export const projectQaRunsRepository = {
     itemId: string,
     input: SetVerificationInput,
   ): Promise<ProjectQaRun | null> {
-    const raw = await request<unknown>(`${runPath(deliveryProjectId, runId)}/items/${enc(itemId)}`, {
-      method: "PATCH",
-      body: JSON.stringify(input),
-    });
+    const raw = await request<unknown>(
+      `${runPath(deliveryProjectId, runId)}/items/${enc(itemId)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      },
+    );
     return runFromReply(raw);
   },
 
@@ -108,17 +117,34 @@ export const projectQaRunsRepository = {
   ): Promise<ProjectQaRun | null> {
     const raw = await request<unknown>(
       `${runPath(deliveryProjectId, runId)}/items/${enc(itemId)}/test-cases/${enc(testCaseId)}`,
-      { method: "PATCH", body: JSON.stringify(input) },
+      { method: 'PATCH', body: JSON.stringify(input) },
     );
     return runFromReply(raw);
   },
 
-  async signoff(deliveryProjectId: string, runId: string, input: QaSignoffInput): Promise<ProjectQaRun> {
-    return runOrThrow(await request<unknown>(`${runPath(deliveryProjectId, runId)}/signoff`, post(input)));
+  async signoff(
+    deliveryProjectId: string,
+    runId: string,
+    input: QaSignoffInput,
+  ): Promise<ProjectQaRun> {
+    return runOrThrow(
+      await request<unknown>(
+        `${runPath(deliveryProjectId, runId)}/signoff`,
+        post(input),
+      ),
+    );
   },
 
-  async reopen(deliveryProjectId: string, runId: string): Promise<ProjectQaRun> {
-    return runOrThrow(await request<unknown>(`${runPath(deliveryProjectId, runId)}/reopen`, post()));
+  async reopen(
+    deliveryProjectId: string,
+    runId: string,
+  ): Promise<ProjectQaRun> {
+    return runOrThrow(
+      await request<unknown>(
+        `${runPath(deliveryProjectId, runId)}/reopen`,
+        post(),
+      ),
+    );
   },
 
   /**
@@ -132,10 +158,13 @@ export const projectQaRunsRepository = {
     itemId: string,
     input: PoAcceptanceInput,
   ): Promise<ProjectQaRun | null> {
-    const raw = await request<unknown>(`${runPath(deliveryProjectId, runId)}/items/${enc(itemId)}/acceptance`, {
-      method: "PATCH",
-      body: JSON.stringify(input),
-    });
+    const raw = await request<unknown>(
+      `${runPath(deliveryProjectId, runId)}/items/${enc(itemId)}/acceptance`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      },
+    );
     return runFromReply(raw);
   },
 
@@ -144,7 +173,11 @@ export const projectQaRunsRepository = {
    * the run covers (or only `projectId`). The server picks the workflow and
    * the ref; the 202 says where it started and where it could not.
    */
-  async dispatchAutomation(deliveryProjectId: string, runId: string, projectId?: string): Promise<ProjectDispatchResult> {
+  async dispatchAutomation(
+    deliveryProjectId: string,
+    runId: string,
+    projectId?: string,
+  ): Promise<ProjectDispatchResult> {
     const raw = await request<unknown>(
       `${runPath(deliveryProjectId, runId)}/automation/dispatch`,
       post(projectId ? { projectId } : undefined),
@@ -157,30 +190,47 @@ export const projectQaRunsRepository = {
    * a saved file must be the server's document, not the shape the page reads.
    */
   reportBody(deliveryProjectId: string, runId: string): Promise<unknown> {
-    return request<unknown>(`${runPath(deliveryProjectId, runId)}/report?format=json`);
+    return request<unknown>(
+      `${runPath(deliveryProjectId, runId)}/report?format=json`,
+    );
   },
 
   /** The same report normalised for drawing. For a signed-off run it describes the frozen copy. */
-  async report(deliveryProjectId: string, runId: string): Promise<QaProjectReport> {
-    return projectReportOrThrow(await projectQaRunsRepository.reportBody(deliveryProjectId, runId));
+  async report(
+    deliveryProjectId: string,
+    runId: string,
+  ): Promise<QaProjectReport> {
+    return projectReportOrThrow(
+      await projectQaRunsRepository.reportBody(deliveryProjectId, runId),
+    );
   },
 
   /** The same report as GitHub-flavoured Markdown, ready to paste into a PR. */
   reportMarkdown(deliveryProjectId: string, runId: string): Promise<string> {
-    return requestText(`${runPath(deliveryProjectId, runId)}/report?format=md`, {
-      headers: { Accept: "text/markdown" },
-    });
+    return requestText(
+      `${runPath(deliveryProjectId, runId)}/report?format=md`,
+      {
+        headers: { Accept: 'text/markdown' },
+      },
+    );
   },
 
   /** The same report as an Excel workbook (.xlsx), one sheet per section. */
   reportExcel(deliveryProjectId: string, runId: string): Promise<Blob> {
-    return requestBlob(`${runPath(deliveryProjectId, runId)}/report?format=xlsx`, {
-      headers: { Accept: XLSX_TYPE },
-    });
+    return requestBlob(
+      `${runPath(deliveryProjectId, runId)}/report?format=xlsx`,
+      {
+        headers: { Accept: XLSX_TYPE },
+      },
+    );
   },
 
   /** Every Developer's items across the Project, in the four buckets. */
   async myItems(deliveryProjectId: string): Promise<ProjectMyItems> {
-    return normalizeProjectMyItems(await request<unknown>(`/delivery-projects/${enc(deliveryProjectId)}/qa/my-items`));
+    return normalizeProjectMyItems(
+      await request<unknown>(
+        `/delivery-projects/${enc(deliveryProjectId)}/qa/my-items`,
+      ),
+    );
   },
 };

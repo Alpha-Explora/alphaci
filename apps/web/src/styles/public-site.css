@@ -5,24 +5,24 @@
  * Extracted from globals.css one surface at a time; see src/features/README.md.
  */
 
-[data-theme="light"] .public-site-nav {
+[data-theme='light'] .public-site-nav {
   background: rgba(250, 250, 251, 0.92);
   border-bottom-color: rgba(0, 0, 0, 0.07);
   color: var(--text-primary);
 }
 
-[data-theme="light"] .public-site-nav--scrolled {
+[data-theme='light'] .public-site-nav--scrolled {
   background: rgba(250, 250, 251, 0.97);
   box-shadow: 0 1px 12px rgba(0, 0, 0, 0.08);
 }
 
 /* ── Public site nav text ────────────────────────────────────── */
-[data-theme="light"] .public-site-brand,
-[data-theme="light"] .public-site-login {
+[data-theme='light'] .public-site-brand,
+[data-theme='light'] .public-site-login {
   color: var(--text-primary);
 }
 
-[data-theme="light"] .public-site-login:hover {
+[data-theme='light'] .public-site-login:hover {
   color: var(--brand);
 }
 
@@ -34,12 +34,11 @@
    Dark navy fills + muted gray text are illegible on white. Turn them into
    clean, soft sky-tinted pill badges. ── */
 
-
 /* ── Problem 2: Scrolled / fixed public nav ──────────────────────────────────
    The two-class .public-site-nav--fixed.public-site-nav--scrolled rule (higher
    specificity) kept the dark frosted glass in light mode. Override both states
    with light-transparent frosted glass. ── */
-[data-theme="light"] .public-site-nav--fixed {
+[data-theme='light'] .public-site-nav--fixed {
   background: linear-gradient(
     180deg,
     rgba(247, 247, 249, 0.72),
@@ -47,7 +46,7 @@
   ) !important;
 }
 
-[data-theme="light"] .public-site-nav--fixed.public-site-nav--scrolled {
+[data-theme='light'] .public-site-nav--fixed.public-site-nav--scrolled {
   background: rgba(250, 250, 251, 0.92) !important;
   border-bottom-color: rgba(0, 0, 0, 0.07) !important;
   box-shadow:
@@ -55,19 +54,19 @@
     inset 0 -1px 0 rgba(17, 17, 22, 0.03) !important;
 }
 
-[data-theme="light"] .public-site-brand,
-[data-theme="light"] .public-site-nav a {
+[data-theme='light'] .public-site-brand,
+[data-theme='light'] .public-site-nav a {
   color: var(--text-primary);
 }
 
 /* Tone down the cyan brand glow that looks muddy on white */
-[data-theme="light"] .public-site-brand,
-[data-theme="light"] .public-site-nav--scrolled .public-site-brand {
+[data-theme='light'] .public-site-brand,
+[data-theme='light'] .public-site-nav--scrolled .public-site-brand {
   text-shadow: 0 0 18px rgba(9, 105, 218, 0.1);
 }
 
-[data-theme="light"] .public-site-brand-mark,
-[data-theme="light"] .public-site-nav--scrolled .public-site-brand-mark {
+[data-theme='light'] .public-site-brand-mark,
+[data-theme='light'] .public-site-nav--scrolled .public-site-brand-mark {
   box-shadow: 0 0 24px rgba(9, 105, 218, 0.12);
 }
 
@@ -95,7 +94,11 @@
   left: 50%;
   transform: translateX(-50%) translateY(0);
   width: 100%;
-  background: linear-gradient(180deg, rgba(10, 10, 14, 0.72), rgba(10, 10, 14, 0));
+  background: linear-gradient(
+    180deg,
+    rgba(10, 10, 14, 0.72),
+    rgba(10, 10, 14, 0)
+  );
   border-bottom: 0;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -311,7 +314,7 @@
   overflow-x: hidden;
   background: var(--bg-base);
   color: var(--text-primary);
-  font-family: var(--font-dash-body), "Plus Jakarta Sans", sans-serif;
+  font-family: var(--font-dash-body), 'Plus Jakarta Sans', sans-serif;
 }
 
 .public-guide-content {
@@ -345,7 +348,7 @@
   margin: 1rem 0 0;
   color: var(--text-secondary);
   font-size: clamp(1rem, 1.45vw, 1.22rem);
-  font-family: var(--font-dash-body), "Plus Jakarta Sans", sans-serif;
+  font-family: var(--font-dash-body), 'Plus Jakarta Sans', sans-serif;
   line-height: 1.65;
 }
 
@@ -361,7 +364,7 @@
   color: var(--text-secondary);
   font-size: 0.94rem;
   font-weight: 680;
-  font-family: var(--font-dash-body), "Plus Jakarta Sans", sans-serif;
+  font-family: var(--font-dash-body), 'Plus Jakarta Sans', sans-serif;
   text-decoration: none;
 }
 
@@ -465,7 +468,7 @@
 }
 
 .public-guide-step::after {
-  content: "";
+  content: '';
   position: absolute;
   right: 1.4rem;
   top: 1.8rem;
@@ -513,7 +516,7 @@
   margin: 0.8rem 0 0;
   color: #babac4;
   font-size: 0.96rem;
-  font-family: var(--font-dash-body), "Plus Jakarta Sans", sans-serif;
+  font-family: var(--font-dash-body), 'Plus Jakarta Sans', sans-serif;
   line-height: 1.6;
 }
 
@@ -595,7 +598,6 @@
 }
 
 @media (max-width: 640px) {
-
   .public-guide-content {
     padding-top: 2.25rem;
   }

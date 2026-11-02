@@ -1,21 +1,24 @@
-import { act, useLayoutEffect } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act, useLayoutEffect } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 
 import {
   getDeploymentTargetActions,
   reinstallDeploymentSecrets,
-} from "../../../../../../src/features/projects/detail/data/projects-api";
-import type { AppRole, DeploymentTarget } from "../../../../../../src/shared/api/contracts";
+} from '../../../../../../src/features/projects/detail/data/projects-api';
+import type {
+  AppRole,
+  DeploymentTarget,
+} from '../../../../../../src/shared/api/contracts';
 import {
   useDeploymentTargetsViewModel,
   type DeploymentTargetsViewModel,
-} from "../../../../../../src/features/projects/detail/view-models/use-deployment-targets-view-model";
+} from '../../../../../../src/features/projects/detail/view-models/use-deployment-targets-view-model';
 
 jest.mock(
-  "../../../../../../src/features/projects/detail/data/projects-api",
+  '../../../../../../src/features/projects/detail/data/projects-api',
   () => ({
     ...jest.requireActual(
-      "../../../../../../src/features/projects/detail/data/projects-api",
+      '../../../../../../src/features/projects/detail/data/projects-api',
     ),
     getDeploymentTargetActions: jest.fn(),
     reinstallDeploymentSecrets: jest.fn(),
@@ -31,31 +34,31 @@ const mockReinstall = reinstallDeploymentSecrets as jest.MockedFunction<
 
 function target(overrides: Partial<DeploymentTarget> = {}): DeploymentTarget {
   return {
-    id: "target-1",
-    projectId: "proj-1",
-    slot: "backend",
-    ownershipMode: "flowci_managed",
-    provider: "render",
+    id: 'target-1',
+    projectId: 'proj-1',
+    slot: 'backend',
+    ownershipMode: 'flowci_managed',
+    provider: 'render',
     providerConnectionId: null,
-    providerProjectId: "srv-1",
-    providerProjectName: "alphaci-api",
-    repoFullName: "tone/alphaci-api",
-    branchName: "main",
-    rootDirectory: ".",
+    providerProjectId: 'srv-1',
+    providerProjectName: 'alphaci-api',
+    repoFullName: 'tone/alphaci-api',
+    branchName: 'main',
+    rootDirectory: '.',
     buildCommand: null,
     startCommand: null,
     environmentMap: {},
-    status: "active",
+    status: 'active',
     ...overrides,
   };
 }
 
 function enabledActions() {
   return {
-    targetId: "target-1",
-    provider: "render" as const,
+    targetId: 'target-1',
+    provider: 'render' as const,
     actions: {
-      sync: { enabled: true, mode: "local_metadata" as const },
+      sync: { enabled: true, mode: 'local_metadata' as const },
       detach: { enabled: true },
       reinstallDeploymentSecrets: { enabled: true },
       openProviderDashboard: { enabled: true, url: null },
@@ -73,7 +76,7 @@ function Probe(
   }>,
 ) {
   const model = useDeploymentTargetsViewModel({
-    projectId: "proj-1",
+    projectId: 'proj-1',
     targets: props.targets,
     appRole: props.appRole,
     onTargetChanged: jest.fn(),
@@ -86,7 +89,7 @@ function Probe(
 }
 
 function current(): DeploymentTargetsViewModel {
-  if (!vm) throw new Error("the ViewModel has not rendered");
+  if (!vm) throw new Error('the ViewModel has not rendered');
   return vm;
 }
 
@@ -103,7 +106,7 @@ async function flush() {
  * fetch gating (only a Developer/admin ever asks) and the 401/403/400 mapping the
  * VM applies to a failed reinstall.
  */
-describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () => {
+describe('useDeploymentTargetsViewModel — reinstall deployment secrets', () => {
   let container: HTMLDivElement;
   let root: Root;
 
@@ -113,7 +116,7 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     mockReinstall.mockReset();
     mockGetActions.mockResolvedValue(enabledActions());
     mockReinstall.mockResolvedValue({ reinstalled: true, githubSecrets: {} });
-    container = document.createElement("div");
+    container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
   });
@@ -123,7 +126,7 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     container.remove();
   });
 
-  it("never fetches target actions for a role that cannot reinstall", async () => {
+  it('never fetches target actions for a role that cannot reinstall', async () => {
     act(() => {
       root.render(<Probe appRole="lead" targets={[target()]} />);
     });
@@ -133,16 +136,16 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     expect(current().targetActions).toEqual({});
   });
 
-  it("fetches target actions once per target for a Developer, and does not refetch on rerender", async () => {
+  it('fetches target actions once per target for a Developer, and does not refetch on rerender', async () => {
     act(() => {
       root.render(<Probe appRole="member" targets={[target()]} />);
     });
     await flush();
 
     expect(mockGetActions).toHaveBeenCalledTimes(1);
-    expect(mockGetActions).toHaveBeenCalledWith("proj-1", "target-1");
+    expect(mockGetActions).toHaveBeenCalledWith('proj-1', 'target-1');
     expect(
-      current().targetActions["target-1"]?.actions.reinstallDeploymentSecrets
+      current().targetActions['target-1']?.actions.reinstallDeploymentSecrets
         .enabled,
     ).toBe(true);
 
@@ -153,11 +156,11 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     expect(mockGetActions).toHaveBeenCalledTimes(1);
   });
 
-  it("goes pending, then reports the secret and variable names on success", async () => {
+  it('goes pending, then reports the secret and variable names on success', async () => {
     mockReinstall.mockResolvedValue({
       reinstalled: true,
-      githubSecrets: { renderDeployHook: "RENDER_DEPLOY_HOOK_URL" },
-      githubVariables: { vercelTestBypass: "VERCEL_TEST_BYPASS_TOKEN" },
+      githubSecrets: { renderDeployHook: 'RENDER_DEPLOY_HOOK_URL' },
+      githubVariables: { vercelTestBypass: 'VERCEL_TEST_BYPASS_TOKEN' },
     });
 
     act(() => {
@@ -169,7 +172,7 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     act(() => {
       call = current().reinstallSecrets(target());
     });
-    expect(current().reinstallingTargetId).toBe("target-1");
+    expect(current().reinstallingTargetId).toBe('target-1');
 
     let ok: boolean | undefined;
     await act(async () => {
@@ -177,21 +180,21 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     });
 
     expect(ok).toBe(true);
-    expect(mockReinstall).toHaveBeenCalledWith("proj-1", "target-1");
+    expect(mockReinstall).toHaveBeenCalledWith('proj-1', 'target-1');
     expect(current().reinstallingTargetId).toBeNull();
     expect(current().message).toBe(
-      "Deployment secrets reinstalled: RENDER_DEPLOY_HOOK_URL, VERCEL_TEST_BYPASS_TOKEN.",
+      'Deployment secrets reinstalled: RENDER_DEPLOY_HOOK_URL, VERCEL_TEST_BYPASS_TOKEN.',
     );
     expect(current().signInHref).toBeNull();
   });
 
-  it("maps a 401 to a sign-in-again message with a login link", async () => {
+  it('maps a 401 to a sign-in-again message with a login link', async () => {
     mockReinstall.mockRejectedValue(
-      Object.assign(new Error("Request failed with status 401"), {
+      Object.assign(new Error('Request failed with status 401'), {
         status: 401,
         details: {
           message:
-            "GitHub access token not found. Re-authenticate via GitHub OAuth.",
+            'GitHub access token not found. Re-authenticate via GitHub OAuth.',
         },
       }),
     );
@@ -207,13 +210,13 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     });
 
     expect(ok).toBe(false);
-    expect(current().signInHref).toBe("/login?next=/projects/proj-1");
+    expect(current().signInHref).toBe('/login?next=/projects/proj-1');
     expect(current().message).toMatch(/sign in again/i);
   });
 
-  it("maps a 403 to a role message with no sign-in link", async () => {
+  it('maps a 403 to a role message with no sign-in link', async () => {
     mockReinstall.mockRejectedValue(
-      Object.assign(new Error("Request failed with status 403"), {
+      Object.assign(new Error('Request failed with status 403'), {
         status: 403,
       }),
     );
@@ -228,18 +231,18 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     });
 
     expect(current().message).toBe(
-      "Only Developers and admins can reinstall deployment secrets.",
+      'Only Developers and admins can reinstall deployment secrets.',
     );
     expect(current().signInHref).toBeNull();
   });
 
   it("shows the server's own message verbatim for a 400", async () => {
     mockReinstall.mockRejectedValue(
-      Object.assign(new Error("Request failed with status 400"), {
+      Object.assign(new Error('Request failed with status 400'), {
         status: 400,
         details: {
           message:
-            "vercel has no CI secrets to reinstall for a vercel_git_connected deployment.",
+            'vercel has no CI secrets to reinstall for a vercel_git_connected deployment.',
         },
       }),
     );
@@ -254,7 +257,7 @@ describe("useDeploymentTargetsViewModel — reinstall deployment secrets", () =>
     });
 
     expect(current().message).toBe(
-      "vercel has no CI secrets to reinstall for a vercel_git_connected deployment.",
+      'vercel has no CI secrets to reinstall for a vercel_git_connected deployment.',
     );
     expect(current().signInHref).toBeNull();
   });

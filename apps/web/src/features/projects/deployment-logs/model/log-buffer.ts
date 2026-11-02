@@ -3,7 +3,7 @@ import type {
   LogCursor,
   LogLevel,
   LogWindow,
-} from "./deployment-logs-types";
+} from './deployment-logs-types';
 
 /** Lines a view holds at most. Past it, the end away from the reader goes. */
 export const LOG_BUFFER_CAP = 2000;
@@ -50,7 +50,7 @@ function timeOf(line: DeploymentLogLine): number {
 export function mergeLogPage(
   buffer: LogBuffer,
   page: readonly DeploymentLogLine[],
-  position: "older" | "newer",
+  position: 'older' | 'newer',
   cap: number = LOG_BUFFER_CAP,
 ): LogBuffer {
   const seen = new Set(buffer.lines.map((line) => line.id));
@@ -63,13 +63,13 @@ export function mergeLogPage(
   if (fresh.length === 0) return buffer;
 
   const combined =
-    position === "newer"
+    position === 'newer'
       ? [...buffer.lines, ...fresh]
       : [...fresh, ...buffer.lines];
   combined.sort((a, b) => timeOf(a) - timeOf(b));
 
   if (combined.length <= cap) return { ...buffer, lines: combined };
-  if (position === "newer") {
+  if (position === 'newer') {
     return {
       ...buffer,
       lines: combined.slice(combined.length - cap),
@@ -103,7 +103,7 @@ export function newestTimestamp(buffer: LogBuffer): string | null {
 
 export function errorCount(lines: readonly DeploymentLogLine[]): number {
   let count = 0;
-  for (const line of lines) if (line.level === "error") count += 1;
+  for (const line of lines) if (line.level === 'error') count += 1;
   return count;
 }
 
@@ -121,16 +121,16 @@ export function countLinesAfter(
   return index === -1 ? lines.length : lines.length - 1 - index;
 }
 
-export type LogTone = "danger" | "warning" | "default" | "muted";
+export type LogTone = 'danger' | 'warning' | 'default' | 'muted';
 
 const LEVEL_TONE: Record<LogLevel, LogTone> = {
-  error: "danger",
-  warn: "warning",
-  info: "default",
-  debug: "muted",
+  error: 'danger',
+  warn: 'warning',
+  info: 'default',
+  debug: 'muted',
 };
 
 /** Error rows red, warn rows amber, as the provider's own log view has them. */
 export function logLevelTone(level: LogLevel): LogTone {
-  return LEVEL_TONE[level] ?? "default";
+  return LEVEL_TONE[level] ?? 'default';
 }

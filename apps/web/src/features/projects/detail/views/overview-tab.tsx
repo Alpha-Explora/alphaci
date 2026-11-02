@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import type { QaScope } from "@/features/checklists";
-import { MyQaItemsSummary } from "@/features/checklists/returned";
-import { ProductionReadinessCard } from "@/features/checklists/studio";
-import { ProductionDeploymentPanel } from "@/features/projects/previews";
-import type { ProvisionedProject } from "@/features/projects";
-import type { ProjectDetailTabsViewModel } from "../view-models/use-project-detail-tabs-view-model";
-import { showOverviewProductionReadiness } from "../model/project-detail-tab-rules";
+import type { QaScope } from '@/features/checklists';
+import { MyQaItemsSummary } from '@/features/checklists/returned';
+import { ProductionReadinessCard } from '@/features/checklists/studio';
+import { ProductionDeploymentPanel } from '@/features/projects/previews';
+import type { ProvisionedProject } from '@/features/projects';
+import type { ProjectDetailTabsViewModel } from '../view-models/use-project-detail-tabs-view-model';
+import { showOverviewProductionReadiness } from '../model/project-detail-tab-rules';
 
 /**
  * The repository Overview, the same for every role: what is live (production
@@ -30,19 +30,23 @@ export function OverviewTab({
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "1rem",
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem',
       }}
     >
       <OverviewPreviews
         enabled={vm.previewDeploymentsEnabled}
         // "Full logs" opens the Hosting tab; a role without it (a Product
         // owner) keeps the card's own log surface only.
-        onOpenFullLogs={vm.visibleTabs.includes("hosting") ? vm.openTargetLogs : undefined}
+        onOpenFullLogs={
+          vm.visibleTabs.includes('hosting') ? vm.openTargetLogs : undefined
+        }
         // A branch's "#N" opens that pull request in the Pull requests tab; a
         // role without the tab sees the number as text.
-        onOpenPullRequest={vm.visibleTabs.includes("pulls") ? vm.openPullRequest : undefined}
+        onOpenPullRequest={
+          vm.visibleTabs.includes('pulls') ? vm.openPullRequest : undefined
+        }
         project={project}
       />
       <MyQaItemsSummary
@@ -68,8 +72,8 @@ function OverviewPreviews({
   project,
 }: Readonly<{
   enabled: boolean;
-  onOpenFullLogs: ProjectDetailTabsViewModel["openTargetLogs"] | undefined;
-  onOpenPullRequest: ProjectDetailTabsViewModel["openPullRequest"] | undefined;
+  onOpenFullLogs: ProjectDetailTabsViewModel['openTargetLogs'] | undefined;
+  onOpenPullRequest: ProjectDetailTabsViewModel['openPullRequest'] | undefined;
   project: ProvisionedProject;
 }>) {
   if (!enabled) return null;

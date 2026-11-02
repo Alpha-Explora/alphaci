@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   createDeploymentTarget,
@@ -10,7 +10,7 @@ import {
   listProviderConnections,
   provisionProjectEnvVars,
   validateProjectEnvVars,
-} from "@/features/workflows";
+} from '@/features/workflows';
 import type {
   CreateDeploymentTargetRequest,
   DeploymentTarget,
@@ -19,8 +19,8 @@ import type {
   ProvisionEnvVarsRequest,
   UsageLimitItem,
   ValidateEnvVarsRequest,
-} from "@/shared/api/contracts";
-import { getMyUsage } from "../data/usage-api";
+} from '@/shared/api/contracts';
+import { getMyUsage } from '../data/usage-api';
 
 /**
  * @param includeEnvMetadata Skip `GET .../env-vars` when the caller will not
@@ -37,7 +37,9 @@ export function useProjectEnvProvisioning(
 ) {
   const [targets, setTargets] = useState<DeploymentTarget[]>([]);
   const [metadata, setMetadata] = useState<EnvVarMetadata[]>([]);
-  const [providerConnections, setProviderConnections] = useState<ProviderConnection[]>([]);
+  const [providerConnections, setProviderConnections] = useState<
+    ProviderConnection[]
+  >([]);
   const [usageItems, setUsageItems] = useState<UsageLimitItem[]>([]);
   const [saving, setSaving] = useState(false);
   // Loading until the read for this project settles: a changed project reads
@@ -51,15 +53,22 @@ export function useProjectEnvProvisioning(
     requestRef.current += 1;
     const requestId = requestRef.current;
     try {
-      const [nextTargets, nextMetadata, nextProviderConnections] = await Promise.all([
-        listDeploymentTargets(projectId),
-        includeEnvMetadata ? listProjectEnvMetadata(projectId) : Promise.resolve([]),
-        listProviderConnections(),
-      ]);
+      const [nextTargets, nextMetadata, nextProviderConnections] =
+        await Promise.all([
+          listDeploymentTargets(projectId),
+          includeEnvMetadata
+            ? listProjectEnvMetadata(projectId)
+            : Promise.resolve([]),
+          listProviderConnections(),
+        ]);
       if (requestId !== requestRef.current) return;
       setTargets(nextTargets);
       setMetadata(nextMetadata);
-      setProviderConnections(nextProviderConnections.filter((connection) => connection.status === "active"));
+      setProviderConnections(
+        nextProviderConnections.filter(
+          (connection) => connection.status === 'active',
+        ),
+      );
     } finally {
       if (requestId === requestRef.current) setSettledKey(requestKey);
     }

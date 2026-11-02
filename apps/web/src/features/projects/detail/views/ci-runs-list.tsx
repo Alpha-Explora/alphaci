@@ -1,8 +1,11 @@
-"use client";
+'use client';
 
-import { formatDate } from "@/features/workflows";
-import type { ProjectCiRun, ProjectCiRunsResponse } from "@/shared/api/contracts";
-import { ciRunRowClass } from "../model/project-detail-tab-rules";
+import { formatDate } from '@/features/workflows';
+import type {
+  ProjectCiRun,
+  ProjectCiRunsResponse,
+} from '@/shared/api/contracts';
+import { ciRunRowClass } from '../model/project-detail-tab-rules';
 
 export function CiRunsList({
   response,
@@ -12,7 +15,7 @@ export function CiRunsList({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
       <CiRunsLiveBanner response={response} />
       <CiRunsBody runs={response.runs} />
     </div>
@@ -29,11 +32,11 @@ function CiRunsLiveBanner({
       </p>
     );
   }
-  if (response.mode === "local_mock") {
+  if (response.mode === 'local_mock') {
     return (
       <p className="env-empty-state" style={{ margin: 0 }}>
-        Live sync is enabled, but no GitHub Actions integration is connected
-        yet — the runs below are simulated, not live.
+        Live sync is enabled, but no GitHub Actions integration is connected yet
+        — the runs below are simulated, not live.
       </p>
     );
   }
@@ -59,9 +62,9 @@ function CiRunRow({ run }: Readonly<{ run: ProjectCiRun }>) {
     <div className={`env-metadata-row ${ciRunRowClass(run.conclusion)}`}>
       <span
         style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.2rem",
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.2rem',
         }}
       >
         <strong>{run.workflowName}</strong>
@@ -70,7 +73,7 @@ function CiRunRow({ run }: Readonly<{ run: ProjectCiRun }>) {
           {runConclusionSuffix(run.conclusion)}
         </small>
         <small>
-          Commit {run.commitSha ?? "not available"} - Actor {run.actor}
+          Commit {run.commitSha ?? 'not available'} - Actor {run.actor}
         </small>
         <small>
           {formatDate(run.createdAt)} - {formatDate(run.updatedAt)}
@@ -82,7 +85,7 @@ function CiRunRow({ run }: Readonly<{ run: ProjectCiRun }>) {
 }
 
 function runConclusionSuffix(conclusion: string | null): string {
-  if (!conclusion) return "";
+  if (!conclusion) return '';
   return ` - ${conclusion}`;
 }
 
@@ -90,10 +93,10 @@ function CiRunActions({ run }: Readonly<{ run: ProjectCiRun }>) {
   return (
     <span
       style={{
-        display: "flex",
-        gap: "0.4rem",
-        flexWrap: "wrap",
-        justifyContent: "flex-end",
+        display: 'flex',
+        gap: '0.4rem',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-end',
       }}
     >
       <CiRunRerunButton canRerun={run.canRerun} />

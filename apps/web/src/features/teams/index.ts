@@ -7,7 +7,7 @@ export type {
   ProvisionedProject,
   Team,
   TeamsStatus,
-} from "./model/teams-types";
+} from './model/teams-types';
 
 export {
   SETTINGS_TEAM_TAB,
@@ -17,4 +17,4 @@ export {
   memberCountLabel,
   resolveSelectedTeam,
   teamMembersHref,
-} from "./model/teams-rules";
+} from './model/teams-rules';

@@ -32,7 +32,8 @@
 }
 
 .create-project-actions .ghost-button.create-menu-trigger:hover,
-.create-project-actions .ghost-button.create-menu-trigger[aria-expanded="true"] {
+.create-project-actions
+  .ghost-button.create-menu-trigger[aria-expanded='true'] {
   border-color: var(--border-layer);
   background: var(--layer-2);
   color: var(--text-primary);

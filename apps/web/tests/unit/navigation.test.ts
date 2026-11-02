@@ -11,13 +11,15 @@
  * does not throw, silencing the expected jsdom notice.
  */
 
-import { navigateToExternalUrl } from "../../src/features/workflows/studio/view-models/navigation";
+import { navigateToExternalUrl } from '../../src/features/workflows/studio/view-models/navigation';
 
-describe("navigateToExternalUrl", () => {
-  it("calls window.location.assign with the given url without throwing", () => {
-    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+describe('navigateToExternalUrl', () => {
+  it('calls window.location.assign with the given url without throwing', () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    expect(() => navigateToExternalUrl("https://example.com/callback")).not.toThrow();
+    expect(() =>
+      navigateToExternalUrl('https://example.com/callback'),
+    ).not.toThrow();
 
     errorSpy.mockRestore();
   });

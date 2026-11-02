@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
+import { useRef, useState } from 'react';
 
-import { projectFoldersRepository } from "../data/project-folders-repository";
+import { projectFoldersRepository } from '../data/project-folders-repository';
 import {
   deleteConfirmMatches,
   deleteErrorMessage,
   deleteNoticeText,
   deletePartialFailure,
   isDeleteConflict,
-} from "../model/project-folder-rules";
-import type { ProjectFolder } from "../model/project-folder-types";
+} from '../model/project-folder-rules';
+import type { ProjectFolder } from '../model/project-folder-types';
 
-export type DeleteProjectStatus = "idle" | "saving" | "error";
+export type DeleteProjectStatus = 'idle' | 'saving' | 'error';
 
 export interface DeleteProjectViewModel {
   status: DeleteProjectStatus;
@@ -54,9 +54,9 @@ export function useDeleteProjectViewModel(options: {
 }): DeleteProjectViewModel {
   const { onDeleted, onChanged } = options;
   const [folder, setFolder] = useState<ProjectFolder | null>(null);
-  const [status, setStatus] = useState<DeleteProjectStatus>("idle");
+  const [status, setStatus] = useState<DeleteProjectStatus>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [confirmName, setConfirmName] = useState("");
+  const [confirmName, setConfirmName] = useState('');
   const [deleteGithubRepos, setDeleteGithubRepos] = useState(false);
   const [deleteProviderResources, setDeleteProviderResources] = useState(false);
   const [deleteSonarProjects, setDeleteSonarProjects] = useState(false);
@@ -64,27 +64,35 @@ export function useDeleteProjectViewModel(options: {
   const request = useRef(0);
 
   async function submit() {
-    if (!folder || status === "saving" || !deleteConfirmMatches(confirmName, folder.name)) return;
+    if (
+      !folder ||
+      status === 'saving' ||
+      !deleteConfirmMatches(confirmName, folder.name)
+    )
+      return;
     request.current += 1;
     const id = request.current;
-    setStatus("saving");
+    setStatus('saving');
     setError(null);
     try {
-      const outcome = await projectFoldersRepository.deleteProject(folder.deliveryProjectId, {
-        confirmName,
-        deleteGithubRepos,
-        deleteProviderResources,
-        deleteSonarProjects,
-      });
+      const outcome = await projectFoldersRepository.deleteProject(
+        folder.deliveryProjectId,
+        {
+          confirmName,
+          deleteGithubRepos,
+          deleteProviderResources,
+          deleteSonarProjects,
+        },
+      );
       if (id !== request.current) return;
-      setStatus("idle");
+      setStatus('idle');
       setFolder(null);
       setNotice(deleteNoticeText(outcome));
       onDeleted();
       onChanged();
     } catch (cause) {
       if (id !== request.current) return;
-      setStatus("error");
+      setStatus('error');
       if (isDeleteConflict(cause)) {
         setError(deletePartialFailure(cause).message);
         onChanged();
@@ -103,18 +111,19 @@ export function useDeleteProjectViewModel(options: {
     deleteProviderResources,
     deleteSonarProjects,
     notice,
-    canSubmit: folder !== null && deleteConfirmMatches(confirmName, folder.name),
+    canSubmit:
+      folder !== null && deleteConfirmMatches(confirmName, folder.name),
     openFor: (next) => {
       setFolder(next);
-      setConfirmName("");
+      setConfirmName('');
       setDeleteGithubRepos(false);
       setDeleteProviderResources(false);
       setDeleteSonarProjects(false);
       setError(null);
-      setStatus("idle");
+      setStatus('idle');
     },
     close: () => {
-      if (status !== "saving") setFolder(null);
+      if (status !== 'saving') setFolder(null);
     },
     setConfirmName,
     setDeleteGithubRepos,

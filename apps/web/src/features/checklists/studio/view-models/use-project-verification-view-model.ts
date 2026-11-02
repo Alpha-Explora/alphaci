@@ -1,23 +1,28 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { projectQaRunsRepository } from "../../data/project-qa-runs-repository";
+import { projectQaRunsRepository } from '../../data/project-qa-runs-repository';
 import {
   allowedVerificationStatuses,
   canVerifyItem,
   verificationPayload,
-} from "../../model/project-run-rules";
+} from '../../model/project-run-rules';
 import type {
   ProjectQaRun,
   ProjectQaRunItem,
   ProjectQaRunPermissions,
   VerificationStatus,
-} from "../../model/project-run-types";
-import { itemDraftError, itemDraftFrom, qaActionError, statusNeedsSeverity } from "../../model/qa-run-rules";
-import type { QaActionError, QaItemDraft } from "../../model/qa-run-types";
+} from '../../model/project-run-types';
+import {
+  itemDraftError,
+  itemDraftFrom,
+  qaActionError,
+  statusNeedsSeverity,
+} from '../../model/qa-run-rules';
+import type { QaActionError, QaItemDraft } from '../../model/qa-run-types';
 
-export type ProjectVerificationStatus = "idle" | "saving";
+export type ProjectVerificationStatus = 'idle' | 'saving';
 
 export interface ProjectVerificationViewModel {
   /** `saving` while one item's write is in flight. */
@@ -39,7 +44,8 @@ export interface ProjectVerificationViewModel {
   dismissError: () => void;
 }
 
-const SAVE_ERROR = "The Verification could not be saved. Try again in a moment.";
+const SAVE_ERROR =
+  'The Verification could not be saved. Try again in a moment.';
 
 /**
  * ViewModel for recording Verification on a Project run's items.
@@ -63,11 +69,17 @@ export function useProjectVerificationViewModel(options: {
   const [openItemId, setOpenItemId] = useState<string | null>(null);
   const [draft, setDraft] = useState<QaItemDraft | null>(null);
   const [attempted, setAttempted] = useState(false);
-  const [error, setError] = useState<(QaActionError & { itemId: string }) | null>(null);
+  const [error, setError] = useState<
+    (QaActionError & { itemId: string }) | null
+  >(null);
 
-  const allowedStatuses = (item: ProjectQaRunItem) => allowedVerificationStatuses(item, run, permissions);
+  const allowedStatuses = (item: ProjectQaRunItem) =>
+    allowedVerificationStatuses(item, run, permissions);
 
-  function open(item: ProjectQaRunItem, status: QaItemDraft["status"] = item.status) {
+  function open(
+    item: ProjectQaRunItem,
+    status: QaItemDraft['status'] = item.status,
+  ) {
     setOpenItemId(item.id);
     setDraft(itemDraftFrom(item, status));
     setAttempted(false);
@@ -89,7 +101,12 @@ export function useProjectVerificationViewModel(options: {
     setSavingItemId(item.id);
     setError(null);
     try {
-      const saved = await projectQaRunsRepository.setVerification(deliveryProjectId, run.id, item.id, body);
+      const saved = await projectQaRunsRepository.setVerification(
+        deliveryProjectId,
+        run.id,
+        item.id,
+        body,
+      );
       if (saved) onRun(saved);
       else onReload();
       if (openItemId === item.id) closeDetails();
@@ -102,7 +119,12 @@ export function useProjectVerificationViewModel(options: {
 
   function chooseStatus(item: ProjectQaRunItem, status: VerificationStatus) {
     // Never send a status this viewer cannot set, whatever the control offered.
-    if (savingItemId || status === item.status || !allowedStatuses(item).includes(status)) return;
+    if (
+      savingItemId ||
+      status === item.status ||
+      !allowedStatuses(item).includes(status)
+    )
+      return;
     if (statusNeedsSeverity(status)) {
       open(item, status);
       return;
@@ -111,9 +133,12 @@ export function useProjectVerificationViewModel(options: {
   }
 
   async function saveDraft(item: ProjectQaRunItem) {
-    if (!draft || savingItemId || !canVerifyItem(item, run, permissions)) return;
+    if (!draft || savingItemId || !canVerifyItem(item, run, permissions))
+      return;
     const status = draft.status;
-    const allowed = status === item.status || allowedStatuses(item).some((entry) => entry === status);
+    const allowed =
+      status === item.status ||
+      allowedStatuses(item).some((entry) => entry === status);
     if (!allowed) return;
     setAttempted(true);
     if (itemDraftError(draft)) return;
@@ -121,7 +146,7 @@ export function useProjectVerificationViewModel(options: {
   }
 
   return {
-    status: savingItemId ? "saving" : "idle",
+    status: savingItemId ? 'saving' : 'idle',
     savingItemId,
     openItemId,
     draft,
@@ -131,7 +156,8 @@ export function useProjectVerificationViewModel(options: {
     chooseStatus,
     openDetails: (item) => open(item),
     closeDetails,
-    updateDraft: (patch) => setDraft((current) => (current ? { ...current, ...patch } : current)),
+    updateDraft: (patch) =>
+      setDraft((current) => (current ? { ...current, ...patch } : current)),
     saveDraft,
     dismissError: () => setError(null),
   };

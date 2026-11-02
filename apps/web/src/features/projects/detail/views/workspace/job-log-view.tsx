@@ -1,17 +1,25 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
+import { useMemo } from 'react';
 
 import {
   parseJobLog,
   summarizeJobLog,
   type JobLogSection,
   type ToolResult,
-} from "@/features/runs";
+} from '@/features/runs';
 
-import { jobLogPendingMessage, jobLogReady, logUnavailableMessage } from "../../model/failure-log-rules";
-import type { JobLogViewModel } from "../../view-models/use-run-jobs-view-model";
-import { WorkspaceEmpty, WorkspaceError, WorkspaceLoading } from "./workspace-states";
+import {
+  jobLogPendingMessage,
+  jobLogReady,
+  logUnavailableMessage,
+} from '../../model/failure-log-rules';
+import type { JobLogViewModel } from '../../view-models/use-run-jobs-view-model';
+import {
+  WorkspaceEmpty,
+  WorkspaceError,
+  WorkspaceLoading,
+} from './workspace-states';
 
 /**
  * One job's log behind its view-model: loading, a retry, the reason a log is
@@ -27,13 +35,18 @@ export function JobLogPanel({
   jobStatus,
 }: Readonly<{ view: JobLogViewModel; jobStatus?: string }>) {
   if (jobStatus !== undefined && !jobLogReady(jobStatus)) {
-    return <WorkspaceEmpty title="Log not ready yet" message={jobLogPendingMessage(jobStatus)} />;
+    return (
+      <WorkspaceEmpty
+        title="Log not ready yet"
+        message={jobLogPendingMessage(jobStatus)}
+      />
+    );
   }
-  if (view.status === "loading") return <WorkspaceLoading rows={4} />;
-  if (view.status === "error") {
+  if (view.status === 'loading') return <WorkspaceLoading rows={4} />;
+  if (view.status === 'error') {
     return (
       <WorkspaceError
-        message={view.error ?? "The log for this job could not be read."}
+        message={view.error ?? 'The log for this job could not be read.'}
         onRetry={view.retry}
       />
     );
@@ -45,7 +58,11 @@ export function JobLogPanel({
         title="The job has finished"
         message="Its log is ready to read."
         action={
-          <button type="button" className="pipe-text-button" onClick={view.retry}>
+          <button
+            type="button"
+            className="pipe-text-button"
+            onClick={view.retry}
+          >
             Show log
           </button>
         }
@@ -53,9 +70,16 @@ export function JobLogPanel({
     );
   }
   if (!view.log.available) {
-    return <WorkspaceEmpty title="No log available" message={logUnavailableMessage(view.log.reason)} />;
+    return (
+      <WorkspaceEmpty
+        title="No log available"
+        message={logUnavailableMessage(view.log.reason)}
+      />
+    );
   }
-  return <JobLogView content={view.log.content} truncated={view.log.truncated} />;
+  return (
+    <JobLogView content={view.log.content} truncated={view.log.truncated} />
+  );
 }
 
 /**
@@ -99,7 +123,10 @@ export function JobLogView({
       <ToolRoster results={results} />
       <ol className="ws-joblog__sections">
         {sections.map((section, index) => (
-          <LogSection key={`${String(index)}-${section.title}`} section={section} />
+          <LogSection
+            key={`${String(index)}-${section.title}`}
+            section={section}
+          />
         ))}
       </ol>
     </div>
@@ -116,10 +143,10 @@ function TruncationNote({ truncated }: Readonly<{ truncated: boolean }>) {
   );
 }
 
-const MARK: Record<ToolResult["outcome"], string> = {
-  passed: "✓",
-  failed: "✗",
-  unknown: "–",
+const MARK: Record<ToolResult['outcome'], string> = {
+  passed: '✓',
+  failed: '✗',
+  unknown: '–',
 };
 
 /** One line per tool: what it is, how it went, and its own numbers. */
@@ -138,7 +165,7 @@ function ToolRoster({ results }: Readonly<{ results: ToolResult[] }>) {
           </span>
           <span className="ws-toolsum__name">{result.label}</span>
           <span className="ws-toolsum__detail">
-            {result.summary ?? (result.outcome === "failed" ? "failed" : "")}
+            {result.summary ?? (result.outcome === 'failed' ? 'failed' : '')}
           </span>
         </li>
       ))}
@@ -153,9 +180,9 @@ function LogSection({ section }: Readonly<{ section: JobLogSection }>) {
         <summary className="ws-joblog__summary">
           <span
             aria-hidden="true"
-            className={`ws-joblog__mark ws-joblog__mark--${section.failed ? "failed" : "passed"}`}
+            className={`ws-joblog__mark ws-joblog__mark--${section.failed ? 'failed' : 'passed'}`}
           >
-            {section.failed ? "✗" : "✓"}
+            {section.failed ? '✗' : '✓'}
           </span>
           <span className="ws-joblog__title">{section.title}</span>
           {section.durationSeconds !== null && (
@@ -170,13 +197,13 @@ function LogSection({ section }: Readonly<{ section: JobLogSection }>) {
               <span
                 key={index}
                 className={
-                  line.severity === "plain"
-                    ? "ws-console__line"
+                  line.severity === 'plain'
+                    ? 'ws-console__line'
                     : `ws-console__line ws-console__line--${line.severity}`
                 }
               >
-                {line.text || " "}
-                {"\n"}
+                {line.text || ' '}
+                {'\n'}
               </span>
             ))}
           </code>

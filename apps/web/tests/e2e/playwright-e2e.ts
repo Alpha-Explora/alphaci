@@ -44,7 +44,9 @@ function launchBrowser(name: BrowserName) {
   const executablePath = process.env.E2E_BROWSER_EXECUTABLE_PATH;
   if (executablePath) {
     if (name !== 'chromium') {
-      throw new Error('E2E_BROWSER_EXECUTABLE_PATH is only supported with chromium-compatible browsers');
+      throw new Error(
+        'E2E_BROWSER_EXECUTABLE_PATH is only supported with chromium-compatible browsers',
+      );
     }
     return chromium.launch({ headless: true, executablePath });
   }
@@ -271,11 +273,31 @@ async function installDashboardAuditApi(page: Page) {
         plan: 'pro',
         items: [
           { code: 'projects', current: 1, limit: 50, upgradeRequired: false },
-          { code: 'deployment_targets', current: 1, limit: 100, upgradeRequired: false },
-          { code: 'managed_render_services', current: 1, limit: 10, upgradeRequired: false },
-          { code: 'managed_vercel_projects', current: 0, limit: 10, upgradeRequired: false },
+          {
+            code: 'deployment_targets',
+            current: 1,
+            limit: 100,
+            upgradeRequired: false,
+          },
+          {
+            code: 'managed_render_services',
+            current: 1,
+            limit: 10,
+            upgradeRequired: false,
+          },
+          {
+            code: 'managed_vercel_projects',
+            current: 0,
+            limit: 10,
+            upgradeRequired: false,
+          },
           { code: 'env_keys', current: 2, limit: 500, upgradeRequired: false },
-          { code: 'workflow_prs', current: 0, limit: 100, upgradeRequired: false },
+          {
+            code: 'workflow_prs',
+            current: 0,
+            limit: 100,
+            upgradeRequired: false,
+          },
         ],
       });
     }
@@ -388,7 +410,11 @@ async function installDashboardAuditApi(page: Page) {
     }
 
     if (path === '/projects/project-1/drift') {
-      return json(route, { enabled: true, mode: 'local_snapshot', findings: [] });
+      return json(route, {
+        enabled: true,
+        mode: 'local_snapshot',
+        findings: [],
+      });
     }
 
     if (path === '/projects/project-1/audit') {
@@ -525,9 +551,15 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
   await page.goto(`${baseUrl}/workflows`, { waitUntil: 'networkidle' });
   // The heading is plain "Projects": the team comes from the header picker,
   // and the page has no dropdown of its own.
-  await page.getByRole('heading', { level: 1, name: /^Projects/ }).waitFor({ state: 'visible' });
-  await page.getByRole('button', { name: /^Active workspace:/ }).waitFor({ state: 'visible' });
-  await page.getByRole('button', { name: 'Create project' }).waitFor({ state: 'visible' });
+  await page
+    .getByRole('heading', { level: 1, name: /^Projects/ })
+    .waitFor({ state: 'visible' });
+  await page
+    .getByRole('button', { name: /^Active workspace:/ })
+    .waitFor({ state: 'visible' });
+  await page
+    .getByRole('button', { name: 'Create project' })
+    .waitFor({ state: 'visible' });
   await page.getByRole('button', { name: 'Notifications' }).click();
   await expectVisibleText(page, 'Project created');
 
@@ -545,7 +577,10 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
   }
 
   await page.getByRole('tab', { name: 'Pipeline', exact: true }).click();
-  await page.getByRole('tablist', { name: 'Pipeline views' }).getByRole('tab', { name: 'Configuration' }).click();
+  await page
+    .getByRole('tablist', { name: 'Pipeline views' })
+    .getByRole('tab', { name: 'Configuration' })
+    .click();
   await expectVisibleText(page, 'Node version');
   await expectVisibleText(page, 'Lint');
   await expectVisibleText(page, 'Unit tests');
@@ -553,7 +588,10 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
   await expectVisibleText(page, 'Security');
   await expectVisibleText(page, 'Deploy target mappings');
 
-  await page.getByRole('tablist', { name: 'Pipeline views' }).getByRole('tab', { name: 'Runs' }).click();
+  await page
+    .getByRole('tablist', { name: 'Pipeline views' })
+    .getByRole('tab', { name: 'Runs' })
+    .click();
   await expectVisibleText(page, 'Live GitHub run sync is not enabled');
   await page.getByRole('tab', { name: 'Deployments' }).click();
   await expectVisibleText(page, 'Live deployment sync is not enabled');
@@ -575,9 +613,15 @@ async function runDashboardAudit(page: Page, baseUrl: string) {
 
   if (consoleMessages.length > 0 || failedResponses.length > 0) {
     const details = [
-      failedResponses.length ? `Failed responses:\n${failedResponses.join('\n')}` : '',
-      consoleMessages.length ? `Console/page errors:\n${consoleMessages.join('\n')}` : '',
-    ].filter(Boolean).join('\n\n');
+      failedResponses.length
+        ? `Failed responses:\n${failedResponses.join('\n')}`
+        : '',
+      consoleMessages.length
+        ? `Console/page errors:\n${consoleMessages.join('\n')}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n');
     throw new Error(`Dashboard audit saw browser errors:\n${details}`);
   }
 }
@@ -620,15 +664,22 @@ async function main() {
   const isExternalTarget = Boolean(process.env.E2E_BASE_URL);
   const waitTimeoutMs = isExternalTarget ? 120_000 : 45_000;
 
-  const hasReusableLocalServer = isExternalTarget ? false : await isServerReachable(baseUrl);
+  const hasReusableLocalServer = isExternalTarget
+    ? false
+    : await isServerReachable(baseUrl);
 
-  const app = isExternalTarget || hasReusableLocalServer
-    ? null
-    : spawn('npm', ['run', 'dev', '--', '--hostname', '127.0.0.1', '--port', port], {
-        stdio: 'inherit',
-        shell: process.platform === 'win32',
-        env: process.env,
-      });
+  const app =
+    isExternalTarget || hasReusableLocalServer
+      ? null
+      : spawn(
+          'npm',
+          ['run', 'dev', '--', '--hostname', '127.0.0.1', '--port', port],
+          {
+            stdio: 'inherit',
+            shell: process.platform === 'win32',
+            env: process.env,
+          },
+        );
 
   try {
     await waitForServer(baseUrl, waitTimeoutMs);
@@ -638,8 +689,14 @@ async function main() {
       if (qaJourneys) {
         // Each journey opens its own browser context, so it gets its own
         // mocked backend, storage and permissions.
-        const passed = await runQaJourneys(browser, baseUrl, process.env.E2E_QA_ONLY);
-        console.log(`Playwright QA journeys passed on ${browserName} (${passed} scenarios)`);
+        const passed = await runQaJourneys(
+          browser,
+          baseUrl,
+          process.env.E2E_QA_ONLY,
+        );
+        console.log(
+          `Playwright QA journeys passed on ${browserName} (${passed} scenarios)`,
+        );
         return;
       }
 
@@ -650,17 +707,23 @@ async function main() {
         return;
       }
 
-      const response = await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
+      const response = await page.goto(baseUrl, {
+        waitUntil: 'domcontentloaded',
+      });
       const status = response?.status();
       const text = (await page.textContent('body')) || '';
 
       if (isExternalTarget && isProtectedPreview(status, text)) {
-        console.log(`Playwright smoke reached protected preview on ${browserName} (status: ${status ?? 'unknown'})`);
+        console.log(
+          `Playwright smoke reached protected preview on ${browserName} (status: ${status ?? 'unknown'})`,
+        );
         return;
       }
 
       if (!hasExpectedLandingMarker(text)) {
-        throw new Error(`Expected landing page content was not found (status: ${status ?? 'unknown'})`);
+        throw new Error(
+          `Expected landing page content was not found (status: ${status ?? 'unknown'})`,
+        );
       }
     } finally {
       await browser.close();
