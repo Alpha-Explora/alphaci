@@ -4,20 +4,20 @@ exports[`runner-mode pipelines (SaaS golden) keeps the generated files byte-iden
 {
   "files": {
     ".github/workflows/00-alphaci-access.yml": {
-      "bytes": 15546,
-      "sha256": "98b3ff1cd9ef146080f9e1c581ce0ab1c31a868c6b0b6f69dbbf9debc0760ef6",
+      "bytes": 15447,
+      "sha256": "4981111bbf1a04b5c726072bbfbc078f2ad5f0f0944535d6ce89067a77c5e132",
     },
     ".github/workflows/05-alphaci-env-guard.yml": {
       "bytes": 4192,
       "sha256": "d7bc7f41106f94bddd5af0934c7d689b4a71dd72b06234d71e1d367bbac71cbb",
     },
     ".github/workflows/10-alphaci-quality.yml": {
-      "bytes": 34455,
-      "sha256": "8ff796d73727c1eacca827a10e03600f32649dc871d6a39b2b2462cccf829c7b",
+      "bytes": 34356,
+      "sha256": "a4ae8dbb0bd531313da9b43886969cf3f0576d4e1f44897b59865ac9f5ecafeb",
     },
     ".github/workflows/20-alphaci-package.yml": {
-      "bytes": 27035,
-      "sha256": "b1c7febf4f2319d1f123ac04c8a2557ccf2383a1e38d237165598994797d7639",
+      "bytes": 26936,
+      "sha256": "5ccbbfd2bf6712649f2f6c2171626446dbd26c4fc48f5e3cc6a801c1bb1a517f",
     },
     ".github/workflows/30-alphaci-promote.yml": {
       "bytes": 4316,
@@ -197,7 +197,6 @@ jobs:
                   .replace(/^\\[|\\]$/g, '')
                   .replace(/\\.$/, '');
               if (host.includes(':')) {
-                  // IPv6 global unicast only; excludes mapped IPv4, loopback, ULA and link local.
                   if (!/^[23][0-9a-f]{3}:/.test(host))
                       throw new Error(problem);
               }
@@ -556,20 +555,20 @@ exports[`runner-mode pipelines (SaaS golden) keeps the generated files byte-iden
 {
   "files": {
     ".github/workflows/00-alphaci-access.yml": {
-      "bytes": 15546,
-      "sha256": "98b3ff1cd9ef146080f9e1c581ce0ab1c31a868c6b0b6f69dbbf9debc0760ef6",
+      "bytes": 15447,
+      "sha256": "4981111bbf1a04b5c726072bbfbc078f2ad5f0f0944535d6ce89067a77c5e132",
     },
     ".github/workflows/05-alphaci-env-guard.yml": {
       "bytes": 4192,
       "sha256": "d7bc7f41106f94bddd5af0934c7d689b4a71dd72b06234d71e1d367bbac71cbb",
     },
     ".github/workflows/10-alphaci-quality.yml": {
-      "bytes": 34455,
-      "sha256": "8ff796d73727c1eacca827a10e03600f32649dc871d6a39b2b2462cccf829c7b",
+      "bytes": 34356,
+      "sha256": "a4ae8dbb0bd531313da9b43886969cf3f0576d4e1f44897b59865ac9f5ecafeb",
     },
     ".github/workflows/20-alphaci-package.yml": {
-      "bytes": 26085,
-      "sha256": "ba2ae05e5e8f42e75b4613f5799b3ba82df384108c87fad49be005083709de18",
+      "bytes": 25986,
+      "sha256": "f47cc35282a3fb0063c9935e034603ca7e33e8a1d9e944de75d3c8a6ca71cc94",
     },
     ".github/workflows/30-alphaci-promote.yml": {
       "bytes": 4316,
@@ -749,7 +748,6 @@ jobs:
                   .replace(/^\\[|\\]$/g, '')
                   .replace(/\\.$/, '');
               if (host.includes(':')) {
-                  // IPv6 global unicast only; excludes mapped IPv4, loopback, ULA and link local.
                   if (!/^[23][0-9a-f]{3}:/.test(host))
                       throw new Error(problem);
               }
@@ -1085,20 +1083,20 @@ exports[`runner-mode pipelines (SaaS golden) keeps the generated files byte-iden
 {
   "files": {
     ".github/workflows/00-alphaci-access.yml": {
-      "bytes": 15546,
-      "sha256": "98b3ff1cd9ef146080f9e1c581ce0ab1c31a868c6b0b6f69dbbf9debc0760ef6",
+      "bytes": 15447,
+      "sha256": "4981111bbf1a04b5c726072bbfbc078f2ad5f0f0944535d6ce89067a77c5e132",
     },
     ".github/workflows/05-alphaci-env-guard.yml": {
       "bytes": 4192,
       "sha256": "d7bc7f41106f94bddd5af0934c7d689b4a71dd72b06234d71e1d367bbac71cbb",
     },
     ".github/workflows/10-alphaci-quality.yml": {
-      "bytes": 34455,
-      "sha256": "8ff796d73727c1eacca827a10e03600f32649dc871d6a39b2b2462cccf829c7b",
+      "bytes": 34356,
+      "sha256": "a4ae8dbb0bd531313da9b43886969cf3f0576d4e1f44897b59865ac9f5ecafeb",
     },
     ".github/workflows/20-alphaci-package.yml": {
-      "bytes": 26285,
-      "sha256": "6b94601601bc73d9e6056ed896633487bdd6bc1b3849d42d9d758defa8b3a995",
+      "bytes": 26186,
+      "sha256": "aa83dfe188a904f54a8e120805355c9a142bbde4ad8cb34d96aafd711830fb64",
     },
     ".github/workflows/30-alphaci-promote.yml": {
       "bytes": 4316,
@@ -1278,7 +1276,6 @@ jobs:
                   .replace(/^\\[|\\]$/g, '')
                   .replace(/\\.$/, '');
               if (host.includes(':')) {
-                  // IPv6 global unicast only; excludes mapped IPv4, loopback, ULA and link local.
                   if (!/^[23][0-9a-f]{3}:/.test(host))
                       throw new Error(problem);
               }
@@ -1616,20 +1613,20 @@ exports[`runner-mode pipelines (SaaS golden) keeps the generated files byte-iden
 {
   "files": {
     ".github/workflows/00-alphaci-access.yml": {
-      "bytes": 15570,
-      "sha256": "2bdd27d92ea82e02057ea8a4c5e0a08d870e16525aebf9b6ccec7c3a0e43ce0d",
+      "bytes": 15471,
+      "sha256": "702b4f8c06c594b2d8885f7388f82276ae9ccd3cb85e64315fb3834ce2a25a0e",
     },
     ".github/workflows/05-alphaci-env-guard.yml": {
       "bytes": 4216,
       "sha256": "e46ba999af6c9c62152910807d3257de0bf969ab4891573e31ec6bffc23bf37f",
     },
     ".github/workflows/10-alphaci-quality.yml": {
-      "bytes": 34455,
-      "sha256": "8ff796d73727c1eacca827a10e03600f32649dc871d6a39b2b2462cccf829c7b",
+      "bytes": 34356,
+      "sha256": "a4ae8dbb0bd531313da9b43886969cf3f0576d4e1f44897b59865ac9f5ecafeb",
     },
     ".github/workflows/20-alphaci-package.yml": {
-      "bytes": 24123,
-      "sha256": "aa6550d3bc4ca285792fb91f630f8b231dfd577b8a6366ddbce10bb58c8d228c",
+      "bytes": 24024,
+      "sha256": "2c7c5c0c55c83da7ae6522e35ac96a961a76d674d132310b95b211afc488571e",
     },
   },
   "packageStage": "name: ALPHACI 3 Build and Deploy
@@ -1805,7 +1802,6 @@ jobs:
                   .replace(/^\\[|\\]$/g, '')
                   .replace(/\\.$/, '');
               if (host.includes(':')) {
-                  // IPv6 global unicast only; excludes mapped IPv4, loopback, ULA and link local.
                   if (!/^[23][0-9a-f]{3}:/.test(host))
                       throw new Error(problem);
               }
