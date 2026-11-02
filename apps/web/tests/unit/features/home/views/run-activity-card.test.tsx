@@ -152,6 +152,13 @@ describe('Home run card', () => {
     const hrefs = [...container.querySelectorAll('a')].map(
       (a) => a.getAttribute('href') ?? '',
     );
-    expect(hrefs.some((href) => href.includes('github.com'))).toBe(false);
+    const hosts = hrefs.map(
+      (href) => new URL(href, 'https://alphaci.test').hostname,
+    );
+    expect(
+      hosts.some(
+        (host) => host === 'github.com' || host.endsWith('.github.com'),
+      ),
+    ).toBe(false);
   });
 });
