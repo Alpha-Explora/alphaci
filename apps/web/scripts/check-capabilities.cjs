@@ -20,10 +20,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
-const SNAPSHOT = path.join(ROOT, 'docs/capabilities/catalog.snapshot.json');
+const REPO = path.resolve(ROOT, '..', '..');
+const SNAPSHOT = path.join(ROOT, 'capabilities/catalog.snapshot.json');
 const { loadCatalogPackage, packageDriftErrors } = require('./lib/capability-profile.cjs');
 
-const SURFACE_REGISTRY = path.join(ROOT, 'docs/capabilities/surface-registry.ts');
+const SURFACE_REGISTRY = path.join(ROOT, 'capabilities/surface-registry.ts');
 const CONTRACTS = path.join(ROOT, 'src/shared/api/contracts.ts');
 const VIEW_FLAGS = path.join(
   ROOT,
@@ -65,7 +66,7 @@ function readGeneratedSurfaceRegistry() {
 function generatedSurfaceErrors(expected, actual) {
   return JSON.stringify(actual) === JSON.stringify(expected)
     ? []
-    : ['docs/capabilities/surface-registry.ts is stale or differs from the vendored capability package'];
+    : ['capabilities/surface-registry.ts is stale or differs from the vendored capability package'];
 }
 
 function expectedPackStatus(capability, edition) {
@@ -126,7 +127,7 @@ function surfaceCatalogErrors(capabilities, surfaces) {
   for (let index = 0; index < max; index += 1) {
     const expected = capabilities[index];
     const actual = surfaces[index];
-    const at = `docs/capabilities/surface-registry.ts row ${index + 1}`;
+    const at = `capabilities/surface-registry.ts row ${index + 1}`;
     if (!expected) {
       errors.push(`${at}: extra surface key ${actual.key}`);
       continue;
@@ -172,7 +173,7 @@ function surfaceCatalogErrors(capabilities, surfaces) {
   for (const [field, key] of seenApi.entries()) {
     if (!contractFields.includes(field)) {
       errors.push(
-        `docs/capabilities/surface-registry.ts: apiField ${field} for ${key} is not a CapabilitiesResponse field`,
+        `capabilities/surface-registry.ts: apiField ${field} for ${key} is not a CapabilitiesResponse field`,
       );
     }
   }
@@ -192,7 +193,7 @@ function surfaceCatalogErrors(capabilities, surfaces) {
   for (const [field, key] of seenFlags.entries()) {
     if (!viewFields.includes(field)) {
       errors.push(
-        `docs/capabilities/surface-registry.ts: viewFlag ${field} for ${key} is not a CapabilityViewFlags field`,
+        `capabilities/surface-registry.ts: viewFlag ${field} for ${key} is not a CapabilityViewFlags field`,
       );
     }
   }
@@ -203,7 +204,7 @@ function surfaceCatalogErrors(capabilities, surfaces) {
 function packCatalogErrors(capabilities) {
   const errors = [];
   for (const pack of PACK_PROFILES) {
-    const file = path.join(ROOT, pack.file);
+    const file = path.join(REPO, pack.file);
     if (!fs.existsSync(file)) {
       errors.push(`${pack.file}: pack profile is missing`);
       continue;
@@ -251,7 +252,7 @@ function packCatalogErrors(capabilities) {
 
 function collect() {
   if (!fs.existsSync(SNAPSHOT)) {
-    return ['docs/capabilities/catalog.snapshot.json: catalog snapshot is missing'];
+    return ['capabilities/catalog.snapshot.json: catalog snapshot is missing'];
   }
   let catalogPackage;
   try {

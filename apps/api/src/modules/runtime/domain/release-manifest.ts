@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
  * The signed on-prem release manifest (schema version 1). W2 builds and signs
  * it in CI; C1 checks it against the registered release and stores it; the
  * host verifies the signature with its pinned public key before pulling.
- * docs/architecture/onprem-release-manifest.schema.json is the published form.
+ * docs/architecture/api/onprem-release-manifest-schema.json at the repository root is the published form.
  */
 export type ReleaseSlot = 'backend' | 'frontend' | 'standalone';
 export const RELEASE_SLOTS: readonly ReleaseSlot[] = [

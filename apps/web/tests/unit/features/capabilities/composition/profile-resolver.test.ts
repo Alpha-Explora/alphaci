@@ -109,14 +109,14 @@ describe("frontend build profile resolver", () => {
 
   it("detects package drift against the snapshot", () => {
     const snapshot = JSON.parse(
-      fs.readFileSync(path.join(root, "docs/capabilities/catalog.snapshot.json"), "utf8"),
+      fs.readFileSync(path.join(root, "capabilities/catalog.snapshot.json"), "utf8"),
     );
     expect(packageDriftErrors(snapshot, catalogPackage)).toEqual([]);
     expect(packageDriftErrors(snapshot, {
       ...catalogPackage,
       catalog: catalogPackage.catalog.slice(1),
     })).toEqual(expect.arrayContaining([
-      expect.stringContaining("does not match docs/capabilities/catalog.snapshot.json"),
+      expect.stringContaining("does not match capabilities/catalog.snapshot.json"),
     ]));
   });
 

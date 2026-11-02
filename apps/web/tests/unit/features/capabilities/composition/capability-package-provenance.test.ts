@@ -38,7 +38,7 @@ const {
 const root = path.resolve(__dirname, "../../../../../");
 const vendorDirectory = path.dirname(require.resolve("@alphaci/capability-catalog"));
 const snapshot = JSON.parse(
-  readFileSync(path.join(root, "docs/capabilities/catalog.snapshot.json"), "utf8"),
+  readFileSync(path.join(root, "capabilities/catalog.snapshot.json"), "utf8"),
 ) as Array<Record<string, unknown>>;
 
 function withVendorCopy(run: (packageDirectory: string) => void): void {

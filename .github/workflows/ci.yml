@@ -90,6 +90,15 @@ jobs:
       - name: Shared dependency versions match
         run: npm run check:versions
 
+      # docs/ is one bundle for both apps and belongs to neither package, so a
+      # docs-only change affects no app job. Check it here, on every event:
+      # format, links, naming, and drift in the maps and pack profiles both
+      # apps generate into it.
+      - name: Documentation bundle
+        run: |
+          npm run test:documentation
+          node scripts/check-documentation.cjs
+
   affected-guard:
     name: Affected detection guard
     if: github.event_name == 'pull_request'
@@ -136,7 +145,6 @@ jobs:
               check:provider-encapsulation check:schema-ownership check:capabilities
               check:capability-package check:composition-source check:capability-ledger
               check:composition-profiles check:migration-order check:documentation
-              test:documentation
     steps:
       - uses: actions/checkout@v7
         with:

@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
-const SNAPSHOT = path.join(ROOT, 'docs/capabilities/catalog.snapshot.json');
+const REPO = path.resolve(ROOT, '..', '..');
+const SNAPSHOT = path.join(ROOT, 'capabilities/catalog.snapshot.json');
 const {
   loadCatalogPackage,
   packageDriftErrors,
@@ -105,26 +106,30 @@ const PACKS = [
     profile: 'hosted',
     displayName: 'SaaS',
     file: 'docs/packs/saas/pack.md',
+    apiExclusion:
+      'reserved SaaS-only source root/marker declarations are absent from the compiled hosted API artifact; no SaaS-only implementation exists yet.',
     composition:
-      'The same Next.js application exposes the shared capability catalog. Hosted deployment is a deployment-target and configuration concern, not a separate frontend.',
+      'The same six-context API and the same Next.js application expose the shared capability catalog. Hosted deployment is a deployment-target and configuration concern, not a separate capability set or a separate web app.',
     deployment:
-      'SaaS is an edition composition reference. This frontend is one deployable. Provider choice remains a Runtime concern consumed through compatibility flags, not a pack-specific UI tree.',
+      'Hosted deployment is a deployment target, not a replacement for the pack identity. Provider choice is a Runtime concern the web app reads through compatibility flags, not a pack-specific UI tree. Current provider behavior is documented in the [provider map](/architecture/api/provider-map.generated.md) and the provisioning [runbook](/runbooks/runbook-deployment-provisioning.md).',
     entitlements:
-      'The narrowing order is `build -> edition manifest -> deployment configuration -> tenant override`. This frontend does not resolve pack entitlements; it renders what `/api/v1/capabilities` returns.',
+      'The narrowing order is `build profile -> edition manifest -> deployment configuration -> tenant override`. `ALPHACI_BUILD_PROFILE` defaults to `enterprise`; hosted builds must opt in explicitly. The web app does not resolve pack entitlements; it renders what `/api/v1/capabilities` returns.',
     nonSupport:
-      'Marketing-site behavior is not a frontend capability and is not a registry key. There is no `/subscribe` route. Catalog rows with status `not-implemented` are the current SaaS product gaps.',
+      'Marketing-site behavior is not a catalog capability and is not a registry key. There is no `/subscribe` route. Catalog rows with status `not-implemented` are the current SaaS product gaps.',
   },
   {
     edition: 'edu',
     profile: 'hosted',
     displayName: 'EDU',
     file: 'docs/packs/edu/pack.md',
+    apiExclusion:
+      'reserved EDU-only source root/marker declarations are absent from the compiled hosted API artifact; no EDU-only implementation exists yet.',
     composition:
-      'The same Next.js application exposes the shared capability catalog. An institution-hosted or shared deployment target remains a separate deployment value.',
+      'The same six-context API and the same Next.js application expose the shared capability catalog. An institution-hosted or shared deployment target remains a separate deployment value.',
     deployment:
-      'EDU is an edition composition reference. This frontend is one deployable and does not fork screens by edition.',
+      'EDU is an edition composition reference. An institution-hosted or shared deployment target remains a separate deployment value, and the web app does not fork screens by edition. Provider behavior is documented in the [provider map](/architecture/api/provider-map.generated.md).',
     entitlements:
-      'The narrowing order is `build -> edition manifest -> deployment configuration -> tenant override`. This frontend does not resolve EDU-specific entitlements at runtime.',
+      'The narrowing order is `build profile -> edition manifest -> deployment configuration -> tenant override`. `ALPHACI_BUILD_PROFILE` defaults to `enterprise`; hosted builds must opt in explicitly. EDU-specific entitlements are not resolved by either app.',
     nonSupport:
       'No additional non-registry product areas. Catalog rows with status `not-implemented` are the current EDU product gaps.',
   },
@@ -133,12 +138,14 @@ const PACKS = [
     profile: 'enterprise',
     displayName: 'Enterprise',
     file: 'docs/packs/enterprise/pack.md',
+    apiExclusion:
+      'reserved hosted source roots/markers are absent from the compiled Enterprise API artifact. The Enterprise client-policy implementation is real source under `apps/api/src/packs/enterprise` and is loaded through the profile-keyed pack seam.',
     composition:
-      'The same Next.js application exposes the shared capability catalog under the Enterprise evidence bar. A customer-managed deployment target remains separate from edition identity.',
+      'The same six-context API and the same Next.js application expose the shared capability catalog under the Enterprise evidence bar. A customer-managed deployment target remains separate from edition identity.',
     deployment:
-      'Enterprise is an edition composition reference. `runtime.air-gap-packaging` and `runtime.customer-isolation` are backend catalog keys with no frontend surface in this repository.',
+      'Enterprise is an edition composition reference. A customer-managed deployment target remains separate from edition identity. `runtime.client-composition` narrows the Enterprise manifest with a deny-only client policy selected at startup; it does not provide air-gap packaging or customer isolation. `runtime.air-gap-packaging` is a deployment-target capability and `runtime.customer-isolation` a tenancy capability composed into this pack; neither has a web surface, and neither replaces the Enterprise edition identity. The self-hosted appliance under `deploy/selfhost/` runs this edition with `ALPHACI_DEPLOYMENT_MODE=selfhosted`; the deployment mode is a separate axis and does not change the manifest. The current Runtime provider and GCP operational scope are described in the [provider map](/architecture/api/provider-map.generated.md) and [provisioning runbook](/runbooks/runbook-deployment-provisioning.md).',
     entitlements:
-      'The narrowing order is `build -> edition manifest -> deployment configuration -> tenant override`. The current frontend does not resolve Enterprise-specific entitlements; it records shared current surfaces and their limits.',
+      'The narrowing order is `build profile -> edition manifest -> client policy -> deployment configuration -> tenant override`. `ALPHACI_BUILD_PROFILE` defaults to `enterprise`. Enterprise-specific entitlements are not resolved by either app; the web app records shared current surfaces and their limits.',
     nonSupport:
       'No additional non-registry product areas. Catalog rows with status `not-implemented` are the current Enterprise product gaps.',
   },
@@ -258,7 +265,7 @@ function generateRouteMap() {
     description: 'Generated inventory of App Router pages and the feature barrels they compose.',
     tags: ['architecture', 'routes', 'map'],
     sources: [
-      { id: 'app-router', resource: 'src/app', title: 'Next.js App Router pages' },
+      { id: 'app-router', resource: 'apps/web/src/app', title: 'Next.js App Router pages' },
     ],
     body: `# Frontend route map
 
@@ -289,8 +296,8 @@ function generateFeatureMap() {
     description: 'Generated inventory of feature domains and the backend contexts they consume.',
     tags: ['architecture', 'features', 'map'],
     sources: [
-      { id: 'features', resource: 'src/features', title: 'Feature domain tree' },
-      { id: 'surface-registry', resource: 'docs/capabilities/surface-registry.ts', title: 'Generated capability surface view' },
+      { id: 'features', resource: 'apps/web/src/features', title: 'Feature domain tree' },
+      { id: 'surface-registry', resource: 'apps/web/capabilities/surface-registry.ts', title: 'Generated capability surface view' },
     ],
     body: `# Frontend feature map
 
@@ -322,10 +329,10 @@ function generateArchitectureChecks() {
     description: 'Generated snapshot of frontend source metrics and the repository architecture gates.',
     tags: ['architecture', 'checks', 'map', 'verification'],
     sources: [
-      { id: 'features', resource: 'src/features', title: 'Feature domain tree' },
-      { id: 'boundary-source', resource: '.dependency-cruiser.cjs', title: 'Authoritative dependency graph configuration' },
-      { id: 'layer-source', resource: 'scripts/check-boundaries.mjs', title: 'Feature MVVM layer checker' },
-      { id: 'ci-source', resource: '../../.github/workflows/ci.yml', title: 'Continuous integration gate' },
+      { id: 'features', resource: 'apps/web/src/features', title: 'Feature domain tree' },
+      { id: 'boundary-source', resource: 'apps/web/.dependency-cruiser.cjs', title: 'Authoritative dependency graph configuration' },
+      { id: 'layer-source', resource: 'apps/web/scripts/check-boundaries.mjs', title: 'Feature MVVM layer checker' },
+      { id: 'ci-source', resource: '.github/workflows/ci.yml', title: 'Continuous integration gate' },
     ],
     body: `# Architecture check map
 
@@ -374,18 +381,18 @@ function generateCapabilityMatrix(capabilities, surfaces) {
 
   return concept({
     type: 'Capability Map',
-    title: 'Capability matrix',
+    title: 'Capability surface matrix',
     description: 'Generated inventory of shared catalog keys and the frontend surfaces that consume them.',
     tags: ['capabilities', 'map', 'packs'],
     sources: [
-      { id: 'catalog-package', resource: '../../packages/capability-catalog', title: 'Versioned capability catalog fixture' },
-      { id: 'catalog-snapshot', resource: 'docs/capabilities/catalog.snapshot.json', title: 'Shared catalog snapshot' },
-      { id: 'surface-registry', resource: 'docs/capabilities/surface-registry.ts', title: 'Frontend surface map' },
-      { id: 'capability-endpoint', resource: 'src/features/capabilities/current/data/capabilities-api.ts', title: 'Compatibility capability client' },
+      { id: 'catalog-package', resource: 'packages/capability-catalog', title: 'Versioned capability catalog fixture' },
+      { id: 'catalog-snapshot', resource: 'apps/web/capabilities/catalog.snapshot.json', title: 'Shared catalog snapshot' },
+      { id: 'surface-registry', resource: 'apps/web/capabilities/surface-registry.ts', title: 'Frontend surface map' },
+      { id: 'capability-endpoint', resource: 'apps/web/src/features/capabilities/current/data/capabilities-api.ts', title: 'Compatibility capability client' },
     ],
-    body: `# Capability matrix
+    body: `# Capability surface matrix
 
-This matrix is generated from the versioned \`@alphaci/capability-catalog\` package and the frontend surface registry. The checked-in snapshot supplies the backend-owned descriptions and configuration notes used for documentation. This frontend does not replace \`/api/v1/capabilities\` and does not implement entitlement resolution.
+This matrix is generated from the versioned \`@alphaci/capability-catalog\` package and the frontend surface registry. The checked-in snapshot supplies the backend-owned descriptions and configuration notes used for documentation. The frontend does not replace \`/api/v1/capabilities\` and does not implement entitlement resolution.
 
 | Capability key | Context | Maturity | Compatibility field | View flag | Frontend routes |
 |---|---|---|---|---|---|
@@ -407,7 +414,7 @@ function packEvidence(capability, edition, surface) {
   const routes = (surface.routes ?? []).map((route) => `\`${route}\``).join(', ');
   const surfaceText = routes ? `Frontend surface: ${routes}.` : 'No frontend surface.';
   if (status === 'not-implemented') {
-    return `${capability.description} ${surfaceText} Not implemented in the backend catalog.`;
+    return `${capability.description} ${surfaceText} Not implemented in the API.`;
   }
   if (capability.key === 'identity.hierarchy') {
     return `${capability.description} ${surfaceText} The hierarchy compatibility flag is loaded; Teams and group routes currently remain visible to authenticated users. Configuration: ${capability.configuration}.`;
@@ -456,9 +463,11 @@ function generatePack(pack, capabilities, manifests, surfaces, packageVersion) {
 ## Current composition
 
 - Build profile: \`${pack.profile}\` (${profile.packs.map((item) => `\`${item}\``).join(', ')})
-- Runtime selection behavior: The build-time profile resolver projects the versioned catalog and aliases excluded feature barrels to fail-closed \`notFound()\` stubs. Runtime capability truth still comes from \`/api/v1/capabilities\`.
-- Excluded frontend feature barrels: ${profile.excludedFeatureBarrels.length > 0 ? profile.excludedFeatureBarrels.map((barrel) => `\`${barrel}\``).join(', ') : 'none in the current surface registry'}
-- Current frontend applicability: ${pack.composition}
+- API edition selection: \`ALPHACI_EDITION=${pack.edition}\` selects the ${pack.displayName} manifest within the \`${pack.profile}\` build ceiling.
+- API artifact exclusion: ${pack.apiExclusion}
+- Web profile resolution: the build-time profile resolver projects the versioned catalog and aliases excluded feature barrels to fail-closed \`notFound()\` stubs. Runtime capability truth still comes from \`/api/v1/capabilities\`.
+- Excluded web feature barrels: ${profile.excludedFeatureBarrels.length > 0 ? profile.excludedFeatureBarrels.map((barrel) => `\`${barrel}\``).join(', ') : 'none in the current surface registry'}
+- Applicability: ${pack.composition}
 
 ## Capability status
 
@@ -487,14 +496,14 @@ ${pack.nonSupport}
 
 ## Ownership and verification
 
-- Feature owners: the domains in the [feature map](/architecture/feature-map.generated.md).
-- Source: \`@alphaci/capability-catalog@${packageVersion}\`, \`docs/capabilities/catalog.snapshot.json\`, and \`docs/capabilities/surface-registry.ts\`.
-- Verification: \`npm run check:documentation\`.`,
+- Owners: the API contexts in the [capability matrix](/capabilities/capability-matrix.generated.md) and the web domains in the [feature map](/architecture/web/feature-map.generated.md).
+- Source: \`apps/api/src/kernel/composition/catalog.source.json\`, published as \`@alphaci/capability-catalog@${packageVersion}\`; web surfaces in \`apps/web/capabilities/surface-registry.ts\`.
+- Verification: \`npm run check:capabilities\` and \`npm run check:composition-profiles\` in \`apps/api\`; \`npm run check:documentation\` in \`apps/web\` and at the repository root.`,
   });
 }
 
 function writeOrCheck(relativePath, content, check) {
-  const file = path.join(ROOT, relativePath);
+  const file = path.join(REPO, relativePath);
   if (check) {
     const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
     if (current === null || normalizeLineEndings(current) !== normalizeLineEndings(content)) {
@@ -517,10 +526,10 @@ function main() {
   const { capabilities, manifests, packageVersion } = loadCatalog();
   const surfaces = readSurfaceRegistry();
   const outputs = [
-    ['docs/architecture/route-map.generated.md', generateRouteMap()],
-    ['docs/architecture/feature-map.generated.md', generateFeatureMap()],
-    ['docs/architecture/architecture-checks.generated.md', generateArchitectureChecks()],
-    ['docs/capabilities/capability-matrix.generated.md', generateCapabilityMatrix(capabilities, surfaces)],
+    ['docs/architecture/web/route-map.generated.md', generateRouteMap()],
+    ['docs/architecture/web/feature-map.generated.md', generateFeatureMap()],
+    ['docs/architecture/web/architecture-checks.generated.md', generateArchitectureChecks()],
+    ['docs/capabilities/surface-matrix.generated.md', generateCapabilityMatrix(capabilities, surfaces)],
     ...PACKS.map((pack) => [
       pack.file,
       generatePack(pack, capabilities, manifests, surfaces, packageVersion),

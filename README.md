@@ -11,6 +11,7 @@ The AlphaCI platform in one repository: an npm workspaces monorepo run with
 | `packages/api-contracts` | `@alphaci/api-contracts` | HTTP wire types (request and response shapes) shared by both apps. Types only: no build step, nothing loaded at runtime. See [its README](packages/api-contracts/README.md). |
 | `packages/config` | `@alphaci/config` | Configuration both apps share: `tsconfig.base.json` (compiler options both set identically) and `oxlint.base.json` (Oxlint rules both enforce identically). Each app extends them. No build step. |
 | `deploy/selfhost` | — | The self-hosted appliance bundle (Docker Compose, Caddy, `alphaci-ctl`) that runs both images. Customers install this folder. |
+| `docs` | — | The one documentation bundle for both apps (OKF v0.2): constitution, architecture, decisions, capabilities, packs, runbooks. Start at [`docs/index.md`](docs/index.md). |
 
 The reusable GitHub Actions workflows that generated customer pipelines call
 stay in their own public repository,
@@ -42,9 +43,18 @@ npm run dev -w @alphaci/web           # web on :3000
 npx turbo run test --filter=@alphaci/web
 ```
 
-Each app keeps its own scripts, checks and docs; see
+Each app keeps its own scripts and checks; see
 [`apps/api/README.md`](apps/api/README.md) and
 [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md).
+
+## Documentation
+
+Both apps share one documentation bundle, [`docs/`](docs/index.md). A concept
+that belongs to one app goes under `docs/architecture/api/` or
+`docs/architecture/web/`; there is no `docs/` folder inside an app.
+`npm run check:documentation` validates the bundle, fails on drift in the maps
+and pack profiles each app's `generate:architecture-maps` writes into it, then
+runs each app's own checks.
 
 ## Dependencies
 

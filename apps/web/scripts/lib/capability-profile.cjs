@@ -12,7 +12,7 @@ const {
 const ROOT = path.resolve(__dirname, '..', '..');
 // Resolved through the npm workspace, so it follows packages/capability-catalog.
 const PACKAGE_DIR = path.dirname(require.resolve('@alphaci/capability-catalog'));
-const EXPECTED_PROVENANCE = path.join(ROOT, 'docs', 'capabilities', 'catalog.provenance.json');
+const EXPECTED_PROVENANCE = path.join(ROOT, 'capabilities', 'catalog.provenance.json');
 const PROFILE_PACKS = Object.freeze({
   hosted: Object.freeze(['saas', 'edu']),
   enterprise: Object.freeze(['enterprise']),
@@ -211,7 +211,7 @@ function packageDriftErrors(snapshot, pkg, packageDirectory = PACKAGE_DIR) {
   const actual = pkg.catalog.map(normalize);
   const errors = [];
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-    errors.push(`vendor capability catalog ${pkg.version} does not match docs/capabilities/catalog.snapshot.json`);
+    errors.push(`vendor capability catalog ${pkg.version} does not match capabilities/catalog.snapshot.json`);
   }
   const expectedManifests = Object.fromEntries(
     ['saas', 'edu', 'enterprise'].map((edition) => [
@@ -230,7 +230,7 @@ function packageDriftErrors(snapshot, pkg, packageDirectory = PACKAGE_DIR) {
   }
   errors.push(...provenanceShapeErrors(pkg.provenance, metadata.version));
   if (expectedProvenance && JSON.stringify(pkg.provenance) !== JSON.stringify(expectedProvenance)) {
-    errors.push('vendor capability provenance does not match docs/capabilities/catalog.provenance.json');
+    errors.push('vendor capability provenance does not match capabilities/catalog.provenance.json');
   }
   try {
     const actualArtifactDigest = artifactDigestFromDirectory(packageDirectory);

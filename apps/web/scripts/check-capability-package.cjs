@@ -10,7 +10,7 @@ const {
 
 const ROOT = path.resolve(__dirname, '..');
 const snapshot = JSON.parse(
-  fs.readFileSync(path.join(ROOT, 'docs/capabilities/catalog.snapshot.json'), 'utf8'),
+  fs.readFileSync(path.join(ROOT, 'capabilities/catalog.snapshot.json'), 'utf8'),
 );
 let errors;
 try {

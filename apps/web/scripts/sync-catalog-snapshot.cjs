@@ -8,7 +8,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
-const SNAPSHOT = path.join(ROOT, 'docs/capabilities/catalog.snapshot.json');
+const SNAPSHOT = path.join(ROOT, 'capabilities/catalog.snapshot.json');
 const VENDOR_PACKAGE = path.dirname(require.resolve('@alphaci/capability-catalog'));
 
 function readJson(file) {
@@ -39,7 +39,7 @@ function main() {
     };
   });
   writeSnapshot(capabilities);
-  console.log('Wrote ' + capabilities.length + ' capabilities to docs/capabilities/catalog.snapshot.json');
+  console.log('Wrote ' + capabilities.length + ' capabilities to capabilities/catalog.snapshot.json');
 }
 
 if (require.main === module) main();

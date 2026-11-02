@@ -1,21 +1,21 @@
 # AlphaCI frontend
 
-This repository contains the AlphaCI frontend: one Next.js App Router deployable with feature-sliced MVVM, a domain-free shared layer, and capability consumption from the backend compatibility API.
+`apps/web` is the AlphaCI frontend: one Next.js App Router deployable with feature-sliced MVVM, a domain-free shared layer, and capability consumption from the backend compatibility API.
 
-AlphaCI runs on the customer's own server. One frontend image, built with `NEXT_PUBLIC_API_BASE_URL=/api/v1` and the Enterprise profile, serves every self-hosted customer behind the backend's Docker Compose and Caddy install. See the [self-hosted frontend image runbook](docs/runbooks/runbook-selfhost.md).
+AlphaCI runs on the customer's own server. One frontend image, built with `NEXT_PUBLIC_API_BASE_URL=/api/v1` and the Enterprise profile, serves every self-hosted customer behind the backend's Docker Compose and Caddy install. See the [self-hosted frontend image runbook](../../docs/runbooks/runbook-selfhost-web-image.md).
 
 ## Documentation
 
-The canonical documentation bundle is the OKF v0.2 tree under [`docs/`](docs/index.md):
+The canonical documentation for both apps is the OKF v0.2 bundle at the repository root, [`docs/`](../../docs/index.md):
 
-- [Constitution](docs/constitution.md) - current invariants and update rules.
-- [Executive and implementation report](docs/executive/golden-copy-executive-report.md) - self-contained current position and Enterprise-first implementation program.
-- [Current architecture](docs/architecture/current-architecture.md) - source and UI composition.
-- [Feature map](docs/architecture/feature-map.generated.md) - feature domains and backend context mapping.
-- [On-prem hosts](docs/architecture/onprem-hosts.md) - machine enrollment and environment assignment.
-- [Capability contract](docs/capabilities/capability-contract.md) - shared catalog consumption.
-- [Composition packs](docs/packs/index.md) - comparable SaaS, EDU, and Enterprise references.
-- [Runbooks](docs/runbooks/index.md) - verification, session, and self-hosted image procedures.
+- [Constitution](../../docs/constitution.md) - current invariants and update rules.
+- [Executive and implementation report](../../docs/executive/golden-copy-executive-report.md) - self-contained current position and Enterprise-first implementation program.
+- [Current architecture](../../docs/architecture/web/current-architecture.md) - source and UI composition.
+- [Feature map](../../docs/architecture/web/feature-map.generated.md) - feature domains and backend context mapping.
+- [On-prem hosts](../../docs/architecture/web/onprem-hosts.md) - machine enrollment and environment assignment.
+- [Capability contract](../../docs/capabilities/capability-contract.md) - shared catalog consumption.
+- [Composition packs](../../docs/packs/index.md) - comparable SaaS, EDU, and Enterprise references.
+- [Runbooks](../../docs/runbooks/index.md) - verification, session, and self-hosted image procedures.
 - [Changelog](CHANGELOG.md) - repository-level changes.
 
 `CLAUDE.md` is the working guide for coding agents. The backend repository owns the product catalog. This frontend vendors that catalog and records the screens that consume it.
@@ -37,7 +37,7 @@ npm run build
 npm run check:documentation
 ```
 
-See the [local verification runbook](docs/runbooks/runbook-local-verification.md) for the complete sequence and evidence expectations.
+See the [local verification runbook](../../docs/runbooks/runbook-local-verification.md) for the complete sequence and evidence expectations.
 
 Local app:
 

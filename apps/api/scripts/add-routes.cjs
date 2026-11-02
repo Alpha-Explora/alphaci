@@ -11,9 +11,9 @@ const { createHash } = require('node:crypto');
 const { readFileSync, writeFileSync } = require('node:fs');
 const { join } = require('node:path');
 
-const docs = join(__dirname, '..', 'docs', 'architecture');
-const baselinePath = join(docs, 'route-inventory.baseline.txt');
-const manifestPath = join(docs, 'route-inventory.manifest.json');
+const inventoryDirectory = join(__dirname, '..', 'architecture');
+const baselinePath = join(inventoryDirectory, 'route-inventory.baseline.txt');
+const manifestPath = join(inventoryDirectory, 'route-inventory.manifest.json');
 
 const args = process.argv.slice(2);
 const reasonAt = args.indexOf('--reason');

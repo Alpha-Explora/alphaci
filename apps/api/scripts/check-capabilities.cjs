@@ -29,6 +29,7 @@ const path = require('node:path');
 const { loadCapabilityCatalog } = require('./load-capability-catalog.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
+const REPO = path.resolve(ROOT, '..', '..');
 const APP_CONFIG = path.join(ROOT, 'src/kernel/config/app.config.types.ts');
 
 const CONTEXTS = new Set([
@@ -190,7 +191,7 @@ function manifestCatalogErrors(capabilities, manifests) {
 function packCatalogErrors(capabilities, manifests) {
   const errors = [];
   for (const pack of PACK_PROFILES) {
-    const file = path.join(ROOT, pack.file);
+    const file = path.join(REPO, pack.file);
     if (!fs.existsSync(file)) {
       errors.push(`${pack.file}: pack profile is missing`);
       continue;

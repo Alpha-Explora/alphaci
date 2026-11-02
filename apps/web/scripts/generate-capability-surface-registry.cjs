@@ -7,7 +7,7 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
 // Resolved through the npm workspace, so it follows packages/capability-catalog.
 const PACKAGE_DIR = path.dirname(require.resolve('@alphaci/capability-catalog'));
-const OUTPUT = path.join(ROOT, 'docs', 'capabilities', 'surface-registry.ts');
+const OUTPUT = path.join(ROOT, 'capabilities', 'surface-registry.ts');
 const HEADER = [
   '// Generated from @alphaci/capability-catalog catalog.json.',
   '// Surface ownership and package integrity live in the versioned backend package.',
@@ -43,16 +43,16 @@ function main() {
   if (process.argv.includes('--check')) {
     const actual = fs.existsSync(OUTPUT) ? fs.readFileSync(OUTPUT, 'utf8') : '';
     if (normalizeLineEndings(actual) !== normalizeLineEndings(expected)) {
-      console.error('Generated output is stale: docs/capabilities/surface-registry.ts');
+      console.error('Generated output is stale: capabilities/surface-registry.ts');
       process.exitCode = 1;
       return;
     }
-    console.log('Checked docs/capabilities/surface-registry.ts from the vendored capability package.');
+    console.log('Checked capabilities/surface-registry.ts from the vendored capability package.');
     return;
   }
   fs.writeFileSync(OUTPUT, expected, 'utf8');
   const metadata = readJson(path.join(PACKAGE_DIR, 'package.json'));
-  console.log('Generated docs/capabilities/surface-registry.ts from @alphaci/capability-catalog@' + metadata.version + '.');
+  console.log('Generated capabilities/surface-registry.ts from @alphaci/capability-catalog@' + metadata.version + '.');
 }
 
 function normalizeLineEndings(value) {

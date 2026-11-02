@@ -31,7 +31,7 @@ FROM deps AS builder
 WORKDIR /app
 # Build-time composition values are inlined into the client bundle. Left unset,
 # the build keeps its existing hosted path. A self-hosted image passes the fixed
-# set documented in docs/runbooks/runbook-selfhost.md, never a per-customer value.
+# set documented in docs/runbooks/runbook-selfhost-web-image.md at the repository root, never a per-customer value.
 ARG NEXT_PUBLIC_API_BASE_URL
 ARG ALPHACI_BUILD_PROFILE
 ARG ALPHACI_EDITION
@@ -62,7 +62,7 @@ COPY --from=builder /app/apps/web/next.config.ts ./next.config.ts
 COPY --from=builder /app/apps/web/src/shared/api/api-proxy-rewrites.ts ./src/shared/api/api-proxy-rewrites.ts
 COPY --from=builder /app/apps/web/src/shared/composition/build-profile.ts ./src/shared/composition/build-profile.ts
 COPY --from=builder /app/apps/web/scripts/lib ./scripts/lib
-COPY --from=builder /app/apps/web/docs/capabilities/catalog.provenance.json ./docs/capabilities/catalog.provenance.json
+COPY --from=builder /app/apps/web/capabilities/catalog.provenance.json ./capabilities/catalog.provenance.json
 EXPOSE 3000
 # The image has no curl, so the probe uses Node's built-in fetch. It calls the
 # cheap /healthz route, which does not touch the backend.

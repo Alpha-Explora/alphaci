@@ -89,7 +89,7 @@ jobs:
       # (CENTRAL_WORKFLOW_REF defaults to v1). It clones with this job's
       # GITHUB_TOKEN, which expires with the job, so no long-lived credential
       # can surface in build metadata. The web image uses the fixed
-      # self-hosted arguments from apps/web/docs/runbooks/runbook-selfhost.md.
+      # self-hosted arguments from docs/runbooks/runbook-selfhost-web-image.md.
       - id: args
         env:
           APP: ${{ matrix.app }}
@@ -171,7 +171,7 @@ jobs:
             echo "ALPHACI_WEB_IMAGE=${web}"
             echo '```'
             echo
-            echo "Upgrade steps: apps/api/docs/runbooks/runbook-selfhost-install.md."
+            echo "Upgrade steps: docs/runbooks/runbook-selfhost-install.md."
           } > notes.md
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release edit "$TAG" --notes-file notes.md

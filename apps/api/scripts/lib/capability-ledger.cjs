@@ -20,7 +20,7 @@ const path = require('node:path');
 const { loadCapabilityCatalog } = require('../load-capability-catalog.cjs');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const LEDGER_PATH = path.join(ROOT, 'docs', 'capabilities', 'ledger.json');
+const LEDGER_PATH = path.join(ROOT, 'capabilities', 'ledger.json');
 const LEDGER_DOC = 'docs/capabilities/capability-ledger.generated.md';
 
 const CHANGE_TYPES = [
@@ -69,7 +69,7 @@ function compositionHash(state) {
 
 function readLedger(file = LEDGER_PATH) {
   if (!fs.existsSync(file)) {
-    throw new Error('docs/capabilities/ledger.json is missing');
+    throw new Error('capabilities/ledger.json is missing');
   }
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
@@ -191,13 +191,13 @@ function renderLedger(ledger, state, currentHash) {
     'status: stable',
     'sources:',
     '  - id: "capability-ledger"',
-    '    resource: "docs/capabilities/ledger.json"',
+    '    resource: "apps/api/capabilities/ledger.json"',
     '    title: "Capability ledger entries"',
     '  - id: "capability-registry"',
-    '    resource: "src/kernel/composition/capability-registry.ts"',
+    '    resource: "apps/api/src/kernel/composition/capability-registry.ts"',
     '    title: "Application capability registry"',
     '  - id: "ledger-gate"',
-    '    resource: "scripts/check-capability-ledger.cjs"',
+    '    resource: "apps/api/scripts/check-capability-ledger.cjs"',
     '    title: "Capability ledger gate"',
     '---',
     '',

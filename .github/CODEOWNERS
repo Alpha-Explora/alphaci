@@ -18,6 +18,7 @@
 /.github/workflows/                          @Alpha-Explora/maintainers
 /packages/                                   @Alpha-Explora/maintainers
 /deploy/selfhost/                            @Alpha-Explora/maintainers
+/docs/                                       @Alpha-Explora/maintainers
 
 # ── Backend (apps/api) shared foundations ────────────────────────────────────
 /apps/api/src/kernel/                        @Alpha-Explora/maintainers
@@ -31,7 +32,7 @@
 /apps/api/src/modules/runtime/               @Alpha-Explora/maintainers
 /apps/api/src/modules/billing/               @Alpha-Explora/maintainers
 /apps/api/src/modules/platform-ops/          @Alpha-Explora/maintainers
-/apps/api/docs/                              @Alpha-Explora/maintainers
+/apps/api/capabilities/                      @Alpha-Explora/maintainers
 
 # ── Frontend (apps/web) shared foundations ───────────────────────────────────
 /apps/web/src/shared/                        @Alpha-Explora/maintainers
