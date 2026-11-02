@@ -3,8 +3,8 @@
  * Playwright pack (page loads, links, accessibility, visual snapshots), and
  * what opening the pull request that adds it said.
  *
- * Types mirror the backend's `BrowserTestsService` (alphaci-golden-copy-be
- * #153) exactly. Every sentence and precedence lives here so it is tested.
+ * Types mirror `BrowserTestsStatusResponse` and `BrowserTestsAddResponse` in
+ * apps/api/src/modules/projects/application/workspace/browser-tests.service.ts. Every sentence and precedence lives here so it is tested.
  * Pure: no React, no fetch.
  */
 
