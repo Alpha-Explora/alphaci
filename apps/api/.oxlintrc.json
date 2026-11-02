@@ -2,7 +2,9 @@
   // Lint rules for apps/api, run first by `npm run lint` (oxlint, then eslint).
   // This is the rule set eslint.config.mjs enforced before (eslint:recommended,
   // typescript-eslint recommended-type-checked, the explicit rules there), one
-  // for one, type-aware rules included: tsgolint (TypeScript 7) supplies types.
+  // for one, type-aware rules included: tsgolint (TypeScript 7) supplies types
+  // when Oxlint runs with --type-aware (npm run lint and the pre-push hook; the
+  // pre-commit fix skips it to stay fast).
   // eslint.config.mjs turns off every rule Oxlint runs (eslint-plugin-oxlint)
   // and keeps only what Oxlint lacks:
     //   @typescript-eslint/consistent-type-imports
@@ -20,7 +22,6 @@
     "typescript"
   ],
   "categories": { "correctness": "off" },
-  "options": { "typeAware": true },
   "env": {
     "builtin": true,
     "es2024": true,
