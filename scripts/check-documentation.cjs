@@ -141,6 +141,38 @@ function scatteredBundleErrors() {
     );
 }
 
+// Every `npm run <script>` a doc names must exist in some workspace manifest,
+// so a renamed or removed script cannot leave instructions that fail.
+function unknownScriptErrors() {
+  const manifests = [ROOT, ...WORKSPACE_PARENTS.flatMap(workspaces)]
+    .map((directory) => path.join(directory, 'package.json'))
+    .filter((file) => fs.existsSync(file));
+  const scripts = new Set(
+    manifests.flatMap((file) => Object.keys(JSON.parse(fs.readFileSync(file, 'utf8')).scripts ?? {})),
+  );
+  const files = [
+    ...filesUnder(DOCS).filter((file) => file.endsWith('.md') && path.basename(file) !== 'log.md'),
+    path.join(ROOT, 'README.md'),
+    path.join(ROOT, 'AGENTS.md'),
+    ...WORKSPACE_PARENTS.flatMap(workspaces).flatMap((workspace) => [
+      path.join(workspace, 'README.md'),
+      path.join(workspace, 'CLAUDE.md'),
+    ]),
+  ].filter((file) => fs.existsSync(file));
+  const errors = [];
+  for (const file of files) {
+    const named = new Set(
+      [...fs.readFileSync(file, 'utf8').matchAll(/npm run ([a-z0-9:_-]+)/gi)].map((match) => match[1]),
+    );
+    for (const script of named) {
+      if (!scripts.has(script)) {
+        errors.push(`${relative(file)}: names \`npm run ${script}\`, which no package.json defines`);
+      }
+    }
+  }
+  return errors;
+}
+
 function generatedMapErrors() {
   return ['api', 'web'].flatMap((app) => {
     const cwd = path.join(ROOT, 'apps', app);
@@ -163,6 +195,7 @@ function main() {
     ...namingErrors(),
     ...staleClaimErrors(),
     ...validateBundle(DOCS),
+    ...unknownScriptErrors(),
     ...generatedMapErrors(),
   ];
   if (errors.length > 0) {
@@ -176,4 +209,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { scatteredBundleErrors, namingErrors, staleClaimErrors, requiredFileErrors };
+module.exports = { scatteredBundleErrors, namingErrors, staleClaimErrors, requiredFileErrors, unknownScriptErrors };
