@@ -106,7 +106,7 @@ every consumer in the same change; do not leave deep-import shims.
 `scripts/check-boundaries.mjs` and `scripts/lib/paths.mjs` are vendored
 byte-identical from the `next-feature-architecture` skill (the skill repo is
 private; `check-boundaries.mjs` dynamically imports `paths.mjs` at runtime,
-which is why both files are here). `scripts/**` is eslint-ignored.
+which is why both files are here). `scripts/**` is not linted.
 
 ---
 
@@ -305,7 +305,7 @@ landing page at `/`. Runtime capability flags come from
 - `"use client"` only where a browser API, state or an event handler needs it.
 - Tailwind 4 — no `tailwind.config.js`; configured via CSS.
 - No hardcoded API URLs — use `getApiBaseUrl()` / `request`.
-- Production functions stay at cyclomatic complexity ≤ 10 (ESLint `complexity`
+- Production functions stay at cyclomatic complexity ≤ 10 (Oxlint `complexity`
   on `src/**`; `npm run complexity` is the audit). Views are not exempt.
 - Conventional Commits. Never push to `main` directly.
 
@@ -324,10 +324,17 @@ landing page at `/`. Runtime capability flags come from
   documents, with a negative lookahead excluding `/_next/*` (those are
   content-hashed and must stay immutably cached).
 
-**`eslint.config.mjs`** — flat config, extends `eslint-config-next`
-core-web-vitals + typescript. Ignores `.next/`, `.capability-stubs/`, `out/`,
-`build/`, `coverage/`, `next-env.d.ts` and `scripts/**`. `_`-prefixed names
-are allowed unused. CI runs `npx eslint src --max-warnings=0`.
+**`.oxlintrc.json`** and **`eslint.config.mjs`** — `npm run lint` (the CI
+gate) runs Oxlint, then ESLint, both over `src` with `--max-warnings=0`.
+Oxlint runs the rules of `eslint-config-next` core-web-vitals + typescript,
+the React Compiler rules (`react-hooks/*`, named `react/*` in Oxlint), the
+`complexity` cap and the `_`-prefix convention for intentionally unused
+names, and reports unused disable directives. ESLint keeps only what Oxlint
+lacks (`react/no-deprecated`,
+`@next/next/no-location-assign-relative-destination`); `eslint-plugin-oxlint`
+turns everything else off there. Existing `// eslint-disable-next-line`
+comments work for both. New rules go in `.oxlintrc.json` when Oxlint has
+them (`npx oxlint --rules`). `scripts/**` is not linted.
 
 **`jest.config.js`** — `next/jest`, jsdom; roots `tests/` and `src/`; setup
 `jest.setup.js` (imports `@testing-library/jest-dom`). Coverage is always
@@ -384,8 +391,8 @@ npm run dev             # next dev --turbopack, port 3000
 npm run dev:enterprise  # also dev:saas, dev:edu — sets profile + edition
 npm run build           # next build --webpack
 npm run build:profile -- --profile enterprise   # build + profile exclusion check
-npm run typecheck       # tsc --noEmit -p tsconfig.typecheck.json
-npm run lint            # eslint src --max-warnings=0 (the CI gate)
+npm run typecheck       # TypeScript 7 tsc --noEmit -p tsconfig.typecheck.json (~2 s)
+npm run lint            # oxlint, then eslint, over src --max-warnings=0 (the CI gate)
 npm run lint:css        # stylelint, tiered, with the warning ceiling
 npm run boundaries      # dependency-cruiser
 npm run arch:check      # MVVM layer checks
@@ -398,7 +405,7 @@ npm run generate:architecture-maps  # regenerate docs/**/*.generated.md and pack
 Full local gate, in the order failures are cheapest to read:
 
 ```bash
-npm run typecheck && npx eslint src --max-warnings=0 && npm run lint:css \
+npm run typecheck && npm run lint && npm run lint:css \
   && npm run boundaries && npm run arch:check && npm test && npm run build \
   && npm run check:documentation
 ```
@@ -417,7 +424,10 @@ in the backend `.env`.
 | `next` | ^16.3.3 |
 | `react` / `react-dom` | ^19.2.5 |
 | `tailwindcss` | ^4.2.4 |
-| `typescript` | ^6.0.3 |
+| `typescript` | ^6.0.3 (API users: jest, ESLint, `next build`) |
+| `typescript-7` (alias of `typescript`) | ^7.0.2 (`typecheck` only) |
+| `oxlint` | ^1.90.0 (not type-aware here, as ESLint was not) |
+| `eslint` / `eslint-plugin-oxlint` | ^10.14.0 / ^1.90.0 |
 | `framer-motion` | ^12.38.0 |
 | `jest` | ^30.3.0 |
 | `stylelint` | ^17.14.1 |
