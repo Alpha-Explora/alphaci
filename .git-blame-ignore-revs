@@ -1,0 +1,6 @@
+# Commits git blame skips. GitHub reads this file; locally run once:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# #33: the first Prettier pass over apps/web (1,149 files), squashed together
+# with its few tooling lines (package.json scripts, ESLint config, CI).
+5e1867bb49168876e079ab8bd561bd3eb546d954
