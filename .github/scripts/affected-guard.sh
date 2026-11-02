@@ -39,6 +39,7 @@ check "API source"          apps/api/src/main.ts                    "api=true we
 check "web source"          apps/web/src/app/layout.tsx             "api=false web=true"
 check "shared package"      packages/capability-catalog/index.js    "api=true web=true"
 check "contracts package"   packages/api-contracts/src/index.ts     "api=true web=true"
+check "config package"      packages/config/tsconfig.base.json      "api=true web=true"
 check "self-hosted bundle"  deploy/selfhost/compose.yaml            "api=true web=true"
 check "root workspace file" turbo.json                              "api=true web=true"
 check "root docs only"      README.md                               "api=false web=false"
