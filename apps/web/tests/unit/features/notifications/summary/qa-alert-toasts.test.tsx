@@ -33,8 +33,10 @@ function refusal(overrides: Partial<NotificationItem> = {}): NotificationItem {
 let root: Root | null = null;
 let container: HTMLDivElement;
 
-function Harness() {
-  const vm = useNotificationsSummaryViewModel({ guest: false, userId: "qa-user" });
+function Harness({
+  capability = "enabled",
+}: Readonly<{ capability?: "pending" | "enabled" | "disabled" }>) {
+  const vm = useNotificationsSummaryViewModel({ guest: false, userId: "qa-user", capability });
   return (
     <>
       <output data-unread={vm.unreadCount} />
@@ -97,6 +99,30 @@ describe("QA refusal pop-ups in the app shell", () => {
     await flush();
     expect(container.querySelector(".qa-alert")).toBeNull();
   });
+
+  it.each(["pending", "disabled"] as const)(
+    "opens no list, stream or polling while the capability is %s",
+    async (capability) => {
+      const eventSource = jest.fn();
+      Object.defineProperty(window, "EventSource", { value: eventSource, configurable: true });
+      try {
+        list.mockResolvedValue({ enabled: true, unreadCount: 1, items: [refusal()] });
+        act(() => root?.render(<Harness capability={capability} />));
+        await flush();
+        await act(async () => {
+          jest.advanceTimersByTime(NOTIFICATIONS_POLL_MS * 2);
+        });
+        await flush();
+
+        expect(list).not.toHaveBeenCalled();
+        expect(eventSource).not.toHaveBeenCalled();
+        expect(container.querySelector(".qa-alert")).toBeNull();
+        expect(container.querySelector("output")?.getAttribute("data-unread")).toBe("0");
+      } finally {
+        Reflect.deleteProperty(window, "EventSource");
+      }
+    },
+  );
 
   it("pops nothing up when in-app notifications are switched off", async () => {
     list.mockResolvedValue({ enabled: false, unreadCount: 1, items: [refusal()] });

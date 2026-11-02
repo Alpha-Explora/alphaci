@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-02
+
+- **Update**: `current-architecture.md` says the workspace list and the notification feed start only once `/capabilities` reports them enabled.
+
 ## 2026-10-20
 
 - **Update**: Brought the bundle and `CLAUDE.md` in line with the code. The backend origin setting is `ALLOWED_ORIGINS`, not `CORS_ORIGINS`. The self-host install is not egress-only, because runners call `/api/v1/ci/*`. The self-host runbook matches the backend Caddyfile and compose file, and pins the image by digest. Corrected the coverage floors, stylelint ceiling, feature domains, routes and test baseline. `onprem-hosts.md` says AlphaCI allocates host ports. The executive report lists the current hosting options and QA, PO Studio, promotion and rollback.

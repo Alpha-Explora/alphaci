@@ -20,7 +20,7 @@ Adding a member grants access immediately and queues `hierarchy.group.member_add
 ## Enable
 
 1. The schema comes from `supabase/migrations/platform-ops/20261019110735_workspace_member_live_notifications.sql`, applied with the rest of the tree ([database migrations](../runbooks/runbook-database-migrations.md)).
-2. Set `NOTIFICATIONS_ENABLED=true` on the backend. It defaults to false. On the self-hosted appliance, add it to `alphaci.env` and run `docker compose up -d`. Confirm `/api/v1/capabilities` reports notifications enabled.
+2. Set `NOTIFICATIONS_ENABLED=true` on the backend. The backend defaults it to false. The self-hosted appliance's `alphaci.env` sets it, with `WORKSPACES_ENABLED=true`, from `alphaci-ctl init` and `alphaci.env.example`; an install from before those lines needs both added, then `docker compose up -d`. Confirm `/api/v1/capabilities` reports notifications enabled.
 3. Leave the relay timers on. `NOTIFICATION_RELAY_INTERVAL_MS` (default 1000, clamped to 250–60000) runs a pass that claims only notification events; `0` turns that pass off. `OUTBOX_RELAY_INTERVAL_MS=0` turns off both automatic workers. See the [outbox relay runbook](../runbooks/runbook-outbox-relay.md).
 4. The ingress must pass `text/event-stream` responses through without buffering. The appliance's Caddy does. Use the same allowed origins and credentialed cookies as the deployment-log streams.
 

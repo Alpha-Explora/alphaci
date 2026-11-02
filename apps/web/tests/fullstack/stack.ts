@@ -231,6 +231,36 @@ export function buildApi(group: ProcessGroup): Promise<void> {
   });
 }
 
+// The appliance's shipped settings, so the run exercises its real defaults.
+const APPLIANCE_ENV_FILE = join(REPO_ROOT, 'deploy', 'selfhost', 'alphaci.env.example');
+const APPLIANCE_COMPOSITION_KEYS = [
+  'ALPHACI_DEPLOYMENT_MODE',
+  'ALPHACI_EDITION',
+  'ALPHACI_BUILD_PROFILE',
+  'STORAGE_DRIVER',
+  'SESSION_STORE_DRIVER',
+];
+
+/**
+ * The composition settings and every `*_ENABLED` feature flag the appliance
+ * ships in alphaci.env.example (KEY=value lines, comments skipped). A feature
+ * the appliance leaves off stays off here too.
+ */
+function applianceSettings(): Record<string, string> {
+  const settings: Record<string, string> = {};
+  for (const line of readFileSync(APPLIANCE_ENV_FILE, 'utf8').split(/\r?\n/)) {
+    const match = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim());
+    if (match && (APPLIANCE_COMPOSITION_KEYS.includes(match[1]) || match[1].endsWith('_ENABLED'))) {
+      settings[match[1]] = match[2].trim();
+    }
+  }
+  const missing = APPLIANCE_COMPOSITION_KEYS.filter((key) => !settings[key]);
+  if (missing.length > 0) {
+    throw new Error(`${APPLIANCE_ENV_FILE} no longer sets ${missing.join(', ')}.`);
+  }
+  return settings;
+}
+
 function apiEnv(ports: StackPorts, egressEnv: Readonly<Record<string, string>>, logDir: string): NodeJS.ProcessEnv {
   const web = loopbackOrigin(ports.web);
   return {
@@ -242,14 +272,11 @@ function apiEnv(ports: StackPorts, egressEnv: Readonly<Record<string, string>>, 
     NODE_ENV: 'development',
     DEV_QUICK_LOGIN: 'true',
     PORT: String(ports.api),
-    // The Supabase-free appliance settings (deploy/selfhost/alphaci.env.example).
-    ALPHACI_DEPLOYMENT_MODE: 'selfhosted',
-    ALPHACI_EDITION: 'enterprise',
-    ALPHACI_BUILD_PROFILE: 'enterprise',
-    STORAGE_DRIVER: 'postgres',
-    SESSION_STORE_DRIVER: 'postgres',
+    // The Supabase-free appliance settings and feature flags, read from
+    // deploy/selfhost/alphaci.env.example (SUBSCRIPTION_GATE_ENABLED=false,
+    // WORKSPACES_ENABLED=true, NOTIFICATIONS_ENABLED=true among them).
+    ...applianceSettings(),
     DATABASE_URL,
-    SUBSCRIPTION_GATE_ENABLED: 'false',
     ENABLE_SWAGGER: 'false',
     // Throwaway secrets, new every run.
     SESSION_SECRET: randomBytes(32).toString('hex'),
@@ -263,10 +290,6 @@ function apiEnv(ports: StackPorts, egressEnv: Readonly<Record<string, string>>, 
     // Required at boot. OAuth never runs; quick login replaces it.
     GITHUB_CLIENT_ID: 'fullstack-e2e',
     GITHUB_CLIENT_SECRET: 'fullstack-e2e',
-    // The web calls /workspaces/me and /notifications on every signed-in page.
-    // Off (their default), the API answers 404 and the run fails.
-    WORKSPACES_ENABLED: 'true',
-    NOTIFICATIONS_ENABLED: 'true',
     // Provider reads that default to on. Off, pages show stored data only.
     CI_RUN_LIVE_GITHUB_ENABLED: 'false',
     DEPLOYMENT_HISTORY_LIVE_PROVIDERS_ENABLED: 'false',

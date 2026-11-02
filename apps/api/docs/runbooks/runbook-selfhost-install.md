@@ -174,7 +174,7 @@ Exit codes: 0 success, 1 a check or database step failed, 2 usage or configurati
 
 Edit `alphaci.env`, then run `docker compose up -d` so `api` restarts with the change, and run `./alphaci-ctl doctor`.
 
-- **Notifications.** `NOTIFICATIONS_ENABLED=true` turns on in-app notifications. See [Workspace member notifications](../operations/workspace-member-notifications.md).
+- **Workspaces and notifications.** On by default: `init` writes `WORKSPACES_ENABLED=true` and `NOTIFICATIONS_ENABLED=true`, because the enterprise edition includes both. Set either to `false` to turn that feature off; the web then hides it. An install from before these lines has neither, so add both when you upgrade. See [Workspace member notifications](../operations/workspace-member-notifications.md).
 - **Hierarchy sync to GitHub teams.** `HIERARCHY_GITHUB_SYNC_MODE=live` writes grants and revocations to GitHub teams. Grant the App the organization permissions first. With `stub`, nothing is written to GitHub.
 - **On-prem hosts.** The commented on-prem block in `alphaci.env.example`. See the [on-prem host setup runbook](runbook-onprem-host-setup.md#self-hosted-appliance).
 - **External PostgreSQL.** Point `secrets/database_url` at the server with `sslmode=require` or `verify-full`, and set `DATABASE_CA_CERT` to its CA certificate.

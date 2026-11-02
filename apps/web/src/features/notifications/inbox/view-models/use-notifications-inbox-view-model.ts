@@ -1,9 +1,19 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+
+import {
+  capabilityAvailability,
+  useCapabilities,
+} from "@/features/capabilities/current";
+
 import { notificationsFeed } from "../../data/notifications-feed";
 import { useNotificationFeed } from "../../live";
-import { toUserError } from "../../model/notifications-rules";
+import {
+  feedUserId,
+  gatedFeedStatus,
+  toUserError,
+} from "../../model/notifications-rules";
 import type {
   NotificationItem,
   NotificationsResponse,
@@ -42,12 +52,23 @@ const EMPTY_RESPONSE: NotificationsResponse = {
   unreadCount: 0,
 };
 
-/** Shares recipient data with the app shell, including live and read updates. */
+/**
+ * Shares recipient data with the app shell, including live and read updates.
+ * While `/capabilities` reports notifications off, nothing is requested and
+ * the Inbox shows its "not enabled" state.
+ */
 export function useNotificationsInboxViewModel(
   active = true,
   userId: string | null = null,
 ): NotificationsInboxViewModel {
-  const feed = useNotificationFeed(active ? userId : null);
+  const capabilities = useCapabilities();
+  const capability = capabilityAvailability(
+    capabilities.status,
+    capabilities.notificationsEnabled,
+  );
+  const feed = useNotificationFeed(
+    feedUserId(active ? userId : null, capability),
+  );
   const response = feed.response ?? EMPTY_RESPONSE;
   const [commandError, setCommandError] = useState<string | null>(null);
   const [filter, setFilter] = useState<NotificationsInboxFilter>("all");
@@ -109,7 +130,7 @@ export function useNotificationsInboxViewModel(
     unreadItemCount: unreadItems.length,
     totalCount: response.items.length,
     isEnabled: response.enabled,
-    status: feed.status,
+    status: gatedFeedStatus(capability, feed.status),
     error: commandError ?? feed.error,
     filter,
     setFilter,

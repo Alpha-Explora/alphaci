@@ -53,7 +53,13 @@ jest.mock("../../../../../../src/features/runs/list", () => ({ RunsSkeleton: () 
 jest.mock("../../../../../../src/shared/layout/flow-background", () => ({ FlowBackground: () => null }));
 
 jest.mock("../../../../../../src/features/capabilities/current", () => ({
-  useCapabilities: () => ({ qaChecklistsEnabled: false }),
+  ...jest.requireActual("../../../../../../src/features/capabilities/current"),
+  useCapabilities: () => ({
+    status: "ready",
+    qaChecklistsEnabled: false,
+    workspacesEnabled: true,
+    notificationsEnabled: true,
+  }),
 }));
 jest.mock("../../../../../../src/features/notifications/summary", () => ({
   useNotificationsSummaryViewModel: () => ({ unreadCount: 0, alerts: [], dismissAlert: jest.fn() }),

@@ -5,10 +5,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { CapabilityAvailability } from "@/features/capabilities/current";
+
 import { getVisibleTeams, getWorkspaces } from "../data/workspace-repository";
 import { useWorkspaceSelection } from "../views/workspace-selection-context";
 import {
   adminOtherTeams,
+  WORKSPACES_OFF,
   type WorkspaceSummary,
   type WorkspacesMeResponse,
 } from "../model/workspace-types";
@@ -46,17 +49,26 @@ async function loadOtherTeams(
 /**
  * Owns the workspace list request while the context owns selection persistence.
  *
+ * Nothing is requested until `/capabilities` reports workspaces on. Reported
+ * off, the list is `WORKSPACES_OFF` and is published so a remembered team is
+ * cleared, as it was when the API itself answered `enabled: false`.
+ *
  * For a platform admin it also reads every team (`/groups`) in parallel and
  * publishes both lists in ONE update, so a remembered selection of a team the
  * admin is not in survives validation instead of being reset to their first
  * own team while the second request is still in flight.
  */
 export function useWorkspaceSelectionViewModel(options: {
+  /** False for a guest: there is nobody to list workspaces for. */
   enabled: boolean;
+  /** What `/capabilities` reports for workspaces. */
+  capability: CapabilityAvailability;
   /** Platform admins only: also list the teams they are not a member of. */
   includeOtherTeams?: boolean;
 }): WorkspaceSelectionViewModel {
-  const { enabled, includeOtherTeams = false } = options;
+  const { enabled, capability, includeOtherTeams = false } = options;
+  const shouldLoad = enabled && capability === "enabled";
+  const featureOff = enabled && capability === "disabled";
   const { setWorkspaces, registerWorkspaceRefresh } = useWorkspaceSelection();
   const [workspaces, setWorkspacesState] = useState<WorkspacesMeResponse | null>(null);
   const [otherTeams, setOtherTeams] = useState<WorkspaceSummary[]>(NO_TEAMS);
@@ -65,7 +77,7 @@ export function useWorkspaceSelectionViewModel(options: {
   const requestId = useRef(0);
 
   const loadWorkspaces = useCallback(async () => {
-    if (!enabled) return;
+    if (!shouldLoad) return;
     const id = ++requestId.current;
     setStatus("loading");
     setError(null);
@@ -87,7 +99,7 @@ export function useWorkspaceSelectionViewModel(options: {
       setStatus("error");
       setError("Workspaces are unavailable right now.");
     }
-  }, [enabled, includeOtherTeams, setWorkspaces]);
+  }, [shouldLoad, includeOtherTeams, setWorkspaces]);
 
   useEffect(() => {
     registerWorkspaceRefresh(() => {
@@ -96,9 +108,16 @@ export function useWorkspaceSelectionViewModel(options: {
   }, [loadWorkspaces, registerWorkspaceRefresh]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!shouldLoad) return;
     void loadWorkspaces();
-  }, [enabled, loadWorkspaces]);
+  }, [shouldLoad, loadWorkspaces]);
 
+  useEffect(() => {
+    if (featureOff) setWorkspaces(WORKSPACES_OFF, NO_TEAMS);
+  }, [featureOff, setWorkspaces]);
+
+  if (featureOff) {
+    return { workspaces: WORKSPACES_OFF, otherTeams: NO_TEAMS, status: "ready", error: null, loadWorkspaces };
+  }
   return { workspaces, otherTeams, status, error, loadWorkspaces };
 }

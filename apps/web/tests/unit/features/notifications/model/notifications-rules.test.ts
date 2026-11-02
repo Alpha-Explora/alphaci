@@ -1,4 +1,6 @@
 import {
+  feedUserId,
+  gatedFeedStatus,
   notificationAlertHref,
   qaAlertsToShow,
   qaRefusalHref,
@@ -54,5 +56,29 @@ describe("QA refusal pop-ups", () => {
       "/projects/proj-1?focus=my-qa-items#overview",
     );
     expect(notificationAlertHref(notification({ eventCode: "qa.run.signed_off", projectId: null }))).toBeNull();
+  });
+});
+
+describe("feedUserId", () => {
+  it("reads the account's feed only once the capability is reported on", () => {
+    expect(feedUserId("u-1", "enabled")).toBe("u-1");
+    expect(feedUserId("u-1", "pending")).toBeNull();
+    expect(feedUserId("u-1", "disabled")).toBeNull();
+    expect(feedUserId(null, "enabled")).toBeNull();
+  });
+});
+
+describe("gatedFeedStatus", () => {
+  it("loads while /capabilities is in flight", () => {
+    expect(gatedFeedStatus("pending", "idle")).toBe("loading");
+  });
+
+  it("is ready, not failed, while notifications are off", () => {
+    expect(gatedFeedStatus("disabled", "idle")).toBe("ready");
+  });
+
+  it("is the feed's own status while notifications are on", () => {
+    expect(gatedFeedStatus("enabled", "error")).toBe("error");
+    expect(gatedFeedStatus("enabled", "ready")).toBe("ready");
   });
 });

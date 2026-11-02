@@ -3,7 +3,10 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
-import { useCapabilities } from "@/features/capabilities/current";
+import {
+  capabilityAvailability,
+  useCapabilities,
+} from "@/features/capabilities/current";
 import { useHostAvailability } from "@/features/hosts/availability";
 import { useNotificationsSummaryViewModel } from "@/features/notifications/summary";
 
@@ -69,14 +72,19 @@ export function useAppNavViewModel(options: {
   pageWorkspaceId?: string | null;
 }): AppNavViewModel {
   const pathname = usePathname();
+  // The header's workspace and notification reads are capability-gated: the
+  // API answers 404 for either while it is off, so ask /capabilities first.
+  const capabilities = useCapabilities();
   const workspaces = useWorkspaceSelectionViewModel({
     enabled: !options.guest,
+    capability: capabilityAvailability(capabilities.status, capabilities.workspacesEnabled),
     includeOtherTeams: Boolean(options.isPlatformAdmin),
   });
   useSelectPageWorkspace(options.pageWorkspaceId);
   const notifications = useNotificationsSummaryViewModel({
     guest: options.guest,
     userId: options.userId,
+    capability: capabilityAvailability(capabilities.status, capabilities.notificationsEnabled),
   });
   const { refreshWorkspaces } = useWorkspaceSelection();
   useEffect(() => {
@@ -94,7 +102,7 @@ export function useAppNavViewModel(options: {
       document.removeEventListener("visibilitychange", refresh);
     };
   }, [options.guest, refreshWorkspaces]);
-  const { qaChecklistsEnabled, envProvisioningEnabled } = useCapabilities();
+  const { qaChecklistsEnabled, envProvisioningEnabled } = capabilities;
   const hostAvailability = useHostAvailability(
     !options.guest && envProvisioningEnabled,
   );

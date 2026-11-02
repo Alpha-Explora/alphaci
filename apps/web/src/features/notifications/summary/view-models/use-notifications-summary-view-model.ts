@@ -1,8 +1,11 @@
 "use client";
 
 import { useCallback } from "react";
+
+import type { CapabilityAvailability } from "@/features/capabilities/current";
 import { notificationsFeed } from "../../data/notifications-feed";
 import { useNotificationFeed } from "../../live";
+import { feedUserId } from "../../model/notifications-rules";
 import type {
   NotificationItem,
   NotificationsStatus,
@@ -20,12 +23,23 @@ export interface NotificationsSummaryViewModel {
   openAlert: (id: string) => void;
 }
 
-/** The shell and Inbox consume the same account-scoped live snapshot. */
+/**
+ * The shell and Inbox consume the same account-scoped live snapshot.
+ *
+ * The feed (list, stream and polling fallback) only starts once
+ * `/capabilities` reports notifications on; until then, and while it is off,
+ * the badge shows nothing and no alert pops.
+ */
 export function useNotificationsSummaryViewModel(options: {
   guest: boolean;
   userId?: string | null;
+  /** What `/capabilities` reports for notifications. */
+  capability: CapabilityAvailability;
 }): NotificationsSummaryViewModel {
-  const userId = options.guest ? null : (options.userId ?? null);
+  const userId = feedUserId(
+    options.guest ? null : (options.userId ?? null),
+    options.capability,
+  );
   const feed = useNotificationFeed(userId);
   const dismissAlert = useCallback(
     (id: string) => {

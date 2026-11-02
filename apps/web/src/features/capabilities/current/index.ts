@@ -6,3 +6,7 @@ export type {
   CapabilitiesStatus,
   CapabilitiesViewModel,
 } from "./view-models/use-capabilities-view-model";
+export {
+  capabilityAvailability,
+  type CapabilityAvailability,
+} from "./model/capability-flags";
