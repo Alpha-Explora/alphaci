@@ -95,6 +95,10 @@ Scenarios that create projects read the central workflow templates from `TEMPLAT
 
 Each run writes `artifacts/e2e/<commit>/report.json` with the commit, a dirty flag, the command, the database image, and each scenario's result. CI runs the same command in the `End-to-end suite (Postgres fixture)` job, against a pinned `alphaci-workflow` commit, and uploads the report as `e2e-report` when the job fails.
 
+### API integration suite
+
+`npm run test:integration` needs Docker. Each spec under `apps/api/tests/integration/` skips itself unless the database URL it reads is set, so plain `npm test` never runs them. `apps/api/scripts/test-integration.ts` starts the same disposable loopback PostgreSQL fixture, gives every spec its own fresh database (empty for migration replays, fully migrated for the outbox contract, the admin connection for the self-hosted runner), runs it, and drops it. It fails when a spec reads a database URL it cannot provide, so a new database test cannot be skipped silently. Set `INTEGRATION_ADMIN_URL` to a running loopback server's admin connection to reuse it. CI runs the same command in the `API integration (Postgres fixture)` job.
+
 ## Full web loop
 
 ```bash
