@@ -2,6 +2,7 @@
 
 import "./qa-report.css";
 
+import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useState, type ReactNode } from "react";
 
@@ -66,9 +67,9 @@ function ReportError({ vm }: Readonly<{ vm: ProjectReportViewModel }>) {
       <h1 className="qa-report-state__title">{error.title}</h1>
       <p className="qa-report-state__text">{error.text}</p>
       {error.signIn ? (
-        <a className="qa-report-toolbar__print" href="/login">
+        <Link className="qa-report-toolbar__print" href="/login">
           Sign in
-        </a>
+        </Link>
       ) : (
         <button type="button" className="qa-report-toolbar__print" onClick={vm.reload}>
           Try again

@@ -97,12 +97,11 @@ describe('DeploymentTargetsService rollback', () => {
     });
     connections.findActiveProviderConnection.mockImplementation(async () => ({
       id: 'connection-1',
-      provider: repository.findDeploymentTargetForUser.mock.results.length
-        ? (
-            (await repository.findDeploymentTargetForUser.mock.results.at(-1)
-              ?.value) as { provider: string }
-          ).provider
-        : 'render',
+      provider:
+        (
+          (await repository.findDeploymentTargetForUser.mock.results.at(-1)
+            ?.value) as { provider: string } | undefined
+        )?.provider ?? 'render',
       encryptedToken: 'enc',
       metadata: {},
     }));

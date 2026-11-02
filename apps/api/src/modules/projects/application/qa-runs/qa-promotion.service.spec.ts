@@ -481,8 +481,9 @@ describe('QaPromotionService.merge', () => {
       message: 'Merged',
       pullRequest: { number: 7, url: 'https://github.com/acme/api/pull/7' },
     });
-    const body = (github.openPullRequest.mock.calls[0]?.[2] as { body: string })
-      .body;
+    const body = (
+      github.openPullRequest.mock.calls[0]?.[2] as { body: string } | undefined
+    )?.body;
     expect(body).toContain('Project run run-1 covered:');
     expect(body).toContain('`acme/web` @ bbbbbbb');
     // The App installation token, never the lead's own (read-only) token.

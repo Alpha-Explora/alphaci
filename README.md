@@ -47,11 +47,27 @@ Each app keeps its own scripts, checks and docs; see
 
 ## Dependencies
 
-npm workspaces hoist shared dependencies to the root `node_modules`. Where the
-apps need different major versions (the API is on TypeScript 5, Jest 29 and
-ESLint 10; the web app on TypeScript 6, Jest 30 and ESLint 9), npm installs the
-API's copy under `apps/api/node_modules`. Add a dependency to one app with
+npm workspaces hoist shared dependencies to the root `node_modules`. Where a
+package needs a different major version, npm installs that copy under the
+app's own `node_modules`. Add a dependency to one app with
 `npm install <pkg> -w @alphaci/api`.
+
+### Lint and typecheck toolchain
+
+- **Two TypeScripts.** `typescript` is 6.x: ts-jest, typescript-eslint, Nest's
+  emit (`npm run build`), `next build` and dependency-cruiser import its API,
+  which TypeScript 7 does not have yet (planned for 7.1). TypeScript 7, the
+  Go compiler, is installed as `typescript-7` and only checks: each
+  `typecheck` script runs `node ../../node_modules/typescript-7/bin/tsc
+  --noEmit`. Both packages ship a `tsc` binary, so `node_modules/.bin/tsc` may
+  be either one; scripts call each compiler by path.
+- **Oxlint, then ESLint.** `npm run lint` runs Oxlint first (`.oxlintrc.json`
+  in each app; type-aware rules through `oxlint-tsgolint`, which uses
+  TypeScript 7), then ESLint for the few rules Oxlint lacks.
+  `eslint-plugin-oxlint` turns off in ESLint every rule `.oxlintrc.json`
+  runs, so no rule runs twice. To add or change a rule, put it in
+  `.oxlintrc.json` if Oxlint has it (`npx oxlint --rules`), otherwise in
+  `eslint.config.mjs`.
 
 `allowScripts` in the root `package.json` lists which install scripts npm may
 run.
@@ -59,9 +75,11 @@ run.
 ## Git hooks
 
 `npm install` installs a pre-push hook ([lefthook](https://lefthook.dev),
-`lefthook.yml`) that typechecks the apps a push touches. Unchanged apps replay
-from the turbo cache, so most pushes pass in a few seconds. Skip once with
-`git push --no-verify`.
+`lefthook.yml`). In parallel, it typechecks the apps a push touches (unchanged
+apps replay from the turbo cache) and lints the pushed files of each app:
+Oxlint (2-3 s), then ESLint (5-7 s for a handful of files). A push that
+touches no app source skips the lint step. Most pushes pass in about ten
+seconds. Skip once with `git push --no-verify`.
 
 ## CI
 

@@ -41,7 +41,7 @@ The frontend profile and documentation checks consume `vendor/@alphaci/capabilit
 
 ```bash
 npm run typecheck
-npx eslint src --max-warnings=0
+npm run lint
 npm run lint:css
 npm run boundaries
 npm run arch:check

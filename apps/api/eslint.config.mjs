@@ -1,17 +1,29 @@
 // @ts-check
+// Second half of `npm run lint`. Oxlint (.oxlintrc.json) runs first and owns
+// every rule it supports, type-aware ones included. The presets below still
+// define the rule set; eslint-plugin-oxlint, last, turns off everything
+// .oxlintrc.json runs, which leaves prettier/prettier,
+// @typescript-eslint/consistent-type-imports and no-octal here.
+import path from 'node:path';
+
 import eslint from '@eslint/js';
+import oxlint from 'eslint-plugin-oxlint';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs'],
+    // `npm run lint` covers *.ts only, as before; .oxlintrc.json matches.
+    ignores: ['**/*.js', '**/*.cjs', '**/*.mjs'],
     linterOptions: {
       reportUnusedDisableDirectives: 'off',
     },
   },
   eslint.configs.recommended,
+  // No type information here: no rule left in ESLint needs it. If a
+  // type-aware rule ever stops being covered by .oxlintrc.json, ESLint fails
+  // loudly ("requires type information") instead of dropping it.
   ...tseslint.configs.recommendedTypeChecked,
   eslintPluginPrettierRecommended,
   {
@@ -20,21 +32,17 @@ export default tseslint.config(
         ...globals.node,
         ...globals.jest,
       },
+      // consistent-type-imports used to read these from tsconfig.json. With
+      // both on it skips files with decorators, so it never asks for
+      // `import type` on a constructor parameter Nest reads at runtime.
       parserOptions: {
-        projectService: {
-          allowDefaultProject: ['tests/performance/*.js'],
-        },
-        tsconfigRootDir: import.meta.dirname,
+        emitDecoratorMetadata: true,
+        experimentalDecorators: true,
       },
     },
   },
   {
     rules: {
-      '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-floating-promises': 'error',
-      '@typescript-eslint/no-unsafe-argument': 'error',
-      '@typescript-eslint/no-unsafe-assignment': 'error',
-      '@typescript-eslint/no-unsafe-call': 'error',
       '@typescript-eslint/consistent-type-imports': [
         'error',
         { prefer: 'type-imports' },
@@ -46,29 +54,10 @@ export default tseslint.config(
     files: ['**/*.spec.ts'],
     rules: {
       '@typescript-eslint/consistent-type-imports': 'off',
-      '@typescript-eslint/no-base-to-string': 'off',
-      '@typescript-eslint/no-require-imports': 'off',
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/require-await': 'off',
-      '@typescript-eslint/unbound-method': 'off',
     },
   },
-  {
-    // k6 supplies the module types and __ENV global at runtime. The Node
-    // workspace intentionally does not install k6's separate type package;
-    // keep the performance smoke script linted for syntax/formatting while
-    // not treating the external runtime values as unsafe Node values.
-    files: ['tests/performance/*.js'],
-    languageOptions: {
-      globals: {
-        __ENV: 'readonly',
-      },
-    },
-    rules: {
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-call': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-    },
-  },
+  ...(await oxlint.buildFromConfigFile(
+    path.join(import.meta.dirname, '.oxlintrc.json'),
+    { typeAware: true, withNursery: true },
+  )),
 );

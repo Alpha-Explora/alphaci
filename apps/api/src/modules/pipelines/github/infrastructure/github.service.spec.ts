@@ -266,8 +266,10 @@ describe('GithubService', () => {
     });
     const refused = { ok: false, status: 403, json: () => Promise.resolve({}) };
     const authHeader = (call: number) =>
-      (fetchMock.mock.calls[call]?.[1] as { headers: Record<string, string> })
-        .headers['Authorization'];
+      (
+        fetchMock.mock.calls[call]?.[1] as
+          { headers: Record<string, string> } | undefined
+      )?.headers['Authorization'];
 
     it("reads with the caller's own token first", async () => {
       fetchMock.mockResolvedValueOnce(roster(['lloydlim1', 'bpramos-ae']));
