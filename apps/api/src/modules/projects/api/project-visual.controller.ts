@@ -6,7 +6,6 @@ import {
   HttpCode,
   Param,
   Post,
-  Query,
   Req,
   Res,
   StreamableFile,
@@ -22,6 +21,7 @@ import {
   type VisualBranch,
 } from '../application/visual/project-visual.service';
 import { ApproveVisualBaselinesDto } from './dto/approve-visual-baselines.dto';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 const BRANCHES: readonly VisualBranch[] = ['uat', 'main'];
 const KINDS: readonly VisualImageKind[] = ['baseline', 'actual', 'diff'];
@@ -49,8 +49,8 @@ export class ProjectVisualController {
   getVisual(
     @Req() req: Request,
     @Param('projectId') projectId: string,
-    @Query('branch') branch?: string,
-    @Query('runId') runId?: string,
+    @QueryString('branch') branch?: string,
+    @QueryString('runId') runId?: string,
   ) {
     return this.visualService.getLatest(
       projectId,
@@ -65,10 +65,10 @@ export class ProjectVisualController {
     @Req() req: Request,
     @Param('projectId') projectId: string,
     @Res({ passthrough: true }) res: Response,
-    @Query('kind') kind?: string,
-    @Query('branch') branch?: string,
-    @Query('runId') runId?: string,
-    @Query('name') name?: string,
+    @QueryString('kind') kind?: string,
+    @QueryString('branch') branch?: string,
+    @QueryString('runId') runId?: string,
+    @QueryString('name') name?: string,
   ): Promise<StreamableFile> {
     const parsedKind = KINDS.find((candidate) => candidate === kind);
     if (!parsedKind) {

@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Param,
-  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -15,6 +14,7 @@ import {
   ProjectPlaywrightLiveService,
   type PlaywrightLiveBranch,
 } from '../application/playwright-live/project-playwright-live.service';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 const BRANCHES: readonly PlaywrightLiveBranch[] = ['uat', 'main'];
 
@@ -32,7 +32,7 @@ export class ProjectPlaywrightLiveController {
   getLive(
     @Req() req: Request,
     @Param('projectId') projectId: string,
-    @Query('branch') branch?: string,
+    @QueryString('branch') branch?: string,
   ) {
     const userId = req.session.user?.id ?? req.session.userId;
     if (!userId) {

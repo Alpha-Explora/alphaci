@@ -1,7 +1,18 @@
 export type FeedbackCategory =
   'general' | 'bug' | 'feature_request' | 'billing' | 'other';
 
-export type FeedbackStatus = 'open' | 'in_review' | 'resolved' | 'dismissed';
+export const FEEDBACK_STATUSES = [
+  'open',
+  'in_review',
+  'resolved',
+  'dismissed',
+] as const;
+
+export type FeedbackStatus = (typeof FEEDBACK_STATUSES)[number];
+
+export function isFeedbackStatus(value: string): value is FeedbackStatus {
+  return (FEEDBACK_STATUSES as readonly string[]).includes(value);
+}
 
 export interface FeedbackRecord {
   id: string;

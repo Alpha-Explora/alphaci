@@ -5,7 +5,6 @@ import {
   Get,
   Param,
   Post,
-  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -17,6 +16,7 @@ import { BrowserTestsService } from '../application/workspace/browser-tests.serv
 import { ProjectWorkspaceService } from '../application/workspace/project-workspace.service';
 import { CreatePullRequestDto } from './dto/create-pull-request.dto';
 import { CreateBranchDto } from './dto/create-branch.dto';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 /**
  * Views of a project's repository — Code, Pull requests and Pipeline runs —
@@ -74,8 +74,8 @@ export class ProjectWorkspaceController {
   listFiles(
     @Req() req: Request,
     @Param('projectId') projectId: string,
-    @Query('path') path = '',
-    @Query('ref') ref?: string,
+    @QueryString('path') path = '',
+    @QueryString('ref') ref?: string,
   ) {
     return this.workspaceService.listFiles(
       projectId,
@@ -94,8 +94,8 @@ export class ProjectWorkspaceController {
   listFileCommits(
     @Req() req: Request,
     @Param('projectId') projectId: string,
-    @Query('path') path = '',
-    @Query('ref') ref?: string,
+    @QueryString('path') path = '',
+    @QueryString('ref') ref?: string,
   ) {
     return this.workspaceService.listFileCommits(
       projectId,
@@ -110,7 +110,7 @@ export class ProjectWorkspaceController {
   listRuns(
     @Req() req: Request,
     @Param('projectId') projectId: string,
-    @Query('branch') branch?: string,
+    @QueryString('branch') branch?: string,
   ) {
     return this.workspaceService.listWorkflowRuns(
       projectId,
@@ -173,7 +173,7 @@ export class ProjectWorkspaceController {
   listPullRequests(
     @Req() req: Request,
     @Param('projectId') projectId: string,
-    @Query('state') state?: string,
+    @QueryString('state') state?: string,
   ) {
     const allowed = ['open', 'closed', 'all'] as const;
     const normalized = allowed.find((value) => value === state) ?? 'all';
@@ -194,8 +194,8 @@ export class ProjectWorkspaceController {
   compareBranches(
     @Req() req: Request,
     @Param('projectId') projectId: string,
-    @Query('base') base?: string,
-    @Query('head') head?: string,
+    @QueryString('base') base?: string,
+    @QueryString('head') head?: string,
   ) {
     return this.workspaceService.compareBranches(
       projectId,

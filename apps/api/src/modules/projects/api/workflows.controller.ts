@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Post,
-  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -14,6 +13,7 @@ import { SessionAuthGuard } from '#kernel/auth/session-auth.guard';
 import { SubscriptionGuard } from '#kernel/auth/subscription.guard';
 import { GenerateWorkflowDto } from '../application/workflows/dto/generate-workflow.dto';
 import { WorkflowsService } from '../application/workflows/workflows.service';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 @Controller('workflows')
 @UseGuards(SessionAuthGuard, SubscriptionGuard)
@@ -31,7 +31,7 @@ export class WorkflowsController {
   }
 
   @Get('history')
-  async history(@Req() req: Request, @Query('limit') limit?: string) {
+  async history(@Req() req: Request, @QueryString('limit') limit?: string) {
     const user = req.session?.user;
     if (!user) {
       throw new UnauthorizedException('Authentication required');

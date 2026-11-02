@@ -6,7 +6,6 @@ import {
   Patch,
   Post,
   Put,
-  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -24,6 +23,7 @@ import { UpdateQaChecklistDto } from '../application/qa-checklists/dto/update-qa
 import { ReplaceQaChecklistItemsDto } from '../application/qa-checklists/dto/replace-qa-checklist-items.dto';
 import { ShareQaChecklistProjectsDto } from '../application/qa-checklists/dto/share-qa-checklist-projects.dto';
 import { UpdateQaChecklistProjectsDto } from '../application/qa-checklists/dto/update-qa-checklist-projects.dto';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 function requireUserId(req: Request): string {
   const userId = req.session.user?.id ?? req.session.userId;
@@ -49,7 +49,7 @@ export class WorkspaceQaChecklistsController {
   list(
     @Req() req: Request,
     @Param('workspaceId') workspaceId: string,
-    @Query('includeArchived') includeArchived?: string,
+    @QueryString('includeArchived') includeArchived?: string,
   ) {
     return this.qaChecklistsService.listForWorkspace(
       workspaceId,

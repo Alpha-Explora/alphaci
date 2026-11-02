@@ -7,7 +7,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   Req,
   StreamableFile,
   UnauthorizedException,
@@ -34,6 +33,7 @@ import {
   renderQaReportWorkbook,
 } from '../application/qa-runs/qa-report.workbook';
 import type { QaReportFormat } from '../application/qa-runs/qa-report.contracts';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 /** `format` query param on GET .../report: defaults to 'json', anything else is a 400. */
 export function parseReportFormat(raw: string | undefined): QaReportFormat {
@@ -110,9 +110,9 @@ export class ProjectQaRunsController {
   list(
     @Req() req: Request,
     @Param('projectId') projectId: string,
-    @Query('branch') branch?: string,
-    @Query('checklistId') checklistId?: string,
-    @Query('limit') limit?: string,
+    @QueryString('branch') branch?: string,
+    @QueryString('checklistId') checklistId?: string,
+    @QueryString('limit') limit?: string,
   ) {
     return this.qaRunsService.listForProject(projectId, requireUserId(req), {
       branch,
@@ -128,8 +128,8 @@ export class ProjectQaRunsController {
   current(
     @Req() req: Request,
     @Param('projectId') projectId: string,
-    @Query('branch') branch?: string,
-    @Query('checklistId') checklistId?: string,
+    @QueryString('branch') branch?: string,
+    @QueryString('checklistId') checklistId?: string,
   ) {
     return this.qaRunsService.current(
       projectId,
@@ -165,7 +165,7 @@ export class ProjectQaRunsController {
     @Req() req: Request,
     @Param('projectId') projectId: string,
     @Param('runId') runId: string,
-    @Query('format') formatParam?: string,
+    @QueryString('format') formatParam?: string,
   ): Promise<StreamableFile> {
     const format = parseReportFormat(formatParam);
     const report = await this.qaReportService.build(

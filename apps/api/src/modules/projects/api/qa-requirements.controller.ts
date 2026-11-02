@@ -8,7 +8,6 @@ import {
   Patch,
   Post,
   Put,
-  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -33,6 +32,7 @@ import { UpdateTestCategoryDto } from '../application/qa-checklists/dto/update-t
 import { QaRequirementsService } from '../application/qa-checklists/qa-requirements.service';
 import { QaTestCasesService } from '../application/qa-checklists/qa-test-cases.service';
 import { actorContext, requireUserId } from './qa-runs.controller';
+import { QueryString } from '#kernel/http/query-string.decorator';
 
 /**
  * A Project's requirements: Features with User stories (functional) and
@@ -50,8 +50,8 @@ export class DeliveryProjectRequirementsController {
   list(
     @Req() req: Request,
     @Param('deliveryProjectId') deliveryProjectId: string,
-    @Query('kind') kind?: string,
-    @Query('includeArchived') includeArchived?: string,
+    @QueryString('kind') kind?: string,
+    @QueryString('includeArchived') includeArchived?: string,
   ) {
     return this.requirementsService.listForProject(
       deliveryProjectId,
@@ -290,7 +290,7 @@ export class WorkspaceQaRequirementsController {
   overview(
     @Req() req: Request,
     @Param('workspaceId') workspaceId: string,
-    @Query('includeArchived') includeArchived?: string,
+    @QueryString('includeArchived') includeArchived?: string,
   ) {
     return this.requirementsService.overview(
       workspaceId,
