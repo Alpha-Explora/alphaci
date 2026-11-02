@@ -428,7 +428,7 @@ in the backend `.env`.
 | `typescript-7` (alias of `typescript`) | ^7.0.2 (`typecheck` only) |
 | `oxlint` | ^1.90.0 (not type-aware here, as ESLint was not) |
 | `eslint` / `eslint-plugin-oxlint` | ^10.14.0 / ^1.90.0 |
-| `framer-motion` | ^12.38.0 |
+| `framer-motion` | ^14.9.0 |
 | `jest` | ^30.3.0 |
 | `stylelint` | ^17.14.1 |
 | `dependency-cruiser` | ^18.2.0 |
