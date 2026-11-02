@@ -5,7 +5,7 @@ import { BranchPreviewsView } from '../../../../../src/features/projects/preview
 import type {
   ProjectBranchPreview,
   ProjectPreviewsResponse,
-} from '../../../../../src/lib/api/contracts';
+} from '@/shared/api/contracts';
 
 function preview(
   overrides: Partial<ProjectBranchPreview> = {},

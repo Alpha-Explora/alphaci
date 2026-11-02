@@ -23,11 +23,12 @@
     "check:capabilities": "turbo run check:capabilities",
     "check:capability-package": "turbo run check:capability-package",
     "check:versions": "node scripts/check-versions.mjs",
+    "check:deps": "knip --include dependencies,unlisted,binaries,unresolved",
     "test:documentation": "node --test scripts/check-okf-bundle.test.cjs"
   },
   "devDependencies": {
-    "eslint": "^10.14.0",
     "js-yaml": "^5.5.0",
+    "knip": "^6.44.1",
     "lefthook": "^2.2.2",
     "oxlint": "^1.90.0",
     "prettier": "^3.4.2",
