@@ -12,6 +12,9 @@ name: Release images
 # - Pull requests that touch the images' inputs: build both, push nothing, so
 #   a broken Dockerfile fails the pull request instead of the release.
 # - Manual run: build; push only when `push` is ticked (no GitHub Release).
+# - Called by another workflow (deploy-enterprise-gce.yml): build `ref`, push
+#   `sha-<commit>` when `push` is true, and leave each digest in a
+#   `digest-<image>` artifact for the caller.
 #
 # GHCR packages are created private on the first push. Customers pull them
 # without credentials, so make both packages public once (org Packages ->
@@ -35,6 +38,16 @@ on:
         description: Push the images to GHCR
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      push:
+        description: Push the images to GHCR
+        type: boolean
+        default: false
+      ref:
+        description: Commit to build (default the triggering ref)
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -61,11 +74,19 @@ jobs:
             image: alphaci-fe
             dockerfile: apps/web/Dockerfile
     env:
-      PUSH: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.push) }}
+      PUSH: ${{ startsWith(github.ref, 'refs/tags/v') || inputs.push == true }}
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ inputs.ref }}
           persist-credentials: false
+
+      # The commit actually checked out. A caller's `ref` differs from
+      # github.sha, which metadata-action would otherwise tag and label.
+      - id: rev
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "short=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v4
 
@@ -82,7 +103,9 @@ jobs:
           images: ghcr.io/alpha-explora/${{ matrix.image }}
           tags: |
             type=semver,pattern={{version}}
-            type=sha,prefix=sha-,format=short
+            type=raw,value=sha-${{ steps.rev.outputs.short }}
+          labels: |
+            org.opencontainers.image.revision=${{ steps.rev.outputs.sha }}
 
       # Build arguments per image. The API bakes the `v1` catalog of the
       # public alphaci-workflow repository, the ref customer pipelines call

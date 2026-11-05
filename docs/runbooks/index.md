@@ -15,6 +15,7 @@
 * [Session authentication](runbook-session-auth.md) - cookie session, CORS, and API origin procedure for the web app.
 * [Outbox relay](runbook-outbox-relay.md) - inspect and run the single PostgreSQL outbox relay.
 * [Migration reconciliation](runbook-migration-reconciliation.md) - reconcile migration files with a Supabase migration ledger.
+* [Enterprise GCE deploy](runbook-enterprise-gce-deploy.md) - how CI deploys the enterprise instance to its Compute Engine VM, and the migration gate.
 * [Deployment provisioning](runbook-deployment-provisioning.md) - provider targets, on-prem targets, and Render or Vercel rollback.
 * [Deployment provisioning live smoke](runbook-deployment-provisioning-live-smoke.md) - approved external-resource verification.
 * [Authentication custom-domain cutover](runbook-auth-custom-domain-cutover.md) - first-party session cookies for the hosted web app and API.
