@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-05
+
+- **Creation**: `runbooks/runbook-enterprise-gce-deploy.md` describes the `Deploy enterprise (GCE)` workflow. A green CI run on `main` builds both images, pushes them to GHCR, and rolls `api` and `web` on `alphaci-enterprise-01` through IAP. A gate stops the deploy when migrations changed. `release.yml` can now be called with `push` and `ref` inputs.
+
 ## 2026-11-02
 
 - **Update**: The local verification runbook describes `npm run test:integration`, which runs the API integration specs against the disposable PostgreSQL fixture locally and in CI.
