@@ -2,10 +2,11 @@
 # Renders the enterprise VM's settings from the GitHub environment into the
 # bundle rollout.sh reads on stdin. Runs on the Actions runner.
 #
-#   VARS_JSON='{...}' SECRETS_JSON='{...}' render.sh <out-file>
+#   VARS_JSON='{...}' SECRET_<NAME>=... render.sh <out-file>
 #
-# VARS_JSON and SECRETS_JSON are toJSON(vars) and toJSON(secrets). Only the
-# keys alphaci.env.template and secret-files name are read. Output lines:
+# VARS_JSON is toJSON(vars). Each secret arrives as the environment variable
+# SECRET_<NAME>, which the workflow maps one by one from secrets.<NAME>. Only
+# the keys alphaci.env.template and secret-files name are read. Output lines:
 #
 #   env <base64 of the rendered alphaci.env>
 #   secret <file name> <base64 of its contents>
@@ -21,12 +22,11 @@ secret_list=${SECRET_FILES:-$here/secret-files}
 out=${1:?usage: render.sh <out-file>}
 
 : "${VARS_JSON:?VARS_JSON must hold toJSON(vars)}"
-: "${SECRETS_JSON:?SECRETS_JSON must hold toJSON(secrets)}"
 
 # The environment's name for KEY.
 stored() { if [[ $1 == GITHUB_* ]]; then echo "GH_${1#GITHUB_}"; else echo "$1"; fi; }
 var() { jq -r --arg k "$1" '.[$k] // empty' <<< "$VARS_JSON"; }
-secret() { jq -r --arg k "$1" '.[$k] // empty' <<< "$SECRETS_JSON"; }
+secret() { local name="SECRET_$1"; printf '%s' "${!name-}"; }
 
 missing=()
 env_file=''
@@ -61,7 +61,7 @@ while IFS= read -r name || [[ -n $name ]]; do
   key=$(stored "${name^^}")
   value=$(secret "$key")
   if [[ -z $value ]]; then
-    missing+=("secret $key")
+    missing+=("secret $key (and SECRET_$key: \${{ secrets.$key }} in the workflow's Render settings step)")
     continue
   fi
   secret_lines+="secret $name $(printf '%s' "$value" | base64 -w0)"$'\n'
