@@ -145,7 +145,18 @@ jobs:
       - name: Render settings
         env:
           VARS_JSON: ${{ toJSON(vars) }}
-          SECRETS_JSON: ${{ toJSON(secrets) }}
+          # One line per name in deploy/enterprise-gce/secret-files. Named one by
+          # one: GitHub holds a workflow that hands toJSON(secrets) to a remote
+          # host for manual approval as possibly malicious.
+          SECRET_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SECRET_SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          SECRET_GH_OAUTH_CLIENT_SECRET: ${{ secrets.GH_OAUTH_CLIENT_SECRET }}
+          SECRET_GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          SECRET_GH_APP_WEBHOOK_SECRET: ${{ secrets.GH_APP_WEBHOOK_SECRET }}
+          SECRET_RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+          SECRET_ENV_PROVISIONING_ENCRYPTION_KEY: ${{ secrets.ENV_PROVISIONING_ENCRYPTION_KEY }}
+          SECRET_ONPREM_REGISTRY_TOKEN: ${{ secrets.ONPREM_REGISTRY_TOKEN }}
+          SECRET_SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           for name in GCP_PROJECT GCP_ZONE GCE_INSTANCE PUBLIC_URL; do
             [[ -n "${!name}" ]] || { echo "::error::Set the variable DEPLOY_$name in the enterprise-gce environment."; exit 1; }

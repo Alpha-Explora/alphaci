@@ -63,7 +63,7 @@ The run reuses the images of that commit and passes the migration gate, because 
 
 ### Add or remove a setting
 
-1. Add or remove the line in `alphaci.env.template`, or the name in `secret-files`, in a pull request.
+1. Add or remove the line in `alphaci.env.template`, or the name in `secret-files`, in a pull request. For a secret, also add or remove its `SECRET_<NAME>: ${{ secrets.<NAME> }}` line in the **Render settings** step of the workflow. The workflow names each secret, because GitHub holds a workflow that passes all secrets to a remote host for manual approval.
 2. Create the variable or secret in the environment before that pull request merges. A deploy whose template names a variable or secret that is not set fails before it connects to the VM, and lists every missing name.
 
 Secret files that `secret-files` does not name, such as the host agent's `machine-token`, are left alone.
