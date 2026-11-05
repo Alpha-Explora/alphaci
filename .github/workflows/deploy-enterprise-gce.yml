@@ -1,16 +1,16 @@
 name: Deploy enterprise (GCE)
 
-# Deploys AlphaCI to the enterprise Compute Engine VM, alphaci-enterprise-01
-# in alphaci-enterprise-20261019 (https://enterprise.alphaci.com.ph), once CI
-# passes on a push to main. A manual run deploys any ref.
+# Deploys AlphaCI and its settings to the enterprise Compute Engine VM
+# (alphaci-enterprise-01, https://enterprise.alphaci.com.ph) once CI passes on
+# a push to main. A manual run deploys any ref, and applies settings changed
+# in the enterprise-gce environment without a code change.
 #
-#   plan    resolves the commit to deploy.
-#   images  builds both images at that commit with release.yml and pushes
-#           ghcr.io/alpha-explora/alphaci-{be,fe}:sha-<commit>.
-#   deploy  signs in to Google Cloud with workload identity federation, SSHes
-#           to the VM through IAP as the alphaci-deployer service account, and
-#           runs .github/scripts/deploy-enterprise-gce.sh, which pins the new
-#           digests in /opt/alphaci/.env and restarts api and web only.
+#   plan    resolves the commit and looks for its images in GHCR.
+#   images  builds and pushes them with release.yml when they are missing.
+#   deploy  renders alphaci.env and the secret files from the enterprise-gce
+#           environment (deploy/enterprise-gce/), signs in to Google Cloud with
+#           workload identity federation, SSHes to the VM through IAP and runs
+#           deploy/enterprise-gce/rollout.sh.
 #
 # Migrations are not applied. The VM's database is Supabase, migrated outside
 # the self-hosted ledger, so the deploy stops when anything under
@@ -18,7 +18,7 @@ name: Deploy enterprise (GCE)
 # revision is recorded yet, and for a rollback. Apply or check the
 # migrations, then run this workflow by hand with `migrations_reviewed`.
 #
-# Setup and operation: docs/runbooks/runbook-enterprise-gce-deploy.md.
+# Settings, setup and operation: docs/runbooks/runbook-enterprise-gce-deploy.md.
 
 on:
   workflow_run:
@@ -28,7 +28,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: Commit, branch or tag to deploy
+        description: Commit, branch or tag to deploy (the deployed one again to apply changed settings)
         type: string
         default: main
       migrations_reviewed:
@@ -45,12 +45,6 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  GCP_PROJECT: alphaci-enterprise-20261019
-  GCP_ZONE: asia-southeast1-b
-  GCE_INSTANCE: alphaci-enterprise-01
-  WORKLOAD_IDENTITY_PROVIDER: projects/471255392927/locations/global/workloadIdentityPools/github/providers/alphaci
-  DEPLOYER_SERVICE_ACCOUNT: alphaci-deployer@alphaci-enterprise-20261019.iam.gserviceaccount.com
-  PUBLIC_URL: https://enterprise.alphaci.com.ph
   MIGRATIONS_DIR: apps/api/supabase/migrations
 
 jobs:
@@ -62,8 +56,14 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     outputs:
       sha: ${{ steps.sha.outputs.sha }}
+      build: ${{ steps.images.outputs.build }}
+      api: ${{ steps.images.outputs.api }}
+      web: ${{ steps.images.outputs.web }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -73,9 +73,33 @@ jobs:
       - id: sha
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      # A commit already built, such as a rerun to apply changed settings,
+      # deploys the same digests instead of new ones.
+      - id: images
+        run: |
+          tag="sha-$(git rev-parse --short=7 HEAD)"
+          for image in alphaci-be alphaci-fe; do
+            if ! digest=$(docker buildx imagetools inspect "ghcr.io/alpha-explora/$image:$tag" --format '{{.Manifest.Digest}}' 2>/dev/null); then
+              echo "ghcr.io/alpha-explora/$image:$tag is not published; building both images."
+              echo "build=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            key=$([[ $image == alphaci-be ]] && echo api || echo web)
+            echo "$key=ghcr.io/alpha-explora/$image@$digest" >> "$GITHUB_OUTPUT"
+          done
+          echo "Both images exist for $tag; reusing them."
+          echo "build=false" >> "$GITHUB_OUTPUT"
+
   images:
     name: Images
     needs: plan
+    if: needs.plan.outputs.build == 'true'
     uses: ./.github/workflows/release.yml
     # A ceiling for release.yml's jobs, which set their own. Its GitHub
     # Release job asks for contents: write and runs for tags only.
@@ -89,18 +113,26 @@ jobs:
   deploy:
     name: Deploy
     needs: [plan, images]
+    if: >-
+      !cancelled() && needs.plan.result == 'success' &&
+      (needs.images.result == 'success' || needs.images.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # The workload identity binding admits this environment only.
+    # Variables and secrets come from this environment, and the workload
+    # identity binding admits it only.
     environment:
       name: enterprise-gce
-      url: ${{ env.PUBLIC_URL }}
+      url: ${{ vars.DEPLOY_PUBLIC_URL }}
     permissions:
       contents: read
       id-token: write
       packages: read
     env:
       TARGET_SHA: ${{ needs.plan.outputs.sha }}
+      GCP_PROJECT: ${{ vars.DEPLOY_GCP_PROJECT }}
+      GCP_ZONE: ${{ vars.DEPLOY_GCP_ZONE }}
+      GCE_INSTANCE: ${{ vars.DEPLOY_GCE_INSTANCE }}
+      PUBLIC_URL: ${{ vars.DEPLOY_PUBLIC_URL }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -109,16 +141,43 @@ jobs:
           filter: blob:none
           persist-credentials: false
 
-      - uses: actions/download-artifact@v8
+      # Before anything else, so a missing setting fails fast and by name.
+      - name: Render settings
+        env:
+          VARS_JSON: ${{ toJSON(vars) }}
+          SECRETS_JSON: ${{ toJSON(secrets) }}
+        run: |
+          for name in GCP_PROJECT GCP_ZONE GCE_INSTANCE PUBLIC_URL; do
+            [[ -n "${!name}" ]] || { echo "::error::Set the variable DEPLOY_$name in the enterprise-gce environment."; exit 1; }
+          done
+          deploy/enterprise-gce/render.sh "$RUNNER_TEMP/settings"
+
+      - if: needs.images.result == 'success'
+        uses: actions/download-artifact@v8
         with:
           pattern: digest-*
           path: digests
           merge-multiple: true
 
+      - name: Image digests
+        id: digests
+        env:
+          BUILT: ${{ needs.images.result == 'success' }}
+          PLANNED_API: ${{ needs.plan.outputs.api }}
+          PLANNED_WEB: ${{ needs.plan.outputs.web }}
+        run: |
+          if [[ "$BUILT" == "true" ]]; then
+            echo "api=$(cat digests/alphaci-be)" >> "$GITHUB_OUTPUT"
+            echo "web=$(cat digests/alphaci-fe)" >> "$GITHUB_OUTPUT"
+          else
+            echo "api=$PLANNED_API" >> "$GITHUB_OUTPUT"
+            echo "web=$PLANNED_WEB" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: google-github-actions/auth@v3
         with:
-          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ env.DEPLOYER_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ vars.DEPLOY_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
 
       - uses: google-github-actions/setup-gcloud@v3
 
@@ -134,7 +193,6 @@ jobs:
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
 
       - name: Migration gate
-        id: gate
         env:
           EVENT: ${{ github.event_name }}
           MIGRATIONS_REVIEWED: ${{ inputs.migrations_reviewed == true }}
@@ -147,9 +205,7 @@ jobs:
           if [[ -z "$deployed" ]]; then
             review='No deployed revision is recorded on the VM, so the migrations it needs are unknown.'
           elif [[ "$deployed" == "$TARGET_SHA" ]]; then
-            echo "Already deployed; nothing to do." | tee -a "$GITHUB_STEP_SUMMARY"
-            echo "action=skip" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "Same revision; applying settings only." | tee -a "$GITHUB_STEP_SUMMARY"
           elif ! git cat-file -e "$deployed^{commit}" 2>/dev/null; then
             review="The deployed revision $deployed is not in this repository's history."
           elif git merge-base --is-ancestor "$deployed" "$TARGET_SHA"; then
@@ -158,8 +214,9 @@ jobs:
               review=$'Migrations changed since the deployed revision:\n'"$changed"
             fi
           elif [[ "$EVENT" == "workflow_run" ]] && git merge-base --is-ancestor "$TARGET_SHA" "$deployed"; then
-            echo "A newer revision is already deployed; skipping this older one." | tee -a "$GITHUB_STEP_SUMMARY"
-            echo "action=skip" >> "$GITHUB_OUTPUT"
+            echo "::notice::A newer revision is already deployed; stopping this older run."
+            echo "A newer revision is already deployed; nothing to do." >> "$GITHUB_STEP_SUMMARY"
+            echo "STALE=true" >> "$GITHUB_ENV"
             exit 0
           else
             review='The target is not a descendant of the deployed revision (a rollback or rewritten history).'
@@ -177,32 +234,34 @@ jobs:
             echo "::error::$(head -n 1 <<< "$review") Apply or check them, then rerun by hand with migrations_reviewed."
             exit 1
           fi
-          [[ -n "$review" ]] && echo "::warning::Deploying past the migration gate: $(head -n 1 <<< "$review")"
-          echo "action=deploy" >> "$GITHUB_OUTPUT"
+          if [[ -n "$review" ]]; then
+            echo "::warning::Deploying past the migration gate: $(head -n 1 <<< "$review")"
+          fi
 
       - name: Roll out
-        if: steps.gate.outputs.action == 'deploy'
+        if: env.STALE != 'true'
         env:
+          API_IMAGE: ${{ steps.digests.outputs.api }}
+          WEB_IMAGE: ${{ steps.digests.outputs.web }}
           GHCR_TOKEN: ${{ github.token }}
           REGISTRY_USER: ${{ github.actor }}
         run: |
-          api=$(cat digests/alphaci-be)
-          web=$(cat digests/alphaci-fe)
-          remote=/tmp/alphaci-deploy-${GITHUB_RUN_ID}.sh
-          gcloud compute scp .github/scripts/deploy-enterprise-gce.sh "$GCE_INSTANCE:$remote" \
+          remote=/tmp/alphaci-rollout-${GITHUB_RUN_ID}.sh
+          gcloud compute scp deploy/enterprise-gce/rollout.sh "$GCE_INSTANCE:$remote" \
             --project "$GCP_PROJECT" --zone "$GCP_ZONE" --tunnel-through-iap --ssh-key-expire-after 1h --quiet
-          printf '%s' "$GHCR_TOKEN" |
-            vm --command "sudo bash $remote '$api' '$web' '$TARGET_SHA' '$REGISTRY_USER'; status=\$?; rm -f $remote; exit \$status"
+          { echo "token $(printf '%s' "$GHCR_TOKEN" | base64 -w0)"; cat "$RUNNER_TEMP/settings"; } |
+            vm --command "sudo bash $remote '$API_IMAGE' '$WEB_IMAGE' '$TARGET_SHA' '$REGISTRY_USER'; status=\$?; rm -f $remote; exit \$status"
+          rm -f "$RUNNER_TEMP/settings"
           {
             echo "### Deployed $TARGET_SHA"
             echo '```'
-            echo "ALPHACI_API_IMAGE=$api"
-            echo "ALPHACI_WEB_IMAGE=$web"
+            echo "ALPHACI_API_IMAGE=$API_IMAGE"
+            echo "ALPHACI_WEB_IMAGE=$WEB_IMAGE"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Public health check
-        if: steps.gate.outputs.action == 'deploy'
+        if: env.STALE != 'true'
         run: |
           curl -fsS --retry 5 --retry-delay 5 --retry-all-errors --max-time 15 "$PUBLIC_URL/api/v1/health" >/dev/null
           curl -fsS --retry 5 --retry-delay 5 --retry-all-errors --max-time 15 "$PUBLIC_URL/healthz" >/dev/null

@@ -2,7 +2,7 @@
 
 ## 2026-11-05
 
-- **Creation**: `runbooks/runbook-enterprise-gce-deploy.md` describes the `Deploy enterprise (GCE)` workflow. A green CI run on `main` builds both images, pushes them to GHCR, and rolls `api` and `web` on `alphaci-enterprise-01` through IAP. A gate stops the deploy when migrations changed. `release.yml` can now be called with `push` and `ref` inputs.
+- **Creation**: `runbooks/runbook-enterprise-gce-deploy.md` describes the `Deploy enterprise (GCE)` workflow. A green CI run on `main` builds both images, pushes them to GHCR, and rolls `api` and `web` on `alphaci-enterprise-01` through IAP. Each deploy also renders `alphaci.env` and the secret files from the `enterprise-gce` GitHub environment through `deploy/enterprise-gce/alphaci.env.template` and `secret-files`. A gate stops the deploy when migrations changed. `release.yml` can now be called with `push` and `ref` inputs.
 
 ## 2026-11-02
 
