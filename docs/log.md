@@ -2,6 +2,7 @@
 
 ## 2026-11-07
 
+- **Update**: `alphaexplora-internal` is a declared Enterprise client policy beside `st-peter`, for Alpha Explora's own hosted deployment (Render API, Vercel web). It narrows nothing yet. `apps/api/deploy/env/enterprise-internal.env` holds its non-secret settings and `npm run start:enterprise-internal` runs it locally. The environment reference names the real policy folder, `src/packs/enterprise/clients`.
 - **Update**: ADR-0006 says `normalizeProjectStack` accepts `dotnet` and that `scaffolds/dotnet-scaffold.ts` is the starter for a new standalone .NET repository. It still said the stack was rejected.
 - **Update**: Regenerated the architecture maps for the moved repo-shape and runtime-contract modules and the new web request sequence.
 

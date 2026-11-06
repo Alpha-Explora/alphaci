@@ -1,10 +1,17 @@
 import type { AppConfig } from '#kernel/config/app.config.js';
 import { createEnterpriseClientPolicyPack } from './client-policy-pack.js';
 
-/** Mirrors the policy that ships in `clients/index.ts`. */
+/** Mirror the policies that ship in `clients/index.ts`. */
 const stPeter = {
   clientId: 'st-peter',
   displayName: 'St. Peter',
+  edition: 'enterprise',
+  disabledCapabilities: [],
+} as const;
+
+const alphaexploraInternal = {
+  clientId: 'alphaexplora-internal',
+  displayName: 'Alpha Explora (internal)',
   edition: 'enterprise',
   disabledCapabilities: [],
 } as const;
@@ -55,6 +62,37 @@ describe('EnterpriseClientPolicyPack', () => {
     expect(policy).not.toHaveProperty('enabledCapabilities');
     // Narrowed to nothing: an empty deny list is a policy, not a gap.
     expect(policy?.disabledCapabilities).toEqual([]);
+  });
+
+  it('resolves the declared Alpha Explora internal preset as a deny-only policy', () => {
+    const pack = createEnterpriseClientPolicyPack();
+    const source = pack.createSource(
+      compositionFor({ id: 'alphaexplora-internal', configPath: null }),
+    );
+
+    expect(source.deployment()).toEqual(alphaexploraInternal);
+    expect(source.deployment()).not.toHaveProperty('enabledCapabilities');
+  });
+
+  it('keeps each declared client to its own policy', () => {
+    const pack = createEnterpriseClientPolicyPack();
+    const policyFor = (id: string) =>
+      pack.createSource(compositionFor({ id, configPath: null })).deployment();
+
+    expect(policyFor('st-peter')).toEqual(stPeter);
+    expect(policyFor('alphaexplora-internal')).toEqual(alphaexploraInternal);
+  });
+
+  it('names every declared client when ALPHACI_CLIENT is unknown', () => {
+    const pack = createEnterpriseClientPolicyPack();
+
+    expect(() =>
+      pack.createSource(
+        compositionFor({ id: 'alphaexplora', configPath: null }),
+      ),
+    ).toThrow(
+      /Unknown ALPHACI_CLIENT 'alphaexplora'\. Declared clients: st-peter, alphaexplora-internal\./,
+    );
   });
 
   it('preserves declared policy lookup and mounted-config precedence', () => {

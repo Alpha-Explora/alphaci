@@ -20,4 +20,19 @@ export const CLIENT_POLICIES: ClientPolicyRegistry = {
     edition: 'enterprise',
     disabledCapabilities: [],
   },
+  /*
+   * Alpha Explora's own hosted deployment (Render API, Vercel web) for its
+   * internal teams. It is a client like any other, so internal-only
+   * differences are data on this record and on that deployment's settings,
+   * never a branch on the client id.
+   *
+   * Narrowed to nothing for now: the internal deployment runs the whole
+   * Enterprise manifest. Add a key only when internal must NOT see it.
+   */
+  'alphaexplora-internal': {
+    clientId: 'alphaexplora-internal',
+    displayName: 'Alpha Explora (internal)',
+    edition: 'enterprise',
+    disabledCapabilities: [],
+  },
 };
