@@ -23,6 +23,7 @@
 
 ## 2026-11-07
 
+- **Creation**: ADR-0023 defines capability options: a setting declared on a capability record in `catalog.source.json`, with closed values and a default equal to current behavior, read at boot into `AppConfig['composition'].options`, served through the `CAPABILITY_OPTIONS` token, and added to the capability's block in `/api/v1/capabilities` while it is enabled. No option is declared yet, so no response changes. The capability contract describes the `options` field. `check-capabilities` requires every option variable in `apps/api/.env.example` with its default, and both documentation checks also reject client-id comparisons against literals.
 - **Update**: `alphaexplora-internal` is a declared Enterprise client policy beside `st-peter`, for Alpha Explora's own hosted deployment (Render API, Vercel web). It narrows nothing yet. `apps/api/deploy/env/enterprise-internal.env` holds its non-secret settings and `npm run start:enterprise-internal` runs it locally. The environment reference names the real policy folder, `src/packs/enterprise/clients`.
 - **Creation**: Added a dated composition improvement proposal, persona and product feature maps, and first-party industry research under `plans/`; proposed tier changes remain unimplemented. Screenshot galleries stay out of the repository.
 - **Update**: ADR-0006 says `normalizeProjectStack` accepts `dotnet` and that `scaffolds/dotnet-scaffold.ts` is the starter for a new standalone .NET repository. It still said the stack was rejected.

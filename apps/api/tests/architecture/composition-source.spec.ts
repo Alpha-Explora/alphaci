@@ -10,6 +10,7 @@ interface SourceRecord {
   configurationFlags: string[];
   requires: string[];
   editions: string[];
+  options?: unknown;
   surface: {
     apiField: string | null;
     viewFlag: string | null;
@@ -294,5 +295,94 @@ describe('composition authoring source', () => {
     expect(manifests).toContain(
       'as const satisfies Record<Edition, CapabilityManifest>',
     );
+  });
+
+  describe('capability options (ADR-0023)', () => {
+    const option = {
+      key: 'reviewMode',
+      env: 'QA_REVIEW_MODE',
+      description: 'Who reviews.',
+      values: ['standard', 'strict'],
+      default: 'standard',
+    };
+    const withOptions = (options: unknown, record = 0) => {
+      const document = clone();
+      document.capabilities[record] = {
+        ...document.capabilities[record]!,
+        options,
+      };
+      return document;
+    };
+    const errorsFor = (options: unknown) =>
+      compositionSource.validateSource(withOptions(options)).join(' ');
+
+    it('accepts a well-formed option and renders it into the registry', () => {
+      const document = withOptions([option]);
+      expect(compositionSource.validateSource(document)).toEqual([]);
+      expect(compositionSource.renderRegistry(document)).toContain(
+        'options: [{"key":"reviewMode","env":"QA_REVIEW_MODE","description":"Who reviews.","values":["standard","strict"],"default":"standard"}],',
+      );
+    });
+
+    it('leaves records without options unchanged in the registry', () => {
+      expect(compositionSource.renderRegistry(committed)).not.toContain(
+        'options:',
+      );
+    });
+
+    it('rejects a default outside the values, and too few values', () => {
+      expect(errorsFor([{ ...option, default: 'lenient' }])).toMatch(
+        /default must be one of its values/,
+      );
+      expect(errorsFor([{ ...option, values: ['standard'] }])).toMatch(
+        /values must list at least two distinct lowercase slugs/,
+      );
+      expect(
+        errorsFor([{ ...option, values: ['Standard', 'strict'] }]),
+      ).toMatch(/values must list at least two distinct lowercase slugs/);
+    });
+
+    it('rejects a malformed key, env name, or an unknown field', () => {
+      expect(errorsFor([{ ...option, key: 'Review-Mode' }])).toMatch(
+        /key must be camelCase/,
+      );
+      expect(errorsFor([{ ...option, env: 'qa_review_mode' }])).toMatch(
+        /env must be an upper-case environment variable name/,
+      );
+      expect(errorsFor([{ ...option, enables: 'everything' }])).toMatch(
+        /unknown field 'enables'/,
+      );
+      expect(errorsFor([])).toMatch(/options must be a non-empty array/);
+    });
+
+    it('rejects a duplicate option key and an env name used twice', () => {
+      expect(errorsFor([option, { ...option, env: 'QA_OTHER' }])).toMatch(
+        /duplicate option key 'reviewMode'/,
+      );
+
+      const document = withOptions([option], 0);
+      document.capabilities[1] = {
+        ...document.capabilities[1]!,
+        options: [{ ...option, key: 'otherMode' }],
+      };
+      expect(compositionSource.validateSource(document).join(' ')).toMatch(
+        /env 'QA_REVIEW_MODE' is already used by/,
+      );
+    });
+
+    it('rejects options on a not-implemented capability', () => {
+      const document = clone();
+      const index = document.capabilities.findIndex(
+        (record) => record.maturity === 'not-implemented',
+      );
+      expect(index).toBeGreaterThanOrEqual(0);
+      document.capabilities[index] = {
+        ...document.capabilities[index]!,
+        options: [option],
+      };
+      expect(compositionSource.validateSource(document).join(' ')).toMatch(
+        /a not-implemented capability cannot declare options/,
+      );
+    });
   });
 });

@@ -30,11 +30,17 @@ function sourceBranchErrors() {
   const patterns = [
     /\bedition\s*(===|!==)\s*['"`]/,
     /['"`](saas|edu|enterprise)['"`]\s*(===|!==)/,
+    // Clients differ by data (their policy and their deployment's capability
+    // options, ADR-0023), never by an if on the client id. Comparing two
+    // client ids, such as a document against ALPHACI_CLIENT, stays allowed.
+    /\bclient(?:Id)?\s*(===|!==)\s*['"`]/,
+    /['"`][^'"`\n]*['"`]\s*(===|!==)\s*[\w.?]*\bclient(?:Id)?\b/,
+    /\bALPHACI_CLIENT['"`]?\]?\s*(===|!==)\s*['"`]/,
   ];
   for (const file of filesUnder(path.join(ROOT, 'src')).filter((item) => item.endsWith('.ts'))) {
     const text = fs.readFileSync(file, 'utf8');
     if (patterns.some((pattern) => pattern.test(text))) {
-      errors.push(`${relative(file)}: edition branches are not allowed; use composition data`);
+      errors.push(`${relative(file)}: edition and client branches are not allowed; use composition data`);
     }
   }
   return errors;
@@ -90,7 +96,7 @@ function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('API documentation checks passed: edition branches and capability sources. The bundle and the maps generated into it are checked by npm run check:documentation at the repository root.');
+  console.log('API documentation checks passed: edition and client branches and capability sources. The bundle and the maps generated into it are checked by npm run check:documentation at the repository root.');
 }
 
 if (require.main === module) main();
