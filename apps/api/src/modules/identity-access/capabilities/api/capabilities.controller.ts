@@ -35,7 +35,7 @@ export class CapabilitiesController {
     const config = this.configService.getOrThrow<AppConfig>('app');
     const capabilityKeys = this.capabilityResolver.deployment();
     const has = (key: CapabilityKey): boolean => capabilityKeys.has(key);
-    // Capability options (ADR-0023) ride on their capability's block, and only
+    // Capability options (ADR-0024) ride on their capability's block, and only
     // while it is enabled: an option of an absent capability describes nothing.
     const optionsOf = (
       key: CapabilityKey,

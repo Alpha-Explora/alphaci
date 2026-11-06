@@ -31,7 +31,7 @@ function sourceBranchErrors() {
     /\bedition\s*(===|!==)\s*['"`]/,
     /['"`](saas|edu|enterprise)['"`]\s*(===|!==)/,
     // Clients differ by data (their policy and their deployment's capability
-    // options, ADR-0023), never by an if on the client id. Comparing two
+    // options, ADR-0024), never by an if on the client id. Comparing two
     // client ids, such as a document against ALPHACI_CLIENT, stays allowed.
     /\bclient(?:Id)?\s*(===|!==)\s*['"`]/,
     /['"`][^'"`\n]*['"`]\s*(===|!==)\s*[\w.?]*\bclient(?:Id)?\b/,

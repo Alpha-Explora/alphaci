@@ -1,7 +1,7 @@
 export type CapabilityMaturity = 'stable' | 'limited' | 'not-implemented';
 
 /**
- * How an available capability behaves on one deployment (ADR-0023). The
+ * How an available capability behaves on one deployment (ADR-0024). The
  * default is the behavior every deployment had before the option existed.
  */
 export interface CapabilityOptionRecord {

@@ -30,7 +30,7 @@ function relative(file) {
 function sourceBranchErrors() {
   const errors = [];
   const src = path.join(ROOT, 'src');
-  // Clients differ by data (capability flags and options, ADR-0023), never by
+  // Clients differ by data (capability flags and options, ADR-0024), never by
   // an if on the client id, exactly as editions do.
   const patterns = [
     /\bedition\s*(===|!==)/,

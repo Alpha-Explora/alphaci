@@ -19,7 +19,7 @@
  *   6. each pack profile lists every registry key in registry order with
  *      status derived from maturity and edition applicability
  *   7. every capability option's variable is documented in .env.example,
- *      with its default as the example value (ADR-0023)
+ *      with its default as the example value (ADR-0024)
  *
  * Usage:
  *   node ./scripts/check-capabilities.cjs

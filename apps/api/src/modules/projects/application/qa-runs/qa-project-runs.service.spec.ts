@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { capabilityOptionsFrom } from '#kernel/composition/capability-options.port.js';
 import type { PlatformAppRole } from '#kernel/ports/platform-admin.port';
 import {
   deliveredIterationRow,
@@ -145,6 +146,7 @@ function setup({
   items = [itemRow()],
   run = runRow(),
   iteration = iterationRow(),
+  authors,
 }: {
   role?: PlatformAppRole;
   readings?:
@@ -153,6 +155,8 @@ function setup({
   items?: QaRunItemRow[];
   run?: QaProjectRunRow | null;
   iteration?: ProjectIterationRow;
+  /** The deployment's testCaseAuthors option; omitted builds no options port. */
+  authors?: 'qa-team' | 'qa-team-and-leads';
 } = {}) {
   const runs = {
     listItemsByRunId: jest.fn().mockResolvedValue(items),
@@ -298,6 +302,11 @@ function setup({
     testCases,
     audit,
     notifications,
+    authors === undefined
+      ? undefined
+      : capabilityOptionsFrom({
+          'projects.qa-checklists': { testCaseAuthors: authors },
+        }),
   );
   return {
     service,
@@ -1469,6 +1478,59 @@ describe('QaProjectRunsService test cases', () => {
     expect(run.permissions).toMatchObject({ canRecordTestCases: false });
     await expect(
       service.updateTestCase(DP, actor('lead-1'), 'run-1', 'ri-1', 'rtc-1', {
+        expectedRowVersion: 1,
+        status: 'passed',
+      }),
+    ).rejects.toMatchObject({
+      response: { code: 'TEST_CASE_RESULT_FORBIDDEN' },
+    });
+    expect(testCases.recordResult).not.toHaveBeenCalled();
+  });
+
+  it('where leads are test case authors, a Product owner writes and records them', async () => {
+    const { service, testCases } = setup({
+      role: 'lead',
+      authors: 'qa-team-and-leads',
+    });
+    testCases.recordResult.mockResolvedValue(copy({ status: 'passed' }));
+
+    const run = await service.getById(DP, actor('lead-1'), 'run-1');
+    expect(run.permissions).toMatchObject({
+      canManageTestCases: true,
+      canRecordTestCases: true,
+    });
+    await service.updateTestCase(
+      DP,
+      actor('lead-1'),
+      'run-1',
+      'ri-1',
+      'rtc-1',
+      {
+        expectedRowVersion: 1,
+        status: 'passed',
+      },
+    );
+    expect(testCases.recordResult).toHaveBeenCalled();
+  });
+
+  it('the default option keeps the Product owner read-only, as with no option', async () => {
+    const { service } = setup({ role: 'lead', authors: 'qa-team' });
+
+    const run = await service.getById(DP, actor('lead-1'), 'run-1');
+    expect(run.permissions).toMatchObject({
+      canManageTestCases: false,
+      canRecordTestCases: false,
+    });
+  });
+
+  it('a developer cannot record a result even where leads are authors', async () => {
+    const { service, testCases } = setup({
+      role: 'member',
+      authors: 'qa-team-and-leads',
+    });
+
+    await expect(
+      service.updateTestCase(DP, actor('dev-1'), 'run-1', 'ri-1', 'rtc-1', {
         expectedRowVersion: 1,
         status: 'passed',
       }),

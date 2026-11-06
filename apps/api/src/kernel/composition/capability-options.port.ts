@@ -7,7 +7,7 @@ import type { CapabilityKey } from './capability-types.js';
 
 export const CAPABILITY_OPTIONS = Symbol('CapabilityOptions');
 
-/** This deployment's capability options (ADR-0023), resolved at boot. */
+/** This deployment's capability options (ADR-0024), resolved at boot. */
 export interface CapabilityOptionsPort {
   value<K extends CapabilityKey, N extends CapabilityOptionKey<K>>(
     capability: K,

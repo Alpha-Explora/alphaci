@@ -6,7 +6,7 @@ import type {
 import type { CapabilityKey } from './capability-types.js';
 
 /**
- * Capability options (ADR-0023): how an available capability behaves on this
+ * Capability options (ADR-0024): how an available capability behaves on this
  * deployment, read once at boot.
  *
  * An option is deployment configuration, the layer after the client policy.

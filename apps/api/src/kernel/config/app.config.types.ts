@@ -41,7 +41,7 @@ export interface AppConfig {
       /** Whether either client-policy selection seam is configured. */
       enabled: boolean;
     };
-    /** Capability options (ADR-0023), validated at boot; defaults when unset. */
+    /** Capability options (ADR-0024), validated at boot; defaults when unset. */
     options: CapabilityOptionValues;
   };
   github: {

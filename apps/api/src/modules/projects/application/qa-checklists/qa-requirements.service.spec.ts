@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 import type { DeliveryProjectOverviewFacts } from '#kernel/ports/delivery-project-overview.port';
+import { capabilityOptionsFrom } from '#kernel/composition/capability-options.port.js';
 import type { PlatformAppRole } from '#kernel/ports/platform-admin.port';
 import {
   deliveredIterationRow,
@@ -129,12 +130,15 @@ function setup({
   manage,
   row = requirementRow(),
   iteration = iterationRow(),
+  authors,
 }: {
   role?: PlatformAppRole;
   member?: boolean;
   manage?: boolean;
   row?: QaChecklistRow | null;
   iteration?: ProjectIterationRow;
+  /** The deployment's testCaseAuthors option; omitted builds no options port. */
+  authors?: 'qa-team' | 'qa-team-and-leads';
 } = {}) {
   const checklists = {
     findById: jest.fn().mockResolvedValue(row),
@@ -218,6 +222,12 @@ function setup({
     testCases,
     audit,
     notifications,
+    undefined, // team to-dos: not used by these tests
+    authors === undefined
+      ? undefined
+      : capabilityOptionsFrom({
+          'projects.qa-checklists': { testCaseAuthors: authors },
+        }),
   );
   return {
     service,
@@ -514,6 +524,23 @@ describe('QaRequirementsService reads', () => {
       canManageTestCases: false,
     });
     expect(result.requirements[0]?.items[0]?.canSetProgress).toBe(true);
+  });
+
+  it('names a lead a test case author only where the deployment says so', async () => {
+    const listAs = async (authors?: 'qa-team' | 'qa-team-and-leads') => {
+      const { service } = setup(
+        authors === undefined ? { role: 'lead' } : { role: 'lead', authors },
+      );
+      const result = await service.listForProject(DP, 'lead-1', {
+        kind: 'functional',
+        includeArchived: false,
+      });
+      return result.permissions.canManageTestCases;
+    };
+
+    expect(await listAs()).toBe(false);
+    expect(await listAs('qa-team')).toBe(false);
+    expect(await listAs('qa-team-and-leads')).toBe(true);
   });
 
   it('rejects a bad kind filter', async () => {

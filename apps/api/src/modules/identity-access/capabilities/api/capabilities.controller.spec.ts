@@ -169,7 +169,7 @@ describe('CapabilitiesController', () => {
   });
 
   /*
-   * Capability options (ADR-0023) ride on their capability's block, and only
+   * Capability options (ADR-0024) ride on their capability's block, and only
    * while it is enabled. With none declared the response is unchanged, which
    * the regression guard above already pins.
    */

@@ -191,7 +191,7 @@ A client policy is a deny-only declaration for one client, selected by `ALPHACI_
 
 ### Capability options
 
-An option changes how an available capability behaves on one deployment; it never enables one. A record declares it in `catalog.source.json` with `key` (camelCase), `env` (the variable that sets it), `description`, `values` (at least two lowercase slugs), and `default`, which is the behavior every deployment had before the option existed. See [ADR-0023](/architecture/decisions/adr-0023-capability-options.md).
+An option changes how an available capability behaves on one deployment; it never enables one. A record declares it in `catalog.source.json` with `key` (camelCase), `env` (the variable that sets it), `description`, `values` (at least two lowercase slugs), and `default`, which is the behavior every deployment had before the option existed. See [ADR-0024](/architecture/decisions/adr-0024-capability-options.md).
 
 - The API reads every option at boot into `AppConfig['composition'].options`. Unset or blank is the default; any other value outside `values` stops the boot.
 - Services read a value through the `CAPABILITY_OPTIONS` token, typed per capability and option, and pass it into domain rules as an argument.

@@ -9,6 +9,10 @@ import {
 import { badRequest, notFound } from '#kernel/http/coded-errors';
 
 import {
+  CAPABILITY_OPTIONS,
+  type CapabilityOptionsPort,
+} from '#kernel/composition/capability-options.port.js';
+import {
   AuditEventPublisher,
   NotificationEventPublisher,
 } from '#kernel/events/platform-event-publisher.js';
@@ -41,6 +45,7 @@ import { ProjectIterationsService } from './project-iterations.service';
 import { QaAccessService } from './qa-access.service';
 import { QaProjectContextService } from './qa-project-context.service';
 import { buildProjectOverview } from './qa-overview.assembly';
+import { testCaseAuthorsOf } from './test-case-authors';
 import type { CreateRequirementDto } from './dto/create-requirement.dto';
 import type { CreateRequirementsBatchDto } from './dto/create-requirements-batch.dto';
 import type { ReorderRequirementItemsDto } from './dto/reorder-requirement-items.dto';
@@ -133,6 +138,9 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
     // Team to-dos share the Project's lifetime: purged with its requirements.
     @Optional()
     private readonly todos?: ProjectTodosRepository,
+    @Optional()
+    @Inject(CAPABILITY_OPTIONS)
+    private readonly capabilityOptions?: CapabilityOptionsPort,
   ) {}
 
   /**
@@ -188,7 +196,10 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
       permissions: {
         canManage: await this.access.canManage(userId),
         canSetProgress: canSetProgress(role),
-        canManageTestCases: canManageTestCases(role),
+        canManageTestCases: canManageTestCases(
+          role,
+          testCaseAuthorsOf(this.capabilityOptions),
+        ),
       },
     };
   }

@@ -166,7 +166,7 @@ function surfaceErrors(at, surface) {
 }
 
 /**
- * Capability options (ADR-0023): how an available capability behaves on one
+ * Capability options (ADR-0024): how an available capability behaves on one
  * deployment. Each option has a closed set of values and a default that is
  * the behavior every deployment had before the option existed, so a
  * deployment that sets nothing keeps it.

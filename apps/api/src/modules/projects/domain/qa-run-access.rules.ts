@@ -1,3 +1,4 @@
+import type { CapabilityOptionValue } from '#kernel/composition/capability-options';
 import type { PlatformAppRole } from '#kernel/ports/platform-admin.port';
 
 export { canManageRequirements } from '#kernel/rules/persona-access.rules';
@@ -20,9 +21,11 @@ export { canManageRequirements } from '#kernel/rules/persona-access.rules';
  *   Reopening a signed-off run, merging to main: lead|admin only.
  *   request-retest (compatibility alias that sets Progress to done):
  *     member|lead|admin.
- *   Writing test cases (categories and cases under a User story): qa|admin.
- *   Recording a test case's result: qa|admin. The Product owner reads test
- *     cases and their results; it does not change them (amendment 12).
+ *   Writing test cases (categories and cases under a User story): qa|admin,
+ *     plus lead where the deployment's testCaseAuthors is qa-team-and-leads.
+ *   Recording a test case's result: the same set. By default the Product
+ *     owner reads test cases and their results; it does not change them
+ *     (amendment 12).
  *   Accepting a signed-off run's items (pass, or fail back to Development):
  *     lead|admin - the Product owner's check after QA (amendment 12).
  */
@@ -38,16 +41,42 @@ export function canSetVerification(role: PlatformAppRole): boolean {
 }
 
 /**
- * Writing test cases: the QA Team owns how a story is tested, so only QA and
- * admins, not Product owners (ADR-0014, amendment 10).
+ * Who writes test cases and records their results on this deployment: the
+ * `projects.qa-checklists` option `testCaseAuthors` (ADR-0024). `qa-team`,
+ * the default, is ADR-0014 amendments 10 and 12. `qa-team-and-leads` lets
+ * the Product owner do both on a deployment that has no QA Team.
  */
-export function canManageTestCases(role: PlatformAppRole): boolean {
-  return role === 'qa' || role === 'admin';
+export type TestCaseAuthors = CapabilityOptionValue<
+  'projects.qa-checklists',
+  'testCaseAuthors'
+>;
+
+function isTestCaseAuthor(
+  role: PlatformAppRole,
+  authors: TestCaseAuthors,
+): boolean {
+  if (role === 'qa' || role === 'admin') return true;
+  return role === 'lead' && authors === 'qa-team-and-leads';
 }
 
-/** Recording a test case's result: the QA Team (and admins), read-only for the Product owner. */
-export function canRecordTestCaseResults(role: PlatformAppRole): boolean {
-  return role === 'qa' || role === 'admin';
+/**
+ * Writing test cases: the QA Team owns how a story is tested, so QA and
+ * admins, not Product owners (ADR-0014, amendment 10), unless the deployment
+ * names the Product owner an author too.
+ */
+export function canManageTestCases(
+  role: PlatformAppRole,
+  authors: TestCaseAuthors,
+): boolean {
+  return isTestCaseAuthor(role, authors);
+}
+
+/** Recording a test case's result: the same authors as writing them. */
+export function canRecordTestCaseResults(
+  role: PlatformAppRole,
+  authors: TestCaseAuthors,
+): boolean {
+  return isTestCaseAuthor(role, authors);
 }
 
 /** The Product owner's acceptance of a signed-off run's items: lead|admin. */
