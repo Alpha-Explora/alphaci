@@ -1,5 +1,16 @@
 export { CAPABILITIES } from './capability-registry.js';
 export { CAPABILITY_MANIFEST_SOURCE } from './capability-manifest-source.port.js';
+export {
+  CAPABILITY_OPTIONS,
+  capabilityOptionsFrom,
+  type CapabilityOptionsPort,
+} from './capability-options.port.js';
+export {
+  parseCapabilityOptions,
+  type CapabilityOptionKey,
+  type CapabilityOptionValue,
+  type CapabilityOptionValues,
+} from './capability-options.js';
 export { CLIENT_POLICY_SOURCE } from './client-policy.port.js';
 export type { ClientPolicySource } from './client-policy.port.js';
 export {

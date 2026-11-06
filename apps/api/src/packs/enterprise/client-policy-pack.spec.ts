@@ -43,6 +43,7 @@ const compositionFor = (
     ...client,
     enabled: client.id !== null || client.configPath !== null,
   },
+  options: {},
 });
 
 describe('EnterpriseClientPolicyPack', () => {

@@ -202,6 +202,7 @@ const configForManifest = (
       configPath: null,
       enabled: capabilities.includes('runtime.client-composition'),
     },
+    options: {},
   };
   return config;
 };

@@ -44,6 +44,7 @@ const appConfig: AppConfig = {
     edition: 'enterprise',
     profile: 'enterprise',
     client: { id: null, configPath: null, enabled: false },
+    options: {},
   },
   github: {
     clientId: 'client-id',

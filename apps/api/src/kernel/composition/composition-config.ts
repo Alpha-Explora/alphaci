@@ -4,6 +4,7 @@ import {
   parseBuildProfile,
 } from './build-profile.js';
 import type { Edition } from './capability-types.js';
+import { parseCapabilityOptions } from './capability-options.js';
 import { parseClientId } from './client-policy.js';
 import { PACK_MANIFESTS } from './manifests.js';
 
@@ -35,7 +36,12 @@ export function parseCompositionConfig(
   const manifest = PACK_MANIFESTS[edition];
 
   assertManifestWithinBuildProfile(profile, manifest);
-  return { edition, profile, client: parseClientConfig(env) };
+  return {
+    edition,
+    profile,
+    client: parseClientConfig(env),
+    options: parseCapabilityOptions(env),
+  };
 }
 
 function parseClientConfig(
