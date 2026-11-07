@@ -1,0 +1,91 @@
+{
+  "checkedDate": "2026-11-05",
+  "organization": "Alpha-Explora",
+  "method": "GitHub connector repository search, metadata and latest-commit queries",
+  "repositories": [
+    {
+      "name": "Alpha-Explora/alphaci",
+      "url": "https://github.com/Alpha-Explora/alphaci",
+      "visibility": "public",
+      "archived": false,
+      "defaultBranch": "main",
+      "observedCommit": "214ef9ba6d4b61b7bd85f930fce8a90e7d9f488d",
+      "commitUrl": "https://github.com/Alpha-Explora/alphaci/commit/214ef9ba6d4b61b7bd85f930fce8a90e7d9f488d",
+      "commitDate": "2026-11-02T20:42:15Z",
+      "subject": "test(web): QA journeys on the current QA flow; the dashboard audit joins them (#47)"
+    },
+    {
+      "name": "Alpha-Explora/alphaci-golden-copy-be",
+      "url": "https://github.com/Alpha-Explora/alphaci-golden-copy-be",
+      "visibility": "public",
+      "archived": true,
+      "defaultBranch": "main",
+      "observedCommit": "b65a63f3103980b3cdb96e3ebb96d6ecea2298ea",
+      "commitUrl": "https://github.com/Alpha-Explora/alphaci-golden-copy-be/commit/b65a63f3103980b3cdb96e3ebb96d6ecea2298ea",
+      "commitDate": "2026-10-21T09:04:23Z",
+      "subject": "Merge pull request #244 from Alpha-Explora/feat/onprem-apps-label-suffix"
+    },
+    {
+      "name": "Alpha-Explora/alphaci-golden-copy-fe",
+      "url": "https://github.com/Alpha-Explora/alphaci-golden-copy-fe",
+      "visibility": "public",
+      "archived": true,
+      "defaultBranch": "main",
+      "observedCommit": "993479d7baf141524ea6a9594d61751a830a5dc4",
+      "commitUrl": "https://github.com/Alpha-Explora/alphaci-golden-copy-fe/commit/993479d7baf141524ea6a9594d61751a830a5dc4",
+      "commitDate": "2026-10-21T07:49:28Z",
+      "subject": "Merge pull request #218 from Alpha-Explora/feat/readable-errors-hosts-setup"
+    },
+    {
+      "name": "Alpha-Explora/alphaci-be",
+      "url": "https://github.com/Alpha-Explora/alphaci-be",
+      "visibility": "private",
+      "archived": false,
+      "defaultBranch": "main",
+      "observedCommit": "4a5fb6c4af63f17bfceb2d2f7f864dac2adc50ba",
+      "commitUrl": "https://github.com/Alpha-Explora/alphaci-be/commit/4a5fb6c4af63f17bfceb2d2f7f864dac2adc50ba",
+      "commitDate": "2026-08-15T08:30:37Z",
+      "subject": "merge(main): sync production hotfixes into main"
+    },
+    {
+      "name": "Alpha-Explora/alphaci-fe",
+      "url": "https://github.com/Alpha-Explora/alphaci-fe",
+      "visibility": "private",
+      "archived": false,
+      "defaultBranch": "main",
+      "observedCommit": "fc18558d6dea5f24926fb9c42a6fb1c4d8434960",
+      "commitUrl": "https://github.com/Alpha-Explora/alphaci-fe/commit/fc18558d6dea5f24926fb9c42a6fb1c4d8434960",
+      "commitDate": "2026-08-15T08:28:48Z",
+      "subject": "merge(main): sync production hotfixes into main"
+    },
+    {
+      "name": "Alpha-Explora/AlphaCI-Educ-be",
+      "url": "https://github.com/Alpha-Explora/AlphaCI-Educ-be",
+      "visibility": "private",
+      "archived": false,
+      "defaultBranch": "main",
+      "observedCommit": "2fe9dffa604bb0b8cb7d35dfd6e12eeda65271bd",
+      "commitUrl": "https://github.com/Alpha-Explora/AlphaCI-Educ-be/commit/2fe9dffa604bb0b8cb7d35dfd6e12eeda65271bd",
+      "commitDate": "2026-08-01T18:31:32Z",
+      "subject": "Merge pull request #4 from Alpha-Explora/workflow-educ"
+    },
+    {
+      "name": "Alpha-Explora/AlphaCI-Educ-fe",
+      "url": "https://github.com/Alpha-Explora/AlphaCI-Educ-fe",
+      "visibility": "public",
+      "archived": false,
+      "defaultBranch": "main",
+      "observedCommit": "5aac58dacc8f32e39f4758b3a090ca8a42bda156",
+      "commitUrl": "https://github.com/Alpha-Explora/AlphaCI-Educ-fe/commit/5aac58dacc8f32e39f4758b3a090ca8a42bda156",
+      "commitDate": "2026-08-10T06:35:13Z",
+      "subject": "Merge pull request #64 from Alpha-Explora/workflow-educ"
+    },
+    {
+      "name": "Alpha-Explora/alphaci-legacy",
+      "url": "https://github.com/Alpha-Explora/alphaci-legacy",
+      "visibility": "private",
+      "archived": true,
+      "defaultBranch": "main"
+    }
+  ]
+}
