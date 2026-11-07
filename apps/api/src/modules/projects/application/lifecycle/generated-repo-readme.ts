@@ -1,7 +1,5 @@
-import {
-  normalizeProjectStack,
-  normalizeRepoShape,
-} from '../../scaffold.builder';
+import { normalizeProjectStack } from '../../scaffolds/service-runtime-contract';
+import { normalizeRepoShape } from '../../domain/repo-shape';
 
 /**
  * Pure README/description builders for generated repositories. No Nest,
@@ -19,7 +17,6 @@ export function describeGeneratedStack(stack: string | undefined): string {
     case 'dotnet':
       return '.NET service';
     case 'nodejs':
-    default:
       return 'Node.js service';
   }
 }

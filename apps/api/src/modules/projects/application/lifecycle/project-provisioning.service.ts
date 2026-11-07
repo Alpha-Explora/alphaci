@@ -11,7 +11,7 @@ import {
   type ProvisionedProjectRow,
   type WorkspaceProjectSummaryRow,
 } from '../../infrastructure/projects.repository';
-import { normalizeRepoShape } from '../../scaffold.builder';
+import { normalizeRepoShape } from '../../domain/repo-shape';
 import { CatalogService } from '../catalog/catalog.service';
 
 /**

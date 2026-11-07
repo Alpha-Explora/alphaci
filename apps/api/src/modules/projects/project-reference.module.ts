@@ -8,7 +8,7 @@ import {
   DEPLOYMENT_PROJECT_REFERENCE_LOOKUP,
 } from '#kernel/ports/deployment-runtime.port';
 import { ProjectsRepository } from './infrastructure/projects.repository';
-import { scaffoldRuntimeContract } from './scaffold.builder';
+import { scaffoldRuntimeContract } from './scaffolds/service-runtime-contract';
 
 @Injectable()
 class ProjectReferenceLookupAdapter implements DeploymentProjectReferenceLookup {

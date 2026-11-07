@@ -57,9 +57,6 @@ describe('DeploymentTargetsService', () => {
     assertWithinLimit: jest.fn(),
     assertManagedFleetCapacity: jest.fn(),
   };
-  const workspaceAccessService = {
-    assertProjectRole: jest.fn(),
-  };
   const appRoleLookup = {
     findAppRole: jest.fn(),
   };
@@ -184,11 +181,6 @@ describe('DeploymentTargetsService', () => {
     clientRegistry.getClient.mockReturnValue(vercelClient);
     usageQuotaService.assertWithinLimit.mockResolvedValue(undefined);
     usageQuotaService.assertManagedFleetCapacity.mockResolvedValue(undefined);
-    workspaceAccessService.assertProjectRole.mockResolvedValue({
-      workspaceId: 'workspace-1',
-      userId: 'user-1',
-      role: 'member',
-    });
     // app_role is the authority for reinstallDeploymentSecrets (see
     // persona-access.rules.ts's canManageProjectLifecycle); default to a
     // persona allowed to reinstall so tests unrelated to the role gate do
@@ -226,9 +218,7 @@ describe('DeploymentTargetsService', () => {
       clientRegistry,
       configService as never,
       new DeploymentStrategyResolver(providerRegistry as never),
-      undefined,
       usageQuotaService,
-      workspaceAccessService as never,
       auditEventsService as never,
       notificationEventsService as never,
       providerRegistry as never,
@@ -255,9 +245,7 @@ describe('DeploymentTargetsService', () => {
       clientRegistry,
       configService as never,
       new DeploymentStrategyResolver(),
-      undefined,
       usageQuotaService,
-      workspaceAccessService as never,
       auditEventsService as never,
       notificationEventsService as never,
       providerRegistry as never,
@@ -713,8 +701,6 @@ describe('DeploymentTargetsService', () => {
         clientRegistry,
         configService as never,
         new DeploymentStrategyResolver(providerRegistry as never),
-        undefined,
-        undefined,
         undefined,
         undefined,
         undefined,

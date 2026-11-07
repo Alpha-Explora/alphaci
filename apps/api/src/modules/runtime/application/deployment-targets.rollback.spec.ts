@@ -129,8 +129,6 @@ describe('DeploymentTargetsService rollback', () => {
       configService as never,
       new DeploymentStrategyResolver(),
       undefined,
-      undefined,
-      undefined,
       audit as never,
       notifications as never,
       undefined,

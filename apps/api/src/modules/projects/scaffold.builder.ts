@@ -13,111 +13,13 @@ import { buildBrowserTestStarterFiles } from './scaffolds/browser-test-starter';
 import { buildDotnetStandaloneScaffold } from './scaffolds/dotnet-scaffold';
 import type { ScaffoldFile } from './scaffolds/scaffold-file';
 import {
+  normalizeProjectStack,
   SCAFFOLD_RUNTIME_CONTRACTS,
-  type CanonicalStack,
 } from './scaffolds/service-runtime-contract';
+import { normalizeRepoShape } from './domain/repo-shape';
 import { NPM_INSTALL_COOLDOWN } from './domain/npm-install-cooldown.rule';
-import type { ServiceRuntimeContract } from '#kernel/ports/deployment-runtime.port';
 
 export type { ScaffoldFile } from './scaffolds/scaffold-file';
-export type { CanonicalStack } from './scaffolds/service-runtime-contract';
-
-export type CanonicalRepoShape =
-  'standalone' | 'monorepo' | 'microservices' | 'multi-repo';
-
-/**
- * Accept legacy FE/API project type IDs as well as catalog stack keys. Older
- * saved requests and tests still use values like 'nestjs-api' and 'react-app',
- * but the scaffold needs canonical stack names to emit the right file tree.
- *
- * Two different things used to share one fallback, and only one of them was
- * benign:
- *
- *   nullish  → a project with no recorded stack, which is every project
- *              predating the catalog. Defaulting these to nodejs is correct.
- *   unknown  → a stack that was explicitly asked for and is not supported.
- *              Defaulting these produced a repository scaffolded as Node —
- *              package.json, tsconfig, ESLint, a Node Dockerfile — for someone
- *              who asked for something else, with nothing anywhere reporting
- *              the substitution. The pipeline then ran `npm ci` against it and
- *              failed for a reason unrelated to the actual mistake.
- *
- * The same reasoning is already written down one function below, for repo
- * shapes: a catalog-driven request must never silently fall back.
- */
-export function normalizeProjectStack(
-  stack: string | null | undefined,
-): CanonicalStack {
-  const normalized = (stack ?? '').trim().toLowerCase();
-
-  if (normalized === '') {
-    return 'nodejs';
-  }
-
-  if (normalized.includes('dotnet')) {
-    return 'dotnet';
-  }
-
-  if (normalized.includes('next')) {
-    return 'nextjs';
-  }
-
-  if (normalized.includes('react') && !normalized.includes('react-native')) {
-    return 'react';
-  }
-
-  if (normalized.includes('nest')) {
-    return 'nestjs';
-  }
-
-  if (normalized.includes('node')) {
-    return 'nodejs';
-  }
-
-  throw new Error(
-    `Unsupported project stack '${stack}'. The scaffold can emit nextjs, react, nestjs, nodejs or dotnet; a stack outside that set needs a scaffold before it can be provisioned.`,
-  );
-}
-
-/**
- * The runtime contract of the app scaffolded for a project type: its container
- * port and health path. Null when there is no project type (a repository
- * AlphaCI did not scaffold) or the type has no scaffold, so the caller keeps
- * its own default instead of guessing one.
- */
-export function scaffoldRuntimeContract(
-  projectTypeId: string | null | undefined,
-): ServiceRuntimeContract | null {
-  if (!projectTypeId?.trim()) return null;
-  try {
-    return SCAFFOLD_RUNTIME_CONTRACTS[normalizeProjectStack(projectTypeId)];
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Map a repo shape ID to its canonical form. The catalog (and therefore the
- * FE) uses the short IDs 'mono' and 'multi', while internal flow logic uses
- * 'monorepo' and 'multi-repo'. Accept both so a catalog-driven request never
- * silently falls back to the standalone flow.
- */
-export function normalizeRepoShape(
-  repoShape: string | null | undefined,
-): CanonicalRepoShape {
-  switch (repoShape) {
-    case 'mono':
-    case 'monorepo':
-      return 'monorepo';
-    case 'multi':
-    case 'multi-repo':
-      return 'multi-repo';
-    case 'microservices':
-      return 'microservices';
-    default:
-      return 'standalone';
-  }
-}
 
 export interface BuildScaffoldOptions {
   serviceName: string;

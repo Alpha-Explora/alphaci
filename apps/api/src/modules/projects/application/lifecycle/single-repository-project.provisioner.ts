@@ -9,7 +9,7 @@ import {
   withDefaultCreateDeploymentProvisioning,
   withRepoShapeRootDirectory,
 } from '../../domain/deployment-provisioning.policy';
-import { normalizeRepoShape } from '../../scaffold.builder';
+import { normalizeRepoShape } from '../../domain/repo-shape';
 import type { CreateProjectDto } from '../../api/dto/create-project.dto';
 import type { SetupProjectDto } from '../../api/dto/setup-project.dto';
 import type {
