@@ -22,5 +22,6 @@ This bundle describes AlphaCI as it is today: a NestJS API (`apps/api`) and a Ne
 * [Bundle update log](log.md) - OKF documentation-bundle history.
 * Notable product changes are recorded in the root `CHANGELOG.md`, one line each.
 * `npm run check:documentation` at the repository root validates this bundle; each app's `generate:architecture-maps` writes its generated maps here.
+* [Feature composition improvements](plans/2026-11-05-feature-composition-improvements.md) - delivered authoring and inventory repairs, industry comparison, and remaining proposals.
 
 The bundle uses OKF v0.2 Markdown and YAML frontmatter. `index.md` files are directory listings and `log.md` is update history; all other Markdown files are typed concepts. `plans/` and `specs/` hold dated plans and designs that are not built yet; they are not current-state concepts and the bundle checks skip them.
