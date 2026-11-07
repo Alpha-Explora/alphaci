@@ -122,6 +122,7 @@ function validateFeatureInventory(features, capabilities, editions) {
 
 const cell = (value) =>
   String(value)
+    .replace(/\\/g, '\\\\')
     .replace(/\|/g, '\\|')
     .replace(/[\r\n]+/g, ' ')
     .replace(/</g, '&lt;');

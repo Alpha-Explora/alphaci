@@ -178,6 +178,31 @@ describe('composition authoring source', () => {
     );
   });
 
+  it('keeps a feature on one table row when its text contains backslashes and pipes', () => {
+    const document = {
+      ...clone(),
+      features: [
+        {
+          id: 'projects.requirements',
+          title: 'Paths like C:\\|D:\\',
+          availability: { kind: 'capability', key: 'projects.qa-checklists' },
+          implementation: [],
+          permissions: [],
+          prerequisites: [],
+          evidence: [],
+        },
+      ],
+    };
+    const row = featureInventory
+      .renderFeatureInventory(document)
+      .split('\n')
+      .find((line) => line.startsWith('| Paths like'));
+    expect(row).toBeDefined();
+    // A Markdown table splits on every pipe that a backslash does not escape.
+    const delimiters = row!.replace(/\\./g, '').split('|').length - 1;
+    expect(delimiters).toBe(5);
+  });
+
   it('rejects a dependency that is absent from a pack the capability is in', () => {
     const document = clone();
     const dependant = document.capabilities.find(
