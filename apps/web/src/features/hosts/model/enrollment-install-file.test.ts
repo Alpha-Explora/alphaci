@@ -389,6 +389,12 @@ describe('Windows install file', () => {
     );
   });
 
+  it('clears the inherited PowerShell module path before any PowerShell call', () => {
+    const clear = contents.indexOf('set "PSModulePath="');
+    expect(clear).toBeGreaterThan(-1);
+    expect(clear).toBeLessThan(contents.indexOf('powershell -NoProfile'));
+  });
+
   it('checks the archive before the installer is called, and passes the code file', () => {
     const download = contents.indexOf('Invoke-WebRequest');
     const check = contents.indexOf('Get-FileHash');
@@ -653,6 +659,8 @@ function runWindowsBlock(
     ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script],
     {
       env: childEnv({
+        // The .cmd clears this before it reaches the block.
+        PSModulePath: '',
         TEMP: paths.scratch,
         TMP: paths.scratch,
         TEST_ARCHIVE: paths.windowsArchive,
