@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { adminRepository } from '../../data/admin-repository';
 import { describeRoleError } from '../../model/admin-rules';
+import { useLatestRequestSequence } from '@shared/async/latest-request-sequence';
 import {
   APP_ROLE_LABELS,
   type AdminStatus,
@@ -35,31 +36,27 @@ export function useAdminUserDetailViewModel(
   const [roleMessage, setRoleMessage] = useState<string | null>(null);
 
   const [nonce, setNonce] = useState(0);
-  const req = useRef(0);
+  const requests = useLatestRequestSequence();
 
   useEffect(() => {
-    req.current += 1;
-    const rid = req.current;
-    let active = true;
+    const lease = requests.begin();
 
     adminRepository
       .user(id)
       .then((next) => {
-        if (!active || rid !== req.current) return;
+        if (!lease.isCurrent()) return;
         setDetail(next);
         setError(null);
         setStatus('ready');
       })
       .catch(() => {
-        if (!active || rid !== req.current) return;
+        if (!lease.isCurrent()) return;
         setError('Could not load this user.');
         setStatus('error');
       });
 
-    return () => {
-      active = false;
-    };
-  }, [id, nonce]);
+    return () => lease.cancel();
+  }, [id, nonce, requests]);
 
   /** Re-reads the user after a write; the role write owns its own busy flag. */
   const reload = () => setNonce((n) => n + 1);

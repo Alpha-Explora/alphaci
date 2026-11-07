@@ -1,4 +1,4 @@
-import { act } from 'react';
+import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { checklistsRepository } from '../../../../../src/features/checklists/data/checklists-repository';
@@ -413,5 +413,29 @@ describe('useProjectChecklistsViewModel', () => {
       useProjectChecklistsViewModel({ projectId: 'project-1', enabled: false }),
     );
     expect(repo.listForProject).not.toHaveBeenCalled();
+  });
+
+  it('drops a response that arrives after the tab is disabled', async () => {
+    let answer: (response: {
+      items: QaChecklist[];
+      canManage: boolean;
+    }) => void = () => {};
+    repo.listForProject.mockReturnValue(
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+    );
+    let setEnabled: (enabled: boolean) => void = () => {};
+    const vm = renderHook(function useSwitchableTab() {
+      const [enabled, setTabEnabled] = useState(true);
+      setEnabled = setTabEnabled;
+      return useProjectChecklistsViewModel({ projectId: 'project-1', enabled });
+    });
+
+    act(() => setEnabled(false));
+    await act(async () => answer({ items: [checklist()], canManage: true }));
+
+    expect(vm().checklists).toEqual([]);
+    expect(vm().canManage).toBe(false);
   });
 });

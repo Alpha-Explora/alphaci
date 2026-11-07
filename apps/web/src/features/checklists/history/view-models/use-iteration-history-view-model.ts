@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { iterationsRepository } from '../../data/iterations-repository';
 import { projectQaRunsRepository } from '../../data/project-qa-runs-repository';
@@ -8,6 +8,7 @@ import { useIterationEpoch } from '../../iteration';
 import type { HistoryIteration } from '../../model/iteration-types';
 import type { ProjectQaRun } from '../../model/project-run-types';
 import { errorStatus } from '../../model/wire-readers';
+import { useLatestRequestSequence } from '@shared/async/latest-request-sequence';
 
 /** `unavailable`: this backend has no iterations route (a 404); the tab says so. */
 export type IterationHistoryStatus =
@@ -70,25 +71,24 @@ export function useIterationHistoryViewModel(options: {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [reports, setReports] = useState<Record<string, HistoryReport>>({});
-  const requestRef = useRef(0);
+  const requests = useLatestRequestSequence();
   const epoch = useIterationEpoch(active ? key : null);
 
   useEffect(() => {
     if (!active) return;
-    requestRef.current += 1;
-    const requestId = requestRef.current;
+    const lease = requests.begin();
     iterationsRepository
       .list(key)
       .then((iterations) => {
-        if (requestId === requestRef.current)
-          setLoaded({ key, iterations, status: 'ready' });
+        if (lease.isCurrent()) setLoaded({ key, iterations, status: 'ready' });
       })
       .catch((cause: unknown) => {
-        if (requestId !== requestRef.current) return;
+        if (!lease.isCurrent()) return;
         const status = errorStatus(cause) === 404 ? 'unavailable' : 'error';
         setLoaded({ key, iterations: [], status });
       });
-  }, [active, key, nonce, epoch]);
+    return () => lease.cancel();
+  }, [active, key, nonce, epoch, requests]);
 
   function loadReport(runId: string) {
     setReports((current) => ({ ...current, [runId]: { status: 'loading' } }));
