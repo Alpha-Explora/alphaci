@@ -160,8 +160,8 @@ html,body{background:transparent;color:var(--foreground);font-family:var(--font-
   }
   q('edition-bars').innerHTML=editions.map(e=>{
     const n=data.counts[e], total=Object.values(n).reduce((a,b)=>a+b,0);
-    return '<div class="bar-row"><span>'+({saas:'SaaS',edu:'EDU',enterprise:'Enterprise'}[e])+'</span><div class="bar" aria-label="'+e+': '+n.stable+' stable, '+n.limited+' limited, '+n['not-implemented']+' not built">'+['stable','limited','not-implemented'].map((s,i)=>'<span class="'+['stable','limited','missing'][i]+'" style="width:'+(n[s]/data.capabilities.length*100)+'%" data-tooltip="'+escape(labels[s]+': '+n[s])+'"></span>').join('')+'</div><span>'+total+'</span></div>';
-  }).join('')+'<p class="small">Scale: 0–'+data.capabilities.length+' catalog capabilities. Implemented records: '+editions.map(e=>e+' '+(data.counts[e].stable+data.counts[e].limited)).join(' · ')+'. Configuration and action rules still apply.</p>';
+    return '<div class="bar-row"><span>'+({saas:'SaaS',edu:'EDU',enterprise:'Enterprise'}[e])+'</span><div class="bar" aria-label="'+escape(e+': '+n.stable+' stable, '+n.limited+' limited, '+n['not-implemented']+' not built')+'">'+['stable','limited','not-implemented'].map((s,i)=>'<span class="'+['stable','limited','missing'][i]+'" style="width:'+escape(n[s]/data.capabilities.length*100)+'%" data-tooltip="'+escape(labels[s]+': '+n[s])+'"></span>').join('')+'</div><span>'+escape(total)+'</span></div>';
+  }).join('')+'<p class="small">'+escape('Scale: 0–'+data.capabilities.length+' catalog capabilities. Implemented records: '+editions.map(e=>e+' '+(data.counts[e].stable+data.counts[e].limited)).join(' · ')+'. Configuration and action rules still apply.')+'</p>';
   q('provenance').textContent='Source snapshot '+data.commit.slice(0,8)+' · '+data.capabilities.length+' records · '+data.source;
   q('internal-base').addEventListener('change',matrix);
   const featureSource=f=>f.availability.kind==='capability'?f.availability.key:f.availability.kind==='deployment'?'Deployment contract':'Web build gate';
