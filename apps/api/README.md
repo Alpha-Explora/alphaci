@@ -45,12 +45,15 @@ npm run start:saas
 npm run start:edu
 npm run start:enterprise
 npm run start:enterprise-client
+npm run start:enterprise-internal
 ```
 
 These development commands run `nest start --watch` on port 4000 (`PORT`). The first three select
 the SaaS, EDU, and full Enterprise compositions; `start:enterprise-client`
-also selects the declared `st-peter` Enterprise client policy. Environment
-presets for deployment are in `deploy/env/`.
+also selects the declared `st-peter` Enterprise client policy, and
+`start:enterprise-internal` the declared `alphaexplora-internal` policy of
+Alpha Explora's own hosted deployment. Environment presets for deployment are
+in `deploy/env/`.
 
 ## Deployment
 
