@@ -40,6 +40,8 @@ export interface TunnelReport {
   reportedAt: string | null;
 }
 export interface OnpremAssignmentPort {
+  /** Deny before provisioning side effects when managed-host delivery is absent. */
+  assertAvailable(): void;
   /** `machineId` omitted: the workspace's only healthy machine is used. */
   assignProvisionedEnvironment(
     projectId: string,

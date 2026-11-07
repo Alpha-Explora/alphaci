@@ -10,6 +10,7 @@
     "billing.usage-quotas",
     "billing.checkout",
     "runtime.env-provisioning",
+    "runtime.managed-host-delivery",
     "runtime.gcp-deployments",
     "runtime.deployment-history",
     "runtime.preview-deployments",
@@ -20,6 +21,7 @@
     "projects.workflow-update-pr",
     "projects.target-management",
     "projects.qa-checklists",
+    "projects.release-governance",
     "pipelines.ci-run-tracking"
   ],
   "edu": [
@@ -35,6 +37,7 @@
     "billing.subscription-gate",
     "billing.usage-quotas",
     "runtime.env-provisioning",
+    "runtime.managed-host-delivery",
     "runtime.gcp-deployments",
     "runtime.deployment-history",
     "runtime.preview-deployments",
@@ -45,6 +48,7 @@
     "projects.workflow-update-pr",
     "projects.target-management",
     "projects.qa-checklists",
+    "projects.release-governance",
     "pipelines.ci-run-tracking"
   ],
   "enterprise": [
@@ -58,6 +62,7 @@
     "billing.subscription-gate",
     "billing.usage-quotas",
     "runtime.env-provisioning",
+    "runtime.managed-host-delivery",
     "runtime.gcp-deployments",
     "runtime.deployment-history",
     "runtime.preview-deployments",
@@ -72,6 +77,7 @@
     "projects.workflow-update-pr",
     "projects.target-management",
     "projects.qa-checklists",
+    "projects.release-governance",
     "pipelines.ci-run-tracking",
     "pipelines.github-enterprise-server"
   ]

@@ -15,3 +15,7 @@ Thumbs.db
 /deploy/selfhost/.env
 /deploy/selfhost/secrets/
 /deploy/selfhost/certs/
+
+# Screenshot galleries never go in the repository; share them outside git.
+/docs/plans/**/screenshots/
+/docs/plans/**/*.zip

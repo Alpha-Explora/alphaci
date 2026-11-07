@@ -1,6 +1,7 @@
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 
+import { StubDeploymentCapabilitiesModule } from '#kernel/composition/__fixtures__/stub-deployment-capabilities.module';
 import { RuntimeCoreModule } from '../../../core/runtime-core.module';
 import type { DeploymentProvider } from '../../../core/deployment-provider.contract';
 import { DeploymentProviderRegistry } from '../../../core/deployment-provider.registry';
@@ -34,6 +35,7 @@ describe('GcpDeploymentModule', () => {
             }),
           ],
         }),
+        StubDeploymentCapabilitiesModule,
         RuntimeCoreModule,
         GcpDeploymentModule,
       ],
@@ -76,6 +78,7 @@ describe('GcpDeploymentModule', () => {
             }),
           ],
         }),
+        StubDeploymentCapabilitiesModule,
         RuntimeCoreModule,
         GcpDeploymentModule,
       ],

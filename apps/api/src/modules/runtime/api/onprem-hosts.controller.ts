@@ -17,7 +17,7 @@ import { OnpremHostsService } from '../application/onprem/onprem-hosts.service';
 import { CreateEnrollmentDto, RevokeMachineDto } from './dto/onprem-host.dto';
 
 @Controller('workspaces/:workspaceId')
-@RequiresCapability('runtime.env-provisioning')
+@RequiresCapability('runtime.managed-host-delivery')
 @UseGuards(SessionAuthGuard, CapabilityGuard, SubscriptionGuard)
 export class OnpremHostsController {
   constructor(private readonly hosts: OnpremHostsService) {}

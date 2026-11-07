@@ -34,13 +34,14 @@ This matrix is generated from the application-owned capability registry and pack
 | `identity.ferpa-workflows` | `identity-access` | FERPA-oriented education workflow automation. | not-implemented | edu | Not implemented in this backend. No AppConfig flag. |
 | `identity.edition-entitlements` | `identity-access` | Runtime edition and pack entitlement resolution. | not-implemented | saas, edu, enterprise | Not implemented in this backend. No AppConfig flag. |
 | `platform.audit-events` | `platform-ops` | Project audit event recording through the application outbox. | stable | saas, edu, enterprise | auditEvents.enabled |
-| `platform.notifications` | `platform-ops` | In-app notification requests and persistence. | stable | saas, edu, enterprise | notifications.enabled |
+| `platform.notifications` | `platform-ops` | In-app notification persistence and live recipient-scoped workspace membership delivery. | stable | saas, edu, enterprise | notifications.enabled |
 | `platform.data-residency` | `platform-ops` | Customer-specific data-location controls. | not-implemented | enterprise | Not implemented in this backend. No AppConfig flag. |
 | `platform.public-site` | `platform-ops` | Public marketing site: landing, pricing, and guide pages served to unauthenticated visitors. | not-implemented | saas | Not implemented in this backend. No AppConfig flag. |
 | `billing.subscription-gate` | `billing` | Subscription entitlement gating for authenticated access and CI run validation. | stable | saas, edu, enterprise | subscription.gateEnabled |
 | `billing.usage-quotas` | `billing` | Usage tracking and quota policy checks. | limited | saas, edu, enterprise | usageQuotas.enabled |
 | `billing.checkout` | `billing` | Self-serve payment checkout. | not-implemented | saas | Not implemented in this backend. No AppConfig flag. |
-| `runtime.env-provisioning` | `runtime` | Provider-backed deployment target and environment provisioning. | limited | saas, edu, enterprise | envProvisioning.enabled plus provider configuration |
+| `runtime.env-provisioning` | `runtime` | Provider-backed environments, shared release registration, promotion, and rollback; managed-host operations require the dependent managed-host-delivery capability. | limited | saas, edu, enterprise | envProvisioning.enabled plus provider configuration |
+| `runtime.managed-host-delivery` | `runtime` | Customer host management, enrollment, assignment, readiness, and signed agent delivery. | limited | saas, edu, enterprise | managedHostDelivery.enabled plus on-prem operator configuration |
 | `runtime.gcp-deployments` | `runtime` | Google Cloud deployment provider, including optional dedicated per-customer projects. | limited | saas, edu, enterprise | gcpDeployments.enabled plus GCP provider configuration |
 | `runtime.deployment-history` | `runtime` | Deployment history read model exposed through the Runtime context. | limited | saas, edu, enterprise | deploymentHistory.enabled |
 | `runtime.preview-deployments` | `runtime` | Branch-scoped preview deployment grouping when the provider supports it. | limited | saas, edu, enterprise | previewDeployments.enabled and deploymentHistory.enabled |
@@ -54,7 +55,8 @@ This matrix is generated from the application-owned capability registry and pack
 | `projects.workflow-settings-preview` | `projects` | Workflow settings preview and validation. | stable | saas, edu, enterprise | workflowSettingsPreview.enabled |
 | `projects.workflow-update-pr` | `projects` | Workflow update pull-request requests. | limited | saas, edu, enterprise | workflowUpdatePr.enabled |
 | `projects.target-management` | `projects` | Project target management composition with Runtime. | stable | saas, edu, enterprise | projectTargetManagement.enabled |
-| `projects.qa-checklists` | `projects` | QA checklist definitions and per-project sharing. | limited | saas, edu, enterprise | qaChecklists.enabled |
+| `projects.qa-checklists` | `projects` | QA checklist definitions and sharing, requirements, test cases, QA runs, sign-off, and evidence; governed acceptance, iteration start, and merge actions require release-governance. | limited | saas, edu, enterprise | qaChecklists.enabled |
+| `projects.release-governance` | `projects` | PO acceptance, controlled production merges, and starting the next project iteration. | limited | saas, edu, enterprise | releaseGovernance.enabled; existing QA and workflow safety gates remain mandatory |
 | `pipelines.ci-run-tracking` | `pipelines` | CI run report ingestion and tracking. | limited | saas, edu, enterprise | ciRunTracking.enabled |
 | `pipelines.github-enterprise-server` | `pipelines` | GitHub Enterprise Server repository and CI integration. | not-implemented | enterprise | Not implemented in this backend. No AppConfig flag. |
 

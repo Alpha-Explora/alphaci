@@ -151,6 +151,7 @@ Run each step from the install directory.
 | `init <hostname> [--tls auto\|internal\|custom]` | Writes `alphaci.env` and the generated secrets. Existing files are kept. |
 | `admin-grant --github-login <login>` | Makes an existing user a platform super-admin. |
 | `doctor` | Runs the installation checks. |
+| `composition` | Prints local capability availability and exclusion reasons without contacting the database or providers. |
 | `registry-token --github-login <owner>` | Saves the read-only token hosts pull release images with. See [Private release images](#private-release-images). |
 | `sonar --organization <org>` | Saves the SonarCloud token new repositories are analysed with. See [SonarCloud](#sonarcloud). |
 | `sudo ./alphaci-ctl server-host --team <name or ID> --github-login <login> [--name <host name>]` | Enrolls this server's own on-prem agent. See [Run deployments on the AlphaCI server](#run-deployments-on-the-alphaci-server). |

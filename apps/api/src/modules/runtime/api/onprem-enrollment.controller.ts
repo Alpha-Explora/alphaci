@@ -8,6 +8,7 @@ import {
   Post,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
@@ -18,9 +19,12 @@ import type { Response } from 'express';
 import { OnpremHostsService } from '../application/onprem/onprem-hosts.service';
 import { ConsumeEnrollmentDto, HeartbeatDto } from './dto/onprem-host.dto';
 import { OnpremMachineRateLimit } from './onprem-machine-throttler.guard';
+import { CapabilityGuard, RequiresCapability } from '#kernel/composition/index';
 
 /** Short-lived enrollment code or revocable machine credential, never session auth. */
 @Controller('onprem')
+@UseGuards(CapabilityGuard)
+@RequiresCapability('runtime.managed-host-delivery')
 export class OnpremEnrollmentController {
   constructor(
     private readonly hosts: OnpremHostsService,

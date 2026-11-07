@@ -6,6 +6,8 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 
 ### Added
 
+- **Composition:** Independent governance and managed-host controls preserve existing edition access; `alphaci-ctl composition` explains local capability availability and exclusions.
+- **Capabilities:** Contributors can preview new assignments without writes; a generated feature inventory links built behavior to existing capabilities, authorization code, and evidence.
 - **Self-hosted:** AlphaCI runs on one server as a Docker Compose appliance (Caddy, API, web, migrator, Postgres 16), managed with `alphaci-ctl init | admin-grant | doctor`.
 - **Self-hosted:** Runs without Supabase: `ALPHACI_DEPLOYMENT_MODE=selfhosted`, `DATABASE_URL`, Postgres sessions, and QA screenshots stored in Postgres.
 - **Self-hosted:** `npm run db:migrate:selfhost` applies migrations with a ledger and refuses to run when an applied migration changed.
@@ -36,6 +38,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 
 ### Changed
 
+- **Documentation:** Clarified editions, personas, internal access, and capability inventory gaps; added a contributor guide for assigning features.
 - **Roles:** `lead` is shown as Product owner; Developers and admins manage hosting and environment variables, Product owners no longer do.
 - **Roles:** Repository tabs follow the viewer's role.
 - **QA:** Verification is Pending, Passed or Failed, and Failed sends the story back to the Developers.
@@ -50,6 +53,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 
 ### Fixed
 
+- **Capabilities:** Unknown, duplicate, or empty edition selections fail before catalog writes. Hosting metadata includes the Hosts page, and capability descriptions cover the current QA and delivery workflows.
 - **On-prem:** The Windows host install file now runs from an elevated PowerShell 7 window, where it stopped with `Get-FileHash` not recognized.
 - **Self-hosted:** A first install no longer risks `migrate` failing: the database counts as healthy only once it accepts TCP connections, not during its one-time setup.
 - **QA:** Report and CI results tables escape backslashes, so a cell ending in `\` no longer breaks the table.

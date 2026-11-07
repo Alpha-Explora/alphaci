@@ -6,24 +6,97 @@ import type {
   CapabilitySet,
   ResolveCapabilitiesInput,
 } from './capability-types.js';
-import { assertManifestWithinBuildProfile } from './build-profile.js';
+import {
+  assertManifestWithinBuildProfile,
+  buildProfileCapabilityCeiling,
+} from './build-profile.js';
 
-export function resolveCapabilities({
+export type CapabilityDecision =
+  | { readonly key: string; readonly state: 'available' }
+  | {
+      readonly key: string;
+      readonly state: 'unavailable';
+      readonly reason:
+        'build-profile' | 'edition' | 'client-policy' | 'not-implemented';
+    }
+  | {
+      readonly key: string;
+      readonly state: 'unavailable';
+      readonly reason: 'configuration';
+      readonly flags: readonly string[];
+    }
+  | {
+      readonly key: string;
+      readonly state: 'unavailable';
+      readonly reason: 'dependency';
+      readonly dependencies: readonly string[];
+    };
+
+export function resolveCapabilities(
+  input: ResolveCapabilitiesInput,
+): CapabilitySet {
+  return explainCapabilities(input).enabled;
+}
+
+export function explainCapabilities({
   registry = CAPABILITIES,
   manifest,
   config,
-}: ResolveCapabilitiesInput): CapabilitySet {
+  editionManifest = manifest,
+}: ResolveCapabilitiesInput & {
+  readonly editionManifest?: CapabilityManifest;
+}): {
+  readonly enabled: CapabilitySet;
+  readonly decisions: readonly CapabilityDecision[];
+} {
   const recordsByKey = validateRegistryAndManifest(registry, manifest);
   assertManifestWithinBuildProfile(config.composition.profile, manifest);
+  if (editionManifest !== manifest)
+    validateRegistryAndManifest(registry, editionManifest);
+  if (
+    editionManifest.edition !== manifest.edition ||
+    manifest.capabilities.some(
+      (key) => !editionManifest.capabilities.includes(key),
+    )
+  ) {
+    throw new Error(
+      'diagnostic edition manifest must contain the selected manifest',
+    );
+  }
+  const ceiling = new Set<string>(
+    buildProfileCapabilityCeiling(config.composition.profile),
+  );
+  const editionKeys = new Set<string>(editionManifest.capabilities);
+  const manifestKeys = new Set<string>(manifest.capabilities);
+  const denied = new Map<string, CapabilityDecision>();
   const active = new Set<CapabilityKey>();
 
-  for (const key of manifest.capabilities) {
-    const record = recordsByKey.get(key);
-    if (
-      record &&
-      record.maturity !== 'not-implemented' &&
-      record.configurationFlags.every((flag) => readBooleanPath(config, flag))
-    ) {
+  for (const record of registry) {
+    const key = record.key;
+    const reason = !ceiling.has(key)
+      ? 'build-profile'
+      : !editionKeys.has(key)
+        ? 'edition'
+        : !manifestKeys.has(key)
+          ? 'client-policy'
+          : record.maturity === 'not-implemented'
+            ? 'not-implemented'
+            : null;
+    if (reason !== null) {
+      denied.set(key, { key, state: 'unavailable', reason });
+      continue;
+    }
+    const flags = record.configurationFlags.filter(
+      (flag) => !readBooleanPath(config, flag),
+    );
+    if (flags.length > 0)
+      denied.set(key, {
+        key,
+        state: 'unavailable',
+        reason: 'configuration',
+        flags,
+      });
+    else {
       active.add(record.key as CapabilityKey);
     }
   }
@@ -45,11 +118,28 @@ export function resolveCapabilities({
     }
   }
 
-  return new Set(
+  const enabled = new Set(
     registry
       .filter(({ key }) => active.has(key as CapabilityKey))
       .map(({ key }) => key as CapabilityKey),
   );
+  return {
+    enabled,
+    decisions: registry.map(
+      (record) =>
+        denied.get(record.key) ??
+        (enabled.has(record.key as CapabilityKey)
+          ? { key: record.key, state: 'available' }
+          : {
+              key: record.key,
+              state: 'unavailable',
+              reason: 'dependency',
+              dependencies: record.requires.filter(
+                (key) => !enabled.has(key as CapabilityKey),
+              ),
+            }),
+    ),
+  };
 }
 
 function validateRegistryAndManifest(

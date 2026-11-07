@@ -1,3 +1,4 @@
+import { useCapabilities } from '@/features/capabilities/current';
 import { act, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
@@ -12,6 +13,10 @@ import type { StartedIteration } from '../../../../../src/features/checklists/mo
 import type { AppRole } from '../../../../../src/shared/api/contracts';
 import { currentWire, startableWire, waitingWire } from '../iteration-fixtures';
 import { apiErrorWith } from '../qa-promotion-fixtures';
+
+jest.mock('@/features/capabilities/current', () => ({
+  useCapabilities: jest.fn(() => ({ releaseGovernanceEnabled: true })),
+}));
 
 jest.mock(
   '../../../../../src/features/checklists/data/iterations-repository',
@@ -132,6 +137,23 @@ async function run(action: (vm: StartIterationViewModel) => unknown) {
 }
 
 describe('useStartIterationViewModel', () => {
+  it('hides iteration start and sends no write when governance is disabled', async () => {
+    jest.mocked(useCapabilities).mockReturnValue({
+      ...useCapabilities(),
+      releaseGovernanceEnabled: false,
+    });
+    iterations.current.mockResolvedValue(
+      normalizeCurrentIteration(startableWire()),
+    );
+    await mount('lead');
+    expect(vm().step.kind).not.toBe('start');
+    await run((model) => model.submit());
+    expect(iterations.start).not.toHaveBeenCalled();
+    jest.mocked(useCapabilities).mockReturnValue({
+      ...useCapabilities(),
+      releaseGovernanceEnabled: true,
+    });
+  });
   it('offers Start version 4 to a Product owner, saying it starts with an empty checklist', async () => {
     iterations.current.mockResolvedValue(
       normalizeCurrentIteration(startableWire()),

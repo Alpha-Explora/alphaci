@@ -90,7 +90,8 @@ export const CAPABILITIES = [
   {
     key: 'platform.notifications',
     context: 'platform-ops',
-    description: 'In-app notification requests and persistence.',
+    description:
+      'In-app notification persistence and live recipient-scoped workspace membership delivery.',
     maturity: 'stable',
     configuration: 'notifications.enabled',
     configurationFlags: ['notifications.enabled'],
@@ -147,11 +148,22 @@ export const CAPABILITIES = [
     key: 'runtime.env-provisioning',
     context: 'runtime',
     description:
-      'Provider-backed deployment target and environment provisioning.',
+      'Provider-backed environments, shared release registration, promotion, and rollback; managed-host operations require the dependent managed-host-delivery capability.',
     maturity: 'limited',
     configuration: 'envProvisioning.enabled plus provider configuration',
     configurationFlags: ['envProvisioning.enabled'],
     requires: [],
+  },
+  {
+    key: 'runtime.managed-host-delivery',
+    context: 'runtime',
+    description:
+      'Customer host management, enrollment, assignment, readiness, and signed agent delivery.',
+    maturity: 'limited',
+    configuration:
+      'managedHostDelivery.enabled plus on-prem operator configuration',
+    configurationFlags: ['managedHostDelivery.enabled'],
+    requires: ['runtime.env-provisioning'],
   },
   {
     key: 'runtime.gcp-deployments',
@@ -279,11 +291,23 @@ export const CAPABILITIES = [
   {
     key: 'projects.qa-checklists',
     context: 'projects',
-    description: 'QA checklist definitions and per-project sharing.',
+    description:
+      'QA checklist definitions and sharing, requirements, test cases, QA runs, sign-off, and evidence; governed acceptance, iteration start, and merge actions require release-governance.',
     maturity: 'limited',
     configuration: 'qaChecklists.enabled',
     configurationFlags: ['qaChecklists.enabled'],
     requires: [],
+  },
+  {
+    key: 'projects.release-governance',
+    context: 'projects',
+    description:
+      'PO acceptance, controlled production merges, and starting the next project iteration.',
+    maturity: 'limited',
+    configuration:
+      'releaseGovernance.enabled; existing QA and workflow safety gates remain mandatory',
+    configurationFlags: ['releaseGovernance.enabled'],
+    requires: ['projects.qa-checklists'],
   },
   {
     key: 'pipelines.ci-run-tracking',

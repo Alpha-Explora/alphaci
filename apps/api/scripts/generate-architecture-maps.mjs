@@ -13,6 +13,8 @@ const require = createRequire(import.meta.url);
 const { schemaOwnershipSnapshot } = require('./check-schema-ownership.cjs');
 const { loadCapabilityCatalog } = require('./load-capability-catalog.cjs');
 const capabilityLedger = require('./lib/capability-ledger.cjs');
+const compositionSource = require('./lib/composition-source.cjs');
+const { renderFeatureInventory } = require('./lib/feature-inventory.cjs');
 
 const CONTEXTS = [
   {
@@ -576,8 +578,16 @@ const OUTPUTS = [
   ['docs/architecture/api/schema-ownership.generated.md', generateSchemaMap],
   ['docs/architecture/api/architecture-checks.generated.md', generateArchitectureChecks],
   ['docs/capabilities/capability-matrix.generated.md', generateCapabilityMatrix],
+  ['docs/capabilities/feature-inventory.generated.md', generateFeatureInventory],
   ['docs/capabilities/capability-ledger.generated.md', generateCapabilityLedger],
 ];
+
+function generateFeatureInventory() {
+  const document = compositionSource.loadSource();
+  const errors = compositionSource.validateSource(document);
+  if (errors.length > 0) throw new Error('Invalid composition source: ' + errors.join('; '));
+  return renderFeatureInventory(document);
+}
 
 function generateCapabilityLedger() {
   const state = capabilityLedger.compositionState();

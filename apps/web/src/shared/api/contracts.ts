@@ -132,6 +132,8 @@ export interface ClientCompositionInfo {
 }
 
 export interface CapabilitiesResponse {
+  releaseGovernance?: { enabled: boolean };
+  managedHostDelivery?: { enabled: boolean };
   /** Edition selected by the backend composition resolver. */
   edition: CapabilityEdition;
   /** Ordered capability keys after backend composition narrowing. */

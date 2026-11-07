@@ -19,6 +19,14 @@ sources:
 
 Each pack profile uses the same sections, capability vocabulary, and status values. A pack is a composition declaration and documentation boundary. It does not own business logic, provider adapters, migrations, core-table columns, feature domains, routes, wire contracts, or stylesheets.
 
+## What a pack establishes
+
+The current packs are SaaS, EDU, and Enterprise. Internal organization policy is an identity and billing control, not a fourth pack. User personas control actions independently of pack membership. Deployment mode controls how AlphaCI runs; `selfhosted` does not automatically select Enterprise or prove air-gap support. See the [capability contract](../capabilities/capability-contract.md#editions-personas-and-deployment) for the current controls.
+
+A capability can cover several built features. For example, all three packs include `projects.qa-checklists` and `runtime.env-provisioning`; their current behavior includes more than those names alone describe. Feature origin in the Enterprise-derived application does not make that behavior Enterprise-exclusive. The [capability inventory limits](../capabilities/capability-contract.md#capabilities-and-individual-features) identify the current gaps.
+
+The EDU pack composes the current shared application. It does not establish that the separate historical education application's classes, assignments, grading, or lab workflows have been integrated. A pack declaration and a retained historical repository are not implementation evidence for each other.
+
 ## Required profile sections
 
 1. **Identity** - stable pack ID and display name.

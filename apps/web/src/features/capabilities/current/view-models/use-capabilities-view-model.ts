@@ -17,6 +17,8 @@ import { capabilityViewFlags } from '../model/capability-flags';
 export type CapabilitiesStatus = 'loading' | 'ready' | 'error';
 
 export interface CapabilitiesViewModel {
+  releaseGovernanceEnabled: boolean;
+  managedHostDeliveryEnabled: boolean;
   capabilities: CapabilitiesResponse | null;
   status: CapabilitiesStatus;
   error: string | null;

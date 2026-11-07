@@ -34,6 +34,10 @@ import {
 } from '#kernel/config/onprem-apps-domain';
 import { canManageHosting } from '#kernel/rules/persona-access.rules';
 import {
+  DEPLOYMENT_CAPABILITY_RESOLVER,
+  type CapabilityResolverPort,
+} from '#kernel/composition/capability-resolver.port';
+import {
   effectivePublicAddress,
   servedSlot,
   tunnelReport,
@@ -261,10 +265,16 @@ export class OnpremAssignmentsService implements OnpremAssignmentPort {
     @Inject(DEPLOYMENT_TARGETS_QUERY)
     private readonly targets: DeploymentTargetsQuery,
     private readonly config: ConfigService,
+    @Inject(DEPLOYMENT_CAPABILITY_RESOLVER)
+    private readonly capabilities: CapabilityResolverPort,
   ) {}
   /** ONPREM_APPS_DOMAIN: its addresses point at this server, which routes them. */
   private appsDomain(): OnpremAppsDomain | undefined {
     return resolveOnpremAppsDomain((key) => this.config.get<string>(key));
+  }
+  assertAvailable(): void {
+    if (!this.capabilities.deployment().has('runtime.managed-host-delivery'))
+      throw new NotFoundException('Requested capability is not available');
   }
   async current(projectId: string, environmentId: string, userId: string) {
     await this.visible(projectId, environmentId, userId);
@@ -498,6 +508,7 @@ export class OnpremAssignmentsService implements OnpremAssignmentPort {
     environmentId: string,
     userId: string,
   ) {
+    this.assertAvailable();
     if (this.config.get('ONPREM_RELEASES_ENABLED') !== 'true')
       throw new ForbiddenException('On-prem delivery is disabled.');
     const project = await this.projects.findProjectReference(projectId, userId);

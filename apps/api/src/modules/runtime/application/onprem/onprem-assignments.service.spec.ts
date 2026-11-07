@@ -132,6 +132,10 @@ describe('automatic assignment', () => {
       projects as never,
       targets,
       releasesConfig(),
+      {
+        deployment: () => new Set(['runtime.managed-host-delivery']),
+        for: () => new Set(['runtime.managed-host-delivery']),
+      },
     );
   beforeEach(() => {
     jest.clearAllMocks();
@@ -466,6 +470,10 @@ describe('tunnel presentation', () => {
       projects as never,
       targets,
       releasesConfig(enabled),
+      {
+        deployment: () => new Set(['runtime.managed-host-delivery']),
+        for: () => new Set(['runtime.managed-host-delivery']),
+      },
     );
   const tunnelRow = {
     id: 'binding',

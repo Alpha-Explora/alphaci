@@ -108,9 +108,9 @@ export function useAppNavViewModel(options: {
       document.removeEventListener('visibilitychange', refresh);
     };
   }, [options.guest, refreshWorkspaces]);
-  const { qaChecklistsEnabled, envProvisioningEnabled } = capabilities;
+  const { qaChecklistsEnabled, managedHostDeliveryEnabled } = capabilities;
   const hostAvailability = useHostAvailability(
-    !options.guest && envProvisioningEnabled,
+    !options.guest && managedHostDeliveryEnabled,
   );
   // The header team's role decides Activity: the feed is per team, and the
   // backend opens it to that team's Lead and Delegated leads only.

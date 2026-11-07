@@ -33,6 +33,10 @@ const compositionSource = require(
   renderManifests: (document: { capabilities: SourceRecord[] }) => string;
 };
 
+const featureInventory = require(
+  resolve(__dirname, '../../scripts/lib/feature-inventory.cjs'),
+) as { renderFeatureInventory: (document: unknown) => string };
+
 const committed = compositionSource.loadSource();
 
 const clone = (): { capabilities: SourceRecord[] } =>
@@ -78,6 +82,100 @@ describe('composition authoring source', () => {
         .validateSource(withFirst({ editions: ['enterprise', 'saas'] }))
         .join(' '),
     ).toMatch(/editions must be listed as/);
+  });
+
+  it('rejects an empty edition assignment', () => {
+    expect(
+      compositionSource.validateSource(withFirst({ editions: [] })).join(' '),
+    ).toMatch(/at least one edition/);
+  });
+
+  it('rejects invalid feature references and duplicate feature identifiers', () => {
+    const feature = {
+      id: 'projects.requirements',
+      title: 'Project requirements',
+      availability: { kind: 'capability', key: 'projects.qa-checklists' },
+      implementation: [
+        'apps/api/src/modules/projects/api/qa-requirements.controller.ts',
+      ],
+      permissions: [
+        'apps/api/src/modules/projects/domain/qa-run-access.rules.ts',
+      ],
+      prerequisites: ['Workspace membership'],
+      evidence: [
+        'apps/api/src/modules/projects/api/qa-requirements.controller.spec.ts',
+      ],
+    };
+    expect(
+      compositionSource.validateSource({ ...clone(), features: [feature] }),
+    ).toEqual([]);
+    expect(
+      compositionSource
+        .validateSource({ ...clone(), features: [feature, feature] })
+        .join(' '),
+    ).toMatch(/duplicate feature/);
+    expect(
+      compositionSource
+        .validateSource({
+          ...clone(),
+          features: [
+            {
+              ...feature,
+              availability: { kind: 'capability', key: 'projects.missing' },
+            },
+          ],
+        })
+        .join(' '),
+    ).toMatch(/unknown capability/);
+    expect(
+      compositionSource
+        .validateSource({
+          ...clone(),
+          features: [{ ...feature, implementation: ['../../outside.txt'] }],
+        })
+        .join(' '),
+    ).toMatch(/repository file/);
+    expect(
+      compositionSource
+        .validateSource({
+          ...clone(),
+          features: [{ ...feature, editions: ['enterprise'] }],
+        })
+        .join(' '),
+    ).toMatch(/unsupported field.*editions/);
+  });
+
+  it('derives feature membership from its capability without changing runtime manifests', () => {
+    const document = {
+      ...clone(),
+      features: [
+        {
+          id: 'projects.requirements',
+          title: 'Project requirements',
+          availability: { kind: 'capability', key: 'projects.qa-checklists' },
+          implementation: [],
+          permissions: [],
+          prerequisites: [],
+          evidence: [],
+        },
+      ],
+    };
+    expect(featureInventory.renderFeatureInventory(document)).toContain(
+      'saas, edu, enterprise',
+    );
+    const capability = document.capabilities.find(
+      (record) => record.key === 'projects.qa-checklists',
+    );
+    expect(capability).toBeDefined();
+    capability!.editions = ['enterprise'];
+    const rendered = featureInventory.renderFeatureInventory(document);
+    expect(rendered).toContain('enterprise');
+    expect(rendered).not.toContain('saas, edu, enterprise');
+    expect(compositionSource.renderManifests(document)).toBe(
+      compositionSource.renderManifests({
+        capabilities: document.capabilities,
+      }),
+    );
   });
 
   it('rejects a dependency that is absent from a pack the capability is in', () => {

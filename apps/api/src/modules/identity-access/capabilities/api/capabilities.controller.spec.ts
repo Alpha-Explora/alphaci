@@ -246,6 +246,8 @@ describe('CapabilitiesController', () => {
       workflowUpdatePr: {
         enabled: true,
       },
+      managedHostDelivery: { enabled: false },
+      releaseGovernance: { enabled: false },
       qaChecklists: {
         enabled: false,
       },
@@ -389,6 +391,8 @@ describe('CapabilitiesController', () => {
       workflowUpdatePr: {
         enabled: false,
       },
+      managedHostDelivery: { enabled: false },
+      releaseGovernance: { enabled: false },
       qaChecklists: {
         enabled: false,
       },

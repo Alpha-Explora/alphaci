@@ -34,7 +34,8 @@ This matrix is generated from the versioned `@alphaci/capability-catalog` packag
 | `billing.subscription-gate` | `billing` | stable | none | none | none |
 | `billing.usage-quotas` | `billing` | limited | `usageQuotas` | `usageQuotasEnabled` | none |
 | `billing.checkout` | `billing` | not-implemented | none | none | none |
-| `runtime.env-provisioning` | `runtime` | limited | `envProvisioning` | `envProvisioningEnabled` | `/workflows`, `/projects/[projectId]` |
+| `runtime.env-provisioning` | `runtime` | limited | `envProvisioning` | `envProvisioningEnabled` | `/workflows`, `/projects/[projectId]`, `/hosts` |
+| `runtime.managed-host-delivery` | `runtime` | limited | `managedHostDelivery` | `managedHostDeliveryEnabled` | `/hosts`, `/projects/[projectId]`, `/workflows` |
 | `runtime.gcp-deployments` | `runtime` | limited | none | none | `/workflows`, `/projects/[projectId]` |
 | `runtime.deployment-history` | `runtime` | limited | `deploymentHistory` | `deploymentHistoryEnabled` | `/projects/[projectId]` |
 | `runtime.preview-deployments` | `runtime` | limited | `previewDeployments` | `previewDeploymentsEnabled` | `/projects/[projectId]` |
@@ -49,6 +50,7 @@ This matrix is generated from the versioned `@alphaci/capability-catalog` packag
 | `projects.workflow-update-pr` | `projects` | limited | `workflowUpdatePr` | `workflowUpdatePrEnabled` | `/projects/[projectId]` |
 | `projects.target-management` | `projects` | stable | `projectTargetManagement` | `projectTargetManagementEnabled` | `/projects/[projectId]` |
 | `projects.qa-checklists` | `projects` | limited | `qaChecklists` | `qaChecklistsEnabled` | `/projects/[projectId]`, `/teams` |
+| `projects.release-governance` | `projects` | limited | `releaseGovernance` | `releaseGovernanceEnabled` | `/projects/[projectId]` |
 | `pipelines.ci-run-tracking` | `pipelines` | limited | `ciRunTracking` | `ciRunTrackingEnabled` | `/runs`, `/projects/[projectId]` |
 | `pipelines.github-enterprise-server` | `pipelines` | not-implemented | none | none | none |
 

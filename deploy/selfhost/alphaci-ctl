@@ -137,6 +137,7 @@ alphaci-ctl - setup helper for the self-hosted AlphaCI appliance
   init <hostname> [--tls auto|internal|custom]   write alphaci.env and secrets/ (existing files are kept)
   admin-grant --github-login <login>             make an existing user a platform super-admin
   doctor                                         check the database, migrations, signing key, settings and outbound HTTPS
+  composition                                    explain deployment capabilities as JSON (no database or provider calls)
   registry-token --github-login <login>          save the read-only token hosts pull release images with (from stdin)
   sonar --organization <org>                     save the SonarCloud token (from stdin) new repositories are analysed with
   sudo server-host --team <team> --github-login <login> [--name <host name>]

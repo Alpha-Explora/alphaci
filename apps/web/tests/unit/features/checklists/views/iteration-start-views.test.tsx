@@ -36,6 +36,10 @@ import {
   projectRunWire,
 } from '../requirement-fixtures';
 
+jest.mock('@/features/capabilities/current', () => ({
+  useCapabilities: jest.fn(() => ({ releaseGovernanceEnabled: true })),
+}));
+
 jest.mock(
   '../../../../../src/features/checklists/data/iterations-repository',
   () => ({

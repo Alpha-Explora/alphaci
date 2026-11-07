@@ -203,7 +203,7 @@ describe('DeploymentTargetsService', () => {
       },
     });
     capabilityResolver.deployment.mockReturnValue(
-      new Set(['projects.target-management']),
+      new Set(['projects.target-management', 'runtime.managed-host-delivery']),
     );
     renderPolicy = new RenderDeploymentPolicy(
       new RenderCostPolicyService(configService as never),
@@ -1773,6 +1773,24 @@ describe('DeploymentTargetsService', () => {
         ),
       ).rejects.toBeInstanceOf(UnauthorizedException);
 
+      expect(githubActions.setActionsVariableStrict).not.toHaveBeenCalled();
+      expect(
+        deploymentTargetsRepository.createDeploymentTarget,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('rejects a disabled managed-host capability before signing or persistence', async () => {
+      capabilityResolver.deployment.mockReturnValue(
+        new Set(['projects.target-management']),
+      );
+      await expect(
+        withGithub().createDeploymentTarget(
+          'project-1',
+          'user-1',
+          onpremRequest,
+          { githubAccessToken: 'gh-token' },
+        ),
+      ).rejects.toBeInstanceOf(NotFoundException);
       expect(githubActions.setActionsVariableStrict).not.toHaveBeenCalled();
       expect(
         deploymentTargetsRepository.createDeploymentTarget,

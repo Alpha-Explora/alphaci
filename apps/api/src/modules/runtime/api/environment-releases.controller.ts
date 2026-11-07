@@ -59,6 +59,7 @@ export class EnvironmentReleasesController {
 
   /** Register an on-prem host for this environment; the response holds its only copy of the token. */
   @Post('hosts')
+  @RequiresCapability('runtime.managed-host-delivery')
   createHost(
     @Req() req: Request,
     @Param('projectId') projectId: string,

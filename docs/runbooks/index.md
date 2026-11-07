@@ -12,6 +12,7 @@
 ## Hosted service and development
 
 * [Local verification](runbook-local-verification.md) - reproducible local checks for both apps and the documentation bundle.
+* [Feature assignment](runbook-feature-assignment.md) - add or reassign capabilities to editions, enforce persona actions, and regenerate the catalog and pack documentation.
 * [Session authentication](runbook-session-auth.md) - cookie session, CORS, and API origin procedure for the web app.
 * [Outbox relay](runbook-outbox-relay.md) - inspect and run the single PostgreSQL outbox relay.
 * [Migration reconciliation](runbook-migration-reconciliation.md) - reconcile migration files with a Supabase migration ledger.

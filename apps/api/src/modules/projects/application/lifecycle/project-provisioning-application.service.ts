@@ -4,6 +4,7 @@ import {
   Inject,
   Injectable,
   Optional,
+  NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -198,6 +199,16 @@ export class ProjectProvisioningApplicationService {
         false,
     );
     if (targetsProblem) throw new BadRequestException(targetsProblem);
+    if (
+      dto.environments?.some((environment) => environment.hostAssignment) ||
+      dto.deploymentProvisioning?.targets?.some(
+        (target) => target.provider === 'onprem-compose',
+      )
+    ) {
+      if (!this.onpremAssignment)
+        throw new NotFoundException('Managed host delivery is not available');
+      this.onpremAssignment.assertAvailable();
+    }
     await this.support.assertWithinQuota(userId, 'projects', 1, null);
     const workspaceId =
       await this.support.workspaceGate.resolveWorkspaceIdForCreate(

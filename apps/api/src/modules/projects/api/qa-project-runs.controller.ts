@@ -190,6 +190,7 @@ export class DeliveryProjectQaRunsController {
    * to the Developers.
    */
   @Patch(':runId/items/:itemId/acceptance')
+  @RequiresCapability('projects.release-governance')
   acceptItem(
     @Req() req: Request,
     @Param('deliveryProjectId') deliveryProjectId: string,

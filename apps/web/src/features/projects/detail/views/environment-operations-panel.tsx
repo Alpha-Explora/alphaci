@@ -75,6 +75,7 @@ export function EnvironmentOperationsPanel({
               vm={vm}
               step={index + 1}
               host={
+                vm.hostsEnabled &&
                 row.hostDelivered &&
                 workspaceId &&
                 row.targets.every(

@@ -80,6 +80,7 @@ describe('file-mode release signing on registration', () => {
   function harness(options: {
     signer?: ReleaseSigner;
     connectivity?: 'direct' | 'indirect';
+    managedHostsEnabled?: boolean;
     trustKeys?: string;
     registeredVerified?: boolean;
   }) {
@@ -164,6 +165,14 @@ describe('file-mode release signing on registration', () => {
       targets as never,
       configService as never,
       providerRegistry as never,
+      {
+        deployment: () =>
+          new Set(
+            options.managedHostsEnabled === false
+              ? []
+              : ['runtime.managed-host-delivery'],
+          ),
+      } as never,
       undefined,
       undefined,
       undefined,
@@ -181,6 +190,28 @@ describe('file-mode release signing on registration', () => {
       });
     return { service, releases, register };
   }
+
+  it('refuses new host work before persistence when managed hosts are disabled', async () => {
+    const { register, releases } = harness({
+      signer: fileSigner(),
+      managedHostsEnabled: false,
+    });
+    await expect(register()).rejects.toThrow(
+      'Managed host delivery is not available',
+    );
+    expect(releases.registerRelease).not.toHaveBeenCalled();
+    expect(releases.attachManifest).not.toHaveBeenCalled();
+  });
+
+  it('keeps direct workflow releases available when managed hosts are disabled', async () => {
+    const { register, releases } = harness({
+      signer: fileSigner(),
+      managedHostsEnabled: false,
+      connectivity: 'direct',
+    });
+    await register();
+    expect(releases.registerRelease).toHaveBeenCalledTimes(1);
+  });
 
   it('signs and verifies the release at once, with the manifest the sign job would build', async () => {
     const { register, releases } = harness({ signer: fileSigner() });

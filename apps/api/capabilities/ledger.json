@@ -37,6 +37,17 @@
       "summary": "Added the projects.qa-checklists capability for QA checklist definitions, items, and per-project sharing (Slice 2).",
       "reference": "CHANGELOG.md",
       "compositionHash": "sha256:c2766dda40a6ab8af9ca60faea7a78a99422330f4f155609b11ed6f6ef329f06"
+    },
+    {
+      "date": "2026-11-05",
+      "change": "added",
+      "keys": [
+        "runtime.managed-host-delivery",
+        "projects.release-governance"
+      ],
+      "summary": "Separate managed-host and governed release controls; preserve shared edition access and default enablement.",
+      "reference": "docs/capabilities/capability-contract.md",
+      "compositionHash": "sha256:756460b069cd2012f29c46701a0dff95758d6417a1f71bac6d11e15eea1c3969"
     }
   ]
 }

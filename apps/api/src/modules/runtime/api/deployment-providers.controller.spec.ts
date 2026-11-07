@@ -31,7 +31,35 @@ describe('DeploymentProvidersController', () => {
     };
     const registry = new DeploymentProviderRegistry<DeploymentProvider>();
     registry.register(provider);
-    const controller = new DeploymentProvidersController(registry);
+    const hostRegistry = new DeploymentProviderRegistry<DeploymentProvider>();
+    hostRegistry.register(provider);
+    hostRegistry.register({
+      ...provider,
+      id: 'onprem-compose',
+      capabilities: { ...provider.capabilities, connectivity: 'indirect' },
+      isEnabled: () => ({ enabled: true }),
+    });
+    const denied = new DeploymentProvidersController(
+      { deployment: () => new Set(), for: () => new Set() },
+      hostRegistry,
+    ).list();
+    expect(
+      denied.providers.find(({ id }) => id === 'onprem-compose'),
+    ).toMatchObject({
+      enabled: false,
+      reason: 'Managed host delivery is not available',
+    });
+    expect(denied.providers.find(({ id }) => id === 'gcp')).toMatchObject({
+      enabled: false,
+      reason: 'GCP deployments are disabled',
+    });
+    const controller = new DeploymentProvidersController(
+      {
+        deployment: () => new Set(['runtime.managed-host-delivery']),
+        for: () => new Set(['runtime.managed-host-delivery']),
+      },
+      registry,
+    );
 
     expect(controller.list()).toEqual({
       providers: [

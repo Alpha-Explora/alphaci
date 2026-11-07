@@ -49,6 +49,8 @@ export class CapabilitiesController {
         (provider) =>
           provider.envProvisioning &&
           provider.enabled &&
+          (provider.id !== 'onprem-compose' ||
+            has('runtime.managed-host-delivery')) &&
           registeredProviderIds.has(provider.id),
       )
       .map((provider) => provider.id);
@@ -83,6 +85,8 @@ export class CapabilitiesController {
         // Render/Vercel/SonarCloud credentials ('flowci_managed').
         modes: enabled ? [config.envProvisioning.ownershipMode] : [],
       },
+      managedHostDelivery: { enabled: has('runtime.managed-host-delivery') },
+      releaseGovernance: { enabled: has('projects.release-governance') },
       projectSyncSnapshots: {
         enabled: has('projects.sync-snapshots'),
         liveGithubEnabled:

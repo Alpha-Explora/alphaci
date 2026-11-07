@@ -19,6 +19,10 @@ import {
 import { runAs, runItem } from '../qa-run-fixtures';
 import { branchPreview } from '../../../../support/branch-preview';
 
+jest.mock('@/features/capabilities/current', () => ({
+  useCapabilities: jest.fn(() => ({ releaseGovernanceEnabled: true })),
+}));
+
 jest.mock(
   '../../../../../src/features/checklists/data/checklists-repository',
   () => ({

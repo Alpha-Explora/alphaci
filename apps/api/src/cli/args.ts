@@ -10,6 +10,7 @@ export type CliCommand =
     }
   | { readonly name: 'admin-grant'; readonly githubLogin: string }
   | { readonly name: 'doctor' }
+  | { readonly name: 'composition' }
   | {
       readonly name: 'host-enrollment';
       readonly team: string;
@@ -41,6 +42,8 @@ Commands:
   doctor
       Check the database, migrations, signing key, required settings, outbound
       HTTPS and the public API address.
+  composition
+      Explain deployment capability availability as JSON without network or database calls.
   help
       Show this text.`;
 
@@ -120,11 +123,12 @@ export function parseArgs(argv: readonly string[]): CliCommand {
         hostName: flags.get('name') ?? 'alphaci-server',
       };
     }
+    case 'composition':
     case 'doctor': {
       if (positionals.length > 0) {
-        throw new UsageError('doctor takes no arguments.');
+        throw new UsageError(command + ' takes no arguments.');
       }
-      return { name: 'doctor' };
+      return { name: command };
     }
     default:
       throw new UsageError(
@@ -142,6 +146,7 @@ const KNOWN_FLAGS: Readonly<Record<string, readonly string[]>> = {
   init: ['tls', 'dir', 'hostname'],
   'admin-grant': ['github-login'],
   doctor: [],
+  composition: [],
   'host-enrollment': ['team', 'github-login', 'name'],
 };
 

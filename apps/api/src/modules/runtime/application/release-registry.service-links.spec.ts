@@ -91,6 +91,7 @@ function registry(
     {} as never,
     configService as never,
     {} as never,
+    { deployment: () => new Set(['runtime.managed-host-delivery']) } as never,
     undefined,
     undefined,
     machineAssignments as never,

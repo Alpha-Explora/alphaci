@@ -44,13 +44,14 @@ This table lists every current catalog capability in package order. Status is de
 | `identity.ferpa-workflows` | `not-applicable` | Not part of this pack composition. |
 | `identity.edition-entitlements` | `not-implemented` | Runtime edition and pack entitlement resolution. No frontend surface. Not implemented in the API. |
 | `platform.audit-events` | `available` | Project audit event recording through the application outbox. Compatibility flag is loaded by the capabilities view-model. No dedicated route yet hides or shows a panel from this flag. Configuration: auditEvents.enabled. |
-| `platform.notifications` | `available` | In-app notification requests and persistence. Frontend surface: `/inbox`, `/settings`. Configuration: notifications.enabled. |
+| `platform.notifications` | `available` | In-app notification persistence and live recipient-scoped workspace membership delivery. Frontend surface: `/inbox`, `/settings`. Configuration: notifications.enabled. |
 | `platform.data-residency` | `not-implemented` | Customer-specific data-location controls. No frontend surface. Not implemented in the API. |
 | `platform.public-site` | `not-applicable` | Not part of this pack composition. |
 | `billing.subscription-gate` | `available` | Subscription entitlement gating for authenticated access and CI run validation. No paywall or `/subscribe` route. Access gating is enforced by the backend session. Configuration: subscription.gateEnabled. |
 | `billing.usage-quotas` | `configuration-gated` | Usage tracking and quota policy checks. Compatibility flag is loaded by the capabilities view-model. No dedicated route yet hides or shows a panel from this flag. Configuration: usageQuotas.enabled. |
 | `billing.checkout` | `not-applicable` | Not part of this pack composition. |
-| `runtime.env-provisioning` | `configuration-gated` | Provider-backed deployment target and environment provisioning. Frontend surface: `/workflows`, `/projects/[projectId]`. Configuration: envProvisioning.enabled plus provider configuration. |
+| `runtime.env-provisioning` | `configuration-gated` | Provider-backed environments, shared release registration, promotion, and rollback; managed-host operations require the dependent managed-host-delivery capability. Frontend surface: `/workflows`, `/projects/[projectId]`, `/hosts`. Configuration: envProvisioning.enabled plus provider configuration. |
+| `runtime.managed-host-delivery` | `configuration-gated` | Customer host management, enrollment, assignment, readiness, and signed agent delivery. Frontend surface: `/hosts`, `/projects/[projectId]`, `/workflows`. Configuration: managedHostDelivery.enabled plus on-prem operator configuration. |
 | `runtime.gcp-deployments` | `configuration-gated` | Google Cloud deployment provider, including optional dedicated per-customer projects. Advertised through `envProvisioning.providers` when GCP is registered. Configuration: gcpDeployments.enabled plus GCP provider configuration. |
 | `runtime.deployment-history` | `configuration-gated` | Deployment history read model exposed through the Runtime context. Frontend surface: `/projects/[projectId]`. Configuration: deploymentHistory.enabled. |
 | `runtime.preview-deployments` | `configuration-gated` | Branch-scoped preview deployment grouping when the provider supports it. Frontend surface: `/projects/[projectId]`. Configuration: previewDeployments.enabled and deploymentHistory.enabled. |
@@ -64,7 +65,8 @@ This table lists every current catalog capability in package order. Status is de
 | `projects.workflow-settings-preview` | `available` | Workflow settings preview and validation. Frontend surface: `/projects/[projectId]`. Configuration: workflowSettingsPreview.enabled. |
 | `projects.workflow-update-pr` | `configuration-gated` | Workflow update pull-request requests. Frontend surface: `/projects/[projectId]`. Configuration: workflowUpdatePr.enabled. |
 | `projects.target-management` | `available` | Project target management composition with Runtime. Frontend surface: `/projects/[projectId]`. Configuration: projectTargetManagement.enabled. |
-| `projects.qa-checklists` | `configuration-gated` | QA checklist definitions and per-project sharing. Frontend surface: `/projects/[projectId]`, `/teams`. Configuration: qaChecklists.enabled. |
+| `projects.qa-checklists` | `configuration-gated` | QA checklist definitions and sharing, requirements, test cases, QA runs, sign-off, and evidence; governed acceptance, iteration start, and merge actions require release-governance. Frontend surface: `/projects/[projectId]`, `/teams`. Configuration: qaChecklists.enabled. |
+| `projects.release-governance` | `configuration-gated` | PO acceptance, controlled production merges, and starting the next project iteration. Frontend surface: `/projects/[projectId]`. Configuration: releaseGovernance.enabled; existing QA and workflow safety gates remain mandatory. |
 | `pipelines.ci-run-tracking` | `configuration-gated` | CI run report ingestion and tracking. Frontend surface: `/runs`, `/projects/[projectId]`. Configuration: ciRunTracking.enabled. |
 | `pipelines.github-enterprise-server` | `not-implemented` | GitHub Enterprise Server repository and CI integration. No frontend surface. Not implemented in the API. |
 
