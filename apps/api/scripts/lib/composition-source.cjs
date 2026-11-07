@@ -26,6 +26,10 @@ const MANIFESTS_PATH = path.join(COMPOSITION_DIR, 'manifests.ts');
 const EDITIONS = ['saas', 'edu', 'enterprise'];
 const MATURITIES = ['stable', 'limited', 'not-implemented'];
 const KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*\.[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const OPTION_KEY_PATTERN = /^[a-z][A-Za-z0-9]*$/;
+const OPTION_ENV_PATTERN = /^[A-Z][A-Z0-9_]*$/;
+const OPTION_VALUE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const OPTION_FIELDS = ['key', 'env', 'description', 'values', 'default'];
 const CONSTANT_BY_EDITION = {
   saas: 'SAAS_KEYS',
   edu: 'EDU_KEYS',
@@ -106,6 +110,8 @@ function validateSource(source) {
     errors.push(...surfaceErrors(at, record.surface));
   });
 
+  errors.push(...optionErrors(source.capabilities));
+
   for (const [key, record] of byKey) {
     if (!Array.isArray(record.requires)) continue;
     for (const dependency of record.requires) {
@@ -155,6 +161,71 @@ function surfaceErrors(at, surface) {
   return errors;
 }
 
+/**
+ * Capability options (ADR-0023): how an available capability behaves on one
+ * deployment. Each option has a closed set of values and a default that is
+ * the behavior every deployment had before the option existed, so a
+ * deployment that sets nothing keeps it.
+ */
+function optionErrors(capabilities) {
+  const errors = [];
+  const envOwners = new Map();
+  capabilities.forEach((record, index) => {
+    if (record === null || typeof record !== 'object' || record.options === undefined) return;
+    const at = typeof record.key === 'string' ? record.key : 'entry ' + index;
+    if (!Array.isArray(record.options) || record.options.length === 0) {
+      errors.push(at + ': options must be a non-empty array when present');
+      return;
+    }
+    if (record.maturity === 'not-implemented') {
+      errors.push(at + ': a not-implemented capability cannot declare options');
+    }
+    const keys = new Set();
+    record.options.forEach((option, position) => {
+      const where = at + ': options[' + position + ']';
+      if (option === null || typeof option !== 'object' || Array.isArray(option)) {
+        errors.push(where + ' must be an object');
+        return;
+      }
+      for (const field of Object.keys(option)) {
+        if (!OPTION_FIELDS.includes(field)) {
+          errors.push(where + ": unknown field '" + field + "'");
+        }
+      }
+      if (typeof option.key !== 'string' || !OPTION_KEY_PATTERN.test(option.key)) {
+        errors.push(where + '.key must be camelCase');
+      } else if (keys.has(option.key)) {
+        errors.push(where + ": duplicate option key '" + option.key + "'");
+      } else {
+        keys.add(option.key);
+      }
+      if (typeof option.env !== 'string' || !OPTION_ENV_PATTERN.test(option.env)) {
+        errors.push(where + '.env must be an upper-case environment variable name');
+      } else if (envOwners.has(option.env)) {
+        errors.push(
+          where + ": env '" + option.env + "' is already used by " + envOwners.get(option.env),
+        );
+      } else {
+        envOwners.set(option.env, at + '.' + option.key);
+      }
+      if (typeof option.description !== 'string' || option.description.trim() === '') {
+        errors.push(where + '.description is required');
+      }
+      if (
+        !isStringArray(option.values) ||
+        option.values.length < 2 ||
+        option.values.some((value) => !OPTION_VALUE_PATTERN.test(value)) ||
+        new Set(option.values).size !== option.values.length
+      ) {
+        errors.push(where + '.values must list at least two distinct lowercase slugs');
+      } else if (!option.values.includes(option.default)) {
+        errors.push(where + '.default must be one of its values');
+      }
+    });
+  });
+  return errors;
+}
+
 function cycleErrors(byKey) {
   const errors = [];
   const state = new Map();
@@ -186,6 +257,9 @@ function renderRegistry(source) {
       '    configuration: ' + JSON.stringify(record.configuration) + ',',
       '    configurationFlags: ' + JSON.stringify(record.configurationFlags) + ',',
       '    requires: ' + JSON.stringify(record.requires) + ',',
+      ...(record.options === undefined
+        ? []
+        : ['    options: ' + JSON.stringify(record.options.map(renderOption)) + ',']),
       '  },',
     ].join('\n'),
   );
@@ -200,6 +274,17 @@ function renderRegistry(source) {
     '] as const satisfies readonly CapabilityRecord[];',
     '',
   ].join('\n');
+}
+
+/** Fixed field order, so the generated registry does not follow source key order. */
+function renderOption(option) {
+  return {
+    key: option.key,
+    env: option.env,
+    description: option.description,
+    values: option.values,
+    default: option.default,
+  };
 }
 
 function renderManifests(source) {

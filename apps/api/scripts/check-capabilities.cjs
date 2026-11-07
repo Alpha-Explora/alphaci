@@ -18,6 +18,8 @@
  *   5. not-implemented records do not claim AppConfig flags
  *   6. each pack profile lists every registry key in registry order with
  *      status derived from maturity and edition applicability
+ *   7. every capability option's variable is documented in .env.example,
+ *      with its default as the example value (ADR-0023)
  *
  * Usage:
  *   node ./scripts/check-capabilities.cjs
@@ -31,6 +33,7 @@ const { loadCapabilityCatalog } = require('./load-capability-catalog.cjs');
 const ROOT = path.resolve(__dirname, '..');
 const REPO = path.resolve(ROOT, '..', '..');
 const APP_CONFIG = path.join(ROOT, 'src/kernel/config/app.config.types.ts');
+const ENV_EXAMPLE = path.join(ROOT, '.env.example');
 
 const CONTEXTS = new Set([
   'identity-access',
@@ -260,6 +263,30 @@ function detectCycle(byKey) {
   return cycle;
 }
 
+/**
+ * An option an operator cannot discover is an option nobody sets on purpose.
+ * The example value is the default, so copying .env.example never changes
+ * behavior.
+ */
+function optionDocumentationErrors(capabilities) {
+  const errors = [];
+  const example = fs.readFileSync(ENV_EXAMPLE, 'utf8');
+  for (const capability of capabilities) {
+    for (const option of capability.options ?? []) {
+      const line = new RegExp('^' + option.env + '=(.*)$', 'm').exec(example);
+      const at = `[${capability.key}] option ${option.key}`;
+      if (!line) {
+        errors.push(`${at}: document ${option.env} in apps/api/.env.example`);
+      } else if (line[1].trim() !== option.default) {
+        errors.push(
+          `${at}: apps/api/.env.example must set ${option.env}=${option.default}, its default`,
+        );
+      }
+    }
+  }
+  return errors;
+}
+
 function collect() {
   const { capabilities, manifests } = readCapabilityCatalog();
   const configFlags = readConfigFlags();
@@ -335,6 +362,7 @@ function collect() {
 
   errors.push(...manifestCatalogErrors(capabilities, manifests));
   errors.push(...packCatalogErrors(capabilities, manifests));
+  errors.push(...optionDocumentationErrors(capabilities));
 
   return {
     capabilityCount: capabilities.length,
@@ -343,6 +371,10 @@ function collect() {
     exemptFlagCount: NON_CAPABILITY_FLAGS.size,
     requiresEdgeCount: capabilities.reduce(
       (total, capability) => total + (capability.requires?.length ?? 0),
+      0,
+    ),
+    optionCount: capabilities.reduce(
+      (total, capability) => total + (capability.options?.length ?? 0),
       0,
     ),
     errors,
@@ -363,7 +395,7 @@ if (result.errors.length > 0) {
 }
 
 console.log(
-  `Capability registry OK (${result.capabilityCount} capabilities, ${result.claimedFlagCount}/${result.configFlagCount} AppConfig flags owned, ${result.exemptFlagCount} exempt, ${result.requiresEdgeCount} requires edge(s), pack catalogs complete).`,
+  `Capability registry OK (${result.capabilityCount} capabilities, ${result.claimedFlagCount}/${result.configFlagCount} AppConfig flags owned, ${result.exemptFlagCount} exempt, ${result.requiresEdgeCount} requires edge(s), ${result.optionCount} option(s) documented, pack catalogs complete).`,
 );
 
 module.exports = { collect, expectedPackStatus, parsePackCapabilityRows };

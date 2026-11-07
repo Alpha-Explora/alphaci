@@ -35,6 +35,14 @@ export class CapabilitiesController {
     const config = this.configService.getOrThrow<AppConfig>('app');
     const capabilityKeys = this.capabilityResolver.deployment();
     const has = (key: CapabilityKey): boolean => capabilityKeys.has(key);
+    // Capability options (ADR-0023) ride on their capability's block, and only
+    // while it is enabled: an option of an absent capability describes nothing.
+    const optionsOf = (
+      key: CapabilityKey,
+    ): { options?: Readonly<Record<string, string>> } => {
+      const values = config.composition.options[key];
+      return has(key) && values !== undefined ? { options: { ...values } } : {};
+    };
     const clientPolicy = this.clientPolicySource?.deployment() ?? null;
     const clientCompositionEnabled =
       has('runtime.client-composition') && clientPolicy !== null;
@@ -60,6 +68,7 @@ export class CapabilitiesController {
       edition: config.composition.edition,
       capabilityKeys: [...capabilityKeys],
       clientComposition: {
+        ...optionsOf('runtime.client-composition'),
         enabled: clientCompositionEnabled,
         clientId: clientCompositionEnabled
           ? (clientPolicy?.clientId ?? null)
@@ -75,6 +84,7 @@ export class CapabilitiesController {
           : [],
       },
       envProvisioning: {
+        ...optionsOf('runtime.env-provisioning'),
         enabled,
         providers: enabled ? providers : [],
         environments: enabled ? ['test', 'uat', 'production'] : [],
@@ -84,6 +94,7 @@ export class CapabilitiesController {
         modes: enabled ? [config.envProvisioning.ownershipMode] : [],
       },
       projectSyncSnapshots: {
+        ...optionsOf('projects.sync-snapshots'),
         enabled: has('projects.sync-snapshots'),
         liveGithubEnabled:
           liveAdaptersImplemented &&
@@ -96,18 +107,23 @@ export class CapabilitiesController {
         mode: 'local_snapshot' as const,
       },
       workflowSettingsPreview: {
+        ...optionsOf('projects.workflow-settings-preview'),
         enabled: has('projects.workflow-settings-preview'),
       },
       workflowUpdatePr: {
+        ...optionsOf('projects.workflow-update-pr'),
         enabled: has('projects.workflow-update-pr'),
       },
       qaChecklists: {
+        ...optionsOf('projects.qa-checklists'),
         enabled: has('projects.qa-checklists'),
       },
       projectTargetManagement: {
+        ...optionsOf('projects.target-management'),
         enabled: has('projects.target-management'),
       },
       ciRunTracking: {
+        ...optionsOf('pipelines.ci-run-tracking'),
         enabled: has('pipelines.ci-run-tracking'),
         liveGithubEnabled:
           has('pipelines.ci-run-tracking') &&
@@ -116,6 +132,7 @@ export class CapabilitiesController {
         mode: 'local_mock' as const,
       },
       deploymentHistory: {
+        ...optionsOf('runtime.deployment-history'),
         enabled: has('runtime.deployment-history'),
         liveProvidersEnabled:
           has('runtime.deployment-history') &&
@@ -124,6 +141,7 @@ export class CapabilitiesController {
         mode: 'local_mock' as const,
       },
       previewDeployments: {
+        ...optionsOf('runtime.preview-deployments'),
         // Previews read the provider history, so the flag alone is not enough
         // — without deployment history there is nothing to group by branch.
         enabled: has('runtime.preview-deployments'),
@@ -132,6 +150,7 @@ export class CapabilitiesController {
         providers: previewProviders,
       },
       driftDetection: {
+        ...optionsOf('runtime.drift-detection'),
         enabled: has('runtime.drift-detection'),
         liveProviderChecksEnabled:
           has('runtime.drift-detection') &&
@@ -140,6 +159,7 @@ export class CapabilitiesController {
         mode: 'local_snapshot' as const,
       },
       driftRepair: {
+        ...optionsOf('runtime.drift-repair'),
         enabled: has('runtime.drift-repair'),
         liveRepairEnabled:
           has('runtime.drift-repair') &&
@@ -148,18 +168,23 @@ export class CapabilitiesController {
         mode: 'local_safe' as const,
       },
       usageQuotas: {
+        ...optionsOf('billing.usage-quotas'),
         enabled: has('billing.usage-quotas'),
       },
       workspaces: {
+        ...optionsOf('identity.workspaces'),
         enabled: has('identity.workspaces'),
       },
       auditEvents: {
+        ...optionsOf('platform.audit-events'),
         enabled: has('platform.audit-events'),
       },
       notifications: {
+        ...optionsOf('platform.notifications'),
         enabled: has('platform.notifications'),
       },
       hierarchy: {
+        ...optionsOf('identity.hierarchy'),
         enabled: has('identity.hierarchy'),
         githubSyncMode: config.hierarchy.githubSyncMode,
       },

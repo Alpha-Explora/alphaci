@@ -15,7 +15,7 @@ describe('CapabilitiesController client composition projection', () => {
           provide: ConfigService,
           useValue: {
             getOrThrow: jest.fn().mockReturnValue({
-              composition: { edition: 'enterprise' },
+              composition: { edition: 'enterprise', options: {} },
               envProvisioning: { ownershipMode: 'flowci_managed' },
               hierarchy: { githubSyncMode: 'stub' },
             }),

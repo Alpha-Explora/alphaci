@@ -42,6 +42,7 @@ Each registry record contains:
 | `configuration` | Current source of enablement or gating. |
 | `configurationFlags` | Boolean `AppConfig` leaves, as `group.flag` paths, that gate the base capability. Checked against `apps/api/src/kernel/config/app.config.types.ts` in both directions. Optional adapter or provider-mode toggles are explicit `NON_CAPABILITY_FLAGS`; this list is empty when `maturity` is `not-implemented`. |
 | `requires` | Capability keys this capability depends on. Edges must resolve and stay acyclic. |
+| `options` | Optional. Settings that change how the capability behaves on one deployment; see [Capability options](#capability-options). |
 | `surface` | How the web app presents the capability; see [Web surfaces](#web-surfaces). |
 
 Edition applicability is owned by `apps/api/src/kernel/composition/manifests.ts`, not by individual capability records. The [capability matrix](/capabilities/capability-matrix.generated.md) is derived from the registry at `apps/api/src/kernel/composition/capability-registry.ts` and those manifests. The live `/api/v1/capabilities` response is a compatibility projection of the resolved deployment set: its existing nested fields remain available, with top-level `edition` and `capabilityKeys` identifying the active composition.
@@ -118,7 +119,7 @@ The web app may only hide surfaces the API already disabled or left unimplemente
 | `ALPHACI_CLIENT` | a client ID registered in `apps/api/src/packs/enterprise/clients/index.ts` | no client policy |
 | `ALPHACI_CLIENT_CONFIG` | path to a client policy document | no client policy |
 
-An invalid value stops the API boot. The edition is read from the environment at startup in every profile. The boot also fails when the edition manifest names a capability outside the build profile. In `apps/api`, `npm run start:saas`, `start:edu`, `start:enterprise`, and `start:enterprise-client` set the profile, edition, and client together through `scripts/run-edition.mjs`. The web app reads `ALPHACI_BUILD_PROFILE` and `ALPHACI_EDITION` at build time.
+An invalid value stops the API boot. The edition is read from the environment at startup in every profile. The boot also fails when the edition manifest names a capability outside the build profile. In `apps/api`, `npm run start:saas`, `start:edu`, `start:enterprise`, `start:enterprise-client`, and `start:enterprise-internal` set the profile, edition, and client together through `scripts/run-edition.mjs`. The web app reads `ALPHACI_BUILD_PROFILE` and `ALPHACI_EDITION` at build time.
 
 ### Resolution rules
 
@@ -132,6 +133,16 @@ An invalid value stops the API boot. The edition is read from the environment at
 Three injection tokens carry the composition. `CAPABILITY_RESOLVER` is request-scoped. `DEPLOYMENT_CAPABILITY_RESOLVER` is a singleton for workers and services without a request subject. `CAPABILITY_MANIFEST_SOURCE` is the replaceable manifest seam. `/api/v1/capabilities` reads the deployment set.
 
 A client policy is a deny-only declaration for one client, selected by `ALPHACI_CLIENT` or supplied as a document at `ALPHACI_CLIENT_CONFIG`. It removes capability keys from the edition manifest and cannot introduce one. See [ADR-0009](/architecture/decisions/adr-0009-client-capability-policies.md).
+
+### Capability options
+
+An option changes how an available capability behaves on one deployment; it never enables one. A record declares it in `catalog.source.json` with `key` (camelCase), `env` (the variable that sets it), `description`, `values` (at least two lowercase slugs), and `default`, which is the behavior every deployment had before the option existed. See [ADR-0023](/architecture/decisions/adr-0023-capability-options.md).
+
+- The API reads every option at boot into `AppConfig['composition'].options`. Unset or blank is the default; any other value outside `values` stops the boot.
+- Services read a value through the `CAPABILITY_OPTIONS` token, typed per capability and option, and pass it into domain rules as an argument.
+- `/api/v1/capabilities` adds an `options` object to a capability's block while the capability is enabled, so the web app reads options where it reads view flags.
+- `apps/api/.env.example` documents every option variable with its default; `check-capabilities` enforces it.
+- A client's option values belong in its `apps/api/deploy/env` preset. Source never compares a client id or edition to a literal; both documentation checks reject it.
 
 ## Naming and ownership
 

@@ -1,6 +1,6 @@
 # Internal client and capability options
 
-Status: planned on 2026-11-07. Step 1 is in progress; steps 2 and 3 are not built. Delete this plan once step 3 lands and its lasting decisions are in ADR-0023, the capability contract and the changelog.
+Status: planned on 2026-11-07. Steps 1 and 2 are built on local branches; step 3 is not. Delete this plan once step 3 lands and its lasting decisions are in ADR-0023, the capability contract and the changelog.
 
 ## Goal
 
@@ -37,17 +37,18 @@ An option changes how an available capability behaves. It is declared on the cap
 - `apps/api/src/kernel/composition/capability-options.ts` (parse and validate at boot, unknown value stops the boot) and `capability-options.port.ts` (deployment-scoped token); wired through `composition-config.ts`, `composition.module.ts`, `index.ts`.
 - `apps/api/src/kernel/config/app.config.types.ts`, `env.validation.ts`, `apps/api/.env.example`.
 - `apps/api/src/modules/identity-access/capabilities/api/capabilities.controller.ts`: each feature block gains `options`.
-- `apps/web/src/shared/api/contracts.ts`; `apps/web/src/features/capabilities/current/{data/capabilities-repository.ts, model/capability-flags.ts, view-models/use-capabilities-view-model.ts}`.
 - `apps/api/scripts/check-capabilities.cjs`: one owner per option, unique env names, default within values, options only on implemented records.
 - `apps/api/scripts/check-documentation.cjs`, `apps/web/scripts/check-documentation.cjs`: reject client-id comparisons as well as edition comparisons.
 - `docs/capabilities/capability-contract.md`, generated maps, `docs/log.md`, `CHANGELOG.md`.
-- Verification: with no option set, `/api/v1/capabilities` equals today's response plus empty `options`; full CI suite.
+- Verification: with no option declared, `/api/v1/capabilities` equals today's response; full CI suite.
+- The web app's reading of options moves to step 3: with no option declared there is nothing to read, and unused helpers would fail the dead-code checks.
 
 ## Step 3: first option, test case authors
 
 - `projects.qa-checklists` option `testCaseAuthors`, env `QA_TEST_CASE_AUTHORS`, values `qa-team` (default) and `qa-team-and-leads`.
 - API: `apps/api/src/modules/projects/domain/qa-run-access.rules.ts` (`canManageTestCases`, `canRecordTestCaseResults` take the option); callers in `application/qa-checklists/qa-test-cases.service.ts` and `application/qa-runs/qa-project-runs.service.ts` read it through the token.
 - Web: `apps/web/src/features/checklists/model/test-case-rules.ts` fallback uses the option.
+- Web: `apps/web/src/shared/api/contracts.ts` types `qaChecklists.options`; `apps/web/src/features/capabilities/current/{data/capabilities-repository.ts, model/capability-flags.ts, view-models/use-capabilities-view-model.ts}` expose `qaTestCaseAuthors` with the default as fallback.
 - Tests: default keeps leads at 403; `qa-team-and-leads` admits them; web rule agrees.
 - Docs: ADR-0014 amendment, `docs/log.md`, `CHANGELOG.md`, and the line in `apps/api/deploy/env/enterprise-internal.env`.
 - Rollout: `QA_TEST_CASE_AUTHORS=qa-team-and-leads` on the internal Render service only.
