@@ -12,7 +12,7 @@ import { ConfigService } from '@nestjs/config';
 
 import type { AppConfig } from '#kernel/config/app.config';
 import type { ServiceRuntimeContract } from '#kernel/ports/deployment-runtime.port';
-import { scaffoldRuntimeContract } from '../../scaffold.builder';
+import { scaffoldRuntimeContract } from '../../scaffolds/service-runtime-contract';
 import type { ListCatalogQueryDto } from './dto/list-catalog-query.dto';
 
 // ─── Project Options types ────────────────────────────────────────────────────

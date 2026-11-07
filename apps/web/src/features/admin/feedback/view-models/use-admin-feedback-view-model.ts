@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { adminRepository } from '../../data/admin-repository';
 import { NEXT_FEEDBACK_STATUS } from '../../model/admin-rules';
+import { useLatestRequestSequence } from '@shared/async/latest-request-sequence';
 import type {
   AdminStatus,
   FeedbackRecord,
@@ -33,33 +34,29 @@ export function useAdminFeedbackViewModel(): AdminFeedbackViewModel {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const [nonce, setNonce] = useState(0);
-  const req = useRef(0);
+  const requests = useLatestRequestSequence();
 
   // As with the user list: the effect resolves, the handlers own the transition
   // into "loading" so no state is set synchronously in an effect body.
   useEffect(() => {
-    req.current += 1;
-    const id = req.current;
-    let active = true;
+    const lease = requests.begin();
 
     adminRepository
       .feedback(filter)
       .then((next) => {
-        if (!active || id !== req.current) return;
+        if (!lease.isCurrent()) return;
         setItems(next);
         setError(null);
         setStatus('ready');
       })
       .catch(() => {
-        if (!active || id !== req.current) return;
+        if (!lease.isCurrent()) return;
         setError('Could not load feedback.');
         setStatus('error');
       });
 
-    return () => {
-      active = false;
-    };
-  }, [filter, nonce]);
+    return () => lease.cancel();
+  }, [filter, nonce, requests]);
 
   async function advance(item: FeedbackRecord) {
     setBusyId(item.id);

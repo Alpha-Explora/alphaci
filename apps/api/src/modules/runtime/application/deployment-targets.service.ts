@@ -65,10 +65,6 @@ import type {
 } from '../core/deployments.types';
 import { ProviderConnectionsRepository } from '../infrastructure/repositories/provider-connections.repository';
 import {
-  WORKSPACE_ACCESS_PORT,
-  type WorkspaceAccessPort,
-} from '#kernel/ports/workspaces.port';
-import {
   DEPLOYMENT_PROJECT_REFERENCE_LOOKUP,
   type DeploymentProjectReference,
   type DeploymentProjectReferenceLookup,
@@ -148,21 +144,9 @@ export class DeploymentTargetsService
     private readonly clientRegistry: ProviderClientRegistryPort,
     private readonly configService: ConfigService,
     private readonly deploymentStrategyResolver: DeploymentStrategyResolver,
-    /** Retained in the constructor order for direct callers during the seam migration. */
-    @Optional()
-    @Inject('LegacyDeploymentTargetDefaults')
-    _legacyTargetDefaults?: unknown,
     @Optional()
     @Inject(USAGE_QUOTA)
     private readonly usageQuotaService?: UsageQuotaPort,
-    /**
-     * No longer an authority: mutations are gated by visibility + app_role
-     * (assertProjectLifecycleAccess). Kept in the constructor order for
-     * positional callers; workspace membership rows must not decide access.
-     */
-    @Optional()
-    @Inject(WORKSPACE_ACCESS_PORT)
-    _workspaceAccessService?: WorkspaceAccessPort,
     @Optional()
     private readonly auditEventsService?: AuditEventPublisher,
     @Optional()

@@ -121,6 +121,9 @@ function windowsScript({ url, sha256, apiUrl, code, replace }: InstallFacts) {
     '@echo off',
     'rem AlphaCI installer for this machine. It contains a one-time enrollment code. It deletes itself after a successful install; keep it private until then.',
     'setlocal',
+    // Started from PowerShell 7, this file inherits a module path that hides
+    // Get-FileHash from the Windows PowerShell below. Unset, it rebuilds its own.
+    'set "PSModulePath="',
     // The path reaches PowerShell through the environment, never inside a quoted
     // command, so an apostrophe in the folder name (O'Brien) cannot break a command.
     'set "ALPHACI_INSTALL_FILE=%~f0"',

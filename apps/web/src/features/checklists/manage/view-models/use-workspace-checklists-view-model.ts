@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { checklistsRepository } from '../../data/checklists-repository';
 import {
@@ -14,6 +14,7 @@ import type {
   QaChecklist,
   QaChecklistListResponse,
 } from '../../model/checklist-types';
+import { useLatestRequestSequence } from '@shared/async/latest-request-sequence';
 
 /** Which screen of the section is showing. One at a time, like the rest of the team panel. */
 export type ChecklistScreen =
@@ -115,29 +116,28 @@ export function useWorkspaceChecklistsViewModel(options: {
     workspaceId: string;
     screen: ChecklistScreen;
   }>(() => ({ workspaceId, screen: initialScreen(initialChecklistId) }));
-  const requestRef = useRef(0);
+  const requests = useLatestRequestSequence();
 
   const key = `${workspaceId}|${String(showArchived)}|${String(nonce)}`;
 
   useEffect(() => {
     if (!enabled || !workspaceId) return;
-    requestRef.current += 1;
-    const requestId = requestRef.current;
+    const lease = requests.begin();
     checklistsRepository
       .listForWorkspace(workspaceId, { includeArchived: showArchived })
       .then((data) => {
-        if (requestId === requestRef.current)
-          setResult({ key, data, error: null });
+        if (lease.isCurrent()) setResult({ key, data, error: null });
       })
       .catch((cause: unknown) => {
-        if (requestId !== requestRef.current) return;
+        if (!lease.isCurrent()) return;
         setResult({
           key,
           data: null,
           error: checklistErrorMessage(cause, LOAD_ERROR),
         });
       });
-  }, [enabled, workspaceId, showArchived, key]);
+    return () => lease.cancel();
+  }, [enabled, workspaceId, showArchived, key, requests]);
 
   const current = result?.key === key ? result : null;
   const status = loadStatus(current);

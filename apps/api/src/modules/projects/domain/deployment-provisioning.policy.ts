@@ -1,4 +1,4 @@
-import { normalizeRepoShape } from '../scaffold.builder';
+import { normalizeRepoShape } from './repo-shape';
 import type {
   DeploymentProvisioningRequestDto,
   DeploymentProvisioningTargetDto,

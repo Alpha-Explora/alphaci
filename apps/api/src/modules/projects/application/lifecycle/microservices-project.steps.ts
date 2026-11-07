@@ -5,7 +5,7 @@ import type { DeploymentProvisioningResult } from '#kernel/ports/deployment-runt
 import { resolveDeploymentWorkflowTargets } from '../workflows/deployment-workflow-targets';
 import { workflowFileMetadata } from '../dashboard/project-overview.view';
 import { extractDeploymentProvider } from '../../domain/deployment-provisioning.policy';
-import { normalizeRepoShape } from '../../scaffold.builder';
+import { normalizeRepoShape } from '../../domain/repo-shape';
 import type {
   CreateProjectDto,
   DeploymentProvisioningRequestDto,

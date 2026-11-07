@@ -101,9 +101,9 @@ Four things had to move because they were Node assumptions rather than pipeline 
 
 Modern SDK-style .NET only. .NET Framework needs MSBuild on Windows runners and is out of scope, so no fragment accommodates it.
 
-### What .NET does not have yet
+### The .NET starter
 
-A .NET pipeline is generated in full for an **existing** repository. There is no .NET **starter**, so `normalizeProjectStack` rejects `dotnet` and a scaffolded .NET project cannot be provisioned. That rejection is deliberate and loud: emitting a Node file tree for someone who asked for .NET is the substitution this ADR exists to prevent. The starter, and the catalog wiring that would let a `dotnet` project type reference it, are the remaining work.
+A .NET pipeline is generated in full for an **existing** repository, and `scaffolds/dotnet-scaffold.ts` is the **starter** for a new standalone one, so `normalizeProjectStack` accepts `dotnet` and a scaffolded .NET project can be provisioned. The starter builds its own file tree rather than adding branches through the Node one: emitting a Node file tree for someone who asked for .NET is the substitution this ADR exists to prevent.
 
 ## Verification
 

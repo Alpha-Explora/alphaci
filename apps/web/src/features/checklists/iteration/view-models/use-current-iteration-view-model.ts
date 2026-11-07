@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { iterationsRepository } from '../../data/iterations-repository';
 import type { CurrentIteration } from '../../model/iteration-types';
 import { useIterationEpoch } from './iteration-epoch';
+import { useLatestRequestSequence } from '@shared/async/latest-request-sequence';
 
 /**
  * `idle`: nothing to read (no Project, or not enabled). `unavailable`: the
@@ -66,7 +67,7 @@ export function useCurrentIterationViewModel(options: {
   const { deliveryProjectId, enabled, watch } = options;
   const [nonce, setNonce] = useState(0);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const requestRef = useRef(0);
+  const requests = useLatestRequestSequence();
   const key = deliveryProjectId ?? '';
   const active = enabled && Boolean(deliveryProjectId);
   const reload = () => setNonce((value) => value + 1);
@@ -75,25 +76,24 @@ export function useCurrentIterationViewModel(options: {
 
   useEffect(() => {
     if (!active) return;
-    requestRef.current += 1;
-    const requestId = requestRef.current;
+    const lease = requests.begin();
     // Through a promise, so even a reader that returns nothing reads as "unavailable".
     Promise.resolve()
       .then(() => iterationsRepository.current(key))
       .then((current) => {
-        if (requestId === requestRef.current)
-          setLoaded({ key, current: current ?? null });
+        if (lease.isCurrent()) setLoaded({ key, current: current ?? null });
       })
       .catch(() => {
         // A failed refresh keeps what was on screen; a first read hides the iteration.
-        if (requestId !== requestRef.current) return;
+        if (!lease.isCurrent()) return;
         setLoaded((previous) =>
           previous?.key === key && previous.current
             ? previous
             : { key, current: null },
         );
       });
-  }, [active, key, nonce, epoch]);
+    return () => lease.cancel();
+  }, [active, key, nonce, epoch, requests]);
 
   const current = loaded?.key === key ? loaded : null;
   return {

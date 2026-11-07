@@ -1,5 +1,10 @@
 # Directory Update Log
 
+## 2026-11-07
+
+- **Update**: ADR-0006 says `normalizeProjectStack` accepts `dotnet` and that `scaffolds/dotnet-scaffold.ts` is the starter for a new standalone .NET repository. It still said the stack was rejected.
+- **Update**: Regenerated the architecture maps for the moved repo-shape and runtime-contract modules and the new web request sequence.
+
 ## 2026-11-05
 
 - **Creation**: `runbooks/runbook-enterprise-gce-deploy.md` describes the `Deploy enterprise (GCE)` workflow. A green CI run on `main` builds both images, pushes them to GHCR, and rolls `api` and `web` on `alphaci-enterprise-01` through IAP. Each deploy also renders `alphaci.env` and the secret files from the `enterprise-gce` GitHub environment through `deploy/enterprise-gce/alphaci.env.template` and `secret-files`. A gate stops the deploy when migrations changed. `release.yml` can now be called with `push` and `ref` inputs.

@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { checklistsRepository } from '../../data/checklists-repository';
 import {
   checklistErrorMessage,
   sortChecklists,
 } from '../../model/checklist-rules';
+import { useLatestRequestSequence } from '@shared/async/latest-request-sequence';
 import type {
   ChecklistsStatus,
   QaChecklist,
@@ -49,28 +50,27 @@ export function useProjectChecklistsViewModel(options: {
   const { projectId, enabled } = options;
   const [nonce, setNonce] = useState(0);
   const [result, setResult] = useState<LoadResult | null>(null);
-  const requestRef = useRef(0);
+  const requests = useLatestRequestSequence();
   const key = `${projectId}|${String(nonce)}`;
 
   useEffect(() => {
     if (!enabled || !projectId) return;
-    requestRef.current += 1;
-    const requestId = requestRef.current;
+    const lease = requests.begin();
     checklistsRepository
       .listForProject(projectId)
       .then((data) => {
-        if (requestId === requestRef.current)
-          setResult({ key, data, error: null });
+        if (lease.isCurrent()) setResult({ key, data, error: null });
       })
       .catch((cause: unknown) => {
-        if (requestId !== requestRef.current) return;
+        if (!lease.isCurrent()) return;
         setResult({
           key,
           data: null,
           error: checklistErrorMessage(cause, LOAD_ERROR),
         });
       });
-  }, [enabled, projectId, key]);
+    return () => lease.cancel();
+  }, [enabled, projectId, key, requests]);
 
   const current = result?.key === key ? result : null;
 
