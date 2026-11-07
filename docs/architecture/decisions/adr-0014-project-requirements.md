@@ -47,6 +47,8 @@ Terminology: a "Project" is a hierarchy delivery project (the folder that owns r
 
 14. **No sign-off while a defect is open, and a refusal reaches the Developers at once (amendment, 2026-10-19).** A sign-off with any verdict, Rejected included, answers `409 QA_RUN_OPEN_DEFECTS` while any run item is `failed` (or `blocked` or `returned_to_dev` on older rows): the Developers fix it and QA verifies the fix first. Setting an item to `failed` notifies the repository owner, the workspace leads and every Developer, never the tester, and only on the change itself. Passing an item, or a Developer re-queuing it with Progress `done`, clears its defect severity.
 
+15. **Who writes test cases is a deployment option (amendment, 2026-11-07).** The `projects.qa-checklists` capability option `testCaseAuthors` (ADR-0023, `QA_TEST_CASE_AUTHORS`) decides who writes test cases and records their results. `qa-team`, the default, keeps amendments 10 and 12: QA and admins only. `qa-team-and-leads` adds the Product owner, for a deployment with no QA Team; Developers never qualify. `canManageTestCases` and `canRecordTestCaseResults` take the value as an argument, and the run and requirement payloads' `permissions.canManageTestCases` and `permissions.canRecordTestCases` follow it, so the web app needs no change.
+
 ## Consequences
 
 - Persona rules are allow-lists in `qa-run-access.rules.ts`; `personaAllowsRole` and per-item `targetPersona` no longer gate anything.

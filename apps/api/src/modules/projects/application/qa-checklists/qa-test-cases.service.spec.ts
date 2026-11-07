@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 
+import { capabilityOptionsFrom } from '#kernel/composition/capability-options.port.js';
 import type { PlatformAppRole } from '#kernel/ports/platform-admin.port';
 import {
   deliveredIterationRow,
@@ -45,11 +46,14 @@ function setup({
   member = true,
   requirement = requirementRow(),
   delivered = false,
+  authors,
 }: {
   role?: PlatformAppRole;
   member?: boolean;
   requirement?: QaChecklistRow | null;
   delivered?: boolean;
+  /** The deployment's testCaseAuthors option; omitted builds no options port. */
+  authors?: 'qa-team' | 'qa-team-and-leads';
 } = {}) {
   const checklists = {
     findById: jest.fn().mockResolvedValue(requirement),
@@ -85,6 +89,11 @@ function setup({
     access,
     iterations,
     audit,
+    authors === undefined
+      ? undefined
+      : capabilityOptionsFrom({
+          'projects.qa-checklists': { testCaseAuthors: authors },
+        }),
   );
   return { service, testCases, audit };
 }
@@ -136,6 +145,45 @@ describe('QaTestCasesService - who writes test cases', () => {
     await expect(
       service.createCategory('req-1', 'item-1', 'u-1', { name: 'Happy path' }),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  it('a lead is refused under the default option, as with no option', async () => {
+    const { service, testCases } = setup({ role: 'lead', authors: 'qa-team' });
+
+    await expect(
+      service.createCategory('req-1', 'item-1', 'u-1', { name: 'Happy path' }),
+    ).rejects.toMatchObject({
+      response: { code: 'TEST_CASE_MANAGE_FORBIDDEN' },
+    });
+    expect(testCases.createCategory).not.toHaveBeenCalled();
+  });
+
+  it('a lead writes test cases where the deployment names leads as authors', async () => {
+    const { service, testCases } = setup({
+      role: 'lead',
+      authors: 'qa-team-and-leads',
+    });
+
+    await service.createCategory('req-1', 'item-1', 'u-1', {
+      name: 'Happy path',
+    });
+
+    expect(testCases.createCategory).toHaveBeenCalledWith(
+      'item-1',
+      'Happy path',
+      'u-1',
+      'it-1',
+    );
+  });
+
+  it('a Developer is refused even where leads are authors', async () => {
+    const { service } = setup({ role: 'member', authors: 'qa-team-and-leads' });
+
+    await expect(
+      service.createCategory('req-1', 'item-1', 'u-1', { name: 'Happy path' }),
+    ).rejects.toMatchObject({
+      response: { code: 'TEST_CASE_MANAGE_FORBIDDEN' },
+    });
   });
 });
 

@@ -6,8 +6,13 @@ import {
   Optional,
 } from '@nestjs/common';
 
+import {
+  CAPABILITY_OPTIONS,
+  type CapabilityOptionsPort,
+} from '#kernel/composition/capability-options.port.js';
 import { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
 import { canManageTestCases } from '../../domain/qa-run-access.rules';
+import { testCaseAuthorsOf } from './test-case-authors';
 import {
   QA_UNIQUE_VIOLATION,
   QaChecklistsRepository,
@@ -72,6 +77,9 @@ export class QaTestCasesService {
     @Optional()
     @Inject(AuditEventPublisher)
     private readonly auditEventsService?: AuditEventSink,
+    @Optional()
+    @Inject(CAPABILITY_OPTIONS)
+    private readonly capabilityOptions?: CapabilityOptionsPort,
   ) {}
 
   async createCategory(
@@ -294,7 +302,12 @@ export class QaTestCasesService {
     if (!item) {
       throw new NotFoundException('Requirement item not found');
     }
-    if (!canManageTestCases(await this.access.findAppRole(userId))) {
+    if (
+      !canManageTestCases(
+        await this.access.findAppRole(userId),
+        testCaseAuthorsOf(this.capabilityOptions),
+      )
+    ) {
       throw testCaseManageForbidden();
     }
     await this.iterations.assertRowWritable(requirement);

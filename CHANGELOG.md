@@ -34,6 +34,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Branches:** `dev`, `uat` and `main` require a pull request on new projects, and admins can apply this to existing repositories.
 - **Editions:** Build profiles (hosted, enterprise), per-client capability policies, and the Enterprise client-composition settings page.
 - **Editions:** The `alphaexplora-internal` client policy for Alpha Explora's own Render and Vercel deployment, selected with `ALPHACI_CLIENT` (preset `deploy/env/enterprise-internal.env`).
+- **QA:** `QA_TEST_CASE_AUTHORS=qa-team-and-leads` lets Product owners write test cases and record their results on a deployment without a QA Team; the default keeps them QA-only.
 
 ### Changed
 

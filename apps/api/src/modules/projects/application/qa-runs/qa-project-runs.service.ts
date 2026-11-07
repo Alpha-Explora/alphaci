@@ -12,6 +12,10 @@ import {
 
 import { QA_BRANCH } from '#kernel/config/pipeline-branches';
 import {
+  CAPABILITY_OPTIONS,
+  type CapabilityOptionsPort,
+} from '#kernel/composition/capability-options.port.js';
+import {
   AuditEventPublisher,
   NotificationEventPublisher,
 } from '#kernel/events/platform-event-publisher.js';
@@ -74,6 +78,7 @@ import {
 } from '../qa-checklists/qa-errors';
 import { QaRequirementsService } from '../qa-checklists/qa-requirements.service';
 import type { QaProgress } from '../qa-checklists/qa-requirements.contracts';
+import { testCaseAuthorsOf } from '../qa-checklists/test-case-authors';
 import { QaAutomationService } from './qa-automation.service';
 import { QaRunAttachmentsService } from './qa-run-attachments.service';
 import { matchAutomatedResult } from './qa-automation-matching';
@@ -242,6 +247,9 @@ export class QaProjectRunsService {
     @Optional()
     @Inject(NotificationEventPublisher)
     private readonly notificationEventsService?: NotificationEventSink,
+    @Optional()
+    @Inject(CAPABILITY_OPTIONS)
+    private readonly capabilityOptions?: CapabilityOptionsPort,
   ) {}
 
   // ---------------------------------------------------------------------
@@ -715,8 +723,11 @@ export class QaProjectRunsService {
     this.requireRunOpen(run);
 
     const role = await this.access.findAppRole(actor.userId);
-    // The QA Team records test case results; a Product owner reads them.
-    if (!canRecordTestCaseResults(role)) {
+    // The QA Team records test case results; a Product owner reads them,
+    // unless this deployment's test case authors include leads.
+    if (
+      !canRecordTestCaseResults(role, testCaseAuthorsOf(this.capabilityOptions))
+    ) {
       throw testCaseResultForbidden();
     }
 
@@ -1349,6 +1360,7 @@ export class QaProjectRunsService {
       iterationRef === null || isIterationWritable(iterationRef.status);
     const open = run.status === 'open' && writable;
     const mayVerify = open && canSetVerification(role);
+    const authors = testCaseAuthorsOf(this.capabilityOptions);
     // After QA's sign-off (not a Rejected one) the Product owner checks each item.
     const mayAccept =
       run.status === 'signed_off' &&
@@ -1406,8 +1418,8 @@ export class QaProjectRunsService {
         canSignOff: open && canSignOff(role),
         canReopen: run.status !== 'open' && writable && canReopenRun(role),
         canDispatch: open && canDispatchAutomation(role),
-        canManageTestCases: open && canManageTestCases(role),
-        canRecordTestCases: open && canRecordTestCaseResults(role),
+        canManageTestCases: open && canManageTestCases(role, authors),
+        canRecordTestCases: open && canRecordTestCaseResults(role, authors),
         canAccept: mayAccept,
       },
       attachments: {

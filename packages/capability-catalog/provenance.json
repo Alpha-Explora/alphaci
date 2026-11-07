@@ -4,7 +4,7 @@
   "packageVersion": "0.2.0",
   "sourceRepository": "github.com/Alpha-Explora/alphaci",
   "authoritativeSource": "apps/api/src/kernel/composition/catalog.source.json",
-  "catalogSourceDigest": "sha256:31485eaa8b9047f3902c4c2c6eabed7f65cc36e32da80a63bd8f3eb828a609a7",
+  "catalogSourceDigest": "sha256:f6fb5112a65b21041ab2eb39d6b961dca6cb37859ecf419e07cf306f210550ac",
   "canonicalFiles": [
     "package.json",
     "catalog.json",

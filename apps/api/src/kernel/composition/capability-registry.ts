@@ -284,6 +284,16 @@ export const CAPABILITIES = [
     configuration: 'qaChecklists.enabled',
     configurationFlags: ['qaChecklists.enabled'],
     requires: [],
+    options: [
+      {
+        key: 'testCaseAuthors',
+        env: 'QA_TEST_CASE_AUTHORS',
+        description:
+          "Who writes a User story's test cases and records their results: the QA Team and admins, or also Product owners for a deployment without a QA Team.",
+        values: ['qa-team', 'qa-team-and-leads'],
+        default: 'qa-team',
+      },
+    ],
   },
   {
     key: 'pipelines.ci-run-tracking',

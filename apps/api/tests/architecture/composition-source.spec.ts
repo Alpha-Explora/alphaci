@@ -201,10 +201,19 @@ describe('composition authoring source', () => {
       );
     });
 
-    it('leaves records without options unchanged in the registry', () => {
-      expect(compositionSource.renderRegistry(committed)).not.toContain(
-        'options:',
-      );
+    it('renders options only for the records that declare them', () => {
+      const declaring = committed.capabilities.filter(
+        (record) => record.options !== undefined,
+      ).length;
+      const rendered = compositionSource
+        .renderRegistry(committed)
+        .split('\n')
+        .filter((line) => line.trim().startsWith('options:')).length;
+      expect(rendered).toBe(declaring);
+
+      const bare = clone();
+      for (const record of bare.capabilities) delete record.options;
+      expect(compositionSource.renderRegistry(bare)).not.toContain('options:');
     });
 
     it('rejects a default outside the values, and too few values', () => {

@@ -5,6 +5,7 @@ import {
   canManageTestCases,
   canManageRequirements,
   canMergeQaPromotion,
+  canRecordTestCaseResults,
   canReopenRun,
   canRequestRetest,
   canSetProgress,
@@ -29,7 +30,6 @@ const EXPECTED: Array<
   ['canReopenRun', canReopenRun, ['admin', 'lead']],
   ['canMergeQaPromotion', canMergeQaPromotion, ['admin', 'lead']],
   ['canRequestRetest', canRequestRetest, ['admin', 'lead', 'member']],
-  ['canManageTestCases', canManageTestCases, ['admin', 'qa']],
 ];
 
 describe.each(EXPECTED)('%s', (_name, rule, allowed) => {
@@ -48,5 +48,32 @@ describe('Progress and Verification are disjoint tracks', () => {
     expect(canSetVerification('qa')).toBe(true);
     expect(canSetProgress('member')).toBe(true);
     expect(canSetVerification('member')).toBe(false);
+  });
+});
+
+/*
+ * Test case authors are a capability option (ADR-0023). The default is the
+ * rule every deployment had before the option existed; the other value adds
+ * the Product owner and nobody else.
+ */
+describe.each([
+  ['canManageTestCases', canManageTestCases],
+  ['canRecordTestCaseResults', canRecordTestCaseResults],
+] as const)('%s', (_name, rule) => {
+  it.each(ROLES)('qa-team (default): role=%s', (role) => {
+    expect(rule(role, 'qa-team')).toBe(['admin', 'qa'].includes(role));
+  });
+
+  it.each(ROLES)('qa-team-and-leads: role=%s', (role) => {
+    expect(rule(role, 'qa-team-and-leads')).toBe(
+      ['admin', 'lead', 'qa'].includes(role),
+    );
+  });
+
+  it('never admits a Developer or an unresolved role', () => {
+    for (const authors of ['qa-team', 'qa-team-and-leads'] as const) {
+      expect(rule('member', authors)).toBe(false);
+      expect(rule('unknown' as PlatformAppRole, authors)).toBe(false);
+    }
   });
 });

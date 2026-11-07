@@ -44,7 +44,7 @@ A **capability option** is a named setting on one capability record in `catalog.
 - **The default is current behavior.** Adding an option never changes a deployment that does not set it. Its `apps/api/.env.example` line sets the default.
 - **Deployment configuration layer.** An option is read from the environment once at boot. It sits after the client policy in the narrowing order and changes behavior only: it cannot enable a capability that an earlier layer removed, and a `not-implemented` capability cannot declare one.
 - **One source.** The generator validates options and writes them into the registry. `AppConfig['composition'].options` holds the resolved values. Application services read them through `CAPABILITY_OPTIONS`, typed per capability, and pass them into pure domain rules as arguments.
-- **Advertised with their capability.** `/api/v1/capabilities` adds `options` to a capability's block while that capability is enabled. The web app reads options from that response, as it reads view flags (ADR-0017).
+- **Advertised with their capability.** `/api/v1/capabilities` adds `options` to a capability's block while that capability is enabled. A screen that needs an option reads it from that response, as it reads view flags (ADR-0017). Where the API already returns a permission computed with the option, the screen follows that permission instead.
 - **No client branches.** A deployment's option values are its data; the code never compares a client id or edition to a literal. A client's values live in its `apps/api/deploy/env` preset.
 
 ## Rejected alternatives
