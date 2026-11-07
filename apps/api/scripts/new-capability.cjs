@@ -37,7 +37,10 @@ const CONTEXT_BY_PREFIX = {
 
 function option(name, fallback) {
   const index = process.argv.indexOf('--' + name);
-  return index >= 0 ? process.argv[index + 1] : fallback;
+  if (index < 0) return fallback;
+  const value = process.argv[index + 1];
+  if (value === undefined || value.startsWith('--')) fail('--' + name + ' requires a value');
+  return value;
 }
 
 function list(name) {
@@ -64,6 +67,11 @@ if (typeof description !== 'string' || description.trim() === '') fail('--descri
 if (typeof summary !== 'string' || summary.trim() === '') fail('--summary is required for the ledger entry');
 if (!source.MATURITIES.includes(maturity)) fail('--maturity must be one of ' + source.MATURITIES.join(', '));
 if (editions.length === 0) fail('--editions must name the packs that include this capability');
+const unknownEditions = editions.filter((edition) => !source.EDITIONS.includes(edition));
+if (unknownEditions.length > 0) {
+  fail('unknown edition(s): ' + unknownEditions.join(', ') + '. Allowed editions: ' + source.EDITIONS.join(', '));
+}
+if (new Set(editions).size !== editions.length) fail('--editions must not contain duplicate editions');
 
 const context = option('context', CONTEXT_BY_PREFIX[key.split('.')[0]]);
 if (typeof context !== 'string') fail('--context could not be derived from the key');
@@ -110,6 +118,11 @@ if (errors.length > 0) {
   console.error('The capability was not added: ' + errors.length + ' error(s).');
   for (const error of errors) console.error('  ' + error);
   process.exit(1);
+}
+
+if (process.argv.includes('--dry-run')) {
+  console.log(JSON.stringify({ dryRun: true, record }, null, 2));
+  process.exit(0);
 }
 
 fs.writeFileSync(source.SOURCE_PATH, JSON.stringify(document, null, 2) + '\n');

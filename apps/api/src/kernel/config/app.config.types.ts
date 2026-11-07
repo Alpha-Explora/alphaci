@@ -190,6 +190,12 @@ export interface AppConfig {
   qaChecklists: {
     enabled: boolean;
   };
+  releaseGovernance: {
+    enabled: boolean;
+  };
+  managedHostDelivery: {
+    enabled: boolean;
+  };
   ciRunTracking: {
     enabled: boolean;
     liveGithubEnabled: boolean;

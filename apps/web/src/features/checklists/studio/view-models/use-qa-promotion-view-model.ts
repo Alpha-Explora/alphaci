@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useCapabilities } from '@/features/capabilities/current';
 
 import type { AppRole } from '@/shared/api/contracts';
 
@@ -178,7 +179,12 @@ export function useQaPromotionViewModel(options: {
 
   const current = result?.key === key ? result : null;
   const data = current?.data ?? null;
-  const { offer, disabledReason } = mergeOffer(data, appRole, outcome);
+  const { releaseGovernanceEnabled } = useCapabilities();
+  const { offer, disabledReason } = mergeOffer(
+    data,
+    releaseGovernanceEnabled ? appRole : null,
+    outcome,
+  );
 
   function openConfirm() {
     if (!offer || disabledReason || mergeState !== 'idle') return;

@@ -1,3 +1,7 @@
+import {
+  DEPLOYMENT_CAPABILITY_RESOLVER,
+  type CapabilityResolverPort,
+} from '#kernel/composition/capability-resolver.port';
 import { createHash, randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
@@ -152,6 +156,8 @@ export class ReleaseRegistryService {
     private readonly targets: EnvironmentDeploymentTargetResolver,
     private readonly configService: ConfigService,
     private readonly providerRegistry: DeploymentProviderRegistry<DeploymentProvider>,
+    @Inject(DEPLOYMENT_CAPABILITY_RESOLVER)
+    private readonly capabilities: CapabilityResolverPort,
     @Optional()
     @Inject(APP_ROLE_LOOKUP)
     private readonly appRoleLookup?: AppRoleLookup,
@@ -912,6 +918,11 @@ export class ReleaseRegistryService {
           ' has both on-prem and hosted targets; every target in an environment must be delivered the same way.',
       );
     }
+    if (
+      deliveries.has('host') &&
+      !this.capabilities.deployment().has('runtime.managed-host-delivery')
+    )
+      throw new NotFoundException('Managed host delivery is not available');
     return deliveries.has('host') ? 'host' : 'workflow';
   }
 

@@ -217,7 +217,7 @@
     {
       "key": "platform.notifications",
       "context": "platform-ops",
-      "description": "In-app notification requests and persistence.",
+      "description": "In-app notification persistence and live recipient-scoped workspace membership delivery.",
       "maturity": "stable",
       "configuration": "notifications.enabled",
       "configurationFlags": [
@@ -365,7 +365,7 @@
     {
       "key": "runtime.env-provisioning",
       "context": "runtime",
-      "description": "Provider-backed deployment target and environment provisioning.",
+      "description": "Provider-backed environments, shared release registration, promotion, and rollback; managed-host operations require the dependent managed-host-delivery capability.",
       "maturity": "limited",
       "configuration": "envProvisioning.enabled plus provider configuration",
       "configurationFlags": [
@@ -382,16 +382,57 @@
         "viewFlag": "envProvisioningEnabled",
         "domains": [
           "workflows",
-          "projects"
+          "projects",
+          "hosts"
         ],
         "routes": [
           "/workflows",
-          "/projects/[projectId]"
+          "/projects/[projectId]",
+          "/hosts"
         ],
         "featureBarrels": [
           "@/features/workflows",
-          "@/features/projects"
+          "@/features/projects",
+          "@/features/hosts"
         ]
+      }
+    },
+    {
+      "key": "runtime.managed-host-delivery",
+      "context": "runtime",
+      "description": "Customer host management, enrollment, assignment, readiness, and signed agent delivery.",
+      "maturity": "limited",
+      "configuration": "managedHostDelivery.enabled plus on-prem operator configuration",
+      "configurationFlags": [
+        "managedHostDelivery.enabled"
+      ],
+      "requires": [
+        "runtime.env-provisioning"
+      ],
+      "editions": [
+        "saas",
+        "edu",
+        "enterprise"
+      ],
+      "surface": {
+        "apiField": "managedHostDelivery",
+        "viewFlag": "managedHostDeliveryEnabled",
+        "domains": [
+          "hosts",
+          "projects",
+          "workflows"
+        ],
+        "routes": [
+          "/hosts",
+          "/projects/[projectId]",
+          "/workflows"
+        ],
+        "featureBarrels": [
+          "@/features/hosts",
+          "@/features/projects",
+          "@/features/workflows"
+        ],
+        "artifactSymbols": []
       }
     },
     {
@@ -750,7 +791,7 @@
     {
       "key": "projects.qa-checklists",
       "context": "projects",
-      "description": "QA checklist definitions and per-project sharing.",
+      "description": "QA checklist definitions and sharing, requirements, test cases, QA runs, sign-off, and evidence; governed acceptance, iteration start, and merge actions require release-governance.",
       "maturity": "limited",
       "configuration": "qaChecklists.enabled",
       "configurationFlags": [
@@ -773,6 +814,39 @@
         "routes": [
           "/projects/[projectId]",
           "/teams"
+        ],
+        "featureBarrels": [
+          "@/features/checklists"
+        ],
+        "artifactSymbols": []
+      }
+    },
+    {
+      "key": "projects.release-governance",
+      "context": "projects",
+      "description": "PO acceptance, controlled production merges, and starting the next project iteration.",
+      "maturity": "limited",
+      "configuration": "releaseGovernance.enabled; existing QA and workflow safety gates remain mandatory",
+      "configurationFlags": [
+        "releaseGovernance.enabled"
+      ],
+      "requires": [
+        "projects.qa-checklists"
+      ],
+      "editions": [
+        "saas",
+        "edu",
+        "enterprise"
+      ],
+      "surface": {
+        "apiField": "releaseGovernance",
+        "viewFlag": "releaseGovernanceEnabled",
+        "domains": [
+          "checklists",
+          "projects"
+        ],
+        "routes": [
+          "/projects/[projectId]"
         ],
         "featureBarrels": [
           "@/features/checklists"
@@ -830,6 +904,262 @@
         "routes": [],
         "featureBarrels": []
       }
+    }
+  ],
+  "features": [
+    {
+      "id": "projects.requirements",
+      "title": "Project requirements and developer progress",
+      "availability": {
+        "kind": "capability",
+        "key": "projects.qa-checklists"
+      },
+      "implementation": [
+        "apps/api/src/modules/projects/api/qa-requirements.controller.ts"
+      ],
+      "permissions": [
+        "apps/api/src/kernel/rules/persona-access.rules.ts",
+        "apps/api/src/modules/projects/domain/qa-run-access.rules.ts"
+      ],
+      "prerequisites": [
+        "Project membership and current iteration; action-specific persona rules"
+      ],
+      "evidence": [
+        "apps/api/src/modules/projects/api/qa-requirements.controller.spec.ts"
+      ]
+    },
+    {
+      "id": "projects.qa-test-cases",
+      "title": "User-story test cases and QA execution",
+      "availability": {
+        "kind": "capability",
+        "key": "projects.qa-checklists"
+      },
+      "implementation": [
+        "apps/api/src/modules/projects/api/qa-checklists.controller.ts",
+        "apps/api/src/modules/projects/api/qa-project-runs.controller.ts"
+      ],
+      "permissions": [
+        "apps/api/src/modules/projects/domain/qa-run-access.rules.ts"
+      ],
+      "prerequisites": [
+        "Project access; QA or admin owns test-case authoring and results"
+      ],
+      "evidence": [
+        "apps/api/src/modules/projects/api/qa-checklists.controller.spec.ts",
+        "apps/api/src/modules/projects/domain/qa-run-access.rules.spec.ts"
+      ]
+    },
+    {
+      "id": "projects.qa-runs",
+      "title": "Project QA runs, screenshot evidence, and sign-off",
+      "availability": {
+        "kind": "capability",
+        "key": "projects.qa-checklists"
+      },
+      "implementation": [
+        "apps/api/src/modules/projects/api/qa-project-runs.controller.ts",
+        "apps/api/src/modules/projects/api/qa-run-attachments.controller.ts"
+      ],
+      "permissions": [
+        "apps/api/src/modules/projects/domain/qa-run-access.rules.ts"
+      ],
+      "prerequisites": [
+        "Repository access and deployed UAT heads; verification and sign-off preconditions"
+      ],
+      "evidence": [
+        "apps/api/src/modules/projects/api/qa-runs.controller.spec.ts",
+        "apps/api/src/modules/projects/api/qa-run-attachments.controller.spec.ts"
+      ]
+    },
+    {
+      "id": "projects.po-acceptance",
+      "title": "PO acceptance and controlled merge to production",
+      "availability": {
+        "kind": "capability",
+        "key": "projects.release-governance"
+      },
+      "implementation": [
+        "apps/api/src/modules/projects/api/qa-runs.controller.ts"
+      ],
+      "permissions": [
+        "apps/api/src/modules/projects/domain/qa-run-access.rules.ts"
+      ],
+      "prerequisites": [
+        "Lead or admin; signed-off run, accepted items, and promotion gate"
+      ],
+      "evidence": [
+        "apps/api/src/modules/projects/api/qa-runs.controller.spec.ts",
+        "apps/api/src/modules/projects/domain/qa-run-access.rules.spec.ts"
+      ],
+      "origin": {
+        "repository": "https://github.com/Alpha-Explora/alphaci",
+        "commit": "3c9820c24ab41fd89e0e5c4d268f5ab3595c3db1"
+      }
+    },
+    {
+      "id": "projects.iterations",
+      "title": "Iteration delivery and carry-forward",
+      "availability": {
+        "kind": "capability",
+        "key": "projects.release-governance"
+      },
+      "implementation": [
+        "apps/api/src/modules/projects/api/project-iterations.controller.ts"
+      ],
+      "permissions": [
+        "apps/api/src/modules/projects/application/qa-checklists/qa-access.service.ts"
+      ],
+      "prerequisites": [
+        "Project manager; current iteration delivered before starting the next"
+      ],
+      "evidence": [
+        "apps/api/src/modules/projects/api/project-iterations.controller.spec.ts",
+        "apps/api/src/modules/projects/application/qa-runs/project-iteration-start.service.spec.ts"
+      ]
+    },
+    {
+      "id": "runtime.hosts",
+      "title": "Customer host inventory, enrollment, and assignment",
+      "availability": {
+        "kind": "capability",
+        "key": "runtime.managed-host-delivery"
+      },
+      "implementation": [
+        "apps/api/src/modules/runtime/api/onprem-hosts.controller.ts",
+        "apps/api/src/modules/runtime/api/onprem-enrollment.controller.ts",
+        "apps/web/src/app/(platform)/hosts/page.tsx"
+      ],
+      "permissions": [
+        "apps/api/src/modules/runtime/application/onprem/onprem-hosts.service.ts",
+        "apps/api/src/modules/runtime/api/onprem-enrollment.controller.ts"
+      ],
+      "prerequisites": [
+        "Workspace access for user APIs; short-lived enrollment code or machine credential for agent APIs; on-prem configuration"
+      ],
+      "evidence": [
+        "apps/api/src/modules/runtime/application/onprem/onprem-hosts.service.spec.ts",
+        "docs/runbooks/runbook-onprem-host-setup.md"
+      ]
+    },
+    {
+      "id": "runtime.signed-delivery",
+      "title": "Signed host release delivery, promotion, and rollback",
+      "availability": {
+        "kind": "capability",
+        "key": "runtime.managed-host-delivery"
+      },
+      "implementation": [
+        "apps/api/src/modules/runtime/api/environment-releases.controller.ts",
+        "apps/api/src/modules/runtime/api/onprem-agent.controller.ts",
+        "apps/api/src/modules/runtime/api/releases.controller.ts"
+      ],
+      "permissions": [
+        "apps/api/src/modules/runtime/domain/release-access.rules.ts",
+        "apps/api/src/modules/runtime/api/onprem-agent.controller.ts"
+      ],
+      "prerequisites": [
+        "Release signing, registry credentials, host readiness, and separate CI or machine authentication"
+      ],
+      "evidence": [
+        "apps/api/src/modules/runtime/application/release-registry.host-gating.spec.ts",
+        "apps/api/src/modules/runtime/domain/release-signature.spec.ts"
+      ],
+      "origin": {
+        "repository": "https://github.com/Alpha-Explora/alphaci",
+        "commit": "8f43299315b847af14aa4a993a3f33de88e3baeb"
+      }
+    },
+    {
+      "id": "platform.live-membership-notifications",
+      "title": "Live workspace membership notifications",
+      "availability": {
+        "kind": "capability",
+        "key": "platform.notifications"
+      },
+      "implementation": [
+        "apps/api/src/modules/platform-ops/notifications/api/notifications.controller.ts",
+        "apps/web/src/features/notifications/data/notifications-stream.ts"
+      ],
+      "permissions": [
+        "apps/api/src/modules/platform-ops/notifications/application/notifications.service.ts"
+      ],
+      "prerequisites": [
+        "Authenticated recipient; notifications enabled; stream with fetch fallback"
+      ],
+      "evidence": [
+        "apps/api/src/modules/platform-ops/notifications/application/notification-stream.service.spec.ts",
+        "docs/operations/workspace-member-notifications.md"
+      ]
+    },
+    {
+      "id": "platform.public-landing",
+      "title": "SaaS public landing pages",
+      "availability": {
+        "kind": "web-build",
+        "edition": "saas"
+      },
+      "implementation": [
+        "apps/web/src/app/page.tsx",
+        "apps/web/src/features/public-site/landing/views/landing-view.tsx"
+      ],
+      "permissions": [
+        "apps/web/src/shared/composition/build-profile.ts"
+      ],
+      "prerequisites": [
+        "SaaS web build; platform.public-site remains unimplemented as an API capability"
+      ],
+      "evidence": [
+        "apps/web/tests/unit/app/root-edition-gate.test.ts"
+      ]
+    },
+    {
+      "id": "runtime.selfhost-appliance",
+      "title": "Single-server AlphaCI appliance",
+      "availability": {
+        "kind": "deployment",
+        "mode": "selfhosted"
+      },
+      "implementation": [
+        "deploy/selfhost/compose.yaml",
+        "deploy/selfhost/alphaci-ctl"
+      ],
+      "permissions": [
+        "apps/api/src/kernel/config/deployment-mode.ts",
+        "docs/runbooks/runbook-selfhost-install.md"
+      ],
+      "prerequisites": [
+        "Customer-operated server, PostgreSQL, configured identity and signer; not an air-gap capability claim"
+      ],
+      "evidence": [
+        "apps/api/tests/unit/deploy/selfhost-compose.spec.ts",
+        "docs/runbooks/runbook-selfhost-install.md"
+      ],
+      "origin": {
+        "repository": "https://github.com/Alpha-Explora/alphaci",
+        "commit": "4f292c1449df8c09ecd18bcd7ebc53bc39abb95d"
+      }
+    },
+    {
+      "id": "runtime.client-policy",
+      "title": "Enterprise client-composition settings",
+      "availability": {
+        "kind": "capability",
+        "key": "runtime.client-composition"
+      },
+      "implementation": [
+        "apps/api/src/packs/enterprise/client-policy-source.ts",
+        "apps/web/src/features/settings/client-composition/views/enterprise-client-composition-settings-view.tsx"
+      ],
+      "permissions": [
+        "apps/api/src/packs/enterprise/client-policy.ts"
+      ],
+      "prerequisites": [
+        "Selected deployment client policy; deny-only narrowing, not per-tenant edition selection"
+      ],
+      "evidence": [
+        "apps/api/src/modules/identity-access/capabilities/api/capabilities.controller.client-composition.spec.ts"
+      ]
     }
   ]
 }

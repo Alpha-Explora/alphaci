@@ -126,9 +126,13 @@ Packs are customer-facing groupings and comparison tools. They do not automatica
 
 | Pack | What it means | Current status |
 |---|---|---|
-| SaaS | Shared hosted capabilities for general customers. | Lists the shared catalog. Checkout and runtime pack entitlement resolution are not implemented. Marketing-site behavior is not a catalog capability. |
+| SaaS | Shared hosted capabilities for general customers. | Lists the shared catalog. Checkout and runtime pack entitlement resolution are not implemented. SaaS landing UI exists behind a build-time gate, while the catalog's `platform.public-site` remains marked not implemented. |
 | EDU | Shared capabilities considered for education environments. | Lists the shared catalog. LMS/LTI, cohort policy, FERPA workflows, education identity provisioning, and runtime pack entitlement resolution are not implemented. |
 | Enterprise | Shared capabilities held to stricter access, security, operating, and evidence standards. | Lists the shared catalog under the Enterprise evidence bar. SSO/SCIM, GitHub Enterprise Server, managed secrets, air-gap packaging, data-location controls, customer-managed isolation, and runtime pack entitlement resolution are not implemented. |
+
+The catalog groups behavior rather than counting every built feature. Requirements, QA runs, PO acceptance, and iterations share the `projects.qa-checklists` capability across all three editions. On-prem host operations share `runtime.env-provisioning`. The generated [built feature inventory](../capabilities/feature-inventory.generated.md) names these behaviors and their implementation, authorization, prerequisites, and evidence references. It inherits capability membership and does not change eligibility.
+
+Internal operation is an organization-access and billing policy, not a fourth pack or an administrator role. The current EDU pack also does not establish integration of the separate historical education application's school workflows. Deployment, edition, and persona decisions are described in the [capability contract](../capabilities/capability-contract.md#editions-personas-and-deployment); contributors use the [feature assignment runbook](../runbooks/runbook-feature-assignment.md).
 
 ### Capabilities recorded as not implemented
 

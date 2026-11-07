@@ -1,3 +1,4 @@
+import { useCapabilities } from '@/features/capabilities/current';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
@@ -13,6 +14,10 @@ import {
   readyWire,
 } from '../qa-promotion-fixtures';
 import { qaRun, runItem } from '../qa-run-fixtures';
+
+jest.mock('@/features/capabilities/current', () => ({
+  useCapabilities: jest.fn(() => ({ releaseGovernanceEnabled: true })),
+}));
 
 jest.mock(
   '../../../../../src/features/checklists/data/qa-runs-repository',
@@ -92,6 +97,24 @@ function promotionHook(props: PromotionProps) {
 }
 
 describe('useQaPromotionViewModel — status', () => {
+  it('keeps readiness readable but cannot merge when governance is disabled', async () => {
+    jest.mocked(useCapabilities).mockReturnValue({
+      ...useCapabilities(),
+      releaseGovernanceEnabled: false,
+    });
+    repo.promotion.mockResolvedValue(readyWire());
+    const vm = promotionHook({ role: 'lead', watch: null });
+    await flush();
+    expect(vm.current().status).toBe('ready');
+    expect(vm.current().canMerge).toBe(false);
+    act(() => vm.current().openConfirm());
+    await act(async () => vm.current().confirmMerge());
+    expect(repo.mergePromotion).not.toHaveBeenCalled();
+    jest.mocked(useCapabilities).mockReturnValue({
+      ...useCapabilities(),
+      releaseGovernanceEnabled: true,
+    });
+  });
   it('loads and normalises the status; a lead the server allows is offered a disabled button with the reason', async () => {
     repo.promotion.mockResolvedValue(promotionWire());
     const vm = promotionHook({ role: 'lead', watch: null });

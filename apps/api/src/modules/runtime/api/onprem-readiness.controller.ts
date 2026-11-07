@@ -14,7 +14,7 @@ import { RequiresCapability } from '#kernel/composition/requires-capability.deco
 import { OnpremReadinessService } from '../application/onprem/onprem-readiness.service';
 
 @Controller('projects/:projectId/environments/:environmentId')
-@RequiresCapability('runtime.env-provisioning')
+@RequiresCapability('runtime.managed-host-delivery')
 @UseGuards(SessionAuthGuard, CapabilityGuard, SubscriptionGuard)
 export class OnpremReadinessController {
   constructor(private readonly readiness: OnpremReadinessService) {}

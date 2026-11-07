@@ -25,6 +25,7 @@ const REGISTRY_KEYS = [
   'billing.usage-quotas',
   'billing.checkout',
   'runtime.env-provisioning',
+  'runtime.managed-host-delivery',
   'runtime.gcp-deployments',
   'runtime.deployment-history',
   'runtime.preview-deployments',
@@ -39,6 +40,7 @@ const REGISTRY_KEYS = [
   'projects.workflow-update-pr',
   'projects.target-management',
   'projects.qa-checklists',
+  'projects.release-governance',
   'pipelines.ci-run-tracking',
   'pipelines.github-enterprise-server',
 ] as const;
@@ -54,6 +56,7 @@ const SAAS_KEYS = [
   'billing.usage-quotas',
   'billing.checkout',
   'runtime.env-provisioning',
+  'runtime.managed-host-delivery',
   'runtime.gcp-deployments',
   'runtime.deployment-history',
   'runtime.preview-deployments',
@@ -64,6 +67,7 @@ const SAAS_KEYS = [
   'projects.workflow-update-pr',
   'projects.target-management',
   'projects.qa-checklists',
+  'projects.release-governance',
   'pipelines.ci-run-tracking',
 ] as const;
 
@@ -80,6 +84,7 @@ const EDU_KEYS = [
   'billing.subscription-gate',
   'billing.usage-quotas',
   'runtime.env-provisioning',
+  'runtime.managed-host-delivery',
   'runtime.gcp-deployments',
   'runtime.deployment-history',
   'runtime.preview-deployments',
@@ -90,6 +95,7 @@ const EDU_KEYS = [
   'projects.workflow-update-pr',
   'projects.target-management',
   'projects.qa-checklists',
+  'projects.release-governance',
   'pipelines.ci-run-tracking',
 ] as const;
 
@@ -104,6 +110,7 @@ const ENTERPRISE_KEYS = [
   'billing.subscription-gate',
   'billing.usage-quotas',
   'runtime.env-provisioning',
+  'runtime.managed-host-delivery',
   'runtime.gcp-deployments',
   'runtime.deployment-history',
   'runtime.preview-deployments',
@@ -118,6 +125,7 @@ const ENTERPRISE_KEYS = [
   'projects.workflow-update-pr',
   'projects.target-management',
   'projects.qa-checklists',
+  'projects.release-governance',
   'pipelines.ci-run-tracking',
   'pipelines.github-enterprise-server',
 ] as const;
@@ -130,6 +138,7 @@ const EXECUTABLE_KEYS = [
   'billing.subscription-gate',
   'billing.usage-quotas',
   'runtime.env-provisioning',
+  'runtime.managed-host-delivery',
   'runtime.gcp-deployments',
   'runtime.deployment-history',
   'runtime.preview-deployments',
@@ -140,13 +149,14 @@ const EXECUTABLE_KEYS = [
   'projects.workflow-update-pr',
   'projects.target-management',
   'projects.qa-checklists',
+  'projects.release-governance',
   'pipelines.ci-run-tracking',
 ] as const;
 
 const ENTERPRISE_EXECUTABLE_KEYS = [
-  ...EXECUTABLE_KEYS.slice(0, 12),
+  ...EXECUTABLE_KEYS.slice(0, 13),
   'runtime.client-composition',
-  ...EXECUTABLE_KEYS.slice(12),
+  ...EXECUTABLE_KEYS.slice(13),
 ] as const;
 
 const allFlagsEnabled = {
@@ -161,6 +171,8 @@ const allFlagsEnabled = {
   workflowUpdatePr: { enabled: true },
   projectTargetManagement: { enabled: true },
   qaChecklists: { enabled: true },
+  releaseGovernance: { enabled: true },
+  managedHostDelivery: { enabled: true },
   ciRunTracking: { enabled: true, liveGithubEnabled: true },
   deploymentHistory: { enabled: true, liveProvidersEnabled: true },
   previewDeployments: { enabled: true },
@@ -223,8 +235,8 @@ const record = (
 });
 
 describe('declared composition catalog', () => {
-  it('keeps the 32 registry records in their existing order', () => {
-    expect(CAPABILITIES).toHaveLength(32);
+  it('keeps the 34 registry records in their declared order', () => {
+    expect(CAPABILITIES).toHaveLength(34);
     expect(CAPABILITIES.map(({ key }) => key)).toEqual(REGISTRY_KEYS);
   });
 

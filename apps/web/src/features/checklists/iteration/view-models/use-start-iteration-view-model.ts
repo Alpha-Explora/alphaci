@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useCapabilities } from '@/features/capabilities/current';
 
 import type { AppRole } from '@/shared/api/contracts';
 
@@ -87,7 +88,11 @@ export function useStartIterationViewModel(options: {
   const { deliveryProjectId, current, appRole, onStarted } = options;
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const step = iterationNextStep(current, appRole);
+  const { releaseGovernanceEnabled } = useCapabilities();
+  const step = iterationNextStep(
+    current,
+    releaseGovernanceEnabled ? appRole : null,
+  );
   const view = dialogView(step, dialog ?? CLOSED);
 
   function update(change: (state: DialogState) => DialogState) {

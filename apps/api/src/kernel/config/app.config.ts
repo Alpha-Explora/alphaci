@@ -60,6 +60,8 @@ function featureFlagConfig(
   | 'workflowUpdatePr'
   | 'projectTargetManagement'
   | 'qaChecklists'
+  | 'releaseGovernance'
+  | 'managedHostDelivery'
   | 'ciRunTracking'
   | 'deploymentHistory'
   | 'previewDeployments'
@@ -92,6 +94,12 @@ function featureFlagConfig(
     // just sees empty checklist lists, not a hidden feature.
     qaChecklists: {
       enabled: env['QA_CHECKLISTS_ENABLED'] !== 'false',
+    },
+    releaseGovernance: {
+      enabled: env['RELEASE_GOVERNANCE_ENABLED'] !== 'false',
+    },
+    managedHostDelivery: {
+      enabled: env['MANAGED_HOST_DELIVERY_ENABLED'] !== 'false',
     },
     ciRunTracking: {
       enabled: env['CI_RUN_TRACKING_ENABLED'] === 'true',
@@ -266,8 +274,7 @@ function directoryConfig(
   };
 }
 
-export const appConfig = registerAs('app', (): AppConfig => {
-  const env = process.env;
+export function buildAppConfig(env: NodeJS.ProcessEnv): AppConfig {
   const github = githubConfig(env);
   const deploymentMode = parseDeploymentMode(env);
 
@@ -292,4 +299,8 @@ export const appConfig = registerAs('app', (): AppConfig => {
     ),
     hierarchy: hierarchyConfig(env),
   };
-});
+}
+
+export const appConfig = registerAs('app', (): AppConfig =>
+  buildAppConfig(process.env),
+);

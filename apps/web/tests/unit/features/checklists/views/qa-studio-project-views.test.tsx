@@ -16,6 +16,10 @@ import type {
 import { checklist } from '../checklist-fixtures';
 import { apiErrorWith, promotionWire } from '../qa-promotion-fixtures';
 
+jest.mock('@/features/capabilities/current', () => ({
+  useCapabilities: jest.fn(() => ({ releaseGovernanceEnabled: true })),
+}));
+
 jest.mock(
   '../../../../../src/features/checklists/data/checklists-repository',
   () => ({

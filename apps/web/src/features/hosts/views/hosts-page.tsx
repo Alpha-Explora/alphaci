@@ -30,9 +30,9 @@ function WorkspaceHosts({
   workspaceId: string;
   canManage: boolean;
 }) {
-  const { envProvisioningEnabled, status: capabilityStatus } =
+  const { managedHostDeliveryEnabled, status: capabilityStatus } =
     useCapabilities();
-  const availability = useHostAvailability(envProvisioningEnabled);
+  const availability = useHostAvailability(managedHostDeliveryEnabled);
   const vm = useHostsViewModel(
     workspaceId,
     canManage,

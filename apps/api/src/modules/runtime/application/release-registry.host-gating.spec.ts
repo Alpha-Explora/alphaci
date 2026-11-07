@@ -63,6 +63,7 @@ function registry(bindings: unknown[], role: 'production' | 'non_production') {
     {} as never,
     configService as never,
     {} as never,
+    { deployment: () => new Set(['runtime.managed-host-delivery']) } as never,
     undefined,
     undefined,
     machineAssignments as never,

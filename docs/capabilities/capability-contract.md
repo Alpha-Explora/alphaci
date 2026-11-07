@@ -29,6 +29,49 @@ sources:
 
 A capability is a named product behavior owned by one API bounded context. Capability keys are stable application identifiers; the application-owned registry and manifests describe the runtime composition, but do not add endpoints, flags, or persistence on their own. The web app consumes capabilities; it does not mint keys.
 
+## Editions, personas, and deployment
+
+These controls answer different questions:
+
+| Control | Current values or source | Question |
+|---|---|---|
+| Edition | `saas`, `edu`, `enterprise` | Which capabilities belong to this product composition? |
+| Build profile | `hosted`, `enterprise` | Which edition implementations may the artifact contain? |
+| Deployment mode | `saas`, `selfhosted` | How does AlphaCI run and select its storage rules? |
+| Client policy | Enterprise deny-only deployment policy | Which included capabilities does this client disable? |
+| Configuration and provider readiness | AppConfig flags and provider configuration | Can the deployment currently perform the behavior? |
+| Persona and resource access | `member`, `qa`, `lead`, `admin`, plus workspace and repository scope | May this user perform this action on this resource? |
+| Internal organization policy | `github.internalOrg` and the user's internal status | Who may sign in, and which billing exceptions apply? |
+
+`internal` is not a fourth edition. Organization membership can restrict sign-in and mark a user internal. Internal status bypasses subscription checks, and usage quota checks exempt users with the stored internal flag. In self-hosted mode, `github.internalOrg` defaults to the enforced customer organization when no separate internal organization is configured. That status neither grants an administrator role nor adds capabilities to the edition.
+
+These rules live in `apps/api/src/kernel/config/app.config-slices.ts`, the Identity auth membership gate, and the Billing subscription and usage services. Persona action rules live in `apps/api/src/kernel/rules/persona-access.rules.ts` and `apps/api/src/modules/projects/domain/qa-run-access.rules.ts`; see the [persona workflow](../design/persona-workflow.md).
+
+## Capabilities and individual features
+
+One capability can cover several features, actions, and screens. The generated matrix counts capability records, not independently entitled features or screens. A feature's repository of origin does not establish its current edition membership.
+
+Current examples show the distinction:
+
+| Built behavior | Current composition decision | Inventory limit |
+|---|---|---|
+| Requirements, test cases, Project QA runs and sign-off | Shared `projects.qa-checklists`, plus role, resource, and workflow checks | Disabling release governance does not remove shared QA or relax release safety. |
+| PO acceptance, iteration start and governed merge | Shared `projects.release-governance`, requiring `projects.qa-checklists` | Independent control; currently included in all three editions. Existing persona and release prerequisites still apply. |
+| Host inventory, environment assignment, readiness, enrollment and agent delivery | Shared `runtime.managed-host-delivery`, requiring `runtime.env-provisioning` | User and machine HTTP paths are gated; explicit host project/target creation and host-delivered release registration/promotion are checked before external or persistence side effects. Provider discovery marks managed hosts unavailable when excluded, and host controls stop polling. Ordinary provider hosting stays under provisioning. |
+| Client-composition settings | Enterprise `runtime.client-composition` | The policy narrows one deployment; it does not select an edition for each tenant. |
+| Public landing pages | Web build-time SaaS edition gate | Landing UI exists even though the API catalog's `platform.public-site` record remains `not-implemented`. |
+| Single-server appliance | `selfhosted` deployment mode | Appliance support does not establish the separate air-gap-packaging or customer-isolation capability claims. |
+
+The catalog remains authoritative for composition. The [built feature inventory](feature-inventory.generated.md) describes reconciled behavior without creating new entitlements or claiming an exhaustive list of application behavior. Use the [feature assignment runbook](../runbooks/runbook-feature-assignment.md) to add or change a composition boundary.
+
+### Descriptive feature inventory
+
+The authoring document's optional top-level `features` array records individual built behaviors. It stays outside the runtime registry and public catalog records; the package's source digest still covers the complete authoring document. The API architecture-map generator produces the feature inventory, and its existing `--check` path rejects stale output.
+
+Each entry has an `id`, `title`, `availability`, `implementation`, `permissions`, `prerequisites`, and `evidence`, with optional historical `origin`. Availability is one of `{kind: capability, key}`, `{kind: deployment, mode: selfhosted}`, or `{kind: web-build, edition}`. Capability entries inherit the referenced capability's current editions, maturity, and configuration. Deployment contracts and web build gates are displayed separately.
+
+Feature identifiers must be unique. Implementation, permission, and evidence references must name existing repository files. Origin, when supplied, records a GitHub repository and full commit SHA; validation checks its shape, not the historical commit's meaning or reachability. Entries cannot contain edition grants, role allow-lists, or other unsupported fields. Permission references point to code rather than duplicating its allow-lists. File presence and recorded evidence do not prove runtime readiness.
+
 ## Record shape
 
 Each registry record contains:
@@ -44,7 +87,7 @@ Each registry record contains:
 | `requires` | Capability keys this capability depends on. Edges must resolve and stay acyclic. |
 | `surface` | How the web app presents the capability; see [Web surfaces](#web-surfaces). |
 
-Edition applicability is owned by `apps/api/src/kernel/composition/manifests.ts`, not by individual capability records. The [capability matrix](/capabilities/capability-matrix.generated.md) is derived from the registry at `apps/api/src/kernel/composition/capability-registry.ts` and those manifests. The live `/api/v1/capabilities` response is a compatibility projection of the resolved deployment set: its existing nested fields remain available, with top-level `edition` and `capabilityKeys` identifying the active composition.
+Authors set `editions` on records in `apps/api/src/kernel/composition/catalog.source.json`. The generated `manifests.ts` owns runtime edition applicability; the generated registry does not maintain a second edition list. The [capability matrix](/capabilities/capability-matrix.generated.md) is derived from that registry and those manifests. The live `/api/v1/capabilities` response is a compatibility projection of the resolved deployment set: its existing nested fields remain available, with top-level `edition` and `capabilityKeys` identifying the active composition.
 
 ### Web surfaces
 
@@ -105,7 +148,9 @@ build profile -> edition manifest -> client policy -> deployment configuration -
 
 Each layer can narrow the set. No layer can enable a capability that is not present in the preceding layer.
 
-The tenant override layer has no source. The manifest source accepts the request subject and ignores it, so every tenant of one deployment resolves the same set.
+The tenant override layer has no tenant-backed source. `StaticCapabilityManifestSource.for(subject)` forwards the subject to the client-policy source, but the current policy sources return either no policy or the same single-client policy for every subject. Every tenant of one deployment therefore resolves the same composition. `/api/v1/capabilities` reads the deployment set; it is not a per-tenant entitlement endpoint.
+
+Use one edition per deployment, with matching API startup and web build presets. Separate hosted SaaS and EDU deployments can share code while retaining explicit composition. Mixed-edition tenants in one API require a subject-bound source, advertisement and worker changes; that behavior is not implemented.
 
 The web app may only hide surfaces the API already disabled or left unimplemented. For `runtime.client-composition`, the settings surface additionally requires the API-owned `clientComposition.enabled` projection and renders only the active deny-only client metadata.
 
@@ -117,8 +162,18 @@ The web app may only hide surfaces the API already disabled or left unimplemente
 | `ALPHACI_EDITION` | `saas`, `edu`, `enterprise` | `enterprise` |
 | `ALPHACI_CLIENT` | a client ID registered in `apps/api/src/packs/enterprise/clients/index.ts` | no client policy |
 | `ALPHACI_CLIENT_CONFIG` | path to a client policy document | no client policy |
+| `RELEASE_GOVERNANCE_ENABLED` | `false` disables governed write actions | enabled |
+| `MANAGED_HOST_DELIVERY_ENABLED` | `false` disables managed-host composition | enabled |
 
 An invalid value stops the API boot. The edition is read from the environment at startup in every profile. The boot also fails when the edition manifest names a capability outside the build profile. In `apps/api`, `npm run start:saas`, `start:edu`, `start:enterprise`, and `start:enterprise-client` set the profile, edition, and client together through `scripts/run-edition.mjs`. The web app reads `ALPHACI_BUILD_PROFILE` and `ALPHACI_EDITION` at build time.
+
+The two independent controls default on unless the value is exactly `false`, preserving existing SaaS, EDU and Enterprise access. Their required base capabilities and operational prerequisites still apply. Managed hosts additionally require `ONPREM_RELEASES_ENABLED=true`, signing, credentials and provider readiness. Disabling composition does not revoke an already running external workload or cancel an operation that was accepted earlier. Governance denial rejects the governed operation; it never bypasses QA, PO acceptance, resource access or merge safety checks. During an API-first or web-first rolling upgrade, the web uses the older base projection only when the new field is absent; an explicit new denial wins.
+
+### Operator diagnostics
+
+`alphaci-ctl composition` prints local deployment composition as JSON using the same configuration factory, build profile, manifest, deny-only client source and resolution algorithm as enforcement. It opens no database or provider connection. Each record is available or reports the first exclusion stage: build profile, edition, client policy, unimplemented maturity, configuration, or missing dependency. Flag and dependency names are printed; secret values are not.
+
+This command does not evaluate a user's subscription, persona, resource access, provider readiness or workflow prerequisites; its `notEvaluated` field lists those limits. Public HTTP capability denials remain 404. Use the [feature assignment runbook](../runbooks/runbook-feature-assignment.md#diagnose-a-deployment) to investigate a denial.
 
 ### Resolution rules
 
@@ -157,6 +212,8 @@ Use `npm run ledger:record` in `apps/api` to append an entry; it computes the ha
 `apps/api/src/kernel/composition/catalog.source.json` is the authoring source. One record carries the capability, its pack membership, configuration flags, and its web surface, including any unique implementation symbols that profile checks must exclude. `capability-registry.ts`, `manifests.ts`, and the package are generated from it and must not be edited by hand; `npm run generate:composition` rewrites the registry/manifests and `npm run check:composition-source` rejects drift.
 
 `npm run capability:new` in `apps/api` adds a capability in one command. It writes the record, regenerates the registry, the manifests, and the package, appends the ledger entry, then refreshes the pack profiles and generated maps. A configuration flag named by a record is code and still has to exist in `AppConfig`. See [ADR-0010](/architecture/decisions/adr-0010-single-authoring-source-for-composition.md).
+
+The command defaults to `not-implemented` and creates metadata, not application behavior. Unknown, duplicate, or empty CLI edition selections are rejected before writes; source validation also rejects empty memberships. `--dry-run` validates the complete proposed source and prints `{dryRun: true, record}` without writing files or running generators. Use only `saas`, `edu`, and `enterprise`; `internal` is not an edition. The [feature assignment runbook](../runbooks/runbook-feature-assignment.md) covers new keys, membership changes, persona checks, and verification.
 
 ## Verification
 

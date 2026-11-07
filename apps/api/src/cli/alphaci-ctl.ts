@@ -30,6 +30,7 @@ import { runDoctor, formatResults, type DoctorProbes } from './doctor';
 import { releaseKeyId } from './release-key';
 import { InitError, runInit, SECRET_FILES } from './selfhost-init';
 import { createHostEnrollment, HostEnrollmentError } from './host-enrollment';
+import { compositionReport } from './composition';
 
 export interface CliIo {
   readonly out: (line: string) => void;
@@ -65,6 +66,17 @@ export async function main(
       return runAdminGrant(command.githubLogin, env, io);
     case 'doctor':
       return runDoctorCommand(env, io);
+    case 'composition': {
+      const loaded = loadSecretFiles(env, io);
+      if (loaded !== 0) return loaded;
+      try {
+        io.out(JSON.stringify(await compositionReport(env), null, 2));
+        return 0;
+      } catch (error) {
+        io.err('Composition configuration is invalid: ' + describe(error));
+        return 1;
+      }
+    }
     case 'host-enrollment':
       return runHostEnrollment(command, env, io);
   }
@@ -169,6 +181,11 @@ async function runHostEnrollment(
 ): Promise<number> {
   const loaded = loadSecretFiles(env, io);
   if (loaded !== 0) return loaded;
+  const composition = await compositionReport(env);
+  if (!composition.capabilityKeys.includes('runtime.managed-host-delivery')) {
+    io.err('Managed host delivery is not available in this deployment.');
+    return 1;
+  }
   const url = env['DATABASE_URL']?.trim() ?? '';
   if (url === '') {
     io.err('DATABASE_URL (or DATABASE_URL_FILE) is not set.');

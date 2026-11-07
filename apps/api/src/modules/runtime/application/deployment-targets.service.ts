@@ -257,6 +257,13 @@ export class DeploymentTargetsService
     // the managed-or-own-account choice, needs no connection, and is only a
     // record here. The host pulls its environment's releases.
     const hostDelivered = this.deliveredByHost(dto.provider);
+    if (
+      hostDelivered &&
+      !this.capabilityResolver
+        ?.deployment()
+        .has('runtime.managed-host-delivery')
+    )
+      throw new NotFoundException('Managed host delivery is not available');
     if (hostDelivered) {
       if (!environment) {
         throw new BadRequestException(

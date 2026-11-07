@@ -24,6 +24,7 @@ Entries are newest first. A ledger entry is required whenever a capability key, 
 
 | Date | Change | Keys | Summary | Reference |
 |---|---|---|---|---|
+| 2026-11-05 | added | `runtime.managed-host-delivery`, `projects.release-governance` | Separate managed-host and governed release controls; preserve shared edition access and default enablement. | docs/capabilities/capability-contract.md |
 | 2026-09-25 | added | `projects.qa-checklists` | Added the projects.qa-checklists capability for QA checklist definitions, items, and per-project sharing (Slice 2). | CHANGELOG.md |
 | 2026-09-15 | added | `platform.public-site` | Declared the SaaS-only public marketing site; EDU and Enterprise deployments go straight to login. | CHANGELOG.md |
 | 2026-09-15 | added | `runtime.client-composition` | Enterprise client composition is now a real pack-owned deny-only surface with backend-owned frontend surface metadata | adr-0009-client-capability-policies.md |
@@ -31,7 +32,7 @@ Entries are newest first. A ledger entry is required whenever a capability key, 
 
 ## Current catalog
 
-- Capabilities: **32**
-- Composition hash: `sha256:c2766dda40a6ab8af9ca60faea7a78a99422330f4f155609b11ed6f6ef329f06`
+- Capabilities: **34**
+- Composition hash: `sha256:756460b069cd2012f29c46701a0dff95758d6417a1f71bac6d11e15eea1c3969`
 
 The hash covers every capability key, maturity, dependency edge, configuration flag, and edition membership in registry order. `npm run check:capability-ledger` recomputes it and rejects a catalog that moved without a ledger entry. `npm run ledger:record` appends an entry with the correct hash.

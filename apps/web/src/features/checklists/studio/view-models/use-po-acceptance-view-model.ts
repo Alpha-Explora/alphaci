@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useCapabilities } from '@/features/capabilities/current';
 
 import { projectQaRunsRepository } from '../../data/project-qa-runs-repository';
 import type {
@@ -53,8 +54,16 @@ export function usePoAcceptanceViewModel(options: {
   onReload: () => void;
   onChanged?: () => void;
 }): PoAcceptanceViewModel {
-  const { deliveryProjectId, run, canAccept, onRun, onReload, onChanged } =
-    options;
+  const {
+    deliveryProjectId,
+    run,
+    canAccept: permittedByRun,
+    onRun,
+    onReload,
+    onChanged,
+  } = options;
+  const { releaseGovernanceEnabled } = useCapabilities();
+  const canAccept = permittedByRun && releaseGovernanceEnabled;
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
   const [failing, setFailing] = useState<PoFailDraft | null>(null);
   const [attempted, setAttempted] = useState(false);

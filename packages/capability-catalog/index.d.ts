@@ -19,6 +19,7 @@ export type CapabilityKey =
   | "billing.usage-quotas"
   | "billing.checkout"
   | "runtime.env-provisioning"
+  | "runtime.managed-host-delivery"
   | "runtime.gcp-deployments"
   | "runtime.deployment-history"
   | "runtime.preview-deployments"
@@ -33,6 +34,7 @@ export type CapabilityKey =
   | "projects.workflow-update-pr"
   | "projects.target-management"
   | "projects.qa-checklists"
+  | "projects.release-governance"
   | "pipelines.ci-run-tracking"
   | "pipelines.github-enterprise-server";
 

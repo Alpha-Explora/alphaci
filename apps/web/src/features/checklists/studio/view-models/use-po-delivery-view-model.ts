@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useCapabilities } from '@/features/capabilities/current';
 
 import type { AppRole } from '@/shared/api/contracts';
 
@@ -106,7 +107,11 @@ export function usePoDeliveryViewModel(options: {
   const [outcome, setOutcome] = useState<MergeAllOutcome | null>(null);
   const current = iteration.current;
   const pending = current ? pendingRepositories(current) : [];
-  const offer = canOfferMergeAll(current, appRole) && pending.length > 0;
+  const { releaseGovernanceEnabled } = useCapabilities();
+  const offer =
+    releaseGovernanceEnabled &&
+    canOfferMergeAll(current, appRole) &&
+    pending.length > 0;
   // A start re-reads the iteration and the QA run itself (the Project's
   // epoch); the promotion status is this studio's own, so it is asked here.
   const start = useStartIterationViewModel({

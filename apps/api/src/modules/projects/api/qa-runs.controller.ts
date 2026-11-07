@@ -300,6 +300,7 @@ export class ProjectQaPromotionController {
   }
 
   @Post('merge')
+  @RequiresCapability('projects.release-governance')
   @HttpCode(200)
   merge(@Req() req: Request, @Param('projectId') projectId: string) {
     return this.qaPromotionService.merge(projectId, actorContext(req));
@@ -319,6 +320,7 @@ export class DeliveryProjectPromotionController {
   constructor(private readonly qaPromotionService: QaPromotionService) {}
 
   @Post('merge-all')
+  @RequiresCapability('projects.release-governance')
   @HttpCode(200)
   mergeAll(
     @Req() req: Request,

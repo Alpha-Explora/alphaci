@@ -65,3 +65,31 @@ describe('capabilityAvailability', () => {
     expect(capabilityAvailability('error', false)).toBe('disabled');
   });
 });
+
+describe('independent governance and managed-host controls', () => {
+  it('preserves access with an older API and respects explicit new denials', () => {
+    const legacy = {
+      ...disabledCapabilities(),
+      qaChecklists: { enabled: true },
+      envProvisioning: { enabled: true, modes: ['byo'] },
+    } as CapabilitiesResponse;
+    delete legacy.releaseGovernance;
+    delete legacy.managedHostDelivery;
+    expect(capabilityViewFlags(legacy)).toMatchObject({
+      releaseGovernanceEnabled: true,
+      managedHostDeliveryEnabled: true,
+    });
+    expect(
+      capabilityViewFlags({
+        ...legacy,
+        releaseGovernance: { enabled: false },
+        managedHostDelivery: { enabled: false },
+      }),
+    ).toMatchObject({
+      releaseGovernanceEnabled: false,
+      managedHostDeliveryEnabled: false,
+      qaChecklistsEnabled: true,
+      envProvisioningEnabled: true,
+    });
+  });
+});

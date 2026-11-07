@@ -10,8 +10,10 @@ describe('Host assignment after project creation', () => {
   const assignProvisionedEnvironment = jest.fn();
   const ensureAutomaticAssignment = jest.fn();
   const publicAddress = jest.fn();
+  const assertAvailable = jest.fn();
   let create: jest.SpyInstance;
   beforeEach(() => {
+    assertAvailable.mockReset();
     jest
       .spyOn(ProjectProvisioningSupport.prototype, 'assertWithinQuota')
       .mockResolvedValue(undefined);
@@ -103,12 +105,26 @@ describe('Host assignment after project creation', () => {
       undefined,
       {
         assignProvisionedEnvironment,
+        assertAvailable,
         ensureAutomaticAssignment,
         publicAddress,
         environmentAddress: jest.fn(),
       },
     );
   }
+  it('rejects an explicit host request before quota or repository side effects when composition denies hosts', async () => {
+    assertAvailable.mockImplementation(() => {
+      throw new Error('Managed host delivery unavailable');
+    });
+    await expect(
+      service().createProject('user', 'login', 'token', dto),
+    ).rejects.toThrow('Managed host delivery unavailable');
+    expect(
+      ProjectProvisioningSupport.prototype.assertWithinQuota,
+    ).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+    expect(assignProvisionedEnvironment).not.toHaveBeenCalled();
+  });
   it('returns the created project with a retryable binding failure, without creating another repository', async () => {
     const result = await service().createProject('user', 'login', 'token', dto);
     expect(result.id).toBe('existing-project');

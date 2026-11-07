@@ -5,6 +5,8 @@ import type {
 import { PUBLIC_SITE_ENABLED } from '@/shared/composition/build-profile';
 
 export type CapabilityViewFlags = {
+  releaseGovernanceEnabled: boolean;
+  managedHostDeliveryEnabled: boolean;
   envProvisioningEnabled: boolean;
   clientCompositionEnabled: boolean;
   deploymentOwnershipMode: EnvOwnershipMode;
@@ -28,6 +30,8 @@ export type CapabilityViewFlags = {
 };
 
 const DISABLED_CAPABILITY_FLAGS: CapabilityViewFlags = {
+  releaseGovernanceEnabled: false,
+  managedHostDeliveryEnabled: false,
   envProvisioningEnabled: false,
   clientCompositionEnabled: false,
   deploymentOwnershipMode: 'flowci_managed',
@@ -75,6 +79,12 @@ export function capabilityViewFlags(
   const capabilityKeys = capabilities.capabilityKeys ?? [];
   return {
     envProvisioningEnabled: optionalEnabled(capabilities.envProvisioning),
+    releaseGovernanceEnabled: optionalEnabled(
+      capabilities.releaseGovernance ?? capabilities.qaChecklists,
+    ),
+    managedHostDeliveryEnabled: optionalEnabled(
+      capabilities.managedHostDelivery ?? capabilities.envProvisioning,
+    ),
     clientCompositionEnabled:
       capabilityKeys.includes('runtime.client-composition') &&
       capabilities.clientComposition?.enabled === true,

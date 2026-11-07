@@ -1,6 +1,7 @@
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 
+import { StubDeploymentCapabilitiesModule } from '#kernel/composition/__fixtures__/stub-deployment-capabilities.module';
 import { RuntimeCoreModule } from '../../../core/runtime-core.module';
 import { DeploymentProviderRegistry } from '../../../core/deployment-provider.registry';
 import { WORKFLOW_FRAGMENTS } from '../../../core/workflow-fragment.contract';
@@ -23,6 +24,7 @@ describe('LegacyDeploymentProvidersModule', () => {
             }),
           ],
         }),
+        StubDeploymentCapabilitiesModule,
         RuntimeCoreModule,
         LegacyDeploymentProvidersModule,
       ],

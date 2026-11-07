@@ -118,7 +118,13 @@ describe('post-consolidation public contract snapshots', () => {
     registry.register(providerFixture('vercel'));
 
     expect(
-      new DeploymentProvidersController(registry).list(),
+      new DeploymentProvidersController(
+        {
+          deployment: () => new Set(['runtime.managed-host-delivery']),
+          for: () => new Set(['runtime.managed-host-delivery']),
+        },
+        registry,
+      ).list(),
     ).toMatchSnapshot();
   });
 });

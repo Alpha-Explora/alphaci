@@ -51,15 +51,6 @@ const HTTP_DECORATORS: Readonly<Record<string, HttpMethod>> = {
 
 const CAPABILITY_ROUTE_BASELINE: Readonly<Record<string, BaselineController>> =
   {
-    'src/modules/runtime/api/onprem-enrollment.controller.ts': {
-      reason:
-        'One-time enrollment code and revocable machine credential authentication, gated by on-prem configuration in service.',
-      routes: [
-        { handler: 'enroll', method: 'POST' },
-        { handler: 'heartbeat', method: 'POST' },
-        { handler: 'installer', method: 'GET' },
-      ],
-    },
     'src/app.controller.ts': {
       reason: 'always-on core surface',
       routes: [{ handler: 'getServiceInfo', method: 'GET' }],
@@ -254,15 +245,6 @@ const CAPABILITY_ROUTE_BASELINE: Readonly<Record<string, BaselineController>> =
         { handler: 'attachManifest', method: 'PUT' },
         { handler: 'reportDeployment', method: 'POST' },
         { handler: 'reportPromotion', method: 'POST' },
-      ],
-    },
-    'src/modules/runtime/api/onprem-agent.controller.ts': {
-      // An on-prem host polling with its environment-scoped host token: no
-      // signed-in subject, and gated by ONPREM_RELEASES_ENABLED instead.
-      reason: 'on-prem host agent surface',
-      routes: [
-        { handler: 'assignments', method: 'GET' },
-        { handler: 'reportStatus', method: 'POST' },
       ],
     },
     'src/modules/pipelines/github/api/github-webhook.controller.ts': {

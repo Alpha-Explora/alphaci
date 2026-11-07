@@ -30,7 +30,7 @@ class UnassignDto {
   @IsUUID() expectedAssignmentId!: string;
 }
 @Controller('projects/:projectId/environments/:environmentId/host-assignment')
-@RequiresCapability('runtime.env-provisioning')
+@RequiresCapability('runtime.managed-host-delivery')
 @UseGuards(SessionAuthGuard, CapabilityGuard, SubscriptionGuard)
 export class OnpremAssignmentsController {
   constructor(private readonly assignments: OnpremAssignmentsService) {}

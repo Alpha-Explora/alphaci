@@ -48,6 +48,7 @@ export class DeliveryProjectIterationsController {
    * ITERATION_CARRY_INVALID when items are named to carry over.
    */
   @Post()
+  @RequiresCapability('projects.release-governance')
   start(
     @Req() req: Request,
     @Param('deliveryProjectId') deliveryProjectId: string,

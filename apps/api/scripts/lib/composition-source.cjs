@@ -16,6 +16,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { validateFeatureInventory } = require('./feature-inventory.cjs');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const COMPOSITION_DIR = path.join(ROOT, 'src', 'kernel', 'composition');
@@ -97,6 +98,8 @@ function validateSource(source) {
     }
     if (!isStringArray(record.editions) || record.editions.some((edition) => !EDITIONS.includes(edition))) {
       errors.push(at + ': editions must be drawn from ' + EDITIONS.join(', '));
+    } else if (record.editions.length === 0) {
+      errors.push(at + ': at least one edition is required');
     } else {
       const canonical = EDITIONS.filter((edition) => record.editions.includes(edition));
       if (canonical.join(',') !== record.editions.join(',')) {
@@ -130,6 +133,7 @@ function validateSource(source) {
   }
 
   errors.push(...cycleErrors(byKey));
+  errors.push(...validateFeatureInventory(source.features, source.capabilities, EDITIONS));
   return errors;
 }
 

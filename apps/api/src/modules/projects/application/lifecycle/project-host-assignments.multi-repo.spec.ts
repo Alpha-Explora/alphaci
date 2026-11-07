@@ -142,6 +142,7 @@ describe('Host assignment after creating a two-repository project', () => {
       undefined,
       {
         assignProvisionedEnvironment,
+        assertAvailable: jest.fn(),
         ensureAutomaticAssignment,
         publicAddress: jest.fn(),
         environmentAddress: jest.fn(),
@@ -329,7 +330,11 @@ describe('Host assignment after creating a two-repository project', () => {
       {},
       {},
       ...Array<undefined>(11).fill(undefined),
-      { assignProvisionedEnvironment, ensureAutomaticAssignment },
+      {
+        assignProvisionedEnvironment,
+        ensureAutomaticAssignment,
+        assertAvailable: jest.fn(),
+      },
     ];
     args[13] = registry;
     const withRegistry = new ProjectProvisioningApplicationService(
