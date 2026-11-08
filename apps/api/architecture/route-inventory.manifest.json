@@ -1,11 +1,11 @@
 {
-  "routeCount": 271,
+  "routeCount": 275,
   "referenceFile": "route-inventory.baseline.txt",
-  "referenceSha256": "5e1f7bae4b10fb8f9ace71306e263cdf5a26b2371967b00d96d7afc1c26f5fea",
+  "referenceSha256": "797ecada9f011f82c643ba0683f422e1d6425d107322ce47036916f298c22f83",
   "referenceKind": "pre-pr-baseline-equals-current",
   "baselineAvailable": true,
   "baselineFile": "route-inventory.baseline.txt",
-  "baselineSha256": "5e1f7bae4b10fb8f9ace71306e263cdf5a26b2371967b00d96d7afc1c26f5fea",
+  "baselineSha256": "797ecada9f011f82c643ba0683f422e1d6425d107322ce47036916f298c22f83",
   "baselineSourceCommit": "e3751eb857ca8f8172da26f8ae61c26f333af19b",
   "capturedAtCheckpoint": "e3751eb857ca8f8172da26f8ae61c26f333af19b",
   "amendments": [
@@ -311,6 +311,15 @@
       "reason": "Create a repository branch from the fixed dev source",
       "routes": [
         "POST /api/v1/projects/{projectId}/workspace/branches"
+      ]
+    },
+    {
+      "reason": "Bound addresses (ADR-0023): a workspace lists, uploads and deletes the certificates its environments serve under their own hostname (the IIS certificate store), and a machine downloads a certificate only while one of its bound addresses uses it.",
+      "routes": [
+        "GET /api/v1/workspaces/{workspaceId}/onprem-certificates",
+        "POST /api/v1/workspaces/{workspaceId}/onprem-certificates",
+        "DELETE /api/v1/workspaces/{workspaceId}/onprem-certificates/{certificateId}",
+        "GET /api/v1/onprem/certificates/{certificateId}"
       ]
     }
   ]

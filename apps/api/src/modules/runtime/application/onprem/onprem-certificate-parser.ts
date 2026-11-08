@@ -25,8 +25,8 @@ export type CertificateUpload =
 
 /** IIS exports are a few kilobytes; this leaves room for long chains. */
 const MAX_UPLOAD_BYTES = 64 * 1024;
-const PEM_CERTIFICATE =
-  /-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g;
+const PEM_BEGIN = '-----BEGIN CERTIFICATE-----';
+const PEM_END = '-----END CERTIFICATE-----';
 
 const invalid = (message: string) => new BadRequestException(message);
 
@@ -131,7 +131,7 @@ function fromPem(upload: { certificatePem: string; privateKeyPem: string }) {
     throw invalid(
       'Upload a PEM certificate and key of at most 64 KB together.',
     );
-  const blocks = upload.certificatePem.match(PEM_CERTIFICATE) ?? [];
+  const blocks = pemCertificates(upload.certificatePem);
   if (!blocks.length)
     throw invalid(
       'The certificate must be PEM text starting with -----BEGIN CERTIFICATE-----.',
@@ -151,6 +151,23 @@ function fromPem(upload: { certificatePem: string; privateKeyPem: string }) {
     );
   }
   return { certificates, key };
+}
+
+/**
+ * Each BEGIN/END CERTIFICATE block in the text, in order. A plain scan rather
+ * than a lazy regular expression, so a crafted upload cannot make it slow.
+ */
+function pemCertificates(text: string): string[] {
+  const blocks: string[] = [];
+  let from = 0;
+  for (;;) {
+    const begin = text.indexOf(PEM_BEGIN, from);
+    if (begin === -1) return blocks;
+    const end = text.indexOf(PEM_END, begin + PEM_BEGIN.length);
+    if (end === -1) return blocks;
+    blocks.push(text.slice(begin, end + PEM_END.length));
+    from = end + PEM_END.length;
+  }
 }
 
 /** The leaf, then each issuer found in the upload, so the proxy sends a full chain. */

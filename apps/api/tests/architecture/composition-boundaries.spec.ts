@@ -23,6 +23,7 @@ import { OnpremAgentController } from '../../src/modules/runtime/api/onprem-agen
 import { OnpremEnrollmentController } from '../../src/modules/runtime/api/onprem-enrollment.controller';
 import { ReleaseRegistryService } from '../../src/modules/runtime/application/release-registry.service';
 import { OnpremHostsService } from '../../src/modules/runtime/application/onprem/onprem-hosts.service';
+import { OnpremCertificatesService } from '../../src/modules/runtime/application/onprem/onprem-certificates.service';
 
 describe('separated capability boundaries', () => {
   it('denies the environment-scoped host token endpoint while leaving shared deployment reads available', async () => {
@@ -129,6 +130,7 @@ describe('separated capability boundaries', () => {
     const heartbeat = jest.fn();
     const hostAssignments = jest.fn().mockResolvedValue([]);
     const reportHostStatus = jest.fn();
+    const certificate = jest.fn();
     const allowed = new Set<string>();
     const module = await Test.createTestingModule({
       controllers: [OnpremAgentController, OnpremEnrollmentController],
@@ -143,6 +145,10 @@ describe('separated capability boundaries', () => {
         {
           provide: OnpremHostsService,
           useValue: { consumeEnrollment: enroll, heartbeat },
+        },
+        {
+          provide: OnpremCertificatesService,
+          useValue: { forMachine: certificate },
         },
         { provide: ConfigService, useValue: { get: () => 'true' } },
       ],
@@ -169,6 +175,11 @@ describe('separated capability boundaries', () => {
         .post('/onprem/deployments/test/status')
         .send({})
         .expect(404);
+      await request(app.getHttpServer() as Server)
+        .get('/onprem/certificates/3f0e8a52-6b1c-4d1e-9a51-0b7f6c2d9e10')
+        .set('Authorization', 'Bearer test-token')
+        .expect(404);
+      expect(certificate).not.toHaveBeenCalled();
       expect(hostAssignments).not.toHaveBeenCalled();
       expect(enroll).not.toHaveBeenCalled();
       expect(heartbeat).not.toHaveBeenCalled();
