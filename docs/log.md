@@ -1,5 +1,13 @@
 # Directory Update Log
 
+## 2026-11-08
+
+- **Creation**: ADR-0023 records bound addresses: ingress mode `bound` serves an on-prem environment under the customer's hostname, optional listen address and certificate (acme, an uploaded workspace certificate, or internal outside production), like an IIS binding. Migration `20261108010000` adds `onprem_certificates`, the binding report columns, and the unique hostname index.
+- **Update**: The release registry documents `bound` ingress, the workspace certificate routes, the machine certificate download, and the `bindings` lists in the heartbeat request and reply. Readiness checks the new migration.
+- **Update**: The on-prem host setup runbook has a "Your own address" section (the IIS binding mapped to Hosting, certificate upload and renewal, DNS, the `alphaci-edge` proxy, WSL forwarding of 443 and 80). The install runbook covers bound addresses on the AlphaCI server (`/opt/alphaci/edge-mode`, the `/bindings` mount) and `ALPHACI_BIND_ADDRESS`. The web Hosts concept lists the new mode and the Certificates panel.
+- **Update**: The current agent is 0.5.0 in the host setup, install and self-enrolling image runbooks.
+- **Update**: Regenerated the API and web architecture maps for the certificate and binding modules.
+
 ## 2026-11-07
 
 - **Update**: `alphaexplora-internal` is a declared Enterprise client policy beside `st-peter`, for Alpha Explora's own hosted deployment (Render API, Vercel web). It narrows nothing yet. `apps/api/deploy/env/enterprise-internal.env` holds its non-secret settings and `npm run start:enterprise-internal` runs it locally. The environment reference names the real policy folder, `src/packs/enterprise/clients`.

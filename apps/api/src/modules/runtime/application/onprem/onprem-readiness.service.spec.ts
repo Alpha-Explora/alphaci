@@ -77,6 +77,7 @@ describe('On-prem readiness', () => {
               active_host_index: true,
               machine_schema: true,
               tunnel_schema: true,
+              binding_schema: true,
             },
           ],
         })
@@ -133,6 +134,7 @@ describe('On-prem readiness', () => {
               active_host_index: true,
               machine_schema: true,
               tunnel_schema: true,
+              binding_schema: true,
             },
           ],
         })
@@ -213,6 +215,53 @@ describe('On-prem readiness', () => {
           id: 'ingress',
           status: 'failed',
           message: `Waiting for the HTTPS address. ${UPDATE_AGENT_MESSAGE}`,
+        }),
+      );
+    });
+    it('reports a bound address from its own report, not the tunnel', async () => {
+      const boundConfig = {
+        ports: [{ slot: 'frontend', hostPort: 8080, containerPort: 3000 }],
+        health: [{ slot: 'frontend', path: '/' }],
+        ingress: {
+          mode: 'bound',
+          publicUrl: 'https://orders.acme.local',
+          binding: {
+            hostname: 'orders.acme.local',
+            listenAddress: null,
+            tls: { kind: 'acme' },
+          },
+        },
+      };
+      const serving = await ingress('production', {
+        assignment_config: boundConfig,
+        agent_version: '0.5.0',
+        binding_status: 'running',
+        binding_message: 'Serving.',
+        binding_reported_at: reportedAt,
+        binding_fresh: true,
+      });
+      expect(serving.checks).toContainEqual(
+        expect.objectContaining({
+          id: 'ingress',
+          status: 'unverified',
+          message: expect.stringContaining(
+            'Point DNS for orders.acme.local at this machine',
+          ),
+        }),
+      );
+      const failed = await ingress('production', {
+        assignment_config: boundConfig,
+        agent_version: '0.5.0',
+        binding_status: 'failed',
+        binding_message: 'Port 443 is in use by another program.',
+        binding_reported_at: reportedAt,
+        binding_fresh: true,
+      });
+      expect(failed.checks).toContainEqual(
+        expect.objectContaining({
+          id: 'ingress',
+          status: 'failed',
+          message: 'Port 443 is in use by another program.',
         }),
       );
     });
@@ -505,6 +554,7 @@ describe('On-prem readiness', () => {
               active_host_index: true,
               machine_schema: true,
               tunnel_schema: true,
+              binding_schema: true,
             },
           ],
         })

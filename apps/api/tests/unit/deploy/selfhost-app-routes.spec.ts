@@ -93,3 +93,51 @@ posixOnly('alphaci-app-routes', () => {
     );
   });
 });
+
+posixOnly('alphaci-app-routes with bound addresses', () => {
+  // Reloads Caddy when the agent's bound-address files change, even without
+  // an apps domain, and not otherwise.
+  it('reloads once per change of a site or certificate', () => {
+    const root = mkdtempSync(join(tmpdir(), 'alphaci-bindings-'));
+    const install = join(root, 'install');
+    const agent = join(root, 'agent');
+    const bin = join(root, 'bin');
+    const site = join(
+      agent,
+      'bindings',
+      'a7f4ebb0-f23d-4da5-a704-52e07bf4cfeb',
+    );
+    mkdirSync(join(install, 'caddy', 'apps'), { recursive: true });
+    mkdirSync(site, { recursive: true });
+    mkdirSync(bin);
+    writeFileSync(join(install, 'alphaci.env'), '');
+    writeFileSync(join(site, 'site.caddy'), 'orders.acme.local {\n}\n');
+    writeFileSync(join(site, 'cert.pem'), 'first');
+    const log = join(root, 'docker.log');
+    writeFileSync(join(bin, 'docker'), `#!/bin/sh\necho "$*" >> '${log}'\n`);
+    chmodSync(join(bin, 'docker'), 0o755);
+    const run = () => {
+      const result = spawnSync('bash', [script], {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PATH: `${bin}:${process.env['PATH']}`,
+          ALPHACI_INSTALL_DIR: install,
+          ALPHACI_HOME: agent,
+        },
+      });
+      if (result.status !== 0) throw new Error(result.stderr);
+    };
+    const reloads = () =>
+      readFileSync(log, 'utf8')
+        .split('\n')
+        .filter((line) => line.includes('caddy reload')).length;
+    run();
+    expect(reloads()).toBe(1);
+    run();
+    expect(reloads()).toBe(1);
+    writeFileSync(join(site, 'cert.pem'), 'renewed');
+    run();
+    expect(reloads()).toBe(2);
+  });
+});

@@ -22,7 +22,7 @@ Feature domains are UI ownership boundaries. They consume backend bounded contex
 | `checklists` | `projects` | team QA checklists and test suites, the project Checklists tab, QA Studio verification runs and evidence, PO Studio acceptance, iterations, QA reports, and the Overview "Returned by QA" card | 195 |
 | `groups` | `identity-access` | hierarchy groups, systems, repositories, members, activity, and delivery projects | 59 |
 | `guide` | `platform-ops` | in-product guide | 3 |
-| `hosts` | `runtime` | on-prem machine enrollment, inventory, and environment host assignment | 21 |
+| `hosts` | `runtime` | on-prem machine enrollment, inventory, and environment host assignment | 27 |
 | `home` | `platform-ops` | authenticated home dashboard | 32 |
 | `notifications` | `platform-ops` | inbox, live notifications, and notification preferences | 21 |
 | `projects` | `projects` | project detail: code, commits, pull requests, pipeline, environments, hosting, promotion, rollback, drift, previews, and settings | 160 |

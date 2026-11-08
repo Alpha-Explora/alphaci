@@ -33,7 +33,7 @@ Nothing here is published. You build the image yourself from a release archive.
 - A public HTTPS address for the AlphaCI API.
 - The agent archive `alphaci-agent-<version>.tar.gz` and its SHA-256, from the
   release, or from `node scripts/package-onprem-agent.mjs` (see `artifacts/onprem/`).
-  Use the current agent (0.4.3). Older agents lack the automatic HTTPS address,
+  Use the current agent (0.5.0). Older agents lack the automatic HTTPS address,
   linked services, and the registry pull credential.
 - An enrollment code from **Hosts** (**Add host**), issued for the new machine.
   Issue it right before you start the machine. For the WSL image, issue it after
@@ -49,7 +49,7 @@ Nothing here is published. You build the image yourself from a release archive.
      --api https://YOUR-API \
      --archive-url https://YOUR-ARCHIVE-URL \
      --archive-sha256 YOUR-SHA256 \
-     --archive-version 0.4.3 \
+     --archive-version 0.5.0 \
      --code-file ./enrollment-code.txt \
      --out ./user-data.yaml
    ```

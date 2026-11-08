@@ -8,6 +8,11 @@
 # one Caddy site per address (proxying to the environment's host port), and
 # reloads the install's Caddy only when the routes changed. Caddy then obtains
 # each name's certificate itself. Run by alphaci-app-routes.timer.
+#
+# It also reloads Caddy when the agent's bound addresses changed: the agent
+# writes one site per bound address (and its certificate) under
+# $ALPHACI_HOME/bindings, which the Caddyfile imports, so a new or renewed
+# certificate is served within 30 seconds.
 set -euo pipefail
 INSTALL="${ALPHACI_INSTALL_DIR:-/opt/alphaci}"
 AGENT="${ALPHACI_HOME:-/opt/alphaci}"
@@ -43,8 +48,20 @@ if [ -n "$domain" ]; then
       printf '%s {\n%s\tencode zstd gzip\n\treverse_proxy host.docker.internal:%s\n}\n' "$host" "$tls" "$port"
     done >> "$tmp"
 fi
-if ! cmp -s "$tmp" "$OUT"; then
-  install -m 0644 "$tmp" "$OUT"
+# The bound-address files Caddy loads, as one hash; a link is never followed.
+bindings=$(for file in "$AGENT"/bindings/*/site.caddy "$AGENT"/bindings/*/cert.pem "$AGENT"/bindings/*/key.pem; do
+  if [ -f "$file" ] && [ ! -L "$file" ]; then printf '%s
+' "$file"; cat "$file"; fi
+done | sha256sum | cut -c1-64)
+LOADED="$INSTALL/caddy/bindings.sha256"
+routes_changed=0
+cmp -s "$tmp" "$OUT" || routes_changed=1
+if [ "$routes_changed" = 1 ] || [ "$bindings" != "$(cat "$LOADED" 2> /dev/null || true)" ]; then
+  [ "$routes_changed" = 0 ] || install -m 0644 "$tmp" "$OUT"
+  # A refused reload keeps Caddy on its previous configuration; the hash is
+  # recorded only after a reload succeeds, so the next run tries again.
   docker compose --project-directory "$INSTALL" exec -T proxy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
-  echo "App routes updated: $(grep -c ' {$' "$OUT" || true) address(es)."
+  printf '%s\n' "$bindings" > "$LOADED"
+  [ "$routes_changed" = 0 ] || echo "App routes updated: $(grep -c ' {$' "$OUT" || true) address(es)."
+  echo "Bound addresses loaded: $(find "$AGENT/bindings" -mindepth 2 -maxdepth 2 -name site.caddy -type f 2> /dev/null | wc -l)."
 fi

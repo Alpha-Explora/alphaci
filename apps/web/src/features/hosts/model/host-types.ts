@@ -32,6 +32,7 @@ export type AssignmentConfig =
 export type AssignmentRequestConfig =
   import('@/shared/api/contracts').OnpremAssignmentRequestConfig;
 export type TunnelReport = import('@/shared/api/contracts').TunnelReport;
+export type BindingReport = import('@/shared/api/contracts').BindingReport;
 export interface MachineAssignment {
   id: string;
   machineId: string;
@@ -41,6 +42,8 @@ export interface MachineAssignment {
   config: AssignmentConfig;
   /** The machine's tunnel report; null unless config.ingress.mode is "tunnel". */
   tunnel: TunnelReport | null;
+  /** The machine's binding report; null unless config.ingress.mode is "bound". */
+  binding?: BindingReport | null;
 }
 export type HostAssignment =
   | MachineAssignment
@@ -95,7 +98,10 @@ export function fallbackAssignmentDefaults(
     health: slots.map((slot) => ({ slot, path: '/' })),
   };
 }
-/** The request part of a stored config: everything except host ports. */
+/**
+ * The request part of a stored config: everything except host ports, and no
+ * publicUrl for a bound address (the server derives it from the hostname).
+ */
 export function requestedConfig(
   config: AssignmentConfig | AssignmentRequestConfig,
 ): AssignmentRequestConfig {
@@ -105,6 +111,10 @@ export function requestedConfig(
       slot,
       containerPort,
     })),
+    ingress:
+      config.ingress.mode === 'bound'
+        ? { ...config.ingress, publicUrl: null }
+        : config.ingress,
   };
 }
 /** Shown while the machine has not reported a tunnel address and said nothing else. */
@@ -118,6 +128,11 @@ export function reachedAt(
   tunnel: TunnelReport | null,
 ): ReachedAt {
   const { ingress } = config;
+  if (ingress.mode === 'bound')
+    return {
+      kind: 'link',
+      href: ingress.publicUrl ?? `https://${ingress.binding.hostname}`,
+    };
   if (ingress.mode === 'configured' && ingress.publicUrl)
     return { kind: 'link', href: ingress.publicUrl };
   if (ingress.mode === 'tunnel') {

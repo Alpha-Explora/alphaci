@@ -10,6 +10,11 @@ import {
   getAssignmentDefaults,
   unassignHost,
 } from './assignments-api';
+import {
+  deleteCertificate,
+  listCertificates,
+  uploadCertificate,
+} from './certificates-api';
 jest.mock('@/shared/api/request', () => ({
   request: jest.fn().mockResolvedValue([]),
 }));
@@ -100,5 +105,27 @@ it("reads an environment's assignment defaults from the backend", async () => {
   await getAssignmentDefaults('p', 'e/1');
   expect(request).toHaveBeenLastCalledWith(
     '/projects/p/environments/e%2F1/host-assignment/defaults',
+  );
+});
+
+it('scopes certificates to the workspace and sends uploads as JSON', async () => {
+  const upload = { name: 'Orders', pfxBase64: 'AAEC', password: 'p' };
+  await listCertificates('w/1');
+  expect(request).toHaveBeenLastCalledWith(
+    '/workspaces/w%2F1/onprem-certificates',
+    { signal: undefined },
+  );
+  await uploadCertificate('w', upload);
+  expect(request).toHaveBeenLastCalledWith(
+    '/workspaces/w/onprem-certificates',
+    {
+      method: 'POST',
+      body: JSON.stringify(upload),
+    },
+  );
+  await deleteCertificate('w', 'c/1');
+  expect(request).toHaveBeenLastCalledWith(
+    '/workspaces/w/onprem-certificates/c%2F1',
+    { method: 'DELETE' },
   );
 });

@@ -12,6 +12,7 @@ import {
   moveMachineBindings,
 } from './onprem-assignments.repository';
 import type {
+  AddressBindingOrder,
   EnrollmentInput,
   HeartbeatReply,
   MachineCheckIn,
@@ -252,6 +253,20 @@ export class OnpremMachinesRepository {
             ],
           );
       }
+      if (input.bindings) {
+        // A snapshot too: a bound address the machine stopped reporting loses its state.
+        await client.query(
+          `UPDATE env_provisioning.onprem_hosts SET binding_status=NULL,binding_message=NULL,binding_reported_at=NULL
+            WHERE machine_id=$1 AND revoked_at IS NULL AND NOT (id=ANY($2::uuid[]))`,
+          [machineId, input.bindings.map((report) => report.assignmentId)],
+        );
+        for (const report of input.bindings)
+          await client.query(
+            `UPDATE env_provisioning.onprem_hosts SET binding_status=$3,binding_message=$4,binding_reported_at=NOW()
+              WHERE id=$2 AND machine_id=$1 AND revoked_at IS NULL AND assignment_config->'ingress'->>'mode'='bound'`,
+            [machineId, report.assignmentId, report.status, report.message],
+          );
+      }
       const ports = await client.query<{ host_port: number }>(
         `SELECT host_port FROM env_provisioning.onprem_port_reservations WHERE machine_id=$1 ORDER BY host_port`,
         [machineId],
@@ -266,8 +281,25 @@ export class OnpremMachinesRepository {
           WHERE machine_id=$1 AND revoked_at IS NULL AND assignment_config->'ingress'->>'mode'='tunnel' ORDER BY id`,
         [machineId],
       );
+      const bound = await client.query<{
+        id: string;
+        project_id: string;
+        environment_id: string;
+        assignment_config: AssignmentConfig;
+        certificate_sha256: string | null;
+      }>(
+        `SELECT h.id,h.project_id,h.environment_id,h.assignment_config,c.sha256 AS certificate_sha256
+           FROM env_provisioning.onprem_hosts h
+           LEFT JOIN env_provisioning.onprem_certificates c
+             ON c.id::text = h.assignment_config->'ingress'->'binding'->'tls'->>'certificateId' AND c.deleted_at IS NULL
+          WHERE h.machine_id=$1 AND h.revoked_at IS NULL AND h.assignment_config->'ingress'->>'mode'='bound' ORDER BY h.id`,
+        [machineId],
+      );
       return {
         ports: ports.rows.map((port) => port.host_port),
+        bindings: bound.rows.flatMap((row) =>
+          addressBindingOrder(row, row.certificate_sha256),
+        ),
         tunnels: tunnels.rows.flatMap((row) => {
           const hostPort = tunnelPort(row.assignment_config.ports);
           return hostPort === null
@@ -367,6 +399,10 @@ export class OnpremMachinesRepository {
         `UPDATE env_provisioning.onprem_hosts SET revoked_at=NOW() WHERE revoked_at IS NULL AND machine_id IN (SELECT id FROM env_provisioning.onprem_machines WHERE workspace_id=$1)`,
         [workspaceId],
       );
+      await client.query(
+        `UPDATE env_provisioning.onprem_certificates SET deleted_at=NOW() WHERE workspace_id=$1 AND deleted_at IS NULL`,
+        [workspaceId],
+      );
       return { removed: result.rowCount ?? 0 };
     });
   }
@@ -383,4 +419,51 @@ export class OnpremMachinesRepository {
     if (result.rows[0]?.deleted_at)
       throw new ConflictException('Workspace has been deleted.');
   }
+}
+
+/**
+ * The bound address a machine must serve for one binding, or nothing when it
+ * cannot: no host port, or an uploaded certificate that is gone.
+ */
+export function addressBindingOrder(
+  row: {
+    id: string;
+    project_id: string;
+    environment_id: string;
+    assignment_config: AssignmentConfig;
+  },
+  certificateSha256: string | null,
+): AddressBindingOrder[] {
+  const ingress = row.assignment_config.ingress;
+  const hostPort = tunnelPort(row.assignment_config.ports);
+  if (ingress.mode !== 'bound' || hostPort === null) return [];
+  const { hostname, listenAddress, tls } = ingress.binding;
+  if (tls.kind !== 'certificate')
+    return [
+      {
+        assignmentId: row.id,
+        projectId: row.project_id,
+        environmentId: row.environment_id,
+        hostPort,
+        hostname,
+        listenAddress,
+        tls,
+      },
+    ];
+  if (!certificateSha256) return [];
+  return [
+    {
+      assignmentId: row.id,
+      projectId: row.project_id,
+      environmentId: row.environment_id,
+      hostPort,
+      hostname,
+      listenAddress,
+      tls: {
+        kind: 'certificate',
+        certificateId: tls.certificateId,
+        sha256: certificateSha256,
+      },
+    },
+  ];
 }

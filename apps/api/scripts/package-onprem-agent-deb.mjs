@@ -57,6 +57,8 @@ export const PACKAGE_FILES = [
   // cloudflared itself is installed on the machine separately; this package does not ship it.
   ['deploy/onprem/agent/tunnel.sh', 'opt/alphaci/bin/tunnel.sh', 0o644],
   ['deploy/onprem/agent/tunnel-run.sh', 'opt/alphaci/bin/tunnel-run', 0o755],
+  // Bound addresses: the sites, certificates and the alphaci-edge proxy.
+  ['deploy/onprem/agent/binding.sh', 'opt/alphaci/bin/binding.sh', 0o644],
   [
     'deploy/onprem/agent/alphaci-tunnel@.service',
     'usr/lib/systemd/system/alphaci-tunnel@.service',

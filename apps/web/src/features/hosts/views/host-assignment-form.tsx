@@ -4,6 +4,15 @@ import {
   hostStatusTone,
   reachedAt,
 } from '../model/host-types';
+import {
+  bindingStatusView,
+  certificateExpiryLabel,
+  dnsRecord,
+  tlsChoice,
+  type AddressBinding,
+  type BindingReport,
+  type IngressMode,
+} from '../model/address-binding';
 import type { useHostAssignmentViewModel } from '../view-models/use-host-assignment-view-model';
 export type AssignmentVm = ReturnType<typeof useHostAssignmentViewModel>;
 export function AssignmentForm({ vm }: { vm: AssignmentVm }) {
@@ -23,7 +32,8 @@ export function AssignmentForm({ vm }: { vm: AssignmentVm }) {
       <p className="hassign-hint">
         AlphaCI picks a free host port on the machine for each service. The
         health path must return a success response. Production needs an HTTPS
-        address: your own URL, or the automatic tunnel.
+        address: your own URL, the automatic tunnel, or your own address with a
+        certificate.
       </p>
       <AssignmentActions vm={vm} />
     </form>
@@ -102,34 +112,32 @@ function PortFields({
     </fieldset>
   );
 }
+const INGRESS_MODES: Array<{ value: IngressMode; label: string }> = [
+  { value: 'direct', label: 'Directly on the host port' },
+  { value: 'configured', label: 'Through an existing proxy or domain' },
+  { value: 'tunnel', label: 'Automatic HTTPS address' },
+  { value: 'bound', label: 'Your own address' },
+];
 function IngressFields({ vm }: { vm: AssignmentVm }) {
-  const mode = vm.config.ingress.mode;
+  const { ingress } = vm.config;
   return (
     <div className="hassign-ingress">
       <label className="hassign-field">
         <span className="hassign-field__label">How users reach it</span>
         <select
-          value={mode}
-          onChange={(event) => {
-            const next = event.target.value as typeof mode;
-            vm.setConfig((old) => ({
-              ...old,
-              ingress: {
-                mode: next,
-                // A tunnel's address is created by the machine, never typed in.
-                publicUrl: next === 'tunnel' ? null : old.ingress.publicUrl,
-              },
-            }));
-          }}
+          value={ingress.mode}
+          onChange={(event) =>
+            vm.setIngressMode(event.target.value as IngressMode)
+          }
         >
-          <option value="direct">Directly on the host port</option>
-          <option value="configured">
-            Through an existing proxy or domain
-          </option>
-          <option value="tunnel">Automatic HTTPS address</option>
+          {INGRESS_MODES.map((mode) => (
+            <option key={mode.value} value={mode.value}>
+              {mode.label}
+            </option>
+          ))}
         </select>
       </label>
-      {mode === 'tunnel' ? (
+      {ingress.mode === 'tunnel' ? (
         <p className="hassign-hint">
           AlphaCI gives this environment an HTTPS address. On a server with an
           apps domain it is permanent (for example
@@ -137,26 +145,141 @@ function IngressFields({ vm }: { vm: AssignmentVm }) {
           changes when the tunnel restarts.
         </p>
       ) : null}
-      {mode === 'configured' ? (
-        <label className="hassign-field">
-          <span className="hassign-field__label">Public application URL</span>
-          <input
-            type="url"
-            required
-            value={vm.config.ingress.publicUrl ?? ''}
-            placeholder="https://app.example.com"
-            onChange={(event) =>
-              vm.setConfig((old) => ({
-                ...old,
-                ingress: {
-                  ...old.ingress,
-                  publicUrl: event.target.value || null,
-                },
-              }))
-            }
-          />
-        </label>
+      {ingress.mode === 'configured' ? <PublicUrlField vm={vm} /> : null}
+      {ingress.mode === 'bound' ? (
+        <BindingFields vm={vm} binding={ingress.binding} />
       ) : null}
+    </div>
+  );
+}
+function PublicUrlField({ vm }: { vm: AssignmentVm }) {
+  return (
+    <label className="hassign-field">
+      <span className="hassign-field__label">Public application URL</span>
+      <input
+        type="url"
+        required
+        value={vm.config.ingress.publicUrl ?? ''}
+        placeholder="https://app.example.com"
+        onChange={(event) =>
+          vm.setConfig((old) => ({
+            ...old,
+            ingress: {
+              mode: 'configured',
+              publicUrl: event.target.value || null,
+            },
+          }))
+        }
+      />
+    </label>
+  );
+}
+/** An IIS-style binding: hostname, optional local IP, and a certificate. */
+function BindingFields({
+  vm,
+  binding,
+}: {
+  vm: AssignmentVm;
+  binding: AddressBinding;
+}) {
+  return (
+    <>
+      <label className="hassign-field">
+        <span className="hassign-field__label">Hostname</span>
+        <input
+          required
+          value={binding.hostname}
+          placeholder="orders.example.com"
+          autoCapitalize="none"
+          spellCheck={false}
+          onChange={(event) =>
+            vm.setBindingField('hostname', event.target.value)
+          }
+        />
+      </label>
+      <label className="hassign-field">
+        <span className="hassign-field__label">Listen address (optional)</span>
+        <span className="hassign-field__hint">
+          The IP on this machine to listen on, as in IIS bindings. Leave empty
+          for all.
+        </span>
+        <input
+          value={binding.listenAddress ?? ''}
+          placeholder="All addresses"
+          spellCheck={false}
+          onChange={(event) =>
+            vm.setBindingField('listenAddress', event.target.value)
+          }
+        />
+      </label>
+      <CertificateField vm={vm} binding={binding} />
+      <DnsRecord binding={binding} />
+      {vm.ingressProblem ? (
+        <p role="alert" className="hassign-alert">
+          {vm.ingressProblem}
+        </p>
+      ) : null}
+    </>
+  );
+}
+function CertificateField({
+  vm,
+  binding,
+}: {
+  vm: AssignmentVm;
+  binding: AddressBinding;
+}) {
+  return (
+    <label className="hassign-field">
+      <span className="hassign-field__label">Certificate</span>
+      <select
+        value={tlsChoice(binding.tls)}
+        onChange={(event) => vm.setBindingTls(event.target.value)}
+      >
+        {binding.tls.kind === 'certificate' && !binding.tls.certificateId ? (
+          <option value="certificate:">Choose a certificate</option>
+        ) : null}
+        {vm.certificates.length ? (
+          <optgroup label="Uploaded">
+            {vm.certificates.map((certificate) => (
+              <option
+                key={certificate.id}
+                value={`certificate:${certificate.id}`}
+              >
+                {certificate.name} · {certificateExpiryLabel(certificate)}
+              </option>
+            ))}
+          </optgroup>
+        ) : null}
+        <option value="acme">
+          Automatic (public DNS and ports 80 and 443 must reach this machine)
+        </option>
+        {vm.production ? null : (
+          <option value="internal">Internal (test only)</option>
+        )}
+      </select>
+      {vm.certificates.length ? null : (
+        <span className="hassign-field__hint">
+          To use your own certificate (.pfx or PEM), upload it on the Hosts
+          page.
+        </span>
+      )}
+    </label>
+  );
+}
+function DnsRecord({ binding }: { binding: AddressBinding }) {
+  const record = dnsRecord(binding);
+  return (
+    <div className="hassign-dns">
+      <p className="hassign-field__label">DNS record to create</p>
+      <p className="hassign-dns__record">
+        <code>{record.type}</code> <code>{record.name}</code> →{' '}
+        <code>{record.value}</code>
+      </p>
+      <p className="hassign-hint">
+        Users reach https://{binding.hostname || 'your hostname'} once this
+        record points at the machine.
+      </p>
     </div>
   );
 }
@@ -261,7 +384,25 @@ export function AssignmentSummary({ vm }: { vm: AssignmentVm }) {
             )}
           </dd>
         </div>
+        {vm.current.config.ingress.mode === 'bound' ? (
+          <BindingFact report={vm.current.binding ?? null} />
+        ) : null}
       </dl>
+    </div>
+  );
+}
+/** The machine's report on the bound address, failures included. */
+function BindingFact({ report }: { report: BindingReport | null }) {
+  const view = bindingStatusView(report);
+  return (
+    <div>
+      <dt>Address</dt>
+      <dd>
+        <span className={`status-chip status-chip-${view.tone}`}>
+          {view.label}
+        </span>{' '}
+        {view.message}
+      </dd>
     </div>
   );
 }

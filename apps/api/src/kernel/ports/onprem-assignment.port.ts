@@ -11,10 +11,41 @@ export interface AssignmentConfig {
 /**
  * How users reach the environment. `tunnel` has the machine create an HTTPS
  * address; its publicUrl is reported by the machine, never sent by a client.
+ * `bound` has the machine serve the environment itself under the customer's
+ * own name and certificate (an IIS-style binding); its publicUrl is derived
+ * from the hostname by the server.
  */
-export interface AssignmentIngress {
-  mode: 'direct' | 'configured' | 'tunnel';
-  publicUrl: string | null;
+export type AssignmentIngress =
+  | { mode: 'direct' | 'configured' | 'tunnel'; publicUrl: string | null }
+  | { mode: 'bound'; publicUrl: string | null; binding: AddressBinding };
+
+/**
+ * The certificate a bound address serves. `acme`: the machine's proxy obtains
+ * a public certificate itself (needs public DNS and inbound 80 and 443).
+ * `certificate`: one the workspace uploaded. `internal`: the proxy's private
+ * CA, for labs; never accepted for production.
+ */
+export type BindingTls =
+  | { kind: 'acme' }
+  | { kind: 'internal' }
+  | { kind: 'certificate'; certificateId: string };
+
+/** The customer's own address for an environment, served on port 443. */
+export interface AddressBinding {
+  /** Lowercase DNS name, for example `orders.acme.local`. */
+  hostname: string;
+  /** The machine's local IP to listen on; null listens on every address. */
+  listenAddress: string | null;
+  tls: BindingTls;
+}
+
+/** The machine's latest state for a bound address. */
+export type BindingStatus = 'starting' | 'running' | 'unavailable' | 'failed';
+/** What the API shows: `waiting` until a fresh report arrives. */
+export interface BindingReport {
+  status: BindingStatus | 'waiting';
+  message: string;
+  reportedAt: string | null;
 }
 /**
  * What a client asks for. Host ports are chosen by the server inside the

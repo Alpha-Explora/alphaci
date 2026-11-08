@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { listHosts } from '../data/hosts-api';
+import { listCertificates } from '../data/certificates-api';
 import {
   assignHost,
   getAssignment,
@@ -17,6 +18,15 @@ import {
   type MachineSummary,
   type ReadinessCheck,
 } from '../model/host-types';
+import {
+  bindingProblem,
+  tlsFromChoice,
+  withBindingField,
+  withIngressMode,
+  type AddressBinding,
+  type Certificate,
+  type IngressMode,
+} from '../model/address-binding';
 export interface HostAssignmentOptions {
   projectId: string;
   environmentId: string;
@@ -32,6 +42,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
     [current, setCurrent] = useState<HostAssignment | null>(null);
   const [checks, setChecks] = useState<ReadinessCheck[]>([]),
     [error, setError] = useState<string | null>(null);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
       'loading',
     ),
@@ -64,11 +75,16 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
   const serverRead = useRef(0);
   // The assignment a replace or unassign confirmation was opened against.
   const confirmedFor = useRef<string | null>(null);
+  // The binding typed before switching to another mode, restored on return.
+  const rememberedBinding = useRef<AddressBinding | undefined>(undefined);
   useEffect(() => {
     tunnelWatch.current = {
       projectId,
       environmentId,
-      tunnel: current?.config?.ingress.mode === 'tunnel',
+      // Tunnel and bound assignments both carry a report from the machine.
+      tunnel:
+        current?.config?.ingress.mode === 'tunnel' ||
+        current?.config?.ingress.mode === 'bound',
     };
   }, [projectId, environmentId, current]);
   useEffect(() => {
@@ -80,8 +96,11 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
       // The port and health path of the project's own app. Without them (an
       // older backend) the form keeps the fallback.
       getAssignmentDefaults(projectId, environmentId).catch(() => null),
+      // Certificates only fill the bound-address picker. Without them (an
+      // older backend, or no permission) the picker offers no uploads.
+      listCertificates(workspaceId).catch(() => [] as Certificate[]),
     ])
-      .then(([machines, assignment, readiness, defaults]) => {
+      .then(([machines, assignment, readiness, defaults, uploaded]) => {
         if (!relevant) return;
         serverRead.current += 1;
         setHosts(
@@ -92,6 +111,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
         );
         setCurrent(assignment);
         setChecks(readiness.checks);
+        setCertificates(uploaded);
         setStatus('ready');
         setError(null);
         if (assignment?.config) {
@@ -169,6 +189,11 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
   const choices = healthyHosts(hosts);
   const automatic = choices.length === 1 ? choices[0]! : null;
   const machineId = selected || automatic?.id || '';
+  // The first reason the server would refuse the address, shown before sending.
+  const ingressProblem =
+    config.ingress.mode === 'bound'
+      ? bindingProblem(config.ingress.binding, { production, certificates })
+      : null;
   // A confirmation survives refreshes untouched, but it only sends for the
   // assignment it was opened against. If the server has since replaced or
   // removed that assignment, the click is refused and the user reviews again.
@@ -193,7 +218,7 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
     return request.current.id;
   }
   async function assign() {
-    if (!canManage || pending.current || !machineId) return;
+    if (!canManage || pending.current || !machineId || ingressProblem) return;
     // A replacement is confirmed first: one click opens it, the next sends.
     if ((current || confirmation === 'replace') && !confirmed('replace'))
       return;
@@ -274,6 +299,32 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
     }));
     setConfirmation(null);
   }
+  function edit(
+    change: (old: AssignmentRequestConfig) => AssignmentRequestConfig,
+  ) {
+    setConfig(change);
+    setConfirmation(null);
+  }
+  function setIngressMode(mode: IngressMode) {
+    edit((old) => {
+      if (old.ingress.mode === 'bound')
+        rememberedBinding.current = old.ingress.binding;
+      return {
+        ...old,
+        ingress: withIngressMode(old.ingress, mode, rememberedBinding.current),
+      };
+    });
+  }
+  function editBinding(change: (old: AddressBinding) => AddressBinding) {
+    edit((old) =>
+      old.ingress.mode === 'bound'
+        ? {
+            ...old,
+            ingress: { ...old.ingress, binding: change(old.ingress.binding) },
+          }
+        : old,
+    );
+  }
   return {
     hosts,
     /** Machines to choose between; the picker shows only for several. */
@@ -296,6 +347,16 @@ export function useHostAssignmentViewModel(options: HostAssignmentOptions) {
       setConfig(value);
       setConfirmation(null);
     },
+    production,
+    /** The workspace's uploaded certificates, for a bound address. */
+    certificates,
+    ingressProblem,
+    setIngressMode,
+    setBindingField: (field: 'hostname' | 'listenAddress', value: string) =>
+      editBinding((old) => withBindingField(old, field, value)),
+    /** `acme`, `internal` or `certificate:<id>`, as the picker values. */
+    setBindingTls: (choice: string) =>
+      editBinding((old) => ({ ...old, tls: tlsFromChoice(choice) })),
     confirmation,
     cancel: () => setConfirmation(null),
     assign,

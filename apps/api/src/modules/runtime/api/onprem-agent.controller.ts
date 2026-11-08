@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 
 import { ReleaseRegistryService } from '../application/release-registry.service';
+import { OnpremCertificatesService } from '../application/onprem/onprem-certificates.service';
 import { ReportDeploymentStatusDto } from './dto/release-registry.dto';
 import { OnpremMachineRateLimit } from './onprem-machine-throttler.guard';
 import { CapabilityGuard, RequiresCapability } from '#kernel/composition/index';
@@ -24,12 +25,25 @@ import { CapabilityGuard, RequiresCapability } from '#kernel/composition/index';
 @UseGuards(CapabilityGuard)
 @RequiresCapability('runtime.managed-host-delivery')
 export class OnpremAgentController {
-  constructor(private readonly releases: ReleaseRegistryService) {}
+  constructor(
+    private readonly releases: ReleaseRegistryService,
+    private readonly certificates: OnpremCertificatesService,
+  ) {}
 
   @Get('assignments')
   @OnpremMachineRateLimit()
   assignments(@Headers('authorization') authorization: string | undefined) {
     return this.releases.hostAssignments(bearer(authorization));
+  }
+
+  /** The chain and key of a certificate one of the machine's bound addresses uses. */
+  @Get('certificates/:certificateId')
+  @OnpremMachineRateLimit()
+  certificate(
+    @Headers('authorization') authorization: string | undefined,
+    @Param('certificateId', ParseUUIDPipe) certificateId: string,
+  ) {
+    return this.certificates.forMachine(bearer(authorization), certificateId);
   }
 
   @Post('deployments/:deploymentId/status')

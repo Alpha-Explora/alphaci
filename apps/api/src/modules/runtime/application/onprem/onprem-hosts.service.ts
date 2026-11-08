@@ -34,6 +34,7 @@ import type {
 } from './onprem-host.contracts';
 import { ONPREM_AGENT_VERSION } from '../../domain/onprem-agent-version';
 import { parseTunnelReport } from '../../domain/onprem-tunnel';
+import { parseBindingReport } from '../../domain/onprem-binding';
 import { trustKeysWithSigner } from '../../domain/release-signature';
 import {
   RELEASE_SIGNER,
@@ -139,10 +140,15 @@ export class OnpremHostsService {
       const report = parseTunnelReport(entry);
       return report ? [report] : [];
     });
+    const bindings = input.bindings?.flatMap((entry) => {
+      const report = parseBindingReport(entry);
+      return report ? [report] : [];
+    });
     return this.machines.heartbeat(hashMachineSecret(credential), {
       agentVersion: input.agentVersion,
       checks: input.checks,
       ...(tunnels ? { tunnels } : {}),
+      ...(bindings ? { bindings } : {}),
     });
   }
   /** The active machine a credential belongs to; null for any other credential. */

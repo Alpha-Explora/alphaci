@@ -75,6 +75,19 @@ Ingress is one of:
   tunnel whose address changes when the tunnel restarts. The assignment returns
   the machine's report as `tunnel` (null unless the mode is `tunnel`; waiting
   until a fresh report). A tunnel request sends a null public URL.
+- `bound`, labelled "Your own address": hostname, optional listen address, and
+  certificate (an uploaded one, automatic, or internal outside production).
+  The request sends a null public URL; the backend derives
+  `https://<hostname>`. The form mirrors the backend rules (lowercase DNS
+  name, no wildcard, IPv4 or IPv6 listen address, a certificate that covers
+  the name and has not expired) and shows the A record to create. The
+  assignment returns the machine's report as `binding`.
+
+The Hosts page also lists the workspace's certificates (name, names covered,
+issuer, expiry with a warning within 30 days, environments using it). Hosting
+managers upload a `.pfx` with its password or a PEM chain and key, read in the
+browser and sent as base64 or text, and delete a certificate no environment
+uses.
 
 Production requires an HTTPS address: a configured HTTPS URL or the automatic
 address. In the wizard, new assignments default to the automatic address when the

@@ -16,6 +16,7 @@ DELETE /api/v1/repositories/{repositoryId}/configuration/{configurationType}/{na
 DELETE /api/v1/requirements/{id}/items/{itemId}
 DELETE /api/v1/requirements/{id}/items/{itemId}/test-cases/{testCaseId}
 DELETE /api/v1/requirements/{id}/items/{itemId}/test-categories/{categoryId}
+DELETE /api/v1/workspaces/{workspaceId}/onprem-certificates/{certificateId}
 GET /api/v1
 GET /api/v1/admin/access-log
 GET /api/v1/admin/admins
@@ -75,6 +76,7 @@ GET /api/v1/notifications
 GET /api/v1/notifications/preferences
 GET /api/v1/notifications/stream
 GET /api/v1/onprem/assignments
+GET /api/v1/onprem/certificates/{certificateId}
 GET /api/v1/onprem/installer/{version}
 GET /api/v1/projects
 GET /api/v1/projects/{id}/audit
@@ -138,6 +140,7 @@ GET /api/v1/usage/me
 GET /api/v1/workflows/history
 GET /api/v1/workspaces/me
 GET /api/v1/workspaces/{workspaceId}/members
+GET /api/v1/workspaces/{workspaceId}/onprem-certificates
 GET /api/v1/workspaces/{workspaceId}/onprem-hosts
 GET /api/v1/workspaces/{workspaceId}/qa-checklists
 GET /api/v1/workspaces/{workspaceId}/qa-requirements/overview
@@ -259,6 +262,7 @@ POST /api/v1/subscription/monthly/cancel
 POST /api/v1/systems/{systemId}/archive
 POST /api/v1/systems/{systemId}/delivery-projects
 POST /api/v1/workflows/generate
+POST /api/v1/workspaces/{workspaceId}/onprem-certificates
 POST /api/v1/workspaces/{workspaceId}/onprem-host-enrollments
 POST /api/v1/workspaces/{workspaceId}/onprem-hosts/{machineId}/revoke
 POST /api/v1/workspaces/{workspaceId}/qa-checklists

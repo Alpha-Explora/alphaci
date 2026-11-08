@@ -955,10 +955,49 @@ export interface TunnelReport {
 }
 
 /**
- * A stored assignment: AlphaCI allocated every host port on the machine.
- * "tunnel" has the machine run a quick tunnel and report its address; the
- * client sends publicUrl as null in that mode.
+ * The machine's report on a bound address (its own hostname on port 443).
+ * Present on an assignment whose ingress mode is "bound"; null otherwise.
  */
+export interface BindingReport {
+  status: 'waiting' | 'starting' | 'running' | 'unavailable' | 'failed';
+  /** One plain sentence for the user. */
+  message: string;
+  reportedAt: string | null;
+}
+
+/**
+ * The certificate a bound address serves. "acme": the machine obtains a public
+ * certificate itself. "certificate": one the workspace uploaded. "internal":
+ * the machine's private CA, for test environments; refused for production.
+ */
+export type OnpremBindingTls =
+  | { kind: 'acme' }
+  | { kind: 'internal' }
+  | { kind: 'certificate'; certificateId: string };
+
+/** An IIS-style binding: the customer's own hostname, served on port 443. */
+export interface OnpremAddressBinding {
+  /** Lowercase DNS name, for example `orders.acme.local`. */
+  hostname: string;
+  /** The machine's local IP to listen on; null listens on every address. */
+  listenAddress: string | null;
+  tls: OnpremBindingTls;
+}
+
+/**
+ * How users reach an environment. "tunnel" has the machine create an HTTPS
+ * address. "bound" has the machine serve the customer's own hostname; the
+ * client sends publicUrl as null in both and the server fills it in.
+ */
+export type OnpremAssignmentIngress =
+  | { mode: 'direct' | 'configured' | 'tunnel'; publicUrl: string | null }
+  | {
+      mode: 'bound';
+      publicUrl: string | null;
+      binding: OnpremAddressBinding;
+    };
+
+/** A stored assignment: AlphaCI allocated every host port on the machine. */
 export interface OnpremAssignmentConfig {
   ports: Array<{
     slot: 'frontend' | 'backend';
@@ -966,17 +1005,34 @@ export interface OnpremAssignmentConfig {
     containerPort: number;
   }>;
   health: Array<{ slot: 'frontend' | 'backend'; path: string | null }>;
-  ingress: {
-    mode: 'direct' | 'configured' | 'tunnel';
-    publicUrl: string | null;
-  };
+  ingress: OnpremAssignmentIngress;
 }
 /** What a client asks for: host ports are chosen by the server. */
 export interface OnpremAssignmentRequestConfig {
   ports: Array<{ slot: 'frontend' | 'backend'; containerPort: number }>;
   health: OnpremAssignmentConfig['health'];
-  ingress: OnpremAssignmentConfig['ingress'];
+  ingress: OnpremAssignmentIngress;
 }
+
+/** A workspace's uploaded TLS certificate. The private key never leaves the server. */
+export interface OnpremCertificate {
+  id: string;
+  name: string;
+  /** Names the certificate covers, wildcards included (`*.acme.local`). */
+  hostnames: string[];
+  issuer: string;
+  notBefore: string;
+  notAfter: string;
+  sha256: string;
+  createdAt: string;
+  /** Active assignments that serve it. */
+  inUse: number;
+}
+
+/** A certificate upload: an IIS .pfx export, or a PEM certificate and key. */
+export type OnpremCertificateUpload =
+  | { name: string; pfxBase64: string; password: string }
+  | { name: string; certificatePem: string; privateKeyPem: string };
 export interface CreateProjectRequest {
   repoName: string;
   visibility: 'private' | 'public';

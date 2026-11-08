@@ -52,7 +52,9 @@ function productionIngressProblem(environment: EnvironmentDraft) {
   // AlphaCI provides the automatic HTTPS address, so the mode itself meets the
   // requirement (a permanent apps-domain address, or the machine's tunnel).
   const { mode, publicUrl } = binding.config.ingress;
-  if (mode === 'tunnel') return null;
+  // The setup flow does not offer a bound address, but one (always HTTPS on
+  // the customer's hostname) meets the requirement too.
+  if (mode === 'tunnel' || mode === 'bound') return null;
   if (mode === 'configured' && publicUrl?.startsWith('https://')) return null;
   return 'Add an HTTPS URL or choose the automatic HTTPS address for Production, or choose Assign later.';
 }
