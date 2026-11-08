@@ -1,7 +1,7 @@
 ---
 type: "Route Map"
 title: "HTTP route map"
-description: "Generated inventory of the 271 current API routes."
+description: "Generated inventory of the 275 current API routes."
 tags: [architecture, http, routes, map]
 status: stable
 sources:
@@ -15,7 +15,7 @@ sources:
 
 # HTTP route map
 
-The current compiled API exposes **271 routes** under the global `/api/v1` prefix. The list below is generated from the checked-in pre-PR baseline used by the route inventory test.
+The current compiled API exposes **275 routes** under the global `/api/v1` prefix. The list below is generated from the checked-in pre-PR baseline used by the route inventory test.
 
 ## Routes
 
@@ -37,6 +37,7 @@ The current compiled API exposes **271 routes** under the global `/api/v1` prefi
 - `DELETE /api/v1/requirements/{id}/items/{itemId}`
 - `DELETE /api/v1/requirements/{id}/items/{itemId}/test-cases/{testCaseId}`
 - `DELETE /api/v1/requirements/{id}/items/{itemId}/test-categories/{categoryId}`
+- `DELETE /api/v1/workspaces/{workspaceId}/onprem-certificates/{certificateId}`
 - `GET /api/v1`
 - `GET /api/v1/admin/access-log`
 - `GET /api/v1/admin/admins`
@@ -96,6 +97,7 @@ The current compiled API exposes **271 routes** under the global `/api/v1` prefi
 - `GET /api/v1/notifications/preferences`
 - `GET /api/v1/notifications/stream`
 - `GET /api/v1/onprem/assignments`
+- `GET /api/v1/onprem/certificates/{certificateId}`
 - `GET /api/v1/onprem/installer/{version}`
 - `GET /api/v1/projects`
 - `GET /api/v1/projects/{id}/audit`
@@ -159,6 +161,7 @@ The current compiled API exposes **271 routes** under the global `/api/v1` prefi
 - `GET /api/v1/workflows/history`
 - `GET /api/v1/workspaces/me`
 - `GET /api/v1/workspaces/{workspaceId}/members`
+- `GET /api/v1/workspaces/{workspaceId}/onprem-certificates`
 - `GET /api/v1/workspaces/{workspaceId}/onprem-hosts`
 - `GET /api/v1/workspaces/{workspaceId}/qa-checklists`
 - `GET /api/v1/workspaces/{workspaceId}/qa-requirements/overview`
@@ -280,6 +283,7 @@ The current compiled API exposes **271 routes** under the global `/api/v1` prefi
 - `POST /api/v1/systems/{systemId}/archive`
 - `POST /api/v1/systems/{systemId}/delivery-projects`
 - `POST /api/v1/workflows/generate`
+- `POST /api/v1/workspaces/{workspaceId}/onprem-certificates`
 - `POST /api/v1/workspaces/{workspaceId}/onprem-host-enrollments`
 - `POST /api/v1/workspaces/{workspaceId}/onprem-hosts/{machineId}/revoke`
 - `POST /api/v1/workspaces/{workspaceId}/qa-checklists`
