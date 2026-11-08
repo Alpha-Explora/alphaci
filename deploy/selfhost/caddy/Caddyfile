@@ -55,3 +55,10 @@
 # Apps deployed on this server, one site per environment address under
 # ONPREM_APPS_DOMAIN. Written by alphaci-app-routes; empty without the setting.
 import /etc/caddy/apps/*.caddy
+
+# Bound addresses: environments served under the customer's own hostname and
+# certificate (Hosting, "Your own address"). The on-prem agent writes one site
+# per environment, with its certificate, under its bindings folder (mounted
+# here); alphaci-app-routes reloads Caddy when they change. Each site proxies
+# to {$ALPHACI_APP_UPSTREAM}, set in compose.yaml.
+import /bindings/*/site.caddy

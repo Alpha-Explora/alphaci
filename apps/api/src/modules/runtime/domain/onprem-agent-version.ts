@@ -4,4 +4,4 @@
  * file enforces that), so an install that leaves ONPREM_INSTALLER_VERSION
  * unset offers the current agent rather than an old one.
  */
-export const ONPREM_AGENT_VERSION = '0.4.3';
+export const ONPREM_AGENT_VERSION = '0.5.0';

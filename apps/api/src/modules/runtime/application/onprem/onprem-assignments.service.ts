@@ -24,11 +24,13 @@ import {
   type ServiceRuntimeContract,
 } from '#kernel/ports/deployment-runtime.port';
 import type {
+  AddressBinding,
   AssignmentRequestConfig,
   OnpremAssignmentPort,
 } from '#kernel/ports/onprem-assignment.port';
 import {
   onpremAppsAddress,
+  onpremAppsHostEnding,
   resolveOnpremAppsDomain,
   type OnpremAppsDomain,
 } from '#kernel/config/onprem-apps-domain';
@@ -42,6 +44,13 @@ import {
   servedSlot,
   tunnelReport,
 } from '../../domain/onprem-tunnel';
+import {
+  bindingAddress,
+  bindingReport,
+  certificateCovers,
+  normalizeBinding,
+} from '../../domain/onprem-binding';
+import { OnpremCertificatesRepository } from '../../infrastructure/repositories/onprem-certificates.repository';
 import {
   OnpremAssignmentsRepository,
   requestedConfig,
@@ -195,13 +204,15 @@ export function validateAssignmentConfig(
   }
   if (
     !config.ingress ||
-    !(['direct', 'configured', 'tunnel'] as string[]).includes(
+    !(['direct', 'configured', 'tunnel', 'bound'] as string[]).includes(
       config.ingress.mode,
     )
   )
     throw new BadRequestException(
-      'Select direct access, configured ingress, or the automatic HTTPS address.',
+      'Select direct access, configured ingress, the automatic HTTPS address, or your own address.',
     );
+  // normalizeIngress has already checked the binding and derived its address.
+  if (config.ingress.mode === 'bound') return;
   // The machine reports a tunnel's address; a client never sets it.
   if (config.ingress.mode === 'tunnel' && config.ingress.publicUrl !== null)
     throw new BadRequestException(
@@ -236,10 +247,53 @@ export function validateAssignmentConfig(
     );
 }
 
-/** A just-saved assignment has no tunnel report yet. */
+/**
+ * A bound ingress as the server stores it: the binding checked and normalized,
+ * and its public URL derived from the hostname (a client never sets it).
+ * Other modes pass through unchanged.
+ */
+export function normalizeIngress(
+  config: AssignmentRequestConfig,
+  production: boolean,
+): AssignmentRequestConfig {
+  if (config?.ingress?.mode !== 'bound') return config;
+  const result = normalizeBinding(
+    (config.ingress as { binding?: unknown }).binding,
+    production,
+  );
+  if ('error' in result) throw new BadRequestException(result.error);
+  return {
+    ...config,
+    ingress: {
+      mode: 'bound',
+      publicUrl: bindingAddress(result.binding),
+      binding: result.binding,
+    },
+  };
+}
+
+/** The lowercase host of a URL setting; null when unset or not a URL. */
+function urlHost(value: string | undefined): string | null {
+  try {
+    return value ? new URL(value).hostname.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** A just-saved assignment has no tunnel or binding report yet. */
 function presented(assignment: MachineAssignment): CurrentMachineAssignment {
   return {
     ...assignment,
+    binding:
+      assignment.config.ingress.mode === 'bound'
+        ? bindingReport({
+            status: null,
+            message: null,
+            reportedAt: null,
+            fresh: false,
+          })
+        : null,
     tunnel:
       assignment.config.ingress.mode === 'tunnel'
         ? tunnelReport({
@@ -267,6 +321,7 @@ export class OnpremAssignmentsService implements OnpremAssignmentPort {
     private readonly config: ConfigService,
     @Inject(DEPLOYMENT_CAPABILITY_RESOLVER)
     private readonly capabilities: CapabilityResolverPort,
+    private readonly certificates: OnpremCertificatesRepository,
   ) {}
   /** ONPREM_APPS_DOMAIN: its addresses point at this server, which routes them. */
   private appsDomain(): OnpremAppsDomain | undefined {
@@ -319,14 +374,18 @@ export class OnpremAssignmentsService implements OnpremAssignmentPort {
       environmentId,
       userId,
     );
+    const production = environment.role === 'production';
     input = {
       ...input,
-      config: withAppsDomain(
-        input.config,
-        this.appsDomain(),
-        environment.slug,
-        project.repoFullName,
-        environment.role === 'production',
+      config: normalizeIngress(
+        withAppsDomain(
+          input.config,
+          this.appsDomain(),
+          environment.slug,
+          project.repoFullName,
+          production,
+        ),
+        production,
       ),
     };
     const membership = await this.manager(projectId, userId);
@@ -344,11 +403,12 @@ export class OnpremAssignmentsService implements OnpremAssignmentPort {
       throw new BadRequestException(
         'All environment targets must use on-prem Compose.',
       );
-    validateAssignmentConfig(
-      input.config,
-      slots,
-      environment.role === 'production',
-    );
+    validateAssignmentConfig(input.config, slots, production);
+    if (input.config.ingress.mode === 'bound')
+      await this.checkBinding(
+        input.config.ingress.binding,
+        membership.workspaceId,
+      );
     const result = await this.repository.assign({
       ...input,
       machineId,
@@ -438,6 +498,49 @@ export class OnpremAssignmentsService implements OnpremAssignmentPort {
       );
       return null;
     }
+  }
+  /**
+   * What a bound address needs beyond its shape: a name that is not AlphaCI's
+   * own or under its apps domain (the proxy would refuse duplicate sites), and
+   * an uploaded certificate of this workspace that is valid and covers it.
+   */
+  private async checkBinding(
+    binding: AddressBinding,
+    workspaceId: string,
+  ): Promise<void> {
+    if (
+      binding.hostname ===
+      urlHost(this.config.get<string>('PLATFORM_PUBLIC_URL'))
+    )
+      throw new BadRequestException(
+        `${binding.hostname} is AlphaCI's own address. Choose another hostname for the environment.`,
+      );
+    const apps = this.appsDomain();
+    if (
+      apps &&
+      (binding.hostname === apps.domain ||
+        binding.hostname.endsWith(onpremAppsHostEnding(apps)))
+    )
+      throw new BadRequestException(
+        `Names under ${apps.domain} get their address automatically. Choose the automatic HTTPS address, or a hostname outside that domain.`,
+      );
+    if (binding.tls.kind !== 'certificate') return;
+    const certificate = await this.certificates.forAssignment(
+      workspaceId,
+      binding.tls.certificateId,
+    );
+    if (!certificate)
+      throw new BadRequestException(
+        'That certificate is not in this team. Upload it under Hosts, then choose it.',
+      );
+    if (certificate.notAfter <= new Date())
+      throw new BadRequestException(
+        `Certificate ${certificate.name} has expired. Upload a renewed one.`,
+      );
+    if (!certificateCovers(certificate.hostnames, binding.hostname))
+      throw new BadRequestException(
+        `Certificate ${certificate.name} is for ${certificate.hostnames.join(', ')}, not ${binding.hostname}.`,
+      );
   }
   /** The environment's target slots, when every one of them is on-prem Compose. */
   private async onpremSlots(

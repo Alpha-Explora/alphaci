@@ -14,6 +14,7 @@ import { OnpremMachinesRepository } from '../../src/modules/runtime/infrastructu
 import { ReleaseRegistryRepository } from '../../src/modules/runtime/infrastructure/repositories/release-registry.repository';
 import { QaProjectRunsRepository } from '../../src/modules/projects/infrastructure/qa-project-runs.repository';
 import { hashMachineSecret } from '../../src/modules/runtime/application/onprem/onprem-hosts.service';
+import { OnpremCertificatesRepository } from '../../src/modules/runtime/infrastructure/repositories/onprem-certificates.repository';
 
 describe('Reusable machine assignment authorization', () => {
   const pool = new Pool({
@@ -38,7 +39,8 @@ describe('Reusable machine assignment authorization', () => {
   } as unknown as DatabaseService;
   const assignments = new OnpremAssignmentsRepository(db),
     machines = new OnpremMachinesRepository(db),
-    releases = new ReleaseRegistryRepository(db);
+    releases = new ReleaseRegistryRepository(db),
+    certificates = new OnpremCertificatesRepository(db);
   const workspaceId = randomUUID(),
     userId = randomUUID(),
     hash = hashMachineSecret(randomUUID());
@@ -119,6 +121,10 @@ describe('Reusable machine assignment authorization', () => {
     );
     await pool.query(
       'DELETE FROM env_provisioning.onprem_enrollments WHERE workspace_id=$1',
+      [workspaceId],
+    );
+    await pool.query(
+      'DELETE FROM env_provisioning.onprem_certificates WHERE workspace_id=$1',
       [workspaceId],
     );
     await pool.query(
@@ -355,6 +361,98 @@ describe('Reusable machine assignment authorization', () => {
       publicUrl: null,
     });
     await assignments.unassign(projectId, environmentId, bound.id);
+  });
+  it('serves a bound address: one name per environment, certificate held by its machine only', async () => {
+    const certificate = await certificates.create({
+      workspaceId,
+      userId,
+      name: 'Orders',
+      hostnames: ['*.acme.e2e'],
+      issuer: 'CN=Acme Internal CA',
+      notBefore: new Date(Date.now() - 86_400_000),
+      notAfter: new Date(Date.now() + 86_400_000),
+      sha256: 'b'.repeat(64),
+      certificatePem:
+        '-----BEGIN CERTIFICATE-----\nx\n-----END CERTIFICATE-----\n',
+      privateKeyCiphertext: 'v1:iv:tag:data',
+    });
+    const hostname = `orders-${randomUUID().slice(0, 8)}.acme.e2e`;
+    const boundConfig: AssignmentConfig = {
+      ports: [{ slot: 'frontend', hostPort: 18220, containerPort: 3000 }],
+      health: [{ slot: 'frontend', path: '/' }],
+      ingress: {
+        mode: 'bound',
+        publicUrl: `https://${hostname}`,
+        binding: {
+          hostname,
+          listenAddress: '10.0.0.5',
+          tls: { kind: 'certificate', certificateId: certificate.id },
+        },
+      },
+    };
+    const bound = await assignments.assign({ ...input(), config: boundConfig });
+    // Another environment cannot take the same name.
+    await expect(
+      assignments.assign({
+        ...input(),
+        environmentId: secondEnv,
+        config: boundConfig,
+      }),
+    ).rejects.toThrow('Another environment already uses this hostname');
+    expect(await certificates.list(workspaceId)).toEqual([
+      expect.objectContaining({ id: certificate.id, inUse: 1 }),
+    ]);
+    await expect(
+      certificates.remove(workspaceId, certificate.id),
+    ).rejects.toThrow('Environments still use this certificate');
+    const reply = await machines.heartbeat(hash, {
+      agentVersion: '0.5.0',
+      checks: [],
+      bindings: [
+        { assignmentId: bound.id, status: 'running', message: 'Serving.' },
+      ],
+    });
+    expect(reply.bindings).toEqual([
+      {
+        assignmentId: bound.id,
+        projectId,
+        environmentId,
+        hostPort: bound.config.ports[0]!.hostPort,
+        hostname,
+        listenAddress: '10.0.0.5',
+        tls: {
+          kind: 'certificate',
+          certificateId: certificate.id,
+          sha256: 'b'.repeat(64),
+        },
+      },
+    ]);
+    const current = (await assignments.current(
+      projectId,
+      environmentId,
+    )) as CurrentMachineAssignment;
+    expect(current.binding).toMatchObject({
+      status: 'running',
+      message: 'Serving.',
+    });
+    expect(current.tunnel).toBeNull();
+    expect(
+      await assignments.environmentAddress(projectId, [environmentId]),
+    ).toBe(`https://${hostname}`);
+    // Only a machine serving it receives the key.
+    expect(
+      await certificates.forMachine(machineId, certificate.id),
+    ).toMatchObject({
+      sha256: 'b'.repeat(64),
+      privateKeyCiphertext: 'v1:iv:tag:data',
+    });
+    expect(
+      await certificates.forMachine(randomUUID(), certificate.id),
+    ).toBeNull();
+    await assignments.unassign(projectId, environmentId, bound.id);
+    expect(await certificates.forMachine(machineId, certificate.id)).toBeNull();
+    expect(await certificates.remove(workspaceId, certificate.id)).toBe(true);
+    expect(await certificates.list(workspaceId)).toEqual([]);
   });
   it('gives the QA verify stage the address of the environment a branch names', async () => {
     // Projects resolves the branch on its own table; Runtime reads the host.

@@ -25,8 +25,11 @@ import {
 } from '#kernel/config/release-signing-key';
 import type {
   AssignmentConfig,
+  BindingStatus,
   TunnelStatus,
 } from '#kernel/ports/onprem-assignment.port';
+import { bindingReadiness, bindingReport } from '../../domain/onprem-binding';
+import { OnpremCertificatesRepository } from '../../infrastructure/repositories/onprem-certificates.repository';
 import {
   TUNNEL_REPORT_WINDOW,
   agentAtLeast,
@@ -65,6 +68,8 @@ export class OnpremReadinessService {
     private readonly assignments?: OnpremAssignmentsRepository,
     @Optional()
     private readonly serviceLinks?: OnpremServiceLinksService,
+    @Optional()
+    private readonly certificates?: OnpremCertificatesRepository,
   ) {}
 
   async read(
@@ -99,6 +104,7 @@ export class OnpremReadinessService {
         active_host_index: boolean;
         machine_schema: boolean;
         tunnel_schema: boolean;
+        binding_schema: boolean;
       }>(
         `SELECT to_regclass('env_provisioning.releases') AS releases,
                 to_regclass('env_provisioning.onprem_hosts') AS hosts,
@@ -110,7 +116,9 @@ export class OnpremReadinessService {
                  AND to_regclass('env_provisioning.onprem_workspace_lifecycle') IS NOT NULL
                  AND to_regclass('env_provisioning.onprem_port_reservations') IS NOT NULL
                  AND EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('env_provisioning.onprem_hosts') AND attname='machine_id' AND NOT attisdropped)) AS machine_schema,
-                EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('env_provisioning.onprem_hosts') AND attname='tunnel_reported_at' AND NOT attisdropped) AS tunnel_schema`,
+                EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('env_provisioning.onprem_hosts') AND attname='tunnel_reported_at' AND NOT attisdropped) AS tunnel_schema,
+                (to_regclass('env_provisioning.onprem_certificates') IS NOT NULL
+                 AND EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('env_provisioning.onprem_hosts') AND attname='binding_reported_at' AND NOT attisdropped)) AS binding_schema`,
       );
       const schema = result.rows[0];
       const missing = [
@@ -122,6 +130,8 @@ export class OnpremReadinessService {
           '20261015020000_onprem_machines.sql and 20261015030000_onprem_machine_assignments.sql',
         !schema?.tunnel_schema &&
           '20261017010000_onprem_tunnel_reports.sql: onprem_hosts tunnel columns',
+        !schema?.binding_schema &&
+          '20261108010000_onprem_address_bindings.sql: onprem_certificates and onprem_hosts binding columns',
       ].filter(Boolean);
       check(
         'schema',
@@ -130,7 +140,11 @@ export class OnpremReadinessService {
           ? 'Missing schema objects: ' + missing.join(', ')
           : 'Required release and host schema objects exist.',
       );
-      if (schema?.machine_schema && schema.tunnel_schema) {
+      if (
+        schema?.machine_schema &&
+        schema.tunnel_schema &&
+        schema.binding_schema
+      ) {
         await this.machineChecks(
           projectId,
           environmentId,
@@ -328,12 +342,18 @@ export class OnpremReadinessService {
       tunnel_message: string | null;
       tunnel_reported_at: Date | null;
       tunnel_fresh: boolean;
+      binding_status: BindingStatus | null;
+      binding_message: string | null;
+      binding_reported_at: Date | null;
+      binding_fresh: boolean;
     }>(
       `SELECT h.machine_id, m.revoked_at IS NOT NULL AS revoked,
                 m.last_seen_at > NOW()-INTERVAL '90 seconds' AS fresh,
                 m.checks, m.agent_version, h.assignment_config,
                 h.tunnel_status, h.tunnel_url, h.tunnel_message, h.tunnel_reported_at,
-                h.tunnel_reported_at > NOW()-INTERVAL '${TUNNEL_REPORT_WINDOW}' AS tunnel_fresh
+                h.tunnel_reported_at > NOW()-INTERVAL '${TUNNEL_REPORT_WINDOW}' AS tunnel_fresh,
+                h.binding_status, h.binding_message, h.binding_reported_at,
+                h.binding_reported_at > NOW()-INTERVAL '${TUNNEL_REPORT_WINDOW}' AS binding_fresh
            FROM env_provisioning.onprem_hosts h
            LEFT JOIN env_provisioning.onprem_machines m ON m.id=h.machine_id
           WHERE h.project_id=$1 AND h.environment_id=$2 AND h.revoked_at IS NULL`,
@@ -373,22 +393,38 @@ export class OnpremReadinessService {
         : 'failed',
       'Every deployed slot needs an explicit health path before the agent can deploy it.',
     );
-    const ingress = config
-      ? ingressReadiness(
-          config.ingress,
-          config.ingress.mode === 'tunnel'
-            ? tunnelReport({
-                status: host.tunnel_status,
-                url: host.tunnel_url,
-                message: host.tunnel_message,
-                reportedAt: host.tunnel_reported_at,
-                fresh: host.tunnel_fresh,
-              })
-            : null,
-          production,
-          host.agent_version,
-        )
-      : { status: 'failed' as const, message: 'No assignment configuration.' };
+    const ingress = !config
+      ? { status: 'failed' as const, message: 'No assignment configuration.' }
+      : config.ingress.mode === 'bound'
+        ? bindingReadiness(
+            config.ingress.binding,
+            bindingReport({
+              status: host.binding_status,
+              message: host.binding_message,
+              reportedAt: host.binding_reported_at,
+              fresh: host.binding_fresh,
+            }),
+            host.agent_version,
+            config.ingress.binding.tls.kind === 'certificate'
+              ? ((await this.certificates?.readinessFacts(
+                  config.ingress.binding.tls.certificateId,
+                )) ?? null)
+              : null,
+          )
+        : ingressReadiness(
+            config.ingress,
+            config.ingress.mode === 'tunnel'
+              ? tunnelReport({
+                  status: host.tunnel_status,
+                  url: host.tunnel_url,
+                  message: host.tunnel_message,
+                  reportedAt: host.tunnel_reported_at,
+                  fresh: host.tunnel_fresh,
+                })
+              : null,
+            production,
+            host.agent_version,
+          );
     check('ingress', ingress.status, ingress.message);
     await this.serviceLinkCheck(
       host.machine_id,

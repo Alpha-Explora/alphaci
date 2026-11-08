@@ -46,7 +46,7 @@ Do this once per AlphaCI server.
    - `ONPREM_RELEASES_ENABLED=true`
    - `ENV_PROVISIONING_ENABLED=true`
    - An installer source (see [Installer source](#installer-source)).
-   - `ONPREM_INSTALLER_VERSION`, the agent version you serve. Unset, the server offers the agent this release ships (`deploy/onprem/agent/release-manifest.json`, currently `0.4.3`). Set it to serve another version, and for `alphaci-ctl server-host`.
+   - `ONPREM_INSTALLER_VERSION`, the agent version you serve. Unset, the server offers the agent this release ships (`deploy/onprem/agent/release-manifest.json`, currently `0.5.0`). Set it to serve another version, and for `alphaci-ctl server-host`.
 2. Releases are signed by the server's own key (`ALPHACI_RELEASE_SIGNER=file`). Enrollment hands that key to every host automatically. `ALPHACI_RELEASE_TRUST_KEYS_JSON` is needed only for extra keys, such as the previous key during a rotation.
 3. If the release images are private, save a pull token: `./alphaci-ctl registry-token --github-login <token owner>`. See [Private release images](#private-release-images).
 4. Apply the settings with `docker compose up -d`, then run `./alphaci-ctl doctor`. While `ONPREM_RELEASES_ENABLED=true`, doctor adds two checks: `on-prem settings are present and valid` names each missing or malformed setting, and `release trust key for on-prem hosts is available` prints the key ID that enrollment trusts.
@@ -65,7 +65,7 @@ Set these in the hosting service's environment (for example the Render service's
 | `ENV_PROVISIONING_ENABLED` | `true` |
 | `ALPHACI_RELEASE_TRUST_KEYS_JSON` | One-line JSON object mapping each trusted key ID to its PEM public key. See [Release signing on a hosted backend](#release-signing-on-a-hosted-backend). |
 | Signing source | Cloud KMS settings, or the lab key for lab hosts. See the same section. |
-| `ONPREM_INSTALLER_VERSION` | The agent version to serve. Default: the agent this backend ships (`deploy/onprem/agent/release-manifest.json`, currently `0.4.3`). |
+| `ONPREM_INSTALLER_VERSION` | The agent version to serve. Default: the agent this backend ships (`deploy/onprem/agent/release-manifest.json`, currently `0.5.0`). |
 | Installer source | `ONPREM_INSTALLER_RELEASE_REPO` and, recommended, `ONPREM_INSTALLER_SHA256`. See [Installer source](#installer-source). |
 | `ONPREM_INSTALLER_RELEASE_TOKEN` | Optional. A GitHub token used only for API calls, to avoid the unauthenticated rate limit. Secret. |
 | `ONPREM_REGISTRY_TOKEN_FILE`, `ONPREM_REGISTRY_USERNAME` | Optional. The pull credential lent to hosts. See [Private release images](#private-release-images). |
@@ -88,8 +88,8 @@ Build an archive locally with `node scripts/package-onprem-agent.mjs`. It writes
 2. On the merged commit, push an annotated tag:
 
    ```bash
-   git tag -a onprem-agent-v0.4.3 -m "On-prem agent 0.4.3"
-   git push origin onprem-agent-v0.4.3
+   git tag -a onprem-agent-v0.5.0 -m "On-prem agent 0.5.0"
+   git push origin onprem-agent-v0.5.0
    ```
 
 3. The **On-prem agent release** workflow (`.github/workflows/onprem-agent-release.yml`) creates the GitHub Release with five assets: `alphaci-agent-<version>.tar.gz`, its `.sha256`, `installer-release.json`, `alphaci-agent_<version>_all.deb`, and its `.sha256`. Manual dispatch from a branch only builds the files as a workflow artifact.
@@ -212,10 +212,11 @@ Choose how users reach the environment ("How users reach it" in Hosting or in th
 - **Automatic HTTPS address.** The default for an environment that runs a frontend. A backend alone defaults to direct access.
   - With `ONPREM_APPS_DOMAIN` set on the server, the address is permanent: `https://<repository>.<domain>` for production and `https://<environment>-<repository>.<domain>` for other environments. This is for deployments on the AlphaCI server itself, whose Caddy routes the names. See the install runbook.
   - Without it, the machine runs a Cloudflare quick tunnel (below).
+- **Your own address.** The machine serves the environment under a hostname you choose, on port 443, with your certificate, like an IIS binding. See [Your own address](#your-own-address).
 - **Through an existing proxy or domain.** Enter an HTTPS URL that the customer's own proxy, DNS, or named tunnel serves, pointing at the environment's frontend host port (Hosting lists it as "port N → 3000").
 - **Direct.** The host port on the machine's own network. Not allowed for production.
 
-QA Studio and previews open the environment's current address: the configured or apps-domain URL, or the running tunnel.
+QA Studio and previews open the environment's current address: your own address, the configured or apps-domain URL, or the running tunnel.
 
 ### Automatic HTTPS address (tunnel)
 
@@ -239,6 +240,41 @@ journalctl -u 'alphaci-tunnel@*' -n 200 --no-pager
 **A quick-tunnel address changes when the tunnel restarts**: after a reboot, after cloudflared exits, or after the port changes. The new address appears on the next check-in. Tell users, and update any link, webhook, or OAuth redirect that uses it. Cloudflare documents quick tunnels for testing. For production without an apps domain, use a named tunnel or proxy on the customer's domain and choose **Through an existing proxy or domain**. AlphaCI does not create or rotate named tunnels.
 
 A machine stops all its tunnels when its credential is rejected (HTTP 401) at check-in, and on uninstall.
+
+### Your own address
+
+This replaces an IIS site binding. For each environment you set:
+
+| IIS binding | In Hosting, "Your own address" |
+|---|---|
+| Host name | **Hostname**, for example `orders.acme.local`. One environment per name, across AlphaCI. Not AlphaCI's own name, and not a name under `ONPREM_APPS_DOMAIN`. |
+| IP address | **Listen address**: an IPv4 or IPv6 address configured on the machine. Empty means every address ("All Unassigned"). |
+| Port | Always 443. Port 80 redirects to HTTPS. |
+| SSL certificate | **Certificate**: an uploaded certificate, an automatic one, or the internal test certificate. |
+
+Certificates:
+
+- **Uploaded.** In Hosts, under **Certificates**, choose **Upload** and give it a name. Upload the `.pfx` file and its password, exported from IIS with **Yes, export the private key**, or paste a PEM certificate chain and an unencrypted PEM key. AlphaCI checks that the key matches, that the certificate names DNS hosts, and that it has not expired. It stores the key encrypted. The certificate must cover the hostname; a wildcard such as `*.acme.local` covers one level. Readiness warns 30 days before it expires. To renew, upload the new certificate, choose it for each environment, then delete the old one. A certificate in use cannot be deleted.
+- **Automatic.** The machine obtains a public certificate from Let's Encrypt. The hostname needs public DNS pointing at the machine, and inbound 80 and 443 from the internet. On an internal-only network, upload a certificate from your CA instead.
+- **Internal (test only).** The proxy's private CA. Browsers do not trust it. Not allowed for production.
+
+DNS: AlphaCI does not create records. Create an A (or AAAA) record for the hostname that points at the listen address, or at the machine when it is empty. Readiness names the record once the machine serves the address.
+
+How the machine serves it: the agent writes one Caddy site per environment, with its certificate, to `/opt/alphaci/bindings/<environment ID>/` (the key is root-only, mode 0600). On the AlphaCI server (`alphaci-ctl server-host`), the install's own Caddy imports those sites; see the [install runbook](runbook-selfhost-install.md#your-own-addresses-on-the-alphaci-server). On any other machine, the agent runs one Caddy container, `alphaci-edge`, on the host network. It starts with the first binding and is removed with the last; its certificate state is kept in the `alphaci-edge-data` volume. Set `ALPHACI_EDGE_IMAGE` in `/opt/alphaci/agent.env` to use another image (default `caddy:2-alpine`).
+
+Requirements:
+
+- Agent 0.5.0 or newer. Readiness asks for an update otherwise.
+- Ports 443 and 80 free on the listen address. If another program holds them, Hosting says so and the address is not served.
+- On a Windows (WSL2) host, forward 443 and 80 from Windows to the distro, as for the application ports.
+
+Hosting shows what the machine reports: **Serving**, or the reason it cannot, such as `10.0.0.9 is not an address of this machine` or `Port 443 on every address is used by another program`. Deployments do not wait for the address. Logs:
+
+```bash
+sudo docker logs --tail 200 alphaci-edge
+```
+
+A machine removes its bindings and their keys, and stops `alphaci-edge`, when its credential is rejected (HTTP 401) at check-in, and on uninstall.
 
 ### Two repositories on one machine
 
@@ -280,7 +316,7 @@ Run `sudo /opt/alphaci/bin/alphaci-supervisor support-bundle`. It writes `/opt/a
 
 ### Update the agent
 
-Readiness names the agent version a feature needs (0.3.0 for the tunnel, 0.4.0 for linked services, 0.4.3 for the registry pull credential). To update an enrolled Ubuntu machine, download and verify the new `alphaci-agent-<version>.tar.gz`, extract it, and run `sudo bash agent/install.sh --enroll https://YOUR-API`. The installer replaces the agent files and keeps the existing enrollment (`Existing machine enrollment retained`), so no code is needed. With the package, install the new `.deb` with `apt-get`. The next check-in reports the new version.
+Readiness names the agent version a feature needs (0.3.0 for the tunnel, 0.4.0 for linked services, 0.4.3 for the registry pull credential, 0.5.0 for your own address). To update an enrolled Ubuntu machine, download and verify the new `alphaci-agent-<version>.tar.gz`, extract it, and run `sudo bash agent/install.sh --enroll https://YOUR-API`. The installer replaces the agent files and keeps the existing enrollment (`Existing machine enrollment retained`), so no code is needed. With the package, install the new `.deb` with `apt-get`. The next check-in reports the new version.
 
 ### Agent request limits
 

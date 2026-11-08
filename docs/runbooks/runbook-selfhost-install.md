@@ -67,7 +67,7 @@ cp .env.example .env   # then set ALPHACI_API_IMAGE and ALPHACI_WEB_IMAGE to the
 
 | Direction | Port | To | Why |
 |---|---|---|---|
-| Inbound | 443 | the appliance | The web app, the API, the `/api/v1/ci/*` routes that runners call, the OAuth callback, the GitHub webhook, and app addresses under `ONPREM_APPS_DOMAIN`. |
+| Inbound | 443 | the appliance | The web app, the API, the `/api/v1/ci/*` routes that runners call, the OAuth callback, the GitHub webhook, app addresses under `ONPREM_APPS_DOMAIN`, and your own addresses. |
 | Inbound | 80 | the appliance | Automatic certificates only (`ALPHACI_TLS_DIRECTIVE` empty, and every app address under `ONPREM_APPS_DOMAIN`). It serves the ACME challenge and redirects to HTTPS. |
 | Inbound | any other | — | Deny. Postgres is not published. |
 
@@ -178,6 +178,7 @@ Edit `alphaci.env`, then run `docker compose up -d` so `api` restarts with the c
 - **Workspaces and notifications.** On by default: `init` writes `WORKSPACES_ENABLED=true` and `NOTIFICATIONS_ENABLED=true`, because the enterprise edition includes both. Set either to `false` to turn that feature off; the web then hides it. An install from before these lines has neither, so add both when you upgrade. See [Workspace member notifications](../operations/workspace-member-notifications.md).
 - **Hierarchy sync to GitHub teams.** `HIERARCHY_GITHUB_SYNC_MODE=live` writes grants and revocations to GitHub teams. Grant the App the organization permissions first. With `stub`, nothing is written to GitHub.
 - **On-prem hosts.** The commented on-prem block in `alphaci.env.example`. See the [on-prem host setup runbook](runbook-onprem-host-setup.md#self-hosted-appliance).
+- **One listen address.** By default the proxy listens on every address of the server. To listen on one IPv4 address only, as an IIS binding does, set `ALPHACI_BIND_ADDRESS=<address>` in `.env` (not `alphaci.env`) and run `docker compose up -d proxy`.
 - **External PostgreSQL.** Point `secrets/database_url` at the server with `sslmode=require` or `verify-full`, and set `DATABASE_CA_CERT` to its CA certificate.
 
 ## Private release images
@@ -213,16 +214,16 @@ Before you start:
    services:
      api:
        volumes:
-         - ./installer/alphaci-agent-0.4.3.tar.gz:/opt/alphaci-installer/alphaci-agent.tar.gz:ro
+         - ./installer/alphaci-agent-0.5.0.tar.gz:/opt/alphaci-installer/alphaci-agent.tar.gz:ro
    ```
 
    with, in `alphaci.env`:
 
    ```text
-   ONPREM_INSTALLER_VERSION=0.4.3
+   ONPREM_INSTALLER_VERSION=0.5.0
    ONPREM_INSTALLER_PATH=/opt/alphaci-installer/alphaci-agent.tar.gz
    ONPREM_INSTALLER_SHA256=<sha256 of the archive>
-   ONPREM_INSTALLER_URL=https://alphaci.acme.example/api/v1/onprem/installer/0.4.3
+   ONPREM_INSTALLER_URL=https://alphaci.acme.example/api/v1/onprem/installer/0.5.0
    ```
 
    The archive file must be readable by uid 1001. `ONPREM_INSTALLER_URL` lets **Add host** issue codes for other machines from the same archive.
@@ -241,6 +242,12 @@ sudo ./alphaci-ctl server-host --team "Platform" --github-login <login>
 It creates a one-time enrollment code for that team, downloads and verifies the archive, runs `install.sh --enroll https://<ALPHACI_HOSTNAME> ubuntu`, installs `/opt/alphaci/bin/alphaci-app-routes`, and enables `alphaci-app-routes.timer`. The machine appears in Hosts as `alphaci-server` unless `--name` is given. One server can be enrolled in several teams; host ports stay unique across them.
 
 With `ONPREM_APPS_DOMAIN` set, every environment with a frontend gets `https://<environment>-<repository>.<domain>`, and production gets `https://<repository>.<domain>` (each with `-<suffix>` before the domain when `ONPREM_APPS_LABEL_SUFFIX` is set). Production is then assigned automatically when the team has one connected machine. Every 30 seconds, `alphaci-app-routes` reads the agent's assignments, writes one Caddy site per address to `caddy/apps/apps.caddy` (proxied to the environment's host port through `host.docker.internal`), and reloads Caddy when the routes change. Without `ONPREM_APPS_DOMAIN`, environments get a Cloudflare quick tunnel instead.
+
+### Your own addresses on the AlphaCI server
+
+An environment on this server can also use **Your own address** in Hosting: a hostname and certificate you choose, like an IIS binding (see the [on-prem host setup runbook](runbook-onprem-host-setup.md#your-own-address)). `server-host` writes `appliance` to `/opt/alphaci/edge-mode`, so the agent does not start its own proxy here. It writes each site and its certificate under `/opt/alphaci/bindings/`, which `compose.yaml` mounts into the proxy at `/bindings` (`ALPHACI_AGENT_HOME` in `.env` moves it). `alphaci-app-routes` reloads Caddy within 30 seconds of a change. A refused reload keeps the previous configuration and is retried on the next run; see `journalctl -u alphaci-app-routes.service`.
+
+The proxy listens on every address, or on `ALPHACI_BIND_ADDRESS`, for every site. So an environment on this server cannot set its own listen address; Hosting reports that and asks you to clear it. An install from before this release needs the new `compose.yaml` and `caddy/Caddyfile`, and `server-host` run again (it keeps the enrollment) to write the edge-mode file.
 
 ## Backup
 

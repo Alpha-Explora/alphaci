@@ -24,6 +24,9 @@ import { DeploymentTargetsController } from './api/deployment-targets.controller
 import { EnvironmentDeploymentTargetsController } from './api/environment-deployment-targets.controller';
 import { EnvironmentReleasesController } from './api/environment-releases.controller';
 import { OnpremAgentController } from './api/onprem-agent.controller';
+import { OnpremCertificatesController } from './api/onprem-certificates.controller';
+import { OnpremCertificatesService } from './application/onprem/onprem-certificates.service';
+import { OnpremCertificatesRepository } from './infrastructure/repositories/onprem-certificates.repository';
 import { OnpremReadinessController } from './api/onprem-readiness.controller';
 import { OnpremReadinessService } from './application/onprem/onprem-readiness.service';
 import { ProjectReleasesController } from './api/project-releases.controller';
@@ -148,6 +151,7 @@ import {
     EnvironmentDeploymentTargetsController,
     EnvironmentReleasesController,
     OnpremAgentController,
+    OnpremCertificatesController,
     OnpremReadinessController,
     ProjectReleasesController,
     EnvVarsController,
@@ -156,6 +160,8 @@ import {
   providers: [
     OnpremAssignmentsService,
     OnpremAssignmentsRepository,
+    OnpremCertificatesRepository,
+    OnpremCertificatesService,
     OnpremServiceLinksService,
     { provide: ONPREM_ASSIGNMENT, useExisting: OnpremAssignmentsService },
     ProviderConnectionsRepository,

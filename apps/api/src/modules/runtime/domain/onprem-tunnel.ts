@@ -121,14 +121,16 @@ export function servedSlot(
 
 /**
  * The address an assignment is reached at: its fresh tunnel address in tunnel
- * mode, the configured public URL otherwise.
+ * mode, the configured or bound public URL otherwise.
  */
 export function effectivePublicAddress(
   ingress: AssignmentIngress,
   tunnel: TunnelReport | null,
 ): string | null {
   if (ingress.mode === 'tunnel') return tunnel?.publicUrl ?? null;
-  return ingress.mode === 'configured' ? ingress.publicUrl : null;
+  return ingress.mode === 'configured' || ingress.mode === 'bound'
+    ? ingress.publicUrl
+    : null;
 }
 
 /** The host port the tunnel serves. */

@@ -47,7 +47,8 @@ sources:
 Runtime owns `onprem_workspace_lifecycle`, `onprem_machines`, `onprem_enrollments`,
 and `onprem_port_reservations`. Apply migrations `20261015020000` and
 `20261015030000` after `20261015010000`, then `20261016010000` and
-`20261017010000` (tunnel reports), before activating this version. A
+`20261017010000` (tunnel reports) and `20261108010000` (certificates and
+binding reports), before activating this version. A
 self-hosted install applies the whole tree in the same order with its ledgered
 runner (`npm run db:migrate:selfhost`, the Compose `migrate` service), which
 finishes before the API starts. RLS and
@@ -68,7 +69,9 @@ Releases need `ENV_PROVISIONING_ENABLED=true`; hosts and machines also need
   `onprem_machine_` credential plus public verification keys. A lost response
   cannot replay credentials. Issue a new enrollment or explicit replacement.
 - `POST /onprem/heartbeat` uses the machine bearer credential and reports agent
-  version and prerequisite checks. A check-in older than 90 seconds is offline.
+  version, prerequisite checks, and the state of each tunnel and bound address.
+  The reply lists the reserved host ports, the tunnels to keep open, and the
+  bound addresses to serve. A check-in older than 90 seconds is offline.
   Heartbeat, assignment polling, and status reports are limited to 120 requests
   per minute per machine credential, and to 300 per minute per client address
   for requests that need a credential lookup.
@@ -108,7 +111,7 @@ explicit null. A request names exactly one port and one health entry per
 target slot. A container port is an integer from 1 to 65535. A health path
 starts with a single `/`, contains no `..`, and has no encoded `.`, `/` or `\`
 (`%2e`, `%2f`, `%5c`). Ingress is `direct`, `configured` (an HTTP or HTTPS URL
-without credentials), or `tunnel`. Null records missing health evidence; the agent reports the
+without credentials), `tunnel`, or `bound` (see [Bound addresses](#bound-addresses)). Null records missing health evidence; the agent reports the
 deployment failed without pulling or applying it until health is configured.
 When nobody chose them, the container port and health path come from the
 runtime contract of the app AlphaCI scaffolded for that project row
@@ -150,6 +153,57 @@ On-prem deployment history items and an on-prem target's `publicUrl` carry
 the environment's current address: the configured URL, or the tunnel's while
 it runs. QA Studio and previews open that address, and the embedding probe
 accepts `*.trycloudflare.com` and names under `ONPREM_APPS_DOMAIN`.
+
+### Bound addresses
+
+`bound` ingress is the IIS binding: the machine itself serves the environment
+under the customer's hostname on port 443 ([ADR-0023](../decisions/adr-0023-bound-addresses.md)).
+The request carries `binding: {hostname, listenAddress, tls}` and a null
+`publicUrl`; the server stores `publicUrl` as `https://<hostname>`.
+
+- `hostname` is a lowercase DNS name of two or more labels, without a scheme,
+  port or wildcard. It is active on one environment at most, across all
+  workspaces (index `onprem_hosts_bound_hostname`, answered with 409). It may
+  not be the host of `PLATFORM_PUBLIC_URL` or a name under `ONPREM_APPS_DOMAIN`.
+- `listenAddress` is an IPv4 or IPv6 literal on the machine, or null for
+  every address.
+- `tls` is `{kind: 'acme'}`, `{kind: 'internal'}` (not for production), or
+  `{kind: 'certificate', certificateId}`, a certificate of the project's
+  workspace that has not expired and whose DNS names cover the hostname. A
+  wildcard covers one label.
+
+Workspace certificates (same guards as the Hosts routes; listing needs any
+workspace role, changes need a hosting role):
+
+- `GET /workspaces/:workspaceId/onprem-certificates` lists `{id, name,
+  hostnames, issuer, notBefore, notAfter, sha256, createdAt, inUse}`, never the
+  key.
+- `POST /workspaces/:workspaceId/onprem-certificates` takes `{name, pfxBase64,
+  password}` or `{name, certificatePem, privateKeyPem}`, at most 64 KB. The
+  private key must match a certificate in the upload; the stored chain starts
+  with that certificate, followed by its issuers found in the upload. The key
+  is stored as PKCS#8, encrypted with `ENV_PROVISIONING_ENCRYPTION_KEY`.
+  `sha256` is the hash of the stored chain PEM.
+- `DELETE /workspaces/:workspaceId/onprem-certificates/:certificateId` answers
+  204, or 409 while an active assignment uses the certificate.
+
+Each heartbeat reply lists the machine's bound addresses as `bindings:
+[{assignmentId, projectId, environmentId, hostPort, hostname, listenAddress,
+tls}]`, where an uploaded certificate's `tls` adds its `sha256`. The host port
+is the frontend's, or the only slot's. The machine fetches `GET
+/onprem/certificates/:certificateId` (machine credential) when its copy's hash
+differs; the route answers `{id, sha256, certificatePem, privateKeyPem}` only
+while an active assignment of that machine uses the certificate. The next
+heartbeat reports `bindings: [{assignmentId, status, message}]` with status
+`starting`, `running`, `unavailable` or `failed`; like tunnel reports, the
+list replaces the previous one, and a report older than 90 seconds shows as
+`waiting`. The assignment response returns it as `binding` (null outside
+`bound` mode).
+
+Readiness for `bound` asks for agent 0.5.0 or newer, fails for a deleted or
+expired certificate and for any machine state other than `running`, and
+otherwise says which A record to create, warning 30 days before the
+certificate expires. Deploying does not wait for a binding.
 
 Readiness distinguishes missing schema, offline/revoked machines, prerequisites,
 missing health paths, and still-unverified runner, registry, port, ingress, and

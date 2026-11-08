@@ -46,6 +46,7 @@ export function shellFixture() {
     ['enroll.sh', 'enroll'],
     ['tunnel.sh', 'tunnel.sh'],
     ['tunnel-run.sh', 'tunnel-run'],
+    ['binding.sh', 'binding.sh'],
   ])
     writeFileSync(
       join(work, 'host/bin', destination!),
@@ -107,6 +108,7 @@ case "$url" in
  */heartbeat) case "$data" in @*) cp "\${data#@}" /work/heartbeat-body.json;; esac; if [ -f /work/revoked ]; then [ -z "$wfmt" ] || printf 401; exit 0; fi; echo heartbeat >> /work/requests.log; if [ -f /work/heartbeat-reply.json ]; then cp /work/heartbeat-reply.json "\${output:-/dev/stdout}"; else echo '{"ports":[]}' > "\${output:-/dev/stdout}"; fi; [ -z "$wfmt" ] || printf 200;;
 
  */assignments) cp /work/assignments.json "$output"; echo assignments >> /work/requests.log;;
+ */certificates/*) echo "certificate \${url##*/}" >> /work/requests.log; if [ -f /work/certificate.json ]; then cp /work/certificate.json "$output"; [ -z "$wfmt" ] || printf 200; else [ -z "$wfmt" ] || printf 404; fi;;
  */status) case "$data" in @*) cat "\${data#@}" >> /work/statuses.log;; *) printf '%s' "$data" >> /work/statuses.log;; esac; printf '\\n' >> /work/statuses.log;;
 esac
 `,

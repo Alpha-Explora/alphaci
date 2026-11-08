@@ -122,6 +122,11 @@ case "$command" in
     [ -z "$sha" ] || echo "$sha  $work/agent.tgz" | sha256sum -c - > /dev/null
     tar -xzf "$work/agent.tgz" -C "$work"
     ALPHACI_ENROLL_CODE_FILE="$work/code" bash "$work/agent/install.sh" --enroll "https://$host" ubuntu
+    # Bound addresses on this server are served by this install's Caddy, not
+    # by an agent-run proxy, which could not share ports 80 and 443 with it.
+    printf 'appliance\n' > /opt/alphaci/edge-mode
+    chmod 0644 /opt/alphaci/edge-mode
+    install -d -m 0755 /opt/alphaci/bindings
     install -m 0755 "$DIR/alphaci-app-routes" /opt/alphaci/bin/alphaci-app-routes
     sed "s|^ExecStart=.*|Environment=ALPHACI_INSTALL_DIR=$DIR\nExecStart=/opt/alphaci/bin/alphaci-app-routes|" \
       "$DIR/alphaci-app-routes.service" > /etc/systemd/system/alphaci-app-routes.service

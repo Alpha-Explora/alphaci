@@ -6,6 +6,7 @@ import {
   lastSeenLabel,
   hostConnectionLabel,
   reachedAt,
+  requestedConfig,
   TUNNEL_WAITING_MESSAGE,
   type AssignmentConfig,
   type MachineSummary,
@@ -112,6 +113,26 @@ describe('reachedAt', () => {
       reachedAt(tunnel, report({ status: 'failed', message: sentence })),
     ).toEqual({ kind: 'text', text: sentence });
   });
+  it("links a bound address at the server's URL, or its hostname", () => {
+    const binding = {
+      hostname: 'orders.acme.local',
+      listenAddress: null,
+      tls: { kind: 'acme' as const },
+    };
+    expect(
+      reachedAt(
+        configWith({
+          mode: 'bound',
+          publicUrl: 'https://orders.acme.local',
+          binding,
+        }),
+        null,
+      ),
+    ).toEqual({ kind: 'link', href: 'https://orders.acme.local' });
+    expect(
+      reachedAt(configWith({ mode: 'bound', publicUrl: null, binding }), null),
+    ).toEqual({ kind: 'link', href: 'https://orders.acme.local' });
+  });
   it('keeps a configured URL as a link and direct on the host port', () => {
     expect(
       reachedAt(
@@ -134,4 +155,34 @@ it('maps connection labels to tones and formats the code countdown', () => {
     countdownLabel('2026-10-15T00:10:05Z', Date.parse('2026-10-15T00:00:00Z')),
   ).toBe('10:05');
   expect(lastSeenLabel(null)).toBe('Never connected');
+});
+
+it('sends no host ports, and no public URL for a bound address', () => {
+  const binding = {
+    hostname: 'orders.acme.local',
+    listenAddress: '10.0.0.5',
+    tls: { kind: 'certificate' as const, certificateId: 'c1' },
+  };
+  expect(
+    requestedConfig({
+      ports: [{ slot: 'frontend', hostPort: 8080, containerPort: 3000 }],
+      health: [{ slot: 'frontend', path: '/' }],
+      ingress: {
+        mode: 'bound',
+        publicUrl: 'https://orders.acme.local',
+        binding,
+      },
+    }),
+  ).toEqual({
+    ports: [{ slot: 'frontend', containerPort: 3000 }],
+    health: [{ slot: 'frontend', path: '/' }],
+    ingress: { mode: 'bound', publicUrl: null, binding },
+  });
+  const configured = {
+    mode: 'configured' as const,
+    publicUrl: 'https://app.example.com',
+  };
+  expect(
+    requestedConfig({ ports: [], health: [], ingress: configured }).ingress,
+  ).toBe(configured);
 });

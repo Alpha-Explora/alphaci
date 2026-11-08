@@ -16,6 +16,7 @@ if [ "${1:-}" = --enroll ]; then
   install -m 0755 alphaci-agent.sh /opt/alphaci/bin/alphaci-agent
   install -m 0755 alphaci-supervisor.sh /opt/alphaci/bin/alphaci-supervisor
   install -m 0644 tunnel.sh /opt/alphaci/bin/tunnel.sh
+  install -m 0644 binding.sh /opt/alphaci/bin/binding.sh
   install -m 0755 tunnel-run.sh /opt/alphaci/bin/tunnel-run
   install -d -m 0755 /opt/alphaci/tunnels
   # Every alphaci-tunnel@ unit runs as this user; each may write only its run/ directory.

@@ -13,7 +13,9 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Self-hosted:** `npm run db:migrate:selfhost` applies migrations with a ledger and refuses to run when an applied migration changed.
 - **Self-hosted:** `ALPHACI_RELEASE_SIGNER=file` signs releases with a key held on the server, so no signing secret reaches GitHub.
 - **Self-hosted:** One web image serves every customer, built with `NEXT_PUBLIC_API_BASE_URL=/api/v1`, with a `/healthz` liveness route.
+- **Self-hosted:** `ALPHACI_BIND_ADDRESS` limits the appliance proxy to one IPv4 address.
 - **Self-hosted:** App addresses can sit under a shared domain (`ONPREM_APPS_LABEL_SUFFIX`); `ALPHACI_TLS_DIRECTIVE=internal` gives app sites Caddy's private CA.
+- **On-prem:** Serve an environment under your own hostname, listen address and uploaded .pfx or automatic certificate, like an IIS binding (agent 0.5.0).
 - **On-prem:** A Hosts page to enroll machines, see their status, and assign them to environments with ports, health path and ingress.
 - **On-prem:** Signed releases, promotion and rollback on customer machines, with per-environment workers and readiness checks.
 - **On-prem:** Both halves of a two-repository project on one machine share a network and each other's address (agent 0.4.0 or newer).

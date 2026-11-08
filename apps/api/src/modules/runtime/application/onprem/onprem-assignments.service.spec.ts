@@ -136,6 +136,7 @@ describe('automatic assignment', () => {
         deployment: () => new Set(['runtime.managed-host-delivery']),
         for: () => new Set(['runtime.managed-host-delivery']),
       },
+      { forAssignment: jest.fn() } as never,
     );
   beforeEach(() => {
     jest.clearAllMocks();
@@ -474,6 +475,7 @@ describe('tunnel presentation', () => {
         deployment: () => new Set(['runtime.managed-host-delivery']),
         for: () => new Set(['runtime.managed-host-delivery']),
       },
+      { forAssignment: jest.fn() } as never,
     );
   const tunnelRow = {
     id: 'binding',
@@ -543,5 +545,143 @@ describe('tunnel presentation', () => {
     expect(
       await service().publicAddress('project', 'env', 'frontend'),
     ).toBeNull();
+  });
+});
+
+describe('bound addresses', () => {
+  const CERTIFICATE = '3f0e8a52-6b1c-4d1e-9a51-0b7f6c2d9e10';
+  const repository = {
+    current: jest.fn(),
+    assign: jest.fn(async (input: { config: AssignmentRequestConfig }) => ({
+      id: 'binding',
+      machineId: 'machine',
+      projectId: 'project',
+      environmentId: 'env',
+      revision: 1,
+      config: { ...input.config, ports: config.ports },
+    })),
+    machineWorkspace: jest.fn().mockResolvedValue('ws'),
+  };
+  const certificates = { forAssignment: jest.fn() };
+  const settings: Record<string, string> = {
+    ONPREM_RELEASES_ENABLED: 'true',
+    PLATFORM_PUBLIC_URL: 'https://alphaci.acme.local',
+    ONPREM_APPS_DOMAIN: 'apps.acme.local',
+  };
+  const service = (role = 'production') =>
+    new OnpremAssignmentsService(
+      repository as never,
+      {
+        assertProjectRole: jest.fn().mockResolvedValue({ workspaceId: 'ws' }),
+      } as never,
+      { findAppRole: jest.fn().mockResolvedValue('member') },
+      {
+        findProjectReference: jest
+          .fn()
+          .mockResolvedValue({ id: 'project', repoFullName: 'acme/orders' }),
+        findProjectEnvironment: jest
+          .fn()
+          .mockResolvedValue({ id: 'env', slug: 'prod', role }),
+      } as never,
+      {
+        listDeploymentTargets: jest.fn().mockResolvedValue([
+          {
+            environmentId: 'env',
+            provider: 'onprem-compose',
+            slot: 'frontend',
+          },
+        ]),
+      },
+      { get: (key: string) => settings[key] } as never,
+      {
+        deployment: () => new Set(['runtime.managed-host-delivery']),
+        for: () => new Set(['runtime.managed-host-delivery']),
+      },
+      certificates as never,
+    );
+  const bound = (binding: Record<string, unknown>) =>
+    ({
+      ports: [{ slot: 'frontend', containerPort: 3000 }],
+      health: [{ slot: 'frontend', path: '/' }],
+      ingress: { mode: 'bound', publicUrl: null, binding },
+    }) as unknown as AssignmentRequestConfig;
+  const assign = (binding: Record<string, unknown>, role?: string) =>
+    service(role).assign('project', 'env', 'user', {
+      machineId: 'machine',
+      expectedAssignmentId: null,
+      requestId: 'request',
+      config: bound(binding),
+    });
+  beforeEach(() => {
+    repository.assign.mockClear();
+    certificates.forAssignment.mockResolvedValue({
+      name: 'Orders',
+      hostnames: ['*.acme.local'],
+      notAfter: new Date(Date.now() + 86_400_000),
+    });
+  });
+
+  it('stores the normalized binding with its derived HTTPS address', async () => {
+    const saved = await assign({
+      hostname: 'Orders.Acme.Local',
+      listenAddress: '10.0.0.5',
+      tls: { kind: 'certificate', certificateId: CERTIFICATE },
+    });
+    expect(repository.assign.mock.calls[0]![0].config.ingress).toEqual({
+      mode: 'bound',
+      publicUrl: 'https://orders.acme.local',
+      binding: {
+        hostname: 'orders.acme.local',
+        listenAddress: '10.0.0.5',
+        tls: { kind: 'certificate', certificateId: CERTIFICATE },
+      },
+    });
+    expect(certificates.forAssignment).toHaveBeenCalledWith('ws', CERTIFICATE);
+    expect(saved.binding).toMatchObject({ status: 'waiting' });
+    expect(saved.tunnel).toBeNull();
+  });
+
+  it("refuses AlphaCI's own name and names under the apps domain", async () => {
+    await expect(
+      assign({ hostname: 'alphaci.acme.local', tls: { kind: 'acme' } }),
+    ).rejects.toThrow("AlphaCI's own address");
+    await expect(
+      assign({ hostname: 'orders.apps.acme.local', tls: { kind: 'acme' } }),
+    ).rejects.toThrow('get their address automatically');
+    expect(repository.assign).not.toHaveBeenCalled();
+  });
+
+  it('refuses a certificate that is missing, expired or for another name', async () => {
+    const withCertificate = {
+      hostname: 'orders.acme.local',
+      tls: { kind: 'certificate', certificateId: CERTIFICATE },
+    };
+    certificates.forAssignment.mockResolvedValueOnce(null);
+    await expect(assign(withCertificate)).rejects.toThrow('not in this team');
+    certificates.forAssignment.mockResolvedValueOnce({
+      name: 'Old',
+      hostnames: ['orders.acme.local'],
+      notAfter: new Date(Date.now() - 1000),
+    });
+    await expect(assign(withCertificate)).rejects.toThrow('has expired');
+    certificates.forAssignment.mockResolvedValueOnce({
+      name: 'Shop',
+      hostnames: ['shop.example.com'],
+      notAfter: new Date(Date.now() + 86_400_000),
+    });
+    await expect(assign(withCertificate)).rejects.toThrow(
+      'is for shop.example.com, not orders.acme.local',
+    );
+  });
+
+  it('allows the internal certificate outside production only', async () => {
+    const internal = {
+      hostname: 'orders.acme.local',
+      tls: { kind: 'internal' },
+    };
+    await expect(assign(internal)).rejects.toBeInstanceOf(BadRequestException);
+    await expect(assign(internal, 'staging')).resolves.toMatchObject({
+      config: { ingress: { mode: 'bound' } },
+    });
   });
 });

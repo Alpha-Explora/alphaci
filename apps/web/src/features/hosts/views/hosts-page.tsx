@@ -6,6 +6,7 @@ import { canManageHosts } from '../model/host-types';
 import { useHostsViewModel } from '../view-models/use-hosts-view-model';
 import { useHostAvailability } from '../view-models/use-host-availability';
 import { AddHostForm, EnrollmentCard, HostCard } from './host-cards';
+import { CertificatesPanel } from './certificates-panel';
 export function HostsPage() {
   return (
     <TeamPageShell
@@ -42,7 +43,12 @@ function WorkspaceHosts({
     return <p role="status">Loading host capability…</p>;
   if (availability !== 'enabled')
     return <p>On-prem hosting is unavailable for this deployment.</p>;
-  return <HostsContent vm={vm} canManage={canManage} />;
+  return (
+    <>
+      <HostsContent vm={vm} canManage={canManage} />
+      <CertificatesPanel workspaceId={workspaceId} canManage={canManage} />
+    </>
+  );
 }
 type HostsVm = ReturnType<typeof useHostsViewModel>;
 function HostsContent({ vm, canManage }: { vm: HostsVm; canManage: boolean }) {

@@ -16,6 +16,7 @@ import {
   getAssignmentDefaults,
   getReadiness,
 } from '../data/assignments-api';
+import { listCertificates } from '../data/certificates-api';
 jest.mock('@/shared/browser/download-blob', () => ({
   downloadBlob: jest.fn(),
 }));
@@ -23,6 +24,9 @@ jest.mock('../data/hosts-api', () => ({
   listHosts: jest.fn(),
   createHostEnrollment: jest.fn(),
   revokeHost: jest.fn(),
+}));
+jest.mock('../data/certificates-api', () => ({
+  listCertificates: jest.fn(),
 }));
 jest.mock('../data/assignments-api', () => ({
   assignHost: jest.fn(),
@@ -54,6 +58,7 @@ beforeEach(() => {
   jest.mocked(getAssignment).mockResolvedValue(null);
   jest.mocked(getReadiness).mockResolvedValue({ checks: [] });
   jest.mocked(getAssignmentDefaults).mockRejectedValue(new Error('Not found'));
+  jest.mocked(listCertificates).mockResolvedValue([]);
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -600,5 +605,132 @@ describe('tunnel refresh on the assignment timer', () => {
     });
     await flushPromises();
     expect(seen().current).toMatchObject({ id: 'b' });
+  });
+});
+
+const orders = {
+  id: 'c1',
+  name: 'Orders',
+  hostnames: ['orders.acme.local'],
+  issuer: 'Acme CA',
+  notBefore: '2026-01-01T00:00:00Z',
+  notAfter: '2099-01-01T00:00:00Z',
+  sha256: 'a'.repeat(64),
+  createdAt: '2026-11-01T00:00:00Z',
+  inUse: 0,
+};
+const boundAssignment: MachineAssignment = {
+  ...tunnelAssignment,
+  config: {
+    ...tunnelAssignment.config,
+    ingress: {
+      mode: 'bound',
+      publicUrl: 'https://orders.acme.local',
+      binding: {
+        hostname: 'orders.acme.local',
+        listenAddress: '10.0.0.5',
+        tls: { kind: 'certificate', certificateId: 'c1' },
+      },
+    },
+  },
+  tunnel: null,
+  binding: { status: 'waiting', message: '', reportedAt: null },
+};
+describe('bound address', () => {
+  it('holds back a binding the server would refuse, then sends it without a public URL', async () => {
+    jest.mocked(listHosts).mockResolvedValue([connected('only')]);
+    jest.mocked(listCertificates).mockResolvedValue([orders]);
+    const seen = probe(() => useHostAssignmentViewModel(options));
+    await settle();
+    expect(seen().certificates).toEqual([orders]);
+    act(() => seen().setIngressMode('bound'));
+    expect(seen().ingressProblem).toBe('Enter the hostname users will open.');
+    await act(() => seen().assign());
+    expect(assignHost).not.toHaveBeenCalled();
+
+    act(() => seen().setBindingField('hostname', 'Shop.Acme.Local'));
+    act(() => seen().setBindingTls('certificate:c1'));
+    expect(seen().ingressProblem).toBe(
+      'Orders does not cover shop.acme.local.',
+    );
+    act(() => seen().setBindingField('hostname', 'orders.acme.local'));
+    act(() => seen().setBindingField('listenAddress', '10.0.0.5'));
+    expect(seen().ingressProblem).toBeNull();
+    await act(() => seen().assign());
+    expect(jest.mocked(assignHost).mock.calls[0]?.[2].config.ingress).toEqual({
+      mode: 'bound',
+      publicUrl: null,
+      binding: {
+        hostname: 'orders.acme.local',
+        listenAddress: '10.0.0.5',
+        tls: { kind: 'certificate', certificateId: 'c1' },
+      },
+    });
+  });
+  it('refuses the internal CA for production', async () => {
+    const seen = probe(() =>
+      useHostAssignmentViewModel({ ...options, production: true }),
+    );
+    await settle();
+    act(() => seen().setIngressMode('bound'));
+    act(() => seen().setBindingField('hostname', 'orders.acme.local'));
+    expect(seen().ingressProblem).toBeNull();
+    act(() => seen().setBindingTls('internal'));
+    expect(seen().ingressProblem).toMatch(/Production needs/);
+  });
+  it('keeps a typed binding across a switch to another mode and back', async () => {
+    const seen = probe(() => useHostAssignmentViewModel(options));
+    await settle();
+    act(() => seen().setIngressMode('bound'));
+    act(() => seen().setBindingField('hostname', 'orders.acme.local'));
+    act(() => seen().setIngressMode('tunnel'));
+    expect(seen().config.ingress).toEqual({ mode: 'tunnel', publicUrl: null });
+    act(() => seen().setIngressMode('bound'));
+    expect(seen().config.ingress).toMatchObject({
+      binding: { hostname: 'orders.acme.local' },
+    });
+  });
+  it('edits a stored binding without sending its public URL back', async () => {
+    jest.mocked(getAssignment).mockResolvedValue(boundAssignment);
+    jest.mocked(listCertificates).mockResolvedValue([orders]);
+    const seen = probe(() => useHostAssignmentViewModel(options));
+    await settle();
+    expect(seen().config.ingress).toMatchObject({
+      mode: 'bound',
+      publicUrl: null,
+    });
+    expect(seen().ingressProblem).toBeNull();
+  });
+  it("refreshes the machine's report on the timer and shows a failure", async () => {
+    jest.useFakeTimers();
+    jest.mocked(listHosts).mockResolvedValue([connected('only')]);
+    jest.mocked(listCertificates).mockResolvedValue([orders]);
+    jest.mocked(getAssignment).mockResolvedValue(boundAssignment);
+    const seen = probe(() => useHostAssignmentViewModel(options));
+    await flushPromises();
+    let summary = renderSummary(seen());
+    expect(summary.text).toContain('https://orders.acme.local');
+    expect(summary.text).toContain('Waiting');
+    summary.unmount();
+
+    jest.mocked(getAssignment).mockResolvedValue({
+      ...boundAssignment,
+      binding: {
+        status: 'failed',
+        message: 'Port 443 is already used by another program.',
+        reportedAt: '2026-11-08T00:00:00Z',
+      },
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(20_000);
+    });
+    await flushPromises();
+    expect(getAssignment).toHaveBeenCalledTimes(2);
+    summary = renderSummary(seen());
+    expect(summary.text).toContain('Failed');
+    expect(summary.text).toContain(
+      'Port 443 is already used by another program.',
+    );
+    summary.unmount();
   });
 });

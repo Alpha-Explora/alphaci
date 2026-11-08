@@ -5,6 +5,7 @@
    .hosts-option    the recommended install path (download the file).
    .hosts-substeps  the command path: copyable command, then the code.
    .hosts-card      one enrolled machine with its status and next action.
+   .hosts-certs     the certificate upload form (format choice, PEM text).
    Tokens only.
    ------------------------------------------------------------------------- */
 
@@ -562,4 +563,22 @@
   font-size: 0.85rem;
   line-height: 1.7;
   color: var(--text-secondary);
+}
+
+.hosts-certs__formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.hosts-certs__input {
+  max-width: 28rem;
+}
+
+.hosts-certs__pem {
+  width: 100%;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
 }

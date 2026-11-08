@@ -40,6 +40,11 @@ export class HeartbeatDto extends MachineCheckInDto {
   @IsArray()
   @ArrayMaxSize(200)
   tunnels?: unknown[];
+  /** Bound-address reports, validated one by one like the tunnel reports. */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(200)
+  bindings?: unknown[];
 }
 export class ConsumeEnrollmentDto extends MachineCheckInDto {
   @Matches(/^[A-Za-z0-9_-]{43}$/) code!: string;
@@ -47,4 +52,15 @@ export class ConsumeEnrollmentDto extends MachineCheckInDto {
 export class RevokeMachineDto {
   /** An active machine of the same workspace that takes over the environments. */
   @IsOptional() @IsUUID() replacementMachineId?: string;
+}
+/**
+ * A certificate for bound addresses: a .pfx export with its password, or a
+ * PEM chain and key. The service checks that exactly one form is complete.
+ */
+export class UploadCertificateDto {
+  @IsString() @MinLength(1) @MaxLength(80) name!: string;
+  @IsOptional() @IsString() @MaxLength(90_000) pfxBase64?: string;
+  @IsOptional() @IsString() @MaxLength(1024) password?: string;
+  @IsOptional() @IsString() @MaxLength(65_536) certificatePem?: string;
+  @IsOptional() @IsString() @MaxLength(65_536) privateKeyPem?: string;
 }

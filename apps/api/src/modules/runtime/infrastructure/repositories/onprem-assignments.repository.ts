@@ -11,9 +11,12 @@ import { DatabaseService } from '#kernel/db/database.service';
 import type {
   AssignmentConfig,
   AssignmentRequestConfig,
+  BindingReport,
+  BindingStatus,
   TunnelReport,
   TunnelStatus,
 } from '#kernel/ports/onprem-assignment.port';
+import { bindingReport } from '../../domain/onprem-binding';
 import {
   TUNNEL_REPORT_WINDOW,
   effectivePublicAddress,
@@ -50,10 +53,18 @@ interface AssignmentRow {
   tunnel_message: string | null;
   tunnel_reported_at: Date | null;
   tunnel_fresh?: boolean;
+  binding_status: BindingStatus | null;
+  binding_message: string | null;
+  binding_reported_at: Date | null;
+  binding_fresh?: boolean;
 }
-/** A machine assignment as the API presents it: `tunnel` only in tunnel mode. */
+/**
+ * A machine assignment as the API presents it: `tunnel` only in tunnel mode,
+ * `binding` only in bound mode.
+ */
 export type CurrentMachineAssignment = MachineAssignment & {
   tunnel: TunnelReport | null;
+  binding: BindingReport | null;
 };
 export interface LegacyHostAssignment {
   id: string;
@@ -280,7 +291,8 @@ export class OnpremAssignmentsRepository {
     environmentId: string,
   ): Promise<CurrentMachineAssignment | LegacyHostAssignment | null> {
     const result = await this.db.query<AssignmentRow>(
-      `SELECT *, tunnel_reported_at > NOW() - INTERVAL '${TUNNEL_REPORT_WINDOW}' AS tunnel_fresh
+      `SELECT *, tunnel_reported_at > NOW() - INTERVAL '${TUNNEL_REPORT_WINDOW}' AS tunnel_fresh,
+              binding_reported_at > NOW() - INTERVAL '${TUNNEL_REPORT_WINDOW}' AS binding_fresh
          FROM env_provisioning.onprem_hosts WHERE project_id=$1 AND environment_id=$2 AND revoked_at IS NULL`,
       [projectId, environmentId],
     );
@@ -297,6 +309,15 @@ export class OnpremAssignmentsRepository {
                   message: row.tunnel_message,
                   reportedAt: row.tunnel_reported_at,
                   fresh: row.tunnel_fresh === true,
+                })
+              : null,
+          binding:
+            row.assignment_config.ingress.mode === 'bound'
+              ? bindingReport({
+                  status: row.binding_status,
+                  message: row.binding_message,
+                  reportedAt: row.binding_reported_at,
+                  fresh: row.binding_fresh === true,
                 })
               : null,
         }
@@ -366,6 +387,21 @@ export class OnpremAssignmentsRepository {
           'UPDATE env_provisioning.onprem_hosts SET revoked_at=NOW() WHERE environment_id=$1 AND revoked_at IS NULL',
           [input.environmentId],
         );
+        const ingress = input.config.ingress;
+        if (
+          ingress.mode === 'bound' &&
+          ingress.binding.tls.kind === 'certificate'
+        ) {
+          // Held until commit, so the certificate cannot be deleted meanwhile.
+          const live = await client.query(
+            'SELECT 1 FROM env_provisioning.onprem_certificates WHERE id=$1 AND workspace_id=$2 AND deleted_at IS NULL FOR SHARE',
+            [ingress.binding.tls.certificateId, input.workspaceId],
+          );
+          if (!live.rowCount)
+            throw new BadRequestException(
+              'That certificate was deleted. Choose another one.',
+            );
+        }
         const row = await insertBinding(client, { ...input, machineId });
         const config = await reserveMachinePorts(
           client,
@@ -384,6 +420,15 @@ export class OnpremAssignmentsRepository {
         return assignment({ ...row, assignment_config: config });
       });
     } catch (error) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'constraint' in error &&
+        error.constraint === 'onprem_hosts_bound_hostname'
+      )
+        throw new ConflictException(
+          'Another environment already uses this hostname. Choose another one, or change that environment first.',
+        );
       if (
         error &&
         typeof error === 'object' &&
