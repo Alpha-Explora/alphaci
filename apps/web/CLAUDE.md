@@ -142,7 +142,7 @@ flips a tie. Other feature CSS sits beside its views
 | `src/styles/**` | **warning**, under a ceiling — lifted out of globals.css |
 | `src/app/globals.css` | ignored |
 
-The warning tier runs under `--max-warnings=715` in `package.json` (714
+The warning tier runs under `--max-warnings=646` in `package.json` (645
 warnings today). **When you fix warnings, lower the ceiling in `package.json`
 in the same commit** — slack you leave is slack the next person spends.
 
