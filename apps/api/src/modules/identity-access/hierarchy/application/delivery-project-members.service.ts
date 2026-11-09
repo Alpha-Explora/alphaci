@@ -104,19 +104,7 @@ export class DeliveryProjectMembersService {
       deliveryProjectId,
       actingUserId,
     );
-    const project =
-      await this.deliveryProjectsRepository.findById(deliveryProjectId);
-    if (!project) {
-      throw new NotFoundException('Delivery project not found');
-    }
-    if (project.status !== 'active') {
-      throw new BadRequestException({
-        statusCode: 400,
-        error: 'Bad Request',
-        code: 'PROJECT_ARCHIVED',
-        message: 'This Project is archived and cannot take new members.',
-      });
-    }
+    await this.assertProjectsOpenInTeam(groupId, [deliveryProjectId]);
 
     const membership = await this.groupsRepository.findActiveMembership(
       groupId,
@@ -130,8 +118,157 @@ export class DeliveryProjectMembersService {
         message: "The person must be an active member of the Project's team.",
       });
     }
+    const memberKind = await this.memberKindOrThrow(dto.userId);
+
+    const live = this.isLive();
+    const { member, queued } = await this.databaseService.withTransaction(
+      async (client) => {
+        const [joined] = await this.joinProjectsWithClient(client, {
+          deliveryProjectIds: [deliveryProjectId],
+          userId: dto.userId,
+          memberKind,
+          actingUserId,
+        });
+        if (!joined) throw new Error('Project membership was not written');
+        return { member: joined.member, queued: joined.repositoriesQueued };
+      },
+    );
+
+    await this.recordMembersAdded(
+      groupId,
+      actingUserId,
+      dto.userId,
+      memberKind,
+      [{ deliveryProjectId, repositoriesQueued: queued }],
+    );
+
+    return { member, githubAccess: this.outcome(live, queued) };
+  }
+
+  /**
+   * Checks, before anything is written, that a person joining the team can
+   * also join these Projects: each is an active Project of this team, and
+   * the person's role is one a Project takes. Returns the kind they join as.
+   *
+   * The caller has already passed the team-manager gate, which is the gate
+   * every Project of the team uses (assertDeliveryProjectManager).
+   */
+  async prepareJoinOnTeamAdd(
+    groupId: string,
+    userId: string,
+    deliveryProjectIds: readonly string[],
+  ): Promise<DeliveryProjectMemberKind> {
+    await this.assertProjectsOpenInTeam(groupId, deliveryProjectIds);
+    return this.memberKindOrThrow(userId);
+  }
+
+  /**
+   * Makes the person an active member of each Project and, for a Developer
+   * while live sync is on, queues GitHub Write on every repository of it.
+   * Runs in the caller's transaction, so a team add and its Project
+   * memberships commit together. The caller validates first
+   * (prepareJoinOnTeamAdd, or the checks in addMember).
+   */
+  async joinProjectsWithClient(
+    client: Pick<PoolClient, 'query'>,
+    input: {
+      deliveryProjectIds: readonly string[];
+      userId: string;
+      memberKind: DeliveryProjectMemberKind;
+      actingUserId: string;
+    },
+  ): Promise<
+    Array<{
+      deliveryProjectId: string;
+      member: DeliveryProjectMemberRecord;
+      repositoriesQueued: number;
+    }>
+  > {
+    const live = this.isLive();
+    const joined = [];
+    for (const deliveryProjectId of input.deliveryProjectIds) {
+      const member = await this.membersRepository.upsertActiveWithClient(
+        client,
+        {
+          deliveryProjectId,
+          userId: input.userId,
+          memberKind: input.memberKind,
+          addedBy: input.actingUserId,
+        },
+      );
+      const repositoriesQueued =
+        input.memberKind === 'developer' && live
+          ? await this.grantDeveloperOnProjectRepositoriesWithClient(
+              client,
+              deliveryProjectId,
+              input.userId,
+              input.actingUserId,
+            )
+          : 0;
+      joined.push({ deliveryProjectId, member, repositoriesQueued });
+    }
+    return joined;
+  }
+
+  /** One audit event per Project joined. Call after the transaction commits. */
+  async recordMembersAdded(
+    groupId: string,
+    actingUserId: string,
+    targetUserId: string,
+    memberKind: DeliveryProjectMemberKind,
+    joined: ReadonlyArray<{
+      deliveryProjectId: string;
+      repositoriesQueued: number;
+    }>,
+  ): Promise<void> {
+    for (const { deliveryProjectId, repositoriesQueued } of joined) {
+      await this.auditEventsService.recordProjectEvent({
+        workspaceId: groupId,
+        actorUserId: actingUserId,
+        eventCode: HIERARCHY_EVENT_CODES.deliveryProjectMemberAdded,
+        message: `Project member added (${memberKind})`,
+        metadata: {
+          deliveryProjectId,
+          targetUserId,
+          memberKind,
+          repositoriesQueued,
+        },
+      });
+    }
+  }
+
+  /** The GitHub side of joining Projects, for the UI to report. */
+  githubAccessOutcome(repositoriesQueued: number): MemberGithubAccessOutcome {
+    return this.outcome(this.isLive(), repositoriesQueued);
+  }
+
+  private async assertProjectsOpenInTeam(
+    groupId: string,
+    deliveryProjectIds: readonly string[],
+  ): Promise<void> {
+    for (const deliveryProjectId of deliveryProjectIds) {
+      const project =
+        await this.deliveryProjectsRepository.findById(deliveryProjectId);
+      // Another team's Project reads as missing, as hierarchy reads do.
+      if (project?.groupId !== groupId) {
+        throw new NotFoundException('Delivery project not found');
+      }
+      if (project.status !== 'active') {
+        throw new BadRequestException({
+          statusCode: 400,
+          error: 'Bad Request',
+          code: 'PROJECT_ARCHIVED',
+          message: `The Project "${project.name}" is archived and cannot take new members.`,
+        });
+      }
+    }
+  }
+
+  private async memberKindOrThrow(
+    userId: string,
+  ): Promise<DeliveryProjectMemberKind> {
     const memberKind = memberKindForRole(
-      await this.appRoleLookup.findAppRole(dto.userId),
+      await this.appRoleLookup.findAppRole(userId),
     );
     if (!memberKind) {
       throw new BadRequestException({
@@ -142,46 +279,7 @@ export class DeliveryProjectMembersService {
           'Only Developers and the QA Team are added to a Project; leads and admins already see every Project of the team.',
       });
     }
-
-    const live = this.isLive();
-    const { member, queued } = await this.databaseService.withTransaction(
-      async (client) => {
-        const record = await this.membersRepository.upsertActiveWithClient(
-          client,
-          {
-            deliveryProjectId,
-            userId: dto.userId,
-            memberKind,
-            addedBy: actingUserId,
-          },
-        );
-        let count = 0;
-        if (memberKind === 'developer' && live) {
-          count = await this.grantDeveloperOnProjectRepositoriesWithClient(
-            client,
-            deliveryProjectId,
-            dto.userId,
-            actingUserId,
-          );
-        }
-        return { member: record, queued: count };
-      },
-    );
-
-    await this.auditEventsService.recordProjectEvent({
-      workspaceId: groupId,
-      actorUserId: actingUserId,
-      eventCode: HIERARCHY_EVENT_CODES.deliveryProjectMemberAdded,
-      message: `Project member added (${memberKind})`,
-      metadata: {
-        deliveryProjectId,
-        targetUserId: dto.userId,
-        memberKind,
-        repositoriesQueued: queued,
-      },
-    });
-
-    return { member, githubAccess: this.outcome(live, queued) };
+    return memberKind;
   }
 
   /**

@@ -6,6 +6,7 @@ import { groupsRepository } from '../../data/groups-repository';
 import type {
   GroupMember,
   InternalUserDirectoryEntry,
+  TeamProjectChoice,
 } from '../../model/groups-types';
 import {
   describeAddMemberError,
@@ -98,6 +99,46 @@ function useDirectoryLookup(active: boolean, groupId: string, term: string) {
   return { view: deriveLookup(active, key, lookup), clear };
 }
 
+export type TeamProjectsStatus = 'idle' | 'loading' | 'ready' | 'error';
+
+interface ProjectsLoad {
+  groupId: string;
+  status: 'ready' | 'error';
+  projects: TeamProjectChoice[];
+}
+
+/**
+ * The team's Projects, read once each time the dialog opens. A failed read
+ * never blocks the add: the person can still join the team and be added to
+ * Projects later from each Project's Members.
+ */
+function useTeamProjects(open: boolean, groupId: string) {
+  const [load, setLoad] = useState<ProjectsLoad | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let stale = false;
+    groupsRepository
+      .projectChoices(groupId)
+      .then((projects) => {
+        if (!stale) setLoad({ groupId, status: 'ready', projects });
+      })
+      .catch(() => {
+        if (!stale) setLoad({ groupId, status: 'error', projects: [] });
+      });
+    return () => {
+      stale = true;
+    };
+  }, [open, groupId]);
+
+  const clear = useCallback(() => setLoad(null), []);
+  if (!open) return { status: 'idle' as const, projects: [], clear };
+  if (load?.groupId !== groupId) {
+    return { status: 'loading' as const, projects: [], clear };
+  }
+  return { status: load.status, projects: load.projects, clear };
+}
+
 function emptyMessageFor(view: LookupView, term: string): string | null {
   return view.status === 'ready' && view.results.length === 0
     ? emptyDirectoryMessage(term)
@@ -114,6 +155,11 @@ export interface AddMemberViewModel {
   selectedUser: InternalUserDirectoryEntry | null;
   select: (user: InternalUserDirectoryEntry) => void;
   clearSelection: () => void;
+  /** The team's active Projects the person can also join. */
+  projects: TeamProjectChoice[];
+  projectsStatus: TeamProjectsStatus;
+  selectedProjectIds: ReadonlySet<string>;
+  toggleProject: (deliveryProjectId: string) => void;
   error: string | null;
   canSubmit: boolean;
   submitting: boolean;
@@ -138,6 +184,11 @@ export function useAddMemberViewModel({
     useState<InternalUserDirectoryEntry | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedProjectIds, setSelectedProjectIds] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
+  const teamProjects = useTeamProjects(open, groupId);
+  const clearProjects = teamProjects.clear;
 
   const term = search.trim();
   const { view, clear } = useDirectoryLookup(
@@ -150,9 +201,11 @@ export function useAddMemberViewModel({
     setSearchValue('');
     setSelectedUser(null);
     setSubmitError(null);
+    setSelectedProjectIds(new Set());
     clear();
+    clearProjects();
     onClose();
-  }, [clear, onClose]);
+  }, [clear, clearProjects, onClose]);
 
   const submit = useCallback(async () => {
     if (!selectedUser?.hasAccount || !selectedUser.id) {
@@ -164,9 +217,17 @@ export function useAddMemberViewModel({
     setSubmitting(true);
     setSubmitError(null);
     try {
-      // Everyone joins as a Member; a Lead can promote them afterward.
+      // Everyone joins as a Member; a Lead can promote them afterward. Only
+      // Projects still offered are sent, in case the list changed.
+      const offered = new Set(
+        teamProjects.projects.map((project) => project.deliveryProjectId),
+      );
+      const deliveryProjectIds = [...selectedProjectIds].filter((id) =>
+        offered.has(id),
+      );
       const member = await groupsRepository.addMember(groupId, {
         userId: selectedUser.id,
+        ...(deliveryProjectIds.length > 0 && { deliveryProjectIds }),
       });
       onAdded(member);
       close();
@@ -175,7 +236,14 @@ export function useAddMemberViewModel({
     } finally {
       setSubmitting(false);
     }
-  }, [close, groupId, onAdded, selectedUser]);
+  }, [
+    close,
+    groupId,
+    onAdded,
+    selectedProjectIds,
+    selectedUser,
+    teamProjects.projects,
+  ]);
 
   return {
     search,
@@ -194,6 +262,17 @@ export function useAddMemberViewModel({
     clearSelection: () => {
       setSelectedUser(null);
       setSearchValue('');
+    },
+    projects: teamProjects.projects,
+    projectsStatus: teamProjects.status,
+    selectedProjectIds,
+    toggleProject: (deliveryProjectId) => {
+      setSelectedProjectIds((current) => {
+        const next = new Set(current);
+        if (next.has(deliveryProjectId)) next.delete(deliveryProjectId);
+        else next.add(deliveryProjectId);
+        return next;
+      });
     },
     error: submitError ?? view.error,
     canSubmit: selectedUser?.hasAccount === true,

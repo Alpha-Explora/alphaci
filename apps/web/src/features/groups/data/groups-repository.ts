@@ -15,6 +15,7 @@ import {
   searchEligibleGroupUsers,
   updateGroup,
 } from '@/features/groups/data/hierarchy-api';
+import { getTeamProjectChoices } from '@/features/groups/data/team-project-choices-api';
 import { getProjects } from '@/features/projects';
 
 import type {
@@ -30,6 +31,7 @@ import type {
   ProvisionedProject,
   RepositoryAccessStatusResponse,
   RepositoryAssignment,
+  TeamProjectChoice,
   UpdateGroupRequest,
 } from '../model/groups-types';
 
@@ -89,6 +91,11 @@ export const groupsRepository = {
     payload: AddGroupMemberRequest,
   ): Promise<GroupMember> {
     return addGroupMember(groupId, payload);
+  },
+
+  /** The team's active Projects a new member can join. */
+  projectChoices(groupId: string): Promise<TeamProjectChoice[]> {
+    return getTeamProjectChoices(groupId);
   },
 
   system(systemId: string): Promise<HierarchySystem> {

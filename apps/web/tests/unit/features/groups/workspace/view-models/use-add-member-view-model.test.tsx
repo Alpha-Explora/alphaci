@@ -15,6 +15,7 @@ jest.mock(
     groupsRepository: {
       eligibleMembers: jest.fn(),
       addMember: jest.fn(),
+      projectChoices: jest.fn(),
     },
   }),
 );
@@ -24,6 +25,9 @@ const mockedEligible = groupsRepository.eligibleMembers as jest.MockedFunction<
 >;
 const mockedAdd = groupsRepository.addMember as jest.MockedFunction<
   typeof groupsRepository.addMember
+>;
+const mockedProjects = groupsRepository.projectChoices as jest.MockedFunction<
+  typeof groupsRepository.projectChoices
 >;
 
 const entry = (
@@ -82,6 +86,10 @@ describe('useAddMemberViewModel', () => {
     mockedEligible.mockResolvedValue([
       entry('bpramos-ae'),
       entry('not-signed-in', false),
+    ]);
+    mockedProjects.mockResolvedValue([
+      { deliveryProjectId: 'dp-billing', name: 'Billing' },
+      { deliveryProjectId: 'dp-payments', name: 'Payments' },
     ]);
   });
 
@@ -223,5 +231,67 @@ describe('useAddMemberViewModel', () => {
     );
     expect(onClose).not.toHaveBeenCalled();
     expect(harness.latest?.submitting).toBe(false);
+  });
+
+  it("offers the team's Projects when opened", async () => {
+    const harness = render(true);
+    expect(harness.latest?.projectsStatus).toBe('loading');
+
+    await flushSearch();
+
+    expect(mockedProjects).toHaveBeenCalledWith('group-1');
+    expect(harness.latest?.projectsStatus).toBe('ready');
+    expect(
+      harness.latest?.projects.map((project) => project.deliveryProjectId),
+    ).toEqual(['dp-billing', 'dp-payments']);
+  });
+
+  it('does not read the Projects while closed', async () => {
+    const harness = render(false);
+    await flushSearch();
+
+    expect(mockedProjects).not.toHaveBeenCalled();
+    expect(harness.latest?.projectsStatus).toBe('idle');
+  });
+
+  it('adds the member to the picked Projects in the same request', async () => {
+    mockedAdd.mockResolvedValue({ id: 'member-9' } as never);
+    const harness = render(true);
+    await flushSearch();
+
+    act(() => harness.latest!.select(entry('bpramos-ae')));
+    act(() => harness.latest!.toggleProject('dp-payments'));
+    act(() => harness.latest!.toggleProject('dp-billing'));
+    act(() => harness.latest!.toggleProject('dp-billing'));
+    expect([...harness.latest!.selectedProjectIds]).toEqual(['dp-payments']);
+
+    await act(async () => {
+      await harness.latest!.submit();
+    });
+
+    expect(mockedAdd).toHaveBeenCalledWith('group-1', {
+      userId: 'bpramos-ae-id',
+      deliveryProjectIds: ['dp-payments'],
+    });
+    expect(harness.latest?.selectedProjectIds.size).toBe(0);
+  });
+
+  it('still adds the member when the Projects cannot be read', async () => {
+    mockedProjects.mockRejectedValue(new Error('offline'));
+    mockedAdd.mockResolvedValue({ id: 'member-9' } as never);
+    const harness = render(true);
+    await flushSearch();
+
+    expect(harness.latest?.projectsStatus).toBe('error');
+    act(() => harness.latest!.select(entry('bpramos-ae')));
+    expect(harness.latest?.canSubmit).toBe(true);
+
+    await act(async () => {
+      await harness.latest!.submit();
+    });
+
+    expect(mockedAdd).toHaveBeenCalledWith('group-1', {
+      userId: 'bpramos-ae-id',
+    });
   });
 });

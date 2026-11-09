@@ -135,6 +135,9 @@ export class GroupsController {
     return this.membersService.addMember(groupId, directoryCallerFrom(req), {
       userId: body.userId,
       ...(body.role !== undefined && { role: body.role }),
+      ...(body.deliveryProjectIds !== undefined && {
+        deliveryProjectIds: body.deliveryProjectIds,
+      }),
     });
   }
 

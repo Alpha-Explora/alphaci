@@ -1,4 +1,8 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 
 import type {
   AuditEventPublisher,
@@ -6,6 +10,7 @@ import type {
 } from '#kernel/events/platform-event-publisher';
 import type { MemberDirectoryService } from '#modules/identity-access/directory/index.js';
 import type { GroupsRepository } from '../infrastructure/groups.repository';
+import type { DeliveryProjectMembersService } from './delivery-project-members.service';
 import { GroupMembersService } from './group-members.service';
 import type { HierarchyAccessService } from './hierarchy-access.service';
 
@@ -16,6 +21,12 @@ describe('GroupMembersService.addMember', () => {
   let directory: jest.Mocked<MemberDirectoryService>;
   let service: GroupMembersService;
   let notifications: { recordInTransaction: jest.Mock };
+  let projectMembers: {
+    prepareJoinOnTeamAdd: jest.Mock;
+    joinProjectsWithClient: jest.Mock;
+    recordMembersAdded: jest.Mock;
+    githubAccessOutcome: jest.Mock;
+  };
 
   beforeEach(() => {
     notifications = {
@@ -36,6 +47,18 @@ describe('GroupMembersService.addMember', () => {
         .fn()
         .mockResolvedValue({ id: 'ramos-id', login: 'bpramos-ae' }),
     } as unknown as jest.Mocked<MemberDirectoryService>;
+    projectMembers = {
+      prepareJoinOnTeamAdd: jest.fn().mockResolvedValue('developer'),
+      joinProjectsWithClient: jest.fn().mockResolvedValue([
+        { deliveryProjectId: 'dp-1', member: {}, repositoriesQueued: 2 },
+        { deliveryProjectId: 'dp-2', member: {}, repositoriesQueued: 1 },
+      ]),
+      recordMembersAdded: jest.fn().mockResolvedValue(undefined),
+      githubAccessOutcome: jest.fn((repositoriesQueued: number) => ({
+        syncMode: 'live',
+        repositoriesQueued,
+      })),
+    };
     service = new GroupMembersService(
       groupsRepository,
       accessService,
@@ -44,6 +67,7 @@ describe('GroupMembersService.addMember', () => {
       } as unknown as AuditEventPublisher,
       directory,
       notifications as unknown as NotificationEventPublisher,
+      projectMembers as unknown as DeliveryProjectMembersService,
     );
   });
 
@@ -102,6 +126,102 @@ describe('GroupMembersService.addMember', () => {
       eventCode: 'hierarchy.group.member_added',
       title: 'You were added to Team A',
       body: '@lead added you as a Member.',
+    });
+  });
+
+  describe('with Projects picked', () => {
+    const client = { query: jest.fn() };
+    beforeEach(() => {
+      groupsRepository.addMemberDirect.mockImplementation(
+        async (_g, _u, _r, _a, onAdded) => {
+          await onAdded!(client as never, {
+            groupName: 'Team A',
+            actorLogin: 'lead',
+          });
+          return true;
+        },
+      );
+    });
+
+    it('joins the Projects in the team-add transaction and reports the GitHub grants queued', async () => {
+      const added = await service.addMember('group-1', lead, {
+        userId: 'ramos-id',
+        deliveryProjectIds: ['dp-1', 'dp-2'],
+      });
+
+      expect(projectMembers.prepareJoinOnTeamAdd).toHaveBeenCalledWith(
+        'group-1',
+        'ramos-id',
+        ['dp-1', 'dp-2'],
+      );
+      expect(projectMembers.joinProjectsWithClient).toHaveBeenCalledWith(
+        client,
+        {
+          deliveryProjectIds: ['dp-1', 'dp-2'],
+          userId: 'ramos-id',
+          memberKind: 'developer',
+          actingUserId: 'lead-id',
+        },
+      );
+      expect(projectMembers.recordMembersAdded).toHaveBeenCalledWith(
+        'group-1',
+        'lead-id',
+        'ramos-id',
+        'developer',
+        [
+          expect.objectContaining({ deliveryProjectId: 'dp-1' }),
+          expect.objectContaining({ deliveryProjectId: 'dp-2' }),
+        ],
+      );
+      expect(added).toMatchObject({
+        login: 'bpramos-ae',
+        projectAccess: {
+          deliveryProjectIds: ['dp-1', 'dp-2'],
+          memberKind: 'developer',
+          syncMode: 'live',
+          repositoriesQueued: 3,
+        },
+      });
+    });
+
+    it('adds nobody when a picked Project cannot be joined', async () => {
+      projectMembers.prepareJoinOnTeamAdd.mockRejectedValue(
+        new BadRequestException({ code: 'PROJECT_ARCHIVED' }),
+      );
+
+      await expect(
+        service.addMember('group-1', lead, {
+          userId: 'ramos-id',
+          deliveryProjectIds: ['dp-archived'],
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(groupsRepository.addMemberDirect).not.toHaveBeenCalled();
+      expect(projectMembers.joinProjectsWithClient).not.toHaveBeenCalled();
+    });
+
+    it('fails the whole add when joining a Project fails inside the transaction', async () => {
+      projectMembers.joinProjectsWithClient.mockRejectedValue(
+        new Error('db down'),
+      );
+
+      await expect(
+        service.addMember('group-1', lead, {
+          userId: 'ramos-id',
+          deliveryProjectIds: ['dp-1'],
+        }),
+      ).rejects.toThrow('db down');
+      expect(projectMembers.recordMembersAdded).not.toHaveBeenCalled();
+    });
+
+    it('touches no Project when none was picked', async () => {
+      const added = await service.addMember('group-1', lead, {
+        userId: 'ramos-id',
+        deliveryProjectIds: [],
+      });
+
+      expect(projectMembers.prepareJoinOnTeamAdd).not.toHaveBeenCalled();
+      expect(projectMembers.joinProjectsWithClient).not.toHaveBeenCalled();
+      expect(added).not.toHaveProperty('projectAccess');
     });
   });
 });

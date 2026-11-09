@@ -1,8 +1,65 @@
 'use client';
 
 import type { GroupMember } from '@/features/groups';
-import { useAddMemberViewModel } from '../view-models/use-add-member-view-model';
+import {
+  useAddMemberViewModel,
+  type AddMemberViewModel,
+} from '../view-models/use-add-member-view-model';
 import { Avatar, FormDialog } from './primitives';
+
+/**
+ * The team's Projects the person also joins. Joining the team gives no
+ * repository access by itself; a Developer gets GitHub write access through
+ * the Projects picked here.
+ */
+function ProjectPicker({ vm }: Readonly<{ vm: AddMemberViewModel }>) {
+  let body;
+  if (vm.projectsStatus === 'loading') {
+    body = (
+      <span className="hier-field-hint">{'Loading this team’s Projects…'}</span>
+    );
+  } else if (vm.projectsStatus === 'error') {
+    body = (
+      <span className="hier-field-hint">
+        {
+          'Couldn’t load this team’s Projects. You can still add the member, then add them to Projects from each Project’s Members.'
+        }
+      </span>
+    );
+  } else if (vm.projects.length === 0) {
+    body = (
+      <span className="hier-field-hint">This team has no Projects yet.</span>
+    );
+  } else {
+    body = (
+      <div className="invite-projects">
+        {vm.projects.map((project) => (
+          <label key={project.deliveryProjectId} className="invite-project">
+            <input
+              type="checkbox"
+              checked={vm.selectedProjectIds.has(project.deliveryProjectId)}
+              onChange={() => vm.toggleProject(project.deliveryProjectId)}
+            />
+            <span>{project.name}</span>
+          </label>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <fieldset className="hier-field invite-projects-field">
+      <legend className="hier-field-label">Projects (optional)</legend>
+      {body}
+      {vm.projectsStatus === 'ready' && vm.projects.length > 0 && (
+        <span className="hier-field-hint">
+          A Developer gets GitHub write access to every repository of the
+          Projects you pick. Without a Project, they get no repository access.
+        </span>
+      )}
+    </fieldset>
+  );
+}
 
 /**
  * Adds someone to a group immediately. There is no invitation and nothing for
@@ -132,6 +189,8 @@ export function AddMemberDialog({
               "Members without an AlphaCI account can't be added until they sign in.")}
         </span>
       </div>
+
+      <ProjectPicker vm={vm} />
     </FormDialog>
   );
 }

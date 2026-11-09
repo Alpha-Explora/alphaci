@@ -23,6 +23,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Projects:** Ordered, renameable environments per project, each with its own targets, and promotion of a release from one environment to the next.
 - **Projects:** Two-repository projects get per-environment pipelines and on-prem hosting.
 - **Projects:** A Projects explorer with a Members action; Developers add repositories once the Product owner has written a Feature.
+- **Teams:** Add member can also add the person to the team's Projects, so a Developer gets GitHub write access to those Projects' repositories in the same step.
 - **Hosting:** Roll back a Render or Vercel deployment from ALPHACI, with the reason recorded in the Audit trail.
 - **Hosting:** Live deployment logs with filters and a live tail; Vercel deploy history includes production.
 - **Hosting:** Render deploys show their commit, trigger and duration, and a deploy a newer one replaced reads "Replaced".
