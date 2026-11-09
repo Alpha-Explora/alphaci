@@ -64,6 +64,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Self-hosted:** A first install no longer risks `migrate` failing: the database counts as healthy only once it accepts TCP connections, not during its one-time setup.
 - **Access:** One refused GitHub team-roster read no longer demotes every lead to Developer in the scheduled role sync; the sweep now skips when the lead or developer roster can't be read.
 - **QA:** Report and CI results tables escape backslashes, so a cell ending in `\` no longer breaks the table.
+- **QA:** QA finds `uat` in repositories with more than 100 branches; the branch list used to stop at the first 100.
 - **Pipelines:** A new project starts one pipeline per branch, not one per generated file.
 - **Pipelines:** An existing repository set up in ALPHACI now gets the `ALPHACI_API_URL` secret, so its managed Render releases no longer stop with "No AlphaCI URL".
 - **Pipelines:** New projects' pipelines pass from creation: images are named after the repository and installs skip npm releases younger than a day.
