@@ -39,6 +39,7 @@ import { ProjectLifecycleService } from '../application/lifecycle/project-lifecy
 import { ProjectPreviewsApplicationService } from '../application/dashboard/project-previews.service';
 import { ProjectWorkflowsService } from '../application/workflows/project-workflows.service';
 import { QueryString } from '#kernel/http/query-string.decorator';
+import { parseAuditCursor } from '#kernel/rules/audit-cursor.rules';
 
 @Controller('projects')
 export class ProjectsController {
@@ -596,10 +597,8 @@ export class ProjectsController {
 }
 
 const AUDIT_MAX_LIMIT = 100;
-const AUDIT_CURSOR_PATTERN =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?(Z|[+-]\d{2}:\d{2})$/;
 
-/** `?limit` (1-100) and `?before=<ISO createdAt>` for the Audit tab. */
+/** `?limit` (1-100) and `?before=<next of the previous page>` for the Audit tab. */
 function parseAuditPaging(
   limit: string | undefined,
   before: string | undefined,
@@ -613,11 +612,10 @@ function parseAuditPaging(
     options.limit = Math.min(parsed, AUDIT_MAX_LIMIT);
   }
   if (before !== undefined && before !== '') {
-    if (
-      !AUDIT_CURSOR_PATTERN.test(before) ||
-      Number.isNaN(Date.parse(before))
-    ) {
-      throw new BadRequestException('before must be an ISO-8601 timestamp');
+    if (parseAuditCursor(before) === null) {
+      throw new BadRequestException(
+        'before must be the next cursor of the previous page (an ISO-8601 timestamp, optionally followed by |<event id>)',
+      );
     }
     options.before = before;
   }

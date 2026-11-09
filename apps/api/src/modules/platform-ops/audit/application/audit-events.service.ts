@@ -13,6 +13,7 @@ import type {
   ProjectAuditQuery,
   ProjectEventSince,
 } from '#kernel/ports/audit.port';
+import { formatAuditCursor } from '#kernel/rules/audit-cursor.rules';
 import {
   AuditEventsRepository,
   type CreateAuditEventInput,
@@ -20,6 +21,13 @@ import {
 
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
+
+/** The cursor that resumes after `event`, or null when there is none. */
+function cursorAfter(
+  event: { id: string; createdAt: string } | undefined,
+): string | null {
+  return event ? formatAuditCursor(event.createdAt, event.id) : null;
+}
 
 @Injectable()
 export class AuditEventsService
@@ -75,7 +83,7 @@ export class AuditEventsService
     return {
       enabled: true,
       items,
-      next: rows.length > limit ? (items.at(-1)?.createdAt ?? null) : null,
+      next: rows.length > limit ? cursorAfter(items.at(-1)) : null,
     };
   }
 

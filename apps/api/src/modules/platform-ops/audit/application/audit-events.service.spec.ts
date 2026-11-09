@@ -140,7 +140,9 @@ describe('AuditEventsService', () => {
       ).resolves.toEqual({
         enabled: true,
         items: [row(3), row(2)],
-        next: row(2).createdAt,
+        // The id rides along: a bare timestamp cannot split events that
+        // share one (audit-cursor.rules).
+        next: `${row(2).createdAt}|${row(2).id}`,
       });
 
       repository.listForProject.mockResolvedValueOnce([row(3), row(2)]);
