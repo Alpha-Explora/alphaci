@@ -121,11 +121,11 @@ describe('RenderEnvClient', () => {
       ok: true,
       json: () => Promise.resolve(json),
     });
+    type FetchCall = [string, { method?: string; body?: string } | undefined];
+    const fetchCalls = () => (fetch as jest.Mock).mock.calls as FetchCall[];
     const putBody = () => {
-      const put = (fetch as jest.Mock).mock.calls.find(
-        ([, init]) => init?.method === 'PUT',
-      );
-      return JSON.parse(put[1].body as string) as Array<{
+      const put = fetchCalls().find(([, init]) => init?.method === 'PUT');
+      return JSON.parse(put?.[1]?.body ?? '[]') as Array<{
         key: string;
         value: string;
       }>;
@@ -147,7 +147,7 @@ describe('RenderEnvClient', () => {
         vars: [{ key: 'NEW', value: 'x' }],
       });
 
-      const urls = (fetch as jest.Mock).mock.calls.map(([url]) => url);
+      const urls = fetchCalls().map(([url]) => url);
       expect(urls.slice(0, 3)).toEqual([
         'https://api.render.com/v1/services/srv-1/env-vars?limit=100',
         'https://api.render.com/v1/services/srv-1/env-vars?limit=100&cursor=cursor-99',
@@ -217,9 +217,7 @@ describe('RenderEnvClient', () => {
           key: 'KEY_1',
         }),
       ).rejects.toThrow();
-      const methods = (fetch as jest.Mock).mock.calls.map(
-        ([, init]) => init?.method ?? 'GET',
-      );
+      const methods = fetchCalls().map(([, init]) => init?.method ?? 'GET');
       expect(methods).not.toContain('PUT');
     });
   });
