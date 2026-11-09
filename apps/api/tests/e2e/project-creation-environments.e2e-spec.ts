@@ -503,9 +503,10 @@ describe('Project creation with environments', () => {
     // A managed Render service is released through AlphaCI (release.yml), a
     // customer-owned one is deployed by render-deploy.yml. Both name their
     // target by ID.
+    // Anchored on the path: sign-release.yml also ends in release.yml.
     const deployJobs = (workflow: Workflow) =>
       Object.values(workflow.jobs).filter((job) =>
-        /(render-deploy|release)\.yml@/.test(job.uses ?? ''),
+        /\/(render-deploy|release)\.yml@/.test(job.uses ?? ''),
       );
     const deployTargets = (workflow: Workflow) =>
       deployJobs(workflow).map((job) => job.with?.['target-id']);
@@ -517,7 +518,7 @@ describe('Project creation with environments', () => {
     ] as const) {
       expect(
         deployJobs(pipeline('.github/workflows/' + file, branch)).every((job) =>
-          /release\.yml@/.test(job.uses ?? ''),
+          /\/release\.yml@/.test(job.uses ?? ''),
         ),
       ).toBe(true);
     }
