@@ -499,8 +499,22 @@ export class GithubService
     teamSlug: string,
     token: string,
   ): Promise<string[]> {
+    return (await this.readTeamRoster(teamSlug, token)) ?? [];
+  }
+
+  /**
+   * The roster of `teamSlug`, or `null` when it could not be read: no org or
+   * token, or any page refused (a 403 rate limit, a 404 for a team that does
+   * not exist). A partial roster is never returned, because it would read as
+   * "these people left the team". A team with no members is `[]`.
+   */
+  async readTeamRoster(
+    teamSlug: string,
+    token: string,
+  ): Promise<string[] | null> {
     const org = this.getEnforcedOrg();
-    if (!org || !teamSlug || !token) return [];
+    if (!teamSlug) return [];
+    if (!org || !token) return null;
 
     const logins: string[] = [];
     const maxPages = 5; // cap at 500 members, same bound as the org roster
@@ -519,7 +533,7 @@ export class GithubService
         this.logger.warn(
           `Could not list members of team ${org}/${teamSlug} (${String(response.status)}) — check the App has org Members:Read`,
         );
-        break;
+        return null;
       }
       const batch = (await response.json()) as Array<{ login: string }>;
       for (const item of batch) logins.push(item.login);

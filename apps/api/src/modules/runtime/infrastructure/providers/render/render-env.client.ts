@@ -35,6 +35,11 @@ import {
 
 const RENDER_API_URL = 'https://api.render.com/v1';
 
+/** Render's largest page for the env-var list (it defaults to 20). */
+const RENDER_ENV_VARS_PAGE_SIZE = 100;
+/** A service with more than 5,000 variables is refused, not half-read. */
+const RENDER_ENV_VARS_MAX_PAGES = 50;
+
 /**
  * The commit an image was built from, read from its `sha-<commit>` tag (the
  * tag the ALPHACI pipeline pushes). Null for any other tag or a digest.
@@ -170,19 +175,12 @@ export class RenderEnvClient implements DeploymentProvider {
   async upsertEnvironmentVariables(
     input: UpsertProviderEnvInput,
   ): Promise<ProviderProvisionResult> {
-    const currentResponse = await fetch(
-      `${RENDER_API_URL}/services/${input.targetId}/env-vars`,
-      { headers: this.headers(input.token) },
-    );
-    await this.assertOk(currentResponse, 'Render env vars could not be loaded');
-    const current = (await currentResponse.json()) as Array<{
-      envVar?: { key?: string; value?: string };
-    }>;
     const merged = new Map<string, string>();
-    for (const item of current) {
-      if (item.envVar?.key) {
-        merged.set(item.envVar.key, item.envVar.value ?? '');
-      }
+    for (const variable of await this.listEnvironmentVariables(
+      input.token,
+      input.targetId,
+    )) {
+      merged.set(variable.key, variable.value);
     }
     for (const variable of input.vars) {
       merged.set(variable.key, variable.value);
@@ -213,20 +211,9 @@ export class RenderEnvClient implements DeploymentProvider {
   async deleteEnvironmentVariable(
     input: DeleteProviderEnvInput,
   ): Promise<{ key: string; status: 'removed' }> {
-    const currentResponse = await fetch(
-      `${RENDER_API_URL}/services/${input.targetId}/env-vars`,
-      { headers: this.headers(input.token) },
-    );
-    await this.assertOk(currentResponse, 'Render env vars could not be loaded');
-    const current = (await currentResponse.json()) as Array<{
-      envVar?: { key?: string; value?: string };
-    }>;
-    const remaining = current
-      .map((item) => item.envVar)
-      .filter((item): item is { key: string; value?: string } =>
-        Boolean(item?.key && item.key !== input.key),
-      )
-      .map((item) => ({ key: item.key, value: item.value ?? '' }));
+    const remaining = (
+      await this.listEnvironmentVariables(input.token, input.targetId)
+    ).filter((variable) => variable.key !== input.key);
 
     const response = await fetch(
       `${RENDER_API_URL}/services/${input.targetId}/env-vars`,
@@ -694,6 +681,53 @@ export class RenderEnvClient implements DeploymentProvider {
       .envProvisioning.flowciManaged.renderOwnerId?.trim();
 
     return ownerId || null;
+  }
+
+  /**
+   * Every variable of the service. Render lists 20 at a time and its PUT
+   * replaces the whole set, so a write built from one page would delete every
+   * variable past it. When a full page cannot be followed to the next, or the
+   * list never ends, this throws: a write must never follow a partial read.
+   */
+  private async listEnvironmentVariables(
+    token: string,
+    targetId: string,
+  ): Promise<Array<{ key: string; value: string }>> {
+    const variables: Array<{ key: string; value: string }> = [];
+    let cursor: string | undefined;
+    for (let page = 0; page < RENDER_ENV_VARS_MAX_PAGES; page += 1) {
+      const query = new URLSearchParams({
+        limit: String(RENDER_ENV_VARS_PAGE_SIZE),
+      });
+      if (cursor) query.set('cursor', cursor);
+      const response = await fetch(
+        `${RENDER_API_URL}/services/${targetId}/env-vars?${query.toString()}`,
+        { headers: this.headers(token) },
+      );
+      await this.assertOk(response, 'Render env vars could not be loaded');
+      const items = (await response.json()) as Array<{
+        envVar?: { key?: string; value?: string };
+        cursor?: string;
+      }>;
+      for (const item of items) {
+        if (item.envVar?.key) {
+          variables.push({
+            key: item.envVar.key,
+            value: item.envVar.value ?? '',
+          });
+        }
+      }
+      if (items.length < RENDER_ENV_VARS_PAGE_SIZE) return variables;
+      cursor = items.at(-1)?.cursor;
+      if (!cursor) {
+        throw new Error(
+          'Render env vars could not be fully read (a full page came back without a cursor), so nothing was changed.',
+        );
+      }
+    }
+    throw new Error(
+      'Render env vars could not be fully read (too many pages), so nothing was changed.',
+    );
   }
 
   private headers(token: string): Record<string, string> {

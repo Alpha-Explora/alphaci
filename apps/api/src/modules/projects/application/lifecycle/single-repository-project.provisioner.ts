@@ -497,6 +497,20 @@ export class SingleRepositoryProjectProvisioner {
         'ALPHACI_REPORT_URL',
         ALPHACI_REPORT_URL,
       );
+      /*
+       * The address deploy jobs send their token to. A managed Render release
+       * job reads it only from this secret (no `api-url` input), and the
+       * shared release workflow stops with "No AlphaCI URL" without it, so a
+       * repository set up without it could never deploy. The create paths
+       * install it for the same reason.
+       */
+      await this.support.githubService.setActionsSecretStrict(
+        accessToken,
+        owner,
+        repo,
+        'ALPHACI_API_URL',
+        ALPHACI_API_URL,
+      );
       // preserveExisting: this is somebody's existing repository, and it may
       // already be wired to its own SonarCloud project.
       await this.support.sonar.installSecrets(accessToken, owner, repo, true);

@@ -48,6 +48,7 @@ function makeGithubService(
   memberships: Record<string, boolean | null>,
   rosters: Record<string, string[]> = {},
   appMemberships?: Record<string, boolean | null>,
+  unreadableRosters: readonly string[] = [],
 ): {
   service: GithubOrganizationPort;
   getTeamMembership: jest.Mock;
@@ -81,6 +82,12 @@ function makeGithubService(
     createInstallationAccessToken,
     listTeamMembersWithToken: jest.fn((teamSlug: string) =>
       Promise.resolve(rosters[teamSlug] ?? []),
+    ),
+    // null is "could not be read" (a refused request), never an empty team.
+    readTeamRoster: jest.fn((teamSlug: string) =>
+      Promise.resolve(
+        unreadableRosters.includes(teamSlug) ? null : (rosters[teamSlug] ?? []),
+      ),
     ),
   } as unknown as GithubOrganizationPort;
   return { service, getTeamMembership, createInstallationAccessToken };
@@ -127,6 +134,7 @@ function build(options: {
   memberships?: Record<string, boolean | null>;
   current?: { role: AppRole; source: AppRoleSource };
   rosters?: Record<string, string[]>;
+  unreadableRosters?: readonly string[];
   syncedUsers?: Array<{ id: string; login: string; appRole: AppRole }>;
   installationId?: number | null;
   appMemberships?: Record<string, boolean | null>;
@@ -139,6 +147,7 @@ function build(options: {
     options.memberships ?? {},
     options.rosters ?? {},
     options.appMemberships,
+    options.unreadableRosters,
   );
   const { repository, setAppRole, setAppRoleSource } = makeRepository(
     options.current ?? { role: 'member', source: 'github_team' },
@@ -581,6 +590,50 @@ describe('GithubTeamRoleService', () => {
         status: 'unreadable',
       });
       expect(setAppRole).not.toHaveBeenCalled();
+    });
+
+    it('refuses to act when only the lead roster could not be read', async () => {
+      // The developer roster reads fine and is not empty, so the "both empty"
+      // guard alone would let this through and demote every lead.
+      const { service, setAppRole } = build({
+        rosters: { [DEV_TEAM]: ['bob'] },
+        unreadableRosters: [LEAD_TEAM],
+        syncedUsers: [{ id: 'u1', login: 'ada', appRole: 'lead' }],
+      });
+      await expect(service.reconcileAll()).resolves.toEqual({
+        status: 'unreadable',
+      });
+      expect(setAppRole).not.toHaveBeenCalled();
+    });
+
+    it('refuses to act when only the developer roster could not be read', async () => {
+      const { service, setAppRole } = build({
+        rosters: LEADS,
+        unreadableRosters: [DEV_TEAM],
+        syncedUsers: [{ id: 'u2', login: 'bob', appRole: 'lead' }],
+      });
+      await expect(service.reconcileAll()).resolves.toEqual({
+        status: 'unreadable',
+      });
+      expect(setAppRole).not.toHaveBeenCalled();
+    });
+
+    it('still reconciles leads when only the qa roster could not be read, leaving qa users alone', async () => {
+      const { service, setAppRole } = build({
+        rosters: LEADS,
+        unreadableRosters: [QA_TEAM],
+        syncedUsers: [
+          { id: 'u1', login: 'ada', appRole: 'member' }, // in team-lead → promote
+          { id: 'u2', login: 'quinn', appRole: 'qa' }, // qa unknown → untouched
+        ],
+      });
+      await expect(service.reconcileAll()).resolves.toEqual({
+        status: 'completed',
+        checked: 2,
+        updated: 1,
+      });
+      expect(setAppRole).toHaveBeenCalledWith('u1', 'lead', 'github_team');
+      expect(setAppRole).toHaveBeenCalledTimes(1);
     });
 
     it('promotes and demotes to match the rosters', async () => {

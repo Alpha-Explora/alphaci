@@ -483,6 +483,78 @@ describe('GithubService', () => {
     });
   });
 
+  /*
+   * The scheduled role sweep demotes whoever is missing from the team-lead
+   * roster, so "could not read it" must never look like "nobody is in it".
+   */
+  describe('readTeamRoster', () => {
+    const page = (logins: string[]) => ({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve(logins.map((login) => ({ login }))),
+    });
+    const refused = (status: number) => ({
+      ok: false,
+      status,
+      json: () => Promise.resolve({}),
+    });
+
+    it('reads the team members', async () => {
+      fetchMock.mockResolvedValueOnce(page(['ada', 'bob']));
+
+      await expect(service.readTeamRoster('team-lead', 'tok')).resolves.toEqual(
+        ['ada', 'bob'],
+      );
+      expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+        'https://api.github.com/orgs/Alpha-Explora/teams/team-lead/members?per_page=100&page=1',
+      );
+    });
+
+    it('is an empty array, not null, for a team that really has no members', async () => {
+      fetchMock.mockResolvedValueOnce(page([]));
+
+      await expect(service.readTeamRoster('team-lead', 'tok')).resolves.toEqual(
+        [],
+      );
+    });
+
+    it.each([403, 404, 500])(
+      'is null when GitHub answers %i',
+      async (status) => {
+        fetchMock.mockResolvedValueOnce(refused(status));
+
+        await expect(
+          service.readTeamRoster('team-lead', 'tok'),
+        ).resolves.toBeNull();
+      },
+    );
+
+    it('is null, never a partial roster, when a later page is refused', async () => {
+      const full = Array.from({ length: 100 }, (_, index) => `user-${index}`);
+      fetchMock
+        .mockResolvedValueOnce(page(full))
+        .mockResolvedValueOnce(refused(403));
+
+      await expect(
+        service.readTeamRoster('team-lead', 'tok'),
+      ).resolves.toBeNull();
+    });
+
+    it('is null without a token, and empty for no team slug', async () => {
+      await expect(service.readTeamRoster('team-lead', '')).resolves.toBeNull();
+      await expect(service.readTeamRoster('', 'tok')).resolves.toEqual([]);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('keeps the old contract for listTeamMembersWithToken: [] when unreadable', async () => {
+      fetchMock.mockResolvedValueOnce(refused(403));
+
+      await expect(
+        service.listTeamMembersWithToken('team-lead', 'tok'),
+      ).resolves.toEqual([]);
+    });
+  });
+
   describe('GitHub App tokens', () => {
     it('builds the GitHub App install URL from config', () => {
       expect(service.getAppInstallUrl()).toBe(
