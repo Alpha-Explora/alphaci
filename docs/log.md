@@ -2,6 +2,7 @@
 
 ## 2026-11-10
 
+- **Update**: An environment's Vercel deploy job maps `VERCEL_<SLOT>_<ENVIRONMENT>_TOKEN`, `_ORG_ID` and `_PROJECT_ID` onto the names `vercel-deploy.yml` requires instead of inheriting the repository's secrets, and the installer writes those names. The names come from one function, `vercelCiSecretNames`. Legacy branch targets keep the slot-only names. The environments concept documents it.
 - **Update**: `POST /repositories/:id/move` follows Project membership for a repository ALPHACI created. A move that would remove GitHub Write from people outside the destination Project (neither the creator nor a Developer member of it) answers `409 MOVE_REVOKES_ACCESS` naming them; the body's optional `confirmAccessChange: true` agrees, and the move and the revokes commit together. The destination's Developers get Write afterwards. Attached repositories and moves while `HIERARCHY_GITHUB_SYNC_MODE=stub` are unchanged.
 
 ## 2026-11-08

@@ -48,6 +48,30 @@ export interface WorkflowFragmentResult {
   readonly jobIds: string[];
   readonly promotionNeeds: string[];
 }
+/**
+ * The repository secrets that hold one Vercel target's credentials. The
+ * installer writes them and the generated deploy job reads them, both through
+ * this function, so a name cannot be installed under one spelling and read
+ * under another.
+ *
+ * A target on the legacy branch path is named by its slot alone. An
+ * environment's target is named by slot and environment, because each
+ * environment has its own Vercel project: sharing one name per slot let the
+ * last environment provisioned overwrite the others' project IDs.
+ */
+export function vercelCiSecretNames(
+  slot: string,
+  environmentSlug?: string | null,
+): { token: string; orgId: string; projectId: string } {
+  const scope = environmentSlug ? slot + '_' + environmentSlug : slot;
+  const prefix = 'VERCEL_' + scope.toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+  return {
+    token: prefix + '_TOKEN',
+    orgId: prefix + '_ORG_ID',
+    projectId: prefix + '_PROJECT_ID',
+  };
+}
+
 /** One environment target, named by IDs, for an environments-mode pipeline. */
 export interface EnvironmentDeployInput {
   readonly environment: {

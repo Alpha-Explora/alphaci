@@ -57,6 +57,93 @@ describe('VercelCiSecretsService', () => {
     vercelEnvClient.ensurePublicPreviews.mockResolvedValue('disabled');
   });
 
+  describe('a target that belongs to an environment', () => {
+    const environmentTarget = (id: string, projectId: string) => ({
+      id,
+      projectId: 'project-1',
+      environmentId: 'env-' + id,
+      slot: 'frontend' as const,
+      ownershipMode: 'byo' as const,
+      provider: 'vercel',
+      providerConnectionId: 'connection-1',
+      providerProjectId: projectId,
+      providerProjectName: 'web-' + id,
+      repoFullName: 'owner/web',
+      branchName: 'dev',
+      rootDirectory: null,
+      buildCommand: null,
+      startCommand: null,
+      environmentMap: {},
+      deploymentStrategy: 'vercel_ci_pushed',
+      providerMetadata: { vercelOrgId: 'user_123' },
+      status: 'active' as const,
+    });
+    const install = (id: string, projectId: string, environmentSlug: string) =>
+      makeService().installForTarget({
+        githubAccessToken: 'github-token',
+        repoFullName: 'owner/web',
+        userId: 'user-1',
+        providerConnectionId: 'connection-1',
+        target: environmentTarget(id, projectId),
+        environmentSlug,
+      });
+    const writtenNames = () =>
+      githubService.setActionsSecretStrict.mock.calls.map(
+        (call) => call[3] as string,
+      );
+
+    it('names the secrets by slot and environment, which the generated job reads', async () => {
+      const result = await install('t-qa', 'prj_qa', 'qa');
+
+      expect(result.githubSecrets).toMatchObject({
+        token: 'VERCEL_FRONTEND_QA_TOKEN',
+        orgId: 'VERCEL_FRONTEND_QA_ORG_ID',
+        projectId: 'VERCEL_FRONTEND_QA_PROJECT_ID',
+      });
+      expect(githubService.setActionsSecretStrict).toHaveBeenCalledWith(
+        'github-token',
+        'owner',
+        'web',
+        'VERCEL_FRONTEND_QA_PROJECT_ID',
+        'prj_qa',
+      );
+    });
+
+    it('keeps each environment its own Vercel project instead of overwriting the last one', async () => {
+      await install('t-dev', 'prj_dev', 'dev');
+      await install('t-qa', 'prj_qa', 'qa');
+
+      const projectWrites = githubService.setActionsSecretStrict.mock.calls
+        .filter((call) => (call[3] as string).endsWith('_PROJECT_ID'))
+        .map((call) => [call[3], call[4]]);
+      expect(projectWrites).toEqual([
+        ['VERCEL_FRONTEND_DEV_PROJECT_ID', 'prj_dev'],
+        ['VERCEL_FRONTEND_QA_PROJECT_ID', 'prj_qa'],
+      ]);
+      expect(writtenNames()).not.toContain('VERCEL_FRONTEND_PROJECT_ID');
+    });
+
+    it('turns a hyphenated slug into a valid secret name', async () => {
+      const result = await install('t-pre', 'prj_pre', 'pre-prod');
+
+      expect(result.githubSecrets['token']).toBe(
+        'VERCEL_FRONTEND_PRE_PROD_TOKEN',
+      );
+    });
+
+    it('still uses the slot-only names when no environment slug is given', async () => {
+      const result = await makeService().installForTarget({
+        githubAccessToken: 'github-token',
+        repoFullName: 'owner/web',
+        userId: 'user-1',
+        providerConnectionId: 'connection-1',
+        target: environmentTarget('t-legacy', 'prj_legacy'),
+      });
+
+      expect(result.githubSecrets['token']).toBe('VERCEL_FRONTEND_TOKEN');
+    });
+  });
+
   it('installs per-slot Vercel secrets for BYO CI-pushed targets', async () => {
     const service = makeService();
 

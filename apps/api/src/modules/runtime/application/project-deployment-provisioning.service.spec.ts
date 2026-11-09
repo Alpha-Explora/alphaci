@@ -11,6 +11,7 @@ describe('ProjectDeploymentProvisioningService', () => {
     createDeploymentTarget: jest.fn(),
     updateProviderMetadata: jest.fn(),
     recordTargetProvisioningFailure: jest.fn().mockResolvedValue(undefined),
+    environmentSlugFor: jest.fn().mockResolvedValue(null),
   };
   const envVarsService = {
     provisionEnvVars: jest.fn(),
@@ -467,6 +468,71 @@ describe('ProjectDeploymentProvisioningService', () => {
     expect(JSON.stringify(result)).not.toContain('rnd_secret');
   });
 
+  it("names an environment's Vercel secrets after that environment", async () => {
+    deploymentTargetsService.createDeploymentTarget.mockResolvedValueOnce({
+      id: 'target-qa',
+      projectId: 'project-1',
+      environmentId: 'env-qa',
+      slot: 'frontend',
+      ownershipMode: 'flowci_managed',
+      provider: 'vercel',
+      providerConnectionId: null,
+      providerProjectId: 'prj_qa',
+      providerProjectName: 'orders-ui-qa',
+      repoFullName: 'tone/orders-ui',
+      branchName: 'dev',
+      rootDirectory: '.',
+      buildCommand: 'npm run build',
+      startCommand: null,
+      environmentMap: {},
+      deploymentStrategy: 'vercel_ci_pushed',
+      providerMetadata: { vercelOrgId: 'team_flowci' },
+      status: 'active',
+    });
+    deploymentTargetsService.updateProviderMetadata.mockResolvedValueOnce(
+      undefined,
+    );
+    deploymentTargetsService.environmentSlugFor.mockResolvedValueOnce('qa');
+
+    const service = new ProjectDeploymentProvisioningService(
+      deploymentTargetsService as never,
+      envVarsService as never,
+      ciSecretsInstallerRegistry as never,
+      providerPolicyRegistry,
+    );
+
+    await service.provisionForProject({
+      projectId: 'project-1',
+      userId: 'user-1',
+      repoFullName: 'tone/orders-ui',
+      githubAccessToken: 'github-token',
+      request: {
+        enabled: true,
+        targets: [
+          {
+            slot: 'frontend',
+            provider: 'vercel',
+            ownershipMode: 'flowci_managed',
+            projectName: 'orders-ui-qa',
+            branchName: 'dev',
+            environmentId: 'env-qa',
+            rootDirectory: '.',
+            buildCommand: 'npm run build',
+            env: [],
+          },
+        ],
+      },
+    });
+
+    expect(deploymentTargetsService.environmentSlugFor).toHaveBeenCalledWith(
+      'project-1',
+      'env-qa',
+    );
+    expect(vercelCiSecretsService.installForTarget).toHaveBeenCalledWith(
+      expect.objectContaining({ environmentSlug: 'qa' }),
+    );
+  });
+
   it('installs GitHub Actions secrets for managed Vercel CI-pushed targets', async () => {
     deploymentTargetsService.createDeploymentTarget.mockResolvedValueOnce({
       id: 'target-1',
@@ -530,6 +596,7 @@ describe('ProjectDeploymentProvisioningService', () => {
         ownershipMode: 'flowci_managed',
         deploymentStrategy: 'vercel_ci_pushed',
       }) as unknown,
+      environmentSlug: null,
     });
     expect(
       deploymentTargetsService.createDeploymentTarget,
@@ -922,6 +989,7 @@ describe('ProjectDeploymentProvisioningService — declined secret installs', ()
   const deploymentTargetsServiceRef = {
     createDeploymentTarget: jest.fn(),
     updateProviderMetadata: jest.fn(),
+    environmentSlugFor: jest.fn().mockResolvedValue(null),
   };
   const envVarsServiceRef = {
     provisionEnvVars: jest.fn().mockResolvedValue({ applied: [] }),

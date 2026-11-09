@@ -12,6 +12,7 @@ import {
   VERCEL_ALIAS_VARIABLE,
   vercelAliasHost,
   vercelAutomationBypassSecretName,
+  vercelCiSecretNames,
 } from '#kernel/ports/workflow-fragment.port';
 import { EnvTokenEncryptionService } from '../../../application/encryption.service';
 import type {
@@ -84,11 +85,19 @@ export class VercelCiSecretsService implements ProviderCiSecretsInstaller {
     input: ProviderCiSecretsInstallerInput,
   ): Promise<ProviderCiSecretsInstallResult> {
     if (!this.supports(input.target)) {
-      return { githubSecrets: this.vercelSecretNames(input.target.slot) };
+      return {
+        githubSecrets: this.vercelSecretNames(
+          input.target.slot,
+          input.environmentSlug,
+        ),
+      };
     }
 
     const [owner, repo] = this.parseRepoFullName(input.repoFullName);
-    const secretNames = this.vercelSecretNames(input.target.slot);
+    const secretNames = this.vercelSecretNames(
+      input.target.slot,
+      input.environmentSlug,
+    );
     const vercelOrgId = this.requireProviderMetadataString(
       input.target.providerMetadata,
       'vercelOrgId',
@@ -276,13 +285,12 @@ export class VercelCiSecretsService implements ProviderCiSecretsInstaller {
     return { alias: VERCEL_ALIAS_VARIABLE };
   }
 
-  vercelSecretNames(slot: EnvTargetSlot): VercelCiSecretNames {
-    const prefix = `VERCEL_${slot.toUpperCase()}`;
-    return {
-      token: `${prefix}_TOKEN`,
-      orgId: `${prefix}_ORG_ID`,
-      projectId: `${prefix}_PROJECT_ID`,
-    };
+  vercelSecretNames(
+    slot: EnvTargetSlot,
+    environmentSlug?: string | null,
+  ): VercelCiSecretNames {
+    // The generator names them through the same function.
+    return vercelCiSecretNames(slot, environmentSlug);
   }
 
   private parseRepoFullName(repoFullName: string): [string, string] {

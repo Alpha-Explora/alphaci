@@ -2,6 +2,7 @@ import {
   VERCEL_ALIAS_VARIABLE,
   legacyEnvironmentLabel,
   vercelBranchAlias,
+  vercelCiSecretNames,
   type EnvironmentDeployInput,
 } from '#kernel/ports/workflow-fragment.port';
 
@@ -105,11 +106,7 @@ function expandVercelTargets(
       slot: target.slot,
       provider: 'vercel',
       deploymentStrategy: 'vercel_ci_pushed',
-      secretNames: {
-        token: `VERCEL_${target.slot.toUpperCase()}_TOKEN`,
-        orgId: `VERCEL_${target.slot.toUpperCase()}_ORG_ID`,
-        projectId: `VERCEL_${target.slot.toUpperCase()}_PROJECT_ID`,
-      },
+      secretNames: vercelCiSecretNames(target.slot),
       ...(rootDirectory ? { rootDirectory } : {}),
     },
   ];
@@ -134,6 +131,8 @@ function vercelEnvironmentDeployJob(
   input: EnvironmentDeployInput,
   context: WorkflowFragmentContext,
 ): Record<string, unknown> {
+  // Vercel only deploys the frontend slot (expandVercelTargets).
+  const secretNames = vercelCiSecretNames('frontend', input.environment.slug);
   return {
     needs: input.needs,
     if: input.if,
@@ -148,6 +147,19 @@ function vercelEnvironmentDeployJob(
       'environment-name': input.environment.slug,
       'target-id': input.targetId,
     },
-    secrets: 'inherit',
+    /*
+     * Named, not `inherit`. vercel-deploy.yml requires VERCEL_TOKEN,
+     * VERCEL_ORG_ID and VERCEL_PROJECT_ID, and `inherit` hands over secrets
+     * under the names the repository has them: the installer's, which carry
+     * the slot and environment. Mapping them here, as the branch pipeline
+     * does, is what lets each environment deploy to its own Vercel project.
+     */
+    secrets: {
+      VERCEL_TOKEN: `\${{ secrets.${secretNames.token} }}`,
+      VERCEL_ORG_ID: `\${{ secrets.${secretNames.orgId} }}`,
+      VERCEL_PROJECT_ID: `\${{ secrets.${secretNames.projectId} }}`,
+      GH_PR_TOKEN:
+        "${{ secrets.GH_PR_TOKEN != '' && secrets.GH_PR_TOKEN || github.token }}",
+    },
   };
 }
