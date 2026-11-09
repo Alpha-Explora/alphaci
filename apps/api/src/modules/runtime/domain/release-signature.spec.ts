@@ -1,7 +1,10 @@
 import { generateKeyPairSync, sign } from 'node:crypto';
 
 import { canonicalJson } from './release-manifest';
-import { verifyReleaseSignature } from './release-signature';
+import {
+  trustKeysSettingProblem,
+  verifyReleaseSignature,
+} from './release-signature';
 
 describe('release signature verification', () => {
   const trusted = generateKeyPairSync('ec', { namedCurve: 'P-256' });
@@ -90,4 +93,29 @@ describe('release signature verification', () => {
       reason,
     });
   });
+});
+
+describe('trustKeysSettingProblem', () => {
+  it.each([
+    undefined,
+    '',
+    '   ',
+    '{}',
+    '{"projects/alphaci/keys/release/1":"-----BEGIN PUBLIC KEY-----"}',
+  ])('finds nothing wrong with %p', (setting) => {
+    expect(trustKeysSettingProblem(setting)).toBeUndefined();
+  });
+
+  it('says the setting is not JSON', () => {
+    expect(trustKeysSettingProblem('{not json')).toBe('it is not valid JSON');
+  });
+
+  it.each(['[]', '"key"', '42', 'null', 'true'])(
+    'says %s is not an object of key IDs to public keys',
+    (setting) => {
+      expect(trustKeysSettingProblem(setting)).toBe(
+        'it must be a JSON object mapping key IDs to public keys',
+      );
+    },
+  );
 });
