@@ -111,6 +111,119 @@ describe('RenderEnvClient', () => {
     );
   });
 
+  describe('a service with more variables than one Render page', () => {
+    const page = (from: number, count: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        envVar: { key: `KEY_${from + index}`, value: `v${from + index}` },
+        cursor: `cursor-${from + index}`,
+      }));
+    const ok = (json: unknown) => ({
+      ok: true,
+      json: () => Promise.resolve(json),
+    });
+    const putBody = () => {
+      const put = (fetch as jest.Mock).mock.calls.find(
+        ([, init]) => init?.method === 'PUT',
+      );
+      return JSON.parse(put[1].body as string) as Array<{
+        key: string;
+        value: string;
+      }>;
+    };
+
+    it('reads every page before an upsert replaces the set', async () => {
+      global.fetch = jest
+        .fn()
+        .mockResolvedValueOnce(ok(page(0, 100)))
+        .mockResolvedValueOnce(ok(page(100, 100)))
+        .mockResolvedValueOnce(ok(page(200, 5)))
+        .mockResolvedValueOnce(ok([]));
+
+      await new RenderEnvClient().upsertEnvironmentVariables({
+        token: 'rnd',
+        targetId: 'srv-1',
+        lane: 'production',
+        gitBranch: null,
+        vars: [{ key: 'NEW', value: 'x' }],
+      });
+
+      const urls = (fetch as jest.Mock).mock.calls.map(([url]) => url);
+      expect(urls.slice(0, 3)).toEqual([
+        'https://api.render.com/v1/services/srv-1/env-vars?limit=100',
+        'https://api.render.com/v1/services/srv-1/env-vars?limit=100&cursor=cursor-99',
+        'https://api.render.com/v1/services/srv-1/env-vars?limit=100&cursor=cursor-199',
+      ]);
+      const written = putBody();
+      expect(written).toHaveLength(206);
+      expect(written.at(-1)).toEqual({ key: 'NEW', value: 'x' });
+      expect(written).toContainEqual({ key: 'KEY_204', value: 'v204' });
+    });
+
+    it('keeps every other variable when deleting one that is on a later page', async () => {
+      global.fetch = jest
+        .fn()
+        .mockResolvedValueOnce(ok(page(0, 100)))
+        .mockResolvedValueOnce(ok(page(100, 3)))
+        .mockResolvedValueOnce(ok([]));
+
+      await new RenderEnvClient().deleteEnvironmentVariable({
+        token: 'rnd',
+        targetId: 'srv-1',
+        lane: 'production',
+        gitBranch: null,
+        key: 'KEY_101',
+      });
+
+      const written = putBody();
+      expect(written).toHaveLength(102);
+      expect(written.map((variable) => variable.key)).not.toContain('KEY_101');
+    });
+
+    it('writes nothing when a full page cannot be followed to the next', async () => {
+      global.fetch = jest
+        .fn()
+        .mockResolvedValueOnce(
+          ok(page(0, 100).map(({ envVar }) => ({ envVar }))),
+        );
+
+      await expect(
+        new RenderEnvClient().upsertEnvironmentVariables({
+          token: 'rnd',
+          targetId: 'srv-1',
+          lane: 'production',
+          gitBranch: null,
+          vars: [{ key: 'NEW', value: 'x' }],
+        }),
+      ).rejects.toThrow(/nothing was changed/);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('writes nothing when a later page fails to load', async () => {
+      global.fetch = jest
+        .fn()
+        .mockResolvedValueOnce(ok(page(0, 100)))
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          text: () => Promise.resolve('boom'),
+        });
+
+      await expect(
+        new RenderEnvClient().deleteEnvironmentVariable({
+          token: 'rnd',
+          targetId: 'srv-1',
+          lane: 'production',
+          gitBranch: null,
+          key: 'KEY_1',
+        }),
+      ).rejects.toThrow();
+      const methods = (fetch as jest.Mock).mock.calls.map(
+        ([, init]) => init?.method ?? 'GET',
+      );
+      expect(methods).not.toContain('PUT');
+    });
+  });
+
   it('deletes Render env vars by replacing the set without the key', async () => {
     global.fetch = jest
       .fn()

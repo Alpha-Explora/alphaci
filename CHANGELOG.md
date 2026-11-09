@@ -60,6 +60,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Projects:** Developers get GitHub Write on repositories whose names GitHub rewrites for team names, such as `web.app`; before this, only the first person granted got it. Each new grant or revoke request gets its full retry budget again.
 - **Capabilities:** Unknown, duplicate, or empty edition selections fail before catalog writes. Hosting metadata includes the Hosts page, and capability descriptions cover the current QA and delivery workflows.
 - **On-prem:** The Windows host install file now runs from an elevated PowerShell 7 window, where it stopped with `Get-FileHash` not recognized.
+- **Hosting:** Saving or deleting a Render environment variable keeps the service's other variables when it has more than 20; before, the rest were erased.
 - **Self-hosted:** A first install no longer risks `migrate` failing: the database counts as healthy only once it accepts TCP connections, not during its one-time setup.
 - **QA:** Report and CI results tables escape backslashes, so a cell ending in `\` no longer breaks the table.
 - **Pipelines:** A new project starts one pipeline per branch, not one per generated file.
