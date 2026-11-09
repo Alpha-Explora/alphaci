@@ -76,6 +76,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Runs:** Terminal colour codes no longer appear in test output, and SonarCloud percentages show one decimal.
 - **UI:** Secondary buttons are visible in the dark theme, and preview cards name the host when the API sends no label.
 - **UI:** Signed-in pages no longer call workspace and notification endpoints that are turned off.
+- **Hosting:** With backend release signing, a malformed `ALPHACI_RELEASE_TRUST_KEYS_JSON` now refuses a release before it is stored; before, it left an unsigned release that re-running CI could not replace.
 - **API:** Query parameters are read as single values: a repeated or nested one counts as absent instead of being joined, and an unknown feedback `status` filter returns 400.
 
 ### Security

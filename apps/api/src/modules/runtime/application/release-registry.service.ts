@@ -62,6 +62,7 @@ import {
   type WorkflowRun,
 } from '../domain/release-manifest';
 import {
+  trustKeysSettingProblem,
   trustKeysWithSigner,
   verifyReleaseSignature,
 } from '../domain/release-signature';
@@ -242,6 +243,25 @@ export class ReleaseRegistryService {
     if (serverSigner?.problem !== undefined) {
       throw new ServiceUnavailableException(
         'Release signing is not configured: ' + serverSigner.problem,
+      );
+    }
+    /*
+     * So does a trust-keys setting that cannot be read. The backend signs and
+     * verifies in this same request, so a bad setting would otherwise fail
+     * after the release row is written. That row holds the workflow run's
+     * unique slot, so re-running the job once the setting is fixed would meet
+     * "already registered" and the release could never be signed.
+     */
+    const trustKeysProblem = serverSigner
+      ? trustKeysSettingProblem(
+          this.configService.get<string>('ALPHACI_RELEASE_TRUST_KEYS_JSON'),
+        )
+      : undefined;
+    if (trustKeysProblem !== undefined) {
+      throw new ServiceUnavailableException(
+        'The release-signing trust keys are not configured correctly: ' +
+          trustKeysProblem +
+          '.',
       );
     }
     try {

@@ -43,6 +43,29 @@ export function trustKeysWithSigner(
   });
 }
 
+/**
+ * What is wrong with the trust-keys setting itself, or undefined when it is
+ * fine. An unset or blank setting is fine (the backend's own signing key is
+ * trusted without it); a set one must be a JSON object of key IDs to public
+ * keys. Used to refuse before anything is written, rather than discover the
+ * mistake while verifying the signature of a release that is already stored.
+ */
+export function trustKeysSettingProblem(
+  trustKeysJson: string | undefined,
+): string | undefined {
+  if (!trustKeysJson?.trim()) return undefined;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trustKeysJson);
+  } catch {
+    return 'it is not valid JSON';
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return 'it must be a JSON object mapping key IDs to public keys';
+  }
+  return undefined;
+}
+
 const BASE64 =
   /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 

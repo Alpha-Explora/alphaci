@@ -309,6 +309,48 @@ describe('file-mode release signing on registration', () => {
     expect(releases.registerRelease).not.toHaveBeenCalled();
   });
 
+  /*
+   * The backend signs and verifies in the same request that registers, so a
+   * malformed trust-keys setting used to fail after the release was written.
+   * That row held the workflow run's unique slot: re-running the job once the
+   * setting was fixed got "already registered", and the release stayed unsigned.
+   */
+  it.each([
+    ['not valid JSON', '{not json'],
+    ['a JSON array', '[]'],
+    ['a JSON string', '"key"'],
+  ])(
+    'refuses before writing anything when the trust keys setting is %s',
+    async (_label, trustKeys) => {
+      for (const connectivity of ['direct', 'indirect'] as const) {
+        const { register, releases } = harness({
+          signer: fileSigner(),
+          connectivity,
+          trustKeys,
+        });
+        await expect(register()).rejects.toThrow(
+          /trust keys are not configured correctly/,
+        );
+        await expect(register()).rejects.toBeInstanceOf(
+          ServiceUnavailableException,
+        );
+        expect(releases.registerRelease).not.toHaveBeenCalled();
+        expect(releases.failUnsignedHostDeployment).not.toHaveBeenCalled();
+      }
+    },
+  );
+
+  it('ignores the trust keys setting in runner mode, where CI signs and the backend does not', async () => {
+    const { register, releases } = harness({
+      signer: new RunnerReleaseSigner(),
+      trustKeys: '{not json',
+    });
+    await expect(register()).resolves.toMatchObject({
+      verificationStatus: 'pending',
+    });
+    expect(releases.registerRelease).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps runner mode unchanged: the release stays pending for CI to sign', async () => {
     const { register, releases } = harness({
       signer: new RunnerReleaseSigner(),
