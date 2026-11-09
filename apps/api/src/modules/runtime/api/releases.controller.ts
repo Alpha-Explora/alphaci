@@ -108,6 +108,8 @@ export class ReleasesController {
       commitSha: body.commitSha,
       ...(body.artifact ? { artifact: body.artifact } : {}),
       ...(body.runUrl ? { runUrl: body.runUrl } : {}),
+      ...(body.targetId ? { targetId: body.targetId } : {}),
+      ...(body.environmentId ? { environmentId: body.environmentId } : {}),
     });
   }
 

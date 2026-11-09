@@ -57,6 +57,16 @@ export interface EnvironmentDeployInput {
     readonly role: 'production' | 'non_production';
   };
   readonly targetId: string;
+  /**
+   * What the pipeline knows about the target besides its ID: which slot it
+   * deploys, and how it is owned and deployed. A provider that releases some
+   * targets itself and has a workflow deploy the rest chooses by these.
+   */
+  readonly target?: {
+    readonly slot: string;
+    readonly ownershipMode?: string | undefined;
+    readonly deploymentStrategy?: string | undefined;
+  };
   readonly needs: string[];
   readonly if: string;
   /** Full commit SHA expression to deploy. */

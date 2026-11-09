@@ -176,6 +176,8 @@ export async function completeEnvironmentPipeline(
           slot: target.slot,
           targetId: target.deploymentTargetId,
           provider: target.provider,
+          ownershipMode: target.ownershipMode ?? undefined,
+          deploymentStrategy: target.deploymentStrategy ?? undefined,
         });
       }
     }

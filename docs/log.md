@@ -3,6 +3,7 @@
 ## 2026-11-10
 
 - **Update**: `POST /repositories/:id/move` follows Project membership for a repository ALPHACI created. A move that would remove GitHub Write from people outside the destination Project (neither the creator nor a Developer member of it) answers `409 MOVE_REVOKES_ACCESS` naming them; the body's optional `confirmAccessChange: true` agrees, and the move and the revokes commit together. The destination's Developers get Write afterwards. Attached repositories and moves while `HIERARCHY_GITHUB_SYNC_MODE=stub` are unchanged.
+- **Update**: A managed Render service in an environment is released through AlphaCI: its deploy job calls `release.yml` with the environment and target IDs, and `POST /ci/releases` accepts optional `environmentId`, `environmentName` and `targetId`, releasing exactly that target (404 when it is not the project's, 400 when it is another slot or environment). A release with a target takes any branch name; one without keeps the pipeline branches. A customer-owned Render service still uses `render-deploy.yml`.
 
 ## 2026-11-08
 

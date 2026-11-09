@@ -118,6 +118,115 @@ describe('ReleasesService', () => {
     expect(view.serviceUrl).toBe('https://demo-uat.onrender.com');
   });
 
+  describe('a release aimed at one target (an environment pipeline)', () => {
+    const qa = target({
+      id: 'target-qa',
+      environmentId: 'env-qa',
+      branchName: 'dev',
+    });
+    // Two environments sharing the dev branch: the branch alone cannot tell
+    // them apart, so the first by branch would be the wrong one for qa.
+    const dev = target({
+      id: 'target-dev',
+      environmentId: 'env-dev',
+      branchName: 'dev',
+    });
+    const targeted = {
+      ...request,
+      branch: 'dev',
+      targetId: 'target-qa',
+      environmentId: 'env-qa',
+    };
+
+    it('releases exactly that target, not the first one on the branch', async () => {
+      const { service, releaser } = build({ targets: [dev, qa] });
+
+      const view = await service.startRelease(targeted);
+
+      expect(releaser.start).toHaveBeenCalledWith(
+        expect.objectContaining({
+          target: expect.objectContaining({ id: 'target-qa' }),
+        }),
+      );
+      expect(view.releaseId).toBe('target-qa.dep-9');
+    });
+
+    it('would have released the wrong environment when found by branch', async () => {
+      const { service, releaser } = build({ targets: [dev, qa] });
+
+      await service.startRelease({
+        ...request,
+        branch: 'dev',
+      });
+
+      expect(releaser.start).toHaveBeenCalledWith(
+        expect.objectContaining({
+          target: expect.objectContaining({ id: 'target-dev' }),
+        }),
+      );
+    });
+
+    it('works when the environment source branch is not a pipeline branch', async () => {
+      const staging = target({
+        id: 'target-staging',
+        environmentId: 'env-staging',
+        branchName: 'release/staging',
+      });
+      const { service, releaser } = build({ targets: [staging] });
+
+      await service.startRelease({
+        ...request,
+        branch: 'release/staging',
+        targetId: 'target-staging',
+        environmentId: 'env-staging',
+      });
+
+      expect(releaser.start).toHaveBeenCalledWith(
+        expect.objectContaining({
+          target: expect.objectContaining({ id: 'target-staging' }),
+        }),
+      );
+    });
+
+    it('is a 404 for a target that is not this project’s', async () => {
+      const { service, releaser } = build({ targets: [dev] });
+
+      await expect(service.startRelease(targeted)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(releaser.start).not.toHaveBeenCalled();
+    });
+
+    it('refuses a target that deploys another slot', async () => {
+      const { service, releaser } = build({ targets: [qa] });
+
+      await expect(
+        service.startRelease({ ...targeted, slot: 'frontend' }),
+      ).rejects.toThrow(/deploys the backend slot, not frontend/);
+      expect(releaser.start).not.toHaveBeenCalled();
+    });
+
+    it('refuses a target of a different environment than the one being released', async () => {
+      const { service, releaser } = build({ targets: [qa] });
+
+      await expect(
+        service.startRelease({ ...targeted, environmentId: 'env-dev' }),
+      ).rejects.toThrow(/does not belong to the environment/);
+      expect(releaser.start).not.toHaveBeenCalled();
+    });
+
+    it('still refuses a target its provider does not handle', async () => {
+      const { service } = build({
+        targets: [qa],
+        releaser: { supports: () => false } as never,
+      });
+
+      await expect(service.startRelease(targeted)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
   it('persists what the release changed on the target', async () => {
     const { service, repository } = build({
       releaser: {
