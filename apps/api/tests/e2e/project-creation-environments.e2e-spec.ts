@@ -500,10 +500,27 @@ describe('Project creation with environments', () => {
         ),
       ).toBe(true);
     }
+    // A managed Render service is released through AlphaCI (release.yml), a
+    // customer-owned one is deployed by render-deploy.yml. Both name their
+    // target by ID.
+    const deployJobs = (workflow: Workflow) =>
+      Object.values(workflow.jobs).filter((job) =>
+        /(render-deploy|release)\.yml@/.test(job.uses ?? ''),
+      );
     const deployTargets = (workflow: Workflow) =>
-      Object.values(workflow.jobs)
-        .filter((job) => /render-deploy\.yml@/.test(job.uses ?? ''))
-        .map((job) => job.with?.['target-id']);
+      deployJobs(workflow).map((job) => job.with?.['target-id']);
+    // Every service here is managed, which Render cannot give a deploy hook, so
+    // the platform releases each one through release.yml.
+    for (const [file, branch] of [
+      ['20-alphaci-package.yml', 'dev'],
+      ['30-alphaci-promote.yml', 'dev'],
+    ] as const) {
+      expect(
+        deployJobs(pipeline('.github/workflows/' + file, branch)).every((job) =>
+          /release\.yml@/.test(job.uses ?? ''),
+        ),
+      ).toBe(true);
+    }
     expect(
       deployTargets(
         pipeline('.github/workflows/20-alphaci-package.yml', 'dev'),
