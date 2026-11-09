@@ -68,13 +68,13 @@ export class GithubTeamAccessLiveProvider extends GithubTeamAccessProvider {
       input.actingUserId,
       input.repoFullName,
     );
-    const teamSlug = `${repoName}-developers`.toLowerCase();
+    const teamName = `${repoName}-developers`.toLowerCase();
 
     const createRes = await fetch(`${GITHUB_API}/orgs/${orgLogin}/teams`, {
       method: 'POST',
       headers: this.headers(token),
       body: JSON.stringify({
-        name: teamSlug,
+        name: teamName,
         privacy: 'closed',
       }),
     });
@@ -88,7 +88,7 @@ export class GithubTeamAccessLiveProvider extends GithubTeamAccessProvider {
 
     const teamPayload = createRes.ok
       ? ((await createRes.json()) as { id: number; slug: string })
-      : await this.fetchExistingTeam(orgLogin, teamSlug, token);
+      : await this.findTeamByName(orgLogin, teamName, token);
 
     const repoGrantRes = await fetch(
       `${GITHUB_API}/orgs/${orgLogin}/teams/${teamPayload.slug}/repos/${orgLogin}/${repoName}`,
@@ -361,21 +361,59 @@ export class GithubTeamAccessLiveProvider extends GithubTeamAccessProvider {
     return { direct: isDirect, otherTeam: false };
   }
 
-  private async fetchExistingTeam(
+  /**
+   * The existing team named `teamName`. GitHub derives a team's slug from its
+   * name (special characters become hyphens: `web.app-developers` is
+   * `web-app-developers`), so the name is not always a valid slug. Tries the
+   * name as a slug first, then searches the org's teams by name.
+   */
+  private async findTeamByName(
     orgLogin: string,
-    teamSlug: string,
+    teamName: string,
     token: string,
   ): Promise<{ id: number; slug: string }> {
-    const res = await fetch(
-      `${GITHUB_API}/orgs/${orgLogin}/teams/${teamSlug}`,
+    const sameName = (team: { name?: string }) =>
+      team.name?.toLowerCase() === teamName.toLowerCase();
+
+    const bySlugRes = await fetch(
+      `${GITHUB_API}/orgs/${orgLogin}/teams/${encodeURIComponent(teamName)}`,
       { headers: this.headers(token) },
     );
-    if (!res.ok) {
+    if (bySlugRes.ok) {
+      const team = (await bySlugRes.json()) as {
+        id: number;
+        slug: string;
+        name?: string;
+      };
+      if (sameName(team)) return { id: team.id, slug: team.slug };
+    } else if (bySlugRes.status !== 404) {
       throw new BadGatewayException(
-        `GitHub team lookup failed (${String(res.status)}): ${await res.text()}`,
+        `GitHub team lookup failed (${String(bySlugRes.status)}): ${await bySlugRes.text()}`,
       );
     }
-    return (await res.json()) as { id: number; slug: string };
+
+    for (let page = 1; ; page += 1) {
+      const listRes = await fetch(
+        `${GITHUB_API}/orgs/${orgLogin}/teams?per_page=100&page=${String(page)}`,
+        { headers: this.headers(token) },
+      );
+      if (!listRes.ok) {
+        throw new BadGatewayException(
+          `GitHub team lookup failed (${String(listRes.status)}): ${await listRes.text()}`,
+        );
+      }
+      const teams = (await listRes.json()) as Array<{
+        id: number;
+        slug: string;
+        name?: string;
+      }>;
+      const match = teams.find(sameName);
+      if (match) return { id: match.id, slug: match.slug };
+      if (teams.length < 100) break;
+    }
+    throw new BadGatewayException(
+      `GitHub reported team "${teamName}" exists in ${orgLogin}, but no team with that name was found`,
+    );
   }
 
   /**

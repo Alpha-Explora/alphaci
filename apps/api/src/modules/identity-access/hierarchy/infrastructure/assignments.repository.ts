@@ -346,12 +346,21 @@ export class AssignmentsRepository {
     );
   }
 
+  /**
+   * A revoke request. Like a new grant request, it starts a fresh retry budget
+   * on the sync row, in the same statement.
+   */
   async setDesiredUnassignedWithClient(
     client: Pick<PoolClient, 'query'>,
     assignmentId: string,
   ): Promise<AssignmentRecord | null> {
     const result = await client.query<AssignmentRow>(
       `
+        WITH fresh_retry_budget AS (
+          UPDATE hierarchy.github_access_sync
+          SET retry_count = 0, last_error = NULL, updated_at = NOW()
+          WHERE assignment_id = $1
+        )
         UPDATE hierarchy.repository_assignments
         SET desired_state = 'unassigned', effective_state = 'revoking', updated_at = NOW()
         WHERE id = $1
