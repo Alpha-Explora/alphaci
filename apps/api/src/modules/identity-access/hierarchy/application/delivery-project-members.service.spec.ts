@@ -79,8 +79,29 @@ function setup({
   const repositoriesRepository = {
     listActiveForGrantWithClient: jest.fn().mockResolvedValue(repos),
     isCreatedByAlphaci: jest.fn().mockResolvedValue(true),
+    moveToDeliveryProjectWithClient: jest.fn().mockResolvedValue(true),
   };
   const assignmentsRepository = {
+    listAssignedPeopleForRepository: jest.fn().mockResolvedValue([
+      {
+        assignmentId: 'asg-1',
+        userId: 'dev-1',
+        login: 'dev-one',
+        name: 'Dev One',
+      },
+      {
+        assignmentId: 'asg-2',
+        userId: 'dev-2',
+        login: 'dev-two',
+        name: 'Dev Two',
+      },
+      {
+        assignmentId: 'asg-3',
+        userId: 'creator-1',
+        login: 'maker',
+        name: 'Maker',
+      },
+    ]),
     listLiveRepositoryIdsForUserWithClient: jest
       .fn()
       .mockResolvedValue(new Set<string>()),
@@ -656,5 +677,132 @@ describe('DeliveryProjectMembersService joining Projects with a team add', () =>
         githubSyncService.createAssignmentAndRequestGrantWithClient,
       ).not.toHaveBeenCalled();
     }
+  });
+});
+
+describe('DeliveryProjectMembersService moving a repository', () => {
+  const move = (createdBy: string | null = 'creator-1') => ({
+    repositoryId: 'repo-a',
+    createdBy,
+    targetDeliveryProjectId: 'dp-2',
+  });
+  const developersOf = (...userIds: string[]) =>
+    userIds.map((userId) =>
+      member({ userId, memberKind: 'developer', deliveryProjectId: 'dp-2' }),
+    );
+
+  it('lists who holds Write but is neither the creator nor a Developer of the destination', async () => {
+    const { service, membersRepository } = setup();
+    membersRepository.listActive.mockResolvedValue(developersOf('dev-2'));
+
+    await expect(service.listAccessLostOnMove(move())).resolves.toEqual([
+      {
+        assignmentId: 'asg-1',
+        userId: 'dev-1',
+        login: 'dev-one',
+        name: 'Dev One',
+      },
+    ]);
+    expect(membersRepository.listActive).toHaveBeenCalledWith('dp-2');
+  });
+
+  it('does not count a QA member of the destination as keeping a Developer', async () => {
+    const { service, membersRepository } = setup();
+    membersRepository.listActive.mockResolvedValue([
+      member({ userId: 'dev-2', memberKind: 'qa', deliveryProjectId: 'dp-2' }),
+    ]);
+
+    const lost = await service.listAccessLostOnMove(move());
+
+    expect(lost.map((person) => person.userId)).toEqual(['dev-1', 'dev-2']);
+  });
+
+  it('never lists the creator, even though they are not in the destination', async () => {
+    const { service, membersRepository } = setup();
+    membersRepository.listActive.mockResolvedValue([]);
+
+    const lost = await service.listAccessLostOnMove(move('creator-1'));
+
+    expect(lost.map((person) => person.userId)).not.toContain('creator-1');
+  });
+
+  it('lists nobody for an attached repository, whose access is only ever set by hand', async () => {
+    const { service, repositoriesRepository, assignmentsRepository } = setup();
+    repositoriesRepository.isCreatedByAlphaci.mockResolvedValue(false);
+
+    await expect(service.listAccessLostOnMove(move())).resolves.toEqual([]);
+    expect(
+      assignmentsRepository.listAssignedPeopleForRepository,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('lists nobody while live sync is off, since no GitHub access is managed', async () => {
+    const { service, assignmentsRepository } = setup({ mode: 'stub' });
+
+    await expect(service.listAccessLostOnMove(move())).resolves.toEqual([]);
+    expect(
+      assignmentsRepository.listAssignedPeopleForRepository,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('moves and queues every revoke in one transaction', async () => {
+    const {
+      service,
+      repositoriesRepository,
+      githubSyncService,
+      databaseService,
+    } = setup();
+
+    await expect(
+      service.moveRepositoryRevokingAccess({
+        repositoryId: 'repo-a',
+        fromDeliveryProjectId: 'dp-1',
+        toDeliveryProjectId: 'dp-2',
+        revoke: [
+          {
+            assignmentId: 'asg-1',
+            userId: 'dev-1',
+            login: 'dev-one',
+            name: null,
+          },
+          {
+            assignmentId: 'asg-2',
+            userId: 'dev-2',
+            login: 'dev-two',
+            name: null,
+          },
+        ],
+        actingUserId: 'lead-1',
+      }),
+    ).resolves.toBe(true);
+
+    expect(databaseService.withTransaction).toHaveBeenCalledTimes(1);
+    expect(
+      repositoriesRepository.moveToDeliveryProjectWithClient,
+    ).toHaveBeenCalledWith(TX, 'repo-a', 'dp-1', 'dp-2');
+    expect(githubSyncService.requestRevokeWithClient.mock.calls).toEqual([
+      [TX, 'asg-1', 'lead-1'],
+      [TX, 'asg-2', 'lead-1'],
+    ]);
+  });
+
+  it('queues no revoke when someone else moved the repository first', async () => {
+    const { service, repositoriesRepository, githubSyncService } = setup();
+    repositoriesRepository.moveToDeliveryProjectWithClient.mockResolvedValue(
+      false,
+    );
+
+    await expect(
+      service.moveRepositoryRevokingAccess({
+        repositoryId: 'repo-a',
+        fromDeliveryProjectId: 'dp-1',
+        toDeliveryProjectId: 'dp-2',
+        revoke: [
+          { assignmentId: 'asg-1', userId: 'dev-1', login: null, name: null },
+        ],
+        actingUserId: 'lead-1',
+      }),
+    ).resolves.toBe(false);
+    expect(githubSyncService.requestRevokeWithClient).not.toHaveBeenCalled();
   });
 });

@@ -71,6 +71,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Pipelines:** A commit runs one pipeline chain while a pipeline-branch pull request is open; `uat` used to deploy twice.
 - **QA:** QA Studio shows `uat` previews of ALPHACI-managed Vercel projects, which Vercel Authentication used to block.
 - **Access:** Adding a project member grants their GitHub access again.
+- **Projects:** Moving an ALPHACI-created repository to another Project asks first, then removes GitHub Write from people outside the destination and grants its Developers Write.
 - **Runs:** A running job's log says it is not ready yet instead of reporting missing access; `startup_failure` runs show as failed.
 - **Projects:** Deleting a project with its GitHub repository keeps the audit entry and sends the notification; both used to be lost when the project row was already gone.
 - **Runs:** Terminal colour codes no longer appear in test output, and SonarCloud percentages show one decimal.

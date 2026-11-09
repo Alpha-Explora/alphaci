@@ -3,9 +3,14 @@
 import { useState } from 'react';
 
 import { projectFoldersRepository } from '../data/project-folders-repository';
-import { isConflict, moveErrorMessage } from '../model/project-folder-rules';
+import {
+  accessLossFrom,
+  isConflict,
+  moveErrorMessage,
+} from '../model/project-folder-rules';
 import type {
   FolderRepository,
+  MoveAccessLoss,
   ProjectFolder,
 } from '../model/project-folder-types';
 
@@ -22,6 +27,11 @@ export interface MoveNotice {
 export interface MoveRepositoryViewModel {
   status: MoveRepositoryStatus;
   error: string | null;
+  /**
+   * Set when the move would remove GitHub Write from people outside the other
+   * Project. The dialog lists them; submitting again is the lead's agreement.
+   */
+  accessLoss: MoveAccessLoss | null;
   /** The repository whose Move dialog is open, or null. */
   repository: FolderRepository | null;
   source: ProjectFolder | null;
@@ -59,6 +69,7 @@ export function useMoveRepositoryViewModel(options: {
   const [status, setStatus] = useState<MoveRepositoryStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<MoveNotice | null>(null);
+  const [accessLoss, setAccessLoss] = useState<MoveAccessLoss | null>(null);
 
   async function submit(targets: ReadonlyArray<ProjectFolder>) {
     if (!repository || !source || !targetId || status === 'saving') return;
@@ -68,6 +79,7 @@ export function useMoveRepositoryViewModel(options: {
       const outcome = await projectFoldersRepository.moveRepository(
         repository.repositoryId,
         targetId,
+        accessLoss !== null,
       );
       const target = targets.find(
         (folder) => folder.deliveryProjectId === targetId,
@@ -84,8 +96,16 @@ export function useMoveRepositoryViewModel(options: {
       });
       setStatus('idle');
       setRepository(null);
+      setAccessLoss(null);
       onChanged();
     } catch (cause) {
+      const loss = accessLossFrom(cause);
+      if (loss) {
+        // Not a failure: the lead decides, and submitting again agrees.
+        setAccessLoss(loss);
+        setStatus('idle');
+        return;
+      }
       setStatus('error');
       setError(moveErrorMessage(cause));
       if (isConflict(cause)) onChanged();
@@ -113,6 +133,7 @@ export function useMoveRepositoryViewModel(options: {
   return {
     status,
     error,
+    accessLoss,
     repository,
     source,
     targetId,
@@ -122,12 +143,21 @@ export function useMoveRepositoryViewModel(options: {
       setSource(from);
       setTargetId('');
       setError(null);
+      setAccessLoss(null);
       setStatus('idle');
     },
     close: () => {
-      if (status !== 'saving') setRepository(null);
+      if (status !== 'saving') {
+        setRepository(null);
+        setAccessLoss(null);
+      }
     },
-    setTargetId,
+    // Who loses access depends on the destination, so a new pick asks again.
+    setTargetId: (deliveryProjectId) => {
+      setTargetId(deliveryProjectId);
+      setAccessLoss(null);
+      setError(null);
+    },
     submit,
     archiveEmptied,
     dismissNotice: () => setNotice(null),

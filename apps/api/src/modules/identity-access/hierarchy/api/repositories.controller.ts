@@ -55,6 +55,7 @@ export class RepositoriesController {
       repositoryId,
       this.requireUserId(req),
       body.deliveryProjectId,
+      body.confirmAccessChange === true,
     );
   }
 

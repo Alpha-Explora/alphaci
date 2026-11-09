@@ -138,6 +138,42 @@ export class AssignmentsRepository {
     return result.rows.map((row) => this.toRecord(row));
   }
 
+  /**
+   * The people currently assigned (desired_state = 'assigned') to a repository,
+   * with the name to show them. Revoked and revoking ones are not listed.
+   */
+  async listAssignedPeopleForRepository(repositoryId: string): Promise<
+    Array<{
+      assignmentId: string;
+      userId: string;
+      login: string | null;
+      name: string | null;
+    }>
+  > {
+    const result = await this.databaseService.query<{
+      id: string;
+      user_id: string;
+      login: string | null;
+      display_name: string | null;
+    }>(
+      `
+        SELECT a.id, a.user_id, u.login, u.display_name
+        FROM hierarchy.repository_assignments AS a
+        LEFT JOIN identity.app_users AS u ON u.id = a.user_id
+        WHERE a.repository_id = $1
+          AND a.desired_state = 'assigned'
+        ORDER BY lower(coalesce(u.display_name, u.login, '')), a.created_at ASC;
+      `,
+      [repositoryId],
+    );
+    return result.rows.map((row) => ({
+      assignmentId: row.id,
+      userId: row.user_id,
+      login: row.login,
+      name: row.display_name ?? row.login,
+    }));
+  }
+
   /** Every currently-assigned (desired_state='assigned') row for a user across a whole group's repositories — cascade-on-removal (assignment cascade contract). */
   async listAssignedByUserWithinGroup(
     groupId: string,

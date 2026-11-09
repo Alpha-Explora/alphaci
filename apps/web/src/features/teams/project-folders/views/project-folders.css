@@ -44,6 +44,30 @@
   color: var(--text-muted);
 }
 
+.pf-access-loss {
+  margin-top: 0.85rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.6rem;
+  background: var(--danger-light);
+  color: var(--text-primary);
+  display: grid;
+  gap: 0.5rem;
+}
+
+.pf-access-loss__lead {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.pf-access-loss__people {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
 .pf-inline-error {
   margin: 0.75rem 0 0;
   font-size: 0.8rem;

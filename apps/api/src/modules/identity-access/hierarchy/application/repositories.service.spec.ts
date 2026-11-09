@@ -97,6 +97,9 @@ function setup({ featureCount = 1, ruleEnabled = true } = {}) {
   };
   const membersService = {
     grantForNewRepositoryBestEffort: jest.fn().mockResolvedValue(undefined),
+    // Nobody loses access by default; the tests below set who does.
+    listAccessLostOnMove: jest.fn().mockResolvedValue([]),
+    moveRepositoryRevokingAccess: jest.fn().mockResolvedValue(true),
   };
   const readiness = {
     isFeatureRuleEnabled: jest.fn().mockReturnValue(ruleEnabled),
@@ -163,6 +166,7 @@ describe('RepositoriesService.moveRepository', () => {
           repositoryId: 'repo-be',
           fromDeliveryProjectId: 'dp-source',
           toDeliveryProjectId: 'dp-target',
+          accessRevokedUserIds: [],
         },
       }),
     );
@@ -583,21 +587,122 @@ describe('RepositoriesService.createBareRepository (legacy system flow)', () => 
 });
 
 describe('RepositoriesService.moveRepository access', () => {
-  it('grants NOBODY on a move: the repository may have been attached, so access comes only from an explicit lead/admin action', async () => {
+  const people = [
+    { assignmentId: 'asg-1', userId: 'dev-a', login: 'dev-a', name: 'Dev A' },
+    { assignmentId: 'asg-2', userId: 'dev-b', login: 'dev-b', name: null },
+  ];
+
+  it("grants the destination Project's members (the grant itself refuses an attached repository)", async () => {
     const { service, membersService } = setup();
     await service.moveRepository('repo-be', 'lead-1', 'dp-target');
-    expect(
-      membersService.grantForNewRepositoryBestEffort,
-    ).not.toHaveBeenCalled();
+    expect(membersService.grantForNewRepositoryBestEffort).toHaveBeenCalledWith(
+      {
+        repositoryId: 'repo-be',
+        deliveryProjectId: 'dp-target',
+        assignedBy: 'lead-1',
+      },
+    );
   });
 
-  it('does nothing for a no-op move', async () => {
+  it('asks who would lose access, for the destination Project and the creator', async () => {
+    const { service, membersService } = setup();
+    await service.moveRepository('repo-be', 'lead-1', 'dp-target');
+    expect(membersService.listAccessLostOnMove).toHaveBeenCalledWith({
+      repositoryId: 'repo-be',
+      createdBy: repository.createdBy,
+      targetDeliveryProjectId: 'dp-target',
+    });
+  });
+
+  it('does nothing about access for a no-op move', async () => {
     const { service, membersService, repositoriesRepository } = setup();
     repositoriesRepository.findById.mockResolvedValue({
       ...repository,
       deliveryProjectId: 'dp-target',
     });
     await service.moveRepository('repo-be', 'lead-1', 'dp-target');
+    expect(membersService.listAccessLostOnMove).not.toHaveBeenCalled();
+    expect(
+      membersService.grantForNewRepositoryBestEffort,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('refuses a move that would remove access until the lead confirms, naming who loses it', async () => {
+    const { service, membersService, repositoriesRepository } = setup();
+    membersService.listAccessLostOnMove.mockResolvedValue(people);
+
+    const refusal = await service
+      .moveRepository('repo-be', 'lead-1', 'dp-target')
+      .catch((error: unknown) => error);
+
+    expect(refusal).toBeInstanceOf(ConflictException);
+    expect((refusal as ConflictException).getResponse()).toMatchObject({
+      statusCode: 409,
+      code: 'MOVE_REVOKES_ACCESS',
+      message: expect.stringContaining('2 people'),
+      people: [
+        { userId: 'dev-a', login: 'dev-a', name: 'Dev A' },
+        { userId: 'dev-b', login: 'dev-b', name: null },
+      ],
+    });
+    // Nothing moved, nothing revoked, nobody granted.
+    expect(repositoriesRepository.moveToDeliveryProject).not.toHaveBeenCalled();
+    expect(membersService.moveRepositoryRevokingAccess).not.toHaveBeenCalled();
+    expect(
+      membersService.grantForNewRepositoryBestEffort,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('moves and revokes in one step once confirmed, then grants the destination', async () => {
+    const {
+      service,
+      membersService,
+      repositoriesRepository,
+      auditEventsService,
+    } = setup();
+    membersService.listAccessLostOnMove.mockResolvedValue(people);
+    repositoriesRepository.findById.mockResolvedValueOnce(repository);
+    repositoriesRepository.findById.mockResolvedValue({
+      ...repository,
+      deliveryProjectId: 'dp-target',
+    });
+
+    const result = await service.moveRepository(
+      'repo-be',
+      'lead-1',
+      'dp-target',
+      true,
+    );
+
+    expect(membersService.moveRepositoryRevokingAccess).toHaveBeenCalledWith({
+      repositoryId: 'repo-be',
+      fromDeliveryProjectId: 'dp-source',
+      toDeliveryProjectId: 'dp-target',
+      revoke: people,
+      actingUserId: 'lead-1',
+    });
+    expect(repositoriesRepository.moveToDeliveryProject).not.toHaveBeenCalled();
+    expect(result.moved).toBe(true);
+    expect(result.repository.deliveryProjectId).toBe('dp-target');
+    expect(auditEventsService.recordProjectEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          accessRevokedUserIds: ['dev-a', 'dev-b'],
+        }),
+      }),
+    );
+    expect(membersService.grantForNewRepositoryBestEffort).toHaveBeenCalled();
+  });
+
+  it('409s, granting nobody, when someone else moved it while the revokes were queued', async () => {
+    const { service, membersService, auditEventsService } = setup();
+    membersService.listAccessLostOnMove.mockResolvedValue(people);
+    membersService.moveRepositoryRevokingAccess.mockResolvedValue(false);
+
+    await expect(
+      service.moveRepository('repo-be', 'lead-1', 'dp-target', true),
+    ).rejects.toThrow('moved by someone else');
+    expect(auditEventsService.recordProjectEvent).not.toHaveBeenCalled();
     expect(
       membersService.grantForNewRepositoryBestEffort,
     ).not.toHaveBeenCalled();

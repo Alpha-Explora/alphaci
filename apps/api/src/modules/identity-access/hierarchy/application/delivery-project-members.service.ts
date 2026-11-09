@@ -40,6 +40,14 @@ export interface MemberGithubAccessOutcome {
   repositoriesQueued: number;
 }
 
+/** Someone who would lose GitHub Write on a repository by moving it. */
+export interface MoveAccessPerson {
+  assignmentId: string;
+  userId: string;
+  login: string | null;
+  name: string | null;
+}
+
 export interface DeliveryProjectMemberChange {
   member: DeliveryProjectMemberRecord;
   githubAccess: MemberGithubAccessOutcome;
@@ -396,6 +404,74 @@ export class DeliveryProjectMembersService {
       syncMode: 'live',
       repositoriesQueued: queued,
     };
+  }
+
+  /**
+   * Who holds GitHub Write on a repository ALPHACI created through an
+   * assignment, yet is neither its creator nor a Developer member of the
+   * Project it is moving into. Those people got their access through the
+   * Project the repository is leaving, so the move would leave it with someone
+   * who belongs to neither Project. Empty while live sync is off, and for an
+   * attached repository, whose access is only ever set by hand.
+   */
+  async listAccessLostOnMove(input: {
+    repositoryId: string;
+    createdBy: string | null;
+    targetDeliveryProjectId: string;
+  }): Promise<MoveAccessPerson[]> {
+    if (!this.isLive()) return [];
+    if (
+      !(await this.repositoriesRepository.isCreatedByAlphaci(
+        input.repositoryId,
+      ))
+    ) {
+      return [];
+    }
+    const [assigned, targetMembers] = await Promise.all([
+      this.assignmentsRepository.listAssignedPeopleForRepository(
+        input.repositoryId,
+      ),
+      this.membersRepository.listActive(input.targetDeliveryProjectId),
+    ]);
+    const keeps = new Set(
+      targetMembers
+        .filter((member) => member.memberKind === 'developer')
+        .map((member) => member.userId),
+    );
+    if (input.createdBy) keeps.add(input.createdBy);
+    return assigned.filter((person) => !keeps.has(person.userId));
+  }
+
+  /**
+   * Moves the repository and queues the revokes in one transaction, so a
+   * failure leaves it where it was with everyone's access intact. Returns
+   * false when someone else moved it first.
+   */
+  async moveRepositoryRevokingAccess(input: {
+    repositoryId: string;
+    fromDeliveryProjectId: string;
+    toDeliveryProjectId: string;
+    revoke: readonly MoveAccessPerson[];
+    actingUserId: string;
+  }): Promise<boolean> {
+    return this.databaseService.withTransaction(async (client) => {
+      const moved =
+        await this.repositoriesRepository.moveToDeliveryProjectWithClient(
+          client,
+          input.repositoryId,
+          input.fromDeliveryProjectId,
+          input.toDeliveryProjectId,
+        );
+      if (!moved) return false;
+      for (const person of input.revoke) {
+        await this.githubSyncService.requestRevokeWithClient(
+          client,
+          person.assignmentId,
+          input.actingUserId,
+        );
+      }
+      return true;
+    });
   }
 
   /**

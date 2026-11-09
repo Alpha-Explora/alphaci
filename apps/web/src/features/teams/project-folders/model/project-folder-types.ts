@@ -68,6 +68,11 @@ export interface CreateProjectFolderRequest {
 /** POST /repositories/:repositoryId/move */
 export interface MoveRepositoryRequest {
   deliveryProjectId: string;
+  /**
+   * Sent once the lead has seen who the move would remove GitHub Write from
+   * (the 409 MOVE_REVOKES_ACCESS answer) and agreed.
+   */
+  confirmAccessChange?: boolean;
 }
 
 export interface MoveRepositoryResponseWire {
@@ -163,6 +168,13 @@ export interface ProjectFoldersSnapshot {
   canCreateRepository: boolean | null;
   folders: ProjectFolder[];
   unfiled: UnfiledProject[];
+}
+
+/** Who a move would remove GitHub Write from, as the lead sees them. */
+export interface MoveAccessLoss {
+  message: string;
+  /** A name (or GitHub login) for each person. */
+  people: string[];
 }
 
 export interface MoveOutcome {

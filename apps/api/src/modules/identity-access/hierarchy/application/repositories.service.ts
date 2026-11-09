@@ -353,9 +353,15 @@ export class RepositoriesService {
   }
 
   /**
-   * Moves a repository into another project of the same team. Only the
-   * `hierarchy.repositories` row changes: access assignments hang off the
-   * repository, so developers keep exactly the access they had.
+   * Moves a repository into another project of the same team.
+   *
+   * For a repository ALPHACI created, Project membership is what gives
+   * Developers GitHub Write, so the move follows it: people who hold Write
+   * through an assignment but are neither the creator nor a Developer of the
+   * destination Project lose it, and the destination's Developers get it. The
+   * lead is told who loses access first: without `confirmAccessChange` such a
+   * move is refused with 409 MOVE_REVOKES_ACCESS naming them. An attached
+   * repository's access is only ever set by hand, so moving one changes nothing.
    *
    * An emptied source project is left in place, not deleted — a lead may have
    * created it on purpose. `sourceDeliveryProjectEmpty` lets the UI offer to
@@ -365,6 +371,7 @@ export class RepositoriesService {
     repositoryId: string,
     userId: string,
     targetDeliveryProjectId: string,
+    confirmAccessChange = false,
   ): Promise<MoveRepositoryResult> {
     const { groupId } =
       await this.accessService.assertRepositoryManagerOrPlatformAdmin(
@@ -403,11 +410,44 @@ export class RepositoriesService {
       };
     }
 
-    const moved = await this.repositoriesRepository.moveToDeliveryProject(
+    const losingAccess = await this.membersService.listAccessLostOnMove({
       repositoryId,
-      sourceDeliveryProjectId,
-      target.id,
-    );
+      createdBy: repository.createdBy,
+      targetDeliveryProjectId: target.id,
+    });
+    if (losingAccess.length > 0 && !confirmAccessChange) {
+      throw new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        code: 'MOVE_REVOKES_ACCESS',
+        message: `Moving "${repository.name}" to "${target.name}" removes GitHub Write from ${String(losingAccess.length)} ${losingAccess.length === 1 ? 'person' : 'people'} who ${losingAccess.length === 1 ? 'is' : 'are'} not in that Project.`,
+        people: losingAccess.map(({ userId: id, login, name }) => ({
+          userId: id,
+          login,
+          name,
+        })),
+      });
+    }
+
+    let moved: RepositoryRecord | null;
+    if (losingAccess.length > 0) {
+      const done = await this.membersService.moveRepositoryRevokingAccess({
+        repositoryId,
+        fromDeliveryProjectId: sourceDeliveryProjectId,
+        toDeliveryProjectId: target.id,
+        revoke: losingAccess,
+        actingUserId: userId,
+      });
+      moved = done
+        ? await this.repositoriesRepository.findById(repositoryId)
+        : null;
+    } else {
+      moved = await this.repositoriesRepository.moveToDeliveryProject(
+        repositoryId,
+        sourceDeliveryProjectId,
+        target.id,
+      );
+    }
     if (!moved) {
       throw new ConflictException(
         'This repository was moved by someone else. Refresh and try again.',
@@ -432,7 +472,16 @@ export class RepositoriesService {
         repositoryId,
         fromDeliveryProjectId: sourceDeliveryProjectId,
         toDeliveryProjectId: target.id,
+        accessRevokedUserIds: losingAccess.map((person) => person.userId),
       },
+    });
+
+    // The destination's Developers hold Write on every repository of it. Only
+    // for a repository ALPHACI created: the grant itself skips an attached one.
+    await this.membersService.grantForNewRepositoryBestEffort({
+      repositoryId,
+      deliveryProjectId: target.id,
+      assignedBy: userId,
     });
 
     return {
