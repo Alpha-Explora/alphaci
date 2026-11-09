@@ -218,7 +218,7 @@ describe('ReleasesService', () => {
     it('still refuses a target its provider does not handle', async () => {
       const { service } = build({
         targets: [qa],
-        releaser: { supports: () => false } as never,
+        releaser: { supports: () => false },
       });
 
       await expect(service.startRelease(targeted)).rejects.toThrow(
