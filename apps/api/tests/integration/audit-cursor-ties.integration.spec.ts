@@ -57,7 +57,7 @@ describeDatabase('Audit tab paging with tied timestamps (postgres)', () => {
         actorLogin: null,
         occurredAt: at,
       })),
-    } as never);
+    });
     return projectId;
   }
 
