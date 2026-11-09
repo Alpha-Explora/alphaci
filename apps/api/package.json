@@ -181,7 +181,7 @@
       ]
     ],
     "testEnvironment": "node",
-    "globalSetup": "<rootDir>/tests/support/prefer-git-bash.cjs",
+    "globalSetup": "<rootDir>/tests/support/global-setup.cjs",
     "roots": [
       "<rootDir>/src",
       "<rootDir>/tests/architecture",
