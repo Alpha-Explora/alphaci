@@ -68,7 +68,12 @@ function setup({
       .mockResolvedValue(member({ status: 'removed' })),
   };
   const deliveryProjectsRepository = {
-    findById: jest.fn().mockResolvedValue({ id: 'dp-1', status: 'active' }),
+    findById: jest.fn().mockResolvedValue({
+      id: 'dp-1',
+      groupId: 'group-1',
+      name: 'Payments',
+      status: 'active',
+    }),
     findGroupIdForDeliveryProject: jest.fn().mockResolvedValue('group-1'),
   };
   const repositoriesRepository = {
@@ -331,6 +336,8 @@ describe('DeliveryProjectMembersService.addMember', () => {
     const { service, deliveryProjectsRepository } = setup();
     deliveryProjectsRepository.findById.mockResolvedValue({
       id: 'dp-1',
+      groupId: 'group-1',
+      name: 'Payments',
       status: 'archived',
     });
     await expect(
@@ -555,5 +562,99 @@ describe('DeliveryProjectMembersService.resyncDevelopers', () => {
     await expect(
       service.resyncDevelopers('dp-1', 'lead-1'),
     ).rejects.toMatchObject({ status: 503 });
+  });
+});
+
+describe('DeliveryProjectMembersService joining Projects with a team add', () => {
+  it('returns the kind the person joins as when every Project is open in the team', async () => {
+    const { service } = setup();
+    await expect(
+      service.prepareJoinOnTeamAdd('group-1', 'qa-1', ['dp-1']),
+    ).resolves.toBe('qa');
+  });
+
+  it("refuses another team's Project as not found", async () => {
+    const { service, deliveryProjectsRepository } = setup();
+    deliveryProjectsRepository.findById.mockResolvedValue({
+      id: 'dp-other',
+      groupId: 'group-2',
+      name: 'Other',
+      status: 'active',
+    });
+    await expect(
+      service.prepareJoinOnTeamAdd('group-1', 'dev-1', ['dp-other']),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('refuses an archived Project by name', async () => {
+    const { service, deliveryProjectsRepository } = setup();
+    deliveryProjectsRepository.findById.mockResolvedValue({
+      id: 'dp-1',
+      groupId: 'group-1',
+      name: 'Payments',
+      status: 'archived',
+    });
+    await expect(
+      service.prepareJoinOnTeamAdd('group-1', 'dev-1', ['dp-1']),
+    ).rejects.toMatchObject({
+      response: {
+        code: 'PROJECT_ARCHIVED',
+        message: expect.stringContaining('"Payments"'),
+      },
+    });
+  });
+
+  it('refuses a lead, who sees every Project without joining one', async () => {
+    const { service } = setup();
+    await expect(
+      service.prepareJoinOnTeamAdd('group-1', 'lead-2', ['dp-1']),
+    ).rejects.toMatchObject({
+      response: { code: 'PROJECT_MEMBER_ROLE_NOT_ALLOWED' },
+    });
+  });
+
+  it('queues GitHub Write on every repository of each Project for a Developer, in the given transaction', async () => {
+    const { service, membersRepository, githubSyncService } = setup();
+    const joined = await service.joinProjectsWithClient(TX, {
+      deliveryProjectIds: ['dp-1', 'dp-2'],
+      userId: 'dev-new',
+      memberKind: 'developer',
+      actingUserId: 'lead-1',
+    });
+
+    expect(joined.map((project) => project.repositoriesQueued)).toEqual([2, 2]);
+    expect(membersRepository.upsertActiveWithClient).toHaveBeenCalledTimes(2);
+    expect(
+      githubSyncService.createAssignmentAndRequestGrantWithClient,
+    ).toHaveBeenCalledWith(TX, {
+      repositoryId: 'repo-a',
+      userId: 'dev-new',
+      assignedBy: 'lead-1',
+    });
+    expect(
+      githubSyncService.createAssignmentAndRequestGrantWithClient,
+    ).toHaveBeenCalledTimes(4);
+  });
+
+  it('queues no GitHub grant for QA, or while sync is stub', async () => {
+    for (const [mode, memberKind] of [
+      ['live', 'qa'],
+      ['stub', 'developer'],
+    ] as const) {
+      const { service, membersRepository, githubSyncService } = setup({
+        mode,
+      });
+      const joined = await service.joinProjectsWithClient(TX, {
+        deliveryProjectIds: ['dp-1'],
+        userId: 'person-1',
+        memberKind,
+        actingUserId: 'lead-1',
+      });
+      expect(joined[0]?.repositoriesQueued).toBe(0);
+      expect(membersRepository.upsertActiveWithClient).toHaveBeenCalled();
+      expect(
+        githubSyncService.createAssignmentAndRequestGrantWithClient,
+      ).not.toHaveBeenCalled();
+    }
   });
 });

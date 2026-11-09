@@ -8,15 +8,30 @@ import {
   MemberDirectoryService,
   type DirectoryCaller,
 } from '#modules/identity-access/directory/index.js';
+import {
+  DeliveryProjectMembersService,
+  type MemberGithubAccessOutcome,
+} from './delivery-project-members.service';
 import { HierarchyAccessService } from './hierarchy-access.service';
 import {
   HIERARCHY_EVENT_CODES,
+  type DeliveryProjectMemberKind,
   type GrantableRole,
 } from '../domain/hierarchy.types';
 import {
   GroupsRepository,
   type GroupMemberRecord,
 } from '../infrastructure/groups.repository';
+
+/** The Projects a person joined together with the team, when any were picked. */
+export interface AddedMemberProjectAccess extends MemberGithubAccessOutcome {
+  deliveryProjectIds: string[];
+  memberKind: DeliveryProjectMemberKind;
+}
+
+export type AddedGroupMember = GroupMemberRecord & {
+  projectAccess?: AddedMemberProjectAccess;
+};
 
 /**
  * Adding people to a group.
@@ -29,6 +44,10 @@ import {
  * The person must be in the deployment's member directory and have an
  * AlphaCI account: a directory member who has never signed in has no row to
  * attach a membership to, so they must sign in once first.
+ *
+ * Joining a team grants no repository access by itself: GitHub Write comes
+ * from Project membership. So the lead can pick Projects of the team in the
+ * same request, and the person joins those in the same transaction.
  */
 @Injectable()
 export class GroupMembersService {
@@ -38,13 +57,18 @@ export class GroupMembersService {
     private readonly auditEventsService: AuditEventPublisher,
     private readonly directory: MemberDirectoryService,
     private readonly notifications: NotificationEventPublisher,
+    private readonly projectMembers: DeliveryProjectMembersService,
   ) {}
 
   async addMember(
     groupId: string,
     actor: DirectoryCaller,
-    input: { userId: string; role?: GrantableRole },
-  ): Promise<GroupMemberRecord> {
+    input: {
+      userId: string;
+      role?: GrantableRole;
+      deliveryProjectIds?: readonly string[];
+    },
+  ): Promise<AddedGroupMember> {
     const actorUserId = actor.userId;
     await this.accessService.assertGroupManagerOrPlatformAdmin(
       groupId,
@@ -69,19 +93,47 @@ export class GroupMembersService {
       );
     }
 
+    // Every Project is checked before anything is written, so a bad pick
+    // fails the whole add instead of leaving a team member with no Project.
+    const deliveryProjectIds = [...(input.deliveryProjectIds ?? [])];
+    const memberKind =
+      deliveryProjectIds.length > 0
+        ? await this.projectMembers.prepareJoinOnTeamAdd(
+            groupId,
+            input.userId,
+            deliveryProjectIds,
+          )
+        : null;
+    let joinedProjects: Array<{
+      deliveryProjectId: string;
+      repositoriesQueued: number;
+    }> = [];
+
     const added = await this.groupsRepository.addMemberDirect(
       groupId,
       input.userId,
       role,
       actorUserId,
-      (client, context) =>
-        this.notifications.recordInTransaction(client, {
+      async (client, context) => {
+        await this.notifications.recordInTransaction(client, {
           userId: input.userId,
           workspaceId: groupId,
           eventCode: HIERARCHY_EVENT_CODES.memberAdded,
           title: `You were added to ${context.groupName}`,
           body: `${context.actorLogin ? `@${context.actorLogin}` : 'A workspace lead'} added you as a ${role === 'delegated_lead' ? 'Delegated lead' : role === 'viewer' ? 'Viewer' : 'Member'}.`,
-        }),
+        });
+        if (memberKind) {
+          joinedProjects = await this.projectMembers.joinProjectsWithClient(
+            client,
+            {
+              deliveryProjectIds,
+              userId: input.userId,
+              memberKind,
+              actingUserId: actorUserId,
+            },
+          );
+        }
+      },
     );
     if (!added) {
       throw new BadRequestException(
@@ -109,6 +161,26 @@ export class GroupMembersService {
       metadata: { groupId, addedUserId: input.userId, role },
     });
 
-    return member;
+    if (!memberKind) return member;
+    await this.projectMembers.recordMembersAdded(
+      groupId,
+      actorUserId,
+      input.userId,
+      memberKind,
+      joinedProjects,
+    );
+    return {
+      ...member,
+      projectAccess: {
+        deliveryProjectIds,
+        memberKind,
+        ...this.projectMembers.githubAccessOutcome(
+          joinedProjects.reduce(
+            (total, project) => total + project.repositoriesQueued,
+            0,
+          ),
+        ),
+      },
+    };
   }
 }

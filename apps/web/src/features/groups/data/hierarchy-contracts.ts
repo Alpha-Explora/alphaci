@@ -220,6 +220,18 @@ export interface AddGroupMemberRequest {
   userId: string;
   /** Defaults to 'member'. 'admin' is not grantable — ownership moves via transfer. */
   role?: GrantableRole;
+  /**
+   * Projects of this team the person also joins, in the same request. A
+   * Developer gets GitHub write access to every repository of each one;
+   * joining the team alone gives no repository access.
+   */
+  deliveryProjectIds?: string[];
+}
+
+/** A Project of the team, as the Add member dialog offers it. */
+export interface TeamProjectChoice {
+  deliveryProjectId: string;
+  name: string;
 }
 
 /* ── Systems & Delivery Projects (plan §2.5) ───────────────────────────────── */

@@ -22,6 +22,7 @@ export type {
   RepositoryAccessStatus,
   RepositoryAccessStatusResponse,
   RepositoryAssignment,
+  TeamProjectChoice,
   UpdateGroupRequest,
 } from '@/features/groups/data/hierarchy-contracts';
 export type {
