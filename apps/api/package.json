@@ -118,7 +118,7 @@
     "@types/supertest": "^7.2.1",
     "dependency-cruiser": "^18.7.2",
     "eslint": "^10.14.0",
-    "eslint-plugin-oxlint": "^1.90.0",
+    "eslint-plugin-oxlint": "^1.92.0",
     "globals": "^17.14.0",
     "jest": "^30.5.2",
     "jest-junit": "^17.0.0",

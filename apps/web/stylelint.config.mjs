@@ -109,7 +109,6 @@ export default {
         "declaration-property-value-disallowed-list": [NO_RAW_RGBA, warn],
         "color-no-hex": [true, { message: TOKEN_MESSAGE, ...warn }],
         "declaration-no-important": [true, warn],
-        "declaration-block-single-line-max-declarations": [1, warn],
         "no-duplicate-selectors": [true, warn],
         "declaration-property-value-keyword-no-deprecated": [true, warn],
         "property-no-deprecated": [true, warn],

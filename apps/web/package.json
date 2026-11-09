@@ -21,7 +21,7 @@
     "test:e2e": "playwright test",
     "test:fullstack": "tsx tests/fullstack/run.ts",
     "boundaries": "depcruise src --config .dependency-cruiser.cjs",
-    "lint:css": "stylelint \"src/**/*.css\" --max-warnings=715",
+    "lint:css": "stylelint \"src/**/*.css\" --max-warnings=646",
     "complexity": "node scripts/check-complexity.cjs",
     "arch:check": "node scripts/check-boundaries.mjs --cwd . --src auto",
     "arch:check:touched": "node scripts/check-boundaries.mjs --cwd . --src auto --since origin/main",
@@ -55,12 +55,12 @@
     "dependency-cruiser": "^18.7.2",
     "eslint": "^10.14.0",
     "eslint-config-next": "^16.4.5",
-    "eslint-plugin-oxlint": "^1.90.0",
+    "eslint-plugin-oxlint": "^1.92.0",
     "jest": "^30.5.2",
     "jest-environment-jsdom": "^30.3.0",
     "stylelint": "^18.0.0",
     "stylelint-config-standard": "^41.0.0",
-    "tailwindcss": "^4.2.4",
+    "tailwindcss": "^4.3.4",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   }
