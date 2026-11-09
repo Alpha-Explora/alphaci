@@ -6,13 +6,19 @@ import { loadEnvFiles } from './load-env';
 
 describe('loadEnvFiles', () => {
   const keys = ['LOAD_ENV_SPEC_A', 'LOAD_ENV_SPEC_B', 'LOAD_ENV_SPEC_C'];
+  // The Jest global setup turns env files off for every spec; this one tests
+  // loading them, so it clears the switch and puts it back afterwards.
+  const ignoreEnvFile = process.env['ALPHACI_IGNORE_ENV_FILE'];
   let dir: string;
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'load-env-'));
     for (const key of keys) delete process.env[key];
+    delete process.env['ALPHACI_IGNORE_ENV_FILE'];
   });
   afterAll(() => {
     for (const key of keys) delete process.env[key];
+    if (ignoreEnvFile !== undefined)
+      process.env['ALPHACI_IGNORE_ENV_FILE'] = ignoreEnvFile;
   });
 
   it('loads files in order like ConfigModule: earlier files and the environment win', () => {

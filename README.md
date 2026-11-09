@@ -69,6 +69,13 @@ use the same version range in each. `npm run check:versions`
 request. When two ranges must differ on purpose, add the dependency to
 `ALLOWED_DIFFERENCES` in that script with the reason.
 
+Dependabot (`.github/dependabot.yml`) groups updates by family. It gives an
+update to the most specific matching group, and ranks the `production` and
+`development` catch-alls above a wildcard such as `@nestjs/*`, so both
+catch-alls exclude every wildcard the named groups use. `npm run
+check:dependabot` (`scripts/check-dependabot-groups.mjs`) fails when one is
+missing, and CI runs it on every pull request.
+
 `npm run check:deps` ([knip](https://knip.dev), configured in `knip.ts`) fails
 when a workspace imports a package it does not declare, declares one it never
 uses, or calls an unknown binary. CI runs it on every pull request. When knip
@@ -135,7 +142,8 @@ seconds. Skip once with `git push --no-verify`.
 - **`plan`** installs dependencies once (cached; pushes to `main` keep the
   cache warm for pull requests) and decides which apps a pull request affects
   with `.github/scripts/plan-affected.sh`. Changes to `deploy/`, workflows or
-  root workspace files run everything. It also runs `npm run check:versions`.
+  root workspace files run everything. It also runs `npm run check:versions`
+  and `npm run check:dependabot`.
 - **`API …` and `Web …` jobs** run one slice of an app's checks each, in
   parallel: lint, typecheck, tests, architecture and documentation checks,
   the API end-to-end suite, and one job per web profile build. A job whose app
