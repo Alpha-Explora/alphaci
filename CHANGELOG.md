@@ -63,6 +63,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Self-hosted:** A first install no longer risks `migrate` failing: the database counts as healthy only once it accepts TCP connections, not during its one-time setup.
 - **QA:** Report and CI results tables escape backslashes, so a cell ending in `\` no longer breaks the table.
 - **Pipelines:** A new project starts one pipeline per branch, not one per generated file.
+- **Pipelines:** An existing repository set up in ALPHACI now gets the `ALPHACI_API_URL` secret, so its managed Render releases no longer stop with "No AlphaCI URL".
 - **Pipelines:** New projects' pipelines pass from creation: images are named after the repository and installs skip npm releases younger than a day.
 - **Pipelines:** A commit runs one pipeline chain while a pipeline-branch pull request is open; `uat` used to deploy twice.
 - **QA:** QA Studio shows `uat` previews of ALPHACI-managed Vercel projects, which Vercel Authentication used to block.

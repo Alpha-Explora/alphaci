@@ -1148,6 +1148,29 @@ jobs:
       expect(written).not.toContain('SONAR_PROJECT_KEY');
     });
 
+    /*
+     * A managed Render release job takes AlphaCI's address only from this
+     * secret, and the shared release workflow refuses to run without it.
+     */
+    it('installs the same three AlphaCI secrets the create paths install', async () => {
+      await service.setupProject('user-1', 'oauth-token', {
+        repoFullName: 'tone/orders-api',
+        templateId: 'be-nestjs',
+        serviceName: 'orders-api',
+      });
+
+      const written = githubServiceMock.setActionsSecretStrict.mock.calls.map(
+        (call) => call[3] as string,
+      );
+      expect(written).toEqual(
+        expect.arrayContaining([
+          'ALPHACI_TOKEN',
+          'ALPHACI_REPORT_URL',
+          'ALPHACI_API_URL',
+        ]),
+      );
+    });
+
     it('removes the secrets it wrote when the push fails', async () => {
       (service as unknown as { pushWorkflowFile: jest.Mock }).pushWorkflowFile =
         jest.fn().mockRejectedValue(new Error('branch not found'));
@@ -1164,7 +1187,11 @@ jobs:
         (call) => call[3] as string,
       );
       expect(removed).toEqual(
-        expect.arrayContaining(['ALPHACI_TOKEN', 'ALPHACI_REPORT_URL']),
+        expect.arrayContaining([
+          'ALPHACI_TOKEN',
+          'ALPHACI_REPORT_URL',
+          'ALPHACI_API_URL',
+        ]),
       );
     });
 

@@ -86,7 +86,7 @@ export class SetupBranchService {
   /**
    * Undoes the secrets written during a failed setup.
    *
-   * Only ever removes the two secrets THIS product owns. SONAR_* is deliberately
+   * Only ever removes the three secrets THIS product owns. SONAR_* is deliberately
    * excluded: installSonarSecrets leaves a repository's own Sonar configuration
    * alone, so deleting those here could destroy something we never wrote.
    *
@@ -98,7 +98,11 @@ export class SetupBranchService {
     owner: string,
     repo: string,
   ): Promise<void> {
-    for (const name of ['ALPHACI_TOKEN', 'ALPHACI_REPORT_URL']) {
+    for (const name of [
+      'ALPHACI_TOKEN',
+      'ALPHACI_REPORT_URL',
+      'ALPHACI_API_URL',
+    ]) {
       try {
         await this.githubService.deleteActionsSecret(
           accessToken,
