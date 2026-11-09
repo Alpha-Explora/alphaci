@@ -38,7 +38,7 @@
     "@alphaci/api-contracts": "*",
     "@alphaci/capability-catalog": "*",
     "driver.js": "^1.4.0",
-    "framer-motion": "^14.9.0",
+    "framer-motion": "^14.9.1",
     "next": "^16.4.5",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
