@@ -32,6 +32,12 @@ updates:
       # gets its updates under that name. Lift this when 7 ships the API.
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
+    # Dependabot gives an update to the most specific group that matches, not the
+    # first: an exact name beats `dependency-type`, which beats a wildcard. So
+    # `production` and `development` exclude every wildcard the named groups
+    # use; without that, those packages fall through to the catch-alls and a
+    # family splits across pull requests (stylelint 18 without its config).
+    # Add a wildcard to a named group, add it to both lists below as well.
     groups:
       nestjs:
         patterns: ['@nestjs/*']
@@ -69,8 +75,24 @@ updates:
           - '@types/supertest'
       production:
         dependency-type: production
+        exclude-patterns:
+          - '@nestjs/*'
+          - '@typescript-eslint/*'
+          - '@eslint/*'
+          - 'eslint-*'
+          - 'stylelint-*'
+          - 'jest-*'
+          - '@testing-library/*'
       development:
         dependency-type: development
+        exclude-patterns:
+          - '@nestjs/*'
+          - '@typescript-eslint/*'
+          - '@eslint/*'
+          - 'eslint-*'
+          - 'stylelint-*'
+          - 'jest-*'
+          - '@testing-library/*'
 
   - package-ecosystem: github-actions
     directory: /

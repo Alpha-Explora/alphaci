@@ -90,6 +90,12 @@ jobs:
       - name: Shared dependency versions match
         run: npm run check:versions
 
+      # Every wildcard in a named Dependabot group is excluded from the
+      # dependency-type catch-alls, which otherwise take its updates
+      # (scripts/check-dependabot-groups.mjs). Reads one YAML file.
+      - name: Dependabot groups receive their updates
+        run: npm run check:dependabot
+
       # knip (knip.ts): no unused, undeclared or unresolvable dependency, and
       # no unknown binary, in any workspace. About 10 s.
       - name: Dependencies are declared and used
