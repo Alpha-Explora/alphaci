@@ -263,7 +263,41 @@ export class RepositoriesRepository {
     fromDeliveryProjectId: string,
     toDeliveryProjectId: string,
   ): Promise<RepositoryRecord | null> {
-    const result = await this.databaseService.query<RepositoryRow>(
+    const row = await this.moveRow(
+      this.databaseService as unknown as Pick<PoolClient, 'query'>,
+      repositoryId,
+      fromDeliveryProjectId,
+      toDeliveryProjectId,
+    );
+    if (!row) return null;
+    const counts = await this.getAssignmentCounts([row.id]);
+    return this.toRecord(row, counts.get(row.id) ?? 0);
+  }
+
+  /** The same move inside the caller's transaction; false when nothing moved. */
+  async moveToDeliveryProjectWithClient(
+    client: Pick<PoolClient, 'query'>,
+    repositoryId: string,
+    fromDeliveryProjectId: string,
+    toDeliveryProjectId: string,
+  ): Promise<boolean> {
+    return (
+      (await this.moveRow(
+        client,
+        repositoryId,
+        fromDeliveryProjectId,
+        toDeliveryProjectId,
+      )) !== null
+    );
+  }
+
+  private async moveRow(
+    client: Pick<PoolClient, 'query'>,
+    repositoryId: string,
+    fromDeliveryProjectId: string,
+    toDeliveryProjectId: string,
+  ): Promise<RepositoryRow | null> {
+    const result = await client.query<RepositoryRow>(
       `
         UPDATE hierarchy.repositories r
         SET delivery_project_id = dp.id, updated_at = NOW()
@@ -278,10 +312,7 @@ export class RepositoriesRepository {
       `,
       [repositoryId, fromDeliveryProjectId, toDeliveryProjectId],
     );
-    const row = result.rows[0];
-    if (!row) return null;
-    const counts = await this.getAssignmentCounts([row.id]);
-    return this.toRecord(row, counts.get(row.id) ?? 0);
+    return result.rows[0] ?? null;
   }
 
   /** Non-archived repositories left in one delivery project. */

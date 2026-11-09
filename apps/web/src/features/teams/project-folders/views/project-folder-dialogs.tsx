@@ -74,7 +74,7 @@ export function MoveRepositoryDialog({
           ? `It leaves ${vm.source.name}. Its dashboard, pipeline and history stay as they are.`
           : undefined
       }
-      submitLabel="Move repository"
+      submitLabel={vm.accessLoss ? 'Move and remove access' : 'Move repository'}
       submitting={vm.status === 'saving'}
       error={vm.error}
       canSubmit={vm.targetId !== ''}
@@ -109,6 +109,22 @@ export function MoveRepositoryDialog({
           ))}
         </fieldset>
       )}
+      {vm.accessLoss ? (
+        <div className="pf-access-loss" role="alert">
+          <p className="pf-access-loss__lead">{vm.accessLoss.message}</p>
+          {vm.accessLoss.people.length > 0 ? (
+            <ul className="pf-access-loss__people">
+              {vm.accessLoss.people.map((person) => (
+                <li key={person}>{person}</li>
+              ))}
+            </ul>
+          ) : null}
+          <p className="pf-note">
+            They keep their access to the other repositories they are on. The
+            Developers of the Project it moves into get Write on it.
+          </p>
+        </div>
+      ) : null}
     </FormDialog>
   );
 }

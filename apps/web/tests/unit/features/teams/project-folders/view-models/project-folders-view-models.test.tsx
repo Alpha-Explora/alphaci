@@ -339,7 +339,7 @@ describe('useMoveRepositoryViewModel', () => {
 
     act(() => vm().setTargetId('dp-2'));
     await act(async () => vm().submit(folders));
-    expect(repo.moveRepository).toHaveBeenCalledWith('repo-fe', 'dp-2');
+    expect(repo.moveRepository).toHaveBeenCalledWith('repo-fe', 'dp-2', false);
     expect(vm().repository).toBeNull();
     expect(vm().notice).toEqual({
       text: 'Moved testfinals-frontend to wallet.',
@@ -357,6 +357,108 @@ describe('useMoveRepositoryViewModel', () => {
 
     act(() => vm().dismissNotice());
     expect(vm().notice).toBeNull();
+  });
+
+  describe('a move that would remove GitHub Write', () => {
+    const asked = () =>
+      apiError(409, {
+        code: 'MOVE_REVOKES_ACCESS',
+        message:
+          'Moving "frontend" to "wallet" removes GitHub Write from 2 people.',
+        people: [
+          { userId: 'u1', login: 'ada', name: 'Ada Lovelace' },
+          { userId: 'u2', login: 'bob', name: null },
+        ],
+      });
+    const moved = {
+      moved: true,
+      sourceDeliveryProjectId: 'dp-1',
+      sourceDeliveryProjectEmpty: false,
+    };
+
+    it('asks the lead, rather than reporting an error or refetching', async () => {
+      repo.moveRepository.mockRejectedValueOnce(asked());
+      const onChanged = jest.fn();
+      const vm = renderHook(() => useMoveRepositoryViewModel({ onChanged }));
+      act(() => vm().openFor(repository, source));
+      act(() => vm().setTargetId('dp-2'));
+      await act(async () => vm().submit(folders));
+
+      expect(vm().accessLoss).toEqual({
+        message:
+          'Moving "frontend" to "wallet" removes GitHub Write from 2 people.',
+        people: ['Ada Lovelace', 'bob'],
+      });
+      expect(vm().status).toBe('idle');
+      expect(vm().error).toBeNull();
+      expect(vm().repository).not.toBeNull();
+      expect(onChanged).not.toHaveBeenCalled();
+    });
+
+    it('moves on the second submit, which is the lead agreeing', async () => {
+      repo.moveRepository.mockRejectedValueOnce(asked());
+      repo.moveRepository.mockResolvedValueOnce(moved);
+      const onChanged = jest.fn();
+      const vm = renderHook(() => useMoveRepositoryViewModel({ onChanged }));
+      act(() => vm().openFor(repository, source));
+      act(() => vm().setTargetId('dp-2'));
+      await act(async () => vm().submit(folders));
+      await act(async () => vm().submit(folders));
+
+      expect(repo.moveRepository).toHaveBeenNthCalledWith(
+        1,
+        'repo-fe',
+        'dp-2',
+        false,
+      );
+      expect(repo.moveRepository).toHaveBeenNthCalledWith(
+        2,
+        'repo-fe',
+        'dp-2',
+        true,
+      );
+      expect(vm().repository).toBeNull();
+      expect(vm().accessLoss).toBeNull();
+      expect(onChanged).toHaveBeenCalledTimes(1);
+    });
+
+    it('asks again after a different Project is picked, since who loses access depends on it', async () => {
+      repo.moveRepository.mockRejectedValueOnce(asked());
+      repo.moveRepository.mockResolvedValueOnce(moved);
+      const vm = renderHook(() =>
+        useMoveRepositoryViewModel({ onChanged: jest.fn() }),
+      );
+      act(() => vm().openFor(repository, source));
+      act(() => vm().setTargetId('dp-2'));
+      await act(async () => vm().submit(folders));
+      expect(vm().accessLoss).not.toBeNull();
+
+      act(() => vm().setTargetId('dp-3'));
+      expect(vm().accessLoss).toBeNull();
+      await act(async () => vm().submit(folders));
+
+      expect(repo.moveRepository).toHaveBeenLastCalledWith(
+        'repo-fe',
+        'dp-3',
+        false,
+      );
+    });
+
+    it('forgets the question when the dialog is closed and reopened', async () => {
+      repo.moveRepository.mockRejectedValueOnce(asked());
+      const vm = renderHook(() =>
+        useMoveRepositoryViewModel({ onChanged: jest.fn() }),
+      );
+      act(() => vm().openFor(repository, source));
+      act(() => vm().setTargetId('dp-2'));
+      await act(async () => vm().submit(folders));
+      expect(vm().accessLoss).not.toBeNull();
+
+      act(() => vm().close());
+      expect(vm().accessLoss).toBeNull();
+      act(() => vm().openFor(repository, source));
+      expect(vm().accessLoss).toBeNull();
+    });
   });
 
   it('explains a concurrent move (409) and refetches', async () => {

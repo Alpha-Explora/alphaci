@@ -10,6 +10,7 @@ import type {
   DeleteProjectOutcome,
   FolderProject,
   FolderRepository,
+  MoveAccessLoss,
   MoveOutcome,
   ProjectFolder,
   ProjectFoldersSnapshot,
@@ -496,6 +497,35 @@ export function moveErrorMessage(cause: unknown): string {
 
 export function isConflict(cause: unknown): boolean {
   return errorStatus(cause) === 409;
+}
+
+/**
+ * Who would lose GitHub Write by this move, from the 409 MOVE_REVOKES_ACCESS
+ * answer, or null for any other failure. That 409 is a question for the lead,
+ * not a sign that someone else moved the repository first.
+ */
+export function accessLossFrom(cause: unknown): MoveAccessLoss | null {
+  if (
+    errorStatus(cause) !== 409 ||
+    errorCode(cause) !== 'MOVE_REVOKES_ACCESS'
+  ) {
+    return null;
+  }
+  const details = errorDetails(cause);
+  const people = (Array.isArray(details.people) ? details.people : []).flatMap(
+    (raw: unknown) => {
+      const person = asRecord(raw);
+      const label =
+        readOptionalString(person?.name) ?? readOptionalString(person?.login);
+      return label ? [label] : [];
+    },
+  );
+  return {
+    message:
+      readOptionalString(details.message) ??
+      'This move removes GitHub Write from people who are not in the other Project.',
+    people,
+  };
 }
 
 const CREATE_MESSAGES: Record<number, string> = {

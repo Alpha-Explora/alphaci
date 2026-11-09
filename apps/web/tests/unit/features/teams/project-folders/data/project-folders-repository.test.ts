@@ -55,6 +55,24 @@ describe('projectFoldersRepository', () => {
     });
   });
 
+  it('sends confirmAccessChange only once the lead has agreed', async () => {
+    mockedRequest.mockResolvedValue({
+      moved: true,
+      sourceDeliveryProjectId: 'dp-1',
+      sourceDeliveryProjectEmpty: false,
+    });
+
+    await projectFoldersRepository.moveRepository('repo-fe', 'dp-2', true);
+
+    expect(mockedRequest).toHaveBeenCalledWith('/repositories/repo-fe/move', {
+      method: 'POST',
+      body: JSON.stringify({
+        deliveryProjectId: 'dp-2',
+        confirmAccessChange: true,
+      }),
+    });
+  });
+
   it('archives an emptied Project through the delivery-project archive', async () => {
     mockedRequest.mockResolvedValue({});
     await projectFoldersRepository.archive('dp-1');

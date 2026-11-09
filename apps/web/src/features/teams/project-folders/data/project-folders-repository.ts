@@ -44,8 +44,12 @@ export const projectFoldersRepository = {
   async moveRepository(
     repositoryId: string,
     deliveryProjectId: string,
+    confirmAccessChange = false,
   ): Promise<MoveOutcome> {
-    const body: MoveRepositoryRequest = { deliveryProjectId };
+    const body: MoveRepositoryRequest = {
+      deliveryProjectId,
+      ...(confirmAccessChange && { confirmAccessChange: true }),
+    };
     const raw = await request<unknown>(
       `/repositories/${enc(repositoryId)}/move`,
       {

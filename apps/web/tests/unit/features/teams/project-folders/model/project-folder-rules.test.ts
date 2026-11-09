@@ -1,4 +1,5 @@
 import {
+  accessLossFrom,
   showsProjectQaWorkspace,
   createErrorMessage,
   createRepositoryHref,
@@ -445,6 +446,47 @@ describe('verify, move and links', () => {
       moved: true,
       sourceDeliveryProjectId: null,
       sourceDeliveryProjectEmpty: false,
+    });
+  });
+});
+
+describe('accessLossFrom', () => {
+  const answer = {
+    code: 'MOVE_REVOKES_ACCESS',
+    message: 'Moving "api" to "wallet" removes GitHub Write from 2 people.',
+    people: [
+      { userId: 'u1', login: 'ada', name: 'Ada Lovelace' },
+      { userId: 'u2', login: 'bob', name: null },
+      { userId: 'u3', login: null, name: null },
+    ],
+  };
+
+  it('reads who loses access, preferring a name over a login and skipping the unnamed', () => {
+    expect(accessLossFrom(apiError(409, answer))).toEqual({
+      message: answer.message,
+      people: ['Ada Lovelace', 'bob'],
+    });
+  });
+
+  it('is not a concurrent-move conflict: that 409 carries no code', () => {
+    expect(accessLossFrom(apiError(409))).toBeNull();
+    expect(
+      accessLossFrom(apiError(409, { code: 'SOMETHING_ELSE' })),
+    ).toBeNull();
+  });
+
+  it('is null for any other status, even with the code', () => {
+    expect(accessLossFrom(apiError(400, answer))).toBeNull();
+    expect(accessLossFrom(new Error('offline'))).toBeNull();
+  });
+
+  it('still asks, with a plain message, when the answer names nobody', () => {
+    expect(
+      accessLossFrom(apiError(409, { code: 'MOVE_REVOKES_ACCESS' })),
+    ).toEqual({
+      message:
+        'This move removes GitHub Write from people who are not in the other Project.',
+      people: [],
     });
   });
 });

@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-10
+
+- **Update**: `POST /repositories/:id/move` follows Project membership for a repository ALPHACI created. A move that would remove GitHub Write from people outside the destination Project (neither the creator nor a Developer member of it) answers `409 MOVE_REVOKES_ACCESS` naming them; the body's optional `confirmAccessChange: true` agrees, and the move and the revokes commit together. The destination's Developers get Write afterwards. Attached repositories and moves while `HIERARCHY_GITHUB_SYNC_MODE=stub` are unchanged.
+
 ## 2026-11-08
 
 - **Creation**: ADR-0023 records bound addresses: ingress mode `bound` serves an on-prem environment under the customer's hostname, optional listen address and certificate (acme, an uploaded workspace certificate, or internal outside production), like an IIS binding. Migration `20261108010000` adds `onprem_certificates`, the binding report columns, and the unique hostname index.
