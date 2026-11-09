@@ -395,6 +395,94 @@ describe('GithubService', () => {
     });
   });
 
+  /*
+   * QA reads the `uat` head from this list. GitHub sorts branches by name and
+   * returns 100 at a time, so a first-page-only read lost `uat` (and `main`)
+   * in any repository with more than 100 branches, and QA reported it missing.
+   */
+  describe('listBranches', () => {
+    const branch = (name: string) => ({
+      name,
+      protected: name === 'main',
+      commit: { sha: `sha-${name}` },
+    });
+    const page = (names: string[]) => ({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve(names.map(branch)),
+    });
+    const names = (from: number, count: number) =>
+      Array.from(
+        { length: count },
+        (_, index) => `feature-${String(from + index).padStart(4, '0')}`,
+      );
+
+    it('reads one page, and one request, for a small repository', async () => {
+      fetchMock.mockResolvedValueOnce(page(['main', 'uat']));
+
+      await expect(service.listBranches('tok', 'org/app')).resolves.toEqual([
+        { name: 'main', protected: true, commitSha: 'sha-main' },
+        { name: 'uat', protected: false, commitSha: 'sha-uat' },
+      ]);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+        'https://api.github.com/repos/org/app/branches?per_page=100&page=1',
+      );
+    });
+
+    it('follows the pages, so a branch that sorts last is found', async () => {
+      fetchMock
+        .mockResolvedValueOnce(page(names(0, 100)))
+        .mockResolvedValueOnce(page(names(100, 100)))
+        .mockResolvedValueOnce(page(['main', 'uat']));
+
+      const branches = await service.listBranches('tok', 'org/app');
+
+      expect(branches).toHaveLength(202);
+      expect(branches.find((b) => b.name === 'uat')?.commitSha).toBe('sha-uat');
+      expect(
+        fetchMock.mock.calls.map((call) => String(call[0]).split('&').pop()),
+      ).toEqual(['page=1', 'page=2', 'page=3']);
+    });
+
+    it('stops after a full page followed by an empty one', async () => {
+      fetchMock
+        .mockResolvedValueOnce(page(names(0, 100)))
+        .mockResolvedValueOnce(page([]));
+
+      await expect(
+        service.listBranches('tok', 'org/app'),
+      ).resolves.toHaveLength(100);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('fails rather than return a partial list when a later page is refused', async () => {
+      fetchMock
+        .mockResolvedValueOnce(page(names(0, 100)))
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 403,
+          text: () => Promise.resolve('rate limited'),
+          json: () => Promise.resolve({}),
+        });
+
+      await expect(service.listBranches('tok', 'org/app')).rejects.toThrow(
+        /branch list failed \(403\)/,
+      );
+    });
+
+    it('is empty for a repository that has none', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        text: () => Promise.resolve(''),
+        json: () => Promise.resolve({}),
+      });
+
+      await expect(service.listBranches('tok', 'org/app')).resolves.toEqual([]);
+    });
+  });
+
   describe('GitHub App tokens', () => {
     it('builds the GitHub App install URL from config', () => {
       expect(service.getAppInstallUrl()).toBe(

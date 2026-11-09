@@ -110,6 +110,11 @@ export {
   type TeamMembershipChangedEvent,
 } from './github-webhook.processor';
 
+/** GitHub's largest page for the branch list. */
+const LIST_BRANCHES_PAGE_SIZE = 100;
+/** 3,000 branches. Past it the list is cut short, not an error. */
+const LIST_BRANCHES_MAX_PAGES = 30;
+
 interface GitHubRepoResponse {
   id: number;
   name: string;
@@ -1525,23 +1530,40 @@ export class GithubService
   // Breaking that ordering is how a handful of open tabs exhausts the org's
   // hourly budget and every other GitHub call in the product starts failing.
 
+  /**
+   * Every branch of the repository. GitHub lists them 100 at a time, sorted
+   * by name, so a lookup that reads only the first page misses any branch
+   * that sorts after the hundredth: `uat` and `main` are near the end of the
+   * alphabet. A repository under 100 branches still costs one request.
+   */
   async listBranches(
     accessToken: string,
     repoFullName: string,
   ): Promise<GitHubBranchSummary[]> {
-    const payload = await this.http.workspaceGet<
-      Array<{ name: string; protected?: boolean; commit?: { sha?: string } }>
-    >(
-      `https://api.github.com/repos/${repoFullName}/branches?per_page=100`,
-      accessToken,
-      'branch list',
-    );
-
-    return (payload ?? []).map((branch) => ({
-      name: branch.name,
-      protected: branch.protected === true,
-      commitSha: branch.commit?.sha ?? '',
-    }));
+    const branches: GitHubBranchSummary[] = [];
+    for (let page = 1; page <= LIST_BRANCHES_MAX_PAGES; page += 1) {
+      const batch =
+        (await this.http.workspaceGet<
+          Array<{
+            name: string;
+            protected?: boolean;
+            commit?: { sha?: string };
+          }>
+        >(
+          `https://api.github.com/repos/${repoFullName}/branches?per_page=${String(LIST_BRANCHES_PAGE_SIZE)}&page=${String(page)}`,
+          accessToken,
+          'branch list',
+        )) ?? [];
+      for (const branch of batch) {
+        branches.push({
+          name: branch.name,
+          protected: branch.protected === true,
+          commitSha: branch.commit?.sha ?? '',
+        });
+      }
+      if (batch.length < LIST_BRANCHES_PAGE_SIZE) break;
+    }
+    return branches;
   }
 
   async listBranchHeadAuthors(

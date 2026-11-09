@@ -62,6 +62,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **On-prem:** The Windows host install file now runs from an elevated PowerShell 7 window, where it stopped with `Get-FileHash` not recognized.
 - **Self-hosted:** A first install no longer risks `migrate` failing: the database counts as healthy only once it accepts TCP connections, not during its one-time setup.
 - **QA:** Report and CI results tables escape backslashes, so a cell ending in `\` no longer breaks the table.
+- **QA:** QA finds `uat` in repositories with more than 100 branches; the branch list used to stop at the first 100.
 - **Pipelines:** A new project starts one pipeline per branch, not one per generated file.
 - **Pipelines:** New projects' pipelines pass from creation: images are named after the repository and installs skip npm releases younger than a day.
 - **Pipelines:** A commit runs one pipeline chain while a pipeline-branch pull request is open; `uat` used to deploy twice.
