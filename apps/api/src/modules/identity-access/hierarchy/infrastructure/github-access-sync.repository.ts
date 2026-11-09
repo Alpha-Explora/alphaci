@@ -66,7 +66,13 @@ export class GithubAccessSyncRepository {
     );
   }
 
-  /** The caller owns the transaction when this method is used directly. */
+  /**
+   * A new grant request. It starts a fresh retry budget: the row lives as long
+   * as the assignment, so a count left from earlier requests would otherwise
+   * stop the bounded requeue after the first failure of this one.
+   *
+   * The caller owns the transaction when this method is used directly.
+   */
   async upsertPendingWithClient(
     client: Pick<PoolClient, 'query'>,
     assignmentId: string,
@@ -76,7 +82,7 @@ export class GithubAccessSyncRepository {
         INSERT INTO hierarchy.github_access_sync (assignment_id, sync_state)
         VALUES ($1, 'pending')
         ON CONFLICT (assignment_id)
-        DO UPDATE SET sync_state = 'pending', updated_at = NOW()
+        DO UPDATE SET sync_state = 'pending', retry_count = 0, last_error = NULL, updated_at = NOW()
         RETURNING id, assignment_id, github_team_id, github_team_slug, sync_state,
           verification_result, last_synced_at, last_error, retry_count, created_at, updated_at;
       `,
@@ -214,7 +220,8 @@ export class GithubAccessSyncRepository {
       `
         UPDATE hierarchy.github_access_sync
         SET sync_state = 'verified', github_team_id = $2, github_team_slug = $3,
-          verification_result = $4::jsonb, last_synced_at = NOW(), last_error = NULL, updated_at = NOW()
+          verification_result = $4::jsonb, last_synced_at = NOW(), last_error = NULL,
+          retry_count = 0, updated_at = NOW()
         WHERE assignment_id = $1;
       `,
       [

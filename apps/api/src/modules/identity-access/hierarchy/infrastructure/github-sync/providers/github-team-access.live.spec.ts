@@ -420,3 +420,130 @@ describe('GithubTeamAccessLiveProvider revoke verification (org base permission 
     ).resolves.toMatchObject({ hasAccess: false, permission: 'admin' });
   });
 });
+
+describe('GithubTeamAccessLiveProvider ensureTeam when the team already exists', () => {
+  const originalFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  const DOTTED_REPO = 'Alphaexplora-Sandbox/web.app';
+  const DOTTED_TEAM_NAME = 'web.app-developers';
+  // GitHub derives the slug from the name; a dot becomes a hyphen.
+  const DOTTED_TEAM_SLUG = 'web-app-developers';
+
+  const alreadyExists = (url: string, init?: RequestInit) =>
+    url.endsWith('/orgs/Alphaexplora-Sandbox/teams') && init?.method === 'POST'
+      ? new Response('{"message":"Name must be unique"}', { status: 422 })
+      : undefined;
+  const teamRepoGrant = (url: string, init?: RequestInit) =>
+    url.includes('/repos/Alphaexplora-Sandbox/') && init?.method === 'PUT'
+      ? new Response(null, { status: 204 })
+      : undefined;
+  const nameIsNotASlug = (url: string) =>
+    url.endsWith(`/teams/${DOTTED_TEAM_NAME}`) ? notFound() : undefined;
+  const teamPage = (page: number, teams: unknown[]) => (url: string) =>
+    url.includes(`/teams?per_page=100&page=${String(page)}`)
+      ? json(teams)
+      : undefined;
+  const otherTeams = (count: number) =>
+    Array.from({ length: count }, (_, index) => ({
+      id: 100 + index,
+      slug: `team-${String(index)}`,
+      name: `team-${String(index)}`,
+    }));
+
+  const ensure = (provider: GithubTeamAccessLiveProvider) =>
+    provider.ensureTeam({
+      repositoryId: 'repo-1',
+      repoFullName: DOTTED_REPO,
+      actingUserId: 'lead-1',
+    });
+
+  /*
+   * The first grant on a repository creates its team; every later grant gets
+   * 422. The lookup used the name as the slug, so for `web.app` it was a 404
+   * and every member after the creator failed on every retry.
+   */
+  it('finds the team by name when the name is not its slug', async () => {
+    const { provider } = setup();
+    const { calls } = mockFetch(
+      alreadyExists,
+      teamRepoGrant,
+      nameIsNotASlug,
+      teamPage(1, [
+        ...otherTeams(2),
+        { id: 9, slug: DOTTED_TEAM_SLUG, name: DOTTED_TEAM_NAME },
+      ]),
+    );
+
+    await expect(ensure(provider)).resolves.toEqual({
+      githubTeamId: '9',
+      githubTeamSlug: DOTTED_TEAM_SLUG,
+    });
+    expect(
+      calls.some(
+        (call) =>
+          call.method === 'PUT' &&
+          call.url.endsWith(
+            `/teams/${DOTTED_TEAM_SLUG}/repos/Alphaexplora-Sandbox/web.app`,
+          ),
+      ),
+    ).toBe(true);
+  });
+
+  it('searches every page of the org teams', async () => {
+    const { provider } = setup();
+    mockFetch(
+      alreadyExists,
+      teamRepoGrant,
+      nameIsNotASlug,
+      teamPage(1, otherTeams(100)),
+      teamPage(2, [
+        { id: 9, slug: DOTTED_TEAM_SLUG, name: 'Web.App-Developers' },
+      ]),
+    );
+
+    await expect(ensure(provider)).resolves.toEqual({
+      githubTeamId: '9',
+      githubTeamSlug: DOTTED_TEAM_SLUG,
+    });
+  });
+
+  it('uses the direct slug lookup when the name is already a slug', async () => {
+    const { provider } = setup();
+    const { calls } = mockFetch(
+      (url, init) =>
+        url.endsWith('/orgs/Alphaexplora-Sandbox/teams') &&
+        init?.method === 'POST'
+          ? new Response('{}', { status: 422 })
+          : undefined,
+      teamRepoGrant,
+      (url) =>
+        url.endsWith(`/teams/${TEAM}`)
+          ? json({ id: 7, slug: TEAM, name: TEAM })
+          : undefined,
+    );
+
+    await expect(
+      provider.ensureTeam({
+        repositoryId: 'repo-1',
+        repoFullName: REPO,
+        actingUserId: 'lead-1',
+      }),
+    ).resolves.toEqual({ githubTeamId: '7', githubTeamSlug: TEAM });
+    expect(calls.some((call) => call.url.includes('/teams?per_page='))).toBe(
+      false,
+    );
+  });
+
+  it('fails with a clear 502 when GitHub says the team exists but none has that name', async () => {
+    const { provider } = setup();
+    mockFetch(alreadyExists, nameIsNotASlug, teamPage(1, otherTeams(3)));
+
+    await expect(ensure(provider)).rejects.toThrow(BadGatewayException);
+    await expect(ensure(provider)).rejects.toThrow(
+      /exists in Alphaexplora-Sandbox, but no team with that name was found/,
+    );
+  });
+});
