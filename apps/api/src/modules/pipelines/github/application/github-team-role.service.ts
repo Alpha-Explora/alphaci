@@ -380,9 +380,9 @@ export class GithubTeamRoleService {
    * than issuing a membership check per user — with a few dozen users that is
    * the difference between 2 requests and 100.
    *
-   * Bails out entirely if both the lead and developer rosters come back empty. An empty roster is
-   * indistinguishable from an unreadable one at this layer (listTeamMembers
-   * degrades to [] on failure), and treating "unreadable" as "nobody is in
+   * Bails out entirely if the lead or developer roster could not be read, or
+   * if both come back empty (an empty answer for both is indistinguishable
+   * from an unreadable one). Treating "unreadable" as "nobody is in
    * team-lead" would demote every lead in the org in one pass. Refusing to act
    * on an ambiguous read is the whole point.
    */
@@ -404,20 +404,30 @@ export class GithubTeamRoleService {
     }
 
     const { leadTeamSlug, qaTeamSlug, developerTeamSlug } = this.config.github;
-    let leadMembers: string[];
-    let qaMembers: string[];
-    let developerMembers: string[];
+    let leadMembers: string[] | null;
+    let qaMembers: string[] | null;
+    let developerMembers: string[] | null;
     try {
       const token =
         await this.githubService.createInstallationAccessToken(installationId);
       [leadMembers, qaMembers, developerMembers] = await Promise.all([
-        this.githubService.listTeamMembersWithToken(leadTeamSlug, token),
-        this.githubService.listTeamMembersWithToken(qaTeamSlug, token),
-        this.githubService.listTeamMembersWithToken(developerTeamSlug, token),
+        this.githubService.readTeamRoster(leadTeamSlug, token),
+        this.githubService.readTeamRoster(qaTeamSlug, token),
+        this.githubService.readTeamRoster(developerTeamSlug, token),
       ]);
     } catch (error) {
       this.logger.warn(
         `Role reconciliation could not read team rosters: ${describeError(error)}`,
+      );
+      return { status: 'unreadable' };
+    }
+
+    // An unreadable lead or developer roster is not an empty one: acting on
+    // it would demote every lead (or promote nobody) for one refused request.
+    // The qa roster may be unknown; that is handled below as "keep qa as is".
+    if (leadMembers === null || developerMembers === null) {
+      this.logger.warn(
+        'Role reconciliation skipped: the lead or developer team roster could not be read.',
       );
       return { status: 'unreadable' };
     }
@@ -430,9 +440,9 @@ export class GithubTeamRoleService {
     }
 
     const leads = new Set(leadMembers.map((login) => login.toLowerCase()));
-    const qa = new Set(qaMembers.map((login) => login.toLowerCase()));
-    // An empty qa roster is ambiguous in the same way (unreadable and "no QA
-    // team" both degrade to []), so it may neither grant nor revoke 'qa'.
+    const qa = new Set((qaMembers ?? []).map((login) => login.toLowerCase()));
+    // An unreadable or empty qa roster is ambiguous (unreadable and "no QA
+    // team" look alike here), so it may neither grant nor revoke 'qa'.
     const qaRosterKnown = qa.size > 0;
     const users = await this.roleAccess.listGithubTeamSyncedUsers();
 

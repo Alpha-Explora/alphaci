@@ -887,6 +887,12 @@ export interface GithubOrganizationPort {
   ): Promise<boolean | null>;
   listTeamMembers(userId: string, teamSlug: string): Promise<string[]>;
   listTeamMembersWithToken(teamSlug: string, token: string): Promise<string[]>;
+  /**
+   * The roster, or `null` when it could not be read (no token, or any page
+   * failed). An empty array is a team with no members; `null` is not an
+   * answer, and a caller deciding who to demote must not treat it as one.
+   */
+  readTeamRoster(teamSlug: string, token: string): Promise<string[] | null>;
   createInstallationAccessToken(installationId: number): Promise<string>;
   getInstallationAccessTokenForUser(userId: string): Promise<string | null>;
   getInstallationAccessTokenForUserRepo(

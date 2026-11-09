@@ -62,6 +62,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **On-prem:** The Windows host install file now runs from an elevated PowerShell 7 window, where it stopped with `Get-FileHash` not recognized.
 - **Hosting:** Saving or deleting a Render environment variable keeps the service's other variables when it has more than 20; before, the rest were erased.
 - **Self-hosted:** A first install no longer risks `migrate` failing: the database counts as healthy only once it accepts TCP connections, not during its one-time setup.
+- **Access:** One refused GitHub team-roster read no longer demotes every lead to Developer in the scheduled role sync; the sweep now skips when the lead or developer roster can't be read.
 - **QA:** Report and CI results tables escape backslashes, so a cell ending in `\` no longer breaks the table.
 - **Pipelines:** A new project starts one pipeline per branch, not one per generated file.
 - **Pipelines:** New projects' pipelines pass from creation: images are named after the repository and installs skip npm releases younger than a day.
