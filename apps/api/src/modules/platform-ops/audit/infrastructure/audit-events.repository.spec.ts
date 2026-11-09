@@ -60,6 +60,75 @@ describe('AuditEventsRepository', () => {
     );
   });
 
+  describe('an event that names a Project deleted before delivery', () => {
+    const projectDeleted = () =>
+      Object.assign(new Error('violates foreign key constraint'), {
+        code: '23503',
+        constraint: 'audit_events_project_id_fkey',
+      });
+    const stored = (projectId: string | null) => ({
+      rows: [
+        {
+          id: 'event-1',
+          workspace_id: 'workspace-1',
+          project_id: projectId,
+          actor_user_id: 'user-1',
+          event_code: 'project_github_repo_deleted',
+          message: 'acme/app was deleted from GitHub.',
+          metadata_json: '{}',
+          created_at: '2026-11-09T00:00:00.000Z',
+        },
+      ],
+    });
+    const event = {
+      workspaceId: 'workspace-1',
+      projectId: 'project-1',
+      actorUserId: 'user-1',
+      eventCode: 'project_github_repo_deleted',
+      message: 'acme/app was deleted from GitHub.',
+    };
+    const projectIdOfCall = (call: number) =>
+      (query.mock.calls[call] as [string, unknown[]])[1][1];
+
+    it('is stored without the Project link instead of being lost', async () => {
+      query
+        .mockRejectedValueOnce(projectDeleted())
+        .mockResolvedValueOnce(stored(null));
+
+      await expect(repository.create(event)).resolves.toMatchObject({
+        id: 'event-1',
+        workspaceId: 'workspace-1',
+        projectId: null,
+      });
+      expect(query).toHaveBeenCalledTimes(2);
+      expect(projectIdOfCall(0)).toBe('project-1');
+      expect(projectIdOfCall(1)).toBeNull();
+    });
+
+    it('does not retry a failure on another key', async () => {
+      query.mockRejectedValueOnce(
+        Object.assign(new Error('violates foreign key constraint'), {
+          code: '23503',
+          constraint: 'audit_events_workspace_id_fkey',
+        }),
+      );
+
+      await expect(repository.create(event)).rejects.toThrow(
+        'violates foreign key constraint',
+      );
+      expect(query).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not retry an event that named no Project', async () => {
+      query.mockRejectedValueOnce(projectDeleted());
+
+      await expect(
+        repository.create({ ...event, projectId: null }),
+      ).rejects.toThrow();
+      expect(query).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('throws when audit event insert does not return a row', async () => {
     query.mockResolvedValueOnce({ rows: [] });
 

@@ -68,6 +68,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **QA:** QA Studio shows `uat` previews of ALPHACI-managed Vercel projects, which Vercel Authentication used to block.
 - **Access:** Adding a project member grants their GitHub access again.
 - **Runs:** A running job's log says it is not ready yet instead of reporting missing access; `startup_failure` runs show as failed.
+- **Projects:** Deleting a project with its GitHub repository keeps the audit entry and sends the notification; both used to be lost when the project row was already gone.
 - **Runs:** Terminal colour codes no longer appear in test output, and SonarCloud percentages show one decimal.
 - **UI:** Secondary buttons are visible in the dark theme, and preview cards name the host when the API sends no label.
 - **UI:** Signed-in pages no longer call workspace and notification endpoints that are turned off.

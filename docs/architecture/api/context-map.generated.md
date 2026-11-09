@@ -26,7 +26,7 @@ This map is generated from the current source tree and architecture metrics. It 
 | `pipelines` | GitHub integration, CI token lifecycle, and CI report ingestion | `src/modules/pipelines/index.ts` | `github_app`, `ci`, `workflow` | 87 source files / 33 tests |
 | `runtime` | deployment targets, environment metadata, domains, provider connections, provider adapters, deployment history, on-prem hosts, and releases | `src/modules/runtime/index.ts` | `runtime`, `env_provisioning`, `runtime_deployments`, `runtime_domains`, `runtime_secrets`, `gcp_operations` | 228 source files / 84 tests |
 | `billing` | subscriptions, usage, and quota policy | `src/modules/billing/index.ts` | `billing`, `usage`, `billing_lifecycle` | 21 source files / 5 tests |
-| `platform-ops` | audit, notifications, feedback, and outbox consumers | `src/modules/platform-ops/index.ts` | `platform`, `audit`, `notifications`, `support` | 36 source files / 9 tests |
+| `platform-ops` | audit, notifications, feedback, and outbox consumers | `src/modules/platform-ops/index.ts` | `platform`, `audit`, `notifications`, `support` | 37 source files / 10 tests |
 
 The technical kernel at `src/kernel/` is shared infrastructure for database access, configuration, capability composition, HTTP concerns, session contracts, event persistence, focused ports, and shared authorization rules. It has no business-context ownership.
 

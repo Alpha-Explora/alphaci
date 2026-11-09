@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { DatabaseService } from '#kernel/db/database.service';
+import { isForeignKeyViolation } from '#kernel/db/postgres-errors';
 import type {
   CreateNotificationInput,
   NotificationItem,
@@ -95,7 +96,28 @@ export class NotificationsRepository {
     return { id: result.rows[0].id, read: true };
   }
 
+  /**
+   * Stores the notification. One that names a Project deleted since it was
+   * queued is stored without the Project link instead of failing until the
+   * outbox quarantines it, the same as ON DELETE SET NULL would have left it.
+   */
   async createForUser(
+    input: CreateNotificationInput,
+  ): Promise<NotificationItem> {
+    try {
+      return await this.insertNotification(input);
+    } catch (error) {
+      if (
+        input.projectId &&
+        isForeignKeyViolation(error, 'notifications_project_id_fkey')
+      ) {
+        return this.insertNotification({ ...input, projectId: null });
+      }
+      throw error;
+    }
+  }
+
+  private async insertNotification(
     input: CreateNotificationInput,
   ): Promise<NotificationItem> {
     const result = await this.databaseService.query<NotificationRow>(
