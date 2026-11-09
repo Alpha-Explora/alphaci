@@ -113,8 +113,10 @@ describe('VercelCiSecretsService', () => {
       await install('t-dev', 'prj_dev', 'dev');
       await install('t-qa', 'prj_qa', 'qa');
 
-      const projectWrites = githubService.setActionsSecretStrict.mock.calls
-        .filter((call) => (call[3] as string).endsWith('_PROJECT_ID'))
+      const calls = githubService.setActionsSecretStrict.mock
+        .calls as string[][];
+      const projectWrites = calls
+        .filter((call) => call[3]?.endsWith('_PROJECT_ID'))
         .map((call) => [call[3], call[4]]);
       expect(projectWrites).toEqual([
         ['VERCEL_FRONTEND_DEV_PROJECT_ID', 'prj_dev'],

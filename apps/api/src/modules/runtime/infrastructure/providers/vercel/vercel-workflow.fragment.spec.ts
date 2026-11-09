@@ -81,7 +81,7 @@ describe('the Vercel deploy job of an environment', () => {
 describe('the Vercel deploy job of the branch pipeline', () => {
   it('keeps the slot-only secret names it always had', () => {
     const [target] = vercelWorkflowFragment.expandTargets!(
-      { slot: 'frontend', provider: 'vercel' } as never,
+      { slot: 'frontend', provider: 'vercel' },
       {},
     );
 
