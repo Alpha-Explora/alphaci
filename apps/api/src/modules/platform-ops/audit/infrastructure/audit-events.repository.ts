@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { DatabaseService } from '#kernel/db/database.service';
 import { parseAuditCursor } from '#kernel/rules/audit-cursor.rules';
+import { isForeignKeyViolation } from '#kernel/db/postgres-errors';
 import type {
   ExternalAuditBatch,
   GithubActivitySyncState,
@@ -58,7 +59,30 @@ interface GithubSyncRow {
 export class AuditEventsRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
+  /**
+   * Stores the event. One that names a Project deleted since it was queued
+   * (the relay delivers after the request that queued it, and deleting a
+   * Project queues "repository deleted" first) is stored without the Project
+   * link instead of being dropped: the same thing ON DELETE SET NULL does to
+   * an event stored before the delete.
+   */
   async create(input: CreateAuditEventInput): Promise<AuditEventRecord> {
+    try {
+      return await this.insertEvent(input);
+    } catch (error) {
+      if (
+        input.projectId &&
+        isForeignKeyViolation(error, 'audit_events_project_id_fkey')
+      ) {
+        return this.insertEvent({ ...input, projectId: null });
+      }
+      throw error;
+    }
+  }
+
+  private async insertEvent(
+    input: CreateAuditEventInput,
+  ): Promise<AuditEventRecord> {
     const result = await this.databaseService.query<AuditEventRow>(
       `
         INSERT INTO audit.audit_events (
