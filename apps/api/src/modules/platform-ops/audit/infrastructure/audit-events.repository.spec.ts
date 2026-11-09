@@ -143,7 +143,54 @@ describe('AuditEventsRepository', () => {
       'dp-1',
       '2026-06-15T00:00:00.000000Z',
       10,
+      null,
     ]);
+  });
+
+  describe('paging by (createdAt, id)', () => {
+    const listWith = async (before: string | null) => {
+      const query = jest.fn().mockResolvedValue({ rows: [] });
+      await new AuditEventsRepository(
+        makeDatabaseService(query),
+      ).listForProject({
+        projectId: 'project-1',
+        deliveryProjectId: null,
+        limit: 10,
+        before,
+      });
+      return query.mock.calls.at(-1) as [string, unknown[]];
+    };
+
+    it('resumes after the named event, within events that share its timestamp', async () => {
+      const [sql, params] = await listWith(
+        '2026-06-15T00:00:00.000000Z|0a1b2c3d-0000-4000-8000-000000000002',
+      );
+
+      expect(sql).toContain('event.created_at = $3::timestamptz');
+      expect(sql).toContain('event.id < $5::uuid');
+      expect(sql).toContain('ORDER BY event.created_at DESC, event.id DESC');
+      expect(params.slice(2)).toEqual([
+        '2026-06-15T00:00:00.000000Z',
+        10,
+        '0a1b2c3d-0000-4000-8000-000000000002',
+      ]);
+    });
+
+    it('still takes a bare timestamp, meaning strictly older', async () => {
+      const [, params] = await listWith('2026-06-15T00:00:00.000000Z');
+
+      expect(params.slice(2)).toEqual([
+        '2026-06-15T00:00:00.000000Z',
+        10,
+        null,
+      ]);
+    });
+
+    it('starts at the newest event without a cursor', async () => {
+      const [, params] = await listWith(null);
+
+      expect(params.slice(2)).toEqual([null, 10, null]);
+    });
   });
 });
 

@@ -70,6 +70,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Runs:** A running job's log says it is not ready yet instead of reporting missing access; `startup_failure` runs show as failed.
 - **Runs:** Terminal colour codes no longer appear in test output, and SonarCloud percentages show one decimal.
 - **UI:** Secondary buttons are visible in the dark theme, and preview cards name the host when the API sends no label.
+- **Audit:** The repository Audit tab no longer skips events that share a timestamp at a page boundary; imported GitHub events often do.
 - **UI:** Signed-in pages no longer call workspace and notification endpoints that are turned off.
 - **API:** Query parameters are read as single values: a repeated or nested one counts as absent instead of being joined, and an unknown feedback `status` filter returns 400.
 

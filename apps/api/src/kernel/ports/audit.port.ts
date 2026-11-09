@@ -40,14 +40,18 @@ export interface ProjectAuditQuery {
   /** The delivery Project the repository belongs to, when it has one. */
   deliveryProjectId?: string | null;
   limit?: number;
-  /** Exclusive ISO createdAt cursor: only strictly older events are returned. */
+  /**
+   * The `next` of the previous page, passed back unchanged: only events after
+   * it in (createdAt, id) order are returned. A bare ISO timestamp also works
+   * and means strictly older than that time. See audit-cursor.rules.
+   */
   before?: string | null;
 }
 
 export interface ProjectAuditPage {
   enabled: boolean;
   items: ProjectAuditEventItem[];
-  /** createdAt cursor to pass as `before` for the next page, or null. */
+  /** Cursor to pass as `before` for the next page, or null on the last one. */
   next: string | null;
 }
 

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { DatabaseService } from '#kernel/db/database.service';
+import { parseAuditCursor } from '#kernel/rules/audit-cursor.rules';
 import type {
   ExternalAuditBatch,
   GithubActivitySyncState,
@@ -99,7 +100,9 @@ export class AuditEventsRepository {
    * the repository's Project) such as requirement and checklist changes.
    *
    * createdAt is formatted at microsecond precision so the cursor round-trips
-   * without skipping rows that share a millisecond.
+   * exactly. `before` is the cursor of the last event of the previous page
+   * (audit-cursor.rules): it names that event's id as well as its time, so a
+   * page boundary inside a run of events sharing a timestamp skips none.
    */
   async listForProject(query: {
     projectId: string;
@@ -107,6 +110,7 @@ export class AuditEventsRepository {
     limit: number;
     before: string | null;
   }): Promise<AuditEventListRow[]> {
+    const cursor = query.before ? parseAuditCursor(query.before) : null;
     const result = await this.databaseService.query<AuditEventListRowRaw>(
       `
         SELECT
@@ -134,11 +138,25 @@ export class AuditEventsRepository {
               AND event.metadata_json ->> 'deliveryProjectId' = $2
             )
           )
-          AND ($3::timestamptz IS NULL OR event.created_at < $3::timestamptz)
+          AND (
+            $3::timestamptz IS NULL
+            OR event.created_at < $3::timestamptz
+            OR (
+              $5::uuid IS NOT NULL
+              AND event.created_at = $3::timestamptz
+              AND event.id < $5::uuid
+            )
+          )
         ORDER BY event.created_at DESC, event.id DESC
         LIMIT $4;
       `,
-      [query.projectId, query.deliveryProjectId, query.before, query.limit],
+      [
+        query.projectId,
+        query.deliveryProjectId,
+        cursor?.createdAt ?? null,
+        query.limit,
+        cursor?.eventId ?? null,
+      ],
     );
 
     return result.rows.map((row) => ({

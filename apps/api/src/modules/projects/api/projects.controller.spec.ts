@@ -630,11 +630,35 @@ describe('ProjectsController', () => {
     );
   });
 
+  it('accepts the next cursor of an earlier page, which names the last event', async () => {
+    const cursor =
+      '2026-10-01T10:00:00.123456Z|0a1b2c3d-0000-4000-8000-000000000002';
+
+    await controller.listProjectAuditEvents(
+      makeRequest(fakeUser),
+      'project-1',
+      undefined,
+      cursor,
+    );
+
+    expect(service.listProjectAuditEvents).toHaveBeenCalledWith(
+      'project-1',
+      'user-1',
+      { before: cursor },
+      null,
+    );
+  });
+
   it.each([
     ['a non-numeric limit', 'abc', undefined],
     ['a zero limit', '0', undefined],
     ['a malformed cursor', undefined, 'yesterday'],
     ['an out-of-range cursor', undefined, '2026-13-45T99:00:00Z'],
+    [
+      'a cursor naming a malformed event id',
+      undefined,
+      '2026-10-01T10:00:00Z|not-a-uuid',
+    ],
   ])('rejects %s with 400', async (_label, limit, before) => {
     await expect(
       controller.listProjectAuditEvents(
