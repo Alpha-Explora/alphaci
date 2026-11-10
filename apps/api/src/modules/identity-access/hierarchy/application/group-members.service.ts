@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { badRequest } from '#kernel/http/coded-errors';
 
 import {
   AuditEventPublisher,
@@ -88,7 +89,8 @@ export class GroupMembersService {
       input.userId,
     );
     if (existing) {
-      throw new BadRequestException(
+      throw badRequest(
+        'GROUP_MEMBER_ALREADY_ACTIVE',
         'User is already an active member of this Group',
       );
     }
@@ -136,7 +138,8 @@ export class GroupMembersService {
       },
     );
     if (!added) {
-      throw new BadRequestException(
+      throw badRequest(
+        'GROUP_MEMBER_ALREADY_ACTIVE',
         'User is already an active member of this Group',
       );
     }
@@ -150,7 +153,7 @@ export class GroupMembersService {
       // The insert reported success but the row is not readable back — surface
       // it rather than returning a hollow object the UI would render as a
       // half-added member.
-      throw new BadRequestException('Member could not be added');
+      throw badRequest('GROUP_MEMBER_ADD_FAILED', 'Member could not be added');
     }
 
     await this.auditEventsService.recordProjectEvent({

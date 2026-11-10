@@ -1,8 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { badRequest } from '#kernel/http/coded-errors';
+import { systemNotFound } from './hierarchy.errors';
 
 import { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
 import { DeliveryProjectsService } from './delivery-projects.service';
@@ -60,7 +58,8 @@ export class SystemsService {
     // Fail fast before writing any record — a missing token otherwise leaves an
     // orphan system/delivery project once we reach repository creation.
     if (!githubAccessToken) {
-      throw new BadRequestException(
+      throw badRequest(
+        'GITHUB_TOKEN_MISSING',
         'GitHub access token not found. Re-authenticate via GitHub OAuth.',
       );
     }
@@ -184,7 +183,7 @@ export class SystemsService {
     await this.accessService.assertSystemMembership(systemId, userId);
     const system = await this.systemsRepository.findById(systemId);
     if (!system) {
-      throw new NotFoundException('System not found');
+      throw systemNotFound();
     }
     return system;
   }
@@ -200,7 +199,7 @@ export class SystemsService {
     );
     const system = await this.systemsRepository.update(systemId, dto);
     if (!system) {
-      throw new NotFoundException('System not found');
+      throw systemNotFound();
     }
 
     await this.auditEventsService.recordProjectEvent({
@@ -221,7 +220,7 @@ export class SystemsService {
     );
     const system = await this.systemsRepository.archive(systemId);
     if (!system) {
-      throw new NotFoundException('System not found');
+      throw systemNotFound();
     }
 
     await this.auditEventsService.recordProjectEvent({

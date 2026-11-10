@@ -7,6 +7,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { deliveryProjectNotFound } from './hierarchy.errors';
 
 import { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
 import {
@@ -164,7 +165,7 @@ export class DeliveryProjectsService {
     const deliveryProject =
       await this.deliveryProjectsRepository.findById(deliveryProjectId);
     if (!deliveryProject) {
-      throw new NotFoundException('Delivery project not found');
+      throw deliveryProjectNotFound();
     }
     return deliveryProject;
   }
@@ -183,7 +184,7 @@ export class DeliveryProjectsService {
       dto,
     );
     if (!deliveryProject) {
-      throw new NotFoundException('Delivery project not found');
+      throw deliveryProjectNotFound();
     }
 
     await this.auditEventsService.recordProjectEvent({
@@ -208,7 +209,7 @@ export class DeliveryProjectsService {
     const deliveryProject =
       await this.deliveryProjectsRepository.archive(deliveryProjectId);
     if (!deliveryProject) {
-      throw new NotFoundException('Delivery project not found');
+      throw deliveryProjectNotFound();
     }
 
     await this.auditEventsService.recordProjectEvent({
@@ -251,7 +252,7 @@ export class DeliveryProjectsService {
     const deliveryProject =
       await this.deliveryProjectsRepository.findById(deliveryProjectId);
     if (!deliveryProject) {
-      throw new NotFoundException('Delivery project not found');
+      throw deliveryProjectNotFound();
     }
 
     if (dto.confirmName !== deliveryProject.name) {
@@ -358,7 +359,7 @@ export class DeliveryProjectsService {
     const deliveryProjectDeleted =
       await this.deliveryProjectsRepository.deleteById(deliveryProjectId);
     if (!deliveryProjectDeleted) {
-      throw new NotFoundException('Delivery project not found');
+      throw deliveryProjectNotFound();
     }
 
     const remainingDeliveryProjects =

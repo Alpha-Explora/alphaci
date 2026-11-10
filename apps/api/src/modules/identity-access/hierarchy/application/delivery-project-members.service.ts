@@ -4,8 +4,9 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  ServiceUnavailableException,
 } from '@nestjs/common';
+import { unavailable } from '#kernel/http/coded-errors';
+import { deliveryProjectNotFound } from './hierarchy.errors';
 import { ConfigService } from '@nestjs/config';
 import type { PoolClient } from 'pg';
 
@@ -259,7 +260,7 @@ export class DeliveryProjectMembersService {
         await this.deliveryProjectsRepository.findById(deliveryProjectId);
       // Another team's Project reads as missing, as hierarchy reads do.
       if (project?.groupId !== groupId) {
-        throw new NotFoundException('Delivery project not found');
+        throw deliveryProjectNotFound();
       }
       if (project.status !== 'active') {
         throw new BadRequestException({
@@ -375,7 +376,8 @@ export class DeliveryProjectMembersService {
       actingUserId,
     );
     if (!this.isLive()) {
-      throw new ServiceUnavailableException(
+      throw unavailable(
+        'GITHUB_SYNC_DISABLED',
         'Repository access is unavailable until live GitHub synchronization is enabled',
       );
     }

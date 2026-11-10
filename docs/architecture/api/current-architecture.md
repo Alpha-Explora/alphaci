@@ -47,7 +47,7 @@ src/
 │   ├── config/                           # environment, deployment mode, and security config
 │   ├── db/                               # PostgreSQL and Supabase access
 │   ├── events/                           # outbox persistence and dispatch
-│   ├── http/                             # middleware and exception filters
+│   ├── http/                             # middleware, exception filters, coded error factories
 │   ├── ports/                            # focused dependency-inversion ports
 │   └── rules/                            # pure authorization rules shared by contexts
 ├── packs/                                # profile-owned Enterprise implementation packs
@@ -66,6 +66,14 @@ Each context has a `<context>.module.ts` composition root and an `index.ts` publ
 ## HTTP composition
 
 `src/main.ts` creates the Express application, applies proxy trust, session storage, security headers, JSON and URL-encoded body parsers, CORS, validation, exception handling, the global `api/v1` prefix, optional Swagger (`ENABLE_SWAGGER=true`), and the listener. Sessions use the in-memory store or PostgreSQL through `connect-pg-simple` when `SESSION_STORE_DRIVER=postgres`. `AppModule` adds configuration validation, throttling, database access, health, and the six context roots.
+
+## Error responses
+
+`AllExceptionsFilter` answers every failure with `{ statusCode, message, error, correlationId, timestamp, path }`. An exception thrown with an object body also sends that body's other fields beside the envelope (`code`, `people`, `limitCode`, `deliveryProjectId`); the envelope fields win over a same-named extra. Unhandled errors answer 500 with no detail.
+
+A refusal the web app has to tell apart carries a `code`: UPPER_SNAKE_CASE, naming the situation rather than the status, never reused for a different one. The factories in `src/kernel/http/coded-errors.ts` (`badRequest`, `unauthorized`, `forbidden`, `notFound`, `conflict`, `unprocessable`, `unavailable`) build the exception with the code, the sentence and optional extras. The message is for people and may be reworded; the code is the contract. Repeated answers get a named factory beside their module, such as `groupNotFound()` in the hierarchy's `hierarchy.errors.ts`.
+
+`tests/architecture/coded-errors.spec.ts` is a ratchet over `src/modules`: a Nest exception thrown without a `code` is counted per file against `tests/architecture/coded-errors.baseline.json`. A new bare throw fails the test; migrating a file lowers its entry (`UPDATE_CODED_ERRORS_BASELINE=1 npm test -w @alphaci/api -- coded-errors`). The hierarchy application layer has no uncoded throws left.
 
 ## Technical kernel
 
