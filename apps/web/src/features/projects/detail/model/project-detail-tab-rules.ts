@@ -10,6 +10,11 @@ import type {
   WorkflowSettings,
 } from '@/shared/api/contracts';
 
+import {
+  canManageEnvVars,
+  canManageHosting,
+  canManageProjectLifecycle,
+} from '@alphaci/persona-rules';
 import { isFailedConclusion } from './github-conclusion';
 import { isPullRequestRole } from './pull-request-compose-rules';
 
@@ -135,14 +140,7 @@ export function checklistsTabCarriesProjectQa(
  * owners (`lead`), QA Team and a session with no known role are refused, so
  * they never see that column.
  */
-const ENV_VARS_ROLES: ReadonlySet<AppRole> = new Set<AppRole>([
-  'member',
-  'admin',
-]);
-
-export function canManageEnvVars(appRole: AppRole | null | undefined): boolean {
-  return appRole != null && ENV_VARS_ROLES.has(appRole);
-}
+export { canManageEnvVars };
 
 /**
  * Developers get the read-only "Ready for production" card on the Overview:
@@ -164,16 +162,7 @@ export function showOverviewProductionReadiness(
  * Reinstalling deployment secrets used to share this list; it follows the
  * hosting rule now (`canReinstallDeploymentSecrets` below).
  */
-const PROJECT_LIFECYCLE_ROLES: ReadonlySet<AppRole> = new Set<AppRole>([
-  'lead',
-  'admin',
-]);
-
-export function canManageProjectLifecycle(
-  appRole: AppRole | null | undefined,
-): boolean {
-  return appRole != null && PROJECT_LIFECYCLE_ROLES.has(appRole);
-}
+export { canManageProjectLifecycle };
 
 /**
  * Developers and Admins — the backend's hosting allow-list (refusal code
@@ -182,14 +171,7 @@ export function canManageProjectLifecycle(
  * domains. Product owners (`lead`) and QA Team are refused. Listing stays open
  * to anyone who can see the project.
  */
-const HOSTING_ROLES: ReadonlySet<AppRole> = new Set<AppRole>([
-  'member',
-  'admin',
-]);
-
-export function canManageHosting(appRole: AppRole | null | undefined): boolean {
-  return appRole != null && HOSTING_ROLES.has(appRole);
-}
+export { canManageHosting };
 
 /** Shown where a hosting mutation control would otherwise be. */
 export const HOSTING_LEAD_ONLY_NOTE =

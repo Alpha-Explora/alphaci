@@ -1,3 +1,8 @@
+import {
+  PIPELINE_BRANCHES as SHARED_PIPELINE_BRANCHES,
+  PRODUCTION_BRANCH,
+  QA_BRANCH as SHARED_QA_BRANCH,
+} from '@alphaci/persona-rules';
 import type { WorkflowFragmentBranch } from '#kernel/ports/workflow-fragment.port';
 
 /**
@@ -17,13 +22,12 @@ import type { WorkflowFragmentBranch } from '#kernel/ports/workflow-fragment.por
  *
  * That is the shape of failure this file exists to prevent. A name is declared
  * once and both sides derive from it, so a future rename cannot reach one half
- * and not the other.
+ * and not the other. The three names are declared in `@alphaci/persona-rules`,
+ * which the web app derives from too, so the UI cannot name a branch the API
+ * does not create.
  */
-export const PIPELINE_BRANCHES = [
-  'dev',
-  'uat',
-  'main',
-] as const satisfies readonly WorkflowFragmentBranch[];
+export const PIPELINE_BRANCHES =
+  SHARED_PIPELINE_BRANCHES satisfies readonly WorkflowFragmentBranch[];
 
 export type PipelineBranch = (typeof PIPELINE_BRANCHES)[number];
 
@@ -31,7 +35,7 @@ export type PipelineBranch = (typeof PIPELINE_BRANCHES)[number];
 export const WORKING_BRANCH = PIPELINE_BRANCHES[0];
 
 /** Production, and the branch every provisioned repository starts on. */
-export const DEFAULT_BRANCH = 'main' satisfies PipelineBranch;
+export const DEFAULT_BRANCH = PRODUCTION_BRANCH satisfies PipelineBranch;
 
 /**
  * Branches provisioning creates from the default branch.
@@ -93,7 +97,7 @@ export type HostedBranch = (typeof HOSTED_BRANCHES)[number];
  * `satisfies` ties it to the hosted list: a QA branch that is not deployed
  * would have nothing to preview.
  */
-export const QA_BRANCH = 'uat' satisfies HostedBranch;
+export const QA_BRANCH = SHARED_QA_BRANCH satisfies HostedBranch;
 
 /** Where a QA-approved uat commit is promoted to. */
 export const QA_PROMOTION_TARGET_BRANCH = DEFAULT_BRANCH satisfies HostedBranch;

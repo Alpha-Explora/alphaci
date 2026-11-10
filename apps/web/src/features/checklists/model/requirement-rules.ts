@@ -6,6 +6,7 @@
  * sent no flag, and it can never grant more than the backend's rule
  * (docs/design/project-requirements.md, section 4.1). */
 
+import { canManageRequirements } from '@alphaci/persona-rules';
 import type { AppRole } from '@/shared/api/contracts';
 
 import {
@@ -71,7 +72,6 @@ const VERIFICATION_TYPES: ReadonlyArray<ChecklistVerificationType> =
 
 /* ── Who may do what (allow-lists) ──────────────────────────────────────── */
 
-const REQUIREMENT_MANAGERS: ReadonlyArray<AppRole> = ['lead', 'admin'];
 const PROGRESS_SETTERS: ReadonlyArray<AppRole> = ['member', 'lead', 'admin'];
 const VERIFIERS: ReadonlyArray<AppRole> = ['qa', 'lead', 'admin'];
 const RUN_REOPENERS: ReadonlyArray<AppRole> = ['lead', 'admin'];
@@ -81,9 +81,7 @@ function named(list: ReadonlyArray<AppRole>, role: Role): boolean {
 }
 
 /** Create, edit, archive and reorder requirements: Product owner or admin. */
-export function canManageRequirements(role: Role): boolean {
-  return named(REQUIREMENT_MANAGERS, role);
-}
+export { canManageRequirements };
 
 /** Move an item's Progress: Developer, Product owner or admin. Never QA. */
 export function canSetProgress(role: Role): boolean {

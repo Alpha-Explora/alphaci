@@ -271,6 +271,13 @@ change the package and fix the web consumers in the same pull request. The
 rest of `contracts.ts` is still hand-written and moves to the package one
 domain at a time (see the package README).
 
+Who may do what by app role is not written here. The role rules the API also
+enforces (create a Project or repository, hosting and environment variables,
+requirements, pull-request routes) and the pipeline branch names live in
+`@alphaci/persona-rules` (`packages/persona-rules`); a feature's `model/` file
+re-exports or wraps them. Do not write a second role list for a rule that
+package already has: change the list there, with its test, and both sides move.
+
 ---
 
 ## Billing model

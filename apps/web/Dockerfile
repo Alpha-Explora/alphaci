@@ -50,9 +50,10 @@ COPY --from=pruner /repo/out/json/ ./
 RUN npm ci --omit=dev \
 	&& npm cache clean --force \
 	&& rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
-# The shared capability catalog is a workspace package: npm ci links
-# node_modules/@alphaci/capability-catalog to this folder.
+# The shared capability catalog and the persona rules are workspace packages:
+# npm ci links node_modules/@alphaci/<name> to these folders.
 COPY --from=pruner /repo/out/full/packages/capability-catalog ./packages/capability-catalog
+COPY --from=pruner /repo/out/full/packages/persona-rules ./packages/persona-rules
 WORKDIR /app/apps/web
 COPY --from=builder /app/apps/web/.next ./.next
 COPY --from=builder /app/apps/web/public ./public
