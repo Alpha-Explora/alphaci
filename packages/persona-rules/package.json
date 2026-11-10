@@ -1,0 +1,23 @@
+{
+  "name": "@alphaci/persona-rules",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Who may do what, by global app role: the pure rules the AlphaCI API enforces and the web app mirrors.",
+  "license": "UNLICENSED",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "scripts": {
+    "test": "node --test"
+  }
+}

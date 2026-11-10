@@ -6,11 +6,18 @@
  * `dev`, and a third listed only the two branches above the working tier. The
  * UI was describing a branch the product no longer creates.
  *
- * Mirrors `kernel/config/pipeline-branches.ts` in the backend, which is the
- * source of truth for what actually gets created. Keep the two in step; if they
- * disagree, the backend is right.
+ * The names come from `@alphaci/persona-rules`, which the backend's
+ * `kernel/config/pipeline-branches.ts` derives from too, so the two cannot
+ * disagree about what gets created.
  */
-export const PIPELINE_BRANCHES = ['dev', 'uat', 'main'] as const;
+import {
+  isPipelineBranch,
+  PIPELINE_BRANCHES,
+  PRODUCTION_BRANCH as SHARED_PRODUCTION_BRANCH,
+  QA_BRANCH as SHARED_QA_BRANCH,
+} from '@alphaci/persona-rules';
+
+export { isPipelineBranch, PIPELINE_BRANCHES };
 
 export type PipelineBranch = (typeof PIPELINE_BRANCHES)[number];
 
@@ -33,7 +40,7 @@ export const PROMOTION_BRANCHES = PIPELINE_BRANCHES.slice(1);
  * QA Studio offers this environment and no other, so it must never be written
  * out as a literal in a view.
  */
-export const QA_BRANCH: PipelineBranch = 'uat';
+export const QA_BRANCH: PipelineBranch = SHARED_QA_BRANCH;
 
 /**
  * The production tier: the last rung, reached only through the promotion
@@ -42,7 +49,7 @@ export const QA_BRANCH: PipelineBranch = 'uat';
  * rule asking "is this base the production branch" never spells out the
  * literal itself.
  */
-export const PRODUCTION_BRANCH: PipelineBranch = 'main';
+export const PRODUCTION_BRANCH: PipelineBranch = SHARED_PRODUCTION_BRANCH;
 
 /** The flow as a label, e.g. "dev > uat > main". */
 export const PROMOTION_FLOW_LABEL = PIPELINE_BRANCHES.join(' > ');
@@ -64,11 +71,6 @@ export const PROMOTION_FLOW_LABEL = PIPELINE_BRANCHES.join(' > ');
 export function pipelineBranchRank(branch: string): number {
   const rank = (PIPELINE_BRANCHES as readonly string[]).indexOf(branch);
   return rank === -1 ? PIPELINE_BRANCHES.length : rank;
-}
-
-/** True when a branch is one the product actually provisions. */
-export function isPipelineBranch(branch: string): boolean {
-  return (PIPELINE_BRANCHES as readonly string[]).includes(branch);
 }
 
 /**

@@ -1,10 +1,37 @@
 import {
+  canCreateProjectFolder,
+  canCreateRepository,
+  canManageEnvVars,
+  canManageHosting,
+  canManageProjectLifecycle,
+  canManageRequirements,
+  isAllowedPullRequestRoute,
+  repositoryCreateRequiresProject,
+} from '@alphaci/persona-rules';
+import {
   PIPELINE_BRANCHES,
   QA_BRANCH,
-  QA_PROMOTION_TARGET_BRANCH,
   WORKING_BRANCH,
 } from '#kernel/config/pipeline-branches';
 import type { PlatformAppRole } from '#kernel/ports/platform-admin.port';
+
+/*
+ * The rules both sides of the wire need (who may create a Project or a
+ * repository, manage hosting or environment variables, open or merge a pull
+ * request) are declared once in @alphaci/persona-rules; the web app uses the
+ * same functions to decide which controls to offer. They are re-exported here
+ * so the API keeps one import path. The rules only the API needs stay below.
+ */
+export {
+  canCreateProjectFolder,
+  canCreateRepository,
+  canManageEnvVars,
+  canManageHosting,
+  canManageProjectLifecycle,
+  canManageRequirements,
+  isAllowedPullRequestRoute,
+  repositoryCreateRequiresProject,
+};
 
 /**
  * Plain functions, not an injectable class — same reasoning as
@@ -41,58 +68,15 @@ import type { PlatformAppRole } from '#kernel/ports/platform-admin.port';
  *     canMergeQaPromotion). qa is never in this allow-list: QA verifies
  *     preview deployments and returns defects to developers, it does not
  *     open or merge pull requests (§3, "Create PR" / merge rows).
- *   canManageEnvVars / canManageProjectLifecycle: admin | lead only. Both
- *     touch a project's live configuration (deployment credentials,
- *     provider secrets, disconnecting a project entirely) — §3's "Hosting &
- *     Secrets" and "Team Administration" rows list these as lead/admin
- *     "Full Access", everyone else "Restricted".
+ *   canManageProjectLifecycle: admin | lead only. It disconnects a project
+ *     entirely — §3's "Team Administration" row lists it as lead/admin "Full
+ *     Access", everyone else "Restricted". canManageEnvVars and
+ *     canManageHosting are the Developer's (member) and admin's: the
+ *     deployment credentials and provider secrets a project runs with.
  *   visibleBranchesFor: role-filtered branch LISTING (§4). A listing filter
  *     only, not enforcement: other endpoints that accept an arbitrary ref
  *     are deliberately unchanged.
  */
-
-const PROJECT_MANAGEMENT_ROLES: readonly PlatformAppRole[] = ['admin', 'lead'];
-
-/** The production branch is never reached through the workspace PR endpoints. */
-function isProductionBranch(base: string): boolean {
-  return base === QA_PROMOTION_TARGET_BRANCH;
-}
-
-/** Pipeline rungs (dev, uat, main); every other branch is a feature branch. */
-function isPipelineBranch(name: string): boolean {
-  return (PIPELINE_BRANCHES as readonly string[]).includes(name);
-}
-
-/**
- * Whether `role` may route a workspace pull request `head` -> `base` (open or
- * merge). Allow-lists only:
- *
- *   admin, lead: any head, any base except the production branch.
- *   member:      a non-pipeline head into the working branch (feature -> dev),
- *                or the working branch into the QA branch (dev -> uat).
- *                Nothing else: no feature -> uat, nothing out of uat, nothing
- *                into main.
- *   qa, other:   nothing.
- */
-export function isAllowedPullRequestRoute(
-  role: PlatformAppRole,
-  head: string,
-  base: string,
-): boolean {
-  if (isProductionBranch(base)) return false;
-  switch (role) {
-    case 'admin':
-    case 'lead':
-      return true;
-    case 'member':
-      return (
-        (base === WORKING_BRANCH && !isPipelineBranch(head)) ||
-        (head === WORKING_BRANCH && base === QA_BRANCH)
-      );
-    default:
-      return false;
-  }
-}
 
 /**
  * Whether `role` may merge a workspace pull request `head` -> `base`, through
@@ -150,68 +134,6 @@ export function canCreateWorkspaceBranch(
   return role != null && BROWSER_TEST_ROLES.includes(role);
 }
 
-const HOSTING_CONFIG_ROLES: readonly PlatformAppRole[] = ['admin', 'member'];
-
-/** Whether `role` may list, provision, validate, or delete a project's environment variables. */
-export function canManageEnvVars(
-  role: PlatformAppRole | null | undefined,
-): boolean {
-  return role != null && HOSTING_CONFIG_ROLES.includes(role);
-}
-
-/**
- * Whether `role` may add, change, verify or remove a project's hosting:
- * deployment targets and custom domains.
- */
-export function canManageHosting(
-  role: PlatformAppRole | null | undefined,
-): boolean {
-  return role != null && HOSTING_CONFIG_ROLES.includes(role);
-}
-
-/**
- * Whether `role` may reinstall a deployment target's CI secrets, or
- * disconnect a project (any variant, including the non-destructive one).
- */
-export function canManageProjectLifecycle(role: PlatformAppRole): boolean {
-  return PROJECT_MANAGEMENT_ROLES.includes(role);
-}
-
-const PROJECT_CREATOR_ROLES: readonly PlatformAppRole[] = ['admin', 'lead'];
-const REPOSITORY_CREATOR_ROLES: readonly PlatformAppRole[] = [
-  'admin',
-  'member',
-];
-
-/**
- * Whether `role` may create a Project (an empty hierarchy delivery project):
- * Product owners ('lead') and admins. Developers and QA never do.
- */
-export function canCreateProjectFolder(role: PlatformAppRole): boolean {
-  return PROJECT_CREATOR_ROLES.includes(role);
-}
-
-/**
- * Whether `role` may create or onboard a repository (create wizard, existing
- * repo setup, hierarchy create, raw GitHub repo create): Developers ('member')
- * and admins. Product owners ('lead') and QA never do - leads make the Project,
- * developers fill it. Existing repositories are untouched by this rule.
- */
-export function canCreateRepository(role: PlatformAppRole): boolean {
-  return REPOSITORY_CREATOR_ROLES.includes(role);
-}
-
-/**
- * Whether a repository create by `role` must name an existing Project. Only
- * admins may omit it (the legacy auto-created Project); a Developer always
- * files the repository into a Project a Product owner already made.
- */
-export function repositoryCreateRequiresProject(
-  role: PlatformAppRole,
-): boolean {
-  return canCreateRepository(role) && role !== 'admin';
-}
-
 const REPOSITORY_FEATURE_GATED_ROLES: readonly PlatformAppRole[] = ['member'];
 
 /**
@@ -225,11 +147,6 @@ export function repositoryCreateRequiresFeature(
   role: PlatformAppRole,
 ): boolean {
   return REPOSITORY_FEATURE_GATED_ROLES.includes(role);
-}
-
-/** Whether `role` may create or edit a Project's QA checklists (requirements). */
-export function canManageRequirements(role: PlatformAppRole): boolean {
-  return PROJECT_CREATOR_ROLES.includes(role);
 }
 
 const REPOSITORY_ASSIGNEE_ROLES: readonly PlatformAppRole[] = ['member'];

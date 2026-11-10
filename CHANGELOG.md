@@ -97,4 +97,5 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Repository:** The API and web app live in one Turborepo monorepo with one documentation bundle in `docs/`.
 - **Capabilities:** One authoring source, a catalog package with provenance, a capability ledger, and checks that keep packs and docs in step.
 - **CI:** The API's database integration specs run against a disposable Postgres on every API change.
+- **Rules:** Who may create a Project or repository, manage hosting, or open a pull request is one shared package, so the API gate and the web button cannot disagree.
 - **Deploy:** A green CI run on `main` deploys the enterprise instance and its settings, kept in the `enterprise-gce` GitHub environment, to its Compute Engine VM; migration changes stop for review.

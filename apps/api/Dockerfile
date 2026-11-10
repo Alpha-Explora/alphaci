@@ -89,6 +89,10 @@ RUN apk upgrade --no-cache zlib \
   && addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nestjs
 
+# The persona rules are a workspace package the compiled application requires at
+# runtime: npm ci links node_modules/@alphaci/persona-rules to this folder.
+COPY --from=pruner /repo/out/full/packages/persona-rules ./packages/persona-rules
+
 WORKDIR /app/apps/api
 
 # Copy compiled application
