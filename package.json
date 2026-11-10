@@ -25,6 +25,7 @@
     "check:versions": "node scripts/check-versions.mjs",
     "check:dependabot": "node scripts/check-dependabot-groups.mjs",
     "check:unused": "knip --include dependencies,unlisted,binaries,unresolved,files",
+    "check:audit"": "npm audit --omit=dev --audit-level=moderate && npm audit --audit-level=high",
     "test:documentation": "node --test scripts/check-okf-bundle.test.cjs"
   },
   "devDependencies": {

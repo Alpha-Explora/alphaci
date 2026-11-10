@@ -85,6 +85,14 @@ reason. Each context's and feature's `index.ts` is an entry, since it is the
 public boundary other code imports through. Unused exports and types are not
 checked (`npx knip` lists them).
 
+`npm run check:audit` runs `npm audit` against the lockfile with two bars: no
+moderate or worse vulnerability in what ships (`--omit=dev`), and no high or
+critical one in the toolchain. CI runs it as the `Dependency vulnerabilities`
+job on every event and the nightly run. The moderate findings in dev-only
+tooling do not fail it. A newly published advisory can fail the job with no
+change in the pull request; the Dependabot update, or an `overrides` entry in
+the root `package.json`, clears it.
+
 ### Lint and typecheck toolchain
 
 - **Two TypeScripts.** `typescript` is 6.x: ts-jest, typescript-eslint, Nest's
@@ -147,6 +155,9 @@ seconds. Skip once with `git push --no-verify`.
   with `.github/scripts/plan-affected.sh`. Changes to `deploy/`, workflows or
   root workspace files run everything. It also runs `npm run check:versions`
   and `npm run check:dependabot`.
+- **`Dependency vulnerabilities`** runs `npm run check:audit` on the lockfile,
+  with no install. It is a job of its own so a registry outage or a new
+  advisory fails and reruns this check alone.
 - **`API …` and `Web …` jobs** run one slice of an app's checks each, in
   parallel: lint, typecheck, tests, architecture and documentation checks,
   the API end-to-end suite, and one job per web profile build. A job whose app

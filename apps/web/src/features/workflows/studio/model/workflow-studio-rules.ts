@@ -198,11 +198,12 @@ function studioErrorMessage(details: unknown): string | undefined {
     details === null ||
     !('message' in details)
   )
-    return;
+    return undefined;
   const message = details.message;
   if (Array.isArray(message)) return message.map(cleanUserMessage).join(', ');
   if (typeof message === 'string' && message.trim())
     return cleanUserMessage(message);
+  return undefined;
 }
 
 export function cleanUserMessage(value: unknown): string {
