@@ -1,24 +1,53 @@
 'use client';
 
+import type { AppRole } from '@/shared/api/contracts';
+import type { QaScope } from '../../model/qa-scope';
 import { useQaPromotionViewModel } from '../view-models/use-qa-promotion-view-model';
+import { usePoDeliveryViewModel } from '../view-models/use-po-delivery-view-model';
 import { PromotionCard } from './promotion-card';
+import { PromotionBarFoot, StudioMergeAction } from './promotion-bar';
+import { MergeAllDialog, MergeAllOutcome } from './po-delivery';
 
-/**
- * The "Ready for production" card with no actions: no Merge button and no
- * link into QA Studio. The project Overview shows it to Developers, who can
- * see whether uat is approved for main but neither merge it nor open the
- * Studio. The role is pinned to `member` so the card can never offer a merge,
- * whatever the caller's session says; the server gates the merge regardless.
- */
+/** Developer release controls reuse the studios' server-checked promotion flow. */
 export function ProductionReadinessCard({
   projectId,
   enabled,
-}: Readonly<{ projectId: string; enabled: boolean }>) {
-  const vm = useQaPromotionViewModel({
+  appRole,
+  qaScope,
+}: Readonly<{
+  projectId: string;
+  enabled: boolean;
+  appRole?: AppRole | null;
+  qaScope?: QaScope;
+}>) {
+  const promotion = useQaPromotionViewModel({
     projectId,
     enabled,
-    appRole: 'member',
+    appRole,
     watch: null,
   });
-  return <PromotionCard vm={vm} />;
+  const deliveryProjectId =
+    qaScope?.kind === 'project'
+      ? qaScope.deliveryProjectId
+      : (promotion.data?.deliveryProject?.id ?? null);
+  const projectName = promotion.data?.deliveryProject?.name ?? 'Project';
+  const delivery = usePoDeliveryViewModel({
+    deliveryProjectId,
+    enabled: enabled && Boolean(deliveryProjectId),
+    projectId,
+    appRole,
+    promotion,
+  });
+  return (
+    <>
+      <PromotionCard
+        vm={promotion}
+        action={<StudioMergeAction promotion={promotion} delivery={delivery} />}
+      />
+      <PromotionBarFoot vm={promotion} projectName={projectName}>
+        <MergeAllOutcome vm={delivery} />
+      </PromotionBarFoot>
+      <MergeAllDialog vm={delivery} projectName={projectName} />
+    </>
+  );
 }

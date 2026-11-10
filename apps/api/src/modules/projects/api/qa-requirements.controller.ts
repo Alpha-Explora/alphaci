@@ -20,11 +20,13 @@ import {
 import { SessionAuthGuard } from '#kernel/auth/session-auth.guard';
 import { CreateRequirementDto } from '../application/qa-checklists/dto/create-requirement.dto';
 import { CreateRequirementsBatchDto } from '../application/qa-checklists/dto/create-requirements-batch.dto';
+import { ImportTestCasesDto } from '../application/qa-checklists/dto/import-test-cases.dto';
 import { CreateTestCaseDto } from '../application/qa-checklists/dto/create-test-case.dto';
 import { CreateTestCategoryDto } from '../application/qa-checklists/dto/create-test-category.dto';
 import { ReorderRequirementItemsDto } from '../application/qa-checklists/dto/reorder-requirement-items.dto';
 import { RequirementItemDto } from '../application/qa-checklists/dto/requirement-item.dto';
 import { SetProgressDto } from '../application/qa-checklists/dto/set-progress.dto';
+import { SetItemScheduleDto } from '../application/qa-checklists/dto/set-item-schedule.dto';
 import { UpdateRequirementItemDto } from '../application/qa-checklists/dto/update-requirement-item.dto';
 import { UpdateRequirementDto } from '../application/qa-checklists/dto/update-requirement.dto';
 import { UpdateTestCaseDto } from '../application/qa-checklists/dto/update-test-case.dto';
@@ -97,6 +99,23 @@ export class RequirementsController {
     private readonly requirementsService: QaRequirementsService,
     private readonly testCasesService: QaTestCasesService,
   ) {}
+
+  @Post(':id/items/:itemId/test-cases/import')
+  importCases(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Param('itemId') itemId: string,
+    @Body() body: ImportTestCasesDto,
+  ) {
+    const actor = actorContext(req);
+    return this.testCasesService.importCases(
+      id,
+      itemId,
+      actor.userId,
+      actor.userLogin,
+      body,
+    );
+  }
 
   @Get(':id')
   getById(@Req() req: Request, @Param('id') id: string) {
@@ -174,6 +193,22 @@ export class RequirementsController {
       id,
       itemId,
       { userId: actor.userId, userLogin: actor.userLogin },
+      body,
+    );
+  }
+
+  /** Due date and priority of a story: Product owners and admins. */
+  @Patch(':id/items/:itemId/schedule')
+  setItemSchedule(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Param('itemId') itemId: string,
+    @Body() body: SetItemScheduleDto,
+  ) {
+    return this.requirementsService.setItemSchedule(
+      id,
+      itemId,
+      requireUserId(req),
       body,
     );
   }

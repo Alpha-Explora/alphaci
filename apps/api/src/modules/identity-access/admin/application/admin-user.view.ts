@@ -10,6 +10,10 @@ import type {
   AppRole,
   AppRoleSource,
 } from '../infrastructure/platform-admins.repository';
+import {
+  parseSpecialAccess,
+  type SpecialAccess,
+} from '#kernel/rules/special-access.rules';
 
 /**
  * View models returned to admins. These types DELIBERATELY have no field for any
@@ -36,6 +40,8 @@ export interface AdminUserListItem {
    * org teams and can change on their next login.
    */
   appRoleSource: AppRoleSource;
+  /** Admin-granted extras on top of appRole (qa_release, deployment_override). */
+  specialAccess: SpecialAccess[];
   projectCount: number;
   errorCount: number;
 }
@@ -67,6 +73,7 @@ export function toAdminUserListItem(row: AdminUserListRow): AdminUserListItem {
     onboardingCompleted: row.onboarding_completed_at != null,
     appRole: row.app_role,
     appRoleSource: row.app_role_source,
+    specialAccess: parseSpecialAccess(row.special_access ?? []),
     projectCount: row.project_count,
     errorCount: row.error_count,
   });

@@ -3,3 +3,9 @@
  * signed them off. Read-only. The project page mounts the panel as its
  * History tab. */
 export { IterationHistoryPanel } from './views/iteration-history-panel';
+
+export {
+  QaHistoryScope,
+  QaItemHistory,
+  QaProgressHistory,
+} from './views/qa-progress-history';

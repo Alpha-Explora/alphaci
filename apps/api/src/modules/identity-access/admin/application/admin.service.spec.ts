@@ -16,10 +16,12 @@ function build(options: {
   /** Platform role per user id — absent means an ordinary user. */
   platformRoles?: Record<string, PlatformRole>;
   targetAppRole?: AppRole;
+  targetSpecialAccess?: string[];
 }) {
   const platformRoles = options.platformRoles ?? {};
   const setAppRole = jest.fn(() => Promise.resolve());
   const setAppRoleSource = jest.fn(() => Promise.resolve());
+  const setSpecialAccess = jest.fn(() => Promise.resolve());
 
   const platformAdminsRepository = {
     findRole: jest.fn((userId: string) =>
@@ -30,6 +32,10 @@ function build(options: {
     ),
     setAppRole,
     setAppRoleSource,
+    findSpecialAccess: jest.fn(() =>
+      Promise.resolve(options.targetSpecialAccess ?? []),
+    ),
+    setSpecialAccess,
   } as unknown as PlatformAdminsRepository;
 
   const adminRepository = {
@@ -45,10 +51,49 @@ function build(options: {
     {} as unknown as FeedbackService,
   );
 
-  return { service, setAppRole, setAppRoleSource };
+  return { service, setAppRole, setAppRoleSource, setSpecialAccess };
 }
 
 describe('AdminService role changes', () => {
+  describe('setSpecialAccess', () => {
+    it('lets any admin grant qa_release', async () => {
+      const { service, setSpecialAccess } = build({
+        platformRoles: { 'plain-admin': 'admin' },
+      });
+      await expect(
+        service.setSpecialAccess('plain-admin', TARGET, ['qa_release']),
+      ).resolves.toEqual({ specialAccess: ['qa_release'] });
+      expect(setSpecialAccess).toHaveBeenCalledWith(TARGET, ['qa_release']);
+    });
+
+    it('reserves granting or removing deployment_override for the super-admin', async () => {
+      const plain = build({ platformRoles: { 'plain-admin': 'admin' } });
+      await expect(
+        plain.service.setSpecialAccess('plain-admin', TARGET, [
+          'deployment_override',
+        ]),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      const removing = build({
+        platformRoles: { 'plain-admin': 'admin' },
+        targetSpecialAccess: ['deployment_override'],
+      });
+      await expect(
+        removing.service.setSpecialAccess('plain-admin', TARGET, []),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(removing.setSpecialAccess).not.toHaveBeenCalled();
+
+      const sup = build({ platformRoles: { [SUPER]: 'super_admin' } });
+      await sup.service.setSpecialAccess(SUPER, TARGET, [
+        'deployment_override',
+        'qa_release',
+      ]);
+      expect(sup.setSpecialAccess).toHaveBeenCalledWith(TARGET, [
+        'qa_release',
+        'deployment_override',
+      ]);
+    });
+  });
+
   describe('setAppRole', () => {
     it('lets a super-admin move another super-admin off Admin', async () => {
       // The old rule froze a super-admin at 'admin'. It bought no safety:

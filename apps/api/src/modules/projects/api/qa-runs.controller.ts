@@ -24,6 +24,7 @@ import {
   type QaRunActorContext,
 } from '../application/qa-runs/qa-runs.service';
 import { RequestRetestDto } from '../application/qa-runs/dto/request-retest.dto';
+import { QaPromotionMergeDto } from '../application/qa-runs/dto/qa-promotion-merge.dto';
 import { QaPromotionService } from '../application/qa-runs/qa-promotion.service';
 import { QaReportService } from '../application/qa-runs/qa-report.service';
 import { buildQaReportFilename } from '../application/qa-runs/qa-report.filename';
@@ -302,8 +303,16 @@ export class ProjectQaPromotionController {
   @Post('merge')
   @RequiresCapability('projects.release-governance')
   @HttpCode(200)
-  merge(@Req() req: Request, @Param('projectId') projectId: string) {
-    return this.qaPromotionService.merge(projectId, actorContext(req));
+  merge(
+    @Req() req: Request,
+    @Param('projectId') projectId: string,
+    @Body() body: QaPromotionMergeDto = {},
+  ) {
+    return this.qaPromotionService.merge(
+      projectId,
+      actorContext(req),
+      body?.overrideReason,
+    );
   }
 }
 
@@ -325,10 +334,12 @@ export class DeliveryProjectPromotionController {
   mergeAll(
     @Req() req: Request,
     @Param('deliveryProjectId') deliveryProjectId: string,
+    @Body() body: QaPromotionMergeDto = {},
   ) {
     return this.qaPromotionService.mergeAll(
       deliveryProjectId,
       actorContext(req),
+      body?.overrideReason,
     );
   }
 }

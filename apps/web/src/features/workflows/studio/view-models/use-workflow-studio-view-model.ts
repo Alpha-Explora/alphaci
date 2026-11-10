@@ -47,11 +47,11 @@ import {
   PROJECT_NAME_TAKEN_MESSAGE,
   isProjectNameTakenError,
   projectNameForRequest,
-  validateProjectName,
 } from '../model/project-name-rules';
 import {
   buildGenerateWorkflowPayload,
   buildSetupExistingRepoPayload,
+  existingRepoFiling,
 } from '../model/studio-command-payloads';
 
 /**
@@ -90,7 +90,10 @@ export function useWorkflowStudioViewModel(options: {
     useState<DiscoverExistingRepoResponse | null>(null);
   const [existingRepoResult, setExistingRepoResult] =
     useState<SetupProjectResponse | null>(null);
-  const [setupMode, setSetupMode] = useState<'new' | 'existing'>('new');
+  // ?mode=existing (a Project's "Attach an existing repository") opens on that mode.
+  const [setupMode, setSetupMode] = useState<'new' | 'existing'>(() =>
+    searchParams.get('mode') === 'existing' ? 'existing' : 'new',
+  );
   const [existingRepoFullName, setExistingRepoFullName] = useState('');
   /**
    * Empty means "ask the repository". Discovery resolves the repo's own
@@ -393,27 +396,50 @@ export function useWorkflowStudioViewModel(options: {
       return;
     }
 
-    const projectName = validateProjectName(createForm.projectName);
-    if (!projectName.ok) {
-      setStatusMessage(projectName.message);
+    // Same filing rules as Create: a Developer's existing repository goes
+    // into a Project (?project= link or the wizard's pick), which keeps its
+    // own name; without one a new Project is named here.
+    const workspaceId = createWorkspaceId ?? undefined;
+    const deliveryProjectId = createTarget.deliveryProjectIdFor(workspaceId);
+    const filing = existingRepoFiling({
+      deliveryProjectId,
+      projectName: createForm.projectName,
+      blocker: createRepositoryBlocker({
+        renderVariablesMissing: false,
+        requiresProject,
+        deliveryProjectId,
+        featuresBlocker: projectFeaturesBlocker(
+          deliveryProjectId,
+          teamProjects.options,
+          appRole,
+        ),
+      }),
+    });
+    if (!filing.ok) {
+      setStatusMessage(filing.message);
       return;
     }
+    const projectName = filing.projectName;
 
-    const payload = buildSetupExistingRepoPayload({
-      projectName: projectName.name,
-      repoFullName,
-      selectedProjectTypeId: projectCatalog.selectedProjectTypeId,
-      selectedWorkflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
-      recipesForSelectedProject: projectCatalog.recipesForSelectedProject,
-      serviceName: createForm.serviceName,
-      discoveredServiceName: existingRepoDiscovery?.serviceName,
-      servicePath: createForm.servicePath,
-      discoveredServicePath: existingRepoDiscovery?.servicePath,
-      nodeVersion: createForm.nodeVersion,
-      coverageThreshold: createForm.coverageThreshold,
-      outputFileName: createForm.outputFileName,
-      deploymentProvisioning: deploymentProvisioning.payload,
-    });
+    const payload = scopeCreatePayload(
+      buildSetupExistingRepoPayload({
+        projectName,
+        repoFullName,
+        selectedProjectTypeId: projectCatalog.selectedProjectTypeId,
+        selectedWorkflowRecipeId: projectCatalog.selectedWorkflowRecipeId,
+        recipesForSelectedProject: projectCatalog.recipesForSelectedProject,
+        serviceName: createForm.serviceName,
+        discoveredServiceName: existingRepoDiscovery?.serviceName,
+        servicePath: createForm.servicePath,
+        discoveredServicePath: existingRepoDiscovery?.servicePath,
+        nodeVersion: createForm.nodeVersion,
+        coverageThreshold: createForm.coverageThreshold,
+        outputFileName: createForm.outputFileName,
+        deploymentProvisioning: deploymentProvisioning.payload,
+      }),
+      workspaceId,
+      deliveryProjectId,
+    );
 
     setIsSettingUpExistingRepo(true);
     createForm.setProjectNameError(null);

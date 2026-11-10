@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { Inject } from '@nestjs/common';
+import { forbidden, notFound } from '#kernel/http/coded-errors';
 import {
   AUDIT_SECURITY_PORT,
   type AuditSecurityPort,
@@ -16,6 +17,10 @@ import {
   type FeedbackRecord,
   type FeedbackStatus,
 } from '#kernel/ports/feedback.port';
+import {
+  parseSpecialAccess,
+  type SpecialAccess,
+} from '#kernel/rules/special-access.rules';
 import {
   AdminRepository,
   type ListUsersOptions,
@@ -241,6 +246,44 @@ export class AdminService {
       role,
       pinned: true,
     });
+  }
+
+  /**
+   * Replaces a user's special access. Granting or removing
+   * deployment_override (merging past the promotion gate) is reserved for the
+   * super-admin, like Admin-tier roles; qa_release is open to any admin.
+   */
+  async setSpecialAccess(
+    actorId: string,
+    targetUserId: string,
+    access: SpecialAccess[],
+  ): Promise<{ specialAccess: SpecialAccess[] }> {
+    const target = await this.adminRepository.findUserById(targetUserId);
+    if (!target) {
+      throw notFound('USER_NOT_FOUND', 'User not found');
+    }
+    const next = parseSpecialAccess(access);
+    const [actorPlatformRole, current] = await Promise.all([
+      this.platformAdminsRepository.findRole(actorId),
+      this.platformAdminsRepository.findSpecialAccess(targetUserId),
+    ]);
+    const touchesOverride =
+      next.includes('deployment_override') !==
+      current.includes('deployment_override');
+    if (touchesOverride && actorPlatformRole !== 'super_admin') {
+      throw forbidden(
+        'DEPLOYMENT_OVERRIDE_GRANT_FORBIDDEN',
+        'Only the super-admin can grant or remove deployment override.',
+      );
+    }
+    await this.platformAdminsRepository.setSpecialAccess(targetUserId, next);
+    await this.audit(
+      actorId,
+      'admin.special_access.set',
+      'Admin set special access',
+      { targetUserId, previous: current, specialAccess: next },
+    );
+    return { specialAccess: next };
   }
 
   /**

@@ -399,6 +399,91 @@ button.ws-link {
   font-style: italic;
 }
 
+/* ── Unified / side-by-side ───────────────────────────────────────────── */
+
+.ws-diffmode {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.ws-diffmode__option {
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.ws-diffmode__option[aria-pressed='true'] {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.ws-diffmode__option:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.ws-difftable--split {
+  table-layout: fixed;
+}
+
+.ws-difftable--split .ws-diffline__num {
+  width: 3.25rem;
+}
+
+.ws-difftable--split .ws-diffline__code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-diffcell--add {
+  background: var(--accent-emerald-light);
+}
+
+.ws-diffcell--del {
+  background: var(--accent-rose-light);
+}
+
+.ws-diffline__empty {
+  background: var(--bg-elevated);
+}
+
+/* ── Conflicts ────────────────────────────────────────────────────────── */
+
+.ws-conflicts {
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border-amber);
+  border-radius: 0.6rem;
+  background: var(--accent-amber-light);
+  font-size: 0.8rem;
+}
+
+.ws-conflicts__title {
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+}
+
+.ws-conflicts ul {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.1rem;
+}
+
+.ws-conflicts code {
+  font-family: ui-monospace, sfmono-regular, menlo, monospace;
+}
+
+.ws-conflicts ol {
+  margin: 0.25rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--text-secondary);
+}
+
 /* ── Merge ────────────────────────────────────────────────────────────── */
 
 .ws-mergeaction {

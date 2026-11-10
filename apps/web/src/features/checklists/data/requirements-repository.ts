@@ -1,5 +1,6 @@
 import { request } from '@/shared/api/request';
 
+import type { SetScheduleInput } from '../model/backlog-schedule-rules';
 import {
   normalizeProgressResult,
   normalizeProjectRequirements,
@@ -165,6 +166,18 @@ export const requirementsRepository = {
       send('PATCH', input),
     );
     return normalizeProgressResult(raw, previous);
+  },
+
+  /** A story's due date and priority; only the keys sent change. */
+  async setSchedule(
+    item: Pick<RequirementItem, 'id' | 'requirementId'>,
+    input: SetScheduleInput,
+  ): Promise<RequirementItem> {
+    const raw = await request<unknown>(
+      `/requirements/${enc(item.requirementId)}/items/${enc(item.id)}/schedule`,
+      send('PATCH', input),
+    );
+    return itemOrThrow(raw, item.requirementId);
   },
 
   /** How many live requirements each of the team's Projects has (the team overview, reduced). */

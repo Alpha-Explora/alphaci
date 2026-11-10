@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
+import {
+  parseSpecialAccess,
+  SPECIAL_ACCESS_LABELS,
+  type SpecialAccess,
+} from '@/shared/api/special-access';
+
 import { adminRepository } from '../../data/admin-repository';
 import { describeRoleError } from '../../model/admin-rules';
 import { useLatestRequestSequence } from '@shared/async/latest-request-sequence';
@@ -23,6 +29,12 @@ export interface AdminUserDetailViewModel {
   roleMessage: string | null;
   setRole: (role: AppRole) => Promise<void>;
   resetRoleToGithub: () => Promise<void>;
+  /** The user's current grants (empty on an older backend). */
+  specialAccess: SpecialAccess[];
+  /** True while a special-access write is in flight. */
+  accessBusy: boolean;
+  accessMessage: string | null;
+  toggleSpecialAccess: (grant: SpecialAccess, on: boolean) => Promise<void>;
 }
 
 /** ViewModel for one user in the admin console. */
@@ -34,6 +46,8 @@ export function useAdminUserDetailViewModel(
   const [error, setError] = useState<string | null>(null);
   const [roleBusy, setRoleBusy] = useState(false);
   const [roleMessage, setRoleMessage] = useState<string | null>(null);
+  const [accessBusy, setAccessBusy] = useState(false);
+  const [accessMessage, setAccessMessage] = useState<string | null>(null);
 
   const [nonce, setNonce] = useState(0);
   const requests = useLatestRequestSequence();
@@ -98,6 +112,29 @@ export function useAdminUserDetailViewModel(
     }
   }
 
+  const specialAccess = parseSpecialAccess(detail?.specialAccess);
+
+  async function toggleSpecialAccess(grant: SpecialAccess, on: boolean) {
+    const next = on
+      ? parseSpecialAccess([...specialAccess, grant])
+      : specialAccess.filter((value) => value !== grant);
+    setAccessBusy(true);
+    setAccessMessage(null);
+    try {
+      await adminRepository.setUserSpecialAccess(id, next);
+      reload();
+      setAccessMessage(
+        `${SPECIAL_ACCESS_LABELS[grant].title} ${on ? 'granted' : 'removed'}.`,
+      );
+    } catch (cause) {
+      setAccessMessage(
+        `Failed to update special access: ${describeRoleError(cause)}`,
+      );
+    } finally {
+      setAccessBusy(false);
+    }
+  }
+
   return {
     detail,
     status,
@@ -106,5 +143,9 @@ export function useAdminUserDetailViewModel(
     roleMessage,
     setRole,
     resetRoleToGithub,
+    specialAccess,
+    accessBusy,
+    accessMessage,
+    toggleSpecialAccess,
   };
 }

@@ -1,3 +1,5 @@
+import type { SpecialAccess } from '@/shared/api/special-access';
+
 export type SubscriptionPlan = 'free' | 'pro';
 export type SubscriptionStatus = 'inactive' | 'active' | 'canceled';
 export type SubscriptionProvider = 'mock' | 'supabase' | 'manual' | 'paymongo';
@@ -36,4 +38,6 @@ export interface AuthSession {
   platformRole?: PlatformRole | null;
   appRole?: AppRole;
   appRoleSource?: AppRoleSource;
+  /** Admin-granted extras on top of appRole; empty when none or on an older backend. */
+  specialAccess?: SpecialAccess[];
 }

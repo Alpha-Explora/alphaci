@@ -278,8 +278,8 @@ A later Rejected sign-off on newer heads blocks even if an older run was approve
 ### 3.2 Routes
 
 - `GET /projects/:projectId/qa/promotion` returns `qaBranch`, `targetBranch`, `headSha`, `scope` (`project` or `unfiled`), `deliveryProject`, `run` (`{ id, verdict, signedAt, stale }`), `repositories: HeadStatus[]`, `requirementsChanged`, `eligible`, `reasons`, `pullRequest`, `repositoryDelivered`, `iterationDelivered`, `iteration`, `reasonCodes`, `canMerge`, and the deprecated `checklists` (one entry per requirement, each carrying the Project-level result).
-- `POST /projects/:projectId/qa/promotion/merge` (lead, admin) recomputes the gate server-side. It answers 409 `QA_PROJECT_REQUIRED` for an unfiled repository, 409 `ITERATION_DELIVERED`, 409 `QA_PROMOTION_BLOCKED` with `reasons`, 409 `QA_UAT_MOVED` when the promotion pull request's head moved, and 409 `GITHUB_REAUTH` without a usable credential. GitHub writes go out as the ALPHACI GitHub App; the person's token is only the fallback. The reply says `how`: `merged`, or `already_in_main` when `main` already holds the signed-off head.
-- `POST /delivery-projects/:dpId/promotion/merge-all` (lead, admin) merges every covered repository in a stable order, keeps going after a failure, and reports a result per repository. 409 `PROJECT_HAS_NO_REPOSITORIES` without a linked repository.
+- `POST /projects/:projectId/qa/promotion/merge` (lead, qa, member, admin) recomputes the gate server-side. It answers 409 `QA_PROJECT_REQUIRED` for an unfiled repository, 409 `ITERATION_DELIVERED`, 409 `QA_PROMOTION_BLOCKED` with `reasons`, 409 `QA_UAT_MOVED` when the promotion pull request's head moved, and 409 `GITHUB_REAUTH` without a usable credential. GitHub writes go out as the ALPHACI GitHub App; the person's token is only the fallback. The reply says `how`: `merged`, or `already_in_main` when `main` already holds the signed-off head.
+- `POST /delivery-projects/:dpId/promotion/merge-all` (lead, qa, member, admin) merges every covered repository in a stable order, keeps going after a failure, and reports a result per repository. 409 `PROJECT_HAS_NO_REPOSITORIES` without a linked repository.
 
 Each delivered repository is recorded in the Iteration's `delivery_json`. When every covered repository is in, the Iteration becomes `delivered`, records `qa.iteration.delivered` and notifies the workspace leads, Developers and QA. A merge records `qa.promotion.merged` with `deliveryProjectId` and `runId`.
 
@@ -302,7 +302,8 @@ All checks are allow-lists, never "not member". Functions in `domain/qa-run-acce
 | `canRecordTestCaseResults` | qa, admin | test case results in a run |
 | `canAcceptRunItems` | lead, admin | Product owner acceptance |
 | `canCreateRun`, `canSignOff`, `canDispatchAutomation`, `canAddEvidence` | qa, lead, admin | run lifecycle and evidence |
-| `canReopenRun`, `canMergeQaPromotion`, `canRemoveAnyAttachment` | lead, admin | reopen, merge to main, deleting another person's attachment |
+| `canReopenRun`, `canRemoveAnyAttachment` | lead, admin | reopen, deleting another person's attachment |
+| `canMergeQaPromotion` | lead, qa, member, admin | execute promotion after QA and PO approval gates pass |
 | `canRequestRetest` | member, lead, admin | the legacy `request-retest` alias |
 
 Starting an Iteration uses `QaAccessService.canManage` (lead, admin). `personaAllowsRole` and `targetPersona` gate nothing on Project runs; the column remains as data on legacy rows. Platform admins resolve to `admin` and keep every action.
@@ -418,3 +419,7 @@ After QA signs a Project run off as `APPROVED` or `CONDITIONAL`, a Product owner
 - Any QA status write resets the item's acceptance to `pending`.
 
 A run item carries `poAcceptance: { status: 'pending'|'passed', acceptedBy, acceptedAt }` and the run carries `permissions.canAccept`. Merge to main waits until every item of the latest signed-off run is accepted (section 3.1).
+
+## Grouped imports and progress history
+
+The [QA import/history runbook](/runbooks/runbook-qa-import-and-history.md) specifies the structured-file preview, role-scoped atomic imports, progress journal and paged event tracker. Definition changes reset affected open-run review and mark the requirement changed for promotion; signed-off copies stay frozen. QA and Developers may execute a release after the same approval gates pass. These additions do not provide external Playwright codebase execution.

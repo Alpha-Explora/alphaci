@@ -6,6 +6,15 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 
 ### Added
 
+- **QA:** Iterations carry a release version (v1.0.0), and starting the next asks for a patch, minor or major revision. Apply `20261028020000_iteration_versions.sql` then `20261029000000_iteration_version_patch.sql`.
+- **QA:** Product owners and QA import Feature checklists and story test cases from Excel, CSV, TSV or Playwright files, with column mapping and a preview first.
+- **QA:** Paged progress and QA history on checklist items, QA items and Release history; the Dev and QA audit trail downloads as Excel. Apply `20261027000000_qa_progress_history.sql`.
+- **QA:** A Semantic test coverage card lists which acceptance outcomes the test cases cover, by shared words. Read-only.
+- **Admin:** Special access: QA release (a Developer acts as QA) and deployment override (granted by the super-admin), which merges past a blocked gate with an audited reason. Apply `20261028000000_app_user_special_access.sql`.
+- **Projects:** Stories carry a due date and priority, and every Project has Team to-dos with an assignee. Apply `20261028030000_backlog_schedule.sql` and `20261028040000_project_todos.sql`.
+- **Pull requests:** Diffs switch between unified and side by side, and a conflicting pull request lists the files both sides changed.
+- **Inbox:** Notifications filter by kind: QA and defects, pull requests and merges, pipelines and deploys, team and to-dos.
+- **Projects:** Existing-repository setup detects .NET repositories and files the repository into the chosen Project.
 - **Composition:** Independent governance and managed-host controls preserve existing edition access; `alphaci-ctl composition` explains local capability availability and exclusions.
 - **Capabilities:** Contributors can preview new assignments without writes; a generated feature inventory links built behavior to existing capabilities, authorization code, and evidence.
 - **Self-hosted:** AlphaCI runs on one server as a Docker Compose appliance (Caddy, API, web, migrator, Postgres 16), managed with `alphaci-ctl init | admin-grant | doctor`.
@@ -42,6 +51,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 
 ### Changed
 
+- **QA:** QA and Developers may merge an approved release to main, behind the same current-head, Iteration and Product owner acceptance gates.
 - **Documentation:** Clarified editions, personas, internal access, and capability inventory gaps; added a contributor guide for assigning features.
 - **Roles:** `lead` is shown as Product owner; Developers and admins manage hosting and environment variables, Product owners no longer do.
 - **Roles:** Repository tabs follow the viewer's role.

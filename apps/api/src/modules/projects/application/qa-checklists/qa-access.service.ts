@@ -6,6 +6,10 @@ import {
 } from '../../infrastructure/projects.repository';
 import { canManageRequirements } from '#kernel/rules/persona-access.rules';
 import type { PlatformAppRole } from '#kernel/ports/platform-admin.port';
+import {
+  actingQaRole,
+  type SpecialAccess,
+} from '#kernel/rules/special-access.rules';
 
 /**
  * Authorization for the QA checklists slice, built entirely on top of
@@ -101,6 +105,25 @@ export class QaAccessService {
     return this.projectsRepository.findAppRole(userId);
   }
 
+  /** Admin-granted extras (qa_release, deployment_override). */
+  async findSpecialAccess(userId: string): Promise<SpecialAccess[]> {
+    return this.projectsRepository.findSpecialAccess(userId);
+  }
+
+  /**
+   * The persona for QA-track checks: a Developer holding qa_release acts as
+   * QA (see actingQaRole). Use it for starting runs, verifying, recording
+   * test results, signing off, dispatching automation and evidence; keep
+   * findAppRole for Developer-track and Product owner checks.
+   */
+  async findQaRole(userId: string): Promise<PlatformAppRole> {
+    const [role, special] = await Promise.all([
+      this.projectsRepository.findAppRole(userId),
+      this.projectsRepository.findSpecialAccess(userId),
+    ]);
+    return actingQaRole(role, special);
+  }
+
   /** The owning user of a provisioned project - a notification recipient. */
   async findProjectOwnerId(projectId: string): Promise<string | null> {
     return this.projectsRepository.findOwnerId(projectId);
@@ -123,5 +146,12 @@ export class QaAccessService {
   /** Active workspace members whose persona is 'qa'. */
   async listWorkspaceQaIds(workspaceId: string): Promise<string[]> {
     return this.projectsRepository.listWorkspaceQaIds(workspaceId);
+  }
+
+  /** Active workspace members with a team persona, by login: who a team to-do can be assigned to. */
+  async listWorkspaceMembers(
+    workspaceId: string,
+  ): Promise<Array<{ id: string; login: string | null }>> {
+    return this.projectsRepository.listWorkspaceMembers(workspaceId);
   }
 }

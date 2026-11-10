@@ -25,6 +25,7 @@ import { AdminService } from '../application/admin.service';
 import { GrantRoleDto } from './dto/grant-role.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { SetAppRoleDto } from './dto/set-app-role.dto';
+import { SetSpecialAccessDto } from './dto/set-special-access.dto';
 import { PlatformAdminGuard } from './guards/platform-admin.guard';
 import { SuperAdminGuard } from './guards/super-admin.guard';
 import { QueryString } from '#kernel/http/query-string.decorator';
@@ -110,6 +111,24 @@ export class AdminController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
     return this.adminService.resetAppRoleToGithub(this.actorId(req), id);
+  }
+
+  /**
+   * Special access on top of the persona (qa_release, deployment_override).
+   * Any platform admin may change qa_release; deployment_override is
+   * super-admin only, enforced in the service.
+   */
+  @Patch('users/:id/special-access')
+  setSpecialAccess(
+    @Req() req: Request,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: SetSpecialAccessDto,
+  ) {
+    return this.adminService.setSpecialAccess(
+      this.actorId(req),
+      id,
+      dto.access,
+    );
   }
 
   @Get('feedback')

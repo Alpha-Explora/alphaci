@@ -1,11 +1,11 @@
-import type { AuthMeResponse } from '@/shared/api/contracts';
 import {
+  type AuthSession,
   getAuthenticatedRedirectPath,
   isGuest,
   isInternalUser,
 } from '@/features/auth/session';
 
-const baseSession: AuthMeResponse = {
+const baseSession: AuthSession = {
   authenticated: true,
   user: {
     id: 'user-1',
@@ -20,7 +20,7 @@ const baseSession: AuthMeResponse = {
   },
 };
 
-function buildSession(overrides: Partial<AuthMeResponse> = {}): AuthMeResponse {
+function buildSession(overrides: Partial<AuthSession> = {}): AuthSession {
   return {
     ...baseSession,
     ...overrides,

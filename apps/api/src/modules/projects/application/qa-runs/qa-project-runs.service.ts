@@ -304,7 +304,7 @@ export class QaProjectRunsService {
       deliveryProjectId,
       actor.userId,
     );
-    const role = await this.access.findAppRole(actor.userId);
+    const role = await this.access.findQaRole(actor.userId);
     const iteration =
       await this.iterations.ensureActiveIteration(deliveryProjectId);
     const readings = await this.heads.readHeads(project.repositories, actor);
@@ -355,7 +355,7 @@ export class QaProjectRunsService {
       actor.userId,
     );
     const run = await this.requireRun(deliveryProjectId, runId);
-    const role = await this.access.findAppRole(actor.userId);
+    const role = await this.access.findQaRole(actor.userId);
     return this.assembleStored(
       project,
       run,
@@ -484,7 +484,7 @@ export class QaProjectRunsService {
       deliveryProjectId,
       actor.userId,
     );
-    const role = await this.access.findAppRole(actor.userId);
+    const role = await this.access.findQaRole(actor.userId);
     if (!canCreateRun(role)) {
       throw new ForbiddenException(
         'Only QA, a lead, or an admin may start a verification run.',
@@ -604,7 +604,7 @@ export class QaProjectRunsService {
     await this.iterations.assertRowWritable(run);
     this.requireRunOpen(run);
 
-    const role = await this.access.findAppRole(actor.userId);
+    const role = await this.access.findQaRole(actor.userId);
     if (!canSetVerification(role)) {
       throw verificationForbidden();
     }
@@ -714,7 +714,7 @@ export class QaProjectRunsService {
     await this.iterations.assertRowWritable(run);
     this.requireRunOpen(run);
 
-    const role = await this.access.findAppRole(actor.userId);
+    const role = await this.access.findQaRole(actor.userId);
     // The QA Team records test case results; a Product owner reads them.
     if (!canRecordTestCaseResults(role)) {
       throw testCaseResultForbidden();
@@ -764,7 +764,7 @@ export class QaProjectRunsService {
     await this.iterations.assertRowWritable(run);
     this.requireRunOpen(run);
 
-    const role = await this.access.findAppRole(actor.userId);
+    const role = await this.access.findQaRole(actor.userId);
     if (!canSignOff(role)) {
       throw new ForbiddenException(
         'Only QA, a lead, or an admin may sign off a run.',
@@ -880,7 +880,7 @@ export class QaProjectRunsService {
     // Reopen is blocked too: a delivered Iteration's code is already in main.
     await this.iterations.assertRowWritable(run);
 
-    const role = await this.access.findAppRole(actor.userId);
+    const role = await this.access.findQaRole(actor.userId);
     if (!canReopenRun(role)) {
       throw new ForbiddenException(
         'Only a lead or admin may reopen a signed-off run.',
@@ -936,7 +936,7 @@ export class QaProjectRunsService {
     const item = await this.requireItem(run.id, itemId);
     await this.iterations.assertRowWritable(run);
 
-    const role = await this.access.findAppRole(actor.userId);
+    const role = await this.access.findQaRole(actor.userId);
     if (!canAcceptRunItems(role)) {
       throw new ForbiddenException(
         'Only a Product owner or an admin may accept a signed-off run.',
@@ -1586,7 +1586,9 @@ export class QaProjectRunsService {
   ): Promise<void> {
     const [anchor, leadIds] = await Promise.all([
       this.projectContext.anchorProjectId(project),
-      this.access.listWorkspaceLeadIds(project.groupId),
+      signoff.verdict === 'REJECTED'
+        ? this.access.listWorkspaceLeadAndDeveloperIds(project.groupId)
+        : this.access.listWorkspaceLeadIds(project.groupId),
     ]);
     const ownerId = anchor
       ? await this.access.findProjectOwnerId(anchor)
@@ -1594,7 +1596,7 @@ export class QaProjectRunsService {
     await this.notifyMany(
       this.dedupeExcludingActor([run.created_by, ownerId, ...leadIds], actorId),
       anchor,
-      'qa.run.signed_off',
+      signoff.verdict === 'REJECTED' ? 'qa.run.rejected' : 'qa.run.signed_off',
       `QA run signed off (${signoff.verdict}) for ${project.name}`,
       signoff.summary
         ? this.truncate(signoff.summary, SIGNOFF_SUMMARY_TRUNCATE_LENGTH)

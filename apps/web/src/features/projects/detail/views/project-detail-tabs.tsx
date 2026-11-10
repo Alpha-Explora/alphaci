@@ -15,6 +15,7 @@ import { IterationStatus } from '@/features/checklists/iteration';
 import { projectStatusVariant } from '../../model/projects-rules';
 import type { ProvisionedProject } from '@/features/projects';
 import type { AppRole } from '@/shared/api/contracts';
+import type { SpecialAccess } from '@/shared/api/special-access';
 import { cloneValue } from '../model/clone-rules';
 import {
   isStudioTab,
@@ -65,6 +66,8 @@ interface ProjectDetailTabsProps {
   dangerZone?: ReactNode;
   /** The viewer's app role. Decides, with the capability flag, whether Checklists shows. */
   appRole?: AppRole;
+  /** Admin-granted extras: qa_release adds QA Studio for a Developer. */
+  specialAccess?: readonly SpecialAccess[];
   /** The viewer's GitHub login, for the pull request presets. */
   viewerLogin?: string;
   /**
@@ -108,6 +111,7 @@ export function ProjectDetailTabs({
   external = false,
   dangerZone,
   appRole,
+  specialAccess,
   viewerLogin,
   folder,
 }: Readonly<ProjectDetailTabsProps>) {
@@ -115,6 +119,7 @@ export function ProjectDetailTabs({
     projectId: project.id,
     workflowFilesFallback: project.workflowFiles,
     appRole,
+    specialAccess,
     viewerLogin,
   });
   const TabPanel = TAB_PANELS[vm.tab];

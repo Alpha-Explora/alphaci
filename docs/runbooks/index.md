@@ -14,6 +14,11 @@
 * [Local verification](runbook-local-verification.md) - reproducible local checks for both apps and the documentation bundle.
 * [Feature assignment](runbook-feature-assignment.md) - add or reassign capabilities to editions, enforce persona actions, and regenerate the catalog and pack documentation.
 * [Session authentication](runbook-session-auth.md) - cookie session, CORS, and API origin procedure for the web app.
+* [QA imports and progress history](runbook-qa-import-and-history.md) - migration order, import contracts, role gates and verification.
+* [Checklist imports and QA history](runbook-qa-checklist-imports.md) - Product owner and QA import flows, tracker locations and release execution.
+* [Backlog deadlines, team to-dos and release versions](runbook-backlog-todos-and-versions.md) - migration order, schedule and to-do routes, role rules and Iteration versions.
+* [Semantic test coverage](runbook-semantic-coverage.md) - acceptance criteria against QA test cases, read-only.
+* [Special access and deployment override](runbook-special-access.md) - QA release and deployment override grants, gate overrides and the audit trail export.
 * [Outbox relay](runbook-outbox-relay.md) - inspect and run the single PostgreSQL outbox relay.
 * [Migration reconciliation](runbook-migration-reconciliation.md) - reconcile migration files with a Supabase migration ledger.
 * [Enterprise GCE deploy](runbook-enterprise-gce-deploy.md) - how CI deploys the enterprise instance to its Compute Engine VM, and the migration gate.

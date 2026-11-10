@@ -1,4 +1,5 @@
 'use client';
+import { QaItemHistory } from '../../history';
 
 import type { FormEvent } from 'react';
 
@@ -412,6 +413,7 @@ export function ProjectRunItem(props: ItemProps) {
         <VerifiedLine item={item} />
         {open ? null : <RecordedFacts item={item} />}
         <FixRequestNote item={item} />
+        <QaItemHistory itemId={item.sourceItemId} />
         <ItemControls item={item} index={index} editor={editor} />
         <ItemEditor item={item} editor={editor} />
         <ItemError {...props} />

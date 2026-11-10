@@ -120,6 +120,8 @@ export interface AuthMeResponse {
    * this user. Optional so older cached sessions deserialize safely.
    */
   appRoleSource?: AppRoleSource;
+  /** Admin-granted extras ('qa_release', 'deployment_override'). Optional for older backends. */
+  specialAccess?: string[];
 }
 
 export interface ClientCompositionInfo {
@@ -799,6 +801,8 @@ export interface SetupProjectRequest extends GenerateWorkflowRequest {
   deploymentProvisioning?: DeploymentProvisioningRequest;
   /** Group/workspace to create this project inside (from ?group=<id>). */
   workspaceId?: string;
+  /** Files the existing repository into this team Project (no projectName then). */
+  deliveryProjectId?: string;
   /**
    * The project's ordered environments (single-repository projects only).
    * Omit it to create the project on the fixed dev, uat, main branch path.

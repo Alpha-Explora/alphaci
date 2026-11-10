@@ -1,5 +1,6 @@
 'use client';
 
+import { QaHistoryScope } from '../../history';
 import { useState } from 'react';
 
 import type { ItemProgressViewModel } from '../../returned';
@@ -243,15 +244,17 @@ export function RequirementCard({
       </header>
 
       <div id={itemsId} className="rq-card__body" hidden={!open}>
-        <CardItems
-          requirement={requirement}
-          permissions={permissions}
-          items={items}
-          progress={progress}
-          onReload={onReload}
-          verdicts={verdicts}
-          filter={filter}
-        />
+        <QaHistoryScope projectId={requirement.deliveryProjectId ?? ''}>
+          <CardItems
+            requirement={requirement}
+            permissions={permissions}
+            items={items}
+            progress={progress}
+            onReload={onReload}
+            verdicts={verdicts}
+            filter={filter}
+          />
+        </QaHistoryScope>
         {canManage ? (
           <AddItem
             items={items}

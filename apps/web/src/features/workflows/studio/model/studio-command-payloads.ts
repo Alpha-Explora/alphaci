@@ -5,6 +5,8 @@ import type {
   WorkflowRecipeOption,
 } from '@/shared/api/contracts';
 
+import { validateProjectName } from './project-name-rules';
+
 export function clampCoverageThreshold(raw: string): number {
   const coverage = Number(raw);
   if (Number.isFinite(coverage) && coverage >= 0 && coverage <= 100) {
@@ -45,8 +47,29 @@ export interface SetupExistingRepoPayloadInput {
   coverageThreshold: string;
   outputFileName: string;
   deploymentProvisioning: SetupProjectRequest['deploymentProvisioning'];
-  /** Trimmed and already validated by the caller; the existing-repo path never joins a Project. */
+  /**
+   * The new Project's name, trimmed and validated by the caller; null when
+   * the repository is filed into an existing Project, which keeps its name.
+   */
+  projectName: string | null;
+}
+
+/**
+ * Where an existing repository is filed: a blocker (no Project for a
+ * Developer, no Feature yet) stops it; an existing Project needs no name;
+ * otherwise the new Project's name must be valid.
+ */
+export function existingRepoFiling(input: {
+  deliveryProjectId: string | undefined;
   projectName: string;
+  blocker: string | null;
+}): { ok: true; projectName: string | null } | { ok: false; message: string } {
+  if (input.blocker) return { ok: false, message: input.blocker };
+  if (input.deliveryProjectId) return { ok: true, projectName: null };
+  const checked = validateProjectName(input.projectName);
+  return checked.ok
+    ? { ok: true, projectName: checked.name }
+    : { ok: false, message: checked.message };
 }
 
 export function buildSetupExistingRepoPayload(
@@ -67,7 +90,9 @@ export function buildSetupExistingRepoPayload(
     coverageThreshold: clampCoverageThreshold(input.coverageThreshold),
     outputFileName: input.outputFileName || 'ci.yml',
     deploymentProvisioning: input.deploymentProvisioning,
-    projectName: input.projectName.trim(),
+    ...(input.projectName === null
+      ? {}
+      : { projectName: input.projectName.trim() }),
   };
 }
 

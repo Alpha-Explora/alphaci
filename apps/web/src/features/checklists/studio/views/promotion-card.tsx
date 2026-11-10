@@ -2,7 +2,7 @@
 
 import './promotion.css';
 
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 
 import {
   approvedCountLabel,
@@ -15,18 +15,20 @@ import { useDisclosure } from '../view-models/use-remembered-flag';
 import { PromotionDetails } from './promotion-parts';
 import { ChevronDownIcon, MergeIcon } from './studio-icons';
 
-type CardProps = Readonly<{ vm: QaPromotionViewModel }>;
+type CardProps = Readonly<{ vm: QaPromotionViewModel; action?: ReactNode }>;
 
 function CardHead({
   data,
   collapsed,
   onToggle,
   bodyId,
+  action,
 }: Readonly<{
   data: QaPromotionStatus;
   collapsed: boolean;
   onToggle: () => void;
   bodyId: string;
+  action?: ReactNode;
 }>) {
   return (
     <div className="qa-promo__head">
@@ -49,6 +51,7 @@ function CardHead({
           </span>
         </span>
       </button>
+      {action}
     </div>
   );
 }
@@ -62,7 +65,12 @@ function readyState(data: QaPromotionStatus): 'delivered' | 'true' | 'false' {
 function ReadyCard({
   vm,
   data,
-}: Readonly<{ vm: QaPromotionViewModel; data: QaPromotionStatus }>) {
+  action,
+}: Readonly<{
+  vm: QaPromotionViewModel;
+  data: QaPromotionStatus;
+  action?: ReactNode;
+}>) {
   // Folded to its head, which already answers "ready or not"; unfolding is
   // for this visit only.
   const [open, toggle] = useDisclosure();
@@ -80,6 +88,7 @@ function ReadyCard({
         collapsed={!open}
         onToggle={toggle}
         bodyId={bodyId}
+        action={action}
       />
       <div id={bodyId} className="qa-promo__body" hidden={!open}>
         <PromotionDetails vm={vm} data={data} />
@@ -90,10 +99,10 @@ function ReadyCard({
 
 /**
  * The project Overview's "Ready for production" card: whether uat's current
- * commit is QA-approved for main, read-only. Merging happens in QA Studio and
- * PO Studio, from the status chip in their run column's tab bar.
+ * commit is QA-approved for main. Authorized team members can merge here or
+ * from their Studio after the same QA and Product Owner gates pass.
  */
-export function PromotionCard({ vm }: CardProps) {
+export function PromotionCard({ vm, action }: CardProps) {
   if (vm.status === 'unavailable') return null;
   if (vm.status === 'loading')
     return (
@@ -109,5 +118,5 @@ export function PromotionCard({ vm }: CardProps) {
       </div>
     );
   }
-  return <ReadyCard vm={vm} data={vm.data} />;
+  return <ReadyCard vm={vm} data={vm.data} action={action} />;
 }

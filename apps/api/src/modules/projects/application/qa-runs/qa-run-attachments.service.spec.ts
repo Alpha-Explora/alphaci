@@ -161,6 +161,8 @@ function setup({
   } as unknown as jest.Mocked<QaAttachmentStoragePort>;
   const access = {
     findAppRole: jest.fn().mockResolvedValue(role),
+    findQaRole: jest.fn().mockResolvedValue(role),
+    findSpecialAccess: jest.fn().mockResolvedValue([]),
   } as unknown as jest.Mocked<QaAccessService>;
   const projectContext = {
     requireProject: jest.fn().mockResolvedValue(project),

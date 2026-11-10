@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import { DatabaseService } from '#kernel/db/database.service';
+import type { BacklogPriority } from '../domain/backlog-schedule.rules';
 import type {
   QaChecklistItemInput,
   QaChecklistTargetPersona,
@@ -61,6 +62,9 @@ export interface QaChecklistItemRow {
   progress_at: string | null;
   row_version: number;
   updated_at: string;
+  /** 20261028030000_backlog_schedule; absent on rows read before it. */
+  due_date?: Date | string | null;
+  priority?: BacklogPriority | null;
 }
 
 export interface CreateQaChecklistInput {

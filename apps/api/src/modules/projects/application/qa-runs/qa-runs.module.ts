@@ -43,6 +43,15 @@ import { QaProjectDeliveryService } from './qa-project-delivery.service';
 import { QaPromotionService } from './qa-promotion.service';
 import { QaReportService } from './qa-report.service';
 import { QaRunsService } from './qa-runs.service';
+import { QaHistoryController } from '../../api/qa-history.controller';
+import { QaImportController } from '../../api/qa-import.controller';
+import { ProjectTodosController } from '../../api/project-todos.controller';
+import { SemanticCoverageController } from '../../api/semantic-coverage.controller';
+import { QaSemanticCoverageService } from '../qa-checklists/qa-semantic-coverage.service';
+import { ProjectTodosService } from '../qa-checklists/project-todos.service';
+import { ProjectTodosRepository } from '../../infrastructure/project-todos.repository';
+import { QaHistoryService } from '../qa-checklists/qa-history.service';
+import { QaHistoryRepository } from '../../infrastructure/qa-history.repository';
 import { QaUatHeadsService } from './qa-uat-heads.service';
 
 @Module({
@@ -84,6 +93,10 @@ import { QaUatHeadsService } from './qa-uat-heads.service';
     DeliveryProjectRequirementsController,
     RequirementsController,
     WorkspaceQaRequirementsController,
+    QaHistoryController,
+    QaImportController,
+    ProjectTodosController,
+    SemanticCoverageController,
   ],
   providers: [
     SessionAuthGuard,
@@ -93,6 +106,11 @@ import { QaUatHeadsService } from './qa-uat-heads.service';
     QaTestCasesRepository,
     QaUatHeadsService,
     QaRequirementsService,
+    QaHistoryService,
+    QaHistoryRepository,
+    ProjectTodosService,
+    ProjectTodosRepository,
+    QaSemanticCoverageService,
     QaTestCasesService,
     QaProjectRunsService,
     QaRunAttachmentsService,

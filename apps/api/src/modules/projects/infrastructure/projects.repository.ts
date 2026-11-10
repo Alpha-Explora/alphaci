@@ -5,6 +5,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '#kernel/db/database.service';
 import type { AppRoleLookup } from '#kernel/ports/app-role.port';
 import type { PlatformAppRole } from '#kernel/ports/platform-admin.port';
+import {
+  parseSpecialAccess,
+  type SpecialAccess,
+} from '#kernel/rules/special-access.rules';
 import type { ProjectVisibilityLookup } from '#kernel/ports/project-visibility.port';
 import type {
   ProjectEnvironmentInput,
@@ -469,6 +473,16 @@ export class ProjectsRepository
     return result.rows[0]?.app_role ?? 'member';
   }
 
+  /** Admin-granted extras on top of the persona (identity.app_users.special_access). */
+  async findSpecialAccess(userId: string): Promise<SpecialAccess[]> {
+    const result = await this.databaseService.query<{
+      special_access: string[] | null;
+    }>(`SELECT special_access FROM identity.app_users WHERE id = $1 LIMIT 1;`, [
+      userId,
+    ]);
+    return parseSpecialAccess(result.rows[0]?.special_access ?? []);
+  }
+
   /**
    * Active workspace members whose global persona is 'lead' — the QA
    * verification-runs notification recipients for "workspace leads". Deliberately
@@ -523,6 +537,28 @@ export class ProjectsRepository
       [workspaceId],
     );
     return result.rows.map((row) => row.id);
+  }
+
+  /** Active workspace members with a team persona, ordered by login. */
+  async listWorkspaceMembers(
+    workspaceId: string,
+  ): Promise<Array<{ id: string; login: string | null }>> {
+    const result = await this.databaseService.query<{
+      id: string;
+      login: string | null;
+    }>(
+      `
+        SELECT DISTINCT u.id, u.login
+        FROM orgs.workspace_members m
+        JOIN identity.app_users u ON u.id = m.user_id
+        WHERE m.workspace_id = $1
+          AND m.member_status = 'active'
+          AND u.app_role IN ('lead', 'member', 'qa', 'admin')
+        ORDER BY u.login;
+      `,
+      [workspaceId],
+    );
+    return result.rows;
   }
 
   /** The owning user of a provisioned project, or null if it does not exist. */

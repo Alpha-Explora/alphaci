@@ -9,7 +9,10 @@ import {
   useCreateRepositoryViewModel,
   type CreateRepositoryViewModel,
 } from '../view-models/use-create-repository-view-model';
-import type { RepositoryOutcomeView } from '../../model/add-repository-rules';
+import {
+  attachExistingRepositoryHref,
+  type RepositoryOutcomeView,
+} from '../../model/add-repository-rules';
 
 interface CreateRepositoryDialogProps {
   open: boolean;
@@ -58,6 +61,13 @@ function CreateRepositoryDialogBody({
       onSubmit={() => void vm.submit()}
     >
       <div className="create-repo">
+        <p className="hier-field-hint">
+          Already have the code on GitHub?{' '}
+          <Link href={attachExistingRepositoryHref(deliveryProjectId)}>
+            Attach an existing repository
+          </Link>{' '}
+          to this Project instead.
+        </p>
         <NameField vm={vm} />
         <StackField vm={vm} />
         <ShapeField vm={vm} />

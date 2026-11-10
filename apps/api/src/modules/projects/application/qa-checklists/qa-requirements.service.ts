@@ -6,6 +6,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { badRequest, notFound } from '#kernel/http/coded-errors';
 
 import {
   AuditEventPublisher,
@@ -29,6 +30,7 @@ import {
   tallyVerificationByRequirement,
 } from '../../infrastructure/qa-project-runs.repository';
 import { QaRequirementsRepository } from '../../infrastructure/qa-requirements.repository';
+import { ProjectTodosRepository } from '../../infrastructure/project-todos.repository';
 import { QaRunsRepository } from '../../infrastructure/qa-runs.repository';
 import {
   QaTestCasesRepository,
@@ -46,6 +48,8 @@ import type { RequirementItemDto } from './dto/requirement-item.dto';
 import type { SetProgressDto } from './dto/set-progress.dto';
 import type { UpdateRequirementDto } from './dto/update-requirement.dto';
 import type { UpdateRequirementItemDto } from './dto/update-requirement-item.dto';
+import type { SetItemScheduleDto } from './dto/set-item-schedule.dto';
+import { isDateOnly, toDateOnly } from '../../domain/backlog-schedule.rules';
 import {
   progressForbidden,
   requirementBatchDuplicateName,
@@ -126,6 +130,9 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
     @Optional()
     @Inject(NotificationEventPublisher)
     private readonly notificationEventsService?: NotificationEventSink,
+    // Team to-dos share the Project's lifetime: purged with its requirements.
+    @Optional()
+    private readonly todos?: ProjectTodosRepository,
   ) {}
 
   /**
@@ -136,9 +143,11 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
   async purgeDeliveryProject(
     deliveryProjectId: string,
   ): Promise<{ removed: number }> {
-    return {
-      removed: await this.checklists.deleteByDeliveryProject(deliveryProjectId),
-    };
+    const requirements =
+      await this.checklists.deleteByDeliveryProject(deliveryProjectId);
+    const todos =
+      (await this.todos?.deleteByDeliveryProject(deliveryProjectId)) ?? 0;
+    return { removed: requirements + todos };
   }
 
   // ---------------------------------------------------------------------
@@ -675,6 +684,49 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
     );
   }
 
+  /** PATCH a story's due date and priority: Product owners and admins, on a writable Iteration. */
+  async setItemSchedule(
+    id: string,
+    itemId: string,
+    userId: string,
+    dto: SetItemScheduleDto,
+  ): Promise<RequirementItem> {
+    if (dto.dueDate === undefined && dto.priority === undefined) {
+      throw badRequest('ITEM_SCHEDULE_EMPTY', 'Send dueDate, priority or both');
+    }
+    if (typeof dto.dueDate === 'string' && !isDateOnly(dto.dueDate)) {
+      throw badRequest(
+        'ITEM_SCHEDULE_DATE_INVALID',
+        'dueDate must be a real calendar date',
+      );
+    }
+    const row = await this.requireRequirement(id, userId);
+    await this.assertManage(userId);
+    await this.iterations.assertRowWritable(row);
+    this.assertNotArchived(row);
+    await this.requireItem(id, itemId);
+    const updated = await this.requirements.setItemSchedule(id, itemId, {
+      ...(dto.dueDate !== undefined ? { dueDate: dto.dueDate } : {}),
+      ...(dto.priority !== undefined ? { priority: dto.priority } : {}),
+    });
+    if (!updated)
+      throw notFound(
+        'REQUIREMENT_ITEM_NOT_FOUND',
+        'Requirement item not found',
+      );
+    await this.recordEvent(REQUIREMENT_EVENTS.updated, row, userId, {
+      fields: ['items'],
+      itemId,
+      change: 'scheduled',
+    });
+    return this.toItem(
+      updated,
+      await this.access.findAppRole(userId),
+      row,
+      (await this.testCategoriesFor([itemId])).get(itemId),
+    );
+  }
+
   async deleteItem(id: string, itemId: string, userId: string): Promise<void> {
     const row = await this.requireRequirement(id, userId);
     await this.assertManage(userId);
@@ -1014,6 +1066,13 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
       rowVersion: item.row_version,
       canSetProgress: canSetProgress(role) && !requirement.archived_at,
       testCategories,
+      // Only once the schedule columns exist, so older rows read exactly as before.
+      ...(item.due_date !== undefined || item.priority !== undefined
+        ? {
+            dueDate: toDateOnly(item.due_date),
+            priority: item.priority ?? null,
+          }
+        : {}),
     };
   }
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { useCapabilities } from '@/features/capabilities/current';
+import { actingQaRole, type SpecialAccess } from '@/shared/api/special-access';
 import type { DeploymentLogFocus } from '@/features/projects/deployment-logs';
 import { projectsRepository } from '../../data/projects-repository';
 import type { ProjectStatus } from '../../model/projects-types';
@@ -54,6 +55,8 @@ export interface ProjectDetailTabsViewModel {
   visibleTabs: ProjectDetailTab[];
   /** The viewer's app role, for the QA surfaces. Rights still come from the server. */
   appRole: AppRole | undefined;
+  /** The persona QA Studio works with: 'qa' for a Developer holding qa_release, else appRole. */
+  qaRole: AppRole | undefined;
   /** The viewer's GitHub login, for recognising their own branches. */
   viewerLogin: string | undefined;
   /** The QA checklists capability: gates QA Studio and the "Returned by QA" card. */
@@ -160,9 +163,16 @@ export function useProjectDetailTabsViewModel(options: {
   projectId: string;
   workflowFilesFallback: WorkflowFileMetadata[] | null | undefined;
   appRole?: AppRole;
+  specialAccess?: readonly SpecialAccess[];
   viewerLogin?: string;
 }): ProjectDetailTabsViewModel {
-  const { projectId, workflowFilesFallback, appRole, viewerLogin } = options;
+  const {
+    projectId,
+    workflowFilesFallback,
+    appRole,
+    specialAccess,
+    viewerLogin,
+  } = options;
   // A deep link (#qa) picks the first tab. Safe to read window here: the tab
   // set only mounts client-side, once the project overview has loaded.
   const [selectedTab, setTabState] = useState<ProjectDetailTab>(
@@ -196,9 +206,11 @@ export function useProjectDetailTabsViewModel(options: {
   );
 
   const caps = useCapabilities();
-  const visibleTabs = visibleProjectDetailTabs(appRole, {
-    qaChecklistsEnabled: caps.qaChecklistsEnabled,
-  });
+  const visibleTabs = visibleProjectDetailTabs(
+    appRole,
+    { qaChecklistsEnabled: caps.qaChecklistsEnabled },
+    specialAccess,
+  );
   // Derived, not reset by an effect: if the flag turns off under a selected
   // Checklists tab, the strip falls back to Overview on the same render.
   const tab = resolveVisibleTab(selectedTab, visibleTabs);
@@ -329,6 +341,7 @@ export function useProjectDetailTabsViewModel(options: {
     setTab,
     visibleTabs,
     appRole,
+    qaRole: actingQaRole(appRole, specialAccess),
     viewerLogin,
     qaChecklistsEnabled: caps.qaChecklistsEnabled,
     highlightMyQaItems,

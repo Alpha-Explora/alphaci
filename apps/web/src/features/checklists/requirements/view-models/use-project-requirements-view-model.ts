@@ -11,6 +11,7 @@ import {
   type CurrentIterationViewModel,
 } from '../../iteration';
 import { lockedIterationNumber } from '../../model/iteration-rules';
+import type { ProjectIteration } from '../../model/iteration-types';
 import {
   removeRequirementItem,
   requirementsOfKind,
@@ -42,10 +43,10 @@ export interface ProjectRequirementsViewModel {
    */
   permissions: RequirementPermissions;
   /**
-   * The delivered iteration's number, when its requirements are locked. Null
+   * The delivered iteration, when its requirements are locked. Null
    * while the iteration is active, and on a backend without iterations.
    */
-  lockedIteration: number | null;
+  lockedIteration: ProjectIteration | null;
   reload: () => void;
   /** A requirement the server just saved (created, renamed, reordered). */
   applyRequirement: (requirement: Requirement) => void;
@@ -75,18 +76,19 @@ const LOCKED: RequirementPermissions = {
 function permissionsFor(
   data: ProjectRequirements | null,
   appRole: AppRole | null | undefined,
-  lockedIteration: number | null,
+  lockedIteration: ProjectIteration | null,
 ): RequirementPermissions {
   return lockedIteration === null
     ? resolveRequirementPermissions(data, appRole)
     : LOCKED;
 }
 
-/** The delivered iteration's number from the current-iteration read, or null. */
-function lockedFrom(iteration: CurrentIterationViewModel): number | null {
-  return lockedIterationNumber(
-    iteration.current ? iteration.current.iteration : null,
-  );
+/** The delivered iteration from the current-iteration read, or null. */
+function lockedFrom(
+  iteration: CurrentIterationViewModel,
+): ProjectIteration | null {
+  const current = iteration.current?.iteration ?? null;
+  return current && lockedIterationNumber(current) !== null ? current : null;
 }
 
 function loadStatus(result: LoadResult | null): RequirementsStatus {

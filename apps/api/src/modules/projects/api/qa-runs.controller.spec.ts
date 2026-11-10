@@ -145,6 +145,7 @@ const promotionStatusFixture = (
   reasonCodes: [],
   pullRequest: null,
   canMerge: false,
+  canOverride: false,
   ...overrides,
 });
 
@@ -466,11 +467,15 @@ describe('ProjectQaPromotionController.merge', () => {
 
     const result = await controller.merge(makeRequest(), 'project-1');
 
-    expect(promotionService.merge).toHaveBeenCalledWith('project-1', {
-      userId: 'user-1',
-      userLogin: 'tone',
-      oauthToken: 'token-1',
-    });
+    expect(promotionService.merge).toHaveBeenCalledWith(
+      'project-1',
+      {
+        userId: 'user-1',
+        userLogin: 'tone',
+        oauthToken: 'token-1',
+      },
+      undefined,
+    );
     expect(result).toEqual({
       merged: true,
       sha: 'merged-sha',
@@ -541,11 +546,15 @@ describe('DeliveryProjectPromotionController.mergeAll', () => {
 
     const answer = await controller.mergeAll(makeRequest(), 'dp-1');
 
-    expect(promotionService.mergeAll).toHaveBeenCalledWith('dp-1', {
-      userId: 'user-1',
-      userLogin: 'tone',
-      oauthToken: 'token-1',
-    });
+    expect(promotionService.mergeAll).toHaveBeenCalledWith(
+      'dp-1',
+      {
+        userId: 'user-1',
+        userLogin: 'tone',
+        oauthToken: 'token-1',
+      },
+      undefined,
+    );
     expect(answer).toBe(result);
   });
 });

@@ -19,6 +19,12 @@ import type { QaHeadStatus, QaVerdict } from './qa-runs.contracts';
 export const QA_PROMOTION_MERGED_EVENT = 'qa.promotion.merged';
 
 /**
+ * Recorded (with the merge event) when a merge went past a blocked gate:
+ * metadata carries the written reason and every gate reason it bypassed.
+ */
+export const QA_PROMOTION_OVERRIDE_EVENT = 'qa.promotion.override_merged';
+
+/**
  * DEPRECATED (kept for the frontend that predates Project requirements): one
  * entry per requirement of the Project, each carrying the Project-level
  * result in approvedForHead. Read run / repositories instead.
@@ -73,6 +79,8 @@ export interface QaPromotionStatus {
   pullRequest: QaPromotionPullRequestRef | null;
   /** True when the caller may POST .../merge (lead|admin). */
   canMerge: boolean;
+  /** The caller may merge past a blocked gate with a written reason (admin, or deployment_override). */
+  canOverride: boolean;
   /** This repository has reached main (merged, or main already held the signed-off head). Stored, so it survives a reload. */
   repositoryDelivered: boolean;
   /** The Project's current Iteration is Delivered: Merge is refused (409 ITERATION_DELIVERED). */
@@ -83,6 +91,8 @@ export interface QaPromotionStatus {
     number: number;
     status: ProjectIterationStatus;
     deliveredAt: string | null;
+    /** "v1.2.0": the release version the Iteration ships as. */
+    versionLabel: string;
   } | null;
   /** Machine-readable twin of `reasons` (additive): e.g. ITERATION_DELIVERED. Empty when none applies. */
   reasonCodes: string[];

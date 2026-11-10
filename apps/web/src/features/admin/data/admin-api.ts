@@ -4,6 +4,7 @@ import type {
   PlatformRole,
 } from '@/shared/api/contracts';
 import { request } from '@/shared/api/request';
+import type { SpecialAccess } from '@/shared/api/special-access';
 
 /* ── Types (mirror the BE admin view models) ─────────────────────────────── */
 
@@ -36,6 +37,8 @@ export interface AdminUserListItem {
    * and automatic sync skips this user until it is reset.
    */
   appRoleSource: AppRoleSource;
+  /** Admin-granted extras (qa_release, deployment_override). Absent on an older backend. */
+  specialAccess?: SpecialAccess[];
   projectCount: number;
   errorCount: number;
 }
@@ -183,6 +186,17 @@ export async function setUserAppRole(id: string, role: AppRole): Promise<void> {
  */
 export async function resetUserAppRoleToGithub(id: string): Promise<void> {
   await request(`/admin/users/${id}/app-role/reset`, { method: 'POST' });
+}
+
+/** Replaces a user's special access. deployment_override changes are super-admin only. */
+export async function setUserSpecialAccess(
+  id: string,
+  access: SpecialAccess[],
+): Promise<void> {
+  await request(`/admin/users/${id}/special-access`, {
+    method: 'PATCH',
+    body: JSON.stringify({ access }),
+  });
 }
 
 export async function getAdminFeedback(

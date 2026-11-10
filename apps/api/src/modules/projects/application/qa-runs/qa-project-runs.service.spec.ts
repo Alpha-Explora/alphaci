@@ -248,6 +248,8 @@ function setup({
   } as unknown as jest.Mocked<QaRequirementsService>;
   const access = {
     findAppRole: jest.fn().mockResolvedValue(role),
+    findQaRole: jest.fn().mockResolvedValue(role),
+    findSpecialAccess: jest.fn().mockResolvedValue([]),
     findProjectOwnerId: jest.fn().mockResolvedValue('owner-1'),
     listWorkspaceLeadIds: jest.fn().mockResolvedValue(['lead-1', 'qa-1']),
     listWorkspaceLeadAndDeveloperIds: jest
@@ -736,7 +738,7 @@ describe('QaProjectRunsService sign-off, reopen, current', () => {
   );
 
   it('a REJECTED sign-off does not need every item of the Iteration', async () => {
-    const { service, runs, projectRuns } = setup({
+    const { service, runs, projectRuns, notifications } = setup({
       items: [itemRow({ status: 'pending' })],
     });
     projectRuns.countIterationItemsNotPassed.mockResolvedValue(3);
@@ -749,6 +751,17 @@ describe('QaProjectRunsService sign-off, reopen, current', () => {
 
     expect(projectRuns.countIterationItemsNotPassed).not.toHaveBeenCalled();
     expect(runs.createSignoff).toHaveBeenCalled();
+    expect(notifications.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'dev-1',
+        eventCode: 'qa.run.rejected',
+      }),
+    );
+    expect(
+      notifications.record.mock.calls.some(
+        ([entry]) => entry.userId === 'qa-1',
+      ),
+    ).toBe(false);
   });
 
   it('freezes the assembled Project run into the sign-off and notifies creator, owner and leads except the actor', async () => {
@@ -1154,6 +1167,7 @@ describe('QaProjectRunsService - Iterations', () => {
         id: 'it-1',
         number: 1,
         status: 'active',
+        versionLabel: 'v1.0.0',
       });
       expect(requirements.requirementsChangedSince).toHaveBeenCalledWith(
         'it-1',
@@ -1301,6 +1315,7 @@ describe('QaProjectRunsService - Iterations', () => {
         id: 'it-1',
         number: 2,
         status: 'delivered',
+        versionLabel: 'v1.1.0',
       });
       expect(run.permissions.canSetVerification).toBe(false);
     });

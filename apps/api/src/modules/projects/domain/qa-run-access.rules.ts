@@ -82,9 +82,11 @@ export function canDispatchAutomation(role: PlatformAppRole): boolean {
   return role === 'qa' || role === 'lead' || role === 'admin';
 }
 
-/** Merging a QA-approved uat commit to main: lead|admin only, same set as reopening a signed-off run. */
+/** Executing a gated production merge: all known personas; approval is checked separately. */
 export function canMergeQaPromotion(role: PlatformAppRole): boolean {
-  return role === 'lead' || role === 'admin';
+  return (
+    role === 'lead' || role === 'admin' || role === 'qa' || role === 'member'
+  );
 }
 
 /** Attaching screenshot evidence to a run item: the Verification track (qa|lead|admin). */

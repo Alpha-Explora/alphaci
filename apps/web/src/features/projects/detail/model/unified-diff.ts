@@ -96,3 +96,58 @@ export function parseUnifiedDiff(patch: string): DiffLine[] {
 
   return lines;
 }
+
+/** One row of a side-by-side diff: base on the left, head on the right. */
+export type SplitDiffRow =
+  | { kind: 'full'; line: DiffLine }
+  | { kind: 'pair'; left: DiffLine | null; right: DiffLine | null };
+
+/**
+ * Lines for a side-by-side view. Context sits on both sides; a run of
+ * deletions followed by additions is paired line by line (the shorter side
+ * padded with empty cells), so a changed line reads across. Hunk headers and
+ * notes span both sides. Pure.
+ */
+export function pairSplitRows(lines: readonly DiffLine[]): SplitDiffRow[] {
+  const rows: SplitDiffRow[] = [];
+  let dels: DiffLine[] = [];
+  let adds: DiffLine[] = [];
+  const flush = () => {
+    const count = Math.max(dels.length, adds.length);
+    for (let index = 0; index < count; index += 1) {
+      rows.push({
+        kind: 'pair',
+        left: dels[index] ?? null,
+        right: adds[index] ?? null,
+      });
+    }
+    dels = [];
+    adds = [];
+  };
+  for (const line of lines) {
+    if (line.kind === 'del') {
+      if (adds.length > 0) flush();
+      dels.push(line);
+    } else if (line.kind === 'add') {
+      adds.push(line);
+    } else {
+      flush();
+      rows.push(
+        line.kind === 'context'
+          ? { kind: 'pair', left: line, right: line }
+          : { kind: 'full', line },
+      );
+    }
+  }
+  flush();
+  return rows;
+}
+
+export type DiffMode = 'unified' | 'split';
+
+export const DIFF_MODE_STORAGE_KEY = 'alphaci.diffMode';
+
+/** A stored preference, or unified when there is none (or it is garbage). */
+export function readDiffMode(stored: string | null | undefined): DiffMode {
+  return stored === 'split' ? 'split' : 'unified';
+}

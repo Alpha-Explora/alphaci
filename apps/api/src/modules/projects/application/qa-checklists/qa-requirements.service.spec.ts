@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 import type { DeliveryProjectOverviewFacts } from '#kernel/ports/delivery-project-overview.port';
 import type { PlatformAppRole } from '#kernel/ports/platform-admin.port';
@@ -170,6 +170,7 @@ function setup({
     reorderItems: jest.fn(),
     appendItem: jest.fn(),
     updateItemDefinition: jest.fn(),
+    setItemSchedule: jest.fn(),
     deleteItem: jest.fn(),
     listByWorkspace: jest.fn().mockResolvedValue([requirementRow()]),
   } as unknown as jest.Mocked<QaRequirementsRepository>;
@@ -1506,5 +1507,92 @@ describe('QaRequirementsService - Iterations', () => {
         service.reorderItems('req-1', 'lead-1', { itemIds: ['item-1'] }),
       ).resolves.toBeDefined();
     });
+  });
+});
+
+describe('QaRequirementsService.setItemSchedule - backlog deadlines (phase 4)', () => {
+  it('sets only the keys sent, without a row version, and answers the dated item', async () => {
+    const { service, requirements, audit } = setup();
+    requirements.setItemSchedule.mockResolvedValue(
+      itemRow({ due_date: new Date(2026, 10, 14), priority: 'high' }),
+    );
+
+    const item = await service.setItemSchedule('req-1', 'item-1', 'lead-1', {
+      dueDate: '2026-11-14',
+    });
+
+    expect(requirements.setItemSchedule).toHaveBeenCalledWith(
+      'req-1',
+      'item-1',
+      {
+        dueDate: '2026-11-14',
+      },
+    );
+    expect(item).toMatchObject({
+      dueDate: '2026-11-14',
+      priority: 'high',
+      rowVersion: 1,
+    });
+    expect(audit.recordProjectEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          change: 'scheduled',
+          itemId: 'item-1',
+        }),
+      }),
+    );
+  });
+
+  it('clears with null', async () => {
+    const { service, requirements } = setup();
+    requirements.setItemSchedule.mockResolvedValue(
+      itemRow({ due_date: null, priority: null }),
+    );
+
+    const item = await service.setItemSchedule('req-1', 'item-1', 'lead-1', {
+      dueDate: null,
+      priority: null,
+    });
+
+    expect(requirements.setItemSchedule).toHaveBeenCalledWith(
+      'req-1',
+      'item-1',
+      {
+        dueDate: null,
+        priority: null,
+      },
+    );
+    expect(item).toMatchObject({ dueDate: null, priority: null });
+  });
+
+  it('refuses an empty body and an impossible date before any write', async () => {
+    const { service, requirements } = setup();
+
+    await expect(
+      service.setItemSchedule('req-1', 'item-1', 'lead-1', {}),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.setItemSchedule('req-1', 'item-1', 'lead-1', {
+        dueDate: '2026-02-30',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(requirements.setItemSchedule).not.toHaveBeenCalled();
+  });
+
+  it('is for Product owners and admins: a Developer or QA is refused', async () => {
+    for (const role of ['member', 'qa'] as const) {
+      const { service, requirements } = setup({ role });
+      await expect(
+        service.setItemSchedule('req-1', 'item-1', 'u-1', { priority: 'low' }),
+      ).rejects.toBeDefined();
+      expect(requirements.setItemSchedule).not.toHaveBeenCalled();
+    }
+  });
+
+  it('reads a story without schedule columns exactly as before', async () => {
+    const { service } = setup();
+    const item = service.toItem(itemRow(), 'lead', { archived_at: null });
+    expect(item).not.toHaveProperty('dueDate');
+    expect(item).not.toHaveProperty('priority');
   });
 });

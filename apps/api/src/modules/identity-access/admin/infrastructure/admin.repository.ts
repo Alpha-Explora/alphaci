@@ -16,6 +16,7 @@ export interface AdminUserListRow {
   onboarding_completed_at: string | null;
   app_role: AppRole;
   app_role_source: AppRoleSource;
+  special_access: string[] | null;
   project_count: number;
   error_count: number;
 }
@@ -99,6 +100,7 @@ export class AdminRepository {
           u.created_at, u.last_login_at, u.archived_at, u.onboarding_completed_at,
           u.app_role,
           u.app_role_source,
+          u.special_access,
           COALESCE(p.project_count, 0)::int AS project_count,
           COALESCE(e.error_count, 0)::int   AS error_count
         FROM identity.app_users AS u
@@ -131,6 +133,7 @@ export class AdminRepository {
           u.created_at, u.last_login_at, u.archived_at, u.onboarding_completed_at,
           u.app_role,
           u.app_role_source,
+          u.special_access,
           (SELECT COUNT(*)::int FROM projects.provisioned_projects
              WHERE user_id = u.id AND is_example = false) AS project_count,
           (SELECT COUNT(*)::int FROM workflow.ci_run_reports

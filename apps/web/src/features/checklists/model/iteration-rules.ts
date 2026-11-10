@@ -16,11 +16,14 @@ import type {
   DeliveryHow,
   IterationRef,
   IterationStatus,
+  IterationVersion,
   MergeAllError,
   MergeAllErrorKind,
   MergeAllRepositoryResult,
   MergeAllResult,
   ProjectIteration,
+  RevisionType,
+  VersionNumbers,
 } from './iteration-types';
 import { QA_ERROR_MESSAGES, qaCodeMessage } from './qa-error-messages';
 import { shortSha } from './qa-run-rules';
@@ -40,22 +43,64 @@ import {
 
 const STATUSES: ReadonlyArray<IterationStatus> = ['active', 'delivered'];
 const HOWS: ReadonlyArray<DeliveryHow> = ['merged', 'already_in_main'];
+const REVISIONS: ReadonlyArray<RevisionType> = ['major', 'minor', 'patch'];
 
 /* ── Reading the wire ────────────────────────────────────────────────────── */
 
-/** `{ id, number, status }`, or null when any of the three is missing. */
+/** `{ id, number, status }` (and `versionLabel` when sent), or null when any of the three is missing. */
 export function normalizeIterationRef(value: unknown): IterationRef | null {
   const raw = record(value);
   const id = text(raw?.id);
   const number = positiveInt(raw?.number);
   const status = oneOf(raw?.status, STATUSES);
   if (!id || !number || !status) return null;
-  return { id, number, status };
+  const versionLabel = text(raw?.versionLabel);
+  return versionLabel
+    ? { id, number, status, versionLabel }
+    : { id, number, status };
 }
 
 /** A login sent as text (`deliveredByLogin`) or inside an actor (`deliveredBy.login`). */
 function deliveredLogin(raw: Loose): string | null {
   return text(raw.deliveredByLogin) ?? text(record(raw.deliveredBy)?.login);
+}
+
+function wholeNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0
+    ? value
+    : null;
+}
+
+/** "1.2.0": a version's numbers, as screens name it after "Version". */
+export function versionNumberText(version: VersionNumbers): string {
+  return `${String(version.major)}.${String(version.minor)}.${String(version.patch ?? 0)}`;
+}
+
+/** `{ major, minor, patch }` from the wire, or null when major or minor is missing. A backend without patch sends v1.2: read as v1.2.0. */
+export function normalizeIterationVersion(
+  value: unknown,
+): IterationVersion | null {
+  const raw = record(value);
+  const major = wholeNumber(raw?.major);
+  const minor = wholeNumber(raw?.minor);
+  if (major === null || minor === null) return null;
+  const patch = wholeNumber(raw?.patch) ?? 0;
+  return {
+    major,
+    minor,
+    patch,
+    label: `v${versionNumberText({ major, minor, patch })}`,
+  };
+}
+
+/** The version fields, only when the server sent a version: older payloads read exactly as before. */
+function versionFields(
+  raw: Loose,
+): Pick<ProjectIteration, 'version' | 'revisionType'> {
+  const version = normalizeIterationVersion(raw.version);
+  return version
+    ? { version, revisionType: oneOf(raw.revisionType, REVISIONS) }
+    : {};
 }
 
 export function normalizeIteration(value: unknown): ProjectIteration | null {
@@ -67,6 +112,7 @@ export function normalizeIteration(value: unknown): ProjectIteration | null {
     goal: text(raw.goal),
     deliveredAt: text(raw.deliveredAt),
     deliveredByLogin: deliveredLogin(raw),
+    ...versionFields(raw),
   };
 }
 
@@ -155,15 +201,33 @@ export function iterationName(number: number): string {
   return `Version ${String(number)}`;
 }
 
-/** "Iteration 4 · Loyalty points" with a goal, "Iteration 4" without. */
-export function iterationTitle(iteration: {
+/** What names an Iteration: its number, and its version or version label when known. */
+export interface IterationNameInput {
   number: number;
+  version?: VersionNumbers | null;
+  versionLabel?: string | null;
+}
+
+const VERSION_LABEL = /^v(\d+\.\d+(?:\.\d+)?)$/;
+
+/** "Version 1.2.0" once the server sends release versions, "Version 3" (the Iteration's number) before. */
+export function iterationVersionName(iteration: IterationNameInput): string {
+  if (iteration.version)
+    return `Version ${versionNumberText(iteration.version)}`;
+  const fromLabel = VERSION_LABEL.exec(iteration.versionLabel ?? '')?.[1];
+  return fromLabel ? `Version ${fromLabel}` : iterationName(iteration.number);
+}
+
+/** A title's input: the number, and the goal and version when known. */
+export interface IterationTitleInput extends IterationNameInput {
   goal?: string | null;
-}): string {
+}
+
+/** "Version 1.2.0 · Loyalty points" with a goal, "Version 1.2.0" without. */
+export function iterationTitle(iteration: IterationTitleInput): string {
   const goal = iteration.goal?.trim();
-  return goal
-    ? `${iterationName(iteration.number)} · ${goal}`
-    : iterationName(iteration.number);
+  const name = iterationVersionName(iteration);
+  return goal ? `${name} · ${goal}` : name;
 }
 
 /**
@@ -187,9 +251,8 @@ export function iterationDateLabel(
 
 /** "Iteration 3 · Active", "Iteration 3 · Delivered 14 Oct", or with a goal "Iteration 4 · Loyalty points · Active". */
 export function iterationStatusLabel(
-  iteration: Pick<ProjectIteration, 'number' | 'status' | 'deliveredAt'> & {
-    goal?: string | null;
-  },
+  iteration: Pick<ProjectIteration, 'number' | 'status' | 'deliveredAt'> &
+    IterationTitleInput,
   locale?: string,
 ): string {
   const name = iterationTitle(iteration);
@@ -206,8 +269,8 @@ export function lockedIterationNumber(
 }
 
 /** The Requirements and QA run tabs once their iteration is delivered: its work has left them. */
-export function deliveredIterationTitle(number: number): string {
-  return `${iterationName(number)} was delivered`;
+export function deliveredIterationTitle(iteration: IterationNameInput): string {
+  return `${iterationVersionName(iteration)} was delivered`;
 }
 
 function historyPlace(historyOnPage: boolean): string {
@@ -225,8 +288,8 @@ export function deliveredRunText(historyOnPage: boolean): string {
 }
 
 /** The read-only banner on a delivered iteration's QA run and requirements. */
-export function iterationLockedText(number: number): string {
-  return `${iterationName(number)} was delivered. Changes are locked.`;
+export function iterationLockedText(iteration: IterationNameInput): string {
+  return `${iterationVersionName(iteration)} was delivered. Changes are locked.`;
 }
 
 /** "Iteration 3 delivered on 14 Oct 2026 by @ana" (with its goal: "Iteration 3 · Loyalty points delivered …"). */
@@ -234,7 +297,8 @@ export function deliveredBannerTitle(
   iteration: Pick<
     ProjectIteration,
     'number' | 'deliveredAt' | 'deliveredByLogin'
-  > & { goal?: string | null },
+  > &
+    IterationTitleInput,
   locale?: string,
 ): string {
   const date = iterationDateLabel(iteration.deliveredAt, {
@@ -309,7 +373,7 @@ export function mergeAllFailures(
 export function mergeAllSummary(result: MergeAllResult): string {
   if (result.delivered) {
     return result.iteration
-      ? `${iterationName(result.iteration.number)} delivered.`
+      ? `${iterationVersionName(result.iteration)} delivered.`
       : 'Version delivered.';
   }
   const failed = mergeAllFailures(result).length;
@@ -322,7 +386,9 @@ export function mergeAllSummary(result: MergeAllResult): string {
 
 /** Product owners (`lead`) and admins merge, as for one repository. */
 function roleCanDeliver(role: AppRole | null | undefined): boolean {
-  return role === 'lead' || role === 'admin';
+  return (
+    role === 'lead' || role === 'admin' || role === 'qa' || role === 'member'
+  );
 }
 
 /** The covered repositories whose main does not contain the signed-off head yet. */
@@ -400,8 +466,7 @@ function kindOf(cause: unknown): MergeAllErrorKind {
 
 const FIXED_COPY: Partial<Record<MergeAllErrorKind, string>> = {
   no_repositories: QA_ERROR_MESSAGES.PROJECT_HAS_NO_REPOSITORIES,
-  forbidden:
-    "Only a Product owner or admin can merge this Project's repositories into main.",
+  forbidden: "Your role cannot merge this Project's repositories into main.",
   not_found:
     'This Project could not be found, or this server cannot merge a whole Project yet.',
 };

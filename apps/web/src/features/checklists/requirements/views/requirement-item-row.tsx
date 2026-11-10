@@ -1,4 +1,5 @@
 'use client';
+import { QaItemHistory } from '../../history';
 
 import './story-test-cases.css';
 
@@ -28,6 +29,7 @@ import type {
 } from '../../model/requirement-types';
 import type { RequirementItemsViewModel } from '../view-models/use-requirement-items-view-model';
 import { ArrowDownIcon, ArrowUpIcon } from './requirement-icons';
+import { StorySchedule } from './story-schedule';
 
 /** Add or edit one story / item, in place. */
 export function ItemForm({
@@ -420,8 +422,10 @@ export function RequirementItemRow({
         {item.acceptanceCriteria ? (
           <p className="rq-item__criteria">{item.acceptanceCriteria}</p>
         ) : null}
+        <StorySchedule item={item} canManage={canManage} onSaved={onReload} />
         <StoryTestCases item={item} />
         <QaFindings runItem={verdict} />
+        <QaItemHistory itemId={item.id} />
         <ItemFoot
           item={item}
           editable={progressEditable}

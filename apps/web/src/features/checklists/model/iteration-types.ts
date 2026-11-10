@@ -8,12 +8,31 @@
 
 export type IterationStatus = 'active' | 'delivered';
 
+/** How starting an Iteration moves the release version: v1.2.0 -> v1.2.1 (patch), v1.3.0 (minor) or v2.0.0 (major). */
+export type RevisionType = 'major' | 'minor' | 'patch';
+
+/** The release version an Iteration ships as. The first Iteration is v1.0.0. */
+export interface IterationVersion {
+  major: number;
+  minor: number;
+  patch: number;
+  /** "v1.2.0" */
+  label: string;
+}
+
+/** A version's numbers; a missing patch reads as 0. */
+export type VersionNumbers = Pick<IterationVersion, 'major' | 'minor'> & {
+  patch?: number;
+};
+
 /** The slice of an Iteration that rides along on run payloads. */
 export interface IterationRef {
   id: string;
   /** 1, 2, 3 … per Project. */
   number: number;
   status: IterationStatus;
+  /** "v1.2.0" on a run's detail and the promotion status; absent elsewhere. */
+  versionLabel?: string;
 }
 
 export interface ProjectIteration extends IterationRef {
@@ -22,6 +41,9 @@ export interface ProjectIteration extends IterationRef {
   deliveredAt: string | null;
   /** Whose merge delivered it, as a GitHub login. */
   deliveredByLogin: string | null;
+  /** Absent on a backend without release versions: the screens then name Iterations by number. */
+  version?: IterationVersion | null;
+  revisionType?: RevisionType | null;
 }
 
 /** One row of the Project's History (GET /delivery-projects/:id/iterations). */
@@ -78,6 +100,8 @@ export interface CurrentIteration {
 export interface StartIterationInput {
   /** Trimmed; left out when empty. At most 120 characters. */
   goal?: string;
+  /** Left out: the server starts a minor revision. */
+  revisionType?: RevisionType;
 }
 
 /** The 201 answer, normalised. */

@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
 import { DatabaseService } from '#kernel/db/database.service';
+import {
+  parseSpecialAccess,
+  type SpecialAccess,
+} from '#kernel/rules/special-access.rules';
 
 export type PlatformRole = 'admin' | 'super_admin';
 
@@ -59,6 +63,27 @@ export class PlatformAdminsRepository {
       [userId],
     );
     return result.rows[0]?.app_role ?? 'member';
+  }
+
+  /** Admin-granted extras on top of app_role (empty for an unknown user). */
+  async findSpecialAccess(userId: string): Promise<SpecialAccess[]> {
+    const result = await this.databaseService.query<{
+      special_access: string[] | null;
+    }>(`SELECT special_access FROM identity.app_users WHERE id = $1 LIMIT 1;`, [
+      userId,
+    ]);
+    return parseSpecialAccess(result.rows[0]?.special_access ?? []);
+  }
+
+  /** Replaces the user's grants. Team sync never writes this column. */
+  async setSpecialAccess(
+    userId: string,
+    access: readonly SpecialAccess[],
+  ): Promise<void> {
+    await this.databaseService.query(
+      `UPDATE identity.app_users SET special_access = $2::text[] WHERE id = $1;`,
+      [userId, parseSpecialAccess(access)],
+    );
   }
 
   /**

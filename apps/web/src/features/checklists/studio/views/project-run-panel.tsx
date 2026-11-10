@@ -1,4 +1,6 @@
 'use client';
+import { QaHistoryScope } from '../../history';
+import { QaImportControl } from '../../importing';
 
 import './qa-studio.css';
 import './project-run.css';
@@ -18,6 +20,7 @@ import {
   deliveredRunText,
   lockedIterationNumber,
 } from '../../model/iteration-rules';
+import type { IterationRef } from '../../model/iteration-types';
 import { kindCopy } from '../../model/requirement-rules';
 import {
   canStartProjectRun,
@@ -547,73 +550,94 @@ function RunBody({
   const shown = showsRepositories(appRole);
 
   return (
-    <div className="qa-run pqa-run__body">
-      <IterationNextStepView vm={next} />
-      <RunStartSummary
-        run={run}
-        shown={shown}
-        summaryShown={summaryShown}
-        checklistMode={checklistMode}
-      />
-      <StaleNotice vm={vm} run={run} appRole={appRole} />
-      <RequirementsChangedNotice run={run} changed={vm.requirementsChanged} />
-      <SignoffBanner
-        run={run}
-        subject={signedSubject(run, shown)}
-        reopen={reopen}
-      />
-      <HeadsList
-        heads={vm.heads.length > 0 ? vm.heads : run.repositories}
-        withRun
-        shown={shown}
-      />
-      {/* Who started the run sits in its progress box, under the count. */}
-      <RunToolbar
-        checklistMode={checklistMode}
-        summaryShown={summaryShown}
-        run={run}
-        list={list}
-        shown={shown}
-        canEditTestCases={run.items.some((item) => testCases.canManage(item))}
-        onCreateTestCases={() => setTestCaseEditorOpen(true)}
-      />
-      {list.status === 'empty' ? (
-        <p className="pqa-note">{runFilterEmptyText(list.filter)}</p>
-      ) : null}
-      {list.groups.map((group) => (
-        <RunGroup
-          key={group.key}
-          group={group}
-          list={list}
-          editor={editor}
-          evidence={evidence}
-          testCases={testCases}
+    <QaHistoryScope projectId={deliveryProjectId}>
+      <div className="qa-run pqa-run__body">
+        <IterationNextStepView vm={next} />
+        <RunStartSummary
+          run={run}
+          shown={shown}
+          summaryShown={summaryShown}
           checklistMode={checklistMode}
-          onReload={vm.reload}
         />
-      ))}
-      <RunTestCaseEditorSlot
-        checklistMode={checklistMode}
-        open={testCaseEditorOpen}
-        onClose={() => setTestCaseEditorOpen(false)}
-        run={run}
-        vm={vm}
-        testCases={testCases}
-      />
-      {run.status === 'open' && lockedNumber === null ? (
-        <SignoffFooter vm={signoff} />
-      ) : null}
-      {signoff.canSignOff ? (
-        <SignoffDialog
-          vm={signoff}
-          description={
-            shown
-              ? `${run.deliveryProjectName} on ${signedSubject(run, shown)}`
-              : run.deliveryProjectName
-          }
+        <StaleNotice vm={vm} run={run} appRole={appRole} />
+        <RequirementsChangedNotice run={run} changed={vm.requirementsChanged} />
+        <SignoffBanner
+          run={run}
+          subject={signedSubject(run, shown)}
+          reopen={reopen}
         />
-      ) : null}
-    </div>
+        <HeadsList
+          heads={vm.heads.length > 0 ? vm.heads : run.repositories}
+          withRun
+          shown={shown}
+        />
+        {/* Who started the run sits in its progress box, under the count. */}
+        <RunToolbar
+          checklistMode={checklistMode}
+          summaryShown={summaryShown}
+          run={run}
+          list={list}
+          shown={shown}
+          canEditTestCases={run.items.some((item) => testCases.canManage(item))}
+          onCreateTestCases={() => setTestCaseEditorOpen(true)}
+        />
+        {run.items.some((item) => testCases.canManage(item)) ? (
+          <QaImportControl
+            projectId={deliveryProjectId}
+            mode="test-cases"
+            onImported={vm.refresh}
+            stories={run.items
+              .filter(
+                (item) =>
+                  testCases.canManage(item) &&
+                  item.requirementId &&
+                  item.sourceItemId,
+              )
+              .map((item) => ({
+                requirementId: item.requirementId!,
+                itemId: item.sourceItemId!,
+                label: `${item.requirementName} / ${item.title}`,
+              }))}
+          />
+        ) : null}
+        {list.status === 'empty' ? (
+          <p className="pqa-note">{runFilterEmptyText(list.filter)}</p>
+        ) : null}
+        {list.groups.map((group) => (
+          <RunGroup
+            key={group.key}
+            group={group}
+            list={list}
+            editor={editor}
+            evidence={evidence}
+            testCases={testCases}
+            checklistMode={checklistMode}
+            onReload={vm.reload}
+          />
+        ))}
+        <RunTestCaseEditorSlot
+          checklistMode={checklistMode}
+          open={testCaseEditorOpen}
+          onClose={() => setTestCaseEditorOpen(false)}
+          run={run}
+          vm={vm}
+          testCases={testCases}
+        />
+        {run.status === 'open' && lockedNumber === null ? (
+          <SignoffFooter vm={signoff} />
+        ) : null}
+        {signoff.canSignOff ? (
+          <SignoffDialog
+            vm={signoff}
+            description={
+              shown
+                ? `${run.deliveryProjectName} on ${signedSubject(run, shown)}`
+                : run.deliveryProjectName
+            }
+          />
+        ) : null}
+      </div>
+    </QaHistoryScope>
   );
 }
 
@@ -624,11 +648,11 @@ function RunBody({
  * page has one.
  */
 function DeliveredRun({
-  number,
+  iteration,
   next,
   onOpenHistory,
 }: Readonly<{
-  number: number;
+  iteration: IterationRef;
   next: StartIterationViewModel;
   onOpenHistory?: () => void;
 }>) {
@@ -636,7 +660,7 @@ function DeliveredRun({
     <div className="pqa-delivered-state">
       <div className="pqa-delivered" role="status">
         <p className="pqa-delivered__title">
-          {deliveredIterationTitle(number)}
+          {deliveredIterationTitle(iteration)}
         </p>
         <p className="pqa-delivered__text">
           {deliveredRunText(Boolean(onOpenHistory))}
@@ -724,6 +748,12 @@ export function ProjectRunPanel({
   return <div className="pqa-run">{body}</div>;
 }
 
+/** The run's Iteration once it is delivered (its work has left the tab); null otherwise. */
+function deliveredIterationOf(run: ProjectQaRun | null): IterationRef | null {
+  const iteration = run?.iteration ?? null;
+  return lockedIterationNumber(iteration) === null ? null : iteration;
+}
+
 function projectRunBody({
   deliveryProjectId,
   vm,
@@ -743,9 +773,7 @@ function projectRunBody({
   checklistMode: boolean;
   next: StartIterationViewModel;
 }>) {
-  const deliveredNumber = vm.run
-    ? lockedIterationNumber(vm.run.iteration)
-    : null;
+  const delivered = deliveredIterationOf(vm.run);
   let body: ReactNode;
   if (vm.status === 'idle' || vm.status === 'loading') body = <RunSkeleton />;
   else if (vm.status === 'unavailable') {
@@ -768,10 +796,10 @@ function projectRunBody({
       </PanelState>
     );
   } else if (!vm.run) body = <NoRun vm={vm} appRole={appRole} next={next} />;
-  else if (deliveredNumber !== null) {
+  else if (delivered !== null) {
     body = (
       <DeliveredRun
-        number={deliveredNumber}
+        iteration={delivered}
         next={next}
         onOpenHistory={onOpenHistory}
       />

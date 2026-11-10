@@ -415,16 +415,19 @@ export class QaProjectDeliveryService {
     // committed change into an error for the caller.
     try {
       const anchor = await this.projectContext.anchorProjectId(project);
+      const version = this.iterations.versionOf(iteration).label;
       await this.auditEventsService?.recordProjectEvent({
         workspaceId: project.groupId,
         projectId: anchor,
         actorUserId: actor.userId,
         eventCode: QA_ITERATION_DELIVERED_EVENT,
-        message: `Iteration ${String(iteration.number)} of Project "${project.name}" was delivered`,
+        message: `Iteration ${String(iteration.number)} (${version}) of Project "${project.name}" was delivered`,
         metadata: {
           deliveryProjectId: project.deliveryProjectId,
           iterationId: iteration.id,
           number: iteration.number,
+          version,
+          revisionType: iteration.revision_type ?? null,
           signoffRunId: iteration.signoff_run_id,
           repositories: repositories.map((repository) => ({ ...repository })),
         },
@@ -471,7 +474,7 @@ export class QaProjectDeliveryService {
           userId,
           projectId: anchor,
           eventCode: QA_ITERATION_DELIVERED_EVENT,
-          title: `Iteration ${String(iteration.number)} of ${project.name} was delivered`,
+          title: `Iteration ${String(iteration.number)} (${this.iterations.versionOf(iteration).label}) of ${project.name} was delivered`,
           body,
         }),
       ),

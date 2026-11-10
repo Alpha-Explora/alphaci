@@ -22,6 +22,9 @@ export type RequirementKind = 'functional' | 'system';
 
 export type RequirementProgress = 'todo' | 'in_progress' | 'done';
 
+/** A story's priority in the backlog. */
+export type BacklogPriority = 'low' | 'medium' | 'high' | 'urgent';
+
 export interface ProgressCounts {
   todo: number;
   in_progress: number;
@@ -95,6 +98,9 @@ export interface RequirementItem {
   canSetProgress: boolean | null;
   /** QA's test cases for this story, by category. Empty on a System item or an older backend. */
   testCategories: TestCategoryDefinition[];
+  /** "YYYY-MM-DD" or null. Absent (undefined) on a backend without schedules: nothing to show or edit. */
+  dueDate?: string | null;
+  priority?: BacklogPriority | null;
 }
 
 export interface Requirement {

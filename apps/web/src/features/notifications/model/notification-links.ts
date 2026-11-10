@@ -19,10 +19,24 @@ const QA_STUDIO_DEEP_LINK_EVENTS: ReadonlySet<string> = new Set([
   'qa.run.signed_off',
   'qa.item.retest_requested',
   'qa.promotion.merged',
+  'qa.promotion.override_merged',
+  'qa.iteration.started',
+  'qa.iteration.delivered',
 ]);
 
 function projectPath(projectId: string): string {
   return `/projects/${encodeURIComponent(projectId)}`;
+}
+
+/** Events that open one tab of the project page; any other opens the page itself. */
+const PROJECT_TAB_EVENTS: Readonly<Record<string, string>> = {
+  // Team to-dos sit on the Checklists tab, above the Project's stories.
+  'project.todo.assigned': 'checklists',
+};
+
+function projectEventHref(projectId: string, eventCode: string): string {
+  const tab = PROJECT_TAB_EVENTS[eventCode];
+  return tab ? `${projectPath(projectId)}#${tab}` : projectPath(projectId);
 }
 
 /** §7: straight into the project folder when both ids are known, else the
@@ -78,5 +92,5 @@ export function notificationHref(
     return qaStudioDeepLinkHref(projectId, appRole);
   }
   if (!projectId) return null;
-  return projectPath(projectId);
+  return projectEventHref(projectId, item.eventCode);
 }

@@ -84,6 +84,34 @@ describe('isAllowedPullRequestRoute', () => {
   });
 });
 
+describe('special access', () => {
+  it('keeps known grants only, in canonical order', () => {
+    assert.deepEqual(
+      rules.parseSpecialAccess(['deployment_override', 'owner', 'qa_release']),
+      ['qa_release', 'deployment_override'],
+    );
+    assert.deepEqual(rules.parseSpecialAccess('qa_release'), []);
+  });
+
+  it('makes only a Developer with qa_release act as QA', () => {
+    assert.equal(rules.actingQaRole('member', ['qa_release']), 'qa');
+    assert.equal(rules.actingQaRole('member', []), 'member');
+    assert.equal(rules.actingQaRole('lead', ['qa_release']), 'lead');
+    assert.equal(rules.actingQaRole('member', null), 'member');
+    assert.equal(rules.actingQaRole(undefined, ['qa_release']), undefined);
+  });
+
+  it('lets admins and deployment_override holders override the gate', () => {
+    assert.equal(rules.canOverrideDeployment('admin', []), true);
+    assert.equal(
+      rules.canOverrideDeployment('member', ['deployment_override']),
+      true,
+    );
+    assert.equal(rules.canOverrideDeployment('lead', ['qa_release']), false);
+    assert.equal(rules.canOverrideDeployment(null, null), false);
+  });
+});
+
 describe('index.d.ts', () => {
   it('declares exactly what index.js exports', () => {
     const declared = [

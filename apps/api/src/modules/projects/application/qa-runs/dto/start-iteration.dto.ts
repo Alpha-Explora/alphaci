@@ -2,11 +2,17 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsIn,
   IsOptional,
   IsString,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
+
+import {
+  REVISION_TYPES,
+  type RevisionType,
+} from '../../../domain/iteration-version.rules';
 
 /** Most items one start can carry over; bounds the payload. */
 export const ITERATION_CARRY_MAX_ITEMS = 2000;
@@ -34,4 +40,9 @@ export class StartIterationDto {
   @ValidateNested()
   @Type(() => CarryOverDto)
   carryOver?: CarryOverDto;
+
+  /** Minor (default): v1.0.0 -> v1.1.0. Patch: v1.1.0 -> v1.1.1. Major: v1.4.2 -> v2.0.0. */
+  @IsOptional()
+  @IsIn(REVISION_TYPES)
+  revisionType?: RevisionType;
 }

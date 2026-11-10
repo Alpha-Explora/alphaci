@@ -125,6 +125,8 @@ export class AuthController {
     // stored app_role is 'member' got member UI while every API gate treated
     // them as admin.
     const appRole = platformRole !== null ? 'admin' : storedAppRole;
+    const specialAccess =
+      await this.platformAdminAccessService.findSpecialAccess(user.id);
 
     return {
       authenticated: true,
@@ -140,6 +142,9 @@ export class AuthController {
       // Console). Surfaced so the Admin Console can explain WHY a role is
       // what it is.
       appRoleSource,
+      // Admin-granted extras: 'qa_release' (acts as QA, may sign off and
+      // merge) and 'deployment_override' (may merge past a blocked gate).
+      specialAccess,
       subscription: await Promise.resolve(
         this.subscriptionService.getForUser(user),
       ),

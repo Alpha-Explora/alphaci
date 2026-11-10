@@ -371,6 +371,16 @@ export interface PullRequestDetailResponse {
   checks: PullRequestCheck[];
   /** True when the viewer opened it — GitHub forbids approving your own. */
   viewerIsAuthor: boolean;
+  /**
+   * Only for a conflicting pull request: the files changed on both sides
+   * since the branches diverged. Absent on an older backend.
+   */
+  conflicts?: PullRequestConflicts | null;
+}
+
+export interface PullRequestConflicts {
+  files: Array<{ path: string; headChanges: number; baseChanges: number }>;
+  truncated: boolean;
 }
 
 /** What happened when the system asked GitHub to merge. */

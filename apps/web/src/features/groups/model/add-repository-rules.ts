@@ -240,3 +240,18 @@ export function addRepositoryErrorMessage(cause: unknown): string {
   }
   return 'The repository could not be created. Please try again.';
 }
+
+/**
+ * The setup wizard on "Existing repository", filed in this Project: the
+ * Project fixes the team, so no ?group= is needed.
+ */
+export function attachExistingRepositoryHref(
+  deliveryProjectId: string,
+): string {
+  const params = new URLSearchParams({
+    tab: 'setup',
+    mode: 'existing',
+    project: deliveryProjectId,
+  });
+  return `/workflows?${params.toString()}`;
+}

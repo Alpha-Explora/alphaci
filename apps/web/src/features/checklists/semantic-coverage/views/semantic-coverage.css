@@ -1,0 +1,121 @@
+/* Semantic test coverage: a folded card of stories and their outcomes. Tokens only. */
+.semantic-coverage {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--bg-elevated);
+}
+
+.semantic-coverage__summary {
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.semantic-coverage__summary:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.semantic-coverage__headline {
+  margin: 0.6rem 0 0.2rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.semantic-coverage__detail,
+.semantic-coverage__hint,
+.semantic-coverage__feature {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.semantic-coverage__detail {
+  margin: 0.3rem 0;
+}
+
+.semantic-coverage__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  font-size: 0.8rem;
+}
+
+.semantic-coverage__toggle input[type='checkbox'] {
+  width: auto;
+  min-height: auto;
+}
+
+.semantic-coverage__stories,
+.semantic-coverage__criteria {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.semantic-coverage__story {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+}
+
+.semantic-coverage__story-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+}
+
+.semantic-coverage__chip,
+.semantic-coverage__criterion-status {
+  --tone: var(--text-secondary);
+
+  padding: 0.05rem 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--tone) 40%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--tone) 10%, transparent);
+  color: var(--tone);
+  font-size: 0.7rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+[data-status='covered'] > .semantic-coverage__criterion-status,
+.semantic-coverage__chip[data-status='covered'] {
+  --tone: var(--success);
+}
+
+[data-status='weak'] > .semantic-coverage__criterion-status,
+.semantic-coverage__chip[data-status='untested'],
+.semantic-coverage__chip[data-status='gaps'] {
+  --tone: var(--warning);
+}
+
+[data-status='uncovered'] > .semantic-coverage__criterion-status {
+  --tone: var(--danger);
+}
+
+.semantic-coverage__criteria {
+  margin-top: 0.45rem;
+}
+
+.semantic-coverage__criteria > li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.5rem;
+  align-items: baseline;
+  font-size: 0.8rem;
+}
+
+.semantic-coverage__hint {
+  grid-column: 2;
+}

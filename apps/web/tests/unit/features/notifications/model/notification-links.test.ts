@@ -33,7 +33,12 @@ describe('notificationHref', () => {
     ).toBeNull();
   });
   describe('QA refusals: returned, failed, blocked (spec §6)', () => {
-    it.each(['qa.item.returned_to_dev', 'qa.item.failed', 'qa.item.blocked'])(
+    it.each([
+      'qa.item.returned_to_dev',
+      'qa.item.failed',
+      'qa.item.blocked',
+      'qa.run.rejected',
+    ])(
       'sends the developer to Overview with the My QA items focus flag (%s)',
       (eventCode) => {
         expect(

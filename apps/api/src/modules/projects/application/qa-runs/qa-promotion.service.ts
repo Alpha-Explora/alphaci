@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Inject,
@@ -21,6 +22,10 @@ import {
 } from '#kernel/ports/github.port';
 import { deliveryEntryFor } from '../../domain/project-delivery.rules';
 import { canMergeQaPromotion } from '../../domain/qa-run-access.rules';
+import {
+  canOverrideDeployment,
+  OVERRIDE_REASON_MIN_LENGTH,
+} from '#kernel/rules/special-access.rules';
 import { QaRequirementsRepository } from '../../infrastructure/qa-requirements.repository';
 import type { ProvisionedProjectRow } from '../../infrastructure/projects.repository';
 import type { DeliveredRepository } from '../qa-checklists/project-iterations.contracts';
@@ -39,6 +44,7 @@ import { qaProjectRequired } from '../qa-checklists/qa-errors';
 import { buildQaPromotionPullRequestBody } from './qa-promotion.pr-body';
 import {
   QA_PROMOTION_MERGED_EVENT,
+  QA_PROMOTION_OVERRIDE_EVENT,
   type QaPromotionChecklist,
   type QaPromotionMergeAllRepositoryResult,
   type QaPromotionMergeAllResult,
@@ -60,7 +66,16 @@ import {
 
 export type { QaRunActorContext };
 
-type QaPromotionStatusCore = Omit<QaPromotionStatus, 'canMerge'>;
+type QaPromotionStatusCore = Omit<
+  QaPromotionStatus,
+  'canMerge' | 'canOverride'
+>;
+
+/** An authorised merge past a blocked gate: why, and what it skipped. */
+interface GateOverride {
+  reason: string;
+  bypassed: string[];
+}
 
 /** What the status was computed from, kept for the merge paths (null for an unfiled repository). */
 interface StatusContext {
@@ -147,23 +162,29 @@ export class QaPromotionService {
     actor: QaRunActorContext,
   ): Promise<QaPromotionStatus> {
     const project = await this.requireVisibleProject(projectId, actor.userId);
-    const [{ status }, role] = await Promise.all([
+    const [{ status }, role, special] = await Promise.all([
       this.computeStatus(project, actor),
       this.access.findAppRole(actor.userId),
+      this.access.findSpecialAccess(actor.userId),
     ]);
-    return { ...status, canMerge: canMergeQaPromotion(role) };
+    return {
+      ...status,
+      canMerge: canMergeQaPromotion(role),
+      canOverride: canOverrideDeployment(role, special),
+    };
   }
 
   async merge(
     projectId: string,
     actor: QaRunActorContext,
+    overrideReason?: string,
   ): Promise<QaPromotionMergeResult> {
     const project = await this.requireVisibleProject(projectId, actor.userId);
 
     const role = await this.access.findAppRole(actor.userId);
     if (!canMergeQaPromotion(role)) {
       throw new ForbiddenException(
-        'Only a lead or admin may merge uat to main.',
+        'Your role is not permitted to merge uat to main.',
       );
     }
 
@@ -178,16 +199,24 @@ export class QaPromotionService {
     if (context.evaluation.iteration.status === 'delivered') {
       throw iterationDelivered(context.evaluation.iteration.number);
     }
+    let override: GateOverride | null = null;
     if (!status.eligible) {
+      override = await this.authorizeOverride(
+        actor,
+        status.reasons,
+        overrideReason,
+        context.evaluation,
+      );
+    }
+    // Eligible implies every head was read; an override needs this one too.
+    const headSha = status.headSha;
+    if (!headSha) {
       throw new ConflictException({
         code: 'QA_PROMOTION_BLOCKED',
-        message: 'QA promotion is not eligible yet.',
+        message: 'Could not read the uat branch head.',
         reasons: status.reasons,
       });
     }
-    // Guaranteed non-null: eligible only becomes true when every head, this
-    // repository's included, was read.
-    const headSha = status.headSha as string;
 
     // Every gate above has passed. The GitHub writes below (promotion PR,
     // merge) go out as the ALPHACI GitHub App: the org default permission is
@@ -212,6 +241,7 @@ export class QaPromotionService {
       headSha,
       pullRequest: status.pullRequest,
       evaluation: context.evaluation,
+      override,
     });
     if (outcome.kind === 'failed') {
       return {
@@ -259,6 +289,7 @@ export class QaPromotionService {
   async mergeAll(
     deliveryProjectId: string,
     actor: QaRunActorContext,
+    overrideReason?: string,
   ): Promise<QaPromotionMergeAllResult> {
     const folder = await this.projectContext.requireProject(
       deliveryProjectId,
@@ -267,7 +298,7 @@ export class QaPromotionService {
     const role = await this.access.findAppRole(actor.userId);
     if (!canMergeQaPromotion(role)) {
       throw new ForbiddenException(
-        'Only a lead or admin may merge uat to main.',
+        'Your role is not permitted to merge uat to main.',
       );
     }
 
@@ -282,7 +313,15 @@ export class QaPromotionService {
     if (folder.repositories.length === 0) {
       throw projectHasNoRepositories();
     }
-    if (!evaluation.gate.eligible || !evaluation.latest) {
+    const override = evaluation.gate.eligible
+      ? null
+      : await this.authorizeOverride(
+          actor,
+          evaluation.gate.reasons,
+          overrideReason,
+          evaluation,
+        );
+    if (!evaluation.latest) {
       throw new ConflictException({
         code: 'QA_PROMOTION_BLOCKED',
         message: 'QA promotion is not eligible yet.',
@@ -315,6 +354,7 @@ export class QaPromotionService {
         repository,
         actor,
         evaluation,
+        override,
       );
       if (outcome.kind === 'failed') {
         results.push({
@@ -490,6 +530,7 @@ export class QaPromotionService {
           deliveredAt: iteration.delivered_at
             ? new Date(iteration.delivered_at).toISOString()
             : null,
+          versionLabel: this.iterations.versionOf(iteration).label,
         },
         reasonCodes: delivered ? ['ITERATION_DELIVERED'] : [],
       },
@@ -559,11 +600,59 @@ export class QaPromotionService {
   // Write path (POST .../merge and merge-all)
   // ---------------------------------------------------------------------
 
+  /**
+   * The gate said no. Without a reason that is the answer (409, as before).
+   * With one, only an admin or a deployment_override holder may go on, the
+   * reason must be written out, and QA must have signed off a run: the
+   * override skips the gate's checks, never QA's sign-off itself.
+   */
+  private async authorizeOverride(
+    actor: QaRunActorContext,
+    reasons: string[],
+    overrideReason: string | undefined,
+    evaluation: ProjectGateEvaluation,
+  ): Promise<GateOverride> {
+    if (overrideReason === undefined) {
+      throw new ConflictException({
+        code: 'QA_PROMOTION_BLOCKED',
+        message: 'QA promotion is not eligible yet.',
+        reasons,
+      });
+    }
+    const [role, special] = await Promise.all([
+      this.access.findAppRole(actor.userId),
+      this.access.findSpecialAccess(actor.userId),
+    ]);
+    if (!canOverrideDeployment(role, special)) {
+      throw new ForbiddenException({
+        code: 'DEPLOYMENT_OVERRIDE_FORBIDDEN',
+        message:
+          'Only an admin or a person with deployment override access may merge past the gate.',
+      });
+    }
+    const reason = overrideReason.trim();
+    if (reason.length < OVERRIDE_REASON_MIN_LENGTH) {
+      throw new BadRequestException({
+        code: 'OVERRIDE_REASON_REQUIRED',
+        message: `Explain the override in at least ${String(OVERRIDE_REASON_MIN_LENGTH)} characters.`,
+      });
+    }
+    if (!evaluation.latest) {
+      throw new ConflictException({
+        code: 'OVERRIDE_NEEDS_SIGNOFF',
+        message: 'An override still needs a QA run that was signed off.',
+        reasons,
+      });
+    }
+    return { reason, bypassed: [...reasons] };
+  }
+
   /** One repository of merge-all: its own credential, its own PR, its own failure. */
   private async mergeCoveredRepository(
     repository: { projectId: string; repoFullName: string; headSha: string },
     actor: QaRunActorContext,
     evaluation: ProjectGateEvaluation,
+    override: GateOverride | null,
   ): Promise<RepositoryMergeOutcome> {
     try {
       const project = await this.access.findVisibleProject(
@@ -604,6 +693,7 @@ export class QaPromotionService {
         headSha: repository.headSha,
         pullRequest,
         evaluation,
+        override,
       });
     } catch (error) {
       // One repository failing (uat moved, GitHub down) must not stop the rest.
@@ -636,8 +726,9 @@ export class QaPromotionService {
     headSha: string;
     pullRequest: QaPromotionPullRequestRef | null;
     evaluation: ProjectGateEvaluation;
+    override: GateOverride | null;
   }): Promise<RepositoryMergeOutcome> {
-    const { project, actor, credential, headSha, evaluation } = input;
+    const { project, actor, credential, headSha, evaluation, override } = input;
 
     // GitHub refuses to open a promotion PR when there is nothing to merge, so
     // ask first: "main already has it" is a fact to record, never an error.
@@ -702,6 +793,9 @@ export class QaPromotionService {
       credential.via,
     );
     await this.notifyLeadsExcludingActor(project, actor, pr, headSha);
+    if (override) {
+      await this.recordOverride(project, actor, pr, headSha, override);
+    }
 
     return {
       kind: 'merged',
@@ -883,6 +977,56 @@ export class QaPromotionService {
 
   private truncate(value: string, max: number): string {
     return value.length > max ? `${value.slice(0, max)}…` : value;
+  }
+
+  /**
+   * An override is never quiet: its own audit event (the reason and every
+   * bypassed gate reason) and a notification to every lead but the actor.
+   */
+  private async recordOverride(
+    project: ProvisionedProjectRow,
+    actor: QaRunActorContext,
+    pr: ResolvedPullRequest,
+    headSha: string,
+    override: GateOverride,
+  ): Promise<void> {
+    await this.auditEventsService?.recordProjectEvent({
+      workspaceId: project.workspace_id ?? null,
+      projectId: project.id,
+      actorUserId: actor.userId,
+      eventCode: QA_PROMOTION_OVERRIDE_EVENT,
+      message: `Promotion gate overridden: uat (${headSha.slice(0, 7)}) merged to main via pull request #${String(pr.number)}`,
+      metadata: {
+        reason: override.reason,
+        bypassed: override.bypassed,
+        pullRequestNumber: pr.number,
+        headSha,
+      },
+    });
+    const notifications = this.notificationEventsService;
+    if (!notifications || !project.workspace_id) {
+      return;
+    }
+    const leadIds = await this.access.listWorkspaceLeadIds(
+      project.workspace_id,
+    );
+    const body = this.truncate(
+      `${actor.userLogin || 'Someone'} merged uat (${headSha.slice(0, 7)}) to main past the promotion gate: ${override.reason}`,
+      NOTIFICATION_BODY_TRUNCATE_LENGTH,
+    );
+    await Promise.all(
+      leadIds
+        .filter((id) => id !== actor.userId)
+        .map((userId) =>
+          notifications.record({
+            userId,
+            projectId: project.id,
+            eventCode: QA_PROMOTION_OVERRIDE_EVENT,
+            title: 'Promotion gate overridden',
+            body,
+          }),
+        ),
+    );
   }
 
   // ---------------------------------------------------------------------

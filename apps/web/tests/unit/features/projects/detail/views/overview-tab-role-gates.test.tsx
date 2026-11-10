@@ -26,6 +26,9 @@ jest.mock('../../../../../../src/features/checklists/returned', () => ({
 jest.mock('../../../../../../src/features/projects/previews', () => ({
   ProductionDeploymentPanel: () => null,
 }));
+jest.mock('@/features/capabilities/current', () => ({
+  useCapabilities: jest.fn(() => ({ releaseGovernanceEnabled: true })),
+}));
 
 const runs = qaRunsRepository as jest.Mocked<typeof qaRunsRepository>;
 
@@ -174,7 +177,7 @@ describe('Overview contents', () => {
 });
 
 describe('Overview Ready for production card', () => {
-  it('shows a Developer a read-only card: no merge button, no Studio link', async () => {
+  it('shows a Developer the card with the gated Merge to main, and no Studio link', async () => {
     const container = await render('member');
     expect(runs.promotion).toHaveBeenCalledWith('p1');
     expect(
@@ -183,7 +186,7 @@ describe('Overview Ready for production card', () => {
     const buttons = [...container.querySelectorAll('button')].map(
       (b) => b.textContent ?? '',
     );
-    expect(buttons.some((text) => text.includes('Merge to main'))).toBe(false);
+    expect(buttons.some((text) => text.includes('Merge to main'))).toBe(true);
     expect(container.querySelector("a[href*='qa']")).toBeNull();
   });
 

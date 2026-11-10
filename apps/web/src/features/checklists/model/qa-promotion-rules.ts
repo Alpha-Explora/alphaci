@@ -8,12 +8,13 @@
  * true only when the server sent exactly `true`, and the role check below can
  * only hide the button, never show it. */
 
+import { OVERRIDE_REASON_MIN_LENGTH } from '@alphaci/persona-rules';
 import type { AppRole } from '@/shared/api/contracts';
 import { QA_BRANCH } from '@/shared/api/pipeline-branches';
 
 import {
   iterationDateLabel,
-  iterationName,
+  iterationVersionName,
   normalizeIterationRef,
 } from './iteration-rules';
 import { normalizeHeads } from './project-run-rules';
@@ -149,6 +150,7 @@ export function normalizePromotionStatus(value: unknown): QaPromotionStatus {
     reasons: texts(raw.reasons),
     pullRequest: pullRequestFrom(raw.pullRequest),
     canMerge: raw.canMerge === true,
+    canOverride: raw.canOverride === true,
   };
 }
 
@@ -183,7 +185,7 @@ type DeliveryFlags = Partial<
 /** "Iteration 3 delivered", once the server says the Project's iteration reached main. */
 export function deliveredTitle(status: DeliveryFlags): string {
   return status.iteration
-    ? `${iterationName(status.iteration.number)} delivered`
+    ? `${iterationVersionName(status.iteration)} delivered`
     : 'Delivered to production';
 }
 
@@ -409,9 +411,11 @@ export function blockingReasons(
 
 /* ── Merge to main ───────────────────────────────────────────────────────── */
 
-/** Team leads and Admins merge; QA Team reads the same status. */
+/** Known team roles may execute a release after the server approval gate passes. */
 export function roleCanMerge(role: AppRole | null | undefined): boolean {
-  return role === 'lead' || role === 'admin';
+  return (
+    role === 'lead' || role === 'admin' || role === 'qa' || role === 'member'
+  );
 }
 
 /**
@@ -424,6 +428,52 @@ export function canOfferMerge(
   role: AppRole | null | undefined,
 ): boolean {
   return status.canMerge && roleCanMerge(role) && !status.iterationDelivered;
+}
+
+/** The shortest written reason the server accepts for an override (shared with the API). */
+export { OVERRIDE_REASON_MIN_LENGTH };
+
+/**
+ * Whether to offer "Override gate": only while the gate is closed, for a
+ * viewer the server allows, on a Project build QA has signed off. The server
+ * checks all of it again.
+ */
+export function canOfferOverride(
+  status: Pick<QaPromotionStatus, 'canOverride' | 'eligible' | 'headSha'> &
+    Partial<
+      Pick<
+        QaPromotionStatus,
+        'iterationDelivered' | 'repositoryDelivered' | 'scope' | 'run'
+      >
+    >,
+): boolean {
+  return (
+    status.canOverride &&
+    !status.eligible &&
+    !status.iterationDelivered &&
+    !status.repositoryDelivered &&
+    status.scope === 'project' &&
+    Boolean(status.headSha) &&
+    Boolean(status.run)
+  );
+}
+
+/** canOfferOverride, only where release governance is on (the merge route needs it). */
+export function overrideOffered(
+  status: QaPromotionStatus | null,
+  releaseGovernanceEnabled: boolean,
+): boolean {
+  return (
+    releaseGovernanceEnabled && status !== null && canOfferOverride(status)
+  );
+}
+
+/** Why the override cannot be sent yet, or null when the reason is long enough. */
+export function overrideReasonProblem(reason: string): string | null {
+  const length = reason.trim().length;
+  return length >= OVERRIDE_REASON_MIN_LENGTH
+    ? null
+    : `Explain why in at least ${String(OVERRIDE_REASON_MIN_LENGTH)} characters (${String(length)} so far).`;
 }
 
 type MergeReasonStatus = Pick<
@@ -532,7 +582,7 @@ function kindOf(cause: unknown): QaPromotionMergeErrorKind {
 const FIXED_COPY: Partial<Record<QaPromotionMergeErrorKind, string>> = {
   project_required: UNFILED_REASON,
   moved: `${QA_BRANCH} moved after QA signed off, so the commit QA approved is no longer ${QA_BRANCH}'s head. The status is refreshed: QA must verify the new commit before it can be merged.`,
-  forbidden: `Only a Product owner or admin can merge ${QA_BRANCH} into ${PROMOTION_TARGET_BRANCH}.`,
+  forbidden: `Your role cannot merge ${QA_BRANCH} into ${PROMOTION_TARGET_BRANCH}.`,
   not_found: `This project, or its ${QA_BRANCH} → ${PROMOTION_TARGET_BRANCH} pull request, could not be found.`,
   no_repositories: QA_ERROR_MESSAGES.PROJECT_HAS_NO_REPOSITORIES,
 };
@@ -581,6 +631,14 @@ export function promotionMergeError(cause: unknown): QaPromotionMergeError {
     reasons: kind === 'blocked' ? texts(errorDetails(cause)?.reasons) : [],
     signIn: kind === 'reauth',
   };
+}
+
+/**
+ * An override failure, in the server's own words when it gave any (who may
+ * override, the reason's length, the missing sign-off), else the merge copy.
+ */
+export function overrideErrorMessage(cause: unknown): string {
+  return errorMessage(cause) ?? promotionMergeError(cause).message;
 }
 
 /** Outcomes the card shows in place (the dialog closes); the rest stay in the dialog to retry. */

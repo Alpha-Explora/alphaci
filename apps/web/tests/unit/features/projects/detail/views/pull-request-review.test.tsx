@@ -363,7 +363,7 @@ describe('PullRequestsTab, Phase 1 security gates', () => {
     );
     expect(merge).toBeUndefined();
     expect(host.textContent).toContain(
-      'Merges into main go through PO Studio — Ready for production.',
+      'Merges into main use the production readiness controls on Overview or in your Studio.',
     );
   });
 
@@ -381,19 +381,25 @@ describe('PullRequestsTab, Phase 1 security gates', () => {
     expect(onOpenPoStudio).toHaveBeenCalled();
   });
 
-  it('gives a Developer the same main-merge notice, with no PO Studio link', async () => {
-    // A Developer cannot open QA Studio at all, so nothing here should
-    // promise a tab that is not there.
+  it('gives a Developer the same main-merge notice, pointing at Overview instead of PO Studio', async () => {
+    // A Developer has no Studio: the release controls are on Overview.
     mockedDetail.mockResolvedValue(detailWithBase('main'));
     const onOpenPoStudio = jest.fn();
 
     await render('member', onOpenPoStudio);
 
-    expect(host.textContent).toContain('Merges into main go through PO Studio');
+    expect(host.textContent).toContain(
+      'Merges into main use the production readiness controls',
+    );
     const link = [...host.querySelectorAll('button')].find(
       (button) => button.textContent === 'Go to PO Studio',
     );
     expect(link).toBeUndefined();
+    expect(
+      [...host.querySelectorAll('button')].some(
+        (button) => button.textContent === 'Go to Overview',
+      ),
+    ).toBe(true);
   });
 
   it('hides Merge for a Developer on feature -> uat, with the route note', async () => {

@@ -415,6 +415,14 @@ function promotionVm(
     confirmMerge: jest.fn(),
     dismissOutcome: jest.fn(),
     reload,
+    canOverride: false,
+    overrideState: 'idle',
+    overrideReason: '',
+    setOverrideReason: jest.fn(),
+    overrideError: null,
+    openOverride: jest.fn(),
+    cancelOverride: jest.fn(),
+    confirmOverride: jest.fn(),
   };
 }
 

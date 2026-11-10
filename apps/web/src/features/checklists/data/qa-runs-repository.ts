@@ -190,10 +190,13 @@ export const qaRunsRepository = {
    * the gate, resolves uat's head and the promotion PR itself, so a stale
    * page can never merge a commit QA did not approve.
    */
-  mergePromotion(projectId: string): Promise<QaPromotionMergeWire> {
+  mergePromotion(
+    projectId: string,
+    overrideReason?: string,
+  ): Promise<QaPromotionMergeWire> {
     return request<QaPromotionMergeWire>(
       `/projects/${id(projectId)}/qa/promotion/merge`,
-      post(),
+      post(overrideReason === undefined ? undefined : { overrideReason }),
     );
   },
 };

@@ -27,7 +27,11 @@ const EXPECTED: Array<
   ['canSignOff', canSignOff, ['admin', 'lead', 'qa']],
   ['canDispatchAutomation', canDispatchAutomation, ['admin', 'lead', 'qa']],
   ['canReopenRun', canReopenRun, ['admin', 'lead']],
-  ['canMergeQaPromotion', canMergeQaPromotion, ['admin', 'lead']],
+  [
+    'canMergeQaPromotion',
+    canMergeQaPromotion,
+    ['admin', 'lead', 'qa', 'member'],
+  ],
   ['canRequestRetest', canRequestRetest, ['admin', 'lead', 'member']],
   ['canManageTestCases', canManageTestCases, ['admin', 'qa']],
 ];

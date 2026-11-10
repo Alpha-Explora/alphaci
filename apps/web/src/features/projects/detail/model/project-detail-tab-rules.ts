@@ -16,6 +16,7 @@ import {
   canManageProjectLifecycle,
 } from '@alphaci/persona-rules';
 import { isFailedConclusion } from './github-conclusion';
+import type { SpecialAccess } from '@/shared/api/special-access';
 import { isPullRequestRole } from './pull-request-compose-rules';
 
 export type ProjectDetailTab =
@@ -258,8 +259,12 @@ const QA_CAPABILITY_TABS: ReadonlySet<ProjectDetailTab> =
 export function visibleProjectDetailTabs(
   appRole: AppRole | null | undefined,
   flags: Readonly<{ qaChecklistsEnabled: boolean }>,
+  specialAccess: readonly SpecialAccess[] = [],
 ): ProjectDetailTab[] {
-  const allowed = projectDetailTabsForRole(appRole);
+  const allowed = new Set(projectDetailTabsForRole(appRole));
+  // qa_release: a Developer also works in QA Studio, keeping every Developer tab.
+  if (appRole === 'member' && specialAccess.includes('qa_release'))
+    allowed.add('qa');
   return PROJECT_DETAIL_TABS.filter(
     (tab) =>
       allowed.has(tab) &&

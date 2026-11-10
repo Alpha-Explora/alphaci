@@ -134,6 +134,9 @@ function summarySheet(report: AnyQaReport): QaSheet {
     ...(project && report.run.iteration
       ? [['Iteration', report.run.iteration.number] as QaSheetCell[]]
       : []),
+    ...(project && report.run.iteration?.versionLabel
+      ? [['Version', report.run.iteration.versionLabel] as QaSheetCell[]]
+      : []),
     ['Branch', run.branch],
     ...(project ? [] : [['Commit', report.run.commitSha] as QaSheetCell[]]),
     ['Run status', run.status === 'open' ? 'Open' : 'Signed off'],
