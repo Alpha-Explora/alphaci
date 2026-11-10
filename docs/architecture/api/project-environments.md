@@ -125,6 +125,18 @@ its project uses the target's branch and the target is the only one for that
 project, slot, and branch. Every other target keeps a null `environmentId`
 and its existing branch-based behavior until an operator attaches it.
 
+An environment's Render service that the platform provisioned
+(`flowci_managed`, `render_image_pushed`) is released through AlphaCI, because
+Render offers a deploy hook only from its dashboard and none can exist for
+such a service. The generated deploy job calls `release.yml` with the
+environment ID, name and target ID, and `POST /ci/releases` releases exactly
+that target: a body with `targetId` (and `environmentId`) is not looked up by
+branch, since environments may share one. The target must be the project's, in
+the slot named, and in that environment, and the branch may be any environment
+source branch. A service the customer owns is still deployed by
+`render-deploy.yml`, which needs an exact deploy hook, set as the
+`RENDER_DEPLOY_HOOK_URL` secret of the GitHub Environment.
+
 ## Creating a project with environments
 
 A single-repository project created with an `environments` list stores the

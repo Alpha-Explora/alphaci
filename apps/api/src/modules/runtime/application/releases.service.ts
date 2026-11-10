@@ -27,6 +27,10 @@ export interface StartReleaseInput {
   commitSha: string;
   artifact?: string | undefined;
   runUrl?: string | undefined;
+  /** Releases exactly this target, not the one the branch would pick. */
+  targetId?: string | undefined;
+  /** When given, the target must belong to this environment. */
+  environmentId?: string | undefined;
 }
 
 export interface ReleaseView {
@@ -194,6 +198,10 @@ export class ReleasesService {
     const slot = input.slot.trim();
     const branch = input.branch.trim();
 
+    if (input.targetId) {
+      return this.findTargetById(targets, input, slot);
+    }
+
     const target = targets.find(
       (candidate) =>
         candidate.slot === slot && (candidate.branchName ?? '') === branch,
@@ -214,6 +222,34 @@ export class ReleasesService {
       );
     }
 
+    return target;
+  }
+
+  /**
+   * An environment's pipeline names its target. Looking one up by branch
+   * would be wrong there, because environments may share a branch.
+   */
+  private findTargetById(
+    targets: readonly DeploymentTargetSummary[],
+    input: StartReleaseInput,
+    slot: string,
+  ): DeploymentTargetSummary {
+    const target = targets.find((candidate) => candidate.id === input.targetId);
+    if (!target) {
+      throw new NotFoundException(
+        'This project has no such deployment target.',
+      );
+    }
+    if (target.slot !== slot) {
+      throw new BadRequestException(
+        `That target deploys the ${target.slot} slot, not ${slot}.`,
+      );
+    }
+    if (input.environmentId && target.environmentId !== input.environmentId) {
+      throw new BadRequestException(
+        'That target does not belong to the environment being released.',
+      );
+    }
     return target;
   }
 

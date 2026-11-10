@@ -1,4 +1,7 @@
-import { WorkflowFragmentRegistry } from '#kernel/ports/workflow-fragment.port';
+import {
+  WorkflowFragmentRegistry,
+  type EnvironmentDeployInput,
+} from '#kernel/ports/workflow-fragment.port';
 
 import { renderWorkflowFragment } from './render-workflow.fragment';
 
@@ -82,5 +85,103 @@ describe('render deploy job', () => {
 
   it('health-checks the path the generated service exposes', () => {
     expect(releaseJob().with['healthcheck-path']).toBe('/health');
+  });
+});
+
+describe('render deploy job of an environment', () => {
+  const environment = {
+    id: 'env-qa',
+    slug: 'qa',
+    sourceBranch: 'release/qa',
+    role: 'non_production' as const,
+  };
+  const input = (
+    target: EnvironmentDeployInput['target'],
+  ): EnvironmentDeployInput => ({
+    environment,
+    targetId: 'target-qa',
+    ...(target ? { target } : {}),
+    needs: ['sign'],
+    if: 'true',
+    commitSha: '${{ github.sha }}',
+    artifact: '${{ needs.build.outputs.image }}@sha256:abc',
+  });
+  const context = {
+    serviceName: 'orders-api',
+    servicePath: '.',
+    centralWorkflowRef: 'v1',
+  };
+  const jobFor = (target: EnvironmentDeployInput['target']) =>
+    renderWorkflowFragment.environmentDeployJob!(input(target), context) as {
+      uses: string;
+      with: Record<string, unknown>;
+      secrets: Record<string, string> | string;
+    };
+
+  describe('for a service the platform provisioned', () => {
+    const managed = {
+      slot: 'backend',
+      ownershipMode: 'flowci_managed',
+      deploymentStrategy: 'render_image_pushed',
+    };
+
+    it('releases through AlphaCI, naming the environment and the exact target', () => {
+      const job = jobFor(managed);
+
+      expect(job.uses).toContain('release.yml@v1');
+      expect(job.with).toEqual({
+        'system-name': 'orders-api',
+        slot: 'backend',
+        branch: 'release/qa',
+        'commit-sha': '${{ github.sha }}',
+        artifact: '${{ needs.build.outputs.image }}@sha256:abc',
+        'healthcheck-path': '/health',
+        'environment-id': 'env-qa',
+        'environment-name': 'qa',
+        'target-id': 'target-qa',
+      });
+    });
+
+    it('carries only the AlphaCI token and address, no deploy hook and no hosting credential', () => {
+      expect(jobFor(managed).secrets).toEqual({
+        ALPHACI_TOKEN: '${{ secrets.ALPHACI_TOKEN }}',
+        ALPHACI_API_URL: '${{ secrets.ALPHACI_API_URL }}',
+      });
+    });
+
+    it('does not use render-deploy.yml, which needs a hook nothing can create', () => {
+      expect(jobFor(managed).uses).not.toContain('render-deploy.yml');
+    });
+  });
+
+  describe('for a service the customer owns', () => {
+    it.each([
+      [
+        'a bring-your-own service',
+        {
+          slot: 'backend',
+          ownershipMode: 'byo',
+          deploymentStrategy: 'render_image_pushed',
+        },
+      ],
+      [
+        'a managed service that is not image-pushed',
+        {
+          slot: 'backend',
+          ownershipMode: 'flowci_managed',
+          deploymentStrategy: 'render_existing_service',
+        },
+      ],
+      ['a target nothing is known about', undefined],
+    ])('still deploys %s with render-deploy.yml', (_label, target) => {
+      const job = jobFor(target);
+
+      expect(job.uses).toContain('render-deploy.yml@v1');
+      expect(job.secrets).toBe('inherit');
+      expect(job.with).toMatchObject({
+        'environment-id': 'env-qa',
+        'target-id': 'target-qa',
+      });
+    });
   });
 });

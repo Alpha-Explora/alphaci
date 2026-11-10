@@ -213,6 +213,52 @@ export const renderWorkflowFragment: WorkflowFragment = {
 };
 
 /**
+ * A Render service the platform provisioned is released by the platform
+ * (RenderReleaseService), the same rule the API applies. Render only offers a
+ * deploy hook from its dashboard, so there is none to give a workflow for such
+ * a service; render-deploy.yml in targeted mode needs one.
+ */
+function isPlatformReleased(input: EnvironmentDeployInput): boolean {
+  return (
+    input.target?.ownershipMode === 'flowci_managed' &&
+    input.target.deploymentStrategy === 'render_image_pushed'
+  );
+}
+
+/**
+ * Release one environment's managed Render target through AlphaCI: the image
+ * digest built for this release, named by environment and target ID. The
+ * release workflow asks the platform to release exactly that target, and the
+ * only credentials the job carries are the project's AlphaCI token and the
+ * address to send it to.
+ */
+function renderPlatformReleaseJob(
+  input: EnvironmentDeployInput,
+  context: WorkflowFragmentContext,
+): Record<string, unknown> {
+  return {
+    needs: input.needs,
+    if: input.if,
+    uses: `${CENTRAL_WORKFLOW_BASE}/release.yml@${context.centralWorkflowRef}`,
+    with: {
+      'system-name': context.serviceName,
+      slot: input.target?.slot,
+      branch: input.environment.sourceBranch,
+      'commit-sha': input.commitSha,
+      ...(input.artifact ? { artifact: input.artifact } : {}),
+      'healthcheck-path': '/health',
+      'environment-id': input.environment.id,
+      'environment-name': input.environment.slug,
+      'target-id': input.targetId,
+    },
+    secrets: {
+      ALPHACI_TOKEN: '${{ secrets.ALPHACI_TOKEN }}',
+      ALPHACI_API_URL: '${{ secrets.ALPHACI_API_URL }}',
+    },
+  };
+}
+
+/**
  * Deploy one environment's Render target: the digest built for this release,
  * named by environment, GitHub Environment, and target ID. Nothing is read
  * from the branch.
@@ -221,6 +267,9 @@ function renderEnvironmentDeployJob(
   input: EnvironmentDeployInput,
   context: WorkflowFragmentContext,
 ): Record<string, unknown> {
+  if (isPlatformReleased(input)) {
+    return renderPlatformReleaseJob(input, context);
+  }
   return {
     needs: input.needs,
     if: input.if,

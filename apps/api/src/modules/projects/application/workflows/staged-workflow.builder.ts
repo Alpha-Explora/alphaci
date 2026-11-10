@@ -463,6 +463,10 @@ export interface StagedEnvironmentTarget {
   slot: 'backend' | 'frontend' | 'standalone';
   targetId: string;
   provider: string;
+  /** How the target is owned ('flowci_managed' or 'byo'), when known. */
+  ownershipMode?: string | undefined;
+  /** How it is deployed (e.g. 'render_image_pushed'), when known. */
+  deploymentStrategy?: string | undefined;
 }
 
 /** The promotion workflow AlphaCI dispatches, relative to .github/workflows. */
@@ -1523,6 +1527,11 @@ function environmentDeployJob(
     {
       environment,
       targetId: target.targetId,
+      target: {
+        slot: target.slot,
+        ownershipMode: target.ownershipMode,
+        deploymentStrategy: target.deploymentStrategy,
+      },
       ...input,
     },
     {
