@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { QaHistoryPage } from '@alphaci/api-contracts';
 import { badRequest } from '#kernel/http/coded-errors';
 import { isUUID } from 'class-validator';
 import { QaHistoryRepository } from '../../infrastructure/qa-history.repository';
@@ -26,7 +27,7 @@ export class QaHistoryService {
       iterationId?: string;
       before?: string;
     },
-  ) {
+  ): Promise<QaHistoryPage> {
     await this.context.requireProject(projectId, userId);
     for (const id of [query.itemId, query.iterationId]) {
       if (id !== undefined && !isUUID(id))

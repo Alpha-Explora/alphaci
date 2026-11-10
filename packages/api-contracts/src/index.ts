@@ -13,3 +13,8 @@ export type * from './drift.js';
 export type * from './env-vars.js';
 export type * from './groups.js';
 export type * from './previews.js';
+export type * from './project-todos.js';
+export type * from './qa-history.js';
+export type * from './qa-imports.js';
+export type * from './semantic-coverage.js';
+export type * from './special-access.js';

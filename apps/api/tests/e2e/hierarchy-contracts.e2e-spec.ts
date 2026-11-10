@@ -2,6 +2,7 @@ import type { z } from 'zod';
 
 import { startApplication, type E2eApplication } from './support/application';
 import {
+  HIERARCHY_CONTRACTS,
   ROUTE_CONTRACTS,
   type ContractRoute,
 } from './support/contracts/routes';
@@ -173,6 +174,8 @@ describe('hierarchy response contracts', () => {
   });
 
   it('exercises every route it declares a contract for', () => {
-    expect([...exercised].sort()).toEqual(Object.keys(ROUTE_CONTRACTS).sort());
+    expect([...exercised].sort()).toEqual(
+      Object.keys(HIERARCHY_CONTRACTS).sort(),
+    );
   });
 });

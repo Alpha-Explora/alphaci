@@ -1,3 +1,4 @@
+import type { QaImportPreviewResponse } from '@/shared/api/contracts';
 import { request } from '@/shared/api/request';
 import { importRequirements } from '../model/qa-import-rules';
 import type {
@@ -11,7 +12,7 @@ export const qaImportRepository = {
     const body = new FormData();
     body.append('file', file);
     return (
-      await request<{ sheets: ImportSheet[] }>(
+      await request<QaImportPreviewResponse>(
         `/delivery-projects/${encodeURIComponent(projectId)}/qa-import-preview`,
         {
           method: 'POST',

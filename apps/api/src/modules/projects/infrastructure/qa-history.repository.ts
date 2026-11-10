@@ -1,21 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import type { QaHistoryEvent } from '@alphaci/api-contracts';
 import { DatabaseService } from '#kernel/db/database.service';
 
-export interface QaHistoryEvent {
-  id: string;
-  createdAt: string;
-  iterationId: string;
-  iterationNumber: number;
-  runId: string | null;
-  itemId: string | null;
-  title: string;
-  requirementName: string;
-  actorLogin: string | null;
-  type: string;
-  fromStatus: string | null;
-  toStatus: string | null;
-  payload: Record<string, unknown>;
-}
+export type { QaHistoryEvent };
 
 @Injectable()
 export class QaHistoryRepository {
