@@ -257,7 +257,8 @@ function SpecialAccessControl({
               checked={granted.includes(grant)}
               disabled={busy || locked}
               onChange={(event) => onToggle(grant, event.target.checked)}
-              style={{ marginTop: '0.2rem' }}
+              // base.css sizes every input to 100% wide; a checkbox keeps its own size.
+              style={{ marginTop: '0.2rem', width: 'auto', flex: 'none' }}
             />
             <span>
               <strong>{SPECIAL_ACCESS_LABELS[grant].title}</strong>
