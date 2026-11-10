@@ -6,6 +6,7 @@
     ".gitattributes",
     "packages/api-contracts/**",
     "packages/capability-catalog/**",
+    "packages/persona-rules/**",
     "deploy/selfhost/**"
   ],
   "tasks": {

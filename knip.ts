@@ -1,7 +1,8 @@
 import type { KnipConfig } from 'knip';
 
-// Unused dependencies, undeclared dependencies and unknown binaries fail CI
-// (`npm run check:deps`). Each exception below says why knip cannot see the use.
+// Unused dependencies, undeclared dependencies, unknown binaries and files that
+// nothing reaches fail CI (`npm run check:unused`). Each exception below says
+// why knip cannot see the use.
 const config: KnipConfig = {
   // System tools the API specs and packaging scripts call, not npm packages.
   ignoreBinaries: ['jq', 'openssl', 'dpkg-deb'],
@@ -16,9 +17,25 @@ const config: KnipConfig = {
   workspaces: {
     '.': {
       entry: ['scripts/*.{cjs,mjs}'],
+      // Scripts that built dated planning artifacts, run by hand when someone
+      // regenerates them. Nothing imports them.
+      ignore: ['docs/plans/**'],
     },
     'apps/api': {
-      entry: ['src/main.ts', 'src/cli/alphaci-ctl.ts', 'src/scripts/*.ts', 'scripts/**/*.{ts,cjs,mjs}'],
+      entry: [
+        'src/main.ts',
+        'src/cli/alphaci-ctl.ts',
+        'src/scripts/*.ts',
+        'scripts/**/*.{ts,cjs,mjs}',
+        // The public boundary of each context and subsystem: other code is
+        // meant to import through these, so they are entries, not dead files.
+        'src/modules/**/index.ts',
+        'src/packs/**/index.ts',
+        // Loaded by tests/e2e/jest-e2e.json (testRegex, globalSetup,
+        // globalTeardown), a config knip cannot read.
+        'tests/e2e/**/*.e2e-spec.ts',
+        'tests/e2e/support/*.ts',
+      ],
       project: ['src/**/*.ts', 'scripts/**/*.{ts,cjs,mjs}', 'tests/**/*.ts'],
       ignoreDependencies: [
         // Not imported: the API generates this package. The dependency is what
@@ -29,7 +46,14 @@ const config: KnipConfig = {
       ],
     },
     'apps/web': {
-      entry: ['scripts/**/*.{cjs,mjs}'],
+      entry: [
+        'scripts/**/*.{cjs,mjs}',
+        // Each feature's barrel is its public boundary.
+        'src/features/*/index.ts',
+        // The full-stack suite has its own Playwright config, outside the
+        // default location knip looks in.
+        'tests/fullstack/*.{ts,mjs}',
+      ],
       project: ['src/**/*.{ts,tsx,css}', 'scripts/**/*.{cjs,mjs}', 'tests/**/*.{ts,tsx}'],
       // k6 scripts: they run in the k6 runtime, where `k6/*` is built in.
       ignore: ['tests/performance/**'],

@@ -277,6 +277,13 @@ API's e2e suite checks its real responses against them. Do not widen one of
 those types in a feature to cover a field the API does not send; a fixture that
 builds one has to carry every field the type names.
 
+Who may do what by app role is not written here. The role rules the API also
+enforces (create a Project or repository, hosting and environment variables,
+requirements, pull-request routes) and the pipeline branch names live in
+`@alphaci/persona-rules` (`packages/persona-rules`); a feature's `model/` file
+re-exports or wraps them. Do not write a second role list for a rule that
+package already has: change the list there, with its test, and both sides move.
+
 ---
 
 ## Billing model

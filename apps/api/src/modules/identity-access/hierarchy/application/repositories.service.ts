@@ -1,10 +1,9 @@
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import { badRequest, conflict } from '#kernel/http/coded-errors';
 import {
-  BadRequestException,
-  ConflictException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+  deliveryProjectNotFound,
+  repositoryNotFound,
+} from './hierarchy.errors';
 
 import { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
 import {
@@ -122,7 +121,8 @@ export class RepositoriesService {
       );
     }
     if (!githubAccessToken) {
-      throw new BadRequestException(
+      throw badRequest(
+        'GITHUB_TOKEN_MISSING',
         'GitHub access token not found. Re-authenticate via GitHub OAuth.',
       );
     }
@@ -205,7 +205,8 @@ export class RepositoriesService {
       );
     }
     if (!session.login) {
-      throw new BadRequestException(
+      throw badRequest(
+        'GITHUB_LOGIN_MISSING',
         'GitHub login not found in session. Re-authenticate via GitHub OAuth.',
       );
     }
@@ -304,7 +305,7 @@ export class RepositoriesService {
         deliveryProjectId,
       );
     if (!groupId) {
-      throw new NotFoundException('Delivery project not found');
+      throw deliveryProjectNotFound();
     }
     const membership = await this.accessService.assertGroupMembership(
       groupId,
@@ -347,7 +348,7 @@ export class RepositoriesService {
       dto,
     );
     if (!repository) {
-      throw new NotFoundException('Repository not found');
+      throw repositoryNotFound();
     }
     return repository;
   }
@@ -380,10 +381,13 @@ export class RepositoriesService {
       );
     const repository = await this.repositoriesRepository.findById(repositoryId);
     if (!repository) {
-      throw new NotFoundException('Repository not found');
+      throw repositoryNotFound();
     }
     if (repository.status === 'archived') {
-      throw new BadRequestException('Archived repositories cannot be moved.');
+      throw badRequest(
+        'REPOSITORY_ARCHIVED',
+        'Archived repositories cannot be moved.',
+      );
     }
 
     const target = await this.deliveryProjectsRepository.findById(
@@ -392,10 +396,11 @@ export class RepositoriesService {
     // Another team's project answers exactly like a missing one, so a lead
     // cannot probe for project ids outside their own team.
     if (!target || target.groupId !== groupId) {
-      throw new NotFoundException('Delivery project not found');
+      throw deliveryProjectNotFound();
     }
     if (target.status === 'archived') {
-      throw new BadRequestException(
+      throw badRequest(
+        'PROJECT_ARCHIVED',
         'Repositories cannot be moved into an archived project.',
       );
     }
@@ -449,7 +454,8 @@ export class RepositoriesService {
       );
     }
     if (!moved) {
-      throw new ConflictException(
+      throw conflict(
+        'REPOSITORY_MOVED_CONCURRENTLY',
         'This repository was moved by someone else. Refresh and try again.',
       );
     }
@@ -503,7 +509,7 @@ export class RepositoriesService {
       );
     const repository = await this.repositoriesRepository.archive(repositoryId);
     if (!repository) {
-      throw new NotFoundException('Repository not found');
+      throw repositoryNotFound();
     }
 
     await this.auditEventsService.recordProjectEvent({

@@ -1,13 +1,7 @@
 import type { Group, GroupRole } from '@alphaci/api-contracts';
-import {
-  BadRequestException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  Logger,
-  NotFoundException,
-  Optional,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { badRequest, forbidden } from '#kernel/http/coded-errors';
+import { groupNotFound, memberNotFound } from './hierarchy.errors';
 
 import { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
 import { DatabaseService } from '#kernel/db/database.service';
@@ -76,7 +70,10 @@ export class GroupsService {
       appRole !== 'lead' &&
       !(await this.accessService.isPlatformAdmin(userId))
     ) {
-      throw new ForbiddenException('Only Leads and Admins can create groups');
+      throw forbidden(
+        'GROUP_CREATE_FORBIDDEN',
+        'Only Leads and Admins can create groups',
+      );
     }
 
     const group = await this.groupsRepository.createGroup({
@@ -108,7 +105,7 @@ export class GroupsService {
     if (await this.accessService.isPlatformAdmin(userId)) {
       const group = await this.groupsRepository.findGroupById(groupId);
       if (!group) {
-        throw new NotFoundException('Group not found');
+        throw groupNotFound();
       }
       return { ...group, role: 'admin' };
     }
@@ -118,7 +115,7 @@ export class GroupsService {
     );
     const group = await this.groupsRepository.findGroupById(groupId);
     if (!group) {
-      throw new NotFoundException('Group not found');
+      throw groupNotFound();
     }
     return { ...group, role: membership.role };
   }
@@ -135,7 +132,7 @@ export class GroupsService {
     );
     const group = await this.groupsRepository.updateGroup(groupId, dto);
     if (!group) {
-      throw new NotFoundException('Group not found');
+      throw groupNotFound();
     }
 
     await this.auditEventsService.recordProjectEvent({
@@ -161,7 +158,7 @@ export class GroupsService {
       userId,
     );
     if (!group) {
-      throw new NotFoundException('Group not found');
+      throw groupNotFound();
     }
 
     await this.auditEventsService.recordProjectEvent({
@@ -194,7 +191,7 @@ export class GroupsService {
     );
     const group = await this.groupsRepository.findGroupById(groupId);
     if (!group) {
-      throw new NotFoundException('Group not found');
+      throw groupNotFound();
     }
 
     // Record the intent BEFORE the row (and its cascaded audit rows) disappear.
@@ -211,7 +208,7 @@ export class GroupsService {
     await this.runtimeCleanup?.purgeWorkspace(groupId);
     const deleted = await this.groupsRepository.deleteGroup(groupId);
     if (!deleted) {
-      throw new NotFoundException('Group not found');
+      throw groupNotFound();
     }
 
     // Data other contexts key by workspace id (QA checklists) has no FK to
@@ -242,7 +239,7 @@ export class GroupsService {
       userId,
     );
     if (!group) {
-      throw new NotFoundException('Group not found');
+      throw groupNotFound();
     }
 
     await this.auditEventsService.recordProjectEvent({
@@ -268,14 +265,15 @@ export class GroupsService {
   ): Promise<Group> {
     const group = await this.groupsRepository.findGroupById(groupId);
     if (!group) {
-      throw new NotFoundException('Group not found');
+      throw groupNotFound();
     }
     const target = await this.groupsRepository.findActiveMembership(
       groupId,
       newManagerUserId,
     );
     if (!target) {
-      throw new BadRequestException(
+      throw badRequest(
+        'GROUP_MANAGER_NOT_MEMBER',
         'The new manager must already be an active member of the Group',
       );
     }
@@ -285,7 +283,8 @@ export class GroupsService {
       newManagerUserId,
     );
     if (!transfer) {
-      throw new BadRequestException(
+      throw badRequest(
+        'GROUP_MANAGER_NOT_MEMBER',
         'The new manager must already be an active member of the Group',
       );
     }
@@ -354,7 +353,7 @@ export class GroupsService {
       memberId,
     );
     if (!target) {
-      throw new NotFoundException('Member not found');
+      throw memberNotFound();
     }
 
     // A Lead promotes members to whichever tier they choose (Member,
@@ -367,7 +366,8 @@ export class GroupsService {
       !viaPlatformAdmin &&
       membership?.role !== 'admin'
     ) {
-      throw new ForbiddenException(
+      throw forbidden(
+        'GROUP_ADMIN_GRANT_FORBIDDEN',
         'Only a Group Admin can grant the Admin (Lead) role',
       );
     }
@@ -384,10 +384,13 @@ export class GroupsService {
         dto.role,
       );
     if (blockedLastOwner) {
-      throw new BadRequestException('Group must keep at least one owner');
+      throw badRequest(
+        'GROUP_LAST_OWNER',
+        'Group must keep at least one owner',
+      );
     }
     if (!updated) {
-      throw new NotFoundException('Member not found');
+      throw memberNotFound();
     }
 
     await this.auditEventsService.recordProjectEvent({
@@ -429,7 +432,7 @@ export class GroupsService {
       memberId,
     );
     if (!target) {
-      throw new NotFoundException('Member not found');
+      throw memberNotFound();
     }
 
     // Keep the member mutation, assignment transitions, and durable revoke
@@ -475,10 +478,13 @@ export class GroupsService {
       return { ...removal, assignments: cascade };
     });
     if (blockedLastOwner) {
-      throw new BadRequestException('Group must keep at least one owner');
+      throw badRequest(
+        'GROUP_LAST_OWNER',
+        'Group must keep at least one owner',
+      );
     }
     if (!removed) {
-      throw new NotFoundException('Member not found');
+      throw memberNotFound();
     }
 
     await this.auditEventsService.recordProjectEvent({

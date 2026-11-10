@@ -8,41 +8,33 @@
  *
  * Allow-lists: a role added later, or a session that has not loaded, gets
  * nothing until it is named here. */
+import {
+  canCreateProjectFolder,
+  canCreateRepository,
+  repositoryCreateRequiresProject,
+} from '@alphaci/persona-rules';
 import type { AppRole } from '@/shared/api/contracts';
 
 type Role = AppRole | null | undefined;
 
-const PROJECT_CREATORS: ReadonlyArray<AppRole> = ['lead', 'admin'];
-const REPOSITORY_CREATORS: ReadonlyArray<AppRole> = ['member', 'admin'];
-/** May create a repository that belongs to no Project (today's admin path). */
-const UNFILED_REPOSITORY_CREATORS: ReadonlyArray<AppRole> = ['admin'];
-
-function named(list: ReadonlyArray<AppRole>, appRole: Role): boolean {
-  return appRole !== null && appRole !== undefined && list.includes(appRole);
-}
+/* The rules are the API's own, from @alphaci/persona-rules: the gate that
+ * answers 403 and the button that is hidden read the same lists. */
 
 /** Create a Project (name + description, no repository): Product owner or admin. */
-export function canCreateProjectFolder(appRole: Role): boolean {
-  return named(PROJECT_CREATORS, appRole);
-}
+export { canCreateProjectFolder };
 
 /** Create a repository (new or existing) inside a Project: Developer or admin. */
-export function canCreateRepositoryInProject(appRole: Role): boolean {
-  return named(REPOSITORY_CREATORS, appRole);
-}
+export const canCreateRepositoryInProject = canCreateRepository;
 
 /** Create a repository with no Project chosen: admin only. */
 export function canCreateRepositoryWithoutProject(appRole: Role): boolean {
-  return named(UNFILED_REPOSITORY_CREATORS, appRole);
+  return (
+    canCreateRepository(appRole) && !repositoryCreateRequiresProject(appRole)
+  );
 }
 
 /** A Developer's repository must name the Project it belongs to. */
-export function repositoryRequiresProject(appRole: Role): boolean {
-  return (
-    canCreateRepositoryInProject(appRole) &&
-    !canCreateRepositoryWithoutProject(appRole)
-  );
-}
+export const repositoryRequiresProject = repositoryCreateRequiresProject;
 
 /*
  * GET /groups/:id/project-folders sends `canCreateProject` and
@@ -95,7 +87,9 @@ export function repositoryBlockedByFeatures(
   appRole: Role,
   featureCount: number | null,
 ): boolean {
-  return featureCount === 0 && !named(FEATURELESS_REPOSITORY_CREATORS, appRole);
+  const exempt =
+    appRole != null && FEATURELESS_REPOSITORY_CREATORS.includes(appRole);
+  return featureCount === 0 && !exempt;
 }
 
 /* ── Refusals (display strings) ─────────────────────────────────────────── */

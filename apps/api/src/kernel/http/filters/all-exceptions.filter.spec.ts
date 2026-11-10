@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { ConflictException, HttpException, HttpStatus } from '@nestjs/common';
 import type { ArgumentsHost } from '@nestjs/common';
 import { AllExceptionsFilter } from '#kernel/http/filters/all-exceptions.filter';
 
@@ -63,6 +63,29 @@ describe('AllExceptionsFilter', () => {
   });
 
   describe('HttpException handling', () => {
+    it('keeps the code and the extra fields a coded exception carries', () => {
+      const res = makeResponse();
+      const host = makeHost({ url: '/x', method: 'POST', headers: {} }, res);
+
+      filter.catch(
+        new ConflictException({
+          statusCode: 409,
+          error: 'Conflict',
+          code: 'MOVE_REVOKES_ACCESS',
+          message: 'Moving removes access.',
+          people: [{ userId: 'u1', login: 'ana', name: 'Ana' }],
+        }),
+        host,
+      );
+
+      expect(res._body).toMatchObject({
+        statusCode: 409,
+        code: 'MOVE_REVOKES_ACCESS',
+        message: 'Moving removes access.',
+        people: [{ userId: 'u1', login: 'ana', name: 'Ana' }],
+      });
+    });
+
     it('returns the correct HTTP status code from an HttpException', () => {
       const res = makeResponse();
       const req = { url: '/test', method: 'GET', headers: {} };
