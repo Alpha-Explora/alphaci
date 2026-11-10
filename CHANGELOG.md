@@ -79,6 +79,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Runs:** Terminal colour codes no longer appear in test output, and SonarCloud percentages show one decimal.
 - **Hosting:** A managed Render service in a project's environments is released through AlphaCI, which finds it by its ID; before, its deploy job needed a deploy hook that cannot exist.
 - **UI:** Secondary buttons are visible in the dark theme, and preview cards name the host when the API sends no label.
+- **Runs:** A stalled or blocked pipeline stage now shows an icon in the run graph; before, those two stages, the ones that explain a broken pipeline, had an empty icon slot.
 - **Audit:** The repository Audit tab no longer skips events that share a timestamp at a page boundary; imported GitHub events often do.
 - **UI:** Signed-in pages no longer call workspace and notification endpoints that are turned off.
 - **Hosting:** With backend release signing, a malformed `ALPHACI_RELEASE_TRUST_KEYS_JSON` now refuses a release before it is stored; before, it left an unsigned release that re-running CI could not replace.

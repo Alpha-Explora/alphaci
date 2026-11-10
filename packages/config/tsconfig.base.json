@@ -5,6 +5,8 @@
   // Add an option here only when both apps already agree on it.
   "compilerOptions": {
     "strict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "isolatedModules": true,
     "esModuleInterop": true,
