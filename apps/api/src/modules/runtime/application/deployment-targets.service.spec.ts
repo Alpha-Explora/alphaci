@@ -967,6 +967,43 @@ describe('DeploymentTargetsService', () => {
     });
   });
 
+  describe('environmentSlugFor', () => {
+    it('is the slug of the environment', async () => {
+      projectReferenceLookup.findProjectEnvironment.mockResolvedValueOnce({
+        id: 'env-qa',
+        slug: 'qa',
+        sourceBranch: 'dev',
+        role: 'non_production',
+      });
+
+      await expect(
+        service.environmentSlugFor('project-1', 'env-qa'),
+      ).resolves.toBe('qa');
+    });
+
+    it('is null for a legacy target, without looking anything up', async () => {
+      projectReferenceLookup.findProjectEnvironment.mockClear();
+
+      await expect(
+        service.environmentSlugFor('project-1', null),
+      ).resolves.toBeNull();
+      await expect(
+        service.environmentSlugFor('project-1', undefined),
+      ).resolves.toBeNull();
+      expect(
+        projectReferenceLookup.findProjectEnvironment,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('is null when the environment no longer exists', async () => {
+      projectReferenceLookup.findProjectEnvironment.mockResolvedValueOnce(null);
+
+      await expect(
+        service.environmentSlugFor('project-1', 'env-gone'),
+      ).resolves.toBeNull();
+    });
+  });
+
   describe('reinstallDeploymentSecrets', () => {
     const target = {
       id: 'target-1',
@@ -1024,6 +1061,7 @@ describe('DeploymentTargetsService', () => {
         userId: 'user-1',
         providerConnectionId: 'connection-1',
         target,
+        environmentSlug: null,
       });
       expect(
         deploymentTargetsRepository.updateProviderMetadata,
@@ -1041,6 +1079,40 @@ describe('DeploymentTargetsService', () => {
         expect.objectContaining({
           eventCode: 'deployment_target_ci_secrets_reinstalled',
         }),
+      );
+    });
+
+    it("hands the installer the slug of the target's environment", async () => {
+      const installer = {
+        supports: jest.fn().mockReturnValue(true),
+        installForTarget: jest.fn().mockResolvedValue({ githubSecrets: {} }),
+      };
+      ciSecretsInstallers.get.mockReturnValue(installer);
+      deploymentTargetsRepository.findDeploymentTargetForUser.mockResolvedValueOnce(
+        { ...target, environmentId: 'env-qa' },
+      );
+      deploymentTargetsRepository.updateProviderMetadata.mockResolvedValueOnce(
+        target,
+      );
+      projectReferenceLookup.findProjectEnvironment.mockResolvedValueOnce({
+        id: 'env-qa',
+        slug: 'qa',
+        sourceBranch: 'dev',
+        role: 'non_production',
+      });
+
+      await service.reinstallDeploymentSecrets(
+        'project-1',
+        'target-1',
+        'user-1',
+        'github-token',
+      );
+
+      expect(
+        projectReferenceLookup.findProjectEnvironment,
+      ).toHaveBeenCalledWith('project-1', 'env-qa');
+      expect(installer.installForTarget).toHaveBeenCalledWith(
+        expect.objectContaining({ environmentSlug: 'qa' }),
       );
     });
 

@@ -1132,6 +1132,10 @@ export class DeploymentTargetsService
       userId,
       providerConnectionId: target.providerConnectionId,
       target,
+      environmentSlug: await this.environmentSlugFor(
+        projectId,
+        target.environmentId,
+      ),
     });
 
     // Persisted the same way provisioning persists it, so a target reinstalled
@@ -1187,6 +1191,20 @@ export class DeploymentTargetsService
    * Instant Rollback holds new production deploys off the domains until
    * resumeDeploymentTarget, so the hold is kept on the target for the UI.
    */
+  /** The slug of the environment a target belongs to; null for a legacy target. */
+  async environmentSlugFor(
+    projectId: string,
+    environmentId: string | null | undefined,
+  ): Promise<string | null> {
+    if (!environmentId) return null;
+    const environment =
+      await this.projectReferenceLookup.findProjectEnvironment(
+        projectId,
+        environmentId,
+      );
+    return environment?.slug ?? null;
+  }
+
   async rollbackDeploymentTarget(
     projectId: string,
     targetId: string,

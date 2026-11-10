@@ -111,6 +111,15 @@ before generated workflows reference it. If it fails, nothing is created at
 the provider. Required reviewers are an operator setting on the GitHub
 Environment.
 
+An environment's Vercel target keeps its credentials in repository secrets
+named by slot and environment (`VERCEL_FRONTEND_<ENVIRONMENT>_TOKEN`,
+`_ORG_ID` and `_PROJECT_ID`, with a hyphen in the slug written as an
+underscore), because each environment has its own Vercel project. The
+generated deploy job maps them onto the `VERCEL_TOKEN`, `VERCEL_ORG_ID` and
+`VERCEL_PROJECT_ID` that `vercel-deploy.yml` requires; it does not inherit the
+repository's secrets. A target on the legacy branch path keeps the slot-only
+names (`VERCEL_FRONTEND_TOKEN`).
+
 The migration attaches an existing target only when exactly one environment of
 its project uses the target's branch and the target is the only one for that
 project, slot, and branch. Every other target keeps a null `environmentId`

@@ -13,6 +13,12 @@ export interface ProviderCiSecretsInstallerInput {
   userId: string;
   providerConnectionId: string | null;
   target: DeploymentTargetSummary;
+  /**
+   * The slug of the environment the target belongs to, when it has one. A
+   * provider whose credentials differ per environment names its repository
+   * secrets by it; null on the legacy branch path.
+   */
+  environmentSlug?: string | null;
 }
 
 /**

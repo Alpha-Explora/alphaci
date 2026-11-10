@@ -24,7 +24,7 @@ This map is generated from the current source tree and architecture metrics. It 
 | `identity-access` | authentication, administration, capabilities, workspaces, hierarchy, and repository access policy | `src/modules/identity-access/index.ts` | `identity`, `orgs`, `hierarchy` | 148 source files / 34 tests |
 | `projects` | project lifecycle, environments, requirements and QA runs, catalog, workflows, existing repositories, and project read models | `src/modules/projects/index.ts` | `projects`, `workflow` | 345 source files / 132 tests |
 | `pipelines` | GitHub integration, CI token lifecycle, and CI report ingestion | `src/modules/pipelines/index.ts` | `github_app`, `ci`, `workflow` | 87 source files / 33 tests |
-| `runtime` | deployment targets, environment metadata, domains, provider connections, provider adapters, deployment history, on-prem hosts, and releases | `src/modules/runtime/index.ts` | `runtime`, `env_provisioning`, `runtime_deployments`, `runtime_domains`, `runtime_secrets`, `gcp_operations` | 228 source files / 84 tests |
+| `runtime` | deployment targets, environment metadata, domains, provider connections, provider adapters, deployment history, on-prem hosts, and releases | `src/modules/runtime/index.ts` | `runtime`, `env_provisioning`, `runtime_deployments`, `runtime_domains`, `runtime_secrets`, `gcp_operations` | 229 source files / 85 tests |
 | `billing` | subscriptions, usage, and quota policy | `src/modules/billing/index.ts` | `billing`, `usage`, `billing_lifecycle` | 21 source files / 5 tests |
 | `platform-ops` | audit, notifications, feedback, and outbox consumers | `src/modules/platform-ops/index.ts` | `platform`, `audit`, `notifications`, `support` | 37 source files / 10 tests |
 

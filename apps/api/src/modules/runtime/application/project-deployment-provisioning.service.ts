@@ -118,6 +118,7 @@ export class ProjectDeploymentProvisioningService implements DeploymentProvision
           targetId: target.id,
         });
         const providerMetadata = await this.installCiSecretsIfSupported({
+          projectId: input.projectId,
           githubAccessToken: input.githubAccessToken,
           repoFullName: input.repoFullName,
           userId: input.userId,
@@ -204,6 +205,7 @@ export class ProjectDeploymentProvisioningService implements DeploymentProvision
   }
 
   private async installCiSecretsIfSupported(input: {
+    projectId: string;
     githubAccessToken: string | undefined;
     repoFullName: string;
     userId: string;
@@ -271,6 +273,10 @@ export class ProjectDeploymentProvisioningService implements DeploymentProvision
       userId: input.userId,
       providerConnectionId: input.providerConnectionId ?? null,
       target: input.target,
+      environmentSlug: await this.deploymentTargetsService.environmentSlugFor(
+        input.projectId,
+        input.target.environmentId,
+      ),
     });
     const providerMetadata = {
       ...input.target.providerMetadata,
