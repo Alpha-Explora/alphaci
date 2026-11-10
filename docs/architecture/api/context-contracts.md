@@ -27,6 +27,7 @@ This register describes the current in-process boundaries. A context index or po
 - Nest feature-module imports belong to composition roots and are not application-level contracts.
 - Provider contracts and registries belong to Runtime. Provider adapters are not context boundaries.
 - HTTP response shapes that the web app also reads are defined once in the types-only workspace package `@alphaci/api-contracts` (`packages/api-contracts`) and re-exported, with `export type`, from the port or `*.types.ts` file that owned them. Today these are deployment history and drift (`deployment-runtime.port.ts`) and previews (`project-previews.types.ts`). Change those shapes in the package.
+- Who may do what by app role is defined once in the workspace package `@alphaci/persona-rules` (`packages/persona-rules`), with the pipeline branch names its pull-request route rule reads. `kernel/rules/persona-access.rules.ts` re-exports the shared rules beside the API-only ones, `kernel/config/pipeline-branches.ts` derives from the package, and the web app calls the same functions to decide which controls to offer. Unlike `@alphaci/api-contracts` it has runtime code, so it is a runtime dependency of both apps.
 
 ## Current directional edges
 

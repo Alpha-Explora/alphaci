@@ -3,6 +3,10 @@
  * they can be tested without rendering anything.
  */
 
+import {
+  isAllowedPullRequestRoute,
+  isPullRequestRole,
+} from '@alphaci/persona-rules';
 import type {
   BranchComparisonResponse,
   ComparisonCommit,
@@ -162,20 +166,12 @@ export function defaultComposeBase(
   return selectable[0] ?? '';
 }
 
-const PULL_REQUEST_ROLES: ReadonlySet<AppRole> = new Set([
-  'admin',
-  'lead',
-  'member',
-]);
-
 /**
  * Who may open or merge pull requests from the workspace. An allow-list, so a
  * role added later (or a session whose role has not loaded) gets nothing
  * until it is named here.
  */
-export function isPullRequestRole(role: AppRole | null | undefined): boolean {
-  return role != null && PULL_REQUEST_ROLES.has(role);
-}
+export { isPullRequestRole };
 
 /**
  * The route rule, mirroring the backend's `PR_ROUTE_RESTRICTED` (and
@@ -186,18 +182,7 @@ export function isPullRequestRole(role: AppRole | null | undefined): boolean {
  *     into `uat`. Never a feature into `uat`, never into `main`.
  *   - qa and anything unknown: nothing.
  */
-export function isPullRequestRouteAllowed(
-  role: AppRole | null | undefined,
-  head: string,
-  base: string,
-): boolean {
-  if (!isPullRequestRole(role)) return false;
-  if (base === PRODUCTION_BRANCH) return false;
-  if (role !== 'member') return true;
-  if (head === '' || head === base) return false;
-  if (base === WORKING_BRANCH) return !isPipelineBranch(head);
-  return base === QA_BRANCH && head === WORKING_BRANCH;
-}
+export const isPullRequestRouteAllowed = isAllowedPullRequestRoute;
 
 /**
  * Whether opening a pull request from `head` into `base` should be offered,
