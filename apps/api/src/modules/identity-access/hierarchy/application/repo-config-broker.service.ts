@@ -1,9 +1,5 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { badRequest, forbidden } from '#kernel/http/coded-errors';
 
 import { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
 import {
@@ -102,7 +98,8 @@ export class RepoConfigBrokerService {
     name: string,
   ): Promise<{ deleted: true }> {
     if (configurationType !== 'variable' && configurationType !== 'secret') {
-      throw new BadRequestException(
+      throw badRequest(
+        'CONFIG_TYPE_INVALID',
         'configurationType must be variable or secret',
       );
     }
@@ -173,7 +170,8 @@ export class RepoConfigBrokerService {
 
     const [owner, repo] = (repository.repoFullName ?? '').split('/');
     if (!owner || !repo) {
-      throw new ForbiddenException(
+      throw forbidden(
+        'REPOSITORY_NOT_LINKED',
         'Repository has no linked GitHub full name yet',
       );
     }
@@ -263,7 +261,8 @@ export class RepoConfigBrokerService {
     }
 
     if (environmentScope === 'production') {
-      throw new ForbiddenException(
+      throw forbidden(
+        'PRODUCTION_CONFIG_APPROVAL_REQUIRED',
         'Production environment configuration requires the protected approval workflow, which is not yet available',
       );
     }
@@ -273,7 +272,7 @@ export class RepoConfigBrokerService {
 
   private assertValidName(name: string): void {
     if (!VARIABLE_NAME_PATTERN.test(name)) {
-      throw new BadRequestException('Invalid configuration name');
+      throw badRequest('CONFIG_NAME_INVALID', 'Invalid configuration name');
     }
   }
 }

@@ -1,8 +1,11 @@
+import { Injectable } from '@nestjs/common';
+import { forbidden } from '#kernel/http/coded-errors';
 import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+  deliveryProjectNotFound,
+  groupNotFound,
+  repositoryNotFound,
+  systemNotFound,
+} from './hierarchy.errors';
 
 import {
   type AppRole,
@@ -119,7 +122,7 @@ export class HierarchyAccessService {
     if (await this.isPlatformAdmin(userId)) {
       const group = await this.groupsRepository.findGroupById(groupId);
       if (!group) {
-        throw new NotFoundException('Group not found');
+        throw groupNotFound();
       }
       return;
     }
@@ -139,7 +142,7 @@ export class HierarchyAccessService {
     if (await this.isPlatformAdmin(userId)) {
       const group = await this.groupsRepository.findGroupById(groupId);
       if (!group) {
-        throw new NotFoundException('Group not found');
+        throw groupNotFound();
       }
       return;
     }
@@ -154,7 +157,7 @@ export class HierarchyAccessService {
   ): Promise<{ groupId: string }> {
     const groupId = await this.systemsRepository.findGroupIdForSystem(systemId);
     if (!groupId) {
-      throw new NotFoundException('System not found');
+      throw systemNotFound();
     }
     if (!(await this.isPlatformAdmin(userId))) {
       await this.assertGroupMembership(groupId, userId);
@@ -177,7 +180,7 @@ export class HierarchyAccessService {
         deliveryProjectId,
       );
     if (!groupId) {
-      throw new NotFoundException('Delivery project not found');
+      throw deliveryProjectNotFound();
     }
     if (!(await this.isPlatformAdmin(userId))) {
       await this.assertGroupMembership(groupId, userId);
@@ -196,7 +199,7 @@ export class HierarchyAccessService {
       userId,
     );
     if (!membership) {
-      throw new NotFoundException('Group not found');
+      throw groupNotFound();
     }
     return membership;
   }
@@ -229,7 +232,7 @@ export class HierarchyAccessService {
       // Platform admin overrides scope but the group must still exist.
       const group = await this.groupsRepository.findGroupById(groupId);
       if (!group) {
-        throw new NotFoundException('Group not found');
+        throw groupNotFound();
       }
       return { viaPlatformAdmin: true, membership: null };
     }
@@ -248,7 +251,7 @@ export class HierarchyAccessService {
   ): Promise<{ groupId: string }> {
     const groupId = await this.systemsRepository.findGroupIdForSystem(systemId);
     if (!groupId) {
-      throw new NotFoundException('System not found');
+      throw systemNotFound();
     }
     if (await this.isPlatformAdmin(userId)) {
       return { groupId };
@@ -263,7 +266,7 @@ export class HierarchyAccessService {
   ): Promise<{ groupId: string; viaPlatformAdmin: boolean }> {
     const groupId = await this.systemsRepository.findGroupIdForSystem(systemId);
     if (!groupId) {
-      throw new NotFoundException('System not found');
+      throw systemNotFound();
     }
     const { viaPlatformAdmin } = await this.assertGroupManagerOrPlatformAdmin(
       groupId,
@@ -282,7 +285,7 @@ export class HierarchyAccessService {
         deliveryProjectId,
       );
     if (!groupId) {
-      throw new NotFoundException('Delivery project not found');
+      throw deliveryProjectNotFound();
     }
     if (await this.isPlatformAdmin(userId)) {
       return { groupId };
@@ -300,7 +303,7 @@ export class HierarchyAccessService {
         deliveryProjectId,
       );
     if (!groupId) {
-      throw new NotFoundException('Delivery project not found');
+      throw deliveryProjectNotFound();
     }
     const { viaPlatformAdmin } = await this.assertGroupManagerOrPlatformAdmin(
       groupId,
@@ -317,7 +320,7 @@ export class HierarchyAccessService {
     const groupId =
       await this.repositoriesRepository.findGroupIdForRepository(repositoryId);
     if (!groupId) {
-      throw new NotFoundException('Repository not found');
+      throw repositoryNotFound();
     }
     const { viaPlatformAdmin } = await this.assertGroupManagerOrPlatformAdmin(
       groupId,
@@ -340,7 +343,7 @@ export class HierarchyAccessService {
   ): Promise<AssignmentRecord> {
     const repository = await this.repositoriesRepository.findById(repositoryId);
     if (!repository || repository.status !== 'active') {
-      throw new NotFoundException('Repository not found');
+      throw repositoryNotFound();
     }
     const assignment =
       await this.assignmentsRepository.findActiveForUserAndRepository(
@@ -348,7 +351,7 @@ export class HierarchyAccessService {
         userId,
       );
     if (!assignment) {
-      throw new NotFoundException('Repository not found');
+      throw repositoryNotFound();
     }
     return assignment;
   }
@@ -367,7 +370,7 @@ export class HierarchyAccessService {
   }> {
     const repository = await this.repositoriesRepository.findById(repositoryId);
     if (!repository) {
-      throw new NotFoundException('Repository not found');
+      throw repositoryNotFound();
     }
 
     if (await this.isPlatformAdmin(userId)) {
@@ -388,7 +391,7 @@ export class HierarchyAccessService {
         userId,
       );
     if (!assignment) {
-      throw new NotFoundException('Repository not found');
+      throw repositoryNotFound();
     }
     return { repository, viaManager: false, viaPlatformAdmin: false };
   }
@@ -398,7 +401,7 @@ export class HierarchyAccessService {
       ...allowedRoles.map((allowed) => ROLE_RANK[allowed]),
     );
     if (ROLE_RANK[role] < minimumRank) {
-      throw new ForbiddenException('Insufficient group role');
+      throw forbidden('GROUP_ROLE_INSUFFICIENT', 'Insufficient group role');
     }
   }
 }

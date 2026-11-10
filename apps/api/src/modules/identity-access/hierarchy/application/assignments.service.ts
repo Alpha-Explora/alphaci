@@ -1,10 +1,6 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { badRequest, unavailable } from '#kernel/http/coded-errors';
+import { assignmentNotFound } from './hierarchy.errors';
 import { ConfigService } from '@nestjs/config';
 
 import type { AppConfig } from '#kernel/config/app.config';
@@ -49,7 +45,8 @@ export class AssignmentsService {
   ): Promise<AssignmentRecord> {
     const config = this.configService.getOrThrow<AppConfig>('app');
     if (config.hierarchy.githubSyncMode !== 'live') {
-      throw new ServiceUnavailableException(
+      throw unavailable(
+        'GITHUB_SYNC_DISABLED',
         'Repository assignment is unavailable until live GitHub synchronization is enabled',
       );
     }
@@ -66,7 +63,8 @@ export class AssignmentsService {
       dto.userId,
     );
     if (!targetMembership) {
-      throw new BadRequestException(
+      throw badRequest(
+        'ASSIGNMENT_TARGET_NOT_IN_GROUP',
         "The target user must be an active member of the repository's owning Group",
       );
     }
@@ -131,7 +129,7 @@ export class AssignmentsService {
       );
     const assignment = await this.assignmentsRepository.findById(assignmentId);
     if (!assignment || assignment.repositoryId !== repositoryId) {
-      throw new NotFoundException('Assignment not found');
+      throw assignmentNotFound();
     }
 
     await this.auditEventsService.recordProjectEvent({
@@ -146,7 +144,7 @@ export class AssignmentsService {
 
     const updated = await this.assignmentsRepository.findById(assignmentId);
     if (!updated) {
-      throw new NotFoundException('Assignment not found');
+      throw assignmentNotFound();
     }
     return updated;
   }
@@ -164,7 +162,7 @@ export class AssignmentsService {
       );
     const assignment = await this.assignmentsRepository.findById(assignmentId);
     if (!assignment || assignment.repositoryId !== repositoryId) {
-      throw new NotFoundException('Assignment not found');
+      throw assignmentNotFound();
     }
 
     await this.githubSyncService.requestReconcile(assignmentId, userId);
