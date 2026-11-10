@@ -96,10 +96,12 @@ jobs:
       - name: Dependabot groups receive their updates
         run: npm run check:dependabot
 
-      # knip (knip.ts): no unused, undeclared or unresolvable dependency, and
-      # no unknown binary, in any workspace. About 10 s.
-      - name: Dependencies are declared and used
-        run: npm run check:deps
+      # knip (knip.ts): no unused, undeclared or unresolvable dependency, no
+      # unknown binary, and no file nothing reaches, in any workspace. About
+      # 30 s. Unused exports and types are not checked: hundreds of them are
+      # a public boundary or a type only a test reads.
+      - name: Dependencies and files are used
+        run: npm run check:unused
 
       # docs/ is one bundle for both apps and belongs to neither package, so a
       # docs-only change affects no app job. Check it here, on every event:

@@ -76,11 +76,14 @@ catch-alls exclude every wildcard the named groups use. `npm run
 check:dependabot` (`scripts/check-dependabot-groups.mjs`) fails when one is
 missing, and CI runs it on every pull request.
 
-`npm run check:deps` ([knip](https://knip.dev), configured in `knip.ts`) fails
+`npm run check:unused` ([knip](https://knip.dev), configured in `knip.ts`) fails
 when a workspace imports a package it does not declare, declares one it never
-uses, or calls an unknown binary. CI runs it on every pull request. When knip
-cannot see a real use, add the package to `ignoreDependencies` in `knip.ts`
-with the reason.
+uses, calls an unknown binary, or has a file nothing reaches. CI runs it on
+every pull request. When knip cannot see a real use, add the package to
+`ignoreDependencies`, or the entry point to `entry`, in `knip.ts` with the
+reason. Each context's and feature's `index.ts` is an entry, since it is the
+public boundary other code imports through. Unused exports and types are not
+checked (`npx knip` lists them).
 
 ### Lint and typecheck toolchain
 
