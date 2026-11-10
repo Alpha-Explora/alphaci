@@ -8,7 +8,13 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-interface ErrorEnvelope {
+/**
+ * The wire body. An exception thrown with an object body may carry more than
+ * the envelope: a `code` the web app switches on, and the facts that code
+ * needs (`people`, `deliveryProjectId`). They travel next to the envelope;
+ * the envelope fields below always win over a same-named extra.
+ */
+interface ErrorEnvelope extends Record<string, unknown> {
   statusCode: number;
   message: string;
   error: string;
@@ -29,6 +35,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let statusCode: number;
     let message: string;
     let error: string;
+    let extras: Record<string, unknown> = {};
 
     if (exception instanceof HttpException) {
       statusCode = exception.getStatus();
@@ -50,6 +57,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
               : exception.message;
         error =
           typeof resp['error'] === 'string' ? resp['error'] : exception.message;
+        extras = resp;
       } else {
         message = exception.message;
         error = exception.message;
@@ -85,6 +93,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         : null);
 
     const body: ErrorEnvelope = {
+      ...extras,
       statusCode,
       message,
       error,

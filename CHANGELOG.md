@@ -58,6 +58,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 ### Fixed
 
 - **Projects:** Developers get GitHub Write on repositories whose names GitHub rewrites for team names, such as `web.app`; before this, only the first person granted got it. Each new grant or revoke request gets its full retry budget again.
+- **API:** Error responses keep their `code` and details, so the web app can tell "moving removes access", quota limits and other coded refusals from a plain failure; they were dropped before.
 - **Capabilities:** Unknown, duplicate, or empty edition selections fail before catalog writes. Hosting metadata includes the Hosts page, and capability descriptions cover the current QA and delivery workflows.
 - **On-prem:** The Windows host install file now runs from an elevated PowerShell 7 window, where it stopped with `Get-FileHash` not recognized.
 - **Hosting:** Saving or deleting a Render environment variable keeps the service's other variables when it has more than 20; before, the rest were erased.
@@ -78,6 +79,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Runs:** Terminal colour codes no longer appear in test output, and SonarCloud percentages show one decimal.
 - **Hosting:** A managed Render service in a project's environments is released through AlphaCI, which finds it by its ID; before, its deploy job needed a deploy hook that cannot exist.
 - **UI:** Secondary buttons are visible in the dark theme, and preview cards name the host when the API sends no label.
+- **Runs:** A stalled or blocked pipeline stage now shows an icon in the run graph; before, those two stages, the ones that explain a broken pipeline, had an empty icon slot.
 - **Audit:** The repository Audit tab no longer skips events that share a timestamp at a page boundary; imported GitHub events often do.
 - **UI:** Signed-in pages no longer call workspace and notification endpoints that are turned off.
 - **Hosting:** With backend release signing, a malformed `ALPHACI_RELEASE_TRUST_KEYS_JSON` now refuses a release before it is stored; before, it left an unsigned release that re-running CI could not replace.

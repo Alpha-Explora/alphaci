@@ -96,10 +96,12 @@ jobs:
       - name: Dependabot groups receive their updates
         run: npm run check:dependabot
 
-      # knip (knip.ts): no unused, undeclared or unresolvable dependency, and
-      # no unknown binary, in any workspace. About 10 s.
-      - name: Dependencies are declared and used
-        run: npm run check:deps
+      # knip (knip.ts): no unused, undeclared or unresolvable dependency, no
+      # unknown binary, and no file nothing reaches, in any workspace. About
+      # 30 s. Unused exports and types are not checked: hundreds of them are
+      # a public boundary or a type only a test reads.
+      - name: Dependencies and files are used
+        run: npm run check:unused
 
       # docs/ is one bundle for both apps and belongs to neither package, so a
       # docs-only change affects no app job. Check it here, on every event:
@@ -421,10 +423,36 @@ jobs:
       - name: turbo run ${{ matrix.tasks }}
         run: npx turbo run ${{ matrix.tasks }} --filter=@alphaci/web --continue ${{ matrix.args }}
 
+  # Known vulnerabilities in the lockfile (npm audit reads it, so there is no
+  # install). Its own job, so a registry hiccup or an advisory published today
+  # fails this one check and reruns alone, instead of stopping every other job.
+  # Two bars (npm run check:audit): nothing moderate or worse in what ships, and
+  # nothing high or critical in the toolchain. The moderate findings in dev-only
+  # tooling do not fail it. A new advisory can turn this red with no change
+  # here: Dependabot's bump, or an `overrides` entry, clears it.
+  audit:
+    name: Dependency vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Nothing moderate or worse ships
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Nothing high or critical in the toolchain
+        if: always()
+        run: npm audit --audit-level=high
+
   ci-passed:
     name: ci-passed
     if: always()
-    needs: [plan, affected-guard, api, api-e2e, api-integration, fullstack-e2e, web-e2e, web]
+    needs: [plan, affected-guard, audit, api, api-e2e, api-integration, fullstack-e2e, web-e2e, web]
     runs-on: ubuntu-latest
     steps:
       - name: Every job passed or was skipped

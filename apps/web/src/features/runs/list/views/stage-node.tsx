@@ -63,6 +63,25 @@ function ClockIcon() {
   );
 }
 
+/** A stage that was never triggered: a dash, muted like its colours. */
+function BlockedIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="6" y1="12" x2="18" y2="12" />
+    </svg>
+  );
+}
+
 function SpinnerIcon({ color }: { color: string }) {
   return (
     <span
@@ -101,6 +120,11 @@ function StageIcon({
     case 'cancelled':
     case 'pending':
       return <ClockIcon />;
+    // A stage that never started is a broken pipeline: it reads like a failure.
+    case 'stalled':
+      return <XIcon />;
+    case 'blocked':
+      return <BlockedIcon />;
   }
 }
 
