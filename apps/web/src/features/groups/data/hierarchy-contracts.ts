@@ -18,6 +18,9 @@ import type {
   AppRole,
   DeploymentProvisioningRequest,
   DeploymentProvisioningResult,
+  HierarchyDeliveryProject,
+  HierarchyGroup,
+  HierarchyGroupMember,
   WorkspaceRole,
 } from '@/shared/api/contracts';
 
@@ -153,21 +156,8 @@ export type GroupActivityGithubLinkType =
 
 /* ── Groups (plan §2.4) ────────────────────────────────────────────────────── */
 
-export interface GroupSummary {
-  id: string;
-  name: string;
-  description: string | null;
-  businessUnit: string | null;
-  status: GroupStatus;
-  /** The CALLER's role in this group — drives role-conditional rendering. */
-  role: GroupRole;
-  /** Caller's own membership lifecycle state. */
-  memberStatus: GroupMemberStatus;
-  memberCount: number;
-  systemCount: number;
-  createdAt: string;
-  archivedAt: string | null;
-}
+/** A group as the API sends it; the type is declared in @alphaci/api-contracts. */
+export type GroupSummary = HierarchyGroup;
 
 export interface CreateGroupRequest {
   name: string;
@@ -196,25 +186,8 @@ export interface InternalUserDirectoryEntry {
   hasAccount: boolean;
 }
 
-export interface GroupMember {
-  id: string;
-  groupId: string;
-  userId: string;
-  role: GroupRole;
-  memberStatus: GroupMemberStatus;
-  login: string;
-  name: string;
-  email: string | null;
-  avatarUrl: string | null;
-  /** The member's global app role, when the backend reports it. */
-  appRole?: AppRole | null;
-  invitedBy: string | null;
-  invitedAt: string | null;
-  removedAt: string | null;
-  removedBy: string | null;
-  removalReason: string | null;
-  createdAt: string;
-}
+/** A group member as the API sends it; declared in @alphaci/api-contracts. */
+export type GroupMember = HierarchyGroupMember;
 
 export interface AddGroupMemberRequest {
   userId: string;
@@ -257,17 +230,8 @@ export interface UpdateSystemRequest {
   description?: string;
 }
 
-export interface DeliveryProject {
-  id: string;
-  systemId: string;
-  groupId: string;
-  name: string;
-  description: string | null;
-  status: DeliveryProjectStatus;
-  repositoryCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
+/** A Project as the API sends it; declared in @alphaci/api-contracts. */
+export type DeliveryProject = HierarchyDeliveryProject;
 
 export interface CreateDeliveryProjectRequest {
   name: string;

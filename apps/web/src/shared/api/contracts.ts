@@ -1289,6 +1289,17 @@ export type {
 } from '@alphaci/api-contracts';
 
 /*
+ * Groups (Teams), their members and delivery projects (Projects): the
+ * responses of /groups and /delivery-projects, from @alphaci/api-contracts.
+ * features/groups/data/hierarchy-contracts.ts names them for the hierarchy.
+ */
+export type {
+  DeliveryProject as HierarchyDeliveryProject,
+  Group as HierarchyGroup,
+  GroupMember as HierarchyGroupMember,
+} from '@alphaci/api-contracts';
+
+/*
  * Environment variables and custom domains, also from @alphaci/api-contracts.
  * `provider` on these is the open DeploymentProvider, not CreatableEnvProvider.
  */

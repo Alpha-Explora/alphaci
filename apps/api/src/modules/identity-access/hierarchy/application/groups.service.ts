@@ -1,3 +1,4 @@
+import type { Group, GroupRole } from '@alphaci/api-contracts';
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { badRequest, forbidden } from '#kernel/http/coded-errors';
 import { groupNotFound, memberNotFound } from './hierarchy.errors';
@@ -22,10 +23,20 @@ import { HIERARCHY_EVENT_CODES } from '../domain/hierarchy.types';
 import {
   GroupsRepository,
   type GroupMemberRecord,
-  type GroupRecord,
 } from '../infrastructure/groups.repository';
 import type { UpdateGroupDto } from '../api/dto/update-group.dto';
 import type { UpdateMemberRoleDto } from '../api/dto/update-member-role.dto';
+
+/**
+ * The role the caller holds in the group, as the response carries it: a
+ * platform admin has no membership row and reads as the top tier, like
+ * getGroup.
+ */
+function callerRole(access: {
+  membership: { role: GroupRole } | null;
+}): GroupRole {
+  return access.membership?.role ?? 'admin';
+}
 
 @Injectable()
 export class GroupsService {
@@ -50,7 +61,7 @@ export class GroupsService {
   async createGroup(
     userId: string,
     input: { name: string; description?: string; businessUnit?: string },
-  ): Promise<GroupRecord> {
+  ): Promise<Group> {
     // Only global Leads and Admins may create groups. Allow-list, not
     // exclusion: 'qa' and 'member' (and any future role) are refused.
     const appRole = await this.accessService.getAppRole(userId);
@@ -83,14 +94,14 @@ export class GroupsService {
     return { ...group, role: 'admin' };
   }
 
-  async getMyGroups(userId: string): Promise<GroupRecord[]> {
+  async getMyGroups(userId: string): Promise<Group[]> {
     if (await this.accessService.isPlatformAdmin(userId)) {
       return this.groupsRepository.listAllGroups();
     }
     return this.groupsRepository.listForUser(userId);
   }
 
-  async getGroup(groupId: string, userId: string): Promise<GroupRecord> {
+  async getGroup(groupId: string, userId: string): Promise<Group> {
     if (await this.accessService.isPlatformAdmin(userId)) {
       const group = await this.groupsRepository.findGroupById(groupId);
       if (!group) {
@@ -113,8 +124,8 @@ export class GroupsService {
     groupId: string,
     userId: string,
     dto: UpdateGroupDto,
-  ): Promise<GroupRecord> {
-    await this.accessService.assertGroupManagerOrPlatformAdmin(
+  ): Promise<Group> {
+    const access = await this.accessService.assertGroupManagerOrPlatformAdmin(
       groupId,
       userId,
       ['admin', 'delegated_lead'],
@@ -132,11 +143,11 @@ export class GroupsService {
       metadata: { groupId, changes: dto },
     });
 
-    return group;
+    return { ...group, role: callerRole(access) };
   }
 
-  async archiveGroup(groupId: string, userId: string): Promise<GroupRecord> {
-    await this.accessService.assertGroupManagerOrPlatformAdmin(
+  async archiveGroup(groupId: string, userId: string): Promise<Group> {
+    const access = await this.accessService.assertGroupManagerOrPlatformAdmin(
       groupId,
       userId,
       ['admin'],
@@ -158,7 +169,7 @@ export class GroupsService {
       metadata: { groupId },
     });
 
-    return group;
+    return { ...group, role: callerRole(access) };
   }
 
   /**
@@ -216,8 +227,8 @@ export class GroupsService {
     return { id: groupId, deleted: true };
   }
 
-  async reopenGroup(groupId: string, userId: string): Promise<GroupRecord> {
-    await this.accessService.assertGroupManagerOrPlatformAdmin(
+  async reopenGroup(groupId: string, userId: string): Promise<Group> {
+    const access = await this.accessService.assertGroupManagerOrPlatformAdmin(
       groupId,
       userId,
       ['admin'],
@@ -239,7 +250,7 @@ export class GroupsService {
       metadata: { groupId },
     });
 
-    return group;
+    return { ...group, role: callerRole(access) };
   }
 
   /**
@@ -251,7 +262,7 @@ export class GroupsService {
     groupId: string,
     actingUserId: string,
     newManagerUserId: string,
-  ): Promise<GroupRecord> {
+  ): Promise<Group> {
     const group = await this.groupsRepository.findGroupById(groupId);
     if (!group) {
       throw groupNotFound();
@@ -290,7 +301,8 @@ export class GroupsService {
       },
     });
 
-    return group;
+    // Platform-admin-only: the caller has no membership row and reads as the top tier.
+    return { ...group, role: 'admin' };
   }
 
   async listMembers(

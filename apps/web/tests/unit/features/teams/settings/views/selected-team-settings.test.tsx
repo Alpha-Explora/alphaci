@@ -31,11 +31,11 @@ const TEAM: GroupSummary = {
   businessUnit: null,
   status: 'active',
   role: 'admin',
-  memberStatus: 'active',
   memberCount: 2,
   systemCount: 0,
   createdAt: '2026-01-01T00:00:00.000Z',
   archivedAt: null,
+  archivedBy: null,
 };
 
 function vm(

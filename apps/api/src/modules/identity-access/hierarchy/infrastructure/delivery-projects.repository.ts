@@ -1,3 +1,4 @@
+import type { DeliveryProject } from '@alphaci/api-contracts';
 import { Injectable } from '@nestjs/common';
 
 import { DatabaseService } from '#kernel/db/database.service';
@@ -7,20 +8,8 @@ import {
   projectNameLockKey,
 } from '../domain/project-name';
 
-export interface DeliveryProjectRecord {
-  id: string;
-  systemId: string;
-  groupId: string;
-  name: string;
-  description: string | null;
-  managerId: string | null;
-  status: LifecycleStatus;
-  archivedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-  /** Non-archived repository count — at-a-glance chip (current hierarchy summary contract). */
-  repositoryCount: number;
-}
+/** The wire shape of a Project; defined once in @alphaci/api-contracts. */
+export type DeliveryProjectRecord = DeliveryProject;
 
 interface DeliveryProjectRow {
   id: string;

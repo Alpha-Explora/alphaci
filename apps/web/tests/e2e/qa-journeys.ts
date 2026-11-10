@@ -2419,11 +2419,11 @@ class QaMockBackend {
       businessUnit: null,
       status: 'active',
       role: this.role === 'lead' || this.role === 'admin' ? 'admin' : 'member',
-      memberStatus: 'active',
       memberCount: 3,
       systemCount: 0,
       createdAt: ago(120 * 24 * 60 * MINUTE),
       archivedAt: null,
+      archivedBy: null,
     };
   }
 
@@ -2442,6 +2442,7 @@ class QaMockBackend {
         groupId,
         userId: person.id,
         role,
+        appRole,
         memberStatus: 'active',
         login: person.login,
         name: person.name,
@@ -2820,7 +2821,9 @@ class QaMockBackend {
       groupId: WORKSPACE.id,
       name: folder.name,
       description: null,
+      managerId: null,
       status: folder.archived ? 'archived' : 'active',
+      archivedAt: folder.archived ? folder.createdAt : null,
       repositoryCount: folder.repositories.filter((repo) => !repo.archived)
         .length,
       createdAt: folder.createdAt,

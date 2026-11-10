@@ -17,6 +17,7 @@ function member(over: Partial<GroupMember>): GroupMember {
     groupId: 'g1',
     userId: 'u1',
     role: 'member',
+    appRole: null,
     memberStatus: 'active',
     login: 'ana',
     name: 'Ana',

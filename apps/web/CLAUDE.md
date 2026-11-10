@@ -271,6 +271,12 @@ change the package and fix the web consumers in the same pull request. The
 rest of `contracts.ts` is still hand-written and moves to the package one
 domain at a time (see the package README).
 
+Groups, group members and delivery projects (`HierarchyGroup`,
+`HierarchyGroupMember`, `HierarchyDeliveryProject`) are in the package, and the
+API's e2e suite checks its real responses against them. Do not widen one of
+those types in a feature to cover a field the API does not send; a fixture that
+builds one has to carry every field the type names.
+
 Who may do what by app role is not written here. The role rules the API also
 enforces (create a Project or repository, hosting and environment variables,
 requirements, pull-request routes) and the pipeline branch names live in

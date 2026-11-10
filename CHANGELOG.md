@@ -58,6 +58,8 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 ### Fixed
 
 - **Projects:** Developers get GitHub Write on repositories whose names GitHub rewrites for team names, such as `web.app`; before this, only the first person granted got it. Each new grant or revoke request gets its full retry budget again.
+- **Teams:** Saving a team's details no longer hides its manage controls until the page is reloaded.
+- **Teams:** Archiving or reopening a team no longer fails with a server error.
 - **API:** Error responses keep their `code` and details, so the web app can tell "moving removes access", quota limits and other coded refusals from a plain failure; they were dropped before.
 - **Capabilities:** Unknown, duplicate, or empty edition selections fail before catalog writes. Hosting metadata includes the Hosts page, and capability descriptions cover the current QA and delivery workflows.
 - **On-prem:** The Windows host install file now runs from an elevated PowerShell 7 window, where it stopped with `Get-FileHash` not recognized.
@@ -97,6 +99,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Repository:** The API and web app live in one Turborepo monorepo with one documentation bundle in `docs/`.
 - **Capabilities:** One authoring source, a catalog package with provenance, a capability ledger, and checks that keep packs and docs in step.
 - **CI:** The API's database integration specs run against a disposable Postgres on every API change.
+- **API:** Team and Project responses are declared once and checked against the running API; a new route declares its response or is listed as not yet declared.
 - **API:** Refusals carry a stable `code` built by shared factories; a check stops new uncoded ones, and the Teams and Projects services already comply.
 - **Rules:** Who may create a Project or repository, manage hosting, or open a pull request is one shared package, so the API gate and the web button cannot disagree.
 - **Deploy:** A green CI run on `main` deploys the enterprise instance and its settings, kept in the `enterprise-gce` GitHub environment, to its Compute Engine VM; migration changes stop for review.
