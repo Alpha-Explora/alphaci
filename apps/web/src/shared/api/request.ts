@@ -123,6 +123,7 @@ async function readErrorDetails(response: Response): Promise<unknown> {
   } catch {
     // A broken error body must not replace the useful HTTP failure.
   }
+  return undefined;
 }
 
 function errorReference(
