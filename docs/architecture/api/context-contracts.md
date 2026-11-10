@@ -26,7 +26,7 @@ This register describes the current in-process boundaries. A context index or po
 - A focused port is used for a real inversion or optional integration. Same-process reads may use the owning context's public index.
 - Nest feature-module imports belong to composition roots and are not application-level contracts.
 - Provider contracts and registries belong to Runtime. Provider adapters are not context boundaries.
-- HTTP response shapes that the web app also reads are defined once in the types-only workspace package `@alphaci/api-contracts` (`packages/api-contracts`) and re-exported, with `export type`, from the port or `*.types.ts` file that owned them. Today these are deployment history and drift (`deployment-runtime.port.ts`) and previews (`project-previews.types.ts`). Change those shapes in the package.
+- HTTP response shapes that the web app also reads are defined once in the types-only workspace package `@alphaci/api-contracts` (`packages/api-contracts`) and re-exported, with `export type`, from the port or `*.types.ts` file that owned them. Today these are deployment history and drift (`deployment-runtime.port.ts`) and previews (`project-previews.types.ts`). Change those shapes in the package. Groups, group members and delivery projects (`groups.ts`, `delivery-projects.ts`) are the first routes whose responses are also checked against the running API: Zod schemas in `tests/e2e/support/contracts/`, exercised by `tests/e2e/hierarchy-contracts.e2e-spec.ts`, and `tests/architecture/route-contracts.spec.ts` requires every route to declare a contract or sit in `route-contracts.baseline.txt`.
 
 ## Current directional edges
 

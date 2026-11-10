@@ -22,6 +22,7 @@ function teamMember(overrides: Partial<GroupMember>): GroupMember {
     groupId: 'g1',
     userId: 'u',
     role: 'member',
+    appRole: null,
     memberStatus: 'active',
     login: 'login',
     name: 'Name',
@@ -126,7 +127,7 @@ describe('eligibleProjectMemberCandidates', () => {
   it('previews the kind from the app role', () => {
     expect(candidateKind({ appRole: 'member' })).toBe('developer');
     expect(candidateKind({ appRole: 'qa' })).toBe('qa');
-    expect(candidateKind({ appRole: undefined })).toBeNull();
+    expect(candidateKind({ appRole: null })).toBeNull();
   });
 });
 

@@ -1,3 +1,4 @@
+import type { Group, GroupMember } from '@alphaci/api-contracts';
 import { Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
@@ -9,49 +10,15 @@ import type {
   MemberStatus,
 } from '../domain/hierarchy.types';
 
-export interface GroupRecord {
-  id: string;
-  name: string;
-  description: string | null;
-  businessUnit: string | null;
-  status: LifecycleStatus;
-  archivedAt: string | null;
-  archivedBy: string | null;
-  createdAt: string;
-  role?: GroupRole;
-  /** Active member / active-system counts — at-a-glance chips (current hierarchy summary contract). */
-  memberCount: number;
-  systemCount: number;
-}
+/**
+ * A group as a query leaves it. `role` (the caller's) is only there when the
+ * query joins the caller; the services add it before anything is sent, and
+ * send a `Group`, which @alphaci/api-contracts defines.
+ */
+export type GroupRecord = Omit<Group, 'role'> & { role?: GroupRole };
 
-export interface GroupMemberRecord {
-  id: string;
-  /**
-   * NOTE: named groupId (not workspaceId) on purpose — the API path segment
-   * is /groups and every hierarchy response uses the product term
-   * (the current hierarchy contract). Only the
-   * underlying orgs.workspaces/workspace_members SQL keeps the internal name.
-   */
-  groupId: string;
-  userId: string;
-  role: GroupRole;
-  /**
-   * The member's global persona (identity.app_users.app_role), for labelling
-   * them Lead / QA Team / Developer. Null where a query does not select it.
-   */
-  appRole: MemberAppRole | null;
-  memberStatus: MemberStatus;
-  login: string;
-  name: string;
-  email: string | null;
-  avatarUrl: string | null;
-  invitedBy: string | null;
-  invitedAt: string | null;
-  removedAt: string | null;
-  removedBy: string | null;
-  removalReason: string | null;
-  createdAt: string;
-}
+/** The wire shape of a group member; defined once in @alphaci/api-contracts. */
+export type GroupMemberRecord = GroupMember;
 
 export interface ActiveMembership {
   workspaceId: string;
@@ -184,7 +151,7 @@ export class GroupsRepository {
     });
   }
 
-  async listForUser(userId: string): Promise<GroupRecord[]> {
+  async listForUser(userId: string): Promise<Group[]> {
     const result = await this.databaseService.query<GroupRow>(
       `
         SELECT
@@ -204,10 +171,12 @@ export class GroupsRepository {
     const counts = await this.getCountsForGroups(
       result.rows.map((row) => row.id),
     );
-    return result.rows.map((row) => this.toGroup(row, counts.get(row.id)));
+    return result.rows.map((row) =>
+      this.toGroupForCaller(row, counts.get(row.id)),
+    );
   }
 
-  async listAllGroups(): Promise<GroupRecord[]> {
+  async listAllGroups(): Promise<Group[]> {
     const result = await this.databaseService.query<GroupRow>(
       `
         SELECT id, name, description, business_unit, status, archived_at, archived_by, created_at,
@@ -220,7 +189,9 @@ export class GroupsRepository {
     const counts = await this.getCountsForGroups(
       result.rows.map((row) => row.id),
     );
-    return result.rows.map((row) => this.toGroup(row, counts.get(row.id)));
+    return result.rows.map((row) =>
+      this.toGroupForCaller(row, counts.get(row.id)),
+    );
   }
 
   async findGroupById(groupId: string): Promise<GroupRecord | null> {
@@ -358,7 +329,7 @@ export class GroupsRepository {
         SET
           status = $2,
           archived_at = CASE WHEN $2 = 'archived' THEN NOW() ELSE NULL END,
-          archived_by = CASE WHEN $2 = 'archived' THEN $3 ELSE NULL END,
+          archived_by = CASE WHEN $2 = 'archived' THEN $3::uuid ELSE NULL END,
           updated_at = NOW()
         WHERE id = $1 AND kind = 'team'
         RETURNING id, name, description, business_unit, status, archived_at, archived_by, created_at;
@@ -686,6 +657,15 @@ export class GroupsRepository {
       }
       return true;
     });
+  }
+
+  /** A listing query selects the caller's role; one that did not is a bug. */
+  private toGroupForCaller(
+    row: GroupRow,
+    counts?: { memberCount: number; systemCount: number },
+  ): Group {
+    if (!row.role) throw new Error('Group listing did not select a role');
+    return { ...this.toGroup(row, counts), role: row.role };
   }
 
   private toGroup(

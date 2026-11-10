@@ -5,18 +5,38 @@ The API's code uses them for the responses it sends and the web app imports
 the same definitions for what it reads. When the API changes a shape in a way
 that breaks the web app, the web typecheck fails in the same pull request.
 
-| File | Covers |
-|------|--------|
-| `src/deployments.ts` | `GET /projects/:id/deployments`: `DeploymentHistoryResponse`, `DeploymentHistoryItem`, `DeploymentHistoryStatus`, `DeploymentHistoryMode`, and the `DeploymentProvider` / `DeploymentSlot` vocabulary |
-| `src/previews.ts` | `GET /projects/:id/previews`: `ProjectPreviewsResponse`, `ProjectBranchPreview`, `ProjectBranchPreviewStatus`, `ProjectPreviewDeploy`, `PreviewSurface` |
-| `src/drift.ts` | `GET /projects/:id/drift`, `POST .../drift/run`, `POST .../drift/:findingId/repair`: `DeploymentDriftResponse`, `DeploymentDriftFinding` and its severity, status and source, `ProjectDriftRepairAction`, `ProjectDriftRepairResponse` |
-| `src/env-vars.ts` | `GET /projects/:id/env-vars`, `POST .../env-vars/provision`, `POST .../env-vars/validate`, `DELETE .../env-vars/:metadataId`: `EnvVarMetadata` and its `EnvVarProvisionStatus`, `EnvLane`, `EnvVarScope`, `EnvVarInput`, `ProvisionEnvVarsRequest`/`Response`, `ValidateEnvVarsRequest`/`Response`, `DeleteEnvVarMetadataResponse` |
-| `src/domains.ts` | `GET`/`POST /projects/:id/domains`, `POST .../domains/:domainId/verify`, `DELETE .../domains/:domainId`: `CustomDomain`, `DomainVerificationChallenge`, `AddCustomDomainRequest`, `RemoveCustomDomainResponse` |
+| File                       | Covers                                                                                                                                                                                                                                                                                                                             |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/deployments.ts`       | `GET /projects/:id/deployments`: `DeploymentHistoryResponse`, `DeploymentHistoryItem`, `DeploymentHistoryStatus`, `DeploymentHistoryMode`, and the `DeploymentProvider` / `DeploymentSlot` vocabulary                                                                                                                              |
+| `src/previews.ts`          | `GET /projects/:id/previews`: `ProjectPreviewsResponse`, `ProjectBranchPreview`, `ProjectBranchPreviewStatus`, `ProjectPreviewDeploy`, `PreviewSurface`                                                                                                                                                                            |
+| `src/drift.ts`             | `GET /projects/:id/drift`, `POST .../drift/run`, `POST .../drift/:findingId/repair`: `DeploymentDriftResponse`, `DeploymentDriftFinding` and its severity, status and source, `ProjectDriftRepairAction`, `ProjectDriftRepairResponse`                                                                                             |
+| `src/env-vars.ts`          | `GET /projects/:id/env-vars`, `POST .../env-vars/provision`, `POST .../env-vars/validate`, `DELETE .../env-vars/:metadataId`: `EnvVarMetadata` and its `EnvVarProvisionStatus`, `EnvLane`, `EnvVarScope`, `EnvVarInput`, `ProvisionEnvVarsRequest`/`Response`, `ValidateEnvVarsRequest`/`Response`, `DeleteEnvVarMetadataResponse` |
+| `src/groups.ts`            | `GET`/`POST /groups`, `GET`/`PATCH /groups/:groupId`, `POST .../archive`, `POST .../reopen`, `GET .../members`: `Group` (with the caller's `role` on every response), `GroupMember`, and the `GroupRole`, `LifecycleStatus`, `MemberStatus`, `MemberAppRole` vocabulary                                                            |
+| `src/delivery-projects.ts` | `GET`/`PATCH /delivery-projects/:deliveryProjectId`, `POST .../archive`, `GET`/`POST /systems/:systemId/delivery-projects`: `DeliveryProject`                                                                                                                                                                                      |
+| `src/domains.ts`           | `GET`/`POST /projects/:id/domains`, `POST .../domains/:domainId/verify`, `DELETE .../domains/:domainId`: `CustomDomain`, `DomainVerificationChallenge`, `AddCustomDomainRequest`, `RemoveCustomDomainResponse`                                                                                                                     |
 
 `DeploymentProvider` is an open `string`, not a list: providers are runtime
 plugins (`render`, `vercel`, `onprem-compose`, `gcp`, ...). Every `provider`
 field here uses it, so a client that labels providers needs a fallback for an
 id it does not know.
+
+## Checking a contract against the API
+
+A type is not proof the API sends it. For each declared route there is a Zod
+schema in `apps/api/tests/e2e/support/contracts/` and a line in `ROUTE_CONTRACTS`
+(`routes.ts`). `hierarchy-contracts.e2e-spec.ts` calls the real routes and checks
+each response with `strictObject`, so a field the API stops sending, renames or
+adds fails the suite. A compile-time `Matches<Schema, Type>` check fails when the
+schema and the type here stop describing the same shape. The schemas live in the
+API's tests, not in this package, so the package stays types only.
+
+`tests/architecture/route-contracts.spec.ts` requires every route in the route
+inventory to be in `ROUTE_CONTRACTS` or in `route-contracts.baseline.txt`, the
+routes that have no contract yet. A new route therefore declares one, or shows up
+in the review as a baseline line. To declare one: add the type here, the schema
+and the `ROUTE_CONTRACTS` entry, cover the route in an e2e spec, then regenerate
+the baseline with `UPDATE_ROUTE_CONTRACTS_BASELINE=1 npm test -w @alphaci/api --
+route-contracts`.
 
 ## Rules
 
@@ -56,6 +76,10 @@ id it does not know.
   `application/custom-domains.service.ts` (`AddCustomDomainInput`); the
   services' return types name the package's response types.
   The rest of the API keeps importing from those files.
+- **Groups and Projects:** the repository files own the records
+  (`GroupRecord` is a `Group` before the caller's role is added;
+  `GroupMemberRecord` and `DeliveryProjectRecord` are the package types), and
+  `GroupsService` returns `Group`.
 - **Web:** `src/shared/api/contracts.ts` is the only file that imports the
   package; the web `boundaries` rule `api-contracts-through-shared-api`
   enforces this. It re-exports each type, under the web's existing name where
