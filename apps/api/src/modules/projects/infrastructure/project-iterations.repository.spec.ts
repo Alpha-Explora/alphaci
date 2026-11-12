@@ -172,9 +172,21 @@ describe('ProjectIterationsRepository.startNext', () => {
     expect(query).toHaveBeenCalledTimes(1);
     const [sql, params] = query.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain('INSERT INTO projects.project_iterations');
-    expect(sql).toContain('COALESCE(MAX(number), 0) + 1');
+    expect(sql).toContain('COALESCE(latest.number, 0) + 1');
+    // The next minor version after the latest Iteration when none is given.
+    expect(sql).toContain('COALESCE($6::int, latest.version_minor + 1, 0)');
+    expect(sql).toContain('COALESCE($7::int, 0)');
     expect(sql).not.toContain('qa_checklists');
-    expect(params).toEqual(['dp-1', 'Loyalty', 'lead-1', 'lead']);
+    expect(params).toEqual([
+      'dp-1',
+      'Loyalty',
+      'lead-1',
+      'lead',
+      null,
+      null,
+      null,
+      null,
+    ]);
   });
 
   it('a unique violation from the one-active index surfaces untouched', async () => {

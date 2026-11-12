@@ -173,6 +173,8 @@ describe('ProjectIterationStartService.start', () => {
       startedBy: 'lead-1',
       startedByLogin: 'lead',
       goal: 'Loyalty points',
+      version: { major: 1, minor: 1, patch: 0 },
+      revisionType: 'minor',
     });
     expect(result).toEqual({
       iteration: expect.objectContaining({
@@ -183,6 +185,28 @@ describe('ProjectIterationStartService.start', () => {
         startedBy: { id: 'lead-1', login: 'lead' },
       }),
     });
+  });
+
+  it('a Major revision moves the version to the next major', async () => {
+    const f = build();
+    await f.service.start(DP, actor, { revisionType: 'major' });
+    expect(f.repository.startNext).toHaveBeenCalledWith(
+      expect.objectContaining({
+        version: { major: 2, minor: 0, patch: 0 },
+        revisionType: 'major',
+      }),
+    );
+  });
+
+  it('a Patch revision bumps only the patch number', async () => {
+    const f = build();
+    await f.service.start(DP, actor, { revisionType: 'patch' });
+    expect(f.repository.startNext).toHaveBeenCalledWith(
+      expect.objectContaining({
+        version: { major: 1, minor: 0, patch: 1 },
+        revisionType: 'patch',
+      }),
+    );
   });
 
   it('still accepts an empty carry-over list from an older client', async () => {

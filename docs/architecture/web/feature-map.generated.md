@@ -19,13 +19,13 @@ Feature domains are UI ownership boundaries. They consume backend bounded contex
 | `admin` | `identity-access` | platform administration, user review, and feedback | 16 |
 | `auth` | `identity-access` | sign-in, callback, and session presentation | 18 |
 | `capabilities` | `identity-access` | compatibility capability consumption from /api/v1/capabilities | 6 |
-| `checklists` | `projects` | team QA checklists and test suites, the project Checklists tab, QA Studio verification runs and evidence, PO Studio acceptance, iterations, QA reports, and the Overview "Returned by QA" card | 195 |
+| `checklists` | `projects` | team QA checklists and test suites, the project Checklists tab, QA Studio verification runs and evidence, PO Studio acceptance, iterations, QA reports, and the Overview "Returned by QA" card | 221 |
 | `groups` | `identity-access` | hierarchy groups, systems, repositories, members, activity, and delivery projects | 60 |
 | `guide` | `platform-ops` | in-product guide | 3 |
 | `hosts` | `runtime` | on-prem machine enrollment, inventory, and environment host assignment | 27 |
 | `home` | `platform-ops` | authenticated home dashboard | 32 |
-| `notifications` | `platform-ops` | inbox, live notifications, and notification preferences | 21 |
-| `projects` | `projects` | project detail: code, commits, pull requests, pipeline, environments, hosting, promotion, rollback, drift, previews, and settings | 160 |
+| `notifications` | `platform-ops` | inbox, live notifications, and notification preferences | 22 |
+| `projects` | `projects` | project detail: code, commits, pull requests, pipeline, environments, hosting, promotion, rollback, drift, previews, and settings | 161 |
 | `public-site` | `platform-ops` | SaaS marketing landing at / | 17 |
 | `runs` | `pipelines` | CI run history presentation | 27 |
 | `settings` | `identity-access` | account, workspace, and notification settings | 22 |

@@ -5,12 +5,18 @@ export interface ProjectIterationRef {
   id: string;
   number: number;
   status: ProjectIterationStatus;
+  /** "v1.2.0" on a run's detail and report; absent from list payloads. */
+  versionLabel?: string;
 }
 
 export interface ProjectIteration extends ProjectIterationRef {
   deliveryProjectId: string;
   /** Optional, at most 120 characters. */
   goal: string | null;
+  /** The release version: v1.0.0, then v1.0.1 (patch), v1.1.0 (minor) or v2.0.0 (major). */
+  version: { major: number; minor: number; patch: number; label: string };
+  /** How this Iteration moved the version from the one before it. */
+  revisionType: 'major' | 'minor' | 'patch';
   startedAt: string;
   startedBy: { id: string | null; login: string | null } | null;
   deliveredAt: string | null;

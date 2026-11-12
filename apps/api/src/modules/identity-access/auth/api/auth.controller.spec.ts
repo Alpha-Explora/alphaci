@@ -87,6 +87,7 @@ const makePlatformAdminAccessService = () =>
     findAppRoleWithSource: jest
       .fn()
       .mockResolvedValue({ role: 'member', source: 'github_team' }),
+    findSpecialAccess: jest.fn().mockResolvedValue([]),
   }) as unknown as PlatformAdminAccessService;
 
 describe('AuthController', () => {
@@ -181,7 +182,20 @@ describe('AuthController', () => {
 
     it('reports the stored app_role for a non-platform-admin', async () => {
       const result = await controller.me(makeRequest(fakeUser));
-      expect(result).toMatchObject({ appRole: 'member', platformRole: null });
+      expect(result).toMatchObject({
+        appRole: 'member',
+        platformRole: null,
+        specialAccess: [],
+      });
+    });
+
+    it('reports the special access an admin granted', async () => {
+      const access = controller['platformAdminAccessService'] as unknown as {
+        findSpecialAccess: jest.Mock;
+      };
+      access.findSpecialAccess.mockResolvedValueOnce(['qa_release']);
+      const result = await controller.me(makeRequest(fakeUser));
+      expect(result).toMatchObject({ specialAccess: ['qa_release'] });
     });
 
     it('returns unauthenticated when no user', async () => {

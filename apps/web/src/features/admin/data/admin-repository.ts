@@ -4,8 +4,10 @@ import {
   getAdminUsers,
   resetUserAppRoleToGithub,
   setUserAppRole,
+  setUserSpecialAccess,
   triageAdminFeedback,
 } from '@/features/admin/data/admin-api';
+import type { SpecialAccess } from '@/shared/api/special-access';
 
 import type {
   AdminUserDetail,
@@ -37,6 +39,10 @@ export const adminRepository = {
   /** Unpins the user so GitHub team membership drives their role again. */
   resetUserRoleToGithub(id: string): Promise<void> {
     return resetUserAppRoleToGithub(id);
+  },
+
+  setUserSpecialAccess(id: string, access: SpecialAccess[]): Promise<void> {
+    return setUserSpecialAccess(id, access);
   },
 
   feedback(status: FeedbackStatus | 'all'): Promise<FeedbackRecord[]> {

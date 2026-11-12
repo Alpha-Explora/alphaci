@@ -87,6 +87,7 @@ const CAPABILITY_ROUTE_BASELINE: Readonly<Record<string, BaselineController>> =
         { handler: 'revokeRole', method: 'DELETE' },
         { handler: 'setAppRole', method: 'PATCH' },
         { handler: 'resetAppRole', method: 'POST' },
+        { handler: 'setSpecialAccess', method: 'PATCH' },
         { handler: 'listFeedback', method: 'GET' },
         { handler: 'triageFeedback', method: 'PATCH' },
         { handler: 'getAccessLog', method: 'GET' },

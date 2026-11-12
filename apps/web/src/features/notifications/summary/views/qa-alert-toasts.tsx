@@ -14,6 +14,7 @@ import type { NotificationItem } from '../../model/notifications-types';
 function alertLinkLabel(alert: NotificationItem): string {
   if (isMembershipNotification(alert)) return 'Open workspace';
   if (isQaSignoff(alert)) return 'Check it in PO Studio';
+  if (alert.eventCode === 'qa.run.rejected') return 'Open QA feedback';
   return 'Open item';
 }
 

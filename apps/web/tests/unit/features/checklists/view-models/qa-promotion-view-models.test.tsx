@@ -128,11 +128,11 @@ describe('useQaPromotionViewModel — status', () => {
     );
   });
 
-  it('offers QA Team no button even if the server said canMerge', async () => {
+  it('offers QA Team the action when the server gate permits it', async () => {
     repo.promotion.mockResolvedValue(readyWire());
     const vm = promotionHook({ role: 'qa', watch: null });
     await flush();
-    expect(vm.current().canMerge).toBe(false);
+    expect(vm.current().canMerge).toBe(true);
   });
 
   it('treats a backend without the route (404) as no card, and a failure as an error to retry', async () => {

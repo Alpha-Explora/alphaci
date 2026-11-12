@@ -108,7 +108,7 @@ export class QaAutomationDispatchService {
       throw new NotFoundException('QA run not found');
     }
 
-    const role = await this.access.findAppRole(actor.userId);
+    const role = await this.access.findQaRole(actor.userId);
     if (!canDispatchAutomation(role)) {
       throw new ForbiddenException(
         'Only QA, a lead, or an admin may run Playwright for this run.',

@@ -785,6 +785,110 @@ describe('ProjectWorkspaceService', () => {
   });
 
   describe('compare branches', () => {
+    describe('conflicted pull request', () => {
+      const pr = (mergeableState: string) => ({
+        number: 7,
+        headRef: 'feature/pay',
+        baseRef: 'dev',
+        mergeableState,
+        headSha: 'h',
+        author: 'ana',
+      });
+      const side = (files: Array<[string, number]>) => ({
+        status: 'diverged',
+        aheadBy: 1,
+        behindBy: 1,
+        totalCommits: 1,
+        commits: [],
+        files: files.map(([filename, additions]) => ({
+          filename,
+          status: 'modified',
+          additions,
+          deletions: 0,
+          changes: additions,
+          patch: null,
+        })),
+        filesTruncated: false,
+      });
+
+      it('names the files changed on both sides when GitHub says dirty', async () => {
+        const compareBranches = jest
+          .fn()
+          .mockResolvedValueOnce(
+            side([
+              ['src/pay.ts', 4],
+              ['README.md', 1],
+            ]),
+          )
+          .mockResolvedValueOnce(
+            side([
+              ['src/pay.ts', 2],
+              ['src/other.ts', 1],
+            ]),
+          );
+        const { service } = build({
+          github: {
+            getPullRequest: jest.fn(() => Promise.resolve(pr('dirty'))),
+            getPullRequestChecks: jest.fn(() => Promise.resolve([])),
+            compareBranches,
+          } as unknown as Partial<GithubService>,
+        });
+        const detail = await service.getPullRequestDetail(
+          'p1',
+          'u1',
+          null,
+          7,
+          'ana',
+        );
+        expect(compareBranches).toHaveBeenNthCalledWith(
+          1,
+          expect.anything(),
+          expect.anything(),
+          'dev',
+          'feature/pay',
+        );
+        expect(compareBranches).toHaveBeenNthCalledWith(
+          2,
+          expect.anything(),
+          expect.anything(),
+          'feature/pay',
+          'dev',
+        );
+        expect(detail.conflicts).toEqual({
+          files: [{ path: 'src/pay.ts', headChanges: 4, baseChanges: 2 }],
+          truncated: false,
+        });
+      });
+
+      it('reads nothing extra for a clean pull request, and degrades to null on a failed read', async () => {
+        const compareBranches = jest.fn().mockRejectedValue(new Error('down'));
+        const clean = build({
+          github: {
+            getPullRequest: jest.fn(() => Promise.resolve(pr('clean'))),
+            getPullRequestChecks: jest.fn(() => Promise.resolve([])),
+            compareBranches,
+          } as unknown as Partial<GithubService>,
+        });
+        expect(
+          (await clean.service.getPullRequestDetail('p1', 'u1', null, 7, null))
+            .conflicts,
+        ).toBeNull();
+        expect(compareBranches).not.toHaveBeenCalled();
+
+        const broken = build({
+          github: {
+            getPullRequest: jest.fn(() => Promise.resolve(pr('dirty'))),
+            getPullRequestChecks: jest.fn(() => Promise.resolve([])),
+            compareBranches,
+          } as unknown as Partial<GithubService>,
+        });
+        expect(
+          (await broken.service.getPullRequestDetail('p1', 'u1', null, 7, null))
+            .conflicts,
+        ).toBeNull();
+      });
+    });
+
     const comparison = {
       status: 'ahead',
       aheadBy: 1,

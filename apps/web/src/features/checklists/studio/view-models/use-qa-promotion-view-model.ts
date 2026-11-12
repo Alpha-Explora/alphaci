@@ -8,12 +8,15 @@ import type { AppRole } from '@/shared/api/contracts';
 import { qaRunsRepository } from '../../data/qa-runs-repository';
 import { qaSignInHref } from '../../model/qa-automation-rules';
 import {
+  overrideOffered,
   canOfferMerge,
   mergeDisabledReason,
   mergeErrorClosesDialog,
   mergeErrorRefreshesStatus,
   normalizePromotionMerge,
   normalizePromotionStatus,
+  overrideErrorMessage,
+  overrideReasonProblem,
   promotionMergeError,
 } from '../../model/qa-promotion-rules';
 import type {
@@ -59,6 +62,16 @@ export interface QaPromotionViewModel {
   confirmMerge: () => Promise<void>;
   dismissOutcome: () => void;
   reload: () => void;
+  /** Whether to offer "Override gate" (server's canOverride, gate closed, QA signed off). */
+  canOverride: boolean;
+  overrideState: QaPromotionMergeState;
+  overrideReason: string;
+  setOverrideReason: (reason: string) => void;
+  /** Why the reason cannot be sent yet, or a failure from the last attempt. */
+  overrideError: string | null;
+  openOverride: () => void;
+  cancelOverride: () => void;
+  confirmOverride: () => Promise<void>;
 }
 
 interface LoadResult {
@@ -149,6 +162,10 @@ export function useQaPromotionViewModel(options: {
   const [mergeState, setMergeState] = useState<QaPromotionMergeState>('idle');
   const [dialogError, setDialogError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<QaPromotionOutcome | null>(null);
+  const [overrideState, setOverrideState] =
+    useState<QaPromotionMergeState>('idle');
+  const [overrideReason, setOverrideReason] = useState('');
+  const [overrideError, setOverrideError] = useState<string | null>(null);
   const requestRef = useRef(0);
   // Keyed by project only: a refresh keeps the card on screen until it answers.
   const key = projectId;
@@ -185,6 +202,7 @@ export function useQaPromotionViewModel(options: {
     releaseGovernanceEnabled ? appRole : null,
     outcome,
   );
+  const overrideOffer = overrideOffered(data, releaseGovernanceEnabled);
 
   function openConfirm() {
     if (!offer || disabledReason || mergeState !== 'idle') return;
@@ -196,6 +214,34 @@ export function useQaPromotionViewModel(options: {
     setOutcome(next);
     setMergeState('idle');
     if (refresh) reload();
+  }
+
+  async function confirmOverride() {
+    if (!overrideOffer || overrideState !== 'confirming') return;
+    const problem = overrideReasonProblem(overrideReason);
+    if (problem) {
+      setOverrideError(problem);
+      return;
+    }
+    const headSha = data?.headSha ?? null;
+    setOverrideState('merging');
+    setOverrideError(null);
+    try {
+      const merged = normalizePromotionMerge(
+        await qaRunsRepository.mergePromotion(projectId, overrideReason.trim()),
+      );
+      setOverrideState('idle');
+      setOverrideReason('');
+      settle(
+        merged.merged
+          ? { kind: 'merged', result: merged, headSha }
+          : { kind: 'refused', result: merged },
+        true,
+      );
+    } catch (cause) {
+      setOverrideError(overrideErrorMessage(cause));
+      setOverrideState('confirming');
+    }
   }
 
   async function confirmMerge() {
@@ -244,5 +290,24 @@ export function useQaPromotionViewModel(options: {
     confirmMerge,
     dismissOutcome: () => setOutcome(null),
     reload,
+    canOverride: overrideOffer,
+    overrideState,
+    overrideReason,
+    setOverrideReason: (reason: string) => {
+      setOverrideReason(reason);
+      setOverrideError(null);
+    },
+    overrideError,
+    openOverride: () => {
+      if (!overrideOffer || overrideState !== 'idle') return;
+      setOverrideError(null);
+      setOverrideState('confirming');
+    },
+    cancelOverride: () => {
+      if (overrideState === 'merging') return;
+      setOverrideState('idle');
+      setOverrideError(null);
+    },
+    confirmOverride,
   };
 }

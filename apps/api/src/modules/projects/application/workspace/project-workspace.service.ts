@@ -38,6 +38,10 @@ import {
   visibleBranchesFor,
 } from '#kernel/rules/persona-access.rules';
 import { ProjectsRepository } from '../../infrastructure/projects.repository';
+import {
+  conflictCandidates,
+  type ConflictCandidate,
+} from '../../domain/merge-conflict.rules';
 import { classifyFailureHint } from './classify-failure-hint';
 import { extractFailureExcerpt } from './extract-failure-excerpt';
 
@@ -192,6 +196,12 @@ export interface ProjectPullRequestDetailResponse {
    * because only the server knows which GitHub login the session belongs to.
    */
   viewerIsAuthor: boolean;
+  /**
+   * Only when GitHub reports the pull request as conflicting ('dirty'): the
+   * files changed on both sides since the branches diverged, where the
+   * conflict can be. Null otherwise, or when the comparison could not be read.
+   */
+  conflicts: { files: ConflictCandidate[]; truncated: boolean } | null;
 }
 
 /** What happened when the system asked GitHub to merge. */
@@ -661,7 +671,47 @@ export class ProjectWorkspaceService {
         viewerLogin != null &&
         pullRequest.author != null &&
         viewerLogin === pullRequest.author,
+      conflicts:
+        pullRequest.mergeableState === 'dirty'
+          ? await this.readConflicts(token, repoFullName, pullRequest)
+          : null,
     };
+  }
+
+  /**
+   * Both sides of a conflicted pull request since they diverged: base...head
+   * (the pull request's changes) and head...base (what landed on the base
+   * since). Best-effort: an unreadable comparison answers null, never an
+   * error, so the review still loads.
+   */
+  private async readConflicts(
+    token: string,
+    repoFullName: string,
+    pullRequest: { baseRef: string; headRef: string },
+  ): Promise<{ files: ConflictCandidate[]; truncated: boolean } | null> {
+    try {
+      const [head, base] = await Promise.all([
+        this.githubService.compareBranches(
+          token,
+          repoFullName,
+          pullRequest.baseRef,
+          pullRequest.headRef,
+        ),
+        this.githubService.compareBranches(
+          token,
+          repoFullName,
+          pullRequest.headRef,
+          pullRequest.baseRef,
+        ),
+      ]);
+      if (!head || !base) return null;
+      return {
+        files: conflictCandidates(head.files, base.files),
+        truncated: head.filesTruncated || base.filesTruncated,
+      };
+    } catch {
+      return null;
+    }
   }
 
   /**

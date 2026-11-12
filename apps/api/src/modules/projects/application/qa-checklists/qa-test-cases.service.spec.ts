@@ -58,6 +58,7 @@ function setup({
     findItem: jest.fn().mockResolvedValue(storyRow),
   } as unknown as jest.Mocked<QaRequirementsRepository>;
   const testCases = {
+    importCases: jest.fn().mockResolvedValue({ added: 1, skipped: 0 }),
     listByItemIds: jest.fn().mockResolvedValue(new Map()),
     countCategories: jest.fn().mockResolvedValue(0),
     countTestCases: jest.fn().mockResolvedValue(0),
@@ -72,6 +73,8 @@ function setup({
   } as unknown as jest.Mocked<QaTestCasesRepository>;
   const access = {
     findAppRole: jest.fn().mockResolvedValue(role),
+    findQaRole: jest.fn().mockResolvedValue(role),
+    findSpecialAccess: jest.fn().mockResolvedValue([]),
     canAccessWorkspace: jest.fn().mockResolvedValue(member),
   } as unknown as jest.Mocked<QaAccessService>;
   const audit = { recordProjectEvent: jest.fn().mockResolvedValue(undefined) };
@@ -256,5 +259,62 @@ describe('QaTestCasesService - writes', () => {
     await expect(
       service.deleteTestCase('req-1', 'item-1', 'tc-1', 'u-1'),
     ).rejects.toThrow(NotFoundException);
+  });
+});
+
+describe('QaTestCasesService - batch import', () => {
+  const rows = [
+    {
+      category: ' Happy path ',
+      title: ' Sign in ',
+      expectedResult: ' Profile shown ',
+    },
+  ];
+  it.each(['qa', 'admin'] as const)(
+    '%s imports only into a writable story with its full scope',
+    async (role) => {
+      const { service, testCases } = setup({ role });
+      await expect(
+        service.importCases('req-1', 'item-1', 'u-1', 'qa', { rows }),
+      ).resolves.toMatchObject({ added: 1, skipped: 0 });
+      expect(testCases.importCases).toHaveBeenCalledWith(
+        'item-1',
+        'req-1',
+        'it-1',
+        [
+          {
+            category: 'Happy path',
+            title: 'Sign in',
+            expectedResult: 'Profile shown',
+          },
+        ],
+        { id: 'u-1', login: 'qa' },
+      );
+    },
+  );
+  it.each(['lead', 'member'] as const)(
+    '%s cannot write QA definitions through import',
+    async (role) => {
+      const { service, testCases } = setup({ role });
+      await expect(
+        service.importCases('req-1', 'item-1', 'u-1', 'dev', { rows }),
+      ).rejects.toMatchObject({
+        response: { code: 'TEST_CASE_MANAGE_FORBIDDEN' },
+      });
+      expect(testCases.importCases).not.toHaveBeenCalled();
+    },
+  );
+  it('refuses hidden stories, delivered iterations and archived Features before writing', async () => {
+    for (const options of [
+      { member: false },
+      { delivered: true },
+      { requirement: requirementRow({ archived_at: '2026-10-01T00:00:00Z' }) },
+    ]) {
+      const { service, testCases } = setup(options);
+      await expect(
+        service.importCases('req-1', 'item-1', 'u-1', 'qa', { rows }),
+      ).rejects.toBeDefined();
+      expect(testCases.importCases).not.toHaveBeenCalled();
+    }
   });
 });

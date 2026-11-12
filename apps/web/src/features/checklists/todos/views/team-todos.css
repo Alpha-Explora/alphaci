@@ -1,0 +1,127 @@
+/* Team to-dos: a compact card of action items beside the stories. Tokens only. */
+.team-todos {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--bg-elevated);
+}
+
+.team-todos__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.team-todos__head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.team-todos__count,
+.team-todos__empty,
+.team-todos__who {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.team-todos__empty {
+  margin: 0;
+}
+
+.team-todos__add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.team-todos__add .hier-field {
+  flex: 0 1 9.5rem;
+}
+
+.team-todos__add .team-todos__title {
+  flex: 1 1 16rem;
+}
+
+.team-todos__list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team-todos__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.team-todos__item:hover {
+  background: color-mix(in srgb, var(--text-muted) 6%, transparent);
+}
+
+.team-todos__item input[type='checkbox'] {
+  width: auto;
+  min-height: auto;
+  margin: 0;
+}
+
+.team-todos__item input[type='checkbox']:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.team-todos__text {
+  flex: 1 1 12rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.team-todos__item[data-status='done'] .team-todos__text {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.team-todos__chip {
+  --chip-tone: var(--text-secondary);
+
+  padding: 0.1rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--chip-tone) 40%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--chip-tone) 10%, transparent);
+  color: var(--chip-tone);
+  font-size: 0.72rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.team-todos__chip[data-tone='urgent'],
+.team-todos__chip[data-tone='overdue'] {
+  --chip-tone: var(--danger);
+}
+
+.team-todos__chip[data-tone='high'],
+.team-todos__chip[data-tone='due_today'],
+.team-todos__chip[data-tone='due_soon'] {
+  --chip-tone: var(--warning);
+}
+
+.team-todos__assignee {
+  width: auto;
+  min-width: 8rem;
+}
+
+.team-todos__done summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}

@@ -1,4 +1,9 @@
 'use client';
+import {
+  QaHistoryScope,
+  QaItemHistory,
+  QaProgressHistory,
+} from './qa-progress-history';
 
 import './history.css';
 
@@ -100,6 +105,7 @@ function HistoryGroup({ group }: Readonly<{ group: ProjectRunGroup }>) {
               ) : null}
               <StatusPill status={item.status} />
             </span>
+            <QaItemHistory itemId={item.sourceItemId} />
           </li>
         ))}
       </ul>
@@ -287,14 +293,17 @@ export function IterationHistoryPanel({
 }>) {
   const vm = useIterationHistoryViewModel({ deliveryProjectId, enabled });
   return (
-    <section className="ihist" aria-labelledby="history-title">
-      <div className="ihist__head">
-        <h3 className="ihist__title" id="history-title">
-          {projectName} release history
-        </h3>
-        <p className="ihist__intro">{HISTORY_INTRO}</p>
-      </div>
-      <HistoryBody vm={vm} showRepositories={showsRepositories(appRole)} />
-    </section>
+    <QaHistoryScope projectId={deliveryProjectId}>
+      <section className="ihist" aria-labelledby="history-title">
+        <div className="ihist__head">
+          <h3 className="ihist__title" id="history-title">
+            {projectName} release history
+          </h3>
+          <p className="ihist__intro">{HISTORY_INTRO}</p>
+        </div>
+        {enabled ? <QaProgressHistory projectId={deliveryProjectId} /> : null}
+        <HistoryBody vm={vm} showRepositories={showsRepositories(appRole)} />
+      </section>
+    </QaHistoryScope>
   );
 }

@@ -730,7 +730,14 @@ export class QaRunsRepository {
         return null;
       }
 
-      const providedFields: Record<string, unknown> = {};
+      const providedFields: Record<string, unknown> =
+        patch.status !== undefined
+          ? {
+              notes: updated.notes,
+              defectSeverity: updated.defect_severity,
+              reproductionSteps: updated.reproduction_steps,
+            }
+          : {};
       if (patch.notes !== undefined) providedFields.notes = patch.notes;
       if (patch.defectSeverity !== undefined) {
         providedFields.defectSeverity = patch.defectSeverity;

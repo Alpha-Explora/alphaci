@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { checklistsRepository } from '../../../../../src/features/checklists/data/checklists-repository';
 import { qaRunsRepository } from '../../../../../src/features/checklists/data/qa-runs-repository';
 import { projectsRepository } from '../../../../../src/features/projects/data/projects-repository';
+import { ProductionReadinessCard } from '../../../../../src/features/checklists/studio/views/production-readiness-card';
 import { QaStudioPanel } from '../../../../../src/features/checklists/studio/views/qa-studio-panel';
 import type { QaRun } from '../../../../../src/features/checklists/model/qa-run-types';
 import type {
@@ -329,7 +330,7 @@ describe('QA Studio — the readiness popover', () => {
     expect(panel.querySelector('.qa-promo__route code')).toBeNull();
     expect(panel.querySelector('.qa-promo__pr')).toBeNull();
     expect(panel.textContent).toContain(
-      'Product owners merge uat into main once every checklist is approved.',
+      'Merging opens once every shared checklist is signed off Approved',
     );
   });
 
@@ -432,13 +433,13 @@ describe('QA Studio — Merge to main beside the chip', () => {
     ).toBe(why.textContent);
   });
 
-  it('QA Team sees the status read-only: no Merge button, who merges instead', async () => {
+  it('QA Team can execute an approved release', async () => {
     setup(readyWire());
     const container = await studio('qa');
-    expect(mergeButton(container)).toBeNull();
+    expect(mergeButton(container)).not.toBeNull();
     expect(
       container.querySelector('.qa-coltabs-bar__action')?.children,
-    ).toHaveLength(0);
+    ).toHaveLength(1);
   });
 
   it('no button when the server withholds canMerge, even for a lead', async () => {
@@ -678,5 +679,37 @@ describe('QA Studio — a delivered version (Versions phase 2)', () => {
     expect(outcome.textContent).toContain('Already in main');
     expect(outcome.textContent).toContain('main already contains this commit');
     expect(outcome.textContent).not.toContain('GitHub refused the merge');
+  });
+});
+
+describe('Developer Overview release execution', () => {
+  it('opens the shared confirmation and executes only after the developer confirms', async () => {
+    setup(readyWire());
+    runs.mergePromotion.mockResolvedValue({
+      merged: true,
+      how: 'merged',
+      message: 'Merged',
+    } as never);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () =>
+      root!.render(
+        <ProductionReadinessCard
+          projectId="project-1"
+          appRole="member"
+          enabled
+        />,
+      ),
+    );
+    await settle();
+    expect(mergeButton(container)).not.toBeNull();
+    expect(runs.mergePromotion).not.toHaveBeenCalled();
+    await click(mergeButton(container));
+    expect(dialog()).not.toBeNull();
+    expect(runs.mergePromotion).not.toHaveBeenCalled();
+    await click(dialogButton('Merge to main'));
+    expect(runs.mergePromotion).toHaveBeenCalledWith('project-1');
+    expect(container.textContent).toContain('Merged');
   });
 });

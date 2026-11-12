@@ -58,7 +58,8 @@ describe('syncOpenRunTestCases', () => {
     );
     // An unchanged copy keeps its result and is not rewritten.
     expect(sql[3]).toContain('IS DISTINCT FROM');
-    expect(sql[3]).not.toMatch(/SET[\s\S]*status =/);
+    expect(sql[3]).toMatch(/status = CASE WHEN/);
+    expect(sql[4]).toContain("po_status = 'pending'");
     expect(sql[4]).toMatch(
       /UPDATE projects\.qa_run_items[\s\S]*row_version = row_version \+ 1/,
     );
@@ -160,22 +161,23 @@ describe('QaTestCasesRepository.recordResult', () => {
 });
 
 describe('QaTestCasesRepository definition writes', () => {
-  it('re-syncs the open runs in the same transaction as the write', async () => {
+  it('locks open runs before definitions and syncs in the same transaction', async () => {
     const query = jest
       .fn()
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: 'cat-1' }] })
       .mockResolvedValueOnce({ rows: [] });
     const repository = makeRepository(query);
-
     await repository.createCategory('item-1', 'Happy path', 'u-1', 'it-1');
-
     expect(query.mock.calls[0]?.[0]).toMatch(
-      /INSERT INTO projects\.qa_test_case_categories/,
-    );
-    expect(query.mock.calls[1]?.[0]).toMatch(
       /qa_verification_runs[\s\S]*FOR SHARE/,
     );
-    expect(query.mock.calls[1]?.[1]).toEqual(['it-1']);
+    expect(query.mock.calls[1]?.[0]).toMatch(
+      /INSERT INTO projects\.qa_test_case_categories/,
+    );
+    expect(query.mock.calls[2]?.[0]).toMatch(
+      /qa_verification_runs[\s\S]*FOR SHARE/,
+    );
   });
 
   it('groups categories with their cases, per story, in order', async () => {

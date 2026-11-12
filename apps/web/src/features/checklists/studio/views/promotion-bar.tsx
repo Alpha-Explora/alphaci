@@ -18,6 +18,7 @@ import type { PoDeliveryViewModel } from '../view-models/use-po-delivery-view-mo
 import type { QaPromotionViewModel } from '../view-models/use-qa-promotion-view-model';
 import { MergeAllToMain } from './po-delivery';
 import { PromotionOutcome } from './promotion-outcome';
+import { OverrideDialog, OverrideToMain } from './promotion-override';
 import { MergeButton, MergeDialog, PromotionDetails } from './promotion-parts';
 import { ChevronDownIcon } from './studio-icons';
 
@@ -175,7 +176,10 @@ export function StudioMergeAction({
   return delivery.canMergeAll ? (
     <MergeAllToMain vm={delivery} />
   ) : (
-    <MergeToMain vm={promotion} />
+    <>
+      <MergeToMain vm={promotion} />
+      <OverrideToMain vm={promotion} />
+    </>
   );
 }
 
@@ -206,6 +210,9 @@ export function PromotionBarFoot({
       </PromotionOutcome>
       {vm.data ? (
         <MergeDialog vm={vm} data={vm.data} projectName={projectName} />
+      ) : null}
+      {vm.data ? (
+        <OverrideDialog vm={vm} data={vm.data} projectName={projectName} />
       ) : null}
     </>
   );

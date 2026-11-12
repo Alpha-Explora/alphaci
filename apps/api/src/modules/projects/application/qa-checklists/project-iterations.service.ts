@@ -2,6 +2,11 @@ import { Injectable } from '@nestjs/common';
 
 import { parseDeliveryEntries } from '../../domain/project-delivery.rules';
 import {
+  nextIterationVersion,
+  versionLabel,
+  type RevisionType,
+} from '../../domain/iteration-version.rules';
+import {
   canStartNextIteration,
   isIterationWritable,
 } from '../../domain/project-iteration.rules';
@@ -100,13 +105,33 @@ export class ProjectIterationsService {
 
   async findRef(iterationId: string): Promise<ProjectIterationRef | null> {
     const row = await this.iterations.findById(iterationId);
-    return row ? this.toRef(row) : null;
+    return row
+      ? { ...this.toRef(row), versionLabel: this.versionOf(row).label }
+      : null;
   }
 
   toRef(
     row: Pick<ProjectIterationRow, 'id' | 'number' | 'status'>,
   ): ProjectIterationRef {
     return { id: row.id, number: row.number, status: row.status };
+  }
+
+  /** The stored version, or the backfill rule (v1.(n-1).0) for a row read before the migration. */
+  versionOf(
+    row: Pick<ProjectIterationRow, 'number'> &
+      Partial<
+        Pick<
+          ProjectIterationRow,
+          'version_major' | 'version_minor' | 'version_patch'
+        >
+      >,
+  ): { major: number; minor: number; patch: number; label: string } {
+    const version = {
+      major: row.version_major ?? 1,
+      minor: row.version_minor ?? row.number - 1,
+      patch: row.version_patch ?? 0,
+    };
+    return { ...version, label: versionLabel(version) };
   }
 
   // ---------------------------------------------------------------------
@@ -190,6 +215,8 @@ export class ProjectIterationsService {
       ...this.toRef(row),
       deliveryProjectId: row.delivery_project_id,
       goal: row.goal,
+      version: this.versionOf(row),
+      revisionType: row.revision_type ?? (row.number === 1 ? 'major' : 'minor'),
       startedAt: toIso(row.started_at),
       startedBy: row.started_by_login
         ? { id: row.started_by, login: row.started_by_login }
@@ -263,13 +290,19 @@ export class ProjectIterationsService {
     startedBy: string;
     startedByLogin: string;
     goal: string | null;
+    revisionType: RevisionType;
   }): Promise<ProjectIterationRow> {
     try {
+      // The delivered Iteration this one follows is the latest: its version is the base.
+      const base = this.versionOf(input.source);
+      const version = nextIterationVersion(base, input.revisionType);
       return await this.iterations.startNext({
         deliveryProjectId: input.source.delivery_project_id,
         startedBy: input.startedBy,
         startedByLogin: input.startedByLogin,
         goal: input.goal,
+        version,
+        revisionType: input.revisionType,
       });
     } catch (error) {
       if (

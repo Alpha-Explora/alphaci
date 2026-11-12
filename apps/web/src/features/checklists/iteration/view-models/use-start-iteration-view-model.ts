@@ -10,15 +10,21 @@ import {
   ITERATION_GOAL_MAX,
   iterationGoalError,
   iterationNextStep,
+  nextIterationVersion,
+  revisionOptions,
   startErrorRefreshesOnClose,
   startIterationDescription,
   startIterationErrorMessage,
   startIterationInput,
   startIterationLabel,
+  versionNumberText,
+  type RevisionOption,
 } from '../../model/iteration-start-rules';
 import type {
   CurrentIteration,
   IterationNextStep,
+  IterationVersion,
+  RevisionType,
   StartedIteration,
 } from '../../model/iteration-types';
 import { announceIterationChanged } from './iteration-epoch';
@@ -35,35 +41,77 @@ export interface StartIterationViewModel {
   goalMax: number;
   /** An over-long goal, said as the viewer types. */
   goalError: string | null;
+  /** Minor or major; only offered once the server sends release versions. */
+  revisionType: RevisionType;
+  /** Empty on a backend without release versions: the dialog then shows no choice. */
+  revisionOptions: RevisionOption[];
   submitting: boolean;
   /** A refused start, in product words. The dialog stays open with it. */
   error: string | null;
   openDialog: () => void;
   close: () => void;
   setGoal: (goal: string) => void;
+  setRevisionType: (revisionType: RevisionType) => void;
   submit: () => Promise<void>;
 }
 
 /** The dialog's own state while it is open. */
 interface DialogState {
   goal: string;
+  revisionType: RevisionType;
   error: string | null;
   /** Someone else started it meanwhile: closing re-reads the Project. */
   refreshOnClose: boolean;
 }
 
-const CLOSED: DialogState = { goal: '', error: null, refreshOnClose: false };
+const CLOSED: DialogState = {
+  goal: '',
+  revisionType: 'minor',
+  error: null,
+  refreshOnClose: false,
+};
+
+/** The button's label and the dialog's sentence, by version once the server sends one. */
+function startCopy(
+  nextNumber: number,
+  previous: IterationVersion | null,
+  revision: RevisionType,
+) {
+  if (!previous) {
+    return {
+      label: startIterationLabel(nextNumber),
+      description: startIterationDescription(nextNumber),
+    };
+  }
+  const next = versionNumberText(nextIterationVersion(previous, revision));
+  return {
+    label: startIterationLabel(next),
+    description: startIterationDescription(nextNumber, {
+      previous: `Version ${versionNumberText(previous)}`,
+      next: `Version ${next}`,
+    }),
+  };
+}
 
 /** Everything the dialog shows, from its state. */
-function dialogView(step: IterationNextStep, state: DialogState) {
+function dialogView(
+  step: IterationNextStep,
+  state: DialogState,
+  previous: IterationVersion | null,
+) {
+  const copy =
+    step.kind === 'start'
+      ? startCopy(step.nextNumber, previous, state.revisionType)
+      : null;
   return {
     step,
-    label: step.kind === 'start' ? startIterationLabel(step.nextNumber) : '',
-    description:
-      step.kind === 'start' ? startIterationDescription(step.nextNumber) : '',
+    label: copy?.label ?? '',
+    description: copy?.description ?? '',
     goal: state.goal,
     goalMax: ITERATION_GOAL_MAX,
     goalError: iterationGoalError(state.goal),
+    revisionType: state.revisionType,
+    revisionOptions: previous ? revisionOptions(previous) : [],
     error: state.error,
   };
 }
@@ -93,7 +141,8 @@ export function useStartIterationViewModel(options: {
     current,
     releaseGovernanceEnabled ? appRole : null,
   );
-  const view = dialogView(step, dialog ?? CLOSED);
+  const previousVersion = current?.iteration.version ?? null;
+  const view = dialogView(step, dialog ?? CLOSED, previousVersion);
 
   function update(change: (state: DialogState) => DialogState) {
     setDialog((state) => (state ? change(state) : state));
@@ -108,7 +157,10 @@ export function useStartIterationViewModel(options: {
   async function submit() {
     if (!dialog || submitting || step.kind !== 'start' || view.goalError)
       return;
-    const input = startIterationInput(dialog.goal);
+    const input = startIterationInput(
+      dialog.goal,
+      previousVersion ? dialog.revisionType : undefined,
+    );
     setSubmitting(true);
     update((state) => ({ ...state, error: null }));
     try {
@@ -140,6 +192,8 @@ export function useStartIterationViewModel(options: {
     },
     close,
     setGoal: (goal) => update((state) => ({ ...state, goal })),
+    setRevisionType: (revisionType) =>
+      update((state) => ({ ...state, revisionType })),
     submit,
   };
 }

@@ -19,6 +19,7 @@ import {
   type QaProjectContext,
 } from '../qa-checklists/qa-project-context.service';
 import type { QaRunActorContext } from './qa-runs.contracts';
+import type { RevisionType } from '../../domain/iteration-version.rules';
 
 /** The audit event (and notification code) recorded once, when an Iteration is started. */
 export const QA_ITERATION_STARTED_EVENT = 'qa.iteration.started';
@@ -31,6 +32,8 @@ export interface StartIterationInput {
   goal?: string | null;
   /** Accepted only empty: nothing is carried over any more (ITERATIONS_PLAN.md 6a). */
   carryOver?: { requirementItemIds?: string[] };
+  /** How the release version moves; minor when absent. */
+  revisionType?: RevisionType;
 }
 
 /**
@@ -91,6 +94,7 @@ export class ProjectIterationStartService {
       startedBy: actor.userId,
       startedByLogin: actor.userLogin,
       goal,
+      revisionType: input.revisionType ?? 'minor',
     });
 
     await this.announce(project, iteration, goal, actor);

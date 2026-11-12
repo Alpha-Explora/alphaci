@@ -80,7 +80,34 @@ function GoalField({ vm }: Readonly<{ vm: StartIterationViewModel }>) {
   );
 }
 
-/** The dialog: an optional goal. The new iteration starts with an empty checklist. */
+/** Minor or major revision, each naming the version it leads to. Nothing on a backend without versions. */
+function RevisionField({ vm }: Readonly<{ vm: StartIterationViewModel }>) {
+  const name = useId();
+  if (vm.revisionOptions.length === 0) return null;
+  return (
+    <fieldset className="iteration-revision">
+      <legend className="hier-field-label">Release type</legend>
+      {vm.revisionOptions.map((option) => (
+        <label key={option.value} className="iteration-revision__option">
+          <input
+            type="radio"
+            name={name}
+            value={option.value}
+            checked={vm.revisionType === option.value}
+            disabled={vm.submitting}
+            onChange={() => vm.setRevisionType(option.value)}
+          />
+          <span className="iteration-revision__text">
+            <span className="iteration-revision__label">{option.label}</span>
+            <span className="iteration-revision__hint">{option.hint}</span>
+          </span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}
+
+/** The dialog: an optional goal and, with release versions, patch, minor or major. The new iteration starts with an empty checklist. */
 export function StartIterationDialog({
   vm,
 }: Readonly<{ vm: StartIterationViewModel }>) {
@@ -100,6 +127,7 @@ export function StartIterationDialog({
     >
       <div className="iteration-start">
         <GoalField vm={vm} />
+        <RevisionField vm={vm} />
       </div>
     </FormDialog>
   );

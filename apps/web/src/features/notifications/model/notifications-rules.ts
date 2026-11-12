@@ -13,6 +13,7 @@ import type {
  */
 const QA_REFUSAL_EVENTS: ReadonlySet<string> = new Set([
   'qa.item.returned_to_dev',
+  'qa.run.rejected',
   'qa.item.failed',
   'qa.item.blocked',
   'qa.item.po_rejected',

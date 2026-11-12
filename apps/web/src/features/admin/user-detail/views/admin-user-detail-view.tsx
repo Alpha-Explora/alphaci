@@ -4,6 +4,11 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { useAdminContext } from '@/features/admin/users';
+import {
+  SPECIAL_ACCESS,
+  SPECIAL_ACCESS_LABELS,
+  type SpecialAccess,
+} from '@/shared/api/special-access';
 
 import { ROLE_ORDER } from '../../model/admin-rules';
 import { APP_ROLE_LABELS, type AppRole } from '../../model/admin-types';
@@ -77,6 +82,13 @@ export function AdminUserDetailView() {
         roleMessage={roleMessage}
         onSetRole={handleSetRole}
         onResetRole={handleResetRole}
+      />
+      <SpecialAccessControl
+        granted={vm.specialAccess}
+        isSuperAdmin={isSuperAdmin}
+        busy={vm.accessBusy}
+        message={vm.accessMessage}
+        onToggle={(grant, on) => void vm.toggleSpecialAccess(grant, on)}
       />
       <DetailPanels detail={detail} />
     </section>
@@ -186,6 +198,93 @@ function RoleControl({
         roleMessage={roleMessage}
       />
     </div>
+  );
+}
+
+/**
+ * Special access on top of the role. Deployment override can be granted or
+ * removed by the super-admin only (the backend enforces the same rule).
+ */
+function SpecialAccessControl({
+  granted,
+  isSuperAdmin,
+  busy,
+  message,
+  onToggle,
+}: Readonly<{
+  granted: readonly SpecialAccess[];
+  isSuperAdmin: boolean;
+  busy: boolean;
+  message: string | null;
+  onToggle: (grant: SpecialAccess, on: boolean) => void;
+}>) {
+  return (
+    <fieldset
+      className="glass-panel"
+      style={{
+        padding: '1rem 1.25rem',
+        borderRadius: '0.75rem',
+        border: 0,
+        margin: 0,
+        display: 'grid',
+        gap: '0.6rem',
+      }}
+    >
+      <legend
+        style={{
+          fontWeight: 600,
+          fontSize: '0.9rem',
+          padding: 0,
+          marginBottom: '0.4rem',
+        }}
+      >
+        Special access
+      </legend>
+      {SPECIAL_ACCESS.map((grant) => {
+        const locked = grant === 'deployment_override' && !isSuperAdmin;
+        return (
+          <label
+            key={grant}
+            style={{
+              display: 'flex',
+              gap: '0.6rem',
+              alignItems: 'flex-start',
+              fontSize: '0.85rem',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={granted.includes(grant)}
+              disabled={busy || locked}
+              onChange={(event) => onToggle(grant, event.target.checked)}
+              // base.css sizes every input to 100% wide; a checkbox keeps its own size.
+              style={{ marginTop: '0.2rem', width: 'auto', flex: 'none' }}
+            />
+            <span>
+              <strong>{SPECIAL_ACCESS_LABELS[grant].title}</strong>
+              <span
+                style={{
+                  display: 'block',
+                  color: 'var(--text-muted)',
+                  fontSize: '0.78rem',
+                }}
+              >
+                {SPECIAL_ACCESS_LABELS[grant].description}
+                {locked ? ' Only the super-admin can change this.' : ''}
+              </span>
+            </span>
+          </label>
+        );
+      })}
+      {message && (
+        <span
+          role="status"
+          style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}
+        >
+          {message}
+        </span>
+      )}
+    </fieldset>
   );
 }
 

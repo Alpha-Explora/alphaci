@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { conflict } from '#kernel/http/coded-errors';
 import type { PoolClient } from 'pg';
 
 import { DatabaseService } from '#kernel/db/database.service';
@@ -73,7 +74,7 @@ export interface RecordTestCaseResultPatch {
 /**
  * Brings every OPEN Project run of an Iteration in line with the test case
  * definitions of its stories: copies new test cases in as pending, updates
- * the snapshot columns of edited ones (their result stays), and drops copies
+ * the snapshot columns of edited ones (changed expectations reset their result), and drops copies
  * whose definition was deleted. Signed-off runs are never touched.
  *
  * Takes the open run rows FOR SHARE first (the lock every run item write
@@ -149,6 +150,17 @@ export async function syncOpenRunTestCases(
         "position" = EXCLUDED."position",
         title = EXCLUDED.title,
         expected_result = EXCLUDED.expected_result,
+        status = CASE WHEN (rtc.title, rtc.expected_result) IS DISTINCT FROM
+          (EXCLUDED.title, EXCLUDED.expected_result) THEN 'pending' ELSE rtc.status END,
+        notes = CASE WHEN (rtc.title, rtc.expected_result) IS DISTINCT FROM
+          (EXCLUDED.title, EXCLUDED.expected_result) THEN NULL ELSE rtc.notes END,
+        verified_by = CASE WHEN (rtc.title, rtc.expected_result) IS DISTINCT FROM
+          (EXCLUDED.title, EXCLUDED.expected_result) THEN NULL ELSE rtc.verified_by END,
+        verified_by_login = CASE WHEN (rtc.title, rtc.expected_result) IS DISTINCT FROM
+          (EXCLUDED.title, EXCLUDED.expected_result) THEN NULL ELSE rtc.verified_by_login END,
+        verified_at = CASE WHEN (rtc.title, rtc.expected_result) IS DISTINCT FROM
+          (EXCLUDED.title, EXCLUDED.expected_result) THEN NULL ELSE rtc.verified_at END,
+        row_version = rtc.row_version + 1,
         updated_at = NOW()
       WHERE (
         rtc.source_category_id,
@@ -179,7 +191,13 @@ export async function syncOpenRunTestCases(
     await client.query(
       `
         UPDATE projects.qa_run_items
-        SET row_version = row_version + 1, updated_at = NOW()
+        SET row_version = row_version + 1, updated_at = NOW(),
+            status = CASE WHEN status = 'passed' THEN 'pending' ELSE status END,
+            verified_by = CASE WHEN status = 'passed' THEN NULL ELSE verified_by END,
+            verified_by_login = CASE WHEN status = 'passed' THEN NULL ELSE verified_by_login END,
+            verified_at = CASE WHEN status = 'passed' THEN NULL ELSE verified_at END,
+            po_status = 'pending', po_by = NULL,
+            po_by_login = NULL, po_at = NULL
         WHERE id = ANY($1::uuid[]);
       `,
       [changed],
@@ -219,6 +237,141 @@ export function toTestCategories(
 @Injectable()
 export class QaTestCasesRepository {
   constructor(private readonly databaseService: DatabaseService) {}
+
+  /** Serialized, append-only import. Definition conflicts roll back the entire batch. */
+  async importCases(
+    itemId: string,
+    requirementId: string,
+    iterationId: string,
+    rows: readonly {
+      category: string;
+      title: string;
+      expectedResult: string;
+    }[],
+    actor: RunActor,
+  ): Promise<{ added: number; skipped: number }> {
+    return this.databaseService.withTransaction(async (client) => {
+      const iteration = await client.query(
+        `SELECT id FROM projects.project_iterations WHERE id = $1 AND status = 'active' FOR SHARE;`,
+        [iterationId],
+      );
+      if (!iteration.rows.length)
+        throw conflict(
+          'ITERATION_DELIVERED',
+          'This iteration is no longer active.',
+        );
+      await client.query(
+        `SELECT id FROM projects.qa_verification_runs
+        WHERE iteration_id = $1 AND status = 'open' ORDER BY id FOR SHARE;`,
+        [iterationId],
+      );
+      await client.query(
+        `SELECT id FROM projects.qa_checklists WHERE id = $1 FOR UPDATE;`,
+        [requirementId],
+      );
+      const story = await client.query(
+        `SELECT i.id FROM projects.qa_checklist_items i
+        JOIN projects.qa_checklists c ON c.id = i.checklist_id
+        WHERE i.id = $1 AND c.id = $2 AND c.iteration_id = $3
+          AND c.archived_at IS NULL AND c.kind = 'functional' FOR UPDATE OF i;`,
+        [itemId, requirementId, iterationId],
+      );
+      if (!story.rows.length)
+        throw conflict(
+          'STORY_CHANGED',
+          'The user story changed. Reload it before importing.',
+        );
+      let added = 0;
+      let skipped = 0;
+      for (const row of rows) {
+        let category = (
+          await client.query<{ id: string }>(
+            `SELECT id FROM projects.qa_test_case_categories
+          WHERE item_id = $1 AND lower(name) = lower($2);`,
+            [itemId, row.category],
+          )
+        ).rows[0];
+        if (!category) {
+          const count = await client.query<{ n: number }>(
+            `SELECT COUNT(*)::int AS n FROM projects.qa_test_case_categories WHERE item_id = $1;`,
+            [itemId],
+          );
+          if (Number(count.rows[0]?.n) >= 20)
+            throw conflict(
+              'STORY_CATEGORY_LIMIT',
+              'A story holds at most 20 categories.',
+            );
+          category = (
+            await client.query<{ id: string }>(
+              `INSERT INTO projects.qa_test_case_categories(item_id, name, "position", created_by)
+            SELECT $1, $2, COALESCE(MAX("position") + 1, 0), $3 FROM projects.qa_test_case_categories WHERE item_id = $1 RETURNING id;`,
+              [itemId, row.category, actor.id],
+            )
+          ).rows[0];
+        }
+        if (!category) throw new Error('Category insert returned no row');
+        const existing = await client.query<{
+          title: string;
+          expected_result: string | null;
+        }>(
+          `SELECT title, expected_result FROM projects.qa_test_cases WHERE category_id = $1 AND lower(title) = lower($2);`,
+          [category.id, row.title],
+        );
+        if (
+          existing.rows.length > 1 ||
+          existing.rows.some(
+            (entry) =>
+              (entry.expected_result ?? '') !== row.expectedResult ||
+              entry.title !== row.title,
+          )
+        ) {
+          throw conflict(
+            'TEST_CASE_IMPORT_CONFLICT',
+            `Test case "${row.title}" already exists with different or ambiguous content. Edit it separately; nothing was imported.`,
+          );
+        }
+        if (existing.rows.length) {
+          skipped++;
+          continue;
+        }
+        const count = await client.query<{ n: number }>(
+          `SELECT COUNT(*)::int AS n FROM projects.qa_test_cases WHERE category_id = $1;`,
+          [category.id],
+        );
+        if (Number(count.rows[0]?.n) >= 50)
+          throw conflict(
+            'CATEGORY_TEST_CASE_LIMIT',
+            'A category holds at most 50 test cases.',
+          );
+        await client.query(
+          `INSERT INTO projects.qa_test_cases(category_id, title, expected_result, "position", created_by)
+          SELECT $1, $2, $3, COALESCE(MAX("position") + 1, 0), $4 FROM projects.qa_test_cases WHERE category_id = $1;`,
+          [category.id, row.title, row.expectedResult || null, actor.id],
+        );
+        added++;
+      }
+      if (added) {
+        await syncOpenRunTestCases(client, iterationId);
+        await client.query(
+          `INSERT INTO projects.qa_run_item_events
+          (run_item_id, run_id, actor_user_id, actor_login, event_type, payload)
+          SELECT ri.id, ri.run_id, $2, $3, 'edited', $4::jsonb
+          FROM projects.qa_run_items ri JOIN projects.qa_verification_runs r ON r.id = ri.run_id
+          WHERE ri.source_item_id = $1 AND r.status = 'open';`,
+          [
+            itemId,
+            actor.id,
+            actor.login,
+            JSON.stringify({
+              import: { added, skipped },
+              note: 'Test definitions imported; QA and PO results require review.',
+            }),
+          ],
+        );
+      }
+      return { added, skipped };
+    });
+  }
 
   /** Every story's categories (with cases), each in position order. Stories with none are absent. */
   async listByItemIds(
@@ -576,6 +729,12 @@ export class QaTestCasesRepository {
     run: (client: PoolClient) => Promise<T>,
   ): Promise<T> {
     return this.databaseService.withTransaction(async (client) => {
+      if (iterationId)
+        await client.query(
+          `SELECT id FROM projects.qa_verification_runs
+        WHERE iteration_id = $1 AND status = 'open' ORDER BY id FOR SHARE;`,
+          [iterationId],
+        );
       const value = await run(client);
       if (iterationId) {
         await syncOpenRunTestCases(client, iterationId);

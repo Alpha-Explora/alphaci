@@ -112,7 +112,9 @@ export class ExistingReposService {
       'package.json',
       baseBranch,
     );
-    const detectedProjectTypeId = this.detectProjectType(packageJson);
+    const detectedProjectTypeId =
+      this.detectProjectType(packageJson) ??
+      (await this.detectDotnet(token, dto.repoFullName, baseBranch));
     const warnings = await this.preflight(
       token,
       owner,
@@ -412,32 +414,30 @@ export class ExistingReposService {
   }
 
   private detectProjectType(packageJsonRaw: string | null): string | null {
-    if (!packageJsonRaw) {
-      return null;
-    }
+    return detectNodeProjectType(packageJsonRaw);
+  }
 
-    let parsed: {
-      dependencies?: Record<string, string>;
-      devDependencies?: Record<string, string>;
-    };
-
+  /**
+   * A repository with no Node manifest may be .NET: a solution or project
+   * file at the root. Read-only and best-effort: a listing GitHub refuses is
+   * "not detected", never an error, so discovery still answers.
+   */
+  private async detectDotnet(
+    token: string,
+    repoFullName: string,
+    ref: string,
+  ): Promise<string | null> {
     try {
-      parsed = JSON.parse(packageJsonRaw) as typeof parsed;
+      const listing = await this.githubService.listRepoContents(
+        token,
+        repoFullName,
+        '',
+        ref,
+      );
+      return detectDotnetProjectType(listing.entries.map((e) => e.name));
     } catch {
       return null;
     }
-
-    const dependencies = {
-      ...(parsed.dependencies ?? {}),
-      ...(parsed.devDependencies ?? {}),
-    };
-
-    if (dependencies.next) return 'nextjs';
-    if (dependencies['@nestjs/core']) return 'nestjs';
-    if (dependencies.react) return 'react';
-    if (dependencies.express || dependencies.fastify) return 'nodejs';
-
-    return null;
   }
 
   private resolveTemplateId(
@@ -546,4 +546,45 @@ export class ExistingReposService {
   ): string {
     return `${fileSlug(serviceName) || 'service'}-${templateId}.yml`;
   }
+}
+
+/** Node stacks, from package.json dependencies. */
+export function detectNodeProjectType(
+  packageJsonRaw: string | null,
+): string | null {
+  if (!packageJsonRaw) {
+    return null;
+  }
+
+  let parsed: {
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
+
+  try {
+    parsed = JSON.parse(packageJsonRaw) as typeof parsed;
+  } catch {
+    return null;
+  }
+
+  const dependencies = {
+    ...(parsed.dependencies ?? {}),
+    ...(parsed.devDependencies ?? {}),
+  };
+
+  if (dependencies.next) return 'nextjs';
+  if (dependencies['@nestjs/core']) return 'nestjs';
+  if (dependencies.react) return 'react';
+  if (dependencies.express || dependencies.fastify) return 'nodejs';
+
+  return null;
+}
+
+/** .NET, from a solution or project file at the repository root. */
+export function detectDotnetProjectType(
+  rootNames: readonly string[],
+): string | null {
+  return rootNames.some((name) => /\.(sln|slnx|csproj)$/i.test(name))
+    ? 'dotnet'
+    : null;
 }

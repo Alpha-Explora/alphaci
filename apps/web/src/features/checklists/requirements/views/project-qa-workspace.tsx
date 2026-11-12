@@ -7,10 +7,13 @@ import { useState } from 'react';
 import type { AppRole } from '@/shared/api/contracts';
 
 import { ProjectRunPanel, useProjectRunViewModel } from '../../studio';
+import { TeamTodosCard } from '../../todos';
+import { SemanticCoverageCard } from '../../semantic-coverage';
 import { verdictsBySourceItem } from '../../model/checklist-filter-rules';
 import {
   CHECKLIST_VIEW_LABELS,
   checklistViewFor,
+  type ChecklistView,
 } from '../../model/checklist-view-rules';
 import { ProjectRequirementsPanel } from './project-requirements-panel';
 
@@ -71,6 +74,21 @@ function ChecklistWithVerdicts({
   );
 }
 
+/** Above the view: the team's to-dos for everyone, and semantic coverage for the Product owner and QA. */
+function ProjectCards({
+  deliveryProjectId,
+  view,
+}: Readonly<{ deliveryProjectId: string; view: ChecklistView }>) {
+  return (
+    <>
+      <TeamTodosCard deliveryProjectId={deliveryProjectId} />
+      {view === 'developer' ? null : (
+        <SemanticCoverageCard deliveryProjectId={deliveryProjectId} />
+      )}
+    </>
+  );
+}
+
 /**
  * Everything QA about one Project, as the ONE view this viewer's role works
  * (`checklistViewFor`): a Product owner's Requirements (written by them, with
@@ -115,6 +133,7 @@ export function ProjectQaWorkspace({
       aria-label={`QA for ${projectName}`}
       data-view={view}
     >
+      <ProjectCards deliveryProjectId={deliveryProjectId} view={view} />
       <div
         className="rq-tabpanel"
         role="region"

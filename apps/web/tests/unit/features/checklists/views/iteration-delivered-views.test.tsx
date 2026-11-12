@@ -366,6 +366,14 @@ function promotionVm(
     confirmMerge: jest.fn(),
     dismissOutcome: jest.fn(),
     reload,
+    canOverride: false,
+    overrideState: 'idle',
+    overrideReason: '',
+    setOverrideReason: jest.fn(),
+    overrideError: null,
+    openOverride: jest.fn(),
+    cancelOverride: jest.fn(),
+    confirmOverride: jest.fn(),
   };
 }
 
@@ -446,12 +454,12 @@ describe('PO Studio: Merge to main on a Project of two repositories', () => {
     expect(container.querySelectorAll('.qa-promo__merge')).toHaveLength(1);
   });
 
-  it("is this repository's merge when the server does not offer every repository, and absent for the QA Team", async () => {
+  it('lets QA execute the project merge, and falls back to one repository when the server does not offer every repository', async () => {
     iterations.current.mockResolvedValue(
       normalizeCurrentIteration(currentWire()),
     );
     const qa = await render(po(promotionVm(READY), 'qa'));
-    expect(buttonNamed(qa, 'Merge to main')).toBeUndefined();
+    expect(buttonNamed(qa, 'Merge to main')?.disabled).toBe(false);
     act(() => root?.unmount());
     iterations.current.mockResolvedValue(
       normalizeCurrentIteration(currentWire({ canMergeAll: false })),

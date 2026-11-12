@@ -23,6 +23,12 @@ import {
   flattenGroups,
   groupNotificationsByDay,
 } from '../model/notifications-inbox-rules';
+import {
+  filterByCategory,
+  notificationCategoryCounts,
+  type CategoryCount,
+  type NotificationCategoryFilter,
+} from '../model/notification-category-rules';
 import type {
   NotificationsInboxFilter,
   NotificationsInboxRow,
@@ -39,6 +45,11 @@ export interface NotificationsInboxViewModel {
   error: string | null;
   filter: NotificationsInboxFilter;
   setFilter: (filter: NotificationsInboxFilter) => void;
+  /** Narrows All or Unread to one kind of event. */
+  category: NotificationCategoryFilter;
+  setCategory: (category: NotificationCategoryFilter) => void;
+  /** The categories in the current All/Unread list, with counts; empty when it is empty. */
+  categoryCounts: CategoryCount[];
   markingId: string | null;
   isMarkingAll: boolean;
   markRead: (id: string) => Promise<void>;
@@ -72,20 +83,30 @@ export function useNotificationsInboxViewModel(
   const response = feed.response ?? EMPTY_RESPONSE;
   const [commandError, setCommandError] = useState<string | null>(null);
   const [filter, setFilter] = useState<NotificationsInboxFilter>('all');
+  const [category, setCategory] = useState<NotificationCategoryFilter>('all');
   const [markingId, setMarkingId] = useState<string | null>(null);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const unreadItems = useMemo(
     () => response.items.filter((item) => !item.readAt),
     [response],
   );
+  const listed = filter === 'unread' ? unreadItems : response.items;
+  const categoryCounts = useMemo(
+    () => notificationCategoryCounts(listed),
+    [listed],
+  );
+  // A category that the list no longer holds falls back to every category.
+  const shownCategory = categoryCounts.some(
+    (entry) => entry.category === category,
+  )
+    ? category
+    : 'all';
   const rows = useMemo(
     () =>
       flattenGroups(
-        groupNotificationsByDay(
-          filter === 'unread' ? unreadItems : response.items,
-        ),
+        groupNotificationsByDay(filterByCategory(listed, shownCategory)),
       ),
-    [response, filter, unreadItems],
+    [listed, shownCategory],
   );
   const refresh = useCallback(async () => {
     if (userId) await notificationsFeed.refresh(userId);
@@ -134,6 +155,9 @@ export function useNotificationsInboxViewModel(
     error: commandError ?? feed.error,
     filter,
     setFilter,
+    category: shownCategory,
+    setCategory,
+    categoryCounts,
     markingId,
     isMarkingAll,
     markRead,

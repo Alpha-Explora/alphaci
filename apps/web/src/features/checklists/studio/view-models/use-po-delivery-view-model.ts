@@ -79,8 +79,8 @@ function promotionWatch(data: QaPromotionStatus | null): string | null {
 /**
  * ViewModel for a Project's delivery, shared by the studio's tab bar and PO
  * Studio's column: the stored per-repository state of the Project's
- * iteration (so a reload still shows what is in main), and — for a Product
- * owner or admin on a Project of two or more repositories — the merge of
+ * iteration (so a reload still shows what is in main), and — for an authorized
+ * team member on a Project of two or more repositories — the merge of
  * every repository not in main yet, which the tab bar's Merge to main runs,
  * with each repository's result and a retry after a partial failure. The
  * server re-checks the gate and decides when the iteration is Delivered;

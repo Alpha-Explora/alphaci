@@ -74,6 +74,8 @@ function setup({
 } = {}) {
   const access = {
     findAppRole: jest.fn().mockResolvedValue(role),
+    findQaRole: jest.fn().mockResolvedValue(role),
+    findSpecialAccess: jest.fn().mockResolvedValue([]),
     findVisibleProject: jest.fn().mockImplementation((projectId: string) =>
       Promise.resolve({
         id: projectId,

@@ -5,6 +5,8 @@ import './iteration.css';
 import {
   iterationLockedText,
   iterationStatusLabel,
+  type IterationNameInput,
+  type IterationTitleInput,
 } from '../../model/iteration-rules';
 import type { ProjectIteration } from '../../model/iteration-types';
 import { useCurrentIterationViewModel } from '../view-models/use-current-iteration-view-model';
@@ -36,9 +38,8 @@ export function IterationStatusPill({
   iteration,
   locale,
 }: Readonly<{
-  iteration: Pick<ProjectIteration, 'number' | 'status' | 'deliveredAt'> & {
-    goal?: string | null;
-  };
+  iteration: Pick<ProjectIteration, 'number' | 'status' | 'deliveredAt'> &
+    IterationTitleInput;
   locale?: string;
 }>) {
   const label = iterationStatusLabel(iteration, locale);
@@ -71,16 +72,16 @@ export function IterationStatus({
 
 /**
  * The read-only banner on a delivered iteration's QA run and requirements:
- * "Iteration 3 was delivered. Changes are locked." The controls themselves
+ * "Version 1.2.0 was delivered. Changes are locked." The controls themselves
  * are withheld by their screens; this says why.
  */
 export function IterationLockedNotice({
-  number,
-}: Readonly<{ number: number }>) {
+  iteration,
+}: Readonly<{ iteration: IterationNameInput }>) {
   return (
     <div className="iteration-locked" role="status">
       <LockGlyph />
-      <p className="iteration-locked__text">{iterationLockedText(number)}</p>
+      <p className="iteration-locked__text">{iterationLockedText(iteration)}</p>
     </div>
   );
 }

@@ -9,6 +9,7 @@
 import { canManageRequirements } from '@alphaci/persona-rules';
 import type { AppRole } from '@/shared/api/contracts';
 
+import { scheduleFrom } from './backlog-schedule-rules';
 import {
   needsTestIdentifier,
   VERIFICATION_TYPE_OPTIONS,
@@ -283,6 +284,7 @@ export function normalizeRequirementItem(
     canSetProgress:
       typeof raw.canSetProgress === 'boolean' ? raw.canSetProgress : null,
     testCategories: normalizeTestCategories(raw.testCategories),
+    ...scheduleFrom(raw),
   };
 }
 

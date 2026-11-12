@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import { DatabaseService } from '#kernel/db/database.service';
+import type { BacklogPriority } from '../domain/backlog-schedule.rules';
 import type { QaChecklistVerificationType } from '../application/qa-checklists/qa-checklists.contracts';
 import type {
   QaProgress,
@@ -19,6 +20,12 @@ export interface UpdateRequirementItemPatch {
   acceptanceCriteria?: string | null;
   verificationType?: QaChecklistVerificationType;
   testIdentifier?: string | null;
+}
+
+/** A story's schedule. `undefined` = leave unchanged; `null` clears it. */
+export interface RequirementItemSchedulePatch {
+  dueDate?: string | null;
+  priority?: BacklogPriority | null;
 }
 
 export interface RequirementProgressActor {
@@ -178,6 +185,38 @@ export class QaRequirementsRepository {
       await this.touchChecklist(client, checklistId);
       return true;
     });
+  }
+
+  /**
+   * Due date and priority. Not a definition change: row_version is left as
+   * is, so a Developer's progress write in flight never goes stale over it,
+   * and the checklist is not touched.
+   */
+  async setItemSchedule(
+    checklistId: string,
+    itemId: string,
+    patch: RequirementItemSchedulePatch,
+  ): Promise<QaChecklistItemRow | null> {
+    const result = await this.databaseService.query<QaChecklistItemRow>(
+      `
+        UPDATE projects.qa_checklist_items
+        SET
+          due_date = CASE WHEN $3::boolean THEN $4::date ELSE due_date END,
+          priority = CASE WHEN $5::boolean THEN $6 ELSE priority END,
+          updated_at = NOW()
+        WHERE id = $1 AND checklist_id = $2
+        RETURNING *;
+      `,
+      [
+        itemId,
+        checklistId,
+        patch.dueDate !== undefined,
+        patch.dueDate ?? null,
+        patch.priority !== undefined,
+        patch.priority ?? null,
+      ],
+    );
+    return result.rows[0] ?? null;
   }
 
   /**

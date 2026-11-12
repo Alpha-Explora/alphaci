@@ -1,4 +1,5 @@
 import { ApiError } from '@/shared/api/request';
+import { parseSpecialAccess } from '@/shared/api/special-access';
 import {
   createGitHubLoginUrl as createLoginUrl,
   completeOnboarding as requestCompleteOnboarding,
@@ -27,6 +28,7 @@ function mapSession(dto: AuthMeResponse): AuthSession {
     platformRole: dto.platformRole,
     appRole: dto.appRole,
     appRoleSource: dto.appRoleSource,
+    specialAccess: parseSpecialAccess(dto.specialAccess),
   };
 }
 

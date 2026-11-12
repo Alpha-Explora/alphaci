@@ -29,7 +29,7 @@ export function QaStudioTabPanel({
   return (
     <QaStudioPanel
       projectId={project.id}
-      appRole={vm.appRole}
+      appRole={vm.qaRole}
       projectName={project.repoFullName}
       qaScope={qaScope}
       toolbarSlot={studioToolbarSlot}

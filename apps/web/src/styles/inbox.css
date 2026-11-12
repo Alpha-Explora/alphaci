@@ -310,6 +310,15 @@
   margin: 0;
 }
 
+/* The kind filter wraps under the header on narrow screens instead of scrolling sideways. */
+.inbox-category-tabs {
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 0.75rem;
+  border-radius: 1rem;
+}
+
 /* ── Non-list states (guest / loading / disabled / empty) ────────────────── */
 .inbox-state-copy {
   margin: 0;

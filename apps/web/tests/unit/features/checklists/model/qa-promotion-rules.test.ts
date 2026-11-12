@@ -72,6 +72,7 @@ describe('normalizePromotionStatus', () => {
         headSha: HEAD_SHA,
       },
       canMerge: true,
+      canOverride: false,
       scope: null,
       deliveryProject: null,
       run: null,
@@ -95,6 +96,7 @@ describe('normalizePromotionStatus', () => {
         reasons: [],
         pullRequest: null,
         canMerge: false,
+        canOverride: false,
         scope: null,
         deliveryProject: null,
         run: null,
@@ -325,12 +327,12 @@ describe('who may merge, and when', () => {
   it("needs the server's canMerge AND a lead or admin role", () => {
     expect(roleCanMerge('lead')).toBe(true);
     expect(roleCanMerge('admin')).toBe(true);
-    expect(roleCanMerge('qa')).toBe(false);
-    expect(roleCanMerge('member')).toBe(false);
+    expect(roleCanMerge('qa')).toBe(true);
+    expect(roleCanMerge('member')).toBe(true);
     expect(roleCanMerge(null)).toBe(false);
     expect(canOfferMerge({ canMerge: true }, 'lead')).toBe(true);
     expect(canOfferMerge({ canMerge: false }, 'lead')).toBe(false);
-    expect(canOfferMerge({ canMerge: true }, 'qa')).toBe(false);
+    expect(canOfferMerge({ canMerge: true }, 'qa')).toBe(true);
   });
 
   it('explains a disabled button', () => {
@@ -419,7 +421,7 @@ describe('promotionMergeError', () => {
 
   it('403 and 404 have their own copy; anything else keeps the dialog open to retry', () => {
     expect(promotionMergeError(apiErrorWith(403)).message).toBe(
-      'Only a Product owner or admin can merge uat into main.',
+      'Your role cannot merge uat into main.',
     );
     expect(promotionMergeError(apiErrorWith(404)).kind).toBe('not_found');
     const failed = promotionMergeError(new Error('network'));

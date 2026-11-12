@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { PlatformAdminPort } from '#kernel/ports/platform-admin.port';
+import type { SpecialAccess } from '#kernel/rules/special-access.rules';
 
 import {
   PlatformAdminsRepository,
@@ -23,6 +24,10 @@ export class PlatformAdminAccessService implements PlatformAdminPort {
 
   findAppRole(userId: string): Promise<AppRole> {
     return this.repository.findAppRole(userId);
+  }
+
+  findSpecialAccess(userId: string): Promise<SpecialAccess[]> {
+    return this.repository.findSpecialAccess(userId);
   }
 
   findAppRoleWithSource(

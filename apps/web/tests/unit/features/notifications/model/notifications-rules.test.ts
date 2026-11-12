@@ -113,3 +113,14 @@ describe('gatedFeedStatus', () => {
     expect(gatedFeedStatus('enabled', 'ready')).toBe('ready');
   });
 });
+
+it('pops up a whole-run QA rejection and opens the developer work area', () => {
+  const rejected = notification({
+    eventCode: 'qa.run.rejected',
+    title: 'QA run rejected',
+  });
+  expect(qaAlertsToShow([rejected], new Set())).toEqual([rejected]);
+  expect(notificationAlertHref(rejected)).toBe(
+    '/projects/proj-1?focus=my-qa-items#overview',
+  );
+});

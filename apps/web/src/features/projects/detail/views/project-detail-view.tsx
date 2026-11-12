@@ -9,6 +9,7 @@ import { teamProjectsHref } from '@/features/workflows';
 import { FlowBackground } from '@/shared/layout/flow-background';
 import { PipelineLoader } from '@/shared/layout/pipeline-loader';
 import type { AppRole } from '@/shared/api/contracts';
+import type { SpecialAccess } from '@/shared/api/special-access';
 import { ProjectDetailTabs } from './project-detail-tabs';
 import { RunsSkeleton } from '@/features/runs/list';
 import { useAuthSession } from '@/features/auth/session';
@@ -146,6 +147,7 @@ function ProjectDetailBody({
   enforcedOrg,
   dangerZone,
   appRole,
+  specialAccess,
   viewerLogin,
   folder,
   onRetry,
@@ -163,6 +165,7 @@ function ProjectDetailBody({
   enforcedOrg: string | undefined;
   dangerZone: ReactNode;
   appRole: AppRole | undefined;
+  specialAccess: readonly SpecialAccess[] | undefined;
   viewerLogin: string | undefined;
   folder: ProjectFolderViewModel;
   onRetry: () => void;
@@ -206,6 +209,7 @@ function ProjectDetailBody({
             external={isExternalRepo(project.repoFullName, enforcedOrg)}
             dangerZone={dangerZone}
             appRole={appRole}
+            specialAccess={specialAccess}
             viewerLogin={viewerLogin}
             folder={folder}
           />
@@ -213,6 +217,15 @@ function ProjectDetailBody({
       </div>
     </>
   );
+}
+
+/** Who is looking: persona, special access and GitHub login, for the tabs. */
+function viewerFacts(session: ReturnType<typeof useAuthSession>['session']) {
+  return {
+    appRole: session?.appRole,
+    specialAccess: session?.specialAccess,
+    viewerLogin: session?.user.login,
+  };
 }
 
 /** Public view for one project's detail route. */
@@ -334,8 +347,7 @@ export function ProjectDetailView() {
               project={project}
               enforcedOrg={enforcedOrg}
               dangerZone={dangerZone}
-              appRole={session?.appRole}
-              viewerLogin={session?.user.login}
+              {...viewerFacts(session)}
               folder={folder}
               onRetry={() => void loadOverview()}
             />

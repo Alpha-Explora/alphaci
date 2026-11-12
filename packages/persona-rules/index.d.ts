@@ -22,3 +22,18 @@ export function isAllowedPullRequestRoute(
   head: string,
   base: string,
 ): boolean;
+
+export const SPECIAL_ACCESS: readonly ['qa_release', 'deployment_override'];
+export type SpecialAccess = (typeof SPECIAL_ACCESS)[number];
+export const OVERRIDE_REASON_MIN_LENGTH: 15;
+
+export function parseSpecialAccess(raw: unknown): SpecialAccess[];
+/** A loaded role gives a role; one that has not loaded gives undefined. */
+export function actingQaRole<R extends MaybeAppRole>(
+  role: R,
+  special: readonly SpecialAccess[] | null | undefined,
+): R extends AppRole ? AppRole : AppRole | undefined;
+export function canOverrideDeployment(
+  role: MaybeAppRole,
+  special: readonly SpecialAccess[] | null | undefined,
+): boolean;

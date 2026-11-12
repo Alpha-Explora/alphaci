@@ -109,7 +109,12 @@ const run = (items: ProjectQaRunItem[]): ProjectQaRun =>
     scope: 'project',
     deliveryProjectId: 'dp-1',
     deliveryProjectName: 'Checkout',
-    iteration: { id: 'it-2', number: 2, status: 'active' },
+    iteration: {
+      id: 'it-2',
+      number: 2,
+      status: 'active',
+      versionLabel: 'v1.1.0',
+    },
     branch: 'uat',
     status: 'open',
     createdBy: { id: 'qa-1', login: 'qa' },
@@ -200,6 +205,12 @@ describe('QA report workbook', () => {
       'Automated tests',
       'Sign-off',
     ]);
+  });
+
+  it('names the Iteration and its release version on the Summary', () => {
+    const rows = sheet('Summary').rows;
+    expect(rows).toContainEqual(['Iteration', 2]);
+    expect(rows).toContainEqual(['Version', 'v1.1.0']);
   });
 
   it('adds a Test cases sheet after the Checklist when a story has test cases', () => {

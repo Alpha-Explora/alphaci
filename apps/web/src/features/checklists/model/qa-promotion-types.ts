@@ -36,6 +36,7 @@ export interface QaPromotionStatusWire {
   reasons?: unknown;
   pullRequest?: unknown;
   canMerge?: unknown;
+  canOverride?: unknown;
   /* Newer backends: the Project-level gate (design section 3.2). */
   scope?: unknown;
   deliveryProject?: unknown;
@@ -106,6 +107,8 @@ export interface QaPromotionStatus {
   pullRequest: QaPromotionPullRequest | null;
   /** Server-decided for this viewer. Absent means no. */
   canMerge: boolean;
+  /** Server-decided: this viewer may merge past a blocked gate with a written reason. Absent means no. */
+  canOverride: boolean;
   scope: QaPromotionScope | null;
   deliveryProject: { id: string; name: string } | null;
   run: QaPromotionRun | null;

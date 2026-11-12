@@ -1965,6 +1965,23 @@ class QaMockBackend {
         new RegExp(`^/delivery-projects/${P}/iterations/current$`),
         (m) => ({ body: this.currentIteration(m[1]) }),
       ],
+      // Every Project screen reads its team to-dos; these journeys add none.
+      [
+        'GET',
+        new RegExp(`^/delivery-projects/${P}/todos$`),
+        () => ({ body: { todos: [], assignees: [] } }),
+      ],
+      // Folded panels that read only when opened: QA history and coverage.
+      [
+        'GET',
+        new RegExp(`^/delivery-projects/${P}/qa-history$`),
+        () => ({ body: { events: [], nextCursor: null } }),
+      ],
+      [
+        'GET',
+        new RegExp(`^/delivery-projects/${P}/semantic-coverage$`),
+        () => ({ body: { features: [] } }),
+      ],
       // No CI run yet for the repository.
       ['GET', /^\/ci\/runs$/, () => ({ body: { runs: [] } })],
       // A repository with nothing deployed or released yet.

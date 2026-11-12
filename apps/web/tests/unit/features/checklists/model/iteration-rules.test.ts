@@ -228,8 +228,11 @@ describe('names and dates', () => {
         deliveredByLogin: null,
       }),
     ).toBe('Version 3 delivered');
-    expect(iterationLockedText(3)).toBe(
+    expect(iterationLockedText({ number: 3 })).toBe(
       'Version 3 was delivered. Changes are locked.',
+    );
+    expect(iterationLockedText({ number: 3, versionLabel: 'v1.2.1' })).toBe(
+      'Version 1.2.1 was delivered. Changes are locked.',
     );
   });
 
@@ -270,8 +273,8 @@ describe('who is offered Merge all repositories', () => {
   it("needs two or more covered repositories, the server's canMergeAll, an active version and a lead or admin", () => {
     expect(canOfferMergeAll(current, 'lead')).toBe(true);
     expect(canOfferMergeAll(current, 'admin')).toBe(true);
-    expect(canOfferMergeAll(current, 'qa')).toBe(false);
-    expect(canOfferMergeAll(current, 'member')).toBe(false);
+    expect(canOfferMergeAll(current, 'qa')).toBe(true);
+    expect(canOfferMergeAll(current, 'member')).toBe(true);
     expect(
       canOfferMergeAll(
         normalizeCurrentIteration(currentWire({ canMergeAll: false })),
@@ -338,7 +341,7 @@ describe('a Merge all that was refused', () => {
       'This Project has no repositories yet, so there is nothing to merge to main. Add a repository first.',
     );
     expect(mergeAllError(apiErrorWith(403)).message).toBe(
-      "Only a Product owner or admin can merge this Project's repositories into main.",
+      "Your role cannot merge this Project's repositories into main.",
     );
     expect(mergeAllError(apiErrorWith(401))).toMatchObject({
       kind: 'reauth',

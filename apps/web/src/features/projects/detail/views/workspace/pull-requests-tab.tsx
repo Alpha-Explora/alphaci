@@ -418,6 +418,7 @@ function PullRequestReview({
       <section className="ws-merge" aria-label="Merge">
         <h5 className="ws-merge__title">Merge</h5>
         <MergeState detail={detail} />
+        <ConflictFiles detail={detail} />
         <div className="ws-merge__actions">
           <MergeControl
             pr={detail.pullRequest}
@@ -449,6 +450,51 @@ function MergeState({
   );
 
   return <p className={`ws-mergestate ws-mergestate--${tone}`}>{message}</p>;
+}
+
+/**
+ * A conflicting pull request: where the conflict can be (files changed on
+ * both sides since the branches diverged) and how to clear it.
+ */
+function ConflictFiles({
+  detail,
+}: Readonly<{ detail: PullRequestDetailResponse }>) {
+  const conflicts = detail.conflicts;
+  if (!conflicts || detail.pullRequest.merged) return null;
+  const { baseRef, headRef } = detail.pullRequest;
+  return (
+    <div className="ws-conflicts" role="note">
+      <p className="ws-conflicts__title">
+        {conflicts.files.length > 0
+          ? `Changed on both ${headRef} and ${baseRef}`
+          : 'No file was changed on both sides'}
+      </p>
+      {conflicts.files.length > 0 ? (
+        <ul>
+          {conflicts.files.map((file) => (
+            <li key={file.path}>
+              <code>{file.path}</code> ({file.headChanges} lines here,{' '}
+              {file.baseChanges} on {baseRef})
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {conflicts.truncated ? (
+        <p className="ws-hint">
+          GitHub listed only part of a large comparison.
+        </p>
+      ) : null}
+      <ol>
+        <li>
+          Merge <code>{baseRef}</code> into <code>{headRef}</code> locally.
+        </li>
+        <li>Resolve the conflicts in the files above, then commit.</li>
+        <li>
+          Push <code>{headRef}</code>; this pull request updates by itself.
+        </li>
+      </ol>
+    </div>
+  );
 }
 
 const MERGE_METHODS: ReadonlyArray<{ id: MergeMethod; label: string }> = [
@@ -495,12 +541,13 @@ function MergeControl({
 
   return (
     <p className="ws-hint" role="status">
-      Merges into main go through PO Studio — Ready for production.
-      {canOpenPoStudio(appRole) && onOpenPoStudio ? (
+      Merges into main use the production readiness controls on Overview or in
+      your Studio.
+      {(canOpenPoStudio(appRole) || appRole === 'member') && onOpenPoStudio ? (
         <>
           {' '}
           <button type="button" className="ws-link" onClick={onOpenPoStudio}>
-            Go to PO Studio
+            {appRole === 'member' ? 'Go to Overview' : 'Go to PO Studio'}
           </button>
         </>
       ) : null}

@@ -12,6 +12,9 @@ export interface StartNextIterationInput {
   startedBy: string;
   startedByLogin: string;
   goal: string | null;
+  /** Omitted: the next minor version after the latest Iteration (v1.0.0 for the first). */
+  version?: { major: number; minor: number; patch: number };
+  revisionType?: 'major' | 'minor' | 'patch';
 }
 
 /**
@@ -35,6 +38,14 @@ export interface ProjectIterationRow {
   signoff_run_id: string | null;
   /** Per-repository delivery state (phase 2); null until delivered. */
   delivery_json: unknown;
+  /**
+   * Release version (20261028020000_iteration_versions, patch from
+   * 20261029000000_iteration_version_patch); optional for rows read before them.
+   */
+  version_major?: number;
+  version_minor?: number;
+  version_patch?: number;
+  revision_type?: 'major' | 'minor' | 'patch';
 }
 
 /**
@@ -243,10 +254,21 @@ export class ProjectIterationsRepository {
     const created = await this.databaseService.query<ProjectIterationRow>(
       `
         INSERT INTO projects.project_iterations
-          (delivery_project_id, number, status, goal, started_by, started_by_login)
-        SELECT $1, COALESCE(MAX(number), 0) + 1, 'active', $2, $3, $4
-        FROM projects.project_iterations
-        WHERE delivery_project_id = $1
+          (delivery_project_id, number, status, goal, started_by, started_by_login,
+           version_major, version_minor, version_patch, revision_type)
+        SELECT $1, COALESCE(latest.number, 0) + 1, 'active', $2, $3, $4,
+          COALESCE($5::int, latest.version_major, 1),
+          COALESCE($6::int, latest.version_minor + 1, 0),
+          COALESCE($7::int, 0),
+          COALESCE($8::text, 'minor')
+        FROM (SELECT 1) AS one
+        LEFT JOIN LATERAL (
+          SELECT number, version_major, version_minor
+          FROM projects.project_iterations
+          WHERE delivery_project_id = $1
+          ORDER BY number DESC
+          LIMIT 1
+        ) AS latest ON TRUE
         RETURNING *;
       `,
       [
@@ -254,6 +276,10 @@ export class ProjectIterationsRepository {
         input.goal,
         input.startedBy,
         input.startedByLogin,
+        input.version?.major ?? null,
+        input.version?.minor ?? null,
+        input.version?.patch ?? null,
+        input.revisionType ?? null,
       ],
     );
     const iteration = created.rows[0];

@@ -1,4 +1,5 @@
 'use client';
+import { QaImportControl } from '../../importing';
 
 import './requirements.css';
 
@@ -26,6 +27,7 @@ import {
 import {
   deliveredIterationTitle,
   deliveredRequirementsText,
+  type IterationNameInput,
 } from '../../model/iteration-rules';
 import {
   canSetVerification,
@@ -293,12 +295,12 @@ function KindSection({
  * has one (`onOpenHistory`).
  */
 function DeliveredRequirements({
-  number,
+  iteration,
   deliveryProjectId,
   appRole,
   onOpenHistory,
 }: Readonly<{
-  number: number;
+  iteration: IterationNameInput;
   deliveryProjectId: string;
   appRole: AppRole | null | undefined;
   onOpenHistory?: () => void;
@@ -306,7 +308,9 @@ function DeliveredRequirements({
   return (
     <div className="rq-panel">
       <div className="rq-delivered" role="status">
-        <p className="rq-delivered__title">{deliveredIterationTitle(number)}</p>
+        <p className="rq-delivered__title">
+          {deliveredIterationTitle(iteration)}
+        </p>
         <p className="rq-delivered__text">
           {deliveredRequirementsText(Boolean(onOpenHistory))}
         </p>
@@ -446,7 +450,7 @@ export function ProjectRequirementsPanel({
   if (vm.lockedIteration !== null) {
     return (
       <DeliveredRequirements
-        number={vm.lockedIteration}
+        iteration={vm.lockedIteration}
         deliveryProjectId={deliveryProjectId}
         appRole={appRole}
         onOpenHistory={onOpenHistory}
@@ -454,17 +458,27 @@ export function ProjectRequirementsPanel({
     );
   }
   return (
-    <ReadyRequirements
-      vm={vm}
-      dialog={dialog}
-      progress={progress}
-      kinds={kinds}
-      appRole={appRole}
-      verdicts={verdicts}
-      filterable={filterable}
-      filter={filter}
-      onFilter={setFilter}
-    />
+    <>
+      {vm.permissions.canManage ? (
+        <QaImportControl
+          key={deliveryProjectId}
+          projectId={deliveryProjectId}
+          mode="requirements"
+          onImported={vm.reload}
+        />
+      ) : null}
+      <ReadyRequirements
+        vm={vm}
+        dialog={dialog}
+        progress={progress}
+        kinds={kinds}
+        appRole={appRole}
+        verdicts={verdicts}
+        filterable={filterable}
+        filter={filter}
+        onFilter={setFilter}
+      />
+    </>
   );
 }
 

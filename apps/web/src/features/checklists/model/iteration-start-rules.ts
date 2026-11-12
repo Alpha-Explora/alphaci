@@ -13,13 +13,19 @@ import type { AppRole } from '@/shared/api/contracts';
 import {
   iterationDateLabel,
   iterationName,
+  iterationVersionName,
   normalizeIteration,
+  versionNumberText,
+  type IterationNameInput,
 } from './iteration-rules';
 import type {
   CurrentIteration,
   IterationNextStep,
+  IterationVersion,
+  RevisionType,
   StartedIteration,
   StartIterationInput,
+  VersionNumbers,
 } from './iteration-types';
 import { qaCodeMessage } from './qa-error-messages';
 import { errorCode, errorStatus, record } from './wire-readers';
@@ -36,14 +42,16 @@ export function roleCanStartIteration(
   return role === 'lead' || role === 'admin';
 }
 
-/** "Start iteration 4". */
-export function startIterationLabel(nextNumber: number): string {
-  return `Start version ${String(nextNumber)}`;
+export { versionNumberText };
+
+/** "Start version 4", or with release versions "Start version 1.3.0". */
+export function startIterationLabel(next: number | string): string {
+  return `Start version ${String(next)}`;
 }
 
-type DeliveredIteration = { number: number; deliveredAt: string | null };
+type DeliveredIteration = IterationNameInput & { deliveredAt: string | null };
 
-/** "Iteration 3 was delivered on 14 Oct 2026." (without a date: "Iteration 3 was delivered."). */
+/** "Version 1.2.0 was delivered on 14 Oct 2026." (without a date: "… was delivered."; without a version: "Version 3 …"). */
 export function iterationDeliveredOnText(
   iteration: DeliveredIteration,
   locale?: string,
@@ -52,18 +60,25 @@ export function iterationDeliveredOnText(
     withYear: true,
     locale,
   });
-  return `${iterationName(iteration.number)} was delivered${date ? ` on ${date}` : ''}.`;
+  return `${iterationVersionName(iteration)} was delivered${date ? ` on ${date}` : ''}.`;
 }
 
 /**
- * Between delivery and the next start (P15): "Iteration 3 was delivered on
- * 14 Oct 2026. Waiting for the Product owner to start iteration 4."
+ * Between delivery and the next start (P15): "Version 1.2.0 was delivered on
+ * 14 Oct 2026. Waiting for the Product owner to start the next version."
+ * Without release versions the next one is named by number ("version 4"):
+ * with them, the Product owner has not chosen patch, minor or major yet.
  */
 export function waitingForNextIterationText(
   iteration: DeliveredIteration,
   locale?: string,
 ): string {
-  return `${iterationDeliveredOnText(iteration, locale)} Waiting for the Product owner to start version ${String(iteration.number + 1)}.`;
+  const versioned =
+    Boolean(iteration.version) || Boolean(iteration.versionLabel);
+  const next = versioned
+    ? 'the next version'
+    : `version ${String(iteration.number + 1)}`;
+  return `${iterationDeliveredOnText(iteration, locale)} Waiting for the Product owner to start ${next}.`;
 }
 
 /**
@@ -102,10 +117,16 @@ export function iterationGoalError(goal: string): string | null {
     : null;
 }
 
-/** The request body: the goal trimmed, left out when empty. Nothing is carried over. */
-export function startIterationInput(goal: string): StartIterationInput {
+/** The request body: the goal trimmed, left out when empty, and the revision when chosen. Nothing is carried over. */
+export function startIterationInput(
+  goal: string,
+  revisionType?: RevisionType,
+): StartIterationInput {
   const trimmed = goal.trim();
-  return trimmed ? { goal: trimmed } : {};
+  return {
+    ...(trimmed ? { goal: trimmed } : {}),
+    ...(revisionType ? { revisionType } : {}),
+  };
 }
 
 /** The 201 answer. A body that is not one still reads as "started". */
@@ -114,10 +135,88 @@ export function normalizeStartedIteration(value: unknown): StartedIteration {
   return { iteration: normalizeIteration(raw.iteration) };
 }
 
-/** The Start dialog's sentence: the new iteration is empty, the delivered one keeps its work. */
-export function startIterationDescription(nextNumber: number): string {
-  const previous = iterationName(nextNumber - 1);
-  return `Name what this version is for. ${iterationName(nextNumber)} starts with an empty checklist: ${previous}'s requirements and QA results stay with ${previous}, read-only.`;
+/**
+ * The Start dialog's sentence: the new iteration is empty, the delivered one
+ * keeps its work. `names` are the version names once the server sends them.
+ */
+export function startIterationDescription(
+  nextNumber: number,
+  names?: { previous: string; next: string },
+): string {
+  const previous = names?.previous ?? iterationName(nextNumber - 1);
+  const next = names?.next ?? iterationName(nextNumber);
+  return `Name what this version is for. ${next} starts with an empty checklist: ${previous}'s requirements and QA results stay with ${previous}, read-only.`;
+}
+
+/* ── Patch, minor and major revisions ────────────────────────────────────── */
+
+/** Smallest change first. Minor stays the dialog's default: it is what the server starts when nothing is chosen. */
+export const REVISION_TYPES: ReadonlyArray<RevisionType> = [
+  'patch',
+  'minor',
+  'major',
+];
+
+function bumped(
+  previous: VersionNumbers,
+  revision: RevisionType,
+): VersionNumbers {
+  const patch = previous.patch ?? 0;
+  if (revision === 'major')
+    return { major: previous.major + 1, minor: 0, patch: 0 };
+  if (revision === 'minor')
+    return { major: previous.major, minor: previous.minor + 1, patch: 0 };
+  return { major: previous.major, minor: previous.minor, patch: patch + 1 };
+}
+
+/** v1.2.0 -> v1.2.1 (patch), v1.3.0 (minor) or v2.0.0 (major), as the server computes it. Pure. */
+export function nextIterationVersion(
+  previous: VersionNumbers,
+  revision: RevisionType,
+): IterationVersion {
+  const next = bumped(previous, revision);
+  const patch = next.patch ?? 0;
+  return {
+    major: next.major,
+    minor: next.minor,
+    patch,
+    label: `v${versionNumberText(next)}`,
+  };
+}
+
+export interface RevisionOption {
+  value: RevisionType;
+  /** "Minor revision · v1.3.0" (without a known version: "Minor revision"). */
+  label: string;
+  hint: string;
+}
+
+const REVISION_LABELS: Readonly<Record<RevisionType, string>> = {
+  patch: 'Patch revision',
+  minor: 'Minor revision',
+  major: 'Major revision',
+};
+
+const REVISION_HINTS: Readonly<Record<RevisionType, string>> = {
+  patch: 'Fixes only: no new features.',
+  minor: 'New features on the same release line.',
+  major: 'A new release line: large or breaking changes.',
+};
+
+/** The three choices in the Start dialog, each naming the version it leads to. */
+export function revisionOptions(
+  previous: VersionNumbers | null | undefined,
+): RevisionOption[] {
+  return REVISION_TYPES.map((value) => {
+    const next = previous
+      ? ` · ${nextIterationVersion(previous, value).label}`
+      : '';
+    return {
+      value,
+      label: `${REVISION_LABELS[value]}${next}`,
+      hint: REVISION_HINTS[value],
+    };
+  });
 }
 
 const STATUS_COPY: Readonly<Record<number, string>> = {

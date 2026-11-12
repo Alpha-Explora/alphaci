@@ -1,0 +1,33 @@
+.qa-history {
+  margin-block: 0.5rem;
+  font-size: 0.8rem;
+}
+.qa-history > summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding-block: 0.4rem;
+}
+.qa-history__body {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+.qa-history__events {
+  display: grid;
+  gap: 1rem;
+  padding-inline-start: 1.25rem;
+  max-height: 28rem;
+  overflow: auto;
+}
+.qa-history__events p {
+  margin-block: 0.25rem;
+}
+.qa-history__detail {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ihist-item > .qa-history {
+  flex-basis: 100%;
+  min-width: 0;
+}

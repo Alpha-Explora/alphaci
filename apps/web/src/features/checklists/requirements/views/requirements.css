@@ -1272,3 +1272,59 @@
     animation: none;
   }
 }
+
+/* A story's due date and priority: small chips, an inline editor for the PO.
+   Overdue is danger, due today or soon is warning; tokens only. */
+.rq-schedule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rq-schedule__chip {
+  --chip-tone: var(--text-muted);
+
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--chip-tone) 40%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--chip-tone) 10%, transparent);
+  color: var(--chip-tone);
+  font-size: 0.72rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.rq-schedule__chip[data-priority='urgent'],
+.rq-schedule__chip[data-due='overdue'] {
+  --chip-tone: var(--danger);
+}
+
+.rq-schedule__chip[data-priority='high'],
+.rq-schedule__chip[data-due='due_today'],
+.rq-schedule__chip[data-due='due_soon'] {
+  --chip-tone: var(--warning);
+}
+
+.rq-schedule__chip[data-due='scheduled'] {
+  --chip-tone: var(--text-secondary);
+}
+
+.rq-schedule__editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.rq-schedule__editor .hier-field {
+  flex: 0 1 11rem;
+}
+
+.rq-schedule__actions {
+  display: inline-flex;
+  gap: 0.4rem;
+}

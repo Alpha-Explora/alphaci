@@ -194,6 +194,33 @@ jobs:
     },
   );
 
+  it('detects a .NET repository from a solution file when there is no package.json', async () => {
+    (githubService.getFileContent as jest.Mock).mockResolvedValueOnce(null);
+    (
+      githubService as unknown as { listRepoContents: jest.Mock }
+    ).listRepoContents = jest.fn().mockResolvedValue({
+      path: '',
+      ref: 'main',
+      file: null,
+      entries: [
+        {
+          name: 'Orders.sln',
+          path: 'Orders.sln',
+          type: 'file',
+          size: 1,
+          sha: 's',
+        },
+        { name: 'src', path: 'src', type: 'dir', size: 0, sha: 'd' },
+      ],
+    });
+
+    await expect(
+      service.discover('user-1', 'oauth-user-token', {
+        repoFullName: 'tone/app',
+      }),
+    ).resolves.toMatchObject({ detectedProjectTypeId: 'dotnet' });
+  });
+
   it('falls back to the OAuth token when no app installation token exists', async () => {
     (
       githubService.getInstallationAccessTokenForUserRepo as jest.Mock

@@ -257,7 +257,7 @@ describeDatabase('qa_test_cases migration and repository', () => {
     await expect(pass()).resolves.toMatchObject({ status: 'passed' });
   });
 
-  it('an edit follows into the open run and keeps the result; a new case joins pending; a deleted one leaves', async () => {
+  it('an edit follows into the open run and resets the result; a new case joins pending; a deleted one leaves', async () => {
     const repository = testCases();
     const [definition] =
       (await repository.listByItemIds([storyId])).get(storyId) ?? [];
@@ -278,18 +278,18 @@ describeDatabase('qa_test_cases migration and repository', () => {
     expect(await copies()).toEqual([
       expect.objectContaining({
         title: 'Logs in (saved password)',
-        status: 'passed',
+        status: 'pending',
       }),
       expect.objectContaining({
         title: 'Logs in after the session expired',
         status: 'pending',
       }),
     ]);
-    expect(await repository.countOpenForRun(runId)).toBe(1);
+    expect(await repository.countOpenForRun(runId)).toBe(2);
 
     await repository.deleteTestCase(second.id, iterationId);
     expect(await copies()).toHaveLength(1);
-    expect(await repository.countOpenForRun(runId)).toBe(0);
+    expect(await repository.countOpenForRun(runId)).toBe(1);
   });
 
   it('a signed-off run keeps its copies when the definitions change', async () => {
@@ -309,7 +309,7 @@ describeDatabase('qa_test_cases migration and repository', () => {
     expect(await copies()).toEqual([
       expect.objectContaining({
         title: 'Logs in (saved password)',
-        status: 'passed',
+        status: 'pending',
         source: null,
       }),
     ]);

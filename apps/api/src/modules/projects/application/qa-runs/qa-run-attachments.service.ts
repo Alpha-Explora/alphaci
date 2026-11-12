@@ -322,7 +322,7 @@ export class QaRunAttachmentsService {
     if (!run) {
       throw new NotFoundException('QA run not found');
     }
-    const role = await this.access.findAppRole(actor.userId);
+    const role = await this.access.findQaRole(actor.userId);
     return { project, run, role };
   }
 

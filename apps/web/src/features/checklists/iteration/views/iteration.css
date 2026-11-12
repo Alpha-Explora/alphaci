@@ -181,3 +181,53 @@
   font-weight: 600;
   color: var(--danger);
 }
+
+/* Minor or major revision: two stacked radio rows, each with its hint. */
+.iteration-revision {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  max-width: 32rem;
+}
+
+.iteration-revision__option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border-control);
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+
+.iteration-revision__option:has(input:checked) {
+  border-color: var(--border-brand);
+  background: var(--brand-light);
+}
+
+.iteration-revision__option:has(input:focus-visible) {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.iteration-revision__option input {
+  margin: 0.15rem 0 0;
+}
+
+.iteration-revision__text {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.iteration-revision__label {
+  font-size: 0.84rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.iteration-revision__hint {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}

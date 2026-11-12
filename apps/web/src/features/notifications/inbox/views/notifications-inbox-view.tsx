@@ -167,6 +167,7 @@ function InboxPage({
 
       <div id="main-content" className="dash-page-content inbox-page">
         <InboxHeader vm={vm} reduced={prefersReducedMotion} />
+        <CategoryFilter vm={vm} />
         {vm.error && (
           <p className="error-text inbox-error-inline">{vm.error}</p>
         )}
@@ -403,6 +404,39 @@ function NotificationAction({
     >
       {vm.markingId === row.item.id ? 'Saving...' : 'Mark read'}
     </button>
+  );
+}
+
+/** "QA & defects 3", "Pull requests & merges 2", …: only the kinds the list holds. Nothing for one kind or none. */
+function CategoryFilter({ vm }: Readonly<{ vm: InboxViewModel }>) {
+  if (vm.categoryCounts.length < 2) return null;
+  const options = [
+    {
+      category: 'all' as const,
+      label: 'Every kind',
+      count: vm.categoryCounts.reduce((sum, entry) => sum + entry.count, 0),
+    },
+    ...vm.categoryCounts,
+  ];
+  return (
+    <div
+      role="group"
+      aria-label="Filter by kind"
+      className="inbox-filter-tabs inbox-category-tabs"
+    >
+      {options.map((option) => (
+        <button
+          key={option.category}
+          type="button"
+          className={`inbox-filter-tab${vm.category === option.category ? ' inbox-filter-tab--active' : ''}`}
+          aria-pressed={vm.category === option.category}
+          onClick={() => vm.setCategory(option.category)}
+        >
+          {option.label}
+          <span className="inbox-filter-tab-count">{option.count}</span>
+        </button>
+      ))}
+    </div>
   );
 }
 

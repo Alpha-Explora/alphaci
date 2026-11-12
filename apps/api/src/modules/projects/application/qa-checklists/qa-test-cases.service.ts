@@ -5,6 +5,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { badRequest } from '#kernel/http/coded-errors';
 
 import { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
 import { canManageTestCases } from '../../domain/qa-run-access.rules';
@@ -19,6 +20,7 @@ import {
   QaTestCasesRepository,
   toTestCategories,
 } from '../../infrastructure/qa-test-cases.repository';
+import type { ImportTestCasesDto } from './dto/import-test-cases.dto';
 import type { CreateTestCaseDto } from './dto/create-test-case.dto';
 import type { CreateTestCategoryDto } from './dto/create-test-category.dto';
 import type { UpdateTestCaseDto } from './dto/update-test-case.dto';
@@ -73,6 +75,40 @@ export class QaTestCasesService {
     @Inject(AuditEventPublisher)
     private readonly auditEventsService?: AuditEventSink,
   ) {}
+
+  async importCases(
+    requirementId: string,
+    itemId: string,
+    userId: string,
+    userLogin: string,
+    dto: ImportTestCasesDto,
+  ) {
+    const scope = await this.requireWritableStory(
+      requirementId,
+      itemId,
+      userId,
+    );
+    if (!scope.requirement.iteration_id)
+      throw badRequest(
+        'TEST_CASE_IMPORT_NEEDS_ITERATION',
+        'Import requires a Project iteration.',
+      );
+    const rows = dto.rows.map((row) => ({
+      category: requireNonBlank(row.category, 'category'),
+      title: requireNonBlank(row.title, 'title'),
+      expectedResult: row.expectedResult.trim(),
+    }));
+    const result = await this.testCases.importCases(
+      itemId,
+      requirementId,
+      scope.requirement.iteration_id,
+      rows,
+      { id: userId, login: userLogin },
+    );
+    if (result.added)
+      await this.recordEvent(scope, { change: 'imported', ...result });
+    return { ...result, ...(await this.storyTestCases(itemId)) };
+  }
 
   async createCategory(
     requirementId: string,
@@ -294,7 +330,7 @@ export class QaTestCasesService {
     if (!item) {
       throw new NotFoundException('Requirement item not found');
     }
-    if (!canManageTestCases(await this.access.findAppRole(userId))) {
+    if (!canManageTestCases(await this.access.findQaRole(userId))) {
       throw testCaseManageForbidden();
     }
     await this.iterations.assertRowWritable(requirement);

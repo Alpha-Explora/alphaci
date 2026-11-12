@@ -7,6 +7,7 @@
  */
 
 import type { QaChecklistVerificationType } from './qa-checklists.contracts';
+import type { BacklogPriority } from '../../domain/backlog-schedule.rules';
 
 export type QaRequirementKind = 'functional' | 'system';
 
@@ -68,6 +69,9 @@ export interface RequirementItem {
    * empty for a system requirement's items: test cases belong to User stories.
    */
   testCategories: TestCaseCategory[];
+  /** "YYYY-MM-DD" or null; absent before 20261028030000_backlog_schedule is applied. */
+  dueDate?: string | null;
+  priority?: BacklogPriority | null;
 }
 
 /** One test case QA wrote under a story. */

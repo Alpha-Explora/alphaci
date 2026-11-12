@@ -108,6 +108,45 @@ function isAllowedPullRequestRoute(role, head, base) {
   return base === QA_BRANCH && head === WORKING_BRANCH;
 }
 
+/*
+ * Special access: grants an admin adds to one person on top of their role
+ * (identity.app_users.special_access).
+ *
+ *   qa_release:          act as the QA Team in QA runs (start runs, verify,
+ *                        record test results, sign off) and merge to main.
+ *                        Never a Product owner power.
+ *   deployment_override: merge to main while the promotion gate is blocked,
+ *                        with a written reason that is audited and announced.
+ *                        Admins always hold it.
+ */
+const SPECIAL_ACCESS = Object.freeze(['qa_release', 'deployment_override']);
+
+/** The shortest written reason an override must carry. */
+const OVERRIDE_REASON_MIN_LENGTH = 15;
+
+/** Known grants only, in canonical order; anything else is dropped. */
+function parseSpecialAccess(raw) {
+  if (!Array.isArray(raw)) return [];
+  return SPECIAL_ACCESS.filter((value) => raw.includes(value));
+}
+
+/**
+ * The role used for QA-track checks: a Developer holding qa_release acts as
+ * QA; every other role is unchanged. A role that has not loaded stays
+ * undefined. Developer-track checks keep reading the real role.
+ */
+function actingQaRole(role, special) {
+  if (role == null) return undefined;
+  return role === 'member' && (special ?? []).includes('qa_release')
+    ? 'qa'
+    : role;
+}
+
+/** Whether the person may merge to main past a blocked promotion gate. */
+function canOverrideDeployment(role, special) {
+  return role === 'admin' || (special ?? []).includes('deployment_override');
+}
+
 module.exports = Object.freeze({
   PIPELINE_BRANCHES,
   WORKING_BRANCH,
@@ -123,4 +162,9 @@ module.exports = Object.freeze({
   repositoryCreateRequiresProject,
   isPullRequestRole,
   isAllowedPullRequestRoute,
+  SPECIAL_ACCESS,
+  OVERRIDE_REASON_MIN_LENGTH,
+  parseSpecialAccess,
+  actingQaRole,
+  canOverrideDeployment,
 });

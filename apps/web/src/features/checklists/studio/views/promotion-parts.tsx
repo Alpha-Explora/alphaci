@@ -142,8 +142,8 @@ function CardFoot({
       {vm.canMerge ? null : (
         <span className="qa-promo__muted">
           {data.scope
-            ? `Product owners merge ${data.qaBranch} into ${data.targetBranch} once QA signs the Project off Approved.`
-            : `Product owners merge ${data.qaBranch} into ${data.targetBranch} once every checklist is approved.`}
+            ? `Team members merge ${data.qaBranch} into ${data.targetBranch} once QA signs the Project off Approved.`
+            : `Team members merge ${data.qaBranch} into ${data.targetBranch} once every checklist is approved.`}
         </span>
       )}
     </div>

@@ -96,6 +96,8 @@ function setup({
       .fn()
       .mockImplementation((id: string) => Promise.resolve(rows[id] ?? null)),
     findAppRole: jest.fn().mockResolvedValue(role),
+    findQaRole: jest.fn().mockResolvedValue(role),
+    findSpecialAccess: jest.fn().mockResolvedValue([]),
     listWorkspaceLeadIds: jest.fn().mockResolvedValue(['lead-1', 'lead-2']),
     listWorkspaceLeadAndDeveloperIds: jest
       .fn()
@@ -437,8 +439,29 @@ describe('QaPromotionService.getStatus (per-Project gate)', () => {
 });
 
 describe('QaPromotionService.merge', () => {
-  it('forbids a caller who is not lead|admin', async () => {
-    const { service, github } = setup({ role: 'qa' });
+  it.each(['qa', 'member'] as const)(
+    '%s can merge only with the same current QA and PO gate',
+    async (role) => {
+      const ready = setup({ role });
+      await expect(ready.service.merge('p-api', actor)).resolves.toMatchObject({
+        merged: true,
+      });
+      const waiting = setup({ role });
+      waiting.projectRuns.countItemsNotAccepted.mockResolvedValue(1);
+      await expect(waiting.service.merge('p-api', actor)).rejects.toMatchObject(
+        { response: { code: 'QA_PROMOTION_BLOCKED' } },
+      );
+      expect(waiting.github.mergePullRequest).not.toHaveBeenCalled();
+      const rejected = setup({ role, verdict: 'REJECTED' });
+      await expect(
+        rejected.service.merge('p-api', actor),
+      ).rejects.toMatchObject({ response: { code: 'QA_PROMOTION_BLOCKED' } });
+      expect(rejected.github.mergePullRequest).not.toHaveBeenCalled();
+    },
+  );
+
+  it('forbids a caller who is unknown', async () => {
+    const { service, github } = setup({ role: 'unknown' as PlatformAppRole });
 
     await expect(service.merge('p-api', actor)).rejects.toThrow(
       ForbiddenException,
@@ -776,6 +799,7 @@ describe('Merge to main: delivery of the Iteration', () => {
         deliveryProjectId: 'dp-1',
         iterationId: 'it-1',
         number: 1,
+        version: 'v1.0.0',
         signoffRunId: 'run-1',
         repositories: [
           expect.objectContaining({ repoFullName: 'acme/api', how: 'merged' }),
@@ -792,7 +816,7 @@ describe('Merge to main: delivery of the Iteration', () => {
       'qa-1',
     ]);
     expect(delivered[0]).toMatchObject({
-      title: 'Iteration 1 of Checkout was delivered',
+      title: 'Iteration 1 (v1.0.0) of Checkout was delivered',
       projectId: 'p-api',
     });
     expect(delivered[0]?.body).toContain('acme/api');
@@ -888,6 +912,100 @@ describe('Merge to main: delivery of the Iteration', () => {
     expect(status.reasons[0]).toBe(
       'Iteration 2 was delivered. Start the next iteration to merge again.',
     );
+  });
+});
+
+describe('QaPromotionService deployment override', () => {
+  const REASON = 'Hotfix for checkout outage, PO on leave';
+
+  it('without a reason a blocked gate stays a 409, even for an admin', async () => {
+    const { service, github } = setup({
+      role: 'admin',
+      verdict: 'CONDITIONAL',
+    });
+    await expect(service.merge('p-api', actor)).rejects.toMatchObject({
+      response: { code: 'QA_PROMOTION_BLOCKED' },
+    });
+    expect(github.mergePullRequest).not.toHaveBeenCalled();
+  });
+
+  it('403 for a lead without deployment_override', async () => {
+    const { service, github } = setup({ verdict: 'CONDITIONAL' });
+    await expect(service.merge('p-api', actor, REASON)).rejects.toMatchObject({
+      response: { code: 'DEPLOYMENT_OVERRIDE_FORBIDDEN' },
+    });
+    expect(github.mergePullRequest).not.toHaveBeenCalled();
+  });
+
+  it('400 when the written reason is too short', async () => {
+    const { service } = setup({ role: 'admin', verdict: 'CONDITIONAL' });
+    await expect(
+      service.merge('p-api', actor, ' too short '),
+    ).rejects.toMatchObject({
+      response: { code: 'OVERRIDE_REASON_REQUIRED' },
+    });
+  });
+
+  it('still needs a signed-off QA run', async () => {
+    const { service } = setup({ role: 'admin', verdict: null, covered: [] });
+    await expect(service.merge('p-api', actor, REASON)).rejects.toMatchObject({
+      response: { code: 'OVERRIDE_NEEDS_SIGNOFF' },
+    });
+  });
+
+  it('a deployment_override holder merges past the gate; the reason and bypassed checks are audited and leads are told', async () => {
+    const { service, access, github, audit, notifications } = setup({
+      verdict: 'CONDITIONAL',
+    });
+    access.findSpecialAccess.mockResolvedValue(['deployment_override']);
+
+    await expect(service.merge('p-api', actor, REASON)).resolves.toMatchObject({
+      merged: true,
+    });
+    expect(github.mergePullRequest).toHaveBeenCalled();
+    expect(audit.recordProjectEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventCode: 'qa.promotion.override_merged',
+        metadata: expect.objectContaining({
+          reason: REASON,
+          bypassed: expect.arrayContaining([
+            expect.stringContaining('Conditional'),
+          ]) as string[],
+        }) as Record<string, unknown>,
+      }),
+    );
+    expect(notifications.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'lead-2',
+        eventCode: 'qa.promotion.override_merged',
+      }),
+    );
+  });
+
+  it('status says who may override', async () => {
+    const admin = setup({ role: 'admin' });
+    expect((await admin.service.getStatus('p-api', actor)).canOverride).toBe(
+      true,
+    );
+    const lead = setup();
+    expect((await lead.service.getStatus('p-api', actor)).canOverride).toBe(
+      false,
+    );
+  });
+
+  it('merge-all goes past the gate with an override too', async () => {
+    const { service, github, audit } = setup({
+      role: 'admin',
+      verdict: 'CONDITIONAL',
+    });
+    const result = await service.mergeAll('dp-1', actor, REASON);
+    expect(result.repositories.every((r) => r.merged)).toBe(true);
+    expect(github.mergePullRequest).toHaveBeenCalledTimes(2);
+    expect(
+      audit.recordProjectEvent.mock.calls.filter(
+        ([event]) => event.eventCode === 'qa.promotion.override_merged',
+      ),
+    ).toHaveLength(2);
   });
 });
 
@@ -1069,8 +1187,25 @@ describe('QaPromotionService.mergeAll', () => {
     ).toHaveLength(3);
   });
 
-  it('403 for a caller who is not lead|admin', async () => {
-    const { service, github } = setup({ role: 'qa' });
+  it.each(['qa', 'member'] as const)(
+    '%s can merge all repositories with the same gate',
+    async (role) => {
+      const ready = setup({ role });
+      await expect(
+        ready.service.mergeAll(MERGE_ALL, actor),
+      ).resolves.toMatchObject({ delivered: true });
+      const stale = setup({
+        role,
+        heads: { 'acme/api': MOVED, 'acme/web': SHA_WEB },
+      });
+      await expect(
+        stale.service.mergeAll(MERGE_ALL, actor),
+      ).rejects.toMatchObject({ response: { code: 'QA_PROMOTION_BLOCKED' } });
+      expect(stale.github.mergePullRequest).not.toHaveBeenCalled();
+    },
+  );
+  it('403 for a caller who is unknown', async () => {
+    const { service, github } = setup({ role: 'unknown' as PlatformAppRole });
 
     await expect(service.mergeAll(MERGE_ALL, actor)).rejects.toThrow(
       ForbiddenException,
@@ -1164,8 +1299,10 @@ describe('QaProjectDeliveryService.current', () => {
     expect(current.iteration.status).toBe('active');
   });
 
-  it('canMergeAll is false for a non lead|admin, without reading GitHub heads', async () => {
-    const { delivery, headsService } = setup({ role: 'qa' });
+  it('canMergeAll is false for a unknown, without reading GitHub heads', async () => {
+    const { delivery, headsService } = setup({
+      role: 'unknown' as PlatformAppRole,
+    });
 
     const current = await delivery.current('dp-1', actor);
 
