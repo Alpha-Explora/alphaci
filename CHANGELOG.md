@@ -15,6 +15,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Pull requests:** Diffs switch between unified and side by side, and a conflicting pull request lists the files both sides changed.
 - **Inbox:** Notifications filter by kind: QA and defects, pull requests and merges, pipelines and deploys, team and to-dos.
 - **Projects:** Existing-repository setup detects .NET repositories and files the repository into the chosen Project.
+- **Projects:** A change to a generated repository's workflows needs an ALPHACI admin's review: an `alphaci-pipeline-owners` team owns them through CODEOWNERS, and a ruleset on dev, uat and main enforces it (ADR-0025).
 - **Composition:** Independent governance and managed-host controls preserve existing edition access; `alphaci-ctl composition` explains local capability availability and exclusions.
 - **Capabilities:** Contributors can preview new assignments without writes; a generated feature inventory links built behavior to existing capabilities, authorization code, and evidence.
 - **Self-hosted:** AlphaCI runs on one server as a Docker Compose appliance (Caddy, API, web, migrator, Postgres 16), managed with `alphaci-ctl init | admin-grant | doctor`.
@@ -53,6 +54,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 ### Changed
 
 - **QA:** QA and Developers may merge an approved release to main, behind the same current-head, Iteration and Product owner acceptance gates.
+- **Projects:** Nobody, organization owners included, can push straight to dev, uat or main of a generated organization repository; only the ALPHACI GitHub App bypasses the pipeline owners ruleset.
 - **Documentation:** Clarified editions, personas, internal access, and capability inventory gaps; added a contributor guide for assigning features.
 - **Roles:** `lead` is shown as Product owner; Developers and admins manage hosting and environment variables, Product owners no longer do.
 - **Roles:** Repository tabs follow the viewer's role.

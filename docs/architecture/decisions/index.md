@@ -24,3 +24,4 @@
 * [ADR-0022: One catalog integrity check](adr-0022-one-catalog-integrity-check.md) - the API's package check is the only integrity check; the web app keeps no copies of the package.
 * [ADR-0023: Bound addresses](adr-0023-bound-addresses.md) - an on-prem environment served by its machine under the customer's own hostname, listen address and certificate (the IIS binding), with workspace certificates and machine reports.
 * [ADR-0024: Capability options](adr-0024-capability-options.md) - a deployment changes how an available capability behaves through declared options with closed values and a default equal to current behavior, never through a branch on the client.
+* [ADR-0025: Pipeline owners review workflow changes](adr-0025-pipeline-owners.md) - CODEOWNERS names an alphaci-pipeline-owners team of ALPHACI admins for .github/workflows, and a ruleset on dev, uat and main requires its review, bypassable only by the ALPHACI GitHub App.

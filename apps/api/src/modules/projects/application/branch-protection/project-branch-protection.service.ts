@@ -7,7 +7,9 @@ import {
   Optional,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
+import type { AppConfig } from '#kernel/config/app.config';
 import { PROTECTED_BRANCHES } from '#kernel/config/pipeline-branches';
 import { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
 import {
@@ -17,6 +19,12 @@ import {
 } from '#kernel/ports/github.port';
 import { ProjectsRepository } from '../../infrastructure/projects.repository';
 import { ProjectGithubTokenResolver } from '../github-activity/project-github-token.resolver';
+import {
+  describePipelineOwners,
+  PipelineOwners,
+  pipelineOwnersBypassAppId,
+  type PipelineOwnersResult,
+} from './pipeline-owners';
 
 export interface BranchProtectionBranchResult {
   name: string;
@@ -27,6 +35,12 @@ export interface BranchProtectionBranchResult {
 export interface RepositoryProtectionResult {
   repoFullName: string;
   branches: BranchProtectionBranchResult[];
+  /**
+   * The pipeline-owners team and the ruleset that requires its review of
+   * workflow changes. `codeowners` is empty here: an existing repository gets
+   * the CODEOWNERS file through the workflow update pull request.
+   */
+  pipelineOwners?: PipelineOwnersResult;
 }
 
 export interface BulkBranchProtectionResponse {
@@ -63,6 +77,8 @@ export class ProjectBranchProtectionService {
     private readonly tokens: ProjectGithubTokenResolver,
     @Optional()
     private readonly auditEventPublisher?: AuditEventPublisher,
+    @Optional()
+    private readonly configService?: ConfigService,
   ) {}
 
   async applyToProject(
@@ -173,7 +189,41 @@ export class ProjectBranchProtectionService {
         });
       }
     }
-    return { repoFullName, branches };
+
+    let pipelineOwners: PipelineOwnersResult | undefined;
+    try {
+      const owners = new PipelineOwners(
+        this.githubService,
+        () => this.projectsRepository.listAdminGithubLogins(),
+        pipelineOwnersBypassAppId(
+          this.configService?.get<AppConfig>('app')?.github?.appId,
+        ),
+      );
+      const preparation = await owners.prepare({
+        token,
+        owner,
+        repo,
+        branches: PROTECTED_BRANCHES,
+        writeCodeowners: false,
+      });
+      const ruleset = await owners.ruleset({
+        token,
+        owner,
+        repo,
+        branches: PROTECTED_BRANCHES,
+        team: preparation.team,
+      });
+      pipelineOwners = { ...preparation, ruleset };
+    } catch (error) {
+      this.logger.warn(
+        `Pipeline owners could not be applied on ${repoFullName}: ${String(error)}`,
+      );
+    }
+    return {
+      repoFullName,
+      branches,
+      ...(pipelineOwners && { pipelineOwners }),
+    };
   }
 
   private async assertAdmin(userId: string): Promise<void> {
@@ -190,6 +240,22 @@ export class ProjectBranchProtectionService {
     project: { id: string; workspace_id?: string | null },
     result: RepositoryProtectionResult,
   ): Promise<void> {
+    if (result.pipelineOwners) {
+      const summary = describePipelineOwners(result.pipelineOwners);
+      await this.auditEventPublisher?.recordProjectEvent({
+        actorUserId: userId,
+        workspaceId: project.workspace_id ?? null,
+        projectId: project.id,
+        eventCode: summary.failed
+          ? 'project_pipeline_owners_failed'
+          : 'project_pipeline_owners_applied',
+        message: summary.message,
+        metadata: {
+          repoFullName: result.repoFullName,
+          ...result.pipelineOwners,
+        },
+      });
+    }
     const failed = result.branches.filter((b) => b.status === 'failed');
     const changed = result.branches.filter((b) => b.status === 'applied');
     if (failed.length === 0 && changed.length === 0) {

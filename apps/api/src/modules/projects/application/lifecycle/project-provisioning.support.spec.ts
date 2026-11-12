@@ -258,18 +258,38 @@ describe('ProjectProvisioningSupport.notifyProjectCreated', () => {
 });
 
 describe('ProjectProvisioningSupport.protectPipelineBranches', () => {
+  /** A personal account by default: no team, so no CODEOWNERS and no ruleset. */
+  const personalAccountOwners = () => ({
+    ensurePipelineOwnersTeam: jest.fn().mockResolvedValue({
+      status: 'unavailable',
+      error: 'acme is a personal account, which has no teams',
+    }),
+    ensurePipelineOwnersRuleset: jest.fn(),
+    putFileContent: jest.fn(),
+    fastForwardBranch: jest.fn(),
+  });
+
   const make = (
     ensure: jest.Mock,
     publisher: { recordProjectEvent: jest.Mock } | undefined,
+    owners: Record<string, jest.Mock> = personalAccountOwners(),
+    adminLogins: string[] = ['lloydlim1'],
   ) =>
     new ProjectProvisioningSupport({
       catalogService: {} as never,
-      githubService: { ensurePullRequestProtection: ensure } as never,
-      projectsRepository: {} as never,
+      githubService: {
+        ensurePullRequestProtection: ensure,
+        ...owners,
+      } as never,
+      projectsRepository: {
+        listAdminGithubLogins: jest.fn().mockResolvedValue(adminLogins),
+      } as never,
       ciService: {} as never,
       projectDeploymentProvisioningService: {} as never,
       deploymentProvisioningDefaults: undefined,
-      configService: undefined,
+      configService: {
+        get: () => ({ github: { appId: '123456' } }),
+      } as never,
       usageQuotaService: undefined,
       auditEventsService: undefined,
       workspacesService: undefined,
@@ -356,5 +376,190 @@ describe('ProjectProvisioningSupport.protectPipelineBranches', () => {
     await expect(
       make(ensure, undefined).protectPipelineBranches(input),
     ).resolves.toBeUndefined();
+  });
+
+  describe('pipeline owners', () => {
+    const organizationOwners = () => {
+      const order: string[] = [];
+      const owners = {
+        ensurePipelineOwnersTeam: jest.fn().mockImplementation(() => {
+          order.push('team');
+          return Promise.resolve({
+            status: 'applied',
+            teamSlug: 'alphaci-pipeline-owners',
+            members: ['lloydlim1'],
+            notOrgMembers: [],
+          });
+        }),
+        putFileContent: jest
+          .fn()
+          .mockImplementation(
+            (
+              _t: string,
+              _o: string,
+              _r: string,
+              _p: string,
+              _c: string,
+              branch: string,
+            ) => {
+              order.push(`codeowners:${branch}`);
+              return Promise.resolve({
+                commitSha: 'sha-main',
+                commitUrl: null,
+              });
+            },
+          ),
+        fastForwardBranch: jest
+          .fn()
+          .mockImplementation(
+            (_t: string, _o: string, _r: string, branch: string) => {
+              order.push(`fast-forward:${branch}`);
+              return Promise.resolve(true);
+            },
+          ),
+        ensurePipelineOwnersRuleset: jest.fn().mockImplementation(() => {
+          order.push('ruleset');
+          return Promise.resolve({ status: 'applied' });
+        }),
+      };
+      return { owners, order };
+    };
+
+    it('writes the team and CODEOWNERS before protection, and the ruleset after it', async () => {
+      const { owners, order } = organizationOwners();
+      const ensure = jest
+        .fn()
+        .mockImplementation(
+          (_t: string, _o: string, _r: string, branch: string) => {
+            order.push(`protect:${branch}`);
+            return Promise.resolve({ status: 'applied' });
+          },
+        );
+      const publisher = { recordProjectEvent: jest.fn() };
+
+      await make(ensure, publisher, owners).protectPipelineBranches(input);
+
+      // CODEOWNERS is committed once on main; dev and uat move to that commit.
+      expect(order).toEqual([
+        'team',
+        'codeowners:main',
+        'fast-forward:dev',
+        'fast-forward:uat',
+        'protect:dev',
+        'protect:uat',
+        'protect:main',
+        'ruleset',
+      ]);
+      expect(owners.ensurePipelineOwnersTeam).toHaveBeenCalledWith(
+        'tok',
+        'acme',
+        'storefront',
+        ['lloydlim1'],
+      );
+      expect(owners.putFileContent).toHaveBeenCalledWith(
+        'tok',
+        'acme',
+        'storefront',
+        '.github/CODEOWNERS',
+        expect.stringContaining(
+          '/.github/workflows/ @acme/alphaci-pipeline-owners',
+        ),
+        'main',
+        'ci: add ALPHACI CODEOWNERS',
+      );
+      expect(owners.fastForwardBranch).toHaveBeenCalledWith(
+        'tok',
+        'acme',
+        'storefront',
+        'dev',
+        'sha-main',
+      );
+      expect(owners.ensurePipelineOwnersRuleset).toHaveBeenCalledWith(
+        'tok',
+        'acme',
+        'storefront',
+        { branches: ['dev', 'uat', 'main'], bypassAppId: 123456 },
+      );
+      expect(publisher.recordProjectEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventCode: 'project_pipeline_owners_applied',
+          message: 'Workflow changes now need a pipeline owner review',
+        }),
+      );
+    });
+
+    it('commits on a branch that cannot be fast-forwarded', async () => {
+      const { owners } = organizationOwners();
+      owners.fastForwardBranch.mockResolvedValue(false);
+      const ensure = jest.fn().mockResolvedValue({ status: 'applied' });
+
+      await make(ensure, undefined, owners).protectPipelineBranches(input);
+
+      expect(
+        owners.putFileContent.mock.calls.map((call: unknown[]) => call[5]),
+      ).toEqual(['main', 'dev', 'uat']);
+    });
+
+    it('writes no CODEOWNERS and no ruleset for a personal account', async () => {
+      const owners = personalAccountOwners();
+      const publisher = { recordProjectEvent: jest.fn() };
+
+      await make(
+        jest.fn().mockResolvedValue({ status: 'applied' }),
+        publisher,
+        owners,
+      ).protectPipelineBranches(input);
+
+      expect(owners.putFileContent).not.toHaveBeenCalled();
+      expect(owners.ensurePipelineOwnersRuleset).not.toHaveBeenCalled();
+      expect(publisher.recordProjectEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventCode: 'project_pipeline_owners_applied',
+          message: expect.stringContaining('not review-gated') as string,
+        }),
+      );
+    });
+
+    it('never fails provisioning when the pipeline-owners step throws', async () => {
+      const owners = {
+        ...personalAccountOwners(),
+        ensurePipelineOwnersTeam: jest
+          .fn()
+          .mockRejectedValue(new Error('network down')),
+      };
+      const ensure = jest.fn().mockResolvedValue({ status: 'applied' });
+
+      await expect(
+        make(ensure, undefined, owners).protectPipelineBranches(input),
+      ).resolves.toBeUndefined();
+      expect(ensure).toHaveBeenCalledTimes(3);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Pipeline owners could not be prepared'),
+      );
+    });
+
+    it('records project_pipeline_owners_failed when the ruleset is refused', async () => {
+      const { owners } = organizationOwners();
+      owners.ensurePipelineOwnersRuleset.mockResolvedValue({
+        status: 'failed',
+        error: 'HTTP 403 writing the ruleset',
+      });
+      const publisher = { recordProjectEvent: jest.fn() };
+
+      await make(
+        jest.fn().mockResolvedValue({ status: 'applied' }),
+        publisher,
+        owners,
+      ).protectPipelineBranches(input);
+
+      expect(publisher.recordProjectEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventCode: 'project_pipeline_owners_failed',
+          message: expect.stringContaining(
+            'ruleset: HTTP 403 writing the ruleset',
+          ) as string,
+        }),
+      );
+    });
   });
 });

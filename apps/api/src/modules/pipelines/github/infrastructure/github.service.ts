@@ -36,6 +36,8 @@ import {
   type GitHubCommitPage,
   type GitHubPathCommits,
   type GithubBranchProtectionOutcome,
+  type GithubPipelineOwnersTeamOutcome,
+  type GithubRulesetOutcome,
   type GithubBranchProtectionSummary,
   type GithubPullRequestProtectionOptions,
   type GitHubPullRequestHeadline,
@@ -52,6 +54,12 @@ import { GithubActivityClient } from './github-activity.client';
 import { GithubRepoFilesClient } from './github-repo-files.client';
 import { ensurePullRequestProtection } from './github-branch-protection';
 import { listPathCommits } from './github-path-commits';
+import {
+  ensurePipelineOwnersRuleset,
+  ensurePipelineOwnersTeam,
+  fastForwardBranch,
+  isOrganizationAccount,
+} from './github-pipeline-owners';
 import { GithubHttp } from './github-http';
 import { GithubInstallationLinker } from './github-installation-linker';
 import {
@@ -2979,6 +2987,50 @@ export class GithubService
       branch,
       options,
     );
+  }
+
+  ensurePipelineOwnersTeam(
+    accessToken: string,
+    org: string,
+    repo: string,
+    memberLogins: readonly string[],
+  ): Promise<GithubPipelineOwnersTeamOutcome> {
+    return ensurePipelineOwnersTeam(
+      this.http,
+      accessToken,
+      org,
+      repo,
+      memberLogins,
+    );
+  }
+
+  ensurePipelineOwnersRuleset(
+    accessToken: string,
+    owner: string,
+    repo: string,
+    options: { branches: readonly string[]; bypassAppId: number | null },
+  ): Promise<GithubRulesetOutcome> {
+    return ensurePipelineOwnersRuleset(
+      this.http,
+      accessToken,
+      owner,
+      repo,
+      options,
+    );
+  }
+
+  fastForwardBranch(
+    accessToken: string,
+    owner: string,
+    repo: string,
+    branch: string,
+    sha: string,
+  ): Promise<boolean> {
+    return fastForwardBranch(this.http, accessToken, owner, repo, branch, sha);
+  }
+
+  isOrganizationAccount(accessToken: string, login: string): Promise<boolean> {
+    return isOrganizationAccount(this.http, accessToken, login);
   }
 
   listCommits(

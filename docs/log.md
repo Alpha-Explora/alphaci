@@ -3,6 +3,7 @@
 ## 2026-11-11
 
 - **Update**: `@alphaci/api-contracts` declares the QA release-tracker responses (`project-todos.ts`, `qa-history.ts`, `semantic-coverage.ts`, `qa-imports.ts`, `special-access.ts`); the API and web use them, and `qa-tracker-contracts.e2e-spec.ts` checks seven routes against Zod schemas. The route-contracts baseline keeps the to-do delete (204), the history export (a file), and the schedule and test-case import routes, which answer the requirement shapes that have no contract yet.
+- **Creation**: ADR-0025 records pipeline owners: a per-organization `alphaci-pipeline-owners` team of ALPHACI admins owns `.github/workflows` through CODEOWNERS, and the "ALPHACI pipeline owners" ruleset on dev, uat and main requires its review, bypassable only by the ALPHACI GitHub App. Provisioning and the branch-protection retrofit apply it; no migration.
 
 ## 2026-11-10
 
