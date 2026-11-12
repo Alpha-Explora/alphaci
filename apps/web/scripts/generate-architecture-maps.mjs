@@ -338,7 +338,7 @@ This snapshot is generated from the current source tree. It is descriptive evide
 | Feature architecture | \`npm run arch:check\` | thin routes, view I/O, model purity |
 | Capability surfaces | \`npm run check:capabilities\` | package surfaces, compatibility fields, and pack catalogs (the package itself: \`npm run check:capability-package -w @alphaci/api\`) |
 | Documentation bundle | \`npm run check:documentation\` at the repository root | OKF v0.2 format, links, naming, current-state wording, generated-map drift, then each app's own check |
-| App documentation | \`npm run check:documentation\` | edition branches and capability sources |
+| App documentation | \`npm run check:documentation\` | edition and client branches and capability sources |
 
 ## Limits
 

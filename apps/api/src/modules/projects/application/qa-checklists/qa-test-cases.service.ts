@@ -7,8 +7,13 @@ import {
 } from '@nestjs/common';
 import { badRequest } from '#kernel/http/coded-errors';
 
+import {
+  CAPABILITY_OPTIONS,
+  type CapabilityOptionsPort,
+} from '#kernel/composition/capability-options.port.js';
 import { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
 import { canManageTestCases } from '../../domain/qa-run-access.rules';
+import { testCaseAuthorsOf } from './test-case-authors';
 import {
   QA_UNIQUE_VIOLATION,
   QaChecklistsRepository,
@@ -74,6 +79,9 @@ export class QaTestCasesService {
     @Optional()
     @Inject(AuditEventPublisher)
     private readonly auditEventsService?: AuditEventSink,
+    @Optional()
+    @Inject(CAPABILITY_OPTIONS)
+    private readonly capabilityOptions?: CapabilityOptionsPort,
   ) {}
 
   async importCases(
@@ -330,7 +338,13 @@ export class QaTestCasesService {
     if (!item) {
       throw new NotFoundException('Requirement item not found');
     }
-    if (!canManageTestCases(await this.access.findQaRole(userId))) {
+    // QA role: a Developer holding qa_release writes test cases as QA.
+    if (
+      !canManageTestCases(
+        await this.access.findQaRole(userId),
+        testCaseAuthorsOf(this.capabilityOptions),
+      )
+    ) {
       throw testCaseManageForbidden();
     }
     await this.iterations.assertRowWritable(requirement);

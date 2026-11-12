@@ -12,6 +12,7 @@ import { CapabilitiesController } from './capabilities.controller';
 const makeConfig = (
   enabled: boolean,
   ownershipMode: 'byo' | 'flowci_managed' = 'byo',
+  options: Record<string, Record<string, string>> = {},
 ) =>
   ({
     getOrThrow: jest.fn().mockReturnValue({
@@ -73,6 +74,7 @@ const makeConfig = (
       },
       composition: {
         edition: 'enterprise',
+        options,
       },
     }),
   }) as unknown as ConfigService;
@@ -164,6 +166,44 @@ describe('CapabilitiesController', () => {
     // The capability that was missing: on when active, off when not.
     expect(allOn.qaChecklists).toEqual({ enabled: true });
     expect(allOff.qaChecklists).toEqual({ enabled: false });
+  });
+
+  /*
+   * Capability options (ADR-0024) ride on their capability's block, and only
+   * while it is enabled. With none declared the response is unchanged, which
+   * the regression guard above already pins.
+   */
+  it("reports a capability's options only while it is enabled", async () => {
+    const build = async (keys: string[]) => {
+      const module = await Test.createTestingModule({
+        controllers: [CapabilitiesController],
+        providers: [
+          {
+            provide: ConfigService,
+            useValue: makeConfig(true, 'byo', {
+              'projects.qa-checklists': { reviewMode: 'strict' },
+            }),
+          },
+          {
+            provide: CAPABILITY_RESOLVER,
+            useValue: { deployment: () => new Set(keys) },
+          },
+          { ...providerCatalog() },
+        ],
+      }).compile();
+      return module.get(CapabilitiesController).getCapabilities();
+    };
+
+    const on = await build(['projects.qa-checklists', 'identity.workspaces']);
+    expect(on.qaChecklists).toEqual({
+      options: { reviewMode: 'strict' },
+      enabled: true,
+    });
+    // A capability that declares no option keeps its block as it was.
+    expect(on.workspaces).toEqual({ enabled: true });
+
+    const off = await build([]);
+    expect(off.qaChecklists).toEqual({ enabled: false });
   });
 
   it('reports env provisioning enabled capabilities', async () => {
@@ -465,7 +505,11 @@ describe('CapabilitiesController', () => {
         auditEvents: { enabled: true },
         notifications: { enabled: true },
         hierarchy: { enabled: true, githubSyncMode: 'stub' },
-        composition: { edition: 'enterprise', profile: 'enterprise' },
+        composition: {
+          edition: 'enterprise',
+          profile: 'enterprise',
+          options: {},
+        },
       }),
     };
     const module = await Test.createTestingModule({

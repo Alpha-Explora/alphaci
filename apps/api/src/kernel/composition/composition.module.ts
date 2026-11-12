@@ -4,6 +4,10 @@ import { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '#kernel/config/app.config.js';
 import { CAPABILITY_MANIFEST_SOURCE } from './capability-manifest-source.port.js';
 import {
+  CAPABILITY_OPTIONS,
+  capabilityOptionsFrom,
+} from './capability-options.port.js';
+import {
   CAPABILITY_RESOLVER,
   DEPLOYMENT_CAPABILITY_RESOLVER,
 } from './capability-resolver.port.js';
@@ -62,10 +66,19 @@ const EMPTY_CLIENT_POLICY_SOURCE: ClientPolicySource = {
       provide: DEPLOYMENT_CAPABILITY_RESOLVER,
       useExisting: DeploymentCapabilityResolverService,
     },
+    {
+      provide: CAPABILITY_OPTIONS,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) =>
+        capabilityOptionsFrom(
+          configService.getOrThrow<AppConfig>('app').composition.options,
+        ),
+    },
   ],
   exports: [
     CAPABILITY_RESOLVER,
     DEPLOYMENT_CAPABILITY_RESOLVER,
+    CAPABILITY_OPTIONS,
     CapabilityGuard,
     CLIENT_POLICY_SOURCE,
   ],

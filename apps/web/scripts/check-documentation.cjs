@@ -30,10 +30,17 @@ function relative(file) {
 function sourceBranchErrors() {
   const errors = [];
   const src = path.join(ROOT, 'src');
+  // Clients differ by data (capability flags and options, ADR-0024), never by
+  // an if on the client id, exactly as editions do.
+  const patterns = [
+    /\bedition\s*(===|!==)/,
+    /\bclient(?:Id)?\s*(===|!==)\s*['"`]/,
+    /['"`][^'"`\n]*['"`]\s*(===|!==)\s*[\w.?]*\bclient(?:Id)?\b/,
+  ];
   for (const file of filesUnder(src).filter((item) => /\.(ts|tsx)$/.test(item))) {
     const text = fs.readFileSync(file, 'utf8');
-    if (/\bedition\s*(===|!==)/.test(text)) {
-      errors.push(`${relative(file)}: edition branches are not allowed; use capability flags`);
+    if (patterns.some((pattern) => pattern.test(text))) {
+      errors.push(`${relative(file)}: edition and client branches are not allowed; use capability flags`);
     }
   }
   return errors;
@@ -63,7 +70,7 @@ function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Web documentation checks passed: edition branches and capability sources. The bundle and the maps generated into it are checked by npm run check:documentation at the repository root.');
+  console.log('Web documentation checks passed: edition and client branches and capability sources. The bundle and the maps generated into it are checked by npm run check:documentation at the repository root.');
 }
 
 if (require.main === module) main();

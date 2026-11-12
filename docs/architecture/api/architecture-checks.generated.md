@@ -31,10 +31,10 @@ This snapshot is generated from the current source tree. It is descriptive evide
 | `identity-access` | 150 | 34 | 9 | 5 | 0 | 0 |
 | `pipelines` | 87 | 33 | 1 | 1 | 0 | 0 |
 | `platform-ops` | 37 | 10 | 0 | 0 | 0 | 0 |
-| `projects` | 376 | 143 | 20 | 5 | 0 | 0 |
+| `projects` | 377 | 143 | 20 | 5 | 0 | 0 |
 | `runtime` | 230 | 86 | 11 | 4 | 0 | 0 |
 
-| Total | 901 | 311 | 41 | 15 | 0 | 0 |
+| Total | 902 | 311 | 41 | 15 | 0 | 0 |
 
 Dead in-process adapters measured by the source report: **0**.
 
@@ -52,7 +52,7 @@ Dead in-process adapters measured by the source report: **0**.
 | Capability registry | `npm run check:capabilities` | AppConfig flag ownership, capability dependency, and pack catalog completeness checker |
 | Migration order | `npm run db:apply:all -- --dry-run` | migration replay planner |
 | Documentation bundle | `npm run check:documentation` at the repository root | OKF v0.2 format, links, naming, current-state wording, generated-map drift, then each app's own check |
-| App documentation | `npm run check:documentation` | edition branches and capability sources |
+| App documentation | `npm run check:documentation` | edition and client branches and capability sources |
 
 ## Limits
 
