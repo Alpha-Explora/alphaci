@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-11
+
+- **Update**: `@alphaci/api-contracts` declares the QA release-tracker responses (`project-todos.ts`, `qa-history.ts`, `semantic-coverage.ts`, `qa-imports.ts`, `special-access.ts`); the API and web use them, and `qa-tracker-contracts.e2e-spec.ts` checks seven routes against Zod schemas. The route-contracts baseline keeps the to-do delete (204), the history export (a file), and the schedule and test-case import routes, which answer the requirement shapes that have no contract yet.
+
 ## 2026-11-10
 
 - **Creation**: `docs/plans/2026-11-10-qa-release-tracker-port.md` plans the QA release-tracker port in phases, starting with reconciling the hosted migration ledger.

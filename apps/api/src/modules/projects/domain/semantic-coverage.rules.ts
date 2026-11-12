@@ -11,9 +11,22 @@
  * model is called, so the same story always gets the same answer. Pure.
  */
 
-export type CriterionStatus = 'covered' | 'weak' | 'uncovered';
-export type StoryCoverageStatus =
-  'covered' | 'gaps' | 'untested' | 'no_criteria';
+import type {
+  CoverageSummary,
+  CriterionCoverage,
+  CriterionStatus,
+  StoryCoverage,
+  StoryCoverageStatus,
+} from '@alphaci/api-contracts';
+
+/* The response shapes are declared in @alphaci/api-contracts; the inputs below are this module's own. */
+export type {
+  CoverageSummary,
+  CriterionCoverage,
+  CriterionStatus,
+  StoryCoverage,
+  StoryCoverageStatus,
+};
 
 export interface CoverageTestCase {
   id: string;
@@ -26,39 +39,6 @@ export interface CoverageStory {
   title: string;
   acceptanceCriteria: string | null;
   testCases: CoverageTestCase[];
-}
-
-export interface CriterionCoverage {
-  /** The outcome as written, without its Then/And keyword. */
-  text: string;
-  status: CriterionStatus;
-  /** Share of the outcome's words the best test case carries, 0 to 1. */
-  score: number;
-  matchedTestCase: { id: string; title: string } | null;
-  matchedTerms: string[];
-  missingTerms: string[];
-}
-
-export interface StoryCoverage {
-  itemId: string;
-  title: string;
-  status: StoryCoverageStatus;
-  testCaseCount: number;
-  criteria: CriterionCoverage[];
-}
-
-export interface CoverageSummary {
-  stories: number;
-  covered: number;
-  gaps: number;
-  untested: number;
-  noCriteria: number;
-  criteria: number;
-  criteriaCovered: number;
-  criteriaWeak: number;
-  criteriaUncovered: number;
-  /** criteriaCovered / criteria, or null when no story has criteria. */
-  coverageRate: number | null;
 }
 
 export const COVERED_SCORE = 0.6;

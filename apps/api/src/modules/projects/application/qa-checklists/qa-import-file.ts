@@ -1,3 +1,7 @@
+import type {
+  ImportSheet,
+  QaImportPreviewResponse,
+} from '@alphaci/api-contracts';
 import { badRequest } from '#kernel/http/coded-errors';
 import { Workbook, type CellValue } from 'exceljs';
 import { Readable } from 'node:stream';
@@ -8,11 +12,7 @@ export interface QaImportFile {
   originalname: string;
   buffer: Buffer;
 }
-export interface ImportSheet {
-  name: string;
-  headers: string[];
-  rows: string[][];
-}
+export type { ImportSheet, QaImportPreviewResponse };
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_EXPANDED = 10 * 1024 * 1024;
 const MAX_ROWS = 1000;
@@ -125,7 +125,7 @@ function parsePlaywrightFile(file: QaImportFile): { sheets: ImportSheet[] } {
 /** Read-only preview. No formulas or scripts execute, no URLs are followed, no file is stored. */
 export async function parseQaImportFile(
   file: QaImportFile | undefined,
-): Promise<{ sheets: ImportSheet[] }> {
+): Promise<QaImportPreviewResponse> {
   if (!file || !file.buffer.length || file.buffer.length > MAX_BYTES) {
     throw badRequest(
       'QA_IMPORT_FILE_EMPTY',

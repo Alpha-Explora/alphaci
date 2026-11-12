@@ -1,3 +1,4 @@
+import type { ProjectTodo, ProjectTodoList } from '@/shared/api/contracts';
 import { request } from '@/shared/api/request';
 
 import {
@@ -27,7 +28,7 @@ function todoOrThrow(value: unknown): TeamTodo {
 export const teamTodosRepository = {
   async list(deliveryProjectId: string): Promise<TeamTodoList> {
     return normalizeTeamTodoList(
-      await request<unknown>(path(deliveryProjectId)),
+      await request<ProjectTodoList>(path(deliveryProjectId)),
     );
   },
   async create(
@@ -35,7 +36,7 @@ export const teamTodosRepository = {
     input: CreateTeamTodoInput,
   ): Promise<TeamTodo> {
     return todoOrThrow(
-      await request<unknown>(path(deliveryProjectId), {
+      await request<ProjectTodo>(path(deliveryProjectId), {
         method: 'POST',
         body: JSON.stringify(input),
       }),
@@ -47,7 +48,7 @@ export const teamTodosRepository = {
     input: UpdateTeamTodoInput,
   ): Promise<TeamTodo> {
     return todoOrThrow(
-      await request<unknown>(path(deliveryProjectId, todoId), {
+      await request<ProjectTodo>(path(deliveryProjectId, todoId), {
         method: 'PATCH',
         body: JSON.stringify(input),
       }),

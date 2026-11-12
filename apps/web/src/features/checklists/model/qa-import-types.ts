@@ -1,8 +1,5 @@
-export interface ImportSheet {
-  name: string;
-  headers: string[];
-  rows: string[][];
-}
+/* One sheet of a file the import preview read; declared in @alphaci/api-contracts. */
+export type { ImportSheet } from '@/shared/api/contracts';
 export type ImportMode = 'requirements' | 'test-cases';
 export interface ImportMapping {
   group: number;

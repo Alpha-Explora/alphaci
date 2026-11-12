@@ -1,27 +1,14 @@
 import { Injectable } from '@nestjs/common';
+import type { ProjectSemanticCoverage } from '@alphaci/api-contracts';
 
 import {
   assessStoryCoverage,
   summarizeCoverage,
-  type CoverageSummary,
-  type StoryCoverage,
 } from '../../domain/semantic-coverage.rules';
 import { QaRequirementsService } from './qa-requirements.service';
 
-/** GET /delivery-projects/:id/semantic-coverage */
-export interface ProjectSemanticCoverage {
-  deliveryProjectId: string;
-  generatedAt: string;
-  /** How outcomes are matched, for the screen to say plainly. */
-  method: 'keyword-overlap';
-  thresholds: { covered: number; weak: number };
-  summary: CoverageSummary;
-  features: Array<{
-    requirementId: string;
-    name: string;
-    stories: StoryCoverage[];
-  }>;
-}
+/** GET /delivery-projects/:id/semantic-coverage, declared in @alphaci/api-contracts. */
+export type { ProjectSemanticCoverage };
 
 /**
  * Semantic test coverage of a Project's active Iteration: every User story's

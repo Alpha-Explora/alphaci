@@ -1304,6 +1304,22 @@ export type {
 } from '@alphaci/api-contracts';
 
 /*
+ * QA release-tracker responses (team to-dos, QA history, semantic coverage,
+ * import previews, special access), from @alphaci/api-contracts. The feature
+ * repositories read them; their normalizers build the view types.
+ */
+export type {
+  ImportSheet,
+  ProjectSemanticCoverage,
+  ProjectTodo,
+  ProjectTodoList,
+  QaHistoryEvent,
+  QaHistoryPage,
+  QaImportPreviewResponse,
+  SpecialAccessResponse,
+} from '@alphaci/api-contracts';
+
+/*
  * Environment variables and custom domains, also from @alphaci/api-contracts.
  * `provider` on these is the open DeploymentProvider, not CreatableEnvProvider.
  */

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { Inject } from '@nestjs/common';
+import type { SpecialAccessResponse } from '@alphaci/api-contracts';
 import { forbidden, notFound } from '#kernel/http/coded-errors';
 import {
   AUDIT_SECURITY_PORT,
@@ -257,7 +258,7 @@ export class AdminService {
     actorId: string,
     targetUserId: string,
     access: SpecialAccess[],
-  ): Promise<{ specialAccess: SpecialAccess[] }> {
+  ): Promise<SpecialAccessResponse> {
     const target = await this.adminRepository.findUserById(targetUserId);
     if (!target) {
       throw notFound('USER_NOT_FOUND', 'User not found');

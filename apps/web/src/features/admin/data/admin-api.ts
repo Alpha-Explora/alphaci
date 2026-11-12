@@ -2,6 +2,7 @@ import type {
   AppRole,
   AppRoleSource,
   PlatformRole,
+  SpecialAccessResponse,
 } from '@/shared/api/contracts';
 import { request } from '@/shared/api/request';
 import type { SpecialAccess } from '@/shared/api/special-access';
@@ -193,7 +194,7 @@ export async function setUserSpecialAccess(
   id: string,
   access: SpecialAccess[],
 ): Promise<void> {
-  await request(`/admin/users/${id}/special-access`, {
+  await request<SpecialAccessResponse>(`/admin/users/${id}/special-access`, {
     method: 'PATCH',
     body: JSON.stringify({ access }),
   });

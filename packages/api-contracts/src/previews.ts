@@ -23,7 +23,8 @@ export type PreviewSurface = 'page' | 'logs';
  * provider to report. The branch is still a real environment with a real
  * address, and a project provisioned an hour ago is made entirely of them.
  */
-export type ProjectBranchPreviewStatus = DeploymentHistoryStatus | 'not_deployed';
+export type ProjectBranchPreviewStatus =
+  DeploymentHistoryStatus | 'not_deployed';
 
 /** One of an environment's recent deploys, as its Overview card lists them. */
 export interface ProjectPreviewDeploy {

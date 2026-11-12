@@ -7,6 +7,7 @@ const event = (overrides: Partial<QaHistoryEvent> = {}): QaHistoryEvent => ({
   id: 'event',
   createdAt: '2026-10-27T00:00:00Z',
   iterationId: 'it',
+  iterationNumber: 1,
   runId: 'run',
   itemId: 'story',
   title: 'Login',

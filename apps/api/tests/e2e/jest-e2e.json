@@ -1,13 +1,7 @@
 {
   "rootDir": "../..",
-  "roots": [
-    "<rootDir>/tests/e2e"
-  ],
-  "moduleFileExtensions": [
-    "js",
-    "json",
-    "ts"
-  ],
+  "roots": ["<rootDir>/tests/e2e"],
+  "moduleFileExtensions": ["js", "json", "ts"],
   "testEnvironment": "node",
   "testRegex": "\\.e2e-spec\\.ts$",
   "transform": {
@@ -27,12 +21,7 @@
   },
   "globalSetup": "<rootDir>/tests/e2e/support/global-setup.ts",
   "globalTeardown": "<rootDir>/tests/e2e/support/global-teardown.ts",
-  "setupFiles": [
-    "<rootDir>/tests/e2e/support/app-environment.ts"
-  ],
-  "reporters": [
-    "default",
-    "<rootDir>/tests/e2e/support/report-reporter.cjs"
-  ],
+  "setupFiles": ["<rootDir>/tests/e2e/support/app-environment.ts"],
+  "reporters": ["default", "<rootDir>/tests/e2e/support/report-reporter.cjs"],
   "testTimeout": 60000
 }
