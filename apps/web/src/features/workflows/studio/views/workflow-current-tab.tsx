@@ -316,11 +316,14 @@ function TeamProjects({
     >
       {(explorer): ReactNode => (
         <>
-          <CurrentProjectsHeader
-            count={explorer.count}
-            actions={actions}
-            explorerActions={explorer.actions}
-          />
+          {/* An open Project heads the screen itself, with "All Projects" back. */}
+          {explorer.folderOpen ? null : (
+            <CurrentProjectsHeader
+              count={explorer.count}
+              actions={actions}
+              explorerActions={explorer.actions}
+            />
+          )}
           <motion.div variants={pageVariants} initial="hidden" animate="show">
             {explorer.panel}
           </motion.div>

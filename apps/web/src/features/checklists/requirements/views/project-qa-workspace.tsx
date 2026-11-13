@@ -2,7 +2,7 @@
 
 import './requirements.css';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import type { AppRole } from '@/shared/api/contracts';
 
@@ -74,17 +74,27 @@ function ChecklistWithVerdicts({
   );
 }
 
-/** Above the view: the team's to-dos for everyone, and semantic coverage for the Product owner and QA. */
+/**
+ * Beside the view: the team's to-dos for everyone, and semantic coverage for
+ * the Product owner and QA once there is a Feature to cover (an unknown
+ * count, as on the QA run, still shows it).
+ */
 function ProjectCards({
   deliveryProjectId,
   view,
-}: Readonly<{ deliveryProjectId: string; view: ChecklistView }>) {
+  featureCount,
+}: Readonly<{
+  deliveryProjectId: string;
+  view: ChecklistView;
+  featureCount: number | null;
+}>) {
+  const showsCoverage = view !== 'developer' && featureCount !== 0;
   return (
     <>
       <TeamTodosCard deliveryProjectId={deliveryProjectId} />
-      {view === 'developer' ? null : (
+      {showsCoverage ? (
         <SemanticCoverageCard deliveryProjectId={deliveryProjectId} />
-      )}
+      ) : null}
     </>
   );
 }
@@ -119,6 +129,15 @@ export function ProjectQaWorkspace({
   const [seenRequest, setSeenRequest] = useState(newFeatureRequest);
   // The request the Requirements view still has to act on, so a revisit never reopens the dialog.
   const [pendingRequest, setPendingRequest] = useState(newFeatureRequest);
+  // The live Feature count, once the Requirements view reads it.
+  const [featureCount, setFeatureCount] = useState<number | null>(null);
+  const noteFeatureCount = useCallback(
+    (count: number) => {
+      setFeatureCount(count);
+      onFeatureCount?.(count);
+    },
+    [onFeatureCount],
+  );
   // State derived from a changing prop, applied while rendering.
   if (newFeatureRequest !== seenRequest) {
     setSeenRequest(newFeatureRequest);
@@ -127,15 +146,16 @@ export function ProjectQaWorkspace({
   if (!enabled || !deliveryProjectId) return null;
   const view = checklistViewFor(appRole);
 
+  // The view leads; the cards sit beside it on a wide screen and under it
+  // on a narrow one (above the QA run, which is wide itself).
   return (
     <section
       className="rq-workspace"
       aria-label={`QA for ${projectName}`}
       data-view={view}
     >
-      <ProjectCards deliveryProjectId={deliveryProjectId} view={view} />
       <div
-        className="rq-tabpanel"
+        className="rq-tabpanel rq-workspace__main"
         role="region"
         aria-label={CHECKLIST_VIEW_LABELS[view]}
       >
@@ -145,7 +165,7 @@ export function ProjectQaWorkspace({
             deliveryProjectId={deliveryProjectId}
             appRole={appRole}
             newFeatureRequest={pendingRequest}
-            onFeatureCount={onFeatureCount}
+            onFeatureCount={noteFeatureCount}
             onOpenHistory={onOpenHistory}
           />
         ) : null}
@@ -163,6 +183,13 @@ export function ProjectQaWorkspace({
             onOpenHistory={onOpenHistory}
           />
         ) : null}
+      </div>
+      <div className="rq-workspace__aside">
+        <ProjectCards
+          deliveryProjectId={deliveryProjectId}
+          view={view}
+          featureCount={featureCount}
+        />
       </div>
     </section>
   );

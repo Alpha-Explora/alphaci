@@ -27,11 +27,7 @@ import type {
   ProjectFolder,
 } from '../model/project-folder-types';
 import type { ProjectFoldersViewModel } from '../view-models/use-project-folders-view-model';
-import {
-  AddRepositoryAction,
-  FeatureNudge,
-  FeaturesRequiredNote,
-} from './feature-gate';
+import { AddRepositoryAction, FeaturesRequiredNote } from './feature-gate';
 import { BackIcon, PeopleIcon, StudioIcon } from './project-folder-icons';
 import { RepoChip } from './repo-chip';
 
@@ -83,31 +79,27 @@ function DetailActions({
   );
 }
 
-/** Under the title: why a Developer waits, or the Product owner's nudge. */
+/**
+ * Under the title: why a Developer's Add repository waits, when the Project
+ * already holds repositories (an empty list says it in its own line). A
+ * Product owner gets no banner here: the Features section's empty state asks
+ * for the first Feature and says why it matters.
+ */
 function FeatureGateBanner({
-  vm,
   folder,
   gate,
   noteId,
 }: Readonly<{
-  vm: ProjectFoldersViewModel;
   folder: ProjectFolder;
   gate: FolderFeatureGate;
   noteId: string;
 }>) {
-  if (gate.addRepository === 'blocked')
-    return (
-      <FeaturesRequiredNote
-        id={noteId}
-        className="pf-gate-note pf-gate-note--banner"
-      />
-    );
-  if (!gate.featureNudge) return null;
+  if (gate.addRepository !== 'blocked' || folder.repositories.length === 0)
+    return null;
   return (
-    <FeatureNudge
-      projectName={folder.name}
-      onAddFeature={() => vm.requestNewFeature(folder.deliveryProjectId)}
-      className="pf-nudge pf-nudge--banner"
+    <FeaturesRequiredNote
+      id={noteId}
+      className="pf-gate-note pf-gate-note--banner"
     />
   );
 }
@@ -162,30 +154,26 @@ function RepositoryRow({
   );
 }
 
+/**
+ * One quiet line. Add repository lives once, in the title row's actions; a
+ * blocked one is described by this line.
+ */
 function EmptyRepositories({
   vm,
-  folder,
   gate,
+  noteId,
 }: Readonly<{
   vm: ProjectFoldersViewModel;
-  folder: ProjectFolder;
   gate: FolderFeatureGate;
+  noteId: string;
 }>) {
-  const noteId = useId();
-  const blocked = gate.addRepository === 'blocked';
   return (
     <div className="pf-empty-folder">
       <p id={noteId}>
-        {blocked
+        {gate.addRepository === 'blocked'
           ? FEATURES_REQUIRED_NOTE
           : emptyRepositoriesCopy(vm.canCreateRepository)}
       </p>
-      <AddRepositoryAction
-        state={gate.addRepository}
-        href={createRepositoryHref(vm.groupId, folder.deliveryProjectId)}
-        className="primary-button"
-        noteId={noteId}
-      />
     </div>
   );
 }
@@ -203,9 +191,9 @@ function ProjectQaSection({
     return null;
   return (
     <section className="pf-detail__block" aria-labelledby="pf-qa-title">
-      <h4 className="pf-subhead" id="pf-qa-title">
+      <h2 className="pf-subhead" id="pf-qa-title">
         Requirements and QA
-      </h4>
+      </h2>
       <ProjectQaWorkspace
         deliveryProjectId={folder.deliveryProjectId}
         projectName={folder.name}
@@ -232,9 +220,9 @@ function ProjectFolderDangerZone({
       className="pf-detail__block pf-danger"
       aria-labelledby="pf-danger-title"
     >
-      <h4 className="pf-subhead" id="pf-danger-title">
+      <h2 className="pf-subhead" id="pf-danger-title">
         Danger zone
-      </h4>
+      </h2>
       <div className="pf-danger__row">
         <p className="pf-note">
           Delete {folder.name} and every repository inside it. This cannot be
@@ -273,21 +261,22 @@ export function ProjectFolderDetail({
       </div>
       <div className="pf-detail__title-row">
         <div>
-          <h3 className="pf-detail__title">{folder.name}</h3>
+          {/* The page's one h1 while a Project is open: the list heading is hidden. */}
+          <h1 className="pf-detail__title">{folder.name}</h1>
           <p className="pf-detail__meta">
             {vm.groupName} · {repositoryCountLabel(folder.repositories.length)}
           </p>
         </div>
         <DetailActions vm={vm} folder={folder} gate={gate} noteId={noteId} />
       </div>
-      <FeatureGateBanner vm={vm} folder={folder} gate={gate} noteId={noteId} />
+      <FeatureGateBanner folder={folder} gate={gate} noteId={noteId} />
 
       <section className="pf-detail__block" aria-labelledby="pf-repos-title">
-        <h4 className="pf-subhead" id="pf-repos-title">
+        <h2 className="pf-subhead" id="pf-repos-title">
           Repositories
-        </h4>
+        </h2>
         {folder.repositories.length === 0 ? (
-          <EmptyRepositories vm={vm} folder={folder} gate={gate} />
+          <EmptyRepositories vm={vm} gate={gate} noteId={noteId} />
         ) : (
           <ul className="pf-repos">
             {folder.repositories.map((repo) => (

@@ -53,6 +53,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 
 ### Changed
 
+- **Projects:** An open Project heads its own screen without the list's Create project and Show guide, asks once for its first Feature, and shows Features first with Team to-dos beside them.
 - **QA:** QA and Developers may merge an approved release to main, behind the same current-head, Iteration and Product owner acceptance gates.
 - **Projects:** Nobody, organization owners included, can push straight to dev, uat or main of a generated organization repository; only the ALPHACI GitHub App bypasses the pipeline owners ruleset.
 - **Documentation:** Clarified editions, personas, internal access, and capability inventory gaps; added a contributor guide for assigning features.

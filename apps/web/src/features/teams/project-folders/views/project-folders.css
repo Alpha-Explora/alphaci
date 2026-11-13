@@ -92,6 +92,17 @@
   letter-spacing: 0;
 }
 
+/* The detail's section labels are h2s (its title is the page's h1). The
+   global heading rules and .tab-content-panel h2 size an h2 as a title;
+   two classes keep these the small uppercase labels. */
+.pf-section .pf-subhead {
+  margin: 0 0 0.65rem;
+  font-family: inherit;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+}
+
 /* ── List ──────────────────────────────────────────────────────────────── */
 .pf-list-screen {
   display: grid;
@@ -651,15 +662,15 @@ a.pf-chip:focus-visible {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem 1rem;
-  padding: 0.9rem 1rem;
-  border: 1px dashed var(--border-strong);
-  border-radius: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.65rem;
 }
 
 .pf-empty-folder p {
   margin: 0;
-  font-size: 0.82rem;
-  color: var(--text-secondary);
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 
 /* ── Checklists ────────────────────────────────────────────────────────── */

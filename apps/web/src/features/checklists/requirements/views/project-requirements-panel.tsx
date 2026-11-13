@@ -4,7 +4,7 @@ import { QaImportControl } from '../../importing';
 import './requirements.css';
 
 import { motion, useReducedMotion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 import { LoadingRows } from '@/features/groups/workspace';
 import type { AppRole } from '@/shared/api/contracts';
@@ -77,7 +77,7 @@ function emptyCopy(kind: RequirementKind, canManage: boolean): string {
   const copy = kindCopy(kind);
   if (canManage) {
     return kind === 'functional'
-      ? 'Describe what this Project must do as Features, each told as User stories with acceptance criteria.'
+      ? 'Describe what this Project must do as Features, each told as User stories with acceptance criteria. Developers can add repositories once the first Feature exists.'
       : 'Add the checks every repository must pass, such as security or performance baselines.';
   }
   return `${copy.empty} Your Product owner writes them.`;
@@ -146,6 +146,39 @@ function filteredRequirements(
   );
 }
 
+/** The full title: icon, name, count and the lede (the requirements-only screens). */
+function SectionTitle({
+  kind,
+  copy,
+  titleId,
+  count,
+}: Readonly<{
+  kind: RequirementKind;
+  copy: ReturnType<typeof kindCopy>;
+  titleId: string;
+  count: number;
+}>) {
+  return (
+    <>
+      <span className="rq-section__icon" aria-hidden="true">
+        {kind === 'functional' ? <FeatureIcon /> : <SystemIcon />}
+      </span>
+      <div className="rq-section__titles">
+        <h3 className="rq-section__title" id={titleId}>
+          {copy.section}
+          <span className="rq-count">{count}</span>
+        </h3>
+        <p className="rq-section__lede">{copy.lede}</p>
+      </div>
+    </>
+  );
+}
+
+/**
+ * The section's one header row. The checklist (filterable) gets a compact
+ * title ("Features 3") with the filter beside it; the author's tools (import,
+ * New Feature) sit at the right end in both layouts.
+ */
 function SectionHeading({
   kind,
   copy,
@@ -154,6 +187,8 @@ function SectionHeading({
   filterable,
   canManage,
   onCreate,
+  filter,
+  tools,
 }: Readonly<{
   kind: RequirementKind;
   copy: ReturnType<typeof kindCopy>;
@@ -162,33 +197,35 @@ function SectionHeading({
   filterable: boolean;
   canManage: boolean;
   onCreate: () => void;
+  /** The filter menu, beside the compact title. */
+  filter?: ReactNode;
+  /** Extra author tools before New Feature (the checklist import). */
+  tools?: ReactNode;
 }>) {
   return (
-    <div className="rq-section__head">
-      {!filterable ? (
-        <>
-          <span className="rq-section__icon" aria-hidden="true">
-            {kind === 'functional' ? <FeatureIcon /> : <SystemIcon />}
-          </span>
-          <div className="rq-section__titles">
-            <h3 className="rq-section__title" id={titleId}>
-              {copy.section}
-              <span className="rq-count">{count}</span>
-            </h3>
-            <p className="rq-section__lede">{copy.lede}</p>
-          </div>
-        </>
-      ) : null}
-      {canManage && count > 0 ? (
-        <button
-          type="button"
-          className="primary-button rq-section__create"
-          onClick={onCreate}
-        >
-          <PlusIcon />
-          {copy.create}
-        </button>
-      ) : null}
+    <div className="rq-section__head" data-compact={String(filterable)}>
+      {filterable ? (
+        <h3 className="rq-section__title rq-section__title--compact">
+          {copy.plural}
+          <span className="rq-count">{count}</span>
+        </h3>
+      ) : (
+        <SectionTitle kind={kind} copy={copy} titleId={titleId} count={count} />
+      )}
+      {filter}
+      <div className="rq-section__tools">
+        {tools}
+        {canManage && count > 0 ? (
+          <button
+            type="button"
+            className="primary-button rq-section__create"
+            onClick={onCreate}
+          >
+            <PlusIcon />
+            {copy.create}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -202,6 +239,8 @@ function KindSection({
   verdicts,
   filter,
   filterable,
+  filterMenu,
+  tools,
 }: Readonly<{
   kind: RequirementKind;
   requirements: Requirement[];
@@ -211,6 +250,8 @@ function KindSection({
   verdicts: ItemVerdicts;
   filter: ChecklistFilter;
   filterable: boolean;
+  filterMenu?: ReactNode;
+  tools?: ReactNode;
 }>) {
   const reduced = useReducedMotion();
   const copy = kindCopy(kind);
@@ -232,6 +273,8 @@ function KindSection({
         filterable={filterable}
         canManage={canManage}
         onCreate={() => dialog.openCreate(kind)}
+        filter={filterMenu}
+        tools={tools}
       />
       {allRequirements.length > 0 && requirements.length === 0 ? (
         <p className="rq-empty rq-empty--filtered">{emptyFilterText(filter)}</p>
@@ -458,27 +501,18 @@ export function ProjectRequirementsPanel({
     );
   }
   return (
-    <>
-      {vm.permissions.canManage ? (
-        <QaImportControl
-          key={deliveryProjectId}
-          projectId={deliveryProjectId}
-          mode="requirements"
-          onImported={vm.reload}
-        />
-      ) : null}
-      <ReadyRequirements
-        vm={vm}
-        dialog={dialog}
-        progress={progress}
-        kinds={kinds}
-        appRole={appRole}
-        verdicts={verdicts}
-        filterable={filterable}
-        filter={filter}
-        onFilter={setFilter}
-      />
-    </>
+    <ReadyRequirements
+      deliveryProjectId={deliveryProjectId}
+      vm={vm}
+      dialog={dialog}
+      progress={progress}
+      kinds={kinds}
+      appRole={appRole}
+      verdicts={verdicts}
+      filterable={filterable}
+      filter={filter}
+      onFilter={setFilter}
+    />
   );
 }
 
@@ -489,8 +523,13 @@ function kindRequirements(
   return kind === 'functional' ? vm.functional : vm.system;
 }
 
-/** The loaded list: the role line, the chips, each shown kind, and the author's dialogs. */
+/**
+ * The loaded list: the role line, each shown kind, and the author's dialogs.
+ * The filter rides in the first section's header row and the Feature
+ * checklist import in the Features header, so neither stands alone.
+ */
 function ReadyRequirements({
+  deliveryProjectId,
   vm,
   dialog,
   progress,
@@ -501,6 +540,7 @@ function ReadyRequirements({
   filter,
   onFilter,
 }: Readonly<{
+  deliveryProjectId: string;
   vm: ProjectRequirementsViewModel;
   dialog: RequirementDialogViewModel;
   progress: ItemProgressViewModel;
@@ -512,22 +552,30 @@ function ReadyRequirements({
   filter: ChecklistFilter;
   onFilter: (next: ChecklistFilter) => void;
 }>) {
+  const filterMenu = filterable ? (
+    <FilterChips
+      filter={filter}
+      counts={checklistFilterCounts(
+        kinds.flatMap((kind) => kindRequirements(vm, kind)),
+        verdicts,
+      )}
+      onChange={onFilter}
+    />
+  ) : null;
+  const importControl = vm.permissions.canManage ? (
+    <QaImportControl
+      key={deliveryProjectId}
+      projectId={deliveryProjectId}
+      mode="requirements"
+      onImported={vm.reload}
+    />
+  ) : null;
   return (
     <div className="rq-panel">
       {!filterable ? (
         <p className="rq-panel__role">{roleLine(vm.permissions, appRole)}</p>
       ) : null}
-      {filterable ? (
-        <FilterChips
-          filter={filter}
-          counts={checklistFilterCounts(
-            kinds.flatMap((kind) => kindRequirements(vm, kind)),
-            verdicts,
-          )}
-          onChange={onFilter}
-        />
-      ) : null}
-      {kinds.map((kind) => (
+      {kinds.map((kind, index) => (
         <KindSection
           key={kind}
           kind={kind}
@@ -538,6 +586,8 @@ function ReadyRequirements({
           verdicts={verdicts}
           filter={filter}
           filterable={Boolean(filterable)}
+          filterMenu={index === 0 ? filterMenu : null}
+          tools={kind === 'functional' ? importControl : null}
         />
       ))}
       {vm.permissions.canManage ? (

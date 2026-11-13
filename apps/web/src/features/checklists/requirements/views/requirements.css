@@ -9,11 +9,44 @@
 .rq-workspace {
   display: grid;
   gap: 0.9rem;
+  align-items: start;
 }
 
 .rq-tabpanel {
   display: grid;
   gap: 0.9rem;
+}
+
+/* The view leads; Team to-dos and coverage follow it, or sit beside it on a
+   wide screen. The QA run is wide itself, so its cards stay above it. */
+.rq-workspace__main,
+.rq-workspace__aside {
+  min-width: 0;
+}
+
+.rq-workspace__aside {
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+}
+
+.rq-workspace__aside:empty {
+  display: none;
+}
+
+.rq-workspace__aside > .team-todos,
+.rq-workspace__aside > .semantic-coverage {
+  margin-bottom: 0;
+}
+
+.rq-workspace[data-view='qa'] > .rq-workspace__aside {
+  order: -1;
+}
+
+@media (min-width: 1200px) {
+  .rq-workspace:not([data-view='qa']):has(> .rq-workspace__aside:not(:empty)) {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+  }
 }
 
 .rq-panel {
@@ -49,6 +82,28 @@
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 0.75rem;
+}
+
+/* The checklist's one header row: "Features 3", the filter, then the
+   author's tools at the right end. */
+.rq-section__head[data-compact='true'] {
+  align-items: center;
+}
+
+.rq-section .rq-section__title--compact {
+  font-size: 1rem;
+}
+
+.rq-section__tools {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.rq-section__tools:empty {
+  display: none;
 }
 
 .rq-section__icon {

@@ -9,7 +9,7 @@ status: stable
 
 ## Import a Feature checklist
 
-A Product Owner or administrator opens **Import feature checklist** above the Project checklist. Download the CSV template or choose an XLSX, CSV or TSV file. Select a sheet, map Feature, User story and optional Acceptance criteria, and inspect every mapped row. Blank group cells use the preceding group only when explicitly selected. Fix row errors in the file and upload again. **Import rows** sends one atomic requirement batch; it creates new Features and stories. Existing Feature names are rejected, preserving existing progress and QA results. A second attempt with already-created Feature names cannot duplicate them.
+A Product Owner or administrator opens **Import feature checklist** in the Features header of the Project checklist. Download the CSV template or choose an XLSX, CSV or TSV file. Select a sheet, map Feature, User story and optional Acceptance criteria, and inspect every mapped row. Blank group cells use the preceding group only when explicitly selected. Fix row errors in the file and upload again. **Import rows** sends one atomic requirement batch; it creates new Features and stories. Existing Feature names are rejected, preserving existing progress and QA results. A second attempt with already-created Feature names cannot duplicate them.
 
 ## Import QA test cases
 

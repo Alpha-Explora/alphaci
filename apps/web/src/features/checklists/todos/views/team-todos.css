@@ -1,5 +1,6 @@
 /* Team to-dos: a compact card of action items beside the stories. Tokens only. */
 .team-todos {
+  container-type: inline-size;
   display: grid;
   gap: 0.75rem;
   margin-bottom: 1rem;
@@ -36,15 +37,32 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 0.5rem;
+  gap: 0.6rem 0.5rem;
 }
 
+/* The form's gap spaces the fields; the dialog field's margin would push
+   them below the Add button. */
 .team-todos__add .hier-field {
   flex: 0 1 9.5rem;
+  margin-bottom: 0;
 }
 
 .team-todos__add .team-todos__title {
   flex: 1 1 16rem;
+}
+
+/* A narrow card (the column beside the stories): the title on its own row,
+   then assignee, due and priority two by two, with Add at the end. */
+@container (max-width: 30rem) {
+  .team-todos__add {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .team-todos__add .team-todos__title,
+  .team-todos__add .rq-form-error {
+    grid-column: 1 / -1;
+  }
 }
 
 .team-todos__list {
