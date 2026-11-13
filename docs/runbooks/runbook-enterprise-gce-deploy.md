@@ -1,13 +1,16 @@
 ---
 type: 'Playbook'
 title: 'Enterprise GCE deploy'
-description: 'How CI deploys AlphaCI and its settings to the enterprise Compute Engine VM, how to change a setting, the migration gate, and the Google Cloud setup.'
+description: 'How CI deploys AlphaCI and its settings to the enterprise Compute Engine VM, how to change a setting, the migration gate, stopping and starting the VM, and the Google Cloud setup.'
 tags: [runbook, deployment, gcp, ci]
 status: stable
 sources:
   - id: workflow
     resource: '.github/workflows/deploy-enterprise-gce.yml'
     title: 'Deploy workflow'
+  - id: power
+    resource: '.github/workflows/enterprise-gce-power.yml'
+    title: 'VM power workflow'
   - id: images
     resource: '.github/workflows/release.yml'
     title: 'Image build, called by the deploy workflow'
@@ -32,7 +35,7 @@ Alpha Explora's enterprise instance of AlphaCI, `https://enterprise.alphaci.com.
 | Item              | Value                                                                                                                                         |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | Project           | `alphaci-enterprise-20261019`                                                                                                                 |
-| VM                | `alphaci-enterprise-01`, zone `asia-southeast1-b`, Ubuntu 24.04                                                                               |
+| VM                | `alphaci-enterprise-01`, zone `asia-southeast1-b`, Ubuntu 24.04, external IP `34.21.182.183` (reserved address `alphaci-enterprise-ip`)       |
 | Install directory | `/opt/alphaci`. Its `compose.yaml` runs `api`, `web` and `proxy`. The on-prem host agent and the app containers (`ac-*`) share the directory. |
 | Database          | Supabase PostgreSQL, through `secrets/database_url`. No `db` or `migrate` service runs on the VM.                                             |
 | Images            | `ghcr.io/alpha-explora/alphaci-be` and `alphaci-fe`, tagged `sha-<commit>` and pinned by digest in `/opt/alphaci/.env`                        |
@@ -111,6 +114,24 @@ Choose one way:
 - Run the workflow by hand with the earlier commit as `ref` and tick **migrations_reviewed**. It deploys that commit with the current settings. Schema changes are not reversed.
 - On the VM, in `/opt/alphaci`, copy the files from the `.deploy-backups/<UTC time>/` you want back into place. Then run `sudo docker compose up --detach --no-deps --force-recreate --wait api web proxy`. The next deploy writes the environment's settings again, and its gate compares against `.deployed-revision`, which still names the newer commit.
 
+## Stop and start the VM
+
+Run **Enterprise VM power** by hand and choose an action:
+
+| Action   | What it does                                                                                                                       |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `status` | Reports the VM's status, and checks `/api/v1/health` and `/healthz` when it is running.                                            |
+| `stop`   | Shuts the VM down. Nothing happens if it is already stopped.                                                                       |
+| `start`  | Starts the VM, then waits up to 5 minutes for both health routes to answer. When the VM is already running, it only checks health. |
+
+Stopping the VM takes down AlphaCI and every app container (`ac-*`) that the host agent runs on it. Compute charges stop; the disk and the reserved IP are still billed.
+
+On boot, Docker restarts every container, because each one has the restart policy `unless-stopped`. The host agent's timers (`alphaci-machine`, `alphaci-app-routes`) resume on their own. The external IP is reserved, so DNS needs no change.
+
+The workflow uses the deploy's concurrency group, so it never runs during a deploy. It refuses to act while the VM is between states, such as `STOPPING`; run it again once the VM settles.
+
+While the VM is stopped, an automatic deploy skips with a notice, and a manual deploy fails. After a start, check whether a push to `main` was skipped, and if so run **Deploy enterprise (GCE)** by hand with `main` as `ref`.
+
 ## Google Cloud setup
 
 The deploy needs these resources. All of them are in `alphaci-enterprise-20261019`.
@@ -121,7 +142,9 @@ The deploy needs these resources. All of them are in `alphaci-enterprise-2026101
 | Service account `alphaci-deployer`                       | `roles/iam.workloadIdentityUser` for `principalSet://…/workloadIdentityPools/github/attribute.environment/enterprise-gce`                                                       |
 |                                                          | `roles/compute.osAdminLogin` on the instance `alphaci-enterprise-01` (OS Login with passwordless sudo)                                                                          |
 |                                                          | `roles/iap.tunnelResourceAccessor` on the project, with the condition `destination.port == 22`                                                                                  |
-|                                                          | `roles/compute.viewer` on the project, so `gcloud compute ssh` can read the instance                                                                                            |
+|                                                          | `roles/compute.viewer` on the project, so `gcloud compute ssh` can read the instance and the power workflow can read its status                                                 |
+|                                                          | The custom role `alphaciVmPower` (`compute.instances.start` and `compute.instances.stop`) on the instance `alphaci-enterprise-01`, for the power workflow                       |
+| Static external address `alphaci-enterprise-ip`          | `34.21.182.183` in `asia-southeast1`, attached to the VM, so the address survives a stop and start                                                                              |
 | Firewall `alphaci-enterprise-admin`                      | TCP 22 from `35.235.240.0/20`, the IAP range                                                                                                                                    |
 
 The `enterprise-gce` GitHub environment allows the `main` branch only. To require approval before each deploy, add required reviewers to that environment.
@@ -136,4 +159,6 @@ The SSH keys that gcloud adds to the service account's OS Login profile expire a
 | `images` fails to push with `denied`                                       | Under the organization's package settings, give this repository write access to the `alphaci-be` or `alphaci-fe` package. A package created from another repository does not accept this repository's token. |
 | The rollout step fails at `docker login` or `pull`                         | The package must give this repository at least read access.                                                                                                                                                  |
 | `Permission 'iam.serviceAccounts.getAccessToken' denied` in the auth step  | The job did not run in the `enterprise-gce` environment, or the run came from another repository.                                                                                                            |
+| A deploy says `Deploy skipped: VM is TERMINATED`                           | The VM is stopped. Start it with **Enterprise VM power**, then run the deploy by hand.                                                                                                                       |
+| **Enterprise VM power** `start` fails its health check                     | On the VM, run `sudo docker compose ps` in `/opt/alphaci` and `systemctl status docker`.                                                                                                                     |
 | The rollout rolled back                                                    | The job log shows the last 80 lines of `api` and `web`. On the VM, run `sudo docker compose ps` in `/opt/alphaci`.                                                                                           |

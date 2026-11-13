@@ -116,3 +116,4 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **API:** Refusals carry a stable `code` built by shared factories; a check stops new uncoded ones, and the Teams and Projects services already comply.
 - **Rules:** Who may create a Project or repository, manage hosting, or open a pull request is one shared package, so the API gate and the web button cannot disagree.
 - **Deploy:** A green CI run on `main` deploys the enterprise instance and its settings, kept in the `enterprise-gce` GitHub environment, to its Compute Engine VM; migration changes stop for review.
+- **Deploy:** The Enterprise VM power workflow starts, stops or reports the enterprise VM by hand; automatic deploys skip while it is stopped.

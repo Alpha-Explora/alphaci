@@ -18,6 +18,9 @@ name: Deploy enterprise (GCE)
 # revision is recorded yet, and for a rollback. Apply or check the
 # migrations, then run this workflow by hand with `migrations_reviewed`.
 #
+# When the VM is stopped (enterprise-gce-power.yml), an automatic run skips
+# with a notice and a manual run fails. Start the VM, then deploy by hand.
+#
 # Settings, setup and operation: docs/runbooks/runbook-enterprise-gce-deploy.md.
 
 on:
@@ -203,7 +206,24 @@ jobs:
           chmod +x "$RUNNER_TEMP/vm"
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
 
+      # A stopped VM would otherwise fail at SSH with an unclear error.
+      - name: VM status
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          status=$(gcloud compute instances describe "$GCE_INSTANCE" --project "$GCP_PROJECT" --zone "$GCP_ZONE" --format='value(status)')
+          [[ "$status" == RUNNING ]] && exit 0
+          message="$GCE_INSTANCE is $status. Start it with the Enterprise VM power workflow, then run this workflow by hand for $TARGET_SHA."
+          echo "### Deploy skipped: VM is $status" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$EVENT" == "workflow_dispatch" ]]; then
+            echo "::error::$message"
+            exit 1
+          fi
+          echo "::notice::$message"
+          echo "SKIP=true" >> "$GITHUB_ENV"
+
       - name: Migration gate
+        if: env.SKIP != 'true'
         env:
           EVENT: ${{ github.event_name }}
           MIGRATIONS_REVIEWED: ${{ inputs.migrations_reviewed == true }}
@@ -227,7 +247,7 @@ jobs:
           elif [[ "$EVENT" == "workflow_run" ]] && git merge-base --is-ancestor "$TARGET_SHA" "$deployed"; then
             echo "::notice::A newer revision is already deployed; stopping this older run."
             echo "A newer revision is already deployed; nothing to do." >> "$GITHUB_STEP_SUMMARY"
-            echo "STALE=true" >> "$GITHUB_ENV"
+            echo "SKIP=true" >> "$GITHUB_ENV"
             exit 0
           else
             review='The target is not a descendant of the deployed revision (a rollback or rewritten history).'
@@ -250,7 +270,7 @@ jobs:
           fi
 
       - name: Roll out
-        if: env.STALE != 'true'
+        if: env.SKIP != 'true'
         env:
           API_IMAGE: ${{ steps.digests.outputs.api }}
           WEB_IMAGE: ${{ steps.digests.outputs.web }}
@@ -272,7 +292,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Public health check
-        if: env.STALE != 'true'
+        if: env.SKIP != 'true'
         run: |
           curl -fsS --retry 5 --retry-delay 5 --retry-all-errors --max-time 15 "$PUBLIC_URL/api/v1/health" >/dev/null
           curl -fsS --retry 5 --retry-delay 5 --retry-all-errors --max-time 15 "$PUBLIC_URL/healthz" >/dev/null

@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-13
+
+- **Update**: The enterprise GCE deploy runbook has a "Stop and start the VM" section for the new `enterprise-gce-power.yml` workflow (`status`, `start` with a health check, `stop`), which shares the deploy's concurrency group. `alphaci-deployer` holds the custom role `alphaciVmPower` on the instance, and the external IP is the reserved address `alphaci-enterprise-ip`. While the VM is not running, an automatic deploy skips with a notice and a manual one fails.
+
 ## 2026-11-11
 
 - **Update**: `@alphaci/api-contracts` declares the QA release-tracker responses (`project-todos.ts`, `qa-history.ts`, `semantic-coverage.ts`, `qa-imports.ts`, `special-access.ts`); the API and web use them, and `qa-tracker-contracts.e2e-spec.ts` checks seven routes against Zod schemas. The route-contracts baseline keeps the to-do delete (204), the history export (a file), and the schedule and test-case import routes, which answer the requirement shapes that have no contract yet.
