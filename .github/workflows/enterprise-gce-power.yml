@@ -1,0 +1,104 @@
+name: Enterprise VM power
+
+# Starts, stops or reports the enterprise Compute Engine VM
+# (alphaci-enterprise-01, https://enterprise.alphaci.com.ph), by hand only.
+#
+# Stopping the VM takes down AlphaCI and every app container (ac-*) the on-prem
+# host agent runs on it. Its external IP is the reserved address
+# alphaci-enterprise-ip, so a start keeps the same address. On boot, Docker
+# restarts every container (restart: unless-stopped) and the host agent's
+# timers resume; a start succeeds only once both health routes answer.
+#
+# While the VM is stopped, the automatic deploy skips instead of failing. After
+# a start, run Deploy enterprise (GCE) by hand if a push to main was skipped.
+#
+# It shares the deploy's concurrency group, so it never runs during a deploy.
+# Setup and operation: docs/runbooks/runbook-enterprise-gce-deploy.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: status, start, or stop (stop also takes down the app containers on the VM)
+        type: choice
+        options: [status, start, stop]
+        default: status
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-enterprise-gce
+  cancel-in-progress: false
+
+jobs:
+  power:
+    name: VM ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The workload identity binding admits this environment only.
+    environment: enterprise-gce
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      ACTION: ${{ inputs.action }}
+      GCP_PROJECT: ${{ vars.DEPLOY_GCP_PROJECT }}
+      GCP_ZONE: ${{ vars.DEPLOY_GCP_ZONE }}
+      GCE_INSTANCE: ${{ vars.DEPLOY_GCE_INSTANCE }}
+      PUBLIC_URL: ${{ vars.DEPLOY_PUBLIC_URL }}
+    steps:
+      - name: Check settings
+        run: |
+          for name in GCP_PROJECT GCP_ZONE GCE_INSTANCE PUBLIC_URL; do
+            [[ -n "${!name}" ]] || { echo "::error::Set the variable DEPLOY_$name in the enterprise-gce environment."; exit 1; }
+          done
+
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.DEPLOY_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - name: Power
+        run: |
+          instance() {
+            gcloud compute instances "$1" "$GCE_INSTANCE" --project "$GCP_PROJECT" --zone "$GCP_ZONE" --quiet "${@:2}"
+          }
+          status() { instance describe --format='value(status)'; }
+
+          before=$(status)
+          echo "$GCE_INSTANCE is $before."
+
+          case "$ACTION:$before" in
+            status:*) ;;
+            start:RUNNING) echo "Already running; checking health." ;;
+            start:TERMINATED) instance start ;;
+            stop:TERMINATED) echo "Already stopped." ;;
+            stop:RUNNING) instance stop ;;
+            *)
+              echo "::error::$GCE_INSTANCE is $before, so it cannot $ACTION now. Wait for it to settle and run this workflow again."
+              exit 1
+              ;;
+          esac
+
+          after=$(status)
+          echo "AFTER=$after" >> "$GITHUB_ENV"
+          echo "### $GCE_INSTANCE: $before → $after" >> "$GITHUB_STEP_SUMMARY"
+
+      # Boot, Docker and the containers' own health checks take a minute or two.
+      - name: Health check
+        if: inputs.action == 'start' || (inputs.action == 'status' && env.AFTER == 'RUNNING')
+        run: |
+          deadline=$((SECONDS + 300))
+          until curl -fsS --max-time 10 "$PUBLIC_URL/api/v1/health" >/dev/null 2>&1 &&
+                curl -fsS --max-time 10 "$PUBLIC_URL/healthz" >/dev/null 2>&1; do
+            if (( SECONDS >= deadline )); then
+              echo "::error::$PUBLIC_URL did not answer on /api/v1/health and /healthz within 5 minutes. On the VM, run 'sudo docker compose ps' in /opt/alphaci."
+              echo "$PUBLIC_URL is **not healthy**." >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "$PUBLIC_URL answers on /api/v1/health and /healthz." | tee -a "$GITHUB_STEP_SUMMARY"
