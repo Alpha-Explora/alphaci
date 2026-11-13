@@ -55,6 +55,7 @@ export {
 /* Who manages a Project's members, and the link to its members panel. */
 export {
   canManageProjectMembers,
+  PROJECT_MEMBERS_ANCHOR,
   projectMembersHref,
 } from './model/project-members-rules';
 export * from './data/hierarchy-api';

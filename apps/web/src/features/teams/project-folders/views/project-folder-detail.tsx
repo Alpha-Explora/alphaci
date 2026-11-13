@@ -6,9 +6,10 @@ import { useId } from 'react';
 import { ProjectQaWorkspace } from '@/features/checklists/requirements';
 import {
   canManageProjectMembers,
-  projectMembersHref,
+  PROJECT_MEMBERS_ANCHOR,
   projectStatusVariant,
 } from '@/features/groups';
+import { ProjectMembersSection } from '@/features/groups/project-members';
 import type { AppRole } from '@/shared/api/contracts';
 
 import {
@@ -31,10 +32,20 @@ import { AddRepositoryAction, FeaturesRequiredNote } from './feature-gate';
 import { BackIcon, PeopleIcon, StudioIcon } from './project-folder-icons';
 import { RepoChip } from './repo-chip';
 
+/** The Members action: the members block further down this screen. */
+function scrollToMembers() {
+  const reduce = window.matchMedia?.(
+    '(prefers-reduced-motion: reduce)',
+  ).matches;
+  document
+    .getElementById(PROJECT_MEMBERS_ANCHOR)
+    ?.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+}
+
 /**
  * The viewer's studio (Verify in QA Studio for the QA Team and admins, Open
- * PO Studio for a Product owner), Members (Product owner, admin: who works on
- * the Project, and the GitHub Write Developers get from it) and Add repository
+ * PO Studio for a Product owner), Members (Product owner, admin: jumps to the
+ * members block on this screen) and Add repository
  * (Developer, admin): a Product owner creates the Project, a Developer fills
  * it, once the Project has its first Feature.
  */
@@ -51,10 +62,8 @@ function DetailActions({
 }>) {
   const verifyId = vm.canVerifyInQaStudio ? verifyProjectId(folder) : null;
   const studio = verifyId ? studioLinkFor(vm.appRole, verifyId) : null;
-  const membersHref = canManageProjectMembers(vm.appRole)
-    ? projectMembersHref(vm.groupId, folder.deliveryProjectId)
-    : null;
-  if (!studio && !membersHref && gate.addRepository === 'hidden') return null;
+  const members = canManageProjectMembers(vm.appRole);
+  if (!studio && !members && gate.addRepository === 'hidden') return null;
   return (
     <div className="pf-detail__actions">
       {studio ? (
@@ -63,11 +72,16 @@ function DetailActions({
           {studio.label}
         </Link>
       ) : null}
-      {membersHref ? (
-        <Link className="ghost-button" href={membersHref}>
+      {members ? (
+        <button
+          type="button"
+          className="ghost-button"
+          aria-controls={PROJECT_MEMBERS_ANCHOR}
+          onClick={scrollToMembers}
+        >
           <PeopleIcon />
           Members
-        </Link>
+        </button>
       ) : null}
       <AddRepositoryAction
         state={gate.addRepository}
@@ -291,6 +305,14 @@ export function ProjectFolderDetail({
           </ul>
         )}
       </section>
+
+      {/* Who works on the Project, and the GitHub Write Developers get from it. */}
+      <ProjectMembersSection
+        groupId={vm.groupId}
+        deliveryProjectId={folder.deliveryProjectId}
+        appRole={vm.appRole}
+        layout="section"
+      />
 
       <ProjectQaSection vm={vm} folder={folder} />
 

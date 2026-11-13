@@ -1,0 +1,19 @@
+/* The Project page (/groups/…/delivery-projects/…). The global buttons are
+   hero-scale; its Requirements and QA block sizes them for a data page, as
+   the Project screen on /workflows does. Two classes beat the global rule. */
+.delivery-project-qa {
+  display: grid;
+  min-width: 0;
+}
+
+.delivery-project-qa .primary-button,
+.delivery-project-qa .ghost-button {
+  gap: 0.35rem;
+  min-height: 2.1rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+}

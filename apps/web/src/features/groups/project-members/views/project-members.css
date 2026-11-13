@@ -88,6 +88,38 @@
   flex-wrap: wrap;
 }
 
+/* ── On the Project screen (/workflows): one block among Repositories and
+   Requirements and QA, so it takes their small uppercase label and a
+   one-line empty state. Three classes beat the page's h2 rules. ── */
+.project-members[data-layout='section'] {
+  margin-top: 0;
+  gap: 0.65rem;
+}
+
+.project-members[data-layout='section'] .hier-section-head {
+  margin-bottom: 0;
+}
+
+.project-members[data-layout='section'] .hier-section-title {
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.project-members__empty {
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.65rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 /* The global .primary-button / .ghost-button are hero-scale; these dialogs
    size their own actions (three classes beat the global rule). */
 .hier-dialog:has(.project-members-dialog, .project-members__confirm)

@@ -1,5 +1,7 @@
 'use client';
 
+import './delivery-project.css';
+
 import type { ReactNode } from 'react';
 import {
   useGroupDeliveryProjectRouteViewModel,
@@ -23,11 +25,11 @@ import { IterationHeader } from '@/features/checklists/iteration';
 import { ProjectQaWorkspace } from '@/features/checklists/requirements';
 
 import { useDeliveryProjectViewModel } from '../view-models/use-delivery-project-view-model';
-import { useProjectMembersViewModel } from '../view-models/use-project-members-view-model';
 import type { AppRole } from '@/shared/api/contracts';
 import { CreateRepositoryDialog } from './create-repository-dialog';
-import { ProjectMembersPanel } from './project-members-panel';
+import { ProjectMembersSection } from '../../project-members';
 import { groupDisplayName } from '../../model/groups-rules';
+import { canManageProjectMembers } from '../../model/project-members-rules';
 
 function HierarchyNotReady({
   crumb,
@@ -57,11 +59,28 @@ function HierarchyNotReady({
   );
 }
 
+/**
+ * The empty repository list, by role: a creator is told how to add one; a
+ * Product owner or admin, who sees every repository, that none exists yet;
+ * anyone else that they may simply not have access.
+ */
+function emptyRepositoriesMessage(
+  canCreate: boolean,
+  appRole: AppRole | null,
+): string {
+  if (canCreate)
+    return 'Add a repository to provision a GitHub repo with its pipeline and hosting.';
+  if (canManageProjectMembers(appRole))
+    return 'No repositories in this Project yet. Developers add them.';
+  return "You don't have access to any repositories in this delivery project yet.";
+}
+
 function DeliveryProjectRepositories({
   groupId,
   status,
   repositories,
   canManage,
+  appRole,
   createButton,
   onRetry,
 }: Readonly<{
@@ -69,6 +88,7 @@ function DeliveryProjectRepositories({
   status: ResourceState;
   repositories: HierarchyRepository[];
   canManage: boolean;
+  appRole: AppRole | null;
   createButton: ReactNode;
   onRetry: () => void;
 }>) {
@@ -88,32 +108,10 @@ function DeliveryProjectRepositories({
       state={status}
       onRetry={onRetry}
       emptyTitle="No repositories yet"
-      emptyMessage={
-        canManage
-          ? 'Add a repository to provision a GitHub repo with its pipeline and hosting.'
-          : "You don't have access to any repositories in this delivery project yet."
-      }
+      emptyMessage={emptyRepositoriesMessage(canManage, appRole)}
       emptyAction={createButton}
     />
   );
-}
-
-/** Leads and admins manage who works on the Project; nobody else sees it. */
-function ProjectMembersSection({
-  groupId,
-  deliveryProjectId,
-  appRole,
-}: Readonly<{
-  groupId: string;
-  deliveryProjectId: string;
-  appRole: AppRole | null;
-}>) {
-  const vm = useProjectMembersViewModel({
-    groupId,
-    deliveryProjectId,
-    appRole,
-  });
-  return <ProjectMembersPanel vm={vm} />;
 }
 
 function DeliveryProjectDetail({
@@ -177,6 +175,7 @@ function DeliveryProjectDetail({
         status={vm.repositoriesStatus}
         repositories={vm.repositories}
         canManage={vm.canCreateRepository}
+        appRole={vm.appRole}
         createButton={createButton}
         onRetry={vm.reloadRepositories}
       />
@@ -190,11 +189,13 @@ function DeliveryProjectDetail({
       {vm.qaEnabled ? (
         <>
           <SectionHeader title="Requirements and QA" />
-          <ProjectQaWorkspace
-            deliveryProjectId={project.id}
-            projectName={project.name}
-            appRole={vm.appRole}
-          />
+          <div className="delivery-project-qa">
+            <ProjectQaWorkspace
+              deliveryProjectId={project.id}
+              projectName={project.name}
+              appRole={vm.appRole}
+            />
+          </div>
         </>
       ) : null}
 

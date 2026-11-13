@@ -2270,6 +2270,12 @@ class QaMockBackend {
         new RegExp(`^/delivery-projects/${P}$`),
         (m) => ({ body: this.deliveryProject(this.requireFolder(m[1])) }),
       ],
+      // The members block on a Project's screen (Product owner, admin).
+      [
+        'GET',
+        new RegExp(`^/delivery-projects/${P}/members$`),
+        (m) => this.projectMembers(m[1]),
+      ],
       [
         'POST',
         new RegExp(`^/delivery-projects/${P}/archive$`),
@@ -2829,6 +2835,18 @@ class QaMockBackend {
     const folder = this.folders.find((entry) => entry.id === folderId);
     if (!folder) throw nestError(404, 'Delivery project not found');
     return folder;
+  }
+
+  /**
+   * GET /delivery-projects/:id/members, as delivery-project-members.service.ts
+   * listMembers: a Product owner (lead) or admin; anyone else is a 403. No
+   * journey adds a Project member, so the list is empty.
+   */
+  private projectMembers(folderId: string): ApiReply {
+    this.requireFolder(folderId);
+    if (this.role !== 'lead' && this.role !== 'admin')
+      throw nestError(403, 'Only a Product owner or admin manages members');
+    return { body: { items: [] } };
   }
 
   private deliveryProject(folder: FolderRow): DeliveryProject {
