@@ -182,10 +182,33 @@ describe('useAddMemberViewModel', () => {
     const harness = render(true);
     await flushSearch();
 
-    act(() => harness.latest!.select(entry('not-signed-in', false)));
+    act(() => harness.latest!.toggleUser(entry('not-signed-in', false)));
 
-    expect(harness.latest?.selectedUser).toBeNull();
+    expect(harness.latest?.selectedUsers).toEqual([]);
     expect(harness.latest?.canSubmit).toBe(false);
+  });
+
+  it('keeps everyone picked across searches, and unpicks on a second click', async () => {
+    const harness = render(true);
+    await flushSearch();
+
+    act(() => harness.latest!.toggleUser(entry('bpramos-ae')));
+    act(() => harness.latest!.setSearch('lim'));
+    act(() => harness.latest!.toggleUser(entry('LimLloyd102')));
+    act(() => harness.latest!.toggleUser(entry('LloydLim1')));
+    act(() => harness.latest!.toggleUser(entry('LimLloyd102')));
+
+    expect(harness.latest?.selectedUsers.map((user) => user.login)).toEqual([
+      'bpramos-ae',
+      'LloydLim1',
+    ]);
+    expect(harness.latest?.isSelected(entry('LloydLim1'))).toBe(true);
+    expect(harness.latest?.isSelected(entry('LimLloyd102'))).toBe(false);
+
+    act(() => harness.latest!.removeUser('bpramos-ae'));
+    expect(harness.latest?.selectedUsers.map((user) => user.login)).toEqual([
+      'LloydLim1',
+    ]);
   });
 
   it('adds the picked member, then closes', async () => {
@@ -194,9 +217,8 @@ describe('useAddMemberViewModel', () => {
     const harness = render(true);
     await flushSearch();
 
-    act(() => harness.latest!.select(entry('bpramos-ae')));
+    act(() => harness.latest!.toggleUser(entry('bpramos-ae')));
     expect(harness.latest?.canSubmit).toBe(true);
-    expect(harness.latest?.status).toBe('idle');
 
     await act(async () => {
       await harness.latest!.submit();
@@ -207,7 +229,65 @@ describe('useAddMemberViewModel', () => {
     });
     expect(onAdded).toHaveBeenCalledWith(member);
     expect(onClose).toHaveBeenCalled();
-    expect(harness.latest?.selectedUser).toBeNull();
+    expect(harness.latest?.selectedUsers).toEqual([]);
+  });
+
+  it('adds everyone picked, each with the picked Projects, then closes', async () => {
+    mockedAdd
+      .mockResolvedValueOnce({ id: 'member-1' } as never)
+      .mockResolvedValueOnce({ id: 'member-2' } as never);
+    const harness = render(true);
+    await flushSearch();
+
+    act(() => harness.latest!.toggleUser(entry('bpramos-ae')));
+    act(() => harness.latest!.toggleUser(entry('LloydLim1')));
+    act(() => harness.latest!.toggleProject('dp-billing'));
+
+    await act(async () => {
+      await harness.latest!.submit();
+    });
+
+    expect(mockedAdd.mock.calls).toEqual([
+      [
+        'group-1',
+        { userId: 'bpramos-ae-id', deliveryProjectIds: ['dp-billing'] },
+      ],
+      [
+        'group-1',
+        { userId: 'LloydLim1-id', deliveryProjectIds: ['dp-billing'] },
+      ],
+    ]);
+    expect(onAdded).toHaveBeenCalledTimes(2);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('keeps only the refused people picked, with the reason, when some adds fail', async () => {
+    mockedAdd
+      .mockResolvedValueOnce({ id: 'member-1' } as never)
+      .mockRejectedValueOnce({
+        status: 404,
+        details: { message: 'LloydLim1 is not in the organization.' },
+      });
+    const harness = render(true);
+    await flushSearch();
+
+    act(() => harness.latest!.toggleUser(entry('bpramos-ae')));
+    act(() => harness.latest!.toggleUser(entry('LloydLim1')));
+
+    await act(async () => {
+      await harness.latest!.submit();
+    });
+
+    expect(onAdded).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(harness.latest?.selectedUsers.map((user) => user.login)).toEqual([
+      'LloydLim1',
+    ]);
+    expect(harness.latest?.error).toBe('LloydLim1 is not in the organization.');
+    // The one already added is no longer offered.
+    expect(harness.latest?.results.map((user) => user.login)).toEqual([
+      'not-signed-in',
+    ]);
   });
 
   it("keeps the dialog open with the server's reason when the add is refused", async () => {
@@ -220,7 +300,7 @@ describe('useAddMemberViewModel', () => {
     });
     const harness = render(true);
     await flushSearch();
-    act(() => harness.latest!.select(entry('bpramos-ae')));
+    act(() => harness.latest!.toggleUser(entry('bpramos-ae')));
 
     await act(async () => {
       await harness.latest!.submit();
@@ -259,7 +339,7 @@ describe('useAddMemberViewModel', () => {
     const harness = render(true);
     await flushSearch();
 
-    act(() => harness.latest!.select(entry('bpramos-ae')));
+    act(() => harness.latest!.toggleUser(entry('bpramos-ae')));
     act(() => harness.latest!.toggleProject('dp-payments'));
     act(() => harness.latest!.toggleProject('dp-billing'));
     act(() => harness.latest!.toggleProject('dp-billing'));
@@ -283,7 +363,7 @@ describe('useAddMemberViewModel', () => {
     await flushSearch();
 
     expect(harness.latest?.projectsStatus).toBe('error');
-    act(() => harness.latest!.select(entry('bpramos-ae')));
+    act(() => harness.latest!.toggleUser(entry('bpramos-ae')));
     expect(harness.latest?.canSubmit).toBe(true);
 
     await act(async () => {

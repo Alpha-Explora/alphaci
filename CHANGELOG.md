@@ -53,6 +53,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 
 ### Changed
 
+- **Teams:** Add several organization members at once, optionally assigning them to the same Projects. If any additions fail, only those members stay selected for retry.
 - **Projects:** An open Project heads its own screen without the list's Create project and Show guide, asks once for its first Feature, and shows Features first with Team to-dos beside them.
 - **Projects:** A Project's members are on its screen, and Members jumps to them instead of opening a second page for the same Project.
 - **QA:** QA and Developers may merge an approved release to main, behind the same current-head, Iteration and Product owner acceptance gates.
