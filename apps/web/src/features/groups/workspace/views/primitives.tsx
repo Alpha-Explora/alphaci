@@ -512,7 +512,11 @@ function FormDialogFooter({
         <p
           className="error-text"
           role="alert"
-          style={{ margin: '0.4rem 0 0', fontSize: '0.8rem' }}
+          style={{
+            margin: '0.4rem 0 0',
+            fontSize: '0.8rem',
+            whiteSpace: 'pre-line',
+          }}
         >
           {error}
         </p>

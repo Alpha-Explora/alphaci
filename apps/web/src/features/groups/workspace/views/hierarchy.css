@@ -565,6 +565,8 @@ a.hier-card:hover {
   border-radius: 1rem;
   box-shadow: var(--shadow-hard);
   padding: 1.4rem 1.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 .hier-dialog-title {
@@ -787,11 +789,20 @@ a.hier-card:hover {
   background: var(--accent-indigo-light);
 }
 
-.invite-project input {
+/* The global input rule gives every input full width and text-field
+   padding; a checkbox has to undo both or it swallows the row. */
+.invite-project input[type='checkbox'] {
   flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent-indigo);
+  cursor: pointer;
 }
 
 .invite-project span {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
@@ -799,7 +810,7 @@ a.hier-card:hover {
   margin-top: 0.4rem;
   display: flex;
   flex-direction: column;
-  max-height: 15rem;
+  max-height: 13.5rem;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--bg-surface);
@@ -843,13 +854,16 @@ a.hier-card:hover {
   outline: none;
 }
 
+.invite-result[aria-selected='true'] {
+  background: var(--accent-indigo-light);
+}
+
 .invite-result:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 
-.invite-result__meta,
-.invite-selected__meta {
+.invite-result__meta {
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
@@ -857,8 +871,7 @@ a.hier-card:hover {
   flex: 1 1 auto;
 }
 
-.invite-result__meta strong,
-.invite-selected__meta strong {
+.invite-result__meta strong {
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -867,8 +880,7 @@ a.hier-card:hover {
   white-space: nowrap;
 }
 
-.invite-result__meta span,
-.invite-selected__meta span {
+.invite-result__meta span {
   font-size: 0.75rem;
   color: var(--text-muted);
   overflow: hidden;
@@ -889,34 +901,100 @@ a.hier-card:hover {
   border: 1px solid var(--border-strong);
 }
 
-/* Chosen member — replaces the search input once a person is picked. */
-.invite-selected {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.6rem 0.7rem;
-  border: 1px solid var(--accent-indigo-glow);
-  border-radius: 0.7rem;
-  background: var(--accent-indigo-light);
-}
-
-.invite-selected__clear {
+/* Round tick on the right of each row; filled once the person is picked. */
+.invite-result__check {
   flex-shrink: 0;
-  font: inherit;
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: var(--accent-indigo);
-  background: transparent;
-  border: 1px solid var(--accent-indigo-glow);
-  border-radius: 0.5rem;
-  padding: 0.32rem 0.7rem;
-  cursor: pointer;
-  transition: background 0.14s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  color: transparent;
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease;
 }
 
-.invite-selected__clear:hover,
-.invite-selected__clear:focus-visible {
+.invite-result__check svg,
+.invite-chip__remove svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.invite-result[aria-selected='true'] .invite-result__check {
+  background: var(--accent-indigo);
+  border-color: var(--accent-indigo);
+  color: #fff;
+}
+
+/* Everyone picked so far, above the search box. */
+.invite-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 0.15rem;
+  padding: 0;
+  list-style: none;
+  max-height: 6.5rem;
+  overflow-y: auto;
+}
+
+.invite-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.18rem 0.2rem 0.18rem 0.2rem;
+  border: 1px solid var(--accent-indigo-glow);
+  border-radius: var(--radius-pill);
+  background: var(--accent-indigo-light);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.invite-chip .hier-avatar {
+  width: 22px;
+  height: 22px;
+  font-size: 0.65rem;
+}
+
+.invite-chip__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invite-chip__remove {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+.invite-chip__remove:hover,
+.invite-chip__remove:focus-visible {
   background: var(--bg-surface);
+  color: var(--text-primary);
   outline: none;
 }
 

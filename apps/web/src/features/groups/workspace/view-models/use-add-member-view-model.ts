@@ -14,7 +14,7 @@ import {
   emptyDirectoryMessage,
 } from '../../model/member-directory-rules';
 
-/** `idle` while closed or once someone is picked; the list is not needed. */
+/** `idle` while closed; the list is not needed. */
 export type MemberDirectoryStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 export const DIRECTORY_SEARCH_DEBOUNCE_MS = 250;
@@ -145,6 +145,17 @@ function emptyMessageFor(view: LookupView, term: string): string | null {
     : null;
 }
 
+/** One line per person the server refused, so each reason stays readable. */
+function describeFailures(
+  failures: { user: InternalUserDirectoryEntry; reason: string }[],
+): string | null {
+  if (failures.length === 0) return null;
+  if (failures.length === 1) return failures[0].reason;
+  return failures
+    .map(({ user, reason }) => `@${user.login}: ${reason}`)
+    .join('\n');
+}
+
 export interface AddMemberViewModel {
   search: string;
   setSearch: (value: string) => void;
@@ -152,9 +163,12 @@ export interface AddMemberViewModel {
   results: InternalUserDirectoryEntry[];
   /** Set when the directory answered and nobody matched. */
   emptyMessage: string | null;
-  selectedUser: InternalUserDirectoryEntry | null;
-  select: (user: InternalUserDirectoryEntry) => void;
-  clearSelection: () => void;
+  /** Everyone picked so far, in the order they were picked. */
+  selectedUsers: InternalUserDirectoryEntry[];
+  isSelected: (user: InternalUserDirectoryEntry) => boolean;
+  /** Picks someone who is not picked yet, or unpicks them. */
+  toggleUser: (user: InternalUserDirectoryEntry) => void;
+  removeUser: (login: string) => void;
   /** The team's active Projects the person can also join. */
   projects: TeamProjectChoice[];
   projectsStatus: TeamProjectsStatus;
@@ -180,8 +194,14 @@ export function useAddMemberViewModel({
   onClose: () => void;
 }): AddMemberViewModel {
   const [search, setSearchValue] = useState('');
-  const [selectedUser, setSelectedUser] =
-    useState<InternalUserDirectoryEntry | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<
+    InternalUserDirectoryEntry[]
+  >([]);
+  // Logins added during this sitting. The directory answer predates them,
+  // so they are hidden from the results instead of offered again.
+  const [addedLogins, setAddedLogins] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [selectedProjectIds, setSelectedProjectIds] = useState<
@@ -191,15 +211,12 @@ export function useAddMemberViewModel({
   const clearProjects = teamProjects.clear;
 
   const term = search.trim();
-  const { view, clear } = useDirectoryLookup(
-    open && selectedUser === null,
-    groupId,
-    term,
-  );
+  const { view, clear } = useDirectoryLookup(open, groupId, term);
 
   const close = useCallback(() => {
     setSearchValue('');
-    setSelectedUser(null);
+    setSelectedUsers([]);
+    setAddedLogins(new Set());
     setSubmitError(null);
     setSelectedProjectIds(new Set());
     clear();
@@ -208,7 +225,8 @@ export function useAddMemberViewModel({
   }, [clear, clearProjects, onClose]);
 
   const submit = useCallback(async () => {
-    if (!selectedUser?.hasAccount || !selectedUser.id) {
+    const pending = selectedUsers.filter((user) => user.hasAccount && user.id);
+    if (pending.length === 0) {
       setSubmitError(
         'Select an organization member who has an AlphaCI account.',
       );
@@ -216,52 +234,74 @@ export function useAddMemberViewModel({
     }
     setSubmitting(true);
     setSubmitError(null);
-    try {
-      // Everyone joins as a Member; a Lead can promote them afterward. Only
-      // Projects still offered are sent, in case the list changed.
-      const offered = new Set(
-        teamProjects.projects.map((project) => project.deliveryProjectId),
-      );
-      const deliveryProjectIds = [...selectedProjectIds].filter((id) =>
-        offered.has(id),
-      );
-      const member = await groupsRepository.addMember(groupId, {
-        userId: selectedUser.id,
-        ...(deliveryProjectIds.length > 0 && { deliveryProjectIds }),
-      });
-      onAdded(member);
-      close();
-    } catch (cause) {
-      setSubmitError(describeAddMemberError(cause));
-    } finally {
-      setSubmitting(false);
+    // Everyone joins as a Member; a Lead can promote them afterward. Only
+    // Projects still offered are sent, in case the list changed.
+    const offered = new Set(
+      teamProjects.projects.map((project) => project.deliveryProjectId),
+    );
+    const deliveryProjectIds = [...selectedProjectIds].filter((id) =>
+      offered.has(id),
+    );
+    // One request per person, in turn, so each GitHub grant settles before
+    // the next starts. A refusal skips only that person.
+    const failures: { user: InternalUserDirectoryEntry; reason: string }[] = [];
+    const added: string[] = [];
+    for (const user of pending) {
+      try {
+        const member = await groupsRepository.addMember(groupId, {
+          userId: user.id as string,
+          ...(deliveryProjectIds.length > 0 && { deliveryProjectIds }),
+        });
+        onAdded(member);
+        added.push(user.login);
+      } catch (cause) {
+        failures.push({ user, reason: describeAddMemberError(cause) });
+      }
     }
+    setSubmitting(false);
+    if (failures.length === 0) {
+      close();
+      return;
+    }
+    // Keep only the people still to add, with why each was refused.
+    setSelectedUsers(failures.map(({ user }) => user));
+    setAddedLogins((current) => new Set([...current, ...added]));
+    setSubmitError(describeFailures(failures));
   }, [
     close,
     groupId,
     onAdded,
     selectedProjectIds,
-    selectedUser,
+    selectedUsers,
     teamProjects.projects,
   ]);
+
+  const selectedLogins = new Set(selectedUsers.map((user) => user.login));
 
   return {
     search,
     setSearch: (value) => {
-      setSelectedUser(null);
-      setSubmitError(null);
       setSearchValue(value);
     },
     status: view.status,
-    results: view.results,
+    results: view.results.filter((user) => !addedLogins.has(user.login)),
     emptyMessage: emptyMessageFor(view, term),
-    selectedUser,
-    select: (user) => {
-      if (user.hasAccount) setSelectedUser(user);
+    selectedUsers,
+    isSelected: (user) => selectedLogins.has(user.login),
+    toggleUser: (user) => {
+      if (!user.hasAccount) return;
+      setSubmitError(null);
+      setSelectedUsers((current) =>
+        current.some((picked) => picked.login === user.login)
+          ? current.filter((picked) => picked.login !== user.login)
+          : [...current, user],
+      );
     },
-    clearSelection: () => {
-      setSelectedUser(null);
-      setSearchValue('');
+    removeUser: (login) => {
+      setSubmitError(null);
+      setSelectedUsers((current) =>
+        current.filter((picked) => picked.login !== login),
+      );
     },
     projects: teamProjects.projects,
     projectsStatus: teamProjects.status,
@@ -275,7 +315,7 @@ export function useAddMemberViewModel({
       });
     },
     error: submitError ?? view.error,
-    canSubmit: selectedUser?.hasAccount === true,
+    canSubmit: selectedUsers.some((user) => user.hasAccount),
     submitting,
     submit,
     close,
