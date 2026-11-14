@@ -163,6 +163,12 @@ export interface ProjectExplorerActions {
 export interface ProjectExplorerSlot {
   /** Projects in the team, or null while loading — the heading's count. */
   count: number | null;
+  /**
+   * A Project is open in place. The page then hides its list heading (the
+   * count, Show guide and Create project): the Project's own title and
+   * actions head the screen.
+   */
+  folderOpen: boolean;
   /** The explorer itself: the Project cards, or one Project opened in place. */
   panel: ReactNode;
   actions: ProjectExplorerActions;
@@ -213,6 +219,7 @@ export function ProjectExplorerHost({
     <>
       {children({
         count: vm.count,
+        folderOpen: vm.selected !== null,
         panel: <ProjectExplorer vm={vm} create={create} />,
         actions,
       })}

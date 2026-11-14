@@ -6,9 +6,10 @@ import { useId } from 'react';
 import { ProjectQaWorkspace } from '@/features/checklists/requirements';
 import {
   canManageProjectMembers,
-  projectMembersHref,
+  PROJECT_MEMBERS_ANCHOR,
   projectStatusVariant,
 } from '@/features/groups';
+import { ProjectMembersSection } from '@/features/groups/project-members';
 import type { AppRole } from '@/shared/api/contracts';
 
 import {
@@ -27,18 +28,24 @@ import type {
   ProjectFolder,
 } from '../model/project-folder-types';
 import type { ProjectFoldersViewModel } from '../view-models/use-project-folders-view-model';
-import {
-  AddRepositoryAction,
-  FeatureNudge,
-  FeaturesRequiredNote,
-} from './feature-gate';
+import { AddRepositoryAction, FeaturesRequiredNote } from './feature-gate';
 import { BackIcon, PeopleIcon, StudioIcon } from './project-folder-icons';
 import { RepoChip } from './repo-chip';
 
+/** The Members action: the members block further down this screen. */
+function scrollToMembers() {
+  const reduce = window.matchMedia?.(
+    '(prefers-reduced-motion: reduce)',
+  ).matches;
+  document
+    .getElementById(PROJECT_MEMBERS_ANCHOR)
+    ?.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+}
+
 /**
  * The viewer's studio (Verify in QA Studio for the QA Team and admins, Open
- * PO Studio for a Product owner), Members (Product owner, admin: who works on
- * the Project, and the GitHub Write Developers get from it) and Add repository
+ * PO Studio for a Product owner), Members (Product owner, admin: jumps to the
+ * members block on this screen) and Add repository
  * (Developer, admin): a Product owner creates the Project, a Developer fills
  * it, once the Project has its first Feature.
  */
@@ -55,10 +62,8 @@ function DetailActions({
 }>) {
   const verifyId = vm.canVerifyInQaStudio ? verifyProjectId(folder) : null;
   const studio = verifyId ? studioLinkFor(vm.appRole, verifyId) : null;
-  const membersHref = canManageProjectMembers(vm.appRole)
-    ? projectMembersHref(vm.groupId, folder.deliveryProjectId)
-    : null;
-  if (!studio && !membersHref && gate.addRepository === 'hidden') return null;
+  const members = canManageProjectMembers(vm.appRole);
+  if (!studio && !members && gate.addRepository === 'hidden') return null;
   return (
     <div className="pf-detail__actions">
       {studio ? (
@@ -67,11 +72,16 @@ function DetailActions({
           {studio.label}
         </Link>
       ) : null}
-      {membersHref ? (
-        <Link className="ghost-button" href={membersHref}>
+      {members ? (
+        <button
+          type="button"
+          className="ghost-button"
+          aria-controls={PROJECT_MEMBERS_ANCHOR}
+          onClick={scrollToMembers}
+        >
           <PeopleIcon />
           Members
-        </Link>
+        </button>
       ) : null}
       <AddRepositoryAction
         state={gate.addRepository}
@@ -83,31 +93,27 @@ function DetailActions({
   );
 }
 
-/** Under the title: why a Developer waits, or the Product owner's nudge. */
+/**
+ * Under the title: why a Developer's Add repository waits, when the Project
+ * already holds repositories (an empty list says it in its own line). A
+ * Product owner gets no banner here: the Features section's empty state asks
+ * for the first Feature and says why it matters.
+ */
 function FeatureGateBanner({
-  vm,
   folder,
   gate,
   noteId,
 }: Readonly<{
-  vm: ProjectFoldersViewModel;
   folder: ProjectFolder;
   gate: FolderFeatureGate;
   noteId: string;
 }>) {
-  if (gate.addRepository === 'blocked')
-    return (
-      <FeaturesRequiredNote
-        id={noteId}
-        className="pf-gate-note pf-gate-note--banner"
-      />
-    );
-  if (!gate.featureNudge) return null;
+  if (gate.addRepository !== 'blocked' || folder.repositories.length === 0)
+    return null;
   return (
-    <FeatureNudge
-      projectName={folder.name}
-      onAddFeature={() => vm.requestNewFeature(folder.deliveryProjectId)}
-      className="pf-nudge pf-nudge--banner"
+    <FeaturesRequiredNote
+      id={noteId}
+      className="pf-gate-note pf-gate-note--banner"
     />
   );
 }
@@ -162,30 +168,26 @@ function RepositoryRow({
   );
 }
 
+/**
+ * One quiet line. Add repository lives once, in the title row's actions; a
+ * blocked one is described by this line.
+ */
 function EmptyRepositories({
   vm,
-  folder,
   gate,
+  noteId,
 }: Readonly<{
   vm: ProjectFoldersViewModel;
-  folder: ProjectFolder;
   gate: FolderFeatureGate;
+  noteId: string;
 }>) {
-  const noteId = useId();
-  const blocked = gate.addRepository === 'blocked';
   return (
     <div className="pf-empty-folder">
       <p id={noteId}>
-        {blocked
+        {gate.addRepository === 'blocked'
           ? FEATURES_REQUIRED_NOTE
           : emptyRepositoriesCopy(vm.canCreateRepository)}
       </p>
-      <AddRepositoryAction
-        state={gate.addRepository}
-        href={createRepositoryHref(vm.groupId, folder.deliveryProjectId)}
-        className="primary-button"
-        noteId={noteId}
-      />
     </div>
   );
 }
@@ -203,9 +205,9 @@ function ProjectQaSection({
     return null;
   return (
     <section className="pf-detail__block" aria-labelledby="pf-qa-title">
-      <h4 className="pf-subhead" id="pf-qa-title">
+      <h2 className="pf-subhead" id="pf-qa-title">
         Requirements and QA
-      </h4>
+      </h2>
       <ProjectQaWorkspace
         deliveryProjectId={folder.deliveryProjectId}
         projectName={folder.name}
@@ -232,9 +234,9 @@ function ProjectFolderDangerZone({
       className="pf-detail__block pf-danger"
       aria-labelledby="pf-danger-title"
     >
-      <h4 className="pf-subhead" id="pf-danger-title">
+      <h2 className="pf-subhead" id="pf-danger-title">
         Danger zone
-      </h4>
+      </h2>
       <div className="pf-danger__row">
         <p className="pf-note">
           Delete {folder.name} and every repository inside it. This cannot be
@@ -273,21 +275,22 @@ export function ProjectFolderDetail({
       </div>
       <div className="pf-detail__title-row">
         <div>
-          <h3 className="pf-detail__title">{folder.name}</h3>
+          {/* The page's one h1 while a Project is open: the list heading is hidden. */}
+          <h1 className="pf-detail__title">{folder.name}</h1>
           <p className="pf-detail__meta">
             {vm.groupName} · {repositoryCountLabel(folder.repositories.length)}
           </p>
         </div>
         <DetailActions vm={vm} folder={folder} gate={gate} noteId={noteId} />
       </div>
-      <FeatureGateBanner vm={vm} folder={folder} gate={gate} noteId={noteId} />
+      <FeatureGateBanner folder={folder} gate={gate} noteId={noteId} />
 
       <section className="pf-detail__block" aria-labelledby="pf-repos-title">
-        <h4 className="pf-subhead" id="pf-repos-title">
+        <h2 className="pf-subhead" id="pf-repos-title">
           Repositories
-        </h4>
+        </h2>
         {folder.repositories.length === 0 ? (
-          <EmptyRepositories vm={vm} folder={folder} gate={gate} />
+          <EmptyRepositories vm={vm} gate={gate} noteId={noteId} />
         ) : (
           <ul className="pf-repos">
             {folder.repositories.map((repo) => (
@@ -302,6 +305,14 @@ export function ProjectFolderDetail({
           </ul>
         )}
       </section>
+
+      {/* Who works on the Project, and the GitHub Write Developers get from it. */}
+      <ProjectMembersSection
+        groupId={vm.groupId}
+        deliveryProjectId={folder.deliveryProjectId}
+        appRole={vm.appRole}
+        layout="section"
+      />
 
       <ProjectQaSection vm={vm} folder={folder} />
 

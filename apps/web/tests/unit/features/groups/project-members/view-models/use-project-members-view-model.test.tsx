@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import {
   useProjectMembersViewModel,
   type ProjectMembersViewModel,
-} from '../../../../../../src/features/groups/delivery-project/view-models/use-project-members-view-model';
+} from '../../../../../../src/features/groups/project-members/view-models/use-project-members-view-model';
 import {
   addProjectMember,
   getProjectMembers,

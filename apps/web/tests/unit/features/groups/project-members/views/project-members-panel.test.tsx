@@ -1,8 +1,8 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { ProjectMembersPanel } from '../../../../../../src/features/groups/delivery-project/views/project-members-panel';
-import { useProjectMembersViewModel } from '../../../../../../src/features/groups/delivery-project/view-models/use-project-members-view-model';
+import { ProjectMembersPanel } from '../../../../../../src/features/groups/project-members/views/project-members-panel';
+import { useProjectMembersViewModel } from '../../../../../../src/features/groups/project-members/view-models/use-project-members-view-model';
 import { getProjectMembers } from '../../../../../../src/features/groups/data/project-members-api';
 import { groupsRepository } from '../../../../../../src/features/groups/data/groups-repository';
 import type { AppRole } from '../../../../../../src/shared/api/contracts';
@@ -227,5 +227,71 @@ describe('ProjectMembersPanel', () => {
       await poll(() => text().includes('Dana Dev'));
       expect(scrollIntoView).not.toHaveBeenCalled();
     });
+
+    it('scrolls to an empty list too', async () => {
+      (getProjectMembers as jest.Mock).mockResolvedValue({ items: [] });
+      window.location.hash = '#members';
+      act(() => root.render(<Section appRole="lead" />));
+      await poll(() => text().includes('No members yet'));
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView.mock.contexts[0]).toBe(
+        container.querySelector('section#members'),
+      );
+    });
+
+    it('scrolls again while the page below still loads, until the reader scrolls', async () => {
+      const observed: Array<() => void> = [];
+      const originalObserver = window.ResizeObserver;
+      window.ResizeObserver = class {
+        constructor(callback: () => void) {
+          observed.push(callback);
+        }
+        observe() {}
+        disconnect() {
+          observed.length = 0;
+        }
+        unobserve() {}
+      } as unknown as typeof ResizeObserver;
+      try {
+        window.location.hash = '#members';
+        act(() => root.render(<Section appRole="lead" />));
+        await poll(() => text().includes('Dana Dev'));
+        expect(scrollIntoView).toHaveBeenCalledTimes(1);
+
+        // Requirements and QA arrive and the page grows: follow it.
+        act(() => observed[0]());
+        expect(scrollIntoView).toHaveBeenCalledTimes(2);
+
+        // The reader scrolls: stop following.
+        act(() => {
+          window.dispatchEvent(new Event('wheel'));
+        });
+        expect(observed).toHaveLength(0);
+      } finally {
+        window.ResizeObserver = originalObserver;
+      }
+    });
+  });
+
+  it('says "No members yet" in one line on the Project screen', async () => {
+    (getProjectMembers as jest.Mock).mockResolvedValue({ items: [] });
+    function ScreenSection() {
+      const vm = useProjectMembersViewModel({
+        groupId: 'g1',
+        deliveryProjectId: 'dp1',
+        appRole: 'lead',
+      });
+      return <ProjectMembersPanel vm={vm} layout="section" />;
+    }
+    act(() => root.render(<ScreenSection />));
+    await poll(() => text().includes('No members yet'));
+    expect(
+      container.querySelector('.project-members__empty')?.textContent,
+    ).toBe(
+      "No members yet. Add Developers and QA Team from this Project's team.",
+    );
+    expect(
+      container.querySelector('section#members')?.getAttribute('data-layout'),
+    ).toBe('section');
   });
 });

@@ -33,19 +33,39 @@ import type { ProjectMembersViewModel } from '../view-models/use-project-members
 type PanelProps = Readonly<{ vm: ProjectMembersViewModel }>;
 
 /**
+ * `page`: a section of the Project page, under its own heading, opened by a
+ * `#members` link. `section`: one block of the Project screen on /workflows,
+ * labelled like its neighbours, with a one-line empty state.
+ */
+export type ProjectMembersLayout = 'page' | 'section';
+
+const NO_MEMBERS_MESSAGE =
+  "Add Developers and QA Team from this Project's team.";
+const NO_MEMBERS_LINE = `No members yet. ${NO_MEMBERS_MESSAGE}`;
+
+/**
  * The Project's members: Developers (GitHub Write on the repositories created
  * here) and QA Team (no GitHub write). Leads and admins only — the caller
  * renders nothing for anyone else.
  */
-export function ProjectMembersPanel({ vm }: PanelProps) {
+export function ProjectMembersPanel({
+  vm,
+  layout = 'page',
+}: Readonly<{ vm: ProjectMembersViewModel; layout?: ProjectMembersLayout }>) {
   const sectionRef = useRef<HTMLElement | null>(null);
-  useScrollIntoViewWhenLinked(sectionRef, vm.visible && vm.status === 'ready');
+  // Any settled list counts: an empty one ("No members yet") is where a lead
+  // most often arrives to add the first member.
+  useScrollIntoViewWhenLinked(
+    sectionRef,
+    layout === 'page' && vm.visible && vm.status !== 'loading',
+  );
   if (!vm.visible) return null;
   return (
     <section
       id={PROJECT_MEMBERS_ANCHOR}
       ref={sectionRef}
       className="project-members"
+      data-layout={layout}
       aria-label="Project members"
     >
       <SectionHeader
@@ -55,11 +75,39 @@ export function ProjectMembersPanel({ vm }: PanelProps) {
       />
       <AccessExplainer syncLive={vm.syncLive} />
       <Feedback notice={vm.notice} error={vm.error} />
-      <MemberList vm={vm} />
+      <MemberList vm={vm} layout={layout} />
       <AddMemberDialog vm={vm} />
       <RemoveMemberDialog vm={vm} />
     </section>
   );
+}
+
+/** The reader's own scrolling ends the follow-up. */
+const READER_INPUT = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const;
+const FOLLOW_MS = 3000;
+
+/**
+ * Scroll the section to the top now, and again while the page around it
+ * still grows (Requirements and QA load after the members, and until they
+ * do the page is too short to scroll that far). Stops after a few seconds
+ * or as soon as the reader scrolls. Returns the cleanup.
+ */
+function followIntoView(section: HTMLElement): () => void {
+  const scroll = () => section.scrollIntoView?.({ block: 'start' });
+  scroll();
+  const page = section.parentElement;
+  if (!page || typeof ResizeObserver === 'undefined') return () => undefined;
+  const observer = new ResizeObserver(scroll);
+  observer.observe(page);
+  const stop = () => {
+    observer.disconnect();
+    window.clearTimeout(timer);
+    for (const type of READER_INPUT) window.removeEventListener(type, stop);
+  };
+  const timer = window.setTimeout(stop, FOLLOW_MS);
+  for (const type of READER_INPUT)
+    window.addEventListener(type, stop, { passive: true });
+  return stop;
 }
 
 /**
@@ -76,8 +124,8 @@ function useScrollIntoViewWhenLinked(
   useEffect(() => {
     if (!ready || done.current) return;
     done.current = true;
-    if (opensOnProjectMembers(window.location.hash))
-      ref.current?.scrollIntoView?.({ block: 'start' });
+    if (!opensOnProjectMembers(window.location.hash) || !ref.current) return;
+    return followIntoView(ref.current);
   }, [ready, ref]);
 }
 
@@ -158,15 +206,21 @@ function Feedback({
   ) : null;
 }
 
-function MemberList({ vm }: PanelProps) {
+function MemberList({
+  vm,
+  layout,
+}: Readonly<{ vm: ProjectMembersViewModel; layout: ProjectMembersLayout }>) {
   if (vm.status === 'loading') return <LoadingRows rows={2} />;
+  if (vm.status === 'empty' && layout === 'section') {
+    return <p className="project-members__empty">{NO_MEMBERS_LINE}</p>;
+  }
   if (vm.status !== 'ready') {
     return (
       <ResourceBoundary
         state={vm.status}
         onRetry={vm.reload}
         emptyTitle="No members yet"
-        emptyMessage="Add Developers and QA Team from this Project's team."
+        emptyMessage={NO_MEMBERS_MESSAGE}
       />
     );
   }

@@ -58,6 +58,25 @@ jest.mock('../../../../../../src/features/checklists/requirements', () => ({
 }));
 
 const mockSession = { appRole: 'lead' as string };
+
+/* The members block owns its view-model (tested in the groups domain); here
+ * it only has to be mounted for the right Project, as a section. */
+jest.mock('../../../../../../src/features/groups/project-members', () => ({
+  ProjectMembersSection: ({
+    deliveryProjectId,
+    layout,
+  }: {
+    deliveryProjectId: string;
+    layout?: string;
+  }) => (
+    <section
+      id="members"
+      data-testid="project-members"
+      data-project={deliveryProjectId}
+      data-layout={layout ?? ''}
+    />
+  ),
+}));
 jest.mock('../../../../../../src/features/auth/session', () => ({
   useAuthSession: () => ({ session: { appRole: mockSession.appRole } }),
 }));
@@ -275,17 +294,9 @@ describe('Features before repositories', () => {
     const workspace = container.querySelector('[data-testid="qa-workspace"]')!;
     expect(workspace.getAttribute('data-project')).toBe('dp-2');
     expect(workspace.getAttribute('data-request')).toBe('1');
-    // The detail repeats the nudge; asking again is a new request.
-    await act(async () =>
-      container
-        .querySelector<HTMLButtonElement>('.pf-nudge--banner button')!
-        .click(),
-    );
-    expect(
-      container
-        .querySelector('[data-testid="qa-workspace"]')
-        ?.getAttribute('data-request'),
-    ).toBe('2');
+    // The detail does not repeat the nudge: the Features section asks instead.
+    expect(container.querySelector('.pf-nudge')).toBeNull();
+    expect(container.textContent).not.toContain('Add a Feature so Developers');
 
     // Writing the Feature retires the nudge without a reload.
     await act(async () =>
@@ -584,11 +595,20 @@ describe('ProjectExplorer', () => {
     const container = await renderExplorer();
     await act(async () => manage(container, 'testfinals')!.click());
 
-    const members = link(container, 'Members');
+    // Members jumps to the members block on this screen; no second page.
+    expect(link(container, 'Members')).toBeUndefined();
+    const members = button(container, 'Members');
     if (offered) {
-      expect(members?.getAttribute('href')).toBe(
-        `/groups/${GROUP_ID}/delivery-projects/dp-1#members`,
-      );
+      const section = container.querySelector(
+        '[data-testid="project-members"]',
+      )!;
+      expect(section.getAttribute('data-project')).toBe('dp-1');
+      expect(section.getAttribute('data-layout')).toBe('section');
+      expect(members?.getAttribute('aria-controls')).toBe('members');
+      const scrollIntoView = jest.fn();
+      (section as HTMLElement).scrollIntoView = scrollIntoView;
+      await act(async () => members!.click());
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
     } else {
       expect(members).toBeUndefined();
     }
