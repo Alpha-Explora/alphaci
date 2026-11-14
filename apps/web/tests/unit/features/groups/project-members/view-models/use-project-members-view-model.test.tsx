@@ -166,7 +166,7 @@ describe('useProjectMembersViewModel', () => {
       member: qa,
       githubAccess: { syncMode: 'live', repositoriesQueued: 0 },
     });
-    act(() => cur().setSelectedUserId('u-qa'));
+    act(() => cur().toggleUser('u-qa'));
     await act(async () => {
       await cur().add();
     });
@@ -186,7 +186,8 @@ describe('useProjectMembersViewModel', () => {
     render('lead');
     await poll(() => cur().status === 'empty');
     act(() => cur().openAdd());
-    act(() => cur().setSelectedUserId('u-dev'));
+    await poll(() => cur().candidatesStatus === 'ready');
+    act(() => cur().toggleUser('u-dev'));
     await act(async () => {
       await cur().add();
     });
@@ -202,7 +203,8 @@ describe('useProjectMembersViewModel', () => {
     render('lead');
     await poll(() => cur().status === 'ready');
     act(() => cur().openAdd());
-    act(() => cur().setSelectedUserId('u-qa'));
+    await poll(() => cur().candidatesStatus === 'ready');
+    act(() => cur().toggleUser('u-qa'));
     await act(async () => {
       await cur().add();
     });
@@ -210,6 +212,42 @@ describe('useProjectMembersViewModel', () => {
     expect(cur().addError).toContain(
       "isn't an active member of this Project's team",
     );
+  });
+
+  it('keeps only failed accounts selected and retries without adding successes twice', async () => {
+    (getProjectMembers as jest.Mock).mockResolvedValue({ items: [] });
+    const githubAccess = { syncMode: 'stub' as const, repositoriesQueued: 0 };
+    const addMember = jest.mocked(addProjectMember);
+    addMember
+      .mockRejectedValueOnce(new Error('network error'))
+      .mockResolvedValueOnce({ member: qa, githubAccess })
+      .mockResolvedValueOnce({ member: developer, githubAccess });
+    render('lead');
+    await poll(() => cur().status === 'empty');
+    act(() => cur().openAdd());
+    await poll(() => cur().candidatesStatus === 'ready');
+    act(() => {
+      cur().toggleUser('u-dev');
+      cur().toggleUser('u-qa');
+    });
+
+    await act(async () => cur().add());
+
+    expect(cur().addOpen).toBe(true);
+    expect(cur().addError).toContain('Dana Dev: The member could not be added');
+    expect([...cur().selectedUserIds]).toEqual(['u-dev']);
+    expect(cur().candidates.map((member) => member.userId)).toEqual(['u-dev']);
+    expect(cur().members).toEqual([qa]);
+
+    await act(async () => cur().add());
+
+    expect(addMember.mock.calls).toEqual([
+      ['dp1', 'u-dev'],
+      ['dp1', 'u-qa'],
+      ['dp1', 'u-dev'],
+    ]);
+    expect(cur().members).toEqual([qa, developer]);
+    expect(cur().addOpen).toBe(false);
   });
 
   it('asks before removing, then drops the member', async () => {

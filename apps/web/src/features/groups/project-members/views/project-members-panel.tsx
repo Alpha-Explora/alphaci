@@ -19,14 +19,11 @@ import type {
 } from '../../model/groups-types';
 import {
   candidateKind,
-  DEVELOPER_ACCESS_NOTE,
   MEMBER_KIND_LABELS,
   memberDisplayName,
   opensOnProjectMembers,
   PROJECT_MEMBERS_ANCHOR,
-  QA_ACCESS_NOTE,
   RESYNC_NOTE,
-  STUB_SYNC_NOTE,
 } from '../../model/project-members-rules';
 import type { ProjectMembersViewModel } from '../view-models/use-project-members-view-model';
 
@@ -73,7 +70,6 @@ export function ProjectMembersPanel({
         count={vm.status === 'ready' ? vm.members.length : undefined}
         actions={<PanelActions vm={vm} />}
       />
-      <AccessExplainer syncLive={vm.syncLive} />
       <Feedback notice={vm.notice} error={vm.error} />
       <MemberList vm={vm} layout={layout} />
       <AddMemberDialog vm={vm} />
@@ -167,24 +163,6 @@ export function KindBadge({
   );
 }
 
-function AccessExplainer({ syncLive }: Readonly<{ syncLive: boolean }>) {
-  return (
-    <div className="project-members__explainer">
-      <p>
-        <KindBadge kind="developer" /> <span>{DEVELOPER_ACCESS_NOTE}</span>
-      </p>
-      <p>
-        <KindBadge kind="qa" /> <span>{QA_ACCESS_NOTE}</span>
-      </p>
-      {syncLive ? null : (
-        <p className="project-members__stub" role="note">
-          {STUB_SYNC_NOTE}
-        </p>
-      )}
-    </div>
-  );
-}
-
 function Feedback({
   notice,
   error,
@@ -273,63 +251,67 @@ function candidateLabel(member: GroupMember): string {
   return kind ? `${who} · ${MEMBER_KIND_LABELS[kind]}` : who;
 }
 
-function candidatePlaceholder(vm: ProjectMembersViewModel): string {
+function candidateStatus(vm: ProjectMembersViewModel): string | null {
   if (vm.candidatesStatus === 'loading') return 'Loading team members…';
   if (vm.candidatesStatus === 'error')
     return 'Team members could not be loaded';
-  return vm.candidates.length > 0
-    ? 'Select a team member'
-    : 'Everyone eligible is already in this Project';
+  return vm.candidates.length === 0
+    ? 'Everyone eligible is already in this Project'
+    : null;
 }
 
-function selectedKindNote(vm: ProjectMembersViewModel): string {
-  const selected = vm.candidates.find(
-    (member) => member.userId === vm.selectedUserId,
+function CandidatePicker({ vm }: PanelProps) {
+  const status = candidateStatus(vm);
+  if (status)
+    return (
+      <p className="hier-field-hint" role="status">
+        {status}
+      </p>
+    );
+  return (
+    <fieldset
+      className="project-members-dialog__picker"
+      disabled={vm.busy === 'add'}
+    >
+      <legend className="hier-field-label">Team members</legend>
+      <div className="project-members-dialog__choices">
+        {vm.candidates.map((member) => (
+          <label key={member.userId} className="project-members-dialog__choice">
+            <input
+              type="checkbox"
+              checked={vm.selectedUserIds.has(member.userId)}
+              onChange={() => vm.toggleUser(member.userId)}
+            />
+            <span>{candidateLabel(member)}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
-  const kind = selected ? candidateKind(selected) : null;
-  if (kind === 'qa') return QA_ACCESS_NOTE;
-  if (kind === 'developer') {
-    return vm.syncLive
-      ? DEVELOPER_ACCESS_NOTE
-      : `${DEVELOPER_ACCESS_NOTE} ${STUB_SYNC_NOTE}`;
-  }
-  return "Developers and QA Team of this Project's team can be added. Their kind comes from their role.";
 }
 
 function AddMemberDialog({ vm }: PanelProps) {
+  const selectedCount = vm.selectedUserIds.size;
   return (
     <FormDialog
       open={vm.addOpen}
       onClose={vm.closeAdd}
       title="Add member"
-      description="Add a Developer or QA Team member of this Project's team."
-      submitLabel="Add member"
+      description="Choose one or more Developers or QA Team members from this Project's team."
+      submitLabel={
+        selectedCount > 1 ? `Add ${selectedCount} members` : 'Add member'
+      }
       submitting={vm.busy === 'add'}
       error={vm.addError}
-      canSubmit={vm.selectedUserId !== ''}
+      canSubmit={selectedCount > 0 && vm.candidatesStatus === 'ready'}
       onSubmit={() => void vm.add()}
     >
       <div className="hier-field project-members-dialog">
-        <label className="hier-field-label" htmlFor="project-member-user">
-          Team member
-        </label>
-        <select
-          id="project-member-user"
-          className="hier-select"
-          value={vm.selectedUserId}
-          onChange={(event) => vm.setSelectedUserId(event.target.value)}
-          disabled={
-            vm.candidatesStatus !== 'ready' || vm.candidates.length === 0
-          }
-        >
-          <option value="">{candidatePlaceholder(vm)}</option>
-          {vm.candidates.map((member) => (
-            <option key={member.userId} value={member.userId}>
-              {candidateLabel(member)}
-            </option>
-          ))}
-        </select>
-        <span className="hier-field-hint">{selectedKindNote(vm)}</span>
+        <CandidatePicker vm={vm} />
+        <span className="hier-field-hint">
+          Developers get GitHub Write on repositories created in this Project
+          when live sync is on. QA Team get no GitHub write access.
+        </span>
       </div>
     </FormDialog>
   );

@@ -3,7 +3,10 @@ import { createRoot, type Root } from 'react-dom/client';
 
 import { ProjectMembersPanel } from '../../../../../../src/features/groups/project-members/views/project-members-panel';
 import { useProjectMembersViewModel } from '../../../../../../src/features/groups/project-members/view-models/use-project-members-view-model';
-import { getProjectMembers } from '../../../../../../src/features/groups/data/project-members-api';
+import {
+  addProjectMember,
+  getProjectMembers,
+} from '../../../../../../src/features/groups/data/project-members-api';
 import { groupsRepository } from '../../../../../../src/features/groups/data/groups-repository';
 import type { AppRole } from '../../../../../../src/shared/api/contracts';
 
@@ -115,7 +118,7 @@ describe('ProjectMembersPanel', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('lists members with kind badges for a lead, and explains the GitHub effect', async () => {
+  it('lists members with kind badges for a lead', async () => {
     act(() => root.render(<Section appRole="lead" />));
     await poll(() => text().includes('Dana Dev'));
     const rows = Array.from(container.querySelectorAll('.hier-row'));
@@ -126,13 +129,6 @@ describe('ProjectMembersPanel', () => {
     expect(
       rows[1]?.querySelector('.project-members__kind--qa')?.textContent,
     ).toBe('QA Team');
-    expect(text()).toContain(
-      'Developers get Write on every repository created in this Project',
-    );
-    expect(text()).toContain('a lead grants access per repository');
-    expect(text()).toContain(
-      'QA Team get no GitHub write access. They run Playwright in QA Studio through ALPHACI.',
-    );
     expect(
       container.querySelector(
         '[aria-label="Remove Dana Dev from this Project"]',
@@ -140,38 +136,109 @@ describe('ProjectMembersPanel', () => {
     ).not.toBeNull();
   });
 
-  it('shows the stub note and no re-sync button while sync is stub', async () => {
+  it('hides the re-sync button while sync is stub', async () => {
     act(() => root.render(<Section appRole="lead" />));
     await poll(() => text().includes('Dana Dev'));
-    expect(text()).toContain(
-      'GitHub access is granted once live GitHub sync is switched on.',
-    );
     expect(button('Re-sync GitHub access')).toBeUndefined();
   });
 
-  it('drops the stub note and offers re-sync in live mode', async () => {
+  it('offers re-sync in live mode', async () => {
     capabilities.hierarchyGithubSyncMode = 'live';
     act(() => root.render(<Section appRole="admin" />));
     await poll(() => text().includes('Dana Dev'));
-    expect(text()).not.toContain(
-      'GitHub access is granted once live GitHub sync is switched on.',
-    );
     expect(button('Re-sync GitHub access')).toBeDefined();
   });
 
-  it('opens the add picker with eligible team members and their kind', async () => {
+  it('selects a Developer and a QA account and submits them together', async () => {
+    jest.mocked(getProjectMembers).mockResolvedValueOnce({ items: [] });
+    const teamAccount = {
+      groupId: 'g1',
+      role: 'member' as const,
+      memberStatus: 'active' as const,
+      email: null,
+      avatarUrl: null,
+      invitedBy: null,
+      invitedAt: null,
+      removedAt: null,
+      removedBy: null,
+      removalReason: null,
+      createdAt: base.createdAt,
+    };
+    jest.mocked(groupsRepository.members).mockResolvedValueOnce([
+      {
+        ...teamAccount,
+        id: 'tm1',
+        userId: 'u-new',
+        login: 'nia',
+        name: 'Nia New',
+        appRole: 'member',
+      },
+      {
+        ...teamAccount,
+        id: 'tm2',
+        userId: 'u-new-qa',
+        login: 'sam',
+        name: 'Sam QA',
+        appRole: 'qa',
+      },
+    ]);
+    const githubAccess = { syncMode: 'stub' as const, repositoriesQueued: 0 };
+    jest
+      .mocked(addProjectMember)
+      .mockResolvedValueOnce({
+        member: {
+          ...base,
+          id: 'm3',
+          userId: 'u-new',
+          memberKind: 'developer',
+          login: 'nia',
+          name: 'Nia New',
+        },
+        githubAccess,
+      })
+      .mockResolvedValueOnce({
+        member: {
+          ...base,
+          id: 'm4',
+          userId: 'u-new-qa',
+          memberKind: 'qa',
+          login: 'sam',
+          name: 'Sam QA',
+        },
+        githubAccess,
+      });
     act(() => root.render(<Section appRole="lead" />));
-    await poll(() => text().includes('Dana Dev'));
+    await poll(() => text().includes('No members yet'));
     act(() => button('Add member')!.click());
-    await poll(
-      () =>
-        document.querySelector("#project-member-user option[value='u-new']") !==
-        null,
+    const choices = () =>
+      Array.from(
+        document.querySelectorAll<HTMLInputElement>(
+          '[role="dialog"] input[type="checkbox"]',
+        ),
+      );
+    await poll(() => choices().length === 2);
+    const [developer, qa] = choices();
+    expect(developer.labels?.[0]).toHaveTextContent(
+      'Nia New (@nia) · Developer',
     );
-    expect(
-      document.querySelector("#project-member-user option[value='u-new']")
-        ?.textContent,
-    ).toBe('Nia New (@nia) · Developer');
+    expect(qa.labels?.[0]).toHaveTextContent('Sam QA (@sam) · QA Team');
+    const submit = () =>
+      document.querySelector<HTMLButtonElement>(
+        '[role="dialog"] button[type="submit"]',
+      )!;
+    expect(submit()).toBeDisabled();
+    act(() => developer.click());
+    act(() => qa.click());
+    expect(developer).toBeChecked();
+    expect(qa).toBeChecked();
+    expect(submit()).toHaveTextContent('Add 2 members');
+    await act(async () => submit().click());
+    expect(jest.mocked(addProjectMember).mock.calls).toEqual([
+      ['dp1', 'u-new'],
+      ['dp1', 'u-new-qa'],
+    ]);
+    expect(container.querySelectorAll('.hier-row')).toHaveLength(2);
+    expect(text()).not.toContain('No members yet');
   });
 
   it('asks for confirmation before removing', async () => {

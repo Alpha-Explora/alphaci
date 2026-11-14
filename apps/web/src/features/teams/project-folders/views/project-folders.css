@@ -207,9 +207,8 @@
 }
 
 /* ── Features before repositories ──────────────────────────────────────────
-   A Developer's Add repository waits for the Project's first Feature: still
-   on screen and focusable (aria-disabled), muted, with the reason under it.
-   A Product owner gets a nudge to write that Feature instead. */
+   Project details explain why Add repository waits for the first Feature.
+   Project cards show Add repository only when available. */
 .pf-add--blocked,
 .pf-add--blocked:hover {
   border-color: var(--border);

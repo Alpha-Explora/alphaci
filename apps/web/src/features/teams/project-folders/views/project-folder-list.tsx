@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useId } from 'react';
 
 import { requirementCountLabel } from '@/features/checklists';
 import { LoadingRows } from '@/features/groups/workspace';
@@ -21,11 +20,7 @@ import type {
   UnfiledProject,
 } from '../model/project-folder-types';
 import type { ProjectFoldersViewModel } from '../view-models/use-project-folders-view-model';
-import {
-  AddRepositoryAction,
-  FeatureNudge,
-  FeaturesRequiredNote,
-} from './feature-gate';
+import { AddRepositoryAction, FeatureNudge } from './feature-gate';
 import {
   ChecklistIcon,
   ChevronIcon,
@@ -68,10 +63,8 @@ function FolderMeta({
  * Project's detail: repositories, Move, requirements and QA, and Delete Project. A
  * Project with no linked repository has no page to open, so its card opens
  * the detail as it always did. A Developer (or admin) also gets "Add
- * repository" beside Manage: the create wizard, filed in this Project. Until
- * the Project has its first Feature, a Developer's Add repository is
- * disabled with the reason under it, and a Product owner is nudged to add
- * that Feature.
+ * repository" beside Manage when they can use the wizard for this Project.
+ * A Product owner is nudged to add the first Feature.
  *
  * No per-repository BACKEND/FRONTEND chips: the card is the Project, the
  * count says how many repositories it holds, and the repositories themselves
@@ -87,14 +80,13 @@ function FolderCard({
 }: Readonly<{
   folder: ProjectFolder;
   requirementCounts: Record<string, number> | null;
-  /** Add repository (link, disabled, or none) and the Product owner's nudge. */
+  /** Repository availability and the Product owner's nudge. */
   gate: FolderFeatureGate;
   /** The wizard filed in this Project. */
   addRepositoryHref: string;
   onOpen: () => void;
   onAddFeature: () => void;
 }>) {
-  const noteId = useId();
   const landingId = folderLandingProjectId(folder);
   const face = (
     <>
@@ -134,21 +126,16 @@ function FolderCard({
           <SlidersIcon />
           <span className="pf-card__manage-label">Manage</span>
         </button>
-        <AddRepositoryAction
-          state={gate.addRepository}
-          href={addRepositoryHref}
-          className="pf-card__manage pf-card__add"
-          ariaLabel={`Add repository to ${folder.name}`}
-          noteId={noteId}
-          showLabel={false}
-        />
+        {gate.addRepository === 'enabled' ? (
+          <AddRepositoryAction
+            state="enabled"
+            href={addRepositoryHref}
+            className="pf-card__manage pf-card__add"
+            ariaLabel={`Add repository to ${folder.name}`}
+            showLabel={false}
+          />
+        ) : null}
       </div>
-      {gate.addRepository === 'blocked' ? (
-        <FeaturesRequiredNote
-          id={noteId}
-          className="pf-gate-note pf-card__foot"
-        />
-      ) : null}
       {gate.featureNudge ? (
         <FeatureNudge
           projectName={folder.name}

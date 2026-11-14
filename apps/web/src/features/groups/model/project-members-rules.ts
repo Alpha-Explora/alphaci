@@ -100,11 +100,6 @@ export function memberDisplayName(
 
 /* ── Copy ─────────────────────────────────────────────────────────────── */
 
-export const DEVELOPER_ACCESS_NOTE =
-  'Developers get Write on every repository created in this Project, including ones created later. ' +
-  'Repositories attached from an existing GitHub repository, or moved here from another Project, ' +
-  'are not granted automatically: a lead grants access per repository.';
-
 export const QA_ACCESS_NOTE =
   'QA Team get no GitHub write access. They run Playwright in QA Studio through ALPHACI.';
 

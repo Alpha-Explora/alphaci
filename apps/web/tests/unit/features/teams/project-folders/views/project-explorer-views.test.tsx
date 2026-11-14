@@ -202,7 +202,7 @@ function featureSnapshot(
 describe('Features before repositories', () => {
   const NOTE = 'Waiting for your Product owner to add the first Feature.';
 
-  it("disables a Developer's Add repository on a Project with no Feature, with the reason", async () => {
+  it('hides Add repository on the card until a Feature exists and explains why in the detail', async () => {
     mockSession.appRole = 'member';
     repo.list.mockResolvedValue(featureSnapshot({ canManage: false }));
     repo.requirementCounts.mockResolvedValue({});
@@ -212,26 +212,14 @@ describe('Features before repositories', () => {
     expect(addToCard(container, 'testfinals')?.getAttribute('href')).toBe(
       '/workflows?tab=setup&group=ws-1&project=dp-1',
     );
-    // wallet has none: still on screen, but a disabled control, never a link.
-    expect(addToCard(container, 'wallet')).toBeNull();
-    const blocked = container.querySelector<HTMLButtonElement>(
-      'button.pf-card__add[aria-label="Add repository to wallet"]',
-    )!;
-    expect(blocked.getAttribute('aria-disabled')).toBe('true');
-    expect(blocked.textContent).toBe('Add repository');
     expect(
-      document.getElementById(blocked.getAttribute('aria-describedby')!)
-        ?.textContent,
-    ).toBe(NOTE);
-    const walletCard = blocked.closest('li.pf-card')!;
-    expect(walletCard.textContent).toContain(NOTE);
-    expect(
-      container.querySelectorAll('li.pf-card')[0].textContent,
-    ).not.toContain(NOTE);
+      container.querySelector('[aria-label="Add repository to wallet"]'),
+    ).toBeNull();
+    expect(container.textContent).not.toContain(NOTE);
     // No nudge for a Developer.
     expect(container.textContent).not.toContain('Add a Feature so Developers');
 
-    // The detail says the same, in the actions and in the empty repository list.
+    // The detail still explains the restriction.
     await act(async () => manage(container, 'wallet')!.click());
     const action = container.querySelector('.pf-detail__actions button')!;
     expect(action.getAttribute('aria-disabled')).toBe('true');
