@@ -5691,8 +5691,8 @@ async function developerAddsRepositoryToProject({
 
 /**
  * (m) Developer, Features before repositories: on a Project with no Feature
- * Add repository is there but disabled with the reason, the wizard lists the
- * Project as "(no Features yet)" and blocks a link to it; once the Product
+ * the card hides Add repository, the wizard lists the Project as
+ * "(no Features yet)" and blocks a link to it; once the Product
  * owner writes the first Feature, the same Developer goes ahead.
  */
 async function developerWaitsForFirstFeature({
@@ -5715,41 +5715,24 @@ async function developerWaitsForFirstFeature({
     has: page.locator('.pf-card__name', { hasText: /^storefront$/ }),
   });
 
-  // storefront has a Feature: the link as before. loyalty has none: disabled, never a link.
+  // Only storefront has a Feature, so only its card offers Add repository.
   assert.equal(
     await storefront
       .getByRole('link', { name: 'Add repository to storefront' })
       .getAttribute('href'),
     `/workflows?tab=setup&group=${WORKSPACE.id}&project=${STOREFRONT_FOLDER}`,
   );
-  const blocked = loyalty.getByRole('button', {
-    name: 'Add repository to loyalty',
-  });
-  assert.equal(
-    await blocked.getAttribute('aria-disabled'),
-    'true',
-    'the blocked control is aria-disabled',
-  );
   assert.equal(
     await loyalty
-      .getByRole('link', { name: 'Add repository to loyalty' })
+      .getByLabel('Add repository to loyalty', { exact: true })
       .count(),
     0,
-    'no dead link',
+    'the card hides Add repository',
   );
-  await expectText(loyalty, note, 'the reason on the card');
-  const describedBy = await blocked.getAttribute('aria-describedby');
-  await expectText(
-    page.locator(`[id="${describedBy}"]`),
-    note,
-    'the control is described by the reason',
-  );
-  // Playwright will not click an aria-disabled control; a user can, and nothing happens.
-  await blocked.dispatchEvent('click');
   assert.equal(
-    new URL(page.url()).searchParams.get('tab'),
-    null,
-    'a blocked control goes nowhere',
+    await loyalty.getByText(note, { exact: true }).count(),
+    0,
+    'the card hides the waiting message',
   );
   assert.equal(
     await page
@@ -5759,7 +5742,7 @@ async function developerWaitsForFirstFeature({
     'no nudge for a Developer',
   );
 
-  // The detail says the same.
+  // The detail still explains why repository creation is unavailable.
   await loyalty.getByRole('button', { name: 'Manage loyalty' }).click();
   await expectText(
     page.locator('.pf-detail__title'),
@@ -6256,7 +6239,7 @@ export const JOURNEYS: Journey[] = [
   {
     id: 'm',
     title:
-      'Developer: Features before repositories — Add repository disabled with the reason until the first Feature, then allowed',
+      'Developer: Features before repositories — cards hide Add repository until the first Feature, then show it',
     backend: () => {
       const backend = new QaMockBackend('member', 'enabled', 'enabled');
       backend.seedRequirement(STOREFRONT_FOLDER, {

@@ -21,12 +21,20 @@ import {
   addedMessage,
   canManageProjectMembers,
   eligibleProjectMemberCandidates,
+  memberDisplayName,
   projectMemberErrorMessage,
   removedMessage,
   resyncedMessage,
 } from '../../model/project-members-rules';
 
 type Busy = 'add' | 'remove' | 'sync' | null;
+
+function memberListStatus(state: ResourceState, count: number): ResourceState {
+  if (state === 'empty' || state === 'ready') {
+    return count === 0 ? 'empty' : 'ready';
+  }
+  return state;
+}
 
 export interface ProjectMembersViewModel {
   /**
@@ -50,8 +58,8 @@ export interface ProjectMembersViewModel {
   closeAdd: () => void;
   candidates: GroupMember[];
   candidatesStatus: 'loading' | 'ready' | 'error';
-  selectedUserId: string;
-  setSelectedUserId: (userId: string) => void;
+  selectedUserIds: ReadonlySet<string>;
+  toggleUser: (userId: string) => void;
   addError: string | null;
   add: () => Promise<void>;
 
@@ -66,6 +74,33 @@ export interface ProjectMembersViewModel {
 interface Feedback {
   notice: string | null;
   error: string | null;
+}
+
+/** Add each person through the existing permission and GitHub grant path. */
+async function addSelectedMembers(
+  projectId: string,
+  pending: GroupMember[],
+  onAdded: (member: DeliveryProjectMember) => void,
+) {
+  const notices: string[] = [];
+  const errors: string[] = [];
+  const failedIds = new Set<string>();
+  for (const candidate of pending) {
+    try {
+      const { member, githubAccess } = await addProjectMember(
+        projectId,
+        candidate.userId,
+      );
+      onAdded(member);
+      notices.push(addedMessage(member, githubAccess));
+    } catch (cause) {
+      failedIds.add(candidate.userId);
+      errors.push(
+        `${memberDisplayName(candidate)}: ${projectMemberErrorMessage(cause, 'add')}`,
+      );
+    }
+  }
+  return { notices, errors, failedIds };
 }
 
 /** Team members who could join, read when the picker opens. */
@@ -90,7 +125,7 @@ function useCandidates(groupId: string) {
 }
 
 /**
- * ViewModel for a Project's members panel: the list, adding a team member,
+ * ViewModel for a Project's members panel: the list, adding team members,
  * removing one (after a confirmation), and re-running the Developers'
  * GitHub grants. Nothing loads for anyone but a lead or admin.
  */
@@ -110,19 +145,25 @@ export function useProjectMembersViewModel(input: {
     [deliveryProjectId],
     { enabled: canManage, emptyWhen: (items) => items.length === 0 },
   );
-  const candidates = useCandidates(groupId);
+  const roster = useCandidates(groupId);
   const [feedback, setFeedback] = useState<Feedback>({
     notice: null,
     error: null,
   });
   const [busy, setBusy] = useState<Busy>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const [addError, setAddError] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] =
     useState<DeliveryProjectMember | null>(null);
 
   const members = resource.data ?? [];
+  const candidates = eligibleProjectMemberCandidates(
+    roster.teamMembers,
+    members,
+  );
 
   function upsert(member: DeliveryProjectMember) {
     resource.setData((current) => [
@@ -138,29 +179,43 @@ export function useProjectMembersViewModel(input: {
   }
 
   function openAdd() {
-    setSelectedUserId('');
+    setSelectedUserIds(new Set());
     setAddError(null);
     setAddOpen(true);
-    candidates.load();
+    roster.load();
+  }
+
+  function toggleUser(userId: string) {
+    setAddError(null);
+    setSelectedUserIds((current) => {
+      const next = new Set(current);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
   }
 
   async function add() {
-    if (!selectedUserId) {
-      setAddError('Choose a team member to add.');
-      return;
-    }
+    if (busy !== null || roster.status !== 'ready') return;
+    const pending = candidates.filter((member) =>
+      selectedUserIds.has(member.userId),
+    );
+    if (pending.length === 0) return;
     setBusy('add');
     setAddError(null);
     try {
-      const change = await addProjectMember(deliveryProjectId, selectedUserId);
-      upsert(change.member);
+      const { notices, errors, failedIds } = await addSelectedMembers(
+        deliveryProjectId,
+        pending,
+        upsert,
+      );
       setFeedback({
-        notice: addedMessage(change.member, change.githubAccess),
+        notice: notices.join('\n') || null,
         error: null,
       });
-      setAddOpen(false);
-    } catch (cause) {
-      setAddError(projectMemberErrorMessage(cause, 'add'));
+      setSelectedUserIds(failedIds);
+      if (errors.length === 0) setAddOpen(false);
+      else setAddError(errors.join('\n'));
     } finally {
       setBusy(null);
     }
@@ -214,7 +269,7 @@ export function useProjectMembersViewModel(input: {
       canManage &&
       resource.state !== 'forbidden' &&
       resource.state !== 'notfound',
-    status: resource.state,
+    status: memberListStatus(resource.state, members.length),
     reload: resource.reload,
     members,
     syncLive,
@@ -223,14 +278,13 @@ export function useProjectMembersViewModel(input: {
     busy,
     addOpen,
     openAdd,
-    closeAdd: () => setAddOpen(false),
-    candidates: eligibleProjectMemberCandidates(
-      candidates.teamMembers,
-      members,
-    ),
-    candidatesStatus: candidates.status,
-    selectedUserId,
-    setSelectedUserId,
+    closeAdd: () => {
+      if (busy !== 'add') setAddOpen(false);
+    },
+    candidates,
+    candidatesStatus: roster.status,
+    selectedUserIds,
+    toggleUser,
     addError,
     add,
     removeTarget,

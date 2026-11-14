@@ -29,7 +29,7 @@ export function AddRepositoryAction({
   /** A fuller accessible name (a card names its Project); the visible label otherwise. */
   ariaLabel?: string;
   /** The id of the visible note that explains a blocked control. */
-  noteId: string;
+  noteId?: string;
   /** Cards wrap the label in their own span (hidden on phones). */
   showLabel?: boolean;
 }>) {

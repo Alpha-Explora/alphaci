@@ -25,40 +25,6 @@
   border-color: var(--accent-indigo);
 }
 
-.project-members__explainer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  padding: 0.75rem 0.9rem;
-  border: 1px solid var(--border-layer);
-  border-radius: 0.75rem;
-  background: var(--bg-frost);
-}
-
-.project-members__explainer > p {
-  margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.55;
-  color: var(--text-secondary);
-}
-
-.project-members__explainer > p > .hier-badge {
-  margin-right: 0.35rem;
-  vertical-align: 1px;
-}
-
-.project-members__stub {
-  padding: 0.45rem 0.65rem;
-  border-radius: 0.55rem;
-  border: 1px solid var(--border-amber);
-  background: var(--accent-amber-light);
-}
-
-.project-members__explainer > .project-members__stub {
-  color: var(--accent-amber);
-  font-weight: 600;
-}
-
 .project-members__kind {
   white-space: nowrap;
 }
@@ -82,6 +48,7 @@
 
 .project-members__notice {
   color: var(--text-secondary);
+  white-space: pre-line;
 }
 
 .project-members__confirm {
@@ -118,6 +85,50 @@
   border-radius: 0.65rem;
   font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+.project-members-dialog__picker {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.project-members-dialog__choices {
+  max-block-size: 13rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border-control);
+  border-radius: 0.55rem;
+}
+
+.project-members-dialog__choice {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.65rem;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.project-members-dialog__choice:has(input:checked),
+.project-members-dialog__choice:hover {
+  background: var(--accent-indigo-light);
+}
+
+.project-members-dialog__choice input[type='checkbox'] {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent-indigo);
+}
+
+.project-members-dialog__choice input:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 
 /* The global .primary-button / .ghost-button are hero-scale; these dialogs

@@ -8,7 +8,6 @@ import {
   projectMembersHref,
   removedMessage,
   resyncedMessage,
-  DEVELOPER_ACCESS_NOTE,
 } from '../../../../../src/features/groups/model/project-members-rules';
 import type {
   DeliveryProjectMember,
@@ -182,15 +181,6 @@ describe('GitHub effect messages', () => {
     ).toBe('Dana Dev was removed from this Project.');
     expect(resyncedMessage(4)).toBe('Granting Write on 4 repositories…');
     expect(resyncedMessage(0)).toContain('already has Write');
-  });
-
-  it('explains that attached repositories need a per-repository grant', () => {
-    expect(DEVELOPER_ACCESS_NOTE).toContain(
-      'repository created in this Project',
-    );
-    expect(DEVELOPER_ACCESS_NOTE).toContain(
-      'a lead grants access per repository',
-    );
   });
 });
 
