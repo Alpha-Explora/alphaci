@@ -922,7 +922,7 @@ a.hier-card:hover {
   width: 0.75rem;
   height: 0.75rem;
   fill: none;
-  stroke: currentColor;
+  stroke: currentcolor;
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -931,7 +931,7 @@ a.hier-card:hover {
 .invite-result[aria-selected='true'] .invite-result__check {
   background: var(--accent-indigo);
   border-color: var(--accent-indigo);
-  color: #fff;
+  color: var(--accent-indigo-foreground);
 }
 
 /* Everyone picked so far, above the search box. */
@@ -951,7 +951,7 @@ a.hier-card:hover {
   align-items: center;
   gap: 0.35rem;
   max-width: 100%;
-  padding: 0.18rem 0.2rem 0.18rem 0.2rem;
+  padding: 0.18rem 0.2rem;
   border: 1px solid var(--accent-indigo-glow);
   border-radius: var(--radius-pill);
   background: var(--accent-indigo-light);

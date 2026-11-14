@@ -89,6 +89,7 @@
 
   /* ── Indigo accent ────────────────────────────────────────── */
   --accent-indigo: #6366f1;
+  --accent-indigo-foreground: #fff;
   --accent-indigo-light: rgba(99, 102, 241, 0.12);
   --accent-indigo-glow: rgba(99, 102, 241, 0.35);
 
