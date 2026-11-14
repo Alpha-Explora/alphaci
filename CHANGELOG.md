@@ -53,6 +53,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 
 ### Changed
 
+- **Teams:** Add several organization members at once, optionally assigning them to the same Projects. If any additions fail, only those members stay selected for retry.
 - **QA:** QA and Developers may merge an approved release to main, behind the same current-head, Iteration and Product owner acceptance gates.
 - **Projects:** Nobody, organization owners included, can push straight to dev, uat or main of a generated organization repository; only the ALPHACI GitHub App bypasses the pipeline owners ruleset.
 - **Documentation:** Clarified editions, personas, internal access, and capability inventory gaps; added a contributor guide for assigning features.

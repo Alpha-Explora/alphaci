@@ -53,17 +53,52 @@ function ProjectPicker({ vm }: Readonly<{ vm: AddMemberViewModel }>) {
       {body}
       {vm.projectsStatus === 'ready' && vm.projects.length > 0 && (
         <span className="hier-field-hint">
-          A Developer gets GitHub write access to every repository of the
-          Projects you pick. Without a Project, they get no repository access.
+          Everyone you add joins the Projects you pick. A Developer gets GitHub
+          write access to every repository of those Projects; without a Project,
+          they get no repository access.
         </span>
       )}
     </fieldset>
   );
 }
 
+/** The people picked so far; each chip can be dropped before adding. */
+function SelectedMembers({ vm }: Readonly<{ vm: AddMemberViewModel }>) {
+  if (vm.selectedUsers.length === 0) return null;
+  return (
+    <ul className="invite-chips" aria-label="Selected members">
+      {vm.selectedUsers.map((user) => (
+        <li key={user.login} className="invite-chip">
+          <Avatar
+            login={user.login}
+            name={user.name}
+            avatarUrl={user.avatarUrl}
+          />
+          <span className="invite-chip__name">{user.name ?? user.login}</span>
+          <button
+            type="button"
+            className="invite-chip__remove"
+            aria-label={`Remove ${user.name ?? user.login}`}
+            onClick={() => vm.removeUser(user.login)}
+            disabled={vm.submitting}
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M4 4l8 8M12 4l-8 8" />
+            </svg>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function submitLabelFor(count: number): string {
+  return count > 1 ? `Add ${count} members` : 'Add member';
+}
+
 /**
- * Adds someone to a group immediately. There is no invitation and nothing for
- * the person to accept — they are a member the moment this succeeds.
+ * Adds one or more people to a group immediately. There is no invitation and
+ * nothing for them to accept — they are members the moment this succeeds.
  */
 export function AddMemberDialog({
   open,
@@ -77,15 +112,14 @@ export function AddMemberDialog({
   onAdded: (member: GroupMember) => void;
 }) {
   const vm = useAddMemberViewModel({ open, groupId, onAdded, onClose });
-  const { selectedUser } = vm;
 
   return (
     <FormDialog
       open={open}
       onClose={vm.close}
       title="Add member"
-      description="Pick a member of your GitHub organization. They join as a Member straight away — you can promote them to Lead afterward."
-      submitLabel="Add member"
+      description="Pick one or more members of your GitHub organization. They join as Members straight away — you can promote them to Lead afterward."
+      submitLabel={submitLabelFor(vm.selectedUsers.length)}
       submitting={vm.submitting}
       error={vm.error}
       canSubmit={vm.canSubmit}
@@ -93,93 +127,75 @@ export function AddMemberDialog({
     >
       <div className="hier-field">
         <label className="hier-field-label" htmlFor="add-member-user">
-          Organization member
+          Organization members
         </label>
 
-        {selectedUser ? (
-          // Selected-member chip — clearer than cramming the name back into the
-          // text input, and shows the GitHub avatar we're about to add.
-          <div className="invite-selected">
-            <Avatar
-              login={selectedUser.login}
-              name={selectedUser.name}
-              avatarUrl={selectedUser.avatarUrl}
-            />
-            <div className="invite-selected__meta">
-              <strong>{selectedUser.name ?? selectedUser.login}</strong>
-              <span>
-                @{selectedUser.login}
-                {selectedUser.email ? ` · ${selectedUser.email}` : ''}
-              </span>
-            </div>
-            <button
-              type="button"
-              className="invite-selected__clear"
-              aria-label="Choose a different member"
-              onClick={vm.clearSelection}
-            >
-              Change
-            </button>
+        <SelectedMembers vm={vm} />
+        <input
+          id="add-member-user"
+          className="hier-input"
+          value={vm.search}
+          onChange={(event) => vm.setSearch(event.target.value)}
+          /* Deliberately does not name the organization: which directory
+             backs this deployment is configuration (MEMBER_DIRECTORY_*),
+             published by GET /api/v1/directory. Naming it here has to
+             come from that data, never a hardcoded org. */
+          placeholder="Search by name or GitHub login"
+          autoComplete="off"
+        />
+        {vm.results.length > 0 && (
+          <div
+            className="invite-results"
+            role="listbox"
+            aria-label="Organization members"
+            aria-multiselectable="true"
+          >
+            {vm.results.map((user) => {
+              const selected = vm.isSelected(user);
+              return (
+                <button
+                  key={user.login}
+                  type="button"
+                  className="invite-result"
+                  role="option"
+                  aria-selected={selected}
+                  disabled={!user.hasAccount || vm.submitting}
+                  title={
+                    user.hasAccount
+                      ? undefined
+                      : "Hasn't signed into AlphaCI yet"
+                  }
+                  onClick={() => vm.toggleUser(user)}
+                >
+                  <Avatar
+                    login={user.login}
+                    name={user.name}
+                    avatarUrl={user.avatarUrl}
+                  />
+                  <div className="invite-result__meta">
+                    <strong>{user.name ?? user.login}</strong>
+                    <span>
+                      @{user.login}
+                      {user.hasAccount
+                        ? user.email
+                          ? ` · ${user.email}`
+                          : ''
+                        : " · hasn't signed in yet"}
+                    </span>
+                  </div>
+                  {user.hasAccount ? (
+                    <span className="invite-result__check" aria-hidden="true">
+                      <svg viewBox="0 0 16 16">
+                        <path d="M3.5 8.5l3 3 6-7" />
+                      </svg>
+                    </span>
+                  ) : (
+                    <span className="invite-result__flag">No account</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
-        ) : (
-          <>
-            <input
-              id="add-member-user"
-              className="hier-input"
-              value={vm.search}
-              onChange={(event) => vm.setSearch(event.target.value)}
-              /* Deliberately does not name the organization: which directory
-                 backs this deployment is configuration (MEMBER_DIRECTORY_*),
-                 published by GET /api/v1/directory. Naming it here has to
-                 come from that data, never a hardcoded org. */
-              placeholder="Search organization members by name or GitHub login"
-              autoComplete="off"
-            />
-            {vm.results.length > 0 && (
-              <div
-                className="invite-results"
-                role="listbox"
-                aria-label="Organization members"
-              >
-                {vm.results.map((user) => (
-                  <button
-                    key={user.login}
-                    type="button"
-                    className="invite-result"
-                    role="option"
-                    aria-selected={false}
-                    disabled={!user.hasAccount}
-                    title={
-                      user.hasAccount
-                        ? undefined
-                        : "Hasn't signed into AlphaCI yet"
-                    }
-                    onClick={() => vm.select(user)}
-                  >
-                    <Avatar
-                      login={user.login}
-                      name={user.name}
-                      avatarUrl={user.avatarUrl}
-                    />
-                    <div className="invite-result__meta">
-                      <strong>{user.name ?? user.login}</strong>
-                      <span>
-                        @{user.login}
-                        {user.hasAccount
-                          ? user.email
-                            ? ` · ${user.email}`
-                            : ''
-                          : " · hasn't signed in yet"}
-                      </span>
-                    </div>
-                    {!user.hasAccount && (
-                      <span className="invite-result__flag">No account</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </>
         )}
 
         <span className="hier-field-hint" role="status">
