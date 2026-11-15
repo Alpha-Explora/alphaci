@@ -124,7 +124,7 @@
     "jest": "^30.5.2",
     "jest-junit": "^17.0.0",
     "oxlint-tsgolint": "^7.0.2006",
-    "supertest": "^7.0.0",
+    "supertest": "^7.3.2",
     "ts-jest": "^29.4.15",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
