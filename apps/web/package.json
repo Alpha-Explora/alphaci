@@ -56,7 +56,7 @@
     "dependency-cruiser": "^18.7.2",
     "eslint": "^10.14.0",
     "eslint-config-next": "^16.4.5",
-    "eslint-plugin-oxlint": "^1.92.0",
+    "eslint-plugin-oxlint": "^1.93.0",
     "jest": "^30.5.2",
     "jest-environment-jsdom": "^30.3.0",
     "stylelint": "^18.0.0",
