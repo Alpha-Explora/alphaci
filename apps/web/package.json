@@ -40,7 +40,7 @@
     "@alphaci/persona-rules": "*",
     "driver.js": "^1.4.0",
     "framer-motion": "^14.10.0",
-    "next": "^16.4.5",
+    "next": "^16.4.6",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },
@@ -55,7 +55,7 @@
     "@types/react-dom": "^19.2.3",
     "dependency-cruiser": "^18.7.2",
     "eslint": "^10.14.0",
-    "eslint-config-next": "^16.4.5",
+    "eslint-config-next": "^16.4.6",
     "eslint-plugin-oxlint": "^1.92.0",
     "jest": "^30.5.2",
     "jest-environment-jsdom": "^30.3.0",
