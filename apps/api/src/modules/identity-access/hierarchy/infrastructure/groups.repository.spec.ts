@@ -6,6 +6,7 @@ const ownerRow = {
   workspace_id: 'group-1',
   user_id: 'user-1',
   role: 'admin' as const,
+  app_role: 'lead' as const,
   member_status: 'active' as const,
   invited_by: null,
   invited_at: null,
@@ -87,45 +88,7 @@ function queryIncludes(client: { query: jest.Mock }, snippet: string): boolean {
 }
 
 describe('GroupsRepository last-owner SQL guards', () => {
-  it('changeMemberRoleGuarded blocks demoting the last admin', async () => {
-    const db = makeDatabaseService();
-    const client = db._clientMock;
-    stubGuardedSql(client, 1);
-
-    const repo = new GroupsRepository(db);
-    const result = await repo.changeMemberRoleGuarded(
-      'group-1',
-      'member-1',
-      'member',
-    );
-
-    expect(result.blockedLastOwner).toBe(true);
-    expect(result.member?.role).toBe('admin');
-    expect(
-      queryIncludes(client, 'UPDATE orgs.workspace_members SET role'),
-    ).toBe(false);
-  });
-
-  it('changeMemberRoleGuarded allows demote when owner count is 2', async () => {
-    const db = makeDatabaseService();
-    const client = db._clientMock;
-    stubGuardedSql(client, 2, { allowRoleUpdate: true });
-
-    const repo = new GroupsRepository(db);
-    const result = await repo.changeMemberRoleGuarded(
-      'group-1',
-      'member-1',
-      'member',
-    );
-
-    expect(result.blockedLastOwner).toBe(false);
-    expect(result.member?.role).toBe('member');
-    expect(
-      queryIncludes(client, 'UPDATE orgs.workspace_members SET role'),
-    ).toBe(true);
-  });
-
-  it('removeMemberGuardedWithClient blocks removing the last admin', async () => {
+  it('removeMemberGuardedWithClient blocks removing the last lead or admin', async () => {
     const db = makeDatabaseService();
     const client = db._clientMock;
     stubGuardedSql(client, 1);
@@ -149,7 +112,7 @@ describe('GroupsRepository addMemberDirect', () => {
     const db = makeDatabaseService();
     const repo = new GroupsRepository(db);
 
-    await repo.addMemberDirect('group-1', 'user-2', 'member', 'actor-1');
+    await repo.addMemberDirect('group-1', 'user-2', 'actor-1');
 
     expect(db.query).not.toHaveBeenCalled();
     const [sql, params] = db._clientMock.query.mock.calls[1] as [
@@ -161,7 +124,7 @@ describe('GroupsRepository addMemberDirect', () => {
     expect(sql).toContain("member_status = 'active'");
     expect(sql).toContain('removed_at = NULL');
     expect(sql).toContain("WHERE workspace_members.member_status <> 'active'");
-    expect(params).toEqual(['group-1', 'user-2', 'member', 'actor-1']);
+    expect(params).toEqual(['group-1', 'user-2', 'actor-1']);
   });
 
   it('rolls membership back when notification enqueueing fails', async () => {
@@ -175,13 +138,7 @@ describe('GroupsRepository addMemberDirect', () => {
     }));
     const notify = jest.fn().mockRejectedValue(new Error('outbox offline'));
     await expect(
-      new GroupsRepository(db).addMemberDirect(
-        'g',
-        'u',
-        'member',
-        'lead',
-        notify,
-      ),
+      new GroupsRepository(db).addMemberDirect('g', 'u', 'lead', notify),
     ).rejects.toThrow('outbox offline');
     expect(notify).toHaveBeenCalledWith(db._clientMock, {
       groupName: 'Team A',
@@ -195,13 +152,7 @@ describe('GroupsRepository addMemberDirect', () => {
     const db = makeDatabaseService();
     const notify = jest.fn();
     await expect(
-      new GroupsRepository(db).addMemberDirect(
-        'g',
-        'u',
-        'member',
-        'lead',
-        notify,
-      ),
+      new GroupsRepository(db).addMemberDirect('g', 'u', 'lead', notify),
     ).resolves.toBe(false);
     expect(notify).not.toHaveBeenCalled();
   });

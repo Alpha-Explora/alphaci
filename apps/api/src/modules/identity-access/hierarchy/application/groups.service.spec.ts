@@ -82,10 +82,7 @@ describe('GroupsService — role enforcement (hard constraint: developer -> 403 
       updateGroup: jest.fn(),
       setArchiveStatus: jest.fn(),
       findMemberById: jest.fn(),
-      countActiveOwners: jest.fn(),
-      updateMemberRole: jest.fn(),
       markMemberRemoved: jest.fn(),
-      changeMemberRoleGuarded: jest.fn(),
       removeMemberGuarded: jest.fn(),
       removeMemberGuardedWithClient: jest.fn(),
       listMembers: jest.fn(),
@@ -361,94 +358,6 @@ describe('GroupsService — role enforcement (hard constraint: developer -> 403 
       service.removeMember('group-1', 'owner-1', 'member-owner'),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(groupsRepository.markMemberRemoved).not.toHaveBeenCalled();
-  });
-
-  it('refuses to demote the last remaining owner via role change (BadRequestException, race-free guard)', async () => {
-    groupsRepository.findActiveMembership.mockResolvedValue({
-      workspaceId: 'group-1',
-      userId: 'owner-1',
-      role: 'admin',
-      memberId: owner.id,
-    });
-    groupsRepository.findMemberById.mockResolvedValue(owner);
-    groupsRepository.changeMemberRoleGuarded.mockResolvedValue({
-      member: owner,
-      blockedLastOwner: true,
-    });
-
-    await expect(
-      service.updateMemberRole('group-1', 'owner-1', 'member-owner', {
-        role: 'delegated_lead',
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(groupsRepository.updateMemberRole).not.toHaveBeenCalled();
-  });
-
-  it('allows an owner to change a non-owner member role when other owners remain', async () => {
-    groupsRepository.findActiveMembership.mockResolvedValue({
-      workspaceId: 'group-1',
-      userId: 'owner-1',
-      role: 'admin',
-      memberId: owner.id,
-    });
-    groupsRepository.findMemberById.mockResolvedValue(developer);
-    groupsRepository.changeMemberRoleGuarded.mockResolvedValue({
-      member: { ...developer, role: 'delegated_lead' },
-      blockedLastOwner: false,
-    });
-
-    await expect(
-      service.updateMemberRole('group-1', 'owner-1', 'member-dev', {
-        role: 'delegated_lead',
-      }),
-    ).resolves.toMatchObject({ role: 'delegated_lead' });
-    expect(groupsRepository.changeMemberRoleGuarded).toHaveBeenCalledWith(
-      'group-1',
-      'member-dev',
-      'delegated_lead',
-    );
-  });
-
-  it('allows an owner (Admin) to promote a member directly to Admin (co-lead)', async () => {
-    groupsRepository.findActiveMembership.mockResolvedValue({
-      workspaceId: 'group-1',
-      userId: 'owner-1',
-      role: 'admin',
-      memberId: owner.id,
-    });
-    groupsRepository.findMemberById.mockResolvedValue(developer);
-    groupsRepository.changeMemberRoleGuarded.mockResolvedValue({
-      member: { ...developer, role: 'admin' },
-      blockedLastOwner: false,
-    });
-
-    await expect(
-      service.updateMemberRole('group-1', 'owner-1', 'member-dev', {
-        role: 'admin',
-      }),
-    ).resolves.toMatchObject({ role: 'admin' });
-    expect(groupsRepository.changeMemberRoleGuarded).toHaveBeenCalledWith(
-      'group-1',
-      'member-dev',
-      'admin',
-    );
-  });
-
-  it('blocks a delegated lead from granting the Admin role', async () => {
-    groupsRepository.findActiveMembership.mockResolvedValue({
-      workspaceId: 'group-1',
-      userId: 'delegated-1',
-      role: 'delegated_lead',
-      memberId: 'member-delegated',
-    });
-    groupsRepository.findMemberById.mockResolvedValue(developer);
-
-    await expect(
-      service.updateMemberRole('group-1', 'delegated-1', 'member-dev', {
-        role: 'admin',
-      }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-    expect(groupsRepository.changeMemberRoleGuarded).not.toHaveBeenCalled();
   });
 
   it('cascades a revoke job for every active assignment the removed member holds in the group (member-management contract/§9)', async () => {

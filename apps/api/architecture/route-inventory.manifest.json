@@ -1,11 +1,11 @@
 {
-  "routeCount": 286,
+  "routeCount": 285,
   "referenceFile": "route-inventory.baseline.txt",
-  "referenceSha256": "fc9c9878160b7685ee81bb9508eb0f08840dca9aad65a334e1eca777ad6da847",
+  "referenceSha256": "5da2d0c063e18f97b7d5278a0c75940b631a7bd711bb536e815666500e62e91c",
   "referenceKind": "pre-pr-baseline-equals-current",
   "baselineAvailable": true,
   "baselineFile": "route-inventory.baseline.txt",
-  "baselineSha256": "fc9c9878160b7685ee81bb9508eb0f08840dca9aad65a334e1eca777ad6da847",
+  "baselineSha256": "5da2d0c063e18f97b7d5278a0c75940b631a7bd711bb536e815666500e62e91c",
   "baselineSourceCommit": "e3751eb857ca8f8172da26f8ae61c26f333af19b",
   "capturedAtCheckpoint": "e3751eb857ca8f8172da26f8ae61c26f333af19b",
   "amendments": [
@@ -361,6 +361,12 @@
       "reason": "Special access: an admin grants a person QA release or deployment override; deployment override is super-admin only.",
       "routes": [
         "PATCH /api/v1/admin/users/{id}/special-access"
+      ]
+    },
+    {
+      "reason": "Retired the team member role route: what a person may do in a team comes from their app role (Admin Console), so a stored team role granted nothing and let a team lose its last manager.",
+      "removedRoutes": [
+        "PATCH /api/v1/groups/{groupId}/members/{memberId}"
       ]
     }
   ]

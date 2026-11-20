@@ -164,7 +164,6 @@ const CAPABILITY_ROUTE_BASELINE: Readonly<Record<string, BaselineController>> =
         { handler: 'listMembers', method: 'GET' },
         { handler: 'addMember', method: 'POST' },
         { handler: 'searchEligibleUsers', method: 'GET' },
-        { handler: 'updateMemberRole', method: 'PATCH' },
         { handler: 'removeMember', method: 'DELETE' },
         { handler: 'listActivity', method: 'GET' },
       ],

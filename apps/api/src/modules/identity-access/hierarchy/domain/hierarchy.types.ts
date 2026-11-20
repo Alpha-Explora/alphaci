@@ -26,15 +26,6 @@ export const GROUP_ROLE_LABELS: Record<GroupRole, string> = {
 /** Roles that may invite/manage members, systems, delivery projects, repositories. */
 export const GROUP_MANAGER_ROLES: GroupRole[] = ['admin', 'delegated_lead'];
 
-/**
- * Roles a lead may grant when adding someone to a group — ownership only
- * changes via transfer (member-management contract).
- *
- * Named for the grant, not the delivery mechanism: members are added directly
- * and there is no invitation step.
- */
-export type GrantableRole = Exclude<GroupRole, 'admin'>;
-
 export type LifecycleStatus = 'active' | 'archived';
 
 /**

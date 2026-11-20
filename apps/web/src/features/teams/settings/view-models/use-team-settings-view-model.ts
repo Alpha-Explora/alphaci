@@ -93,10 +93,10 @@ export function useTeamSettingsViewModel(options: {
     [team.id],
   );
 
-  // Ownership can only move to somebody already on the team, and never to the
-  // person who already holds it.
+  // Ownership can only move to an active member who can manage the team: a
+  // Lead or an Admin (role 'admin' here, derived from the app role).
   const candidates = (members.data ?? []).filter(
-    (member) => member.memberStatus === 'active' && member.role !== 'admin',
+    (member) => member.memberStatus === 'active' && member.role === 'admin',
   );
   const archived = team.status === 'archived';
   const dirty =

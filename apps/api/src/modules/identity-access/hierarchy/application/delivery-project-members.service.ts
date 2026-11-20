@@ -157,7 +157,8 @@ export class DeliveryProjectMembersService {
   /**
    * Checks, before anything is written, that a person joining the team can
    * also join these Projects: each is an active Project of this team, and
-   * the person's role is one a Project takes. Returns the kind they join as.
+   * returns the kind they join as, or null for a lead or admin, who joins
+   * the team only.
    *
    * The caller has already passed the team-manager gate, which is the gate
    * every Project of the team uses (assertDeliveryProjectManager).
@@ -166,9 +167,12 @@ export class DeliveryProjectMembersService {
     groupId: string,
     userId: string,
     deliveryProjectIds: readonly string[],
-  ): Promise<DeliveryProjectMemberKind> {
+  ): Promise<DeliveryProjectMemberKind | null> {
     await this.assertProjectsOpenInTeam(groupId, deliveryProjectIds);
-    return this.memberKindOrThrow(userId);
+    // Leads and admins already see every Project of the team: they join the
+    // team and skip the Project join, so one lead in a batch does not refuse
+    // the whole add for them.
+    return memberKindForRole(await this.appRoleLookup.findAppRole(userId));
   }
 
   /**

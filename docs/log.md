@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-20
+
+- **Update**: Team roles come only from the app role. `PATCH /groups/{groupId}/members/{memberId}` is retired and `POST /groups/{groupId}/members` no longer takes `role`; the last-manager guard (`GROUP_LAST_OWNER`) counts active, non-archived members whose app role is lead or admin, the same rule the permission checks use. Lead transfer moves only the team's owner and requires a lead or admin (`GROUP_MANAGER_NOT_LEAD`). Adding a lead or admin with Projects picked adds them to the team and skips the Project join.
+
 ## 2026-11-13
 
 - **Update**: The enterprise GCE deploy runbook has a "Stop and start the VM" section for the new `enterprise-gce-power.yml` workflow (`status`, `start` with a health check, `stop`), which shares the deploy's concurrency group. `alphaci-deployer` holds the custom role `alphaciVmPower` on the instance, and the external IP is the reserved address `alphaci-enterprise-ip`. While the VM is not running, an automatic deploy skips with a notice and a manual one fails.

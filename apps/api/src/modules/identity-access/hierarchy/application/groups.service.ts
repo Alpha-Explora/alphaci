@@ -25,7 +25,6 @@ import {
   type GroupMemberRecord,
 } from '../infrastructure/groups.repository';
 import type { UpdateGroupDto } from '../api/dto/update-group.dto';
-import type { UpdateMemberRoleDto } from '../api/dto/update-member-role.dto';
 
 /**
  * The role the caller holds in the group, as the response carries it: a
@@ -278,11 +277,20 @@ export class GroupsService {
       );
     }
 
-    const transfer = await this.groupsRepository.transferLeadGuarded(
+    // What a person may do in a team comes from their app role, so ownership
+    // can only go to someone who can manage the team.
+    if (target.role !== 'admin') {
+      throw badRequest(
+        'GROUP_MANAGER_NOT_LEAD',
+        'The new owner must be a Lead or an Admin',
+      );
+    }
+
+    const transferred = await this.groupsRepository.transferOwner(
       groupId,
       newManagerUserId,
     );
-    if (!transfer) {
+    if (!transferred) {
       throw badRequest(
         'GROUP_MANAGER_NOT_MEMBER',
         'The new manager must already be an active member of the Group',
@@ -294,11 +302,7 @@ export class GroupsService {
       actorUserId: actingUserId,
       eventCode: HIERARCHY_EVENT_CODES.groupManagerTransferred,
       message: `Group lead transferred to ${newManagerUserId}`,
-      metadata: {
-        groupId,
-        newManagerUserId,
-        previousRole: transfer.previousRole,
-      },
+      metadata: { groupId, newManagerUserId },
     });
 
     // Platform-admin-only: the caller has no membership row and reads as the top tier.
@@ -334,80 +338,6 @@ export class GroupsService {
       search,
       workspaceId: groupId,
     });
-  }
-
-  async updateMemberRole(
-    groupId: string,
-    userId: string,
-    memberId: string,
-    dto: UpdateMemberRoleDto,
-  ): Promise<GroupMemberRecord> {
-    const { viaPlatformAdmin, membership } =
-      await this.accessService.assertGroupManagerOrPlatformAdmin(
-        groupId,
-        userId,
-        ['admin', 'delegated_lead'],
-      );
-    const target = await this.groupsRepository.findMemberById(
-      groupId,
-      memberId,
-    );
-    if (!target) {
-      throw memberNotFound();
-    }
-
-    // A Lead promotes members to whichever tier they choose (Member,
-    // Delegated lead, or Admin). Granting the top Admin/Lead tier is reserved
-    // for an existing Admin (or a platform admin) — a Delegated lead cannot
-    // mint an Admin above their own authority. The last-owner guard below
-    // still prevents demoting the final Admin out of existence.
-    if (
-      dto.role === 'admin' &&
-      !viaPlatformAdmin &&
-      membership?.role !== 'admin'
-    ) {
-      throw forbidden(
-        'GROUP_ADMIN_GRANT_FORBIDDEN',
-        'Only a Group Admin can grant the Admin (Lead) role',
-      );
-    }
-
-    // Race-free last-owner guard: changeMemberRoleGuarded holds a row lock
-    // on every active owner of the Group for the duration of the check +
-    // write, so two concurrent demotions of two different owners can no
-    // longer both read "2 owners" and both proceed to zero (ciso finding,
-    // last-owner safety rule "last-manager protection ... race-condition safety").
-    const { member: updated, blockedLastOwner } =
-      await this.groupsRepository.changeMemberRoleGuarded(
-        groupId,
-        memberId,
-        dto.role,
-      );
-    if (blockedLastOwner) {
-      throw badRequest(
-        'GROUP_LAST_OWNER',
-        'Group must keep at least one owner',
-      );
-    }
-    if (!updated) {
-      throw memberNotFound();
-    }
-
-    await this.auditEventsService.recordProjectEvent({
-      workspaceId: groupId,
-      actorUserId: userId,
-      eventCode: HIERARCHY_EVENT_CODES.memberRoleChanged,
-      message: `Member role changed to ${dto.role}`,
-      metadata: {
-        groupId,
-        memberId,
-        targetUserId: target.userId,
-        previousRole: target.role,
-        newRole: dto.role,
-      },
-    });
-
-    return updated;
   }
 
   /**

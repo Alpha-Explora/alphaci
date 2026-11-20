@@ -80,7 +80,6 @@ describe('GroupMembersService.addMember', () => {
     expect(groupsRepository.addMemberDirect).toHaveBeenCalledWith(
       'group-1',
       'ramos-id',
-      'member',
       'lead-id',
       expect.any(Function),
     );
@@ -111,7 +110,7 @@ describe('GroupMembersService.addMember', () => {
   it('addresses the membership notification to the added member in the transaction', async () => {
     const client = { query: jest.fn() };
     groupsRepository.addMemberDirect.mockImplementation(
-      async (_g, _u, _r, _a, onAdded) => {
+      async (_g, _u, _a, onAdded) => {
         await onAdded!(client as never, {
           groupName: 'Team A',
           actorLogin: 'lead',
@@ -125,7 +124,7 @@ describe('GroupMembersService.addMember', () => {
       workspaceId: 'group-1',
       eventCode: 'hierarchy.group.member_added',
       title: 'You were added to Team A',
-      body: '@lead added you as a Member.',
+      body: '@lead added you to the team.',
     });
   });
 
@@ -133,7 +132,7 @@ describe('GroupMembersService.addMember', () => {
     const client = { query: jest.fn() };
     beforeEach(() => {
       groupsRepository.addMemberDirect.mockImplementation(
-        async (_g, _u, _r, _a, onAdded) => {
+        async (_g, _u, _a, onAdded) => {
           await onAdded!(client as never, {
             groupName: 'Team A',
             actorLogin: 'lead',
