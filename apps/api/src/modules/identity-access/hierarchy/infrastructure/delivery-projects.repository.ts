@@ -130,6 +130,15 @@ export class DeliveryProjectsRepository {
     return this.toRecord(row, counts.get(row.id) ?? 0);
   }
 
+  async hasActiveMember(projectId: string, userId: string): Promise<boolean> {
+    const result = await this.databaseService.query(
+      `SELECT 1 FROM hierarchy.delivery_project_members
+       WHERE delivery_project_id = $1 AND user_id = $2 AND status = 'active'`,
+      [projectId, userId],
+    );
+    return result.rows.length > 0;
+  }
+
   /** Non-archived repository counts, batched by delivery-project id (current hierarchy summary contract). */
   private async getRepositoryCounts(
     deliveryProjectIds: string[],

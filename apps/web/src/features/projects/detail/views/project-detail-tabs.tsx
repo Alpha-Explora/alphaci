@@ -106,6 +106,10 @@ const TAB_PANELS: Record<
   settings: SettingsTab,
 };
 
+function canAccessFolderQa(folder: ProjectDetailTabsProps['folder']): boolean {
+  return folder?.status !== 'loading' && folder?.project?.canAccessQa !== false;
+}
+
 export function ProjectDetailTabs({
   project,
   external = false,
@@ -122,6 +126,7 @@ export function ProjectDetailTabs({
     appRole,
     specialAccess,
     viewerLogin,
+    canAccessQa: canAccessFolderQa(folder),
   });
   const TabPanel = TAB_PANELS[vm.tab];
   // Five tabs fit beside the title; a Developer's nine and an admin's eleven

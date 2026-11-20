@@ -127,7 +127,10 @@ export function useDeliveryProjectViewModel(
     reopenError,
     reopen,
     appRole,
-    qaEnabled: qaChecklistsEnabled && Boolean(appRole),
+    qaEnabled:
+      qaChecklistsEnabled &&
+      Boolean(appRole) &&
+      projectResource.data?.canAccessQa !== false,
     dialogOpen,
     setDialogOpen,
     prependRepository: (repository) =>

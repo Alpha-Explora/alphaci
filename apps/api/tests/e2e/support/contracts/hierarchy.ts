@@ -73,6 +73,7 @@ export const DeliveryProjectSchema = z.strictObject({
   createdAt: timestamp,
   updatedAt: timestamp,
   repositoryCount: z.number().int().nonnegative(),
+  canAccessQa: z.boolean().optional(),
 });
 
 export const _group: Matches<typeof GroupSchema, Group> = true;

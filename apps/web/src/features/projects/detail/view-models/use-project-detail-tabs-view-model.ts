@@ -163,6 +163,7 @@ export function useProjectDetailTabsViewModel(options: {
   appRole?: AppRole;
   specialAccess?: readonly SpecialAccess[];
   viewerLogin?: string;
+  canAccessQa?: boolean;
 }): ProjectDetailTabsViewModel {
   const {
     projectId,
@@ -171,6 +172,7 @@ export function useProjectDetailTabsViewModel(options: {
     appRole,
     specialAccess,
     viewerLogin,
+    canAccessQa = true,
   } = options;
   // A deep link (#qa) picks the first tab. Safe to read window here: the tab
   // set only mounts client-side, once the project overview has loaded.
@@ -205,9 +207,10 @@ export function useProjectDetailTabsViewModel(options: {
   );
 
   const caps = useCapabilities();
+  const qaChecklistsEnabled = caps.qaChecklistsEnabled && canAccessQa;
   const visibleTabs = visibleProjectDetailTabs(
     appRole,
-    { qaChecklistsEnabled: caps.qaChecklistsEnabled },
+    { qaChecklistsEnabled },
     specialAccess,
   );
   // Derived, not reset by an effect: if the flag turns off under a selected
@@ -342,7 +345,7 @@ export function useProjectDetailTabsViewModel(options: {
     appRole,
     qaRole: actingQaRole(appRole, specialAccess),
     viewerLogin,
-    qaChecklistsEnabled: caps.qaChecklistsEnabled,
+    qaChecklistsEnabled,
     highlightMyQaItems,
     openMyQaItems,
     logFocus,

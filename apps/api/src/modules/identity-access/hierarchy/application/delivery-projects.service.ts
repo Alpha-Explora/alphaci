@@ -10,6 +10,7 @@ import {
 import { deliveryProjectNotFound } from './hierarchy.errors';
 
 import { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
+import { canManageRequirements } from '#kernel/rules/persona-access.rules';
 import {
   DELIVERY_PROJECT_DATA_CLEANUP,
   type DeliveryProjectDataCleanupPort,
@@ -220,7 +221,14 @@ export class DeliveryProjectsService {
     if (!deliveryProject) {
       throw deliveryProjectNotFound();
     }
-    return deliveryProject;
+    const canAccessQa =
+      (await this.accessService.isPlatformAdmin(userId)) ||
+      canManageRequirements(await this.accessService.getAppRole(userId)) ||
+      (await this.deliveryProjectsRepository.hasActiveMember(
+        deliveryProjectId,
+        userId,
+      ));
+    return { ...deliveryProject, canAccessQa };
   }
 
   async updateDeliveryProject(

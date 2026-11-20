@@ -269,6 +269,10 @@ describe('QA release-tracker response contracts', () => {
       [userId],
     );
     try {
+      expect(
+        (await agent.get(`/api/v1/delivery-projects/${projectId}`).expect(200))
+          .body,
+      ).toMatchObject({ canAccessQa: false });
       await agent.get(requirements).expect(404);
       await agent
         .get(`/api/v1/requirements/${source.requirement_id}`)
@@ -281,6 +285,10 @@ describe('QA release-tracker response contracts', () => {
         [projectId, userId],
       );
       await agent.get(requirements).expect(200);
+      expect(
+        (await agent.get(`/api/v1/delivery-projects/${projectId}`).expect(200))
+          .body,
+      ).toMatchObject({ canAccessQa: true });
       await agent.get(todos).expect(200);
       await agent
         .patch(

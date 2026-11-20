@@ -139,6 +139,18 @@ test.describe('workspace projects', () => {
       await expect(
         page.getByRole('heading', { name: 'Checkout', exact: true }),
       ).toBeVisible();
+      const qaHeading = page.getByRole('heading', {
+        name: 'Requirements and QA',
+      });
+      await expect(qaHeading).toBeVisible();
+      await page.waitForLoadState('networkidle');
+
+      setQuickLoginRole('member');
+      await page.reload();
+      await expect(
+        page.getByRole('heading', { name: 'Checkout', exact: true }),
+      ).toBeVisible();
+      await expect(qaHeading).toHaveCount(0);
     } finally {
       setQuickLoginRole('member');
     }

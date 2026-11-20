@@ -21,4 +21,6 @@ export interface DeliveryProject {
   updatedAt: string;
   /** Repositories that are not archived. */
   repositoryCount: number;
+  /** Present on the Project detail response for the signed-in viewer. */
+  canAccessQa?: boolean | undefined;
 }

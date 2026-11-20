@@ -60,7 +60,10 @@ function DetailActions({
   gate: FolderFeatureGate;
   noteId: string;
 }>) {
-  const verifyId = vm.canVerifyInQaStudio ? verifyProjectId(folder) : null;
+  const verifyId =
+    vm.canVerifyInQaStudio && canOpenProjectQa(vm, folder)
+      ? verifyProjectId(folder)
+      : null;
   const studio = verifyId ? studioLinkFor(vm.appRole, verifyId) : null;
   const members = canManageProjectMembers(vm.appRole);
   if (!studio && !members && gate.addRepository === 'hidden') return null;
@@ -196,11 +199,22 @@ function EmptyRepositories({
  * The Project's requirements, its QA run and its project-wide QA items. The
  * workspace belongs to the checklists domain and owns its view-models.
  */
+function canOpenProjectQa(
+  vm: ProjectFoldersViewModel,
+  folder: ProjectFolder,
+): boolean {
+  return (
+    vm.canManageRequirements ||
+    (vm.requirementCounts !== null &&
+      Object.hasOwn(vm.requirementCounts, folder.deliveryProjectId))
+  );
+}
+
 function ProjectQaSection({
   vm,
   folder,
 }: Readonly<{ vm: ProjectFoldersViewModel; folder: ProjectFolder }>) {
-  if (!vm.qaChecklistsEnabled) return null;
+  if (!vm.qaChecklistsEnabled || !canOpenProjectQa(vm, folder)) return null;
   if (!showsProjectQaWorkspace(vm.appRole, folder.repositories.length))
     return null;
   return (

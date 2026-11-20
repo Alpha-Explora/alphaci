@@ -37,6 +37,7 @@ export interface ProjectFolderSummary {
   deliveryProjectId: string | null;
   groupId: string | null;
   name: string;
+  canAccessQa?: boolean;
   /** Ordered frontend, backend, service, app (the server's order, kept). */
   repositories: ProjectFolderRepository[];
 }

@@ -11,6 +11,7 @@ import type {
 } from '../../infrastructure/projects.repository';
 import type { CatalogService } from '../catalog/catalog.service';
 import { ProjectFolderService } from './project-folder.service';
+import type { QaAccessService } from '../qa-checklists/qa-access.service';
 
 const GROUP = 'group-1';
 const DELIVERY = 'delivery-1';
@@ -64,6 +65,9 @@ function build(options: {
     projectsRepository as unknown as ProjectsRepository,
     catalogService as unknown as CatalogService,
     projectLink as unknown as ProjectLinkPort,
+    {
+      canAccessProject: jest.fn().mockResolvedValue(true),
+    } as unknown as QaAccessService,
   );
   return { service, projectsRepository, projectLink };
 }

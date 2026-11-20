@@ -81,6 +81,8 @@ Every route sits behind `@RequiresCapability('projects.qa-checklists')`. Develop
 
 A Feature rejects duplicate story titles after trimming and case folding with `409 QA_STORY_DUPLICATE`. Creating the same open to-do twice as the same author returns `409 PROJECT_TODO_DUPLICATE` when the normalized title, notes, assignee, due date and priority match. A Developer with QA release access receives `403 QA_SELF_VERIFICATION` when they try to pass a story they marked Done.
 
+The team QA overview lists only Projects the viewer may access. Project detail and repository folder responses expose `canAccessQa` for the current viewer so navigation and requests follow the same access rule.
+
 ### 2.1 Shapes
 
 ```ts
