@@ -30,11 +30,11 @@
   },
   "devDependencies": {
     "js-yaml": "^5.5.0",
-    "knip": "^6.44.1",
+    "knip": "^6.45.1",
     "lefthook": "^2.2.2",
-    "oxlint": "^1.92.0",
+    "oxlint": "^1.93.0",
     "prettier": "^3.4.2",
-    "turbo": "^2.11.10",
+    "turbo": "^2.11.11",
     "typescript": "^6.0.3",
     "typescript-7": "npm:typescript@^7.0.2"
   },

@@ -47,7 +47,7 @@
   "devDependencies": {
     "@alphaci/config": "*",
     "@playwright/test": "^1.65.0",
-    "@tailwindcss/postcss": "^4.3.4",
+    "@tailwindcss/postcss": "^4.3.5",
     "@testing-library/jest-dom": "^7.0.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.6.6",
