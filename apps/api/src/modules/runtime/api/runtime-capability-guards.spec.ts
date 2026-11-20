@@ -67,7 +67,15 @@ describe('runtime capability guard order', () => {
         SubscriptionGuard,
         {
           provide: SESSION_USER_LOOKUP,
-          useValue: { findSessionUser: jest.fn() } satisfies SessionUserLookup,
+          useValue: {
+            findSessionUser: jest.fn(),
+            findActiveSessionUser: jest.fn().mockResolvedValue({
+              id: 'user-1',
+              login: 'user-1',
+              onboardingCompleted: true,
+              isInternal: false,
+            }),
+          } satisfies SessionUserLookup,
         },
         {
           provide: CAPABILITY_RESOLVER,
@@ -127,7 +135,15 @@ describe('runtime capability guard order', () => {
         SubscriptionGuard,
         {
           provide: SESSION_USER_LOOKUP,
-          useValue: { findSessionUser: jest.fn() } satisfies SessionUserLookup,
+          useValue: {
+            findSessionUser: jest.fn(),
+            findActiveSessionUser: jest.fn().mockResolvedValue({
+              id: 'user-1',
+              login: 'user-1',
+              onboardingCompleted: true,
+              isInternal: false,
+            }),
+          } satisfies SessionUserLookup,
         },
         {
           provide: CAPABILITY_RESOLVER,

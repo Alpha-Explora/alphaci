@@ -91,6 +91,7 @@ describe('GithubSyncService — assignment state machine (hierarchy state-machin
     } as unknown as jest.Mocked<RepositoriesRepository>;
     sessionUserLookup = {
       findSessionUser: jest.fn().mockResolvedValue(baseUser),
+      findActiveSessionUser: jest.fn().mockResolvedValue(baseUser),
     };
     provider = {
       ensureTeam: jest.fn(),

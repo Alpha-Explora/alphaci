@@ -23,57 +23,58 @@ const makeContext = (session: Record<string, unknown>) =>
     }),
   }) as unknown as ExecutionContext;
 
-const makeSessionUserLookup = () =>
-  ({
-    findSessionUser: jest.fn().mockResolvedValue(fakeUser),
-  }) as unknown as SessionUserLookup;
-
 describe('SessionAuthGuard', () => {
   let guard: SessionAuthGuard;
-  let sessionUserLookup: SessionUserLookup;
+  let findActiveSessionUser: jest.Mock;
 
   beforeEach(async () => {
-    sessionUserLookup = makeSessionUserLookup();
+    findActiveSessionUser = jest.fn().mockResolvedValue(fakeUser);
+    const lookup = {
+      findSessionUser: jest.fn(),
+      findActiveSessionUser,
+    } as unknown as SessionUserLookup;
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SessionAuthGuard,
-        { provide: SESSION_USER_LOOKUP, useValue: sessionUserLookup },
+        { provide: SESSION_USER_LOOKUP, useValue: lookup },
       ],
     }).compile();
 
     guard = module.get(SessionAuthGuard);
   });
 
-  it('should be defined', () => {
-    expect(guard).toBeDefined();
+  it('throws when the session has neither user nor userId', async () => {
+    await expect(guard.canActivate(makeContext({}))).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(findActiveSessionUser).not.toHaveBeenCalled();
   });
 
-  it('returns true when session.user is set', async () => {
-    const ctx = makeContext({ user: fakeUser });
-    const result = await guard.canActivate(ctx);
-    expect(result).toBe(true);
-  });
-
-  it('throws UnauthorizedException when session has neither user nor userId', async () => {
-    const ctx = makeContext({});
-    await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
-  });
-
-  it('loads user from repo when userId is set but user is missing', async () => {
+  it('loads the user when only userId is set', async () => {
     const session: Record<string, unknown> = { userId: 'user-1' };
-    const ctx = makeContext(session);
-    const result = await guard.canActivate(ctx);
-
-    expect(sessionUserLookup.findSessionUser).toHaveBeenCalledWith('user-1');
-    expect(result).toBe(true);
+    await expect(guard.canActivate(makeContext(session))).resolves.toBe(true);
+    expect(findActiveSessionUser).toHaveBeenCalledWith('user-1');
     expect(session['user']).toEqual(fakeUser);
   });
 
-  it('throws UnauthorizedException when userId is set but user not found in repo', async () => {
-    (sessionUserLookup.findSessionUser as jest.Mock).mockResolvedValueOnce(
-      null,
+  it('re-reads the account even when the session caches a user', async () => {
+    const stale = { ...fakeUser, login: 'old-login' };
+    const session: Record<string, unknown> = { user: stale, userId: 'user-1' };
+    await expect(guard.canActivate(makeContext(session))).resolves.toBe(true);
+    expect(findActiveSessionUser).toHaveBeenCalledWith('user-1');
+    expect(session['user']).toEqual(fakeUser);
+  });
+
+  it('signs out a session whose account was archived or deleted', async () => {
+    findActiveSessionUser.mockResolvedValueOnce(null);
+    const session: Record<string, unknown> = {
+      user: fakeUser,
+      userId: 'user-1',
+    };
+    await expect(guard.canActivate(makeContext(session))).rejects.toThrow(
+      UnauthorizedException,
     );
-    const ctx = makeContext({ userId: 'unknown' });
-    await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
+    expect(session['user']).toBeUndefined();
+    expect(session['userId']).toBeUndefined();
   });
 });

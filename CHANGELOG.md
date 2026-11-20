@@ -113,6 +113,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **Pipelines:** Generated workflows no longer run stages chained off a fork's code, and write permissions sit only on the jobs that use them.
 - **On-prem:** Replacing a host revokes its previous credentials.
 - **On-prem:** A person removed from a team can no longer assign their project to the team's machines or deploy to them.
+- **Sign-in:** Deleting an account signs out all of its sessions, not only the one that deleted it.
 
 ### Development
 

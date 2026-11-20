@@ -12,6 +12,12 @@ import {
   type SessionUserLookup,
 } from '#kernel/auth/session-user-lookup.contract';
 
+/**
+ * A session acts as its account only while that account exists and is not
+ * archived. The account is read on every request rather than trusted from the
+ * session, so deleting an account ends every one of its sessions, not just the
+ * one that deleted it, and the session's copy of the user stays current.
+ */
 @Injectable()
 export class SessionAuthGuard implements CanActivate {
   constructor(
@@ -21,24 +27,22 @@ export class SessionAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
+    const session = request.session;
+    const userId = session?.userId ?? session?.user?.id;
 
-    if (!request.session?.user && !request.session?.userId) {
+    if (!userId) {
       throw new UnauthorizedException('Authentication required');
     }
 
-    if (!request.session.user && request.session.userId) {
-      const user = await this.sessionUserLookup.findSessionUser(
-        request.session.userId,
-      );
-
-      if (!user) {
-        throw new UnauthorizedException('Authentication required');
-      }
-
-      request.session.user = user;
-      request.session.userId = user.id;
+    const user = await this.sessionUserLookup.findActiveSessionUser(userId);
+    if (!user) {
+      delete session.user;
+      delete session.userId;
+      throw new UnauthorizedException('Authentication required');
     }
 
+    session.user = user;
+    session.userId = user.id;
     return true;
   }
 }
