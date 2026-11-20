@@ -41,8 +41,8 @@ export class ProviderConnectionsService {
     dto: CreateProviderConnectionDto,
   ) {
     await this.assertCanManageProviderConnections(userId);
-    const provider = this.findProvider(dto.provider);
-    if (!provider) {
+    const provider = this.providerRegistry?.find(dto.provider);
+    if (!provider?.capabilities.envProvisioning) {
       throw new BadRequestException('Unsupported provider');
     }
     if (!dto.label?.trim() || !dto.token?.trim()) {
@@ -101,17 +101,6 @@ export class ProviderConnectionsService {
         code: 'PROJECT_ROLE_FORBIDDEN',
         message: 'Only a lead or admin may manage provider connections.',
       });
-    }
-  }
-
-  private findProvider(providerId: string) {
-    if (!this.providerRegistry) {
-      return undefined;
-    }
-    try {
-      return this.providerRegistry.get(providerId);
-    } catch {
-      return undefined;
     }
   }
 }

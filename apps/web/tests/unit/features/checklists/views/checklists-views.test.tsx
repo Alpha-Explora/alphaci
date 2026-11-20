@@ -171,9 +171,7 @@ describe('WorkspaceChecklistsSection', () => {
         initialChecklistId="cl-1"
       />,
     );
-    expect(container.textContent).toContain(
-      'now a System requirement of a Project',
-    );
+    expect(container.textContent).toContain('now a Project requirement');
     expect(buttonNamed(container, 'Edit checklist')).toBeUndefined();
     expect(buttonNamed(container, 'Share')).toBeUndefined();
     expect(buttonNamed(container, 'Archive')).toBeUndefined();

@@ -12,11 +12,11 @@ import {
   getSystem,
   getSystemDeliveryProjects,
   reopenGroup,
+  reopenDeliveryProject,
   searchEligibleGroupUsers,
   updateGroup,
 } from '@/features/groups/data/hierarchy-api';
 import { getTeamProjectChoices } from '@/features/groups/data/team-project-choices-api';
-import { getProjects } from '@/features/projects';
 
 import type {
   AddGroupMemberRequest,
@@ -28,7 +28,6 @@ import type {
   HierarchyRepository,
   HierarchySystem,
   InternalUserDirectoryEntry,
-  ProvisionedProject,
   RepositoryAccessStatusResponse,
   RepositoryAssignment,
   TeamProjectChoice,
@@ -41,11 +40,6 @@ import type {
  * Domain-level rather than per-slice because every one of the seven group
  * surfaces begins by resolving the group itself — the skill sanctions
  * features/<domain>/data as the share point between actions. */
-
-/* The systems surface called getProjects(undefined, …), which takes that
- * function's own default of 25 — not its 100 ceiling. Naming it here keeps the
- * page size the same as before the move. */
-const PROJECTS_LIMIT = 25;
 
 export const groupsRepository = {
   group(groupId: string): Promise<GroupSummary> {
@@ -110,6 +104,10 @@ export const groupsRepository = {
     return getDeliveryProject(deliveryProjectId);
   },
 
+  reopenDeliveryProject(deliveryProjectId: string): Promise<DeliveryProject> {
+    return reopenDeliveryProject(deliveryProjectId);
+  },
+
   deliveryProjectRepositories(
     deliveryProjectId: string,
   ): Promise<HierarchyRepository[]> {
@@ -128,12 +126,5 @@ export const groupsRepository = {
     repositoryId: string,
   ): Promise<RepositoryAccessStatusResponse> {
     return getRepositoryAccessStatus(repositoryId);
-  },
-
-  /** Provisioned projects for the group, scoped server-side. */
-  groupProjects(groupId: string): Promise<ProvisionedProject[]> {
-    return getProjects(PROJECTS_LIMIT, { workspaceId: groupId }).then(
-      (res) => res.items,
-    );
   },
 };

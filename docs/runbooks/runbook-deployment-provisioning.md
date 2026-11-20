@@ -41,6 +41,12 @@ Every environment is delivered one way, and each deployment records which:
 - **Workflow**: Render and Vercel targets. The generated pipeline deploys the first environment on push and runs `30-alphaci-promote.yml` for a promotion; CI reports status with the project CI token.
 - **Host**: on-prem targets. The pipeline builds and registers the release and runs no deploy job. The release is signed by the backend itself (`ALPHACI_RELEASE_SIGNER=file`, the self-hosted appliance) or by a sign-release job in CI (hosted backend). The environment's host pulls the assignment and is the only party that may report its status.
 
+Assign an on-prem host before registering or promoting a release into that environment. Without one, the API returns 409 `DEPLOYMENT_HOST_UNASSIGNED` before creating the deployment. Retry the same request after assigning a host.
+
+Unassigning a host or revoking it without a replacement marks its pending or deploying releases as failed. Assign a new host, then run the release workflow again or retry the promotion. Replacing a host keeps in-flight deployments available for the replacement.
+
+Environment source branches must be Git branch names that generated workflows can use. To repair a saved invalid branch, send `displayName` and the corrected `sourceBranch` to `PATCH /api/v1/projects/{projectId}/environments/{environmentId}`, then regenerate the workflow. This repair endpoint accepts branch changes only for invalid saved branches.
+
 An environment cannot mix the two: creating or attaching a target that would mix them is refused with 409, and project creation refuses it with 400 before the repository exists.
 
 ## On-prem targets

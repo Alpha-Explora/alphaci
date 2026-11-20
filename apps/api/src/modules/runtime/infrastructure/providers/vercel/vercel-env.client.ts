@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import type { AppConfig } from '#kernel/config/app.config';
-import { throwIfRateLimited } from '../core/fetch-with-retry';
+import {
+  fetchProviderConnection,
+  throwIfRateLimited,
+} from '../core/fetch-with-retry';
 import type {
   CreateProviderTargetInput,
   DeleteProviderEnvInput,
@@ -127,9 +130,11 @@ export class VercelEnvClient implements DeploymentProvider {
   constructor(private readonly configService?: ConfigService) {}
 
   async validateConnection(token: string): Promise<ProviderAccountSummary> {
-    const response = await fetch(this.withScope(`${VERCEL_API_URL}/v2/user`), {
-      headers: this.headers(token),
-    });
+    const response = await fetchProviderConnection(
+      'Vercel',
+      this.withScope(`${VERCEL_API_URL}/v2/user`),
+      this.headers(token),
+    );
     await this.assertOk(response, 'Vercel connection validation failed');
     const payload = (await response.json()) as {
       user?: { uid?: string; username?: string; name?: string };
@@ -150,9 +155,11 @@ export class VercelEnvClient implements DeploymentProvider {
     token: string,
     teamId: string,
   ): Promise<{ id: string; slug?: string; name?: string }> {
-    const response = await fetch(`${VERCEL_API_URL}/v2/teams/${teamId}`, {
-      headers: this.headers(token),
-    });
+    const response = await fetchProviderConnection(
+      'Vercel',
+      `${VERCEL_API_URL}/v2/teams/${teamId}`,
+      this.headers(token),
+    );
     await this.assertOk(response, 'Vercel team access validation failed');
     const payload = (await response.json()) as {
       id?: string;

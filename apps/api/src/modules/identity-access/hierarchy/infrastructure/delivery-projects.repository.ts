@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 
 import { DatabaseService, type SqlExecutor } from '#kernel/db/database.service';
 import type { LifecycleStatus } from '../domain/hierarchy.types';
+import { requireActiveGroup } from './groups.repository';
 import {
   PROJECT_NAME_HOLDERS_SQL,
   ProjectNameTakenException,
@@ -73,6 +74,7 @@ export class DeliveryProjectsRepository {
     },
     db: SqlExecutor = this.databaseService,
   ): Promise<DeliveryProjectRecord> {
+    await requireActiveGroup(db, input.groupId);
     const result = await db.query<DeliveryProjectRow>(
       `
         INSERT INTO hierarchy.delivery_projects (system_id, group_id, name, description, manager_id)
@@ -205,6 +207,26 @@ export class DeliveryProjectsRepository {
     if (!row) return null;
     const counts = await this.getRepositoryCounts([row.id]);
     return this.toRecord(row, counts.get(row.id) ?? 0);
+  }
+
+  async reopen(
+    project: Pick<DeliveryProjectRecord, 'id' | 'groupId' | 'name'>,
+  ): Promise<boolean> {
+    return this.withUniqueName(
+      project.groupId,
+      project.name,
+      async (tx) => {
+        await requireActiveGroup(tx, project.groupId);
+        const result = await tx.query(
+          `UPDATE hierarchy.delivery_projects
+         SET status = 'active', archived_at = NULL, updated_at = NOW()
+         WHERE id = $1 AND name = $2 AND status = 'archived'`,
+          [project.id, project.name],
+        );
+        return (result.rowCount ?? 0) > 0;
+      },
+      project.id,
+    );
   }
 
   /**

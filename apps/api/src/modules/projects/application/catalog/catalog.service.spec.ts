@@ -427,6 +427,23 @@ describe('CatalogService', () => {
       expect(result[0]).toHaveProperty('name');
       expect(result[0]).toHaveProperty('count');
     });
+
+    it('combines case variants and counts a template once per category', async () => {
+      mockFs.access.mockResolvedValue(undefined);
+      mockReaddir([makeEntry('nestjs-be.properties.json')]);
+      mockReadFile(
+        JSON.stringify({
+          ...(JSON.parse(sampleProperties) as Record<string, unknown>),
+          categories: ['NestJS', 'nestjs', 'Backend'],
+        }),
+      );
+
+      const result = await service.listCategories();
+
+      expect(
+        result.filter((category) => category.name.toLowerCase() === 'nestjs'),
+      ).toEqual([{ name: 'NestJS', count: 1 }]);
+    });
   });
 
   describe('getTemplateById', () => {

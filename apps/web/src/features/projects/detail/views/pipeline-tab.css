@@ -21,6 +21,16 @@
   min-width: 0;
 }
 
+.pipeline-tab__views {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pipeline-tab__views button[aria-pressed='true'] {
+  color: var(--text-primary);
+  border-color: currentcolor;
+}
+
 .pipeline-tab__name {
   margin: 0;
   font-size: 0.95rem;

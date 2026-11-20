@@ -60,6 +60,8 @@ Each feature domain has an `index.ts` public API. Actions inside a domain follow
 
 ## Routing
 
+The Group Projects tab reads the team's Project folders, including empty Projects and unfiled repositories. The Pipeline tab reads reported results by repository from the CI runs API used by the Runs page.
+
 `src/app/` is a routing table. Most pages re-export one feature view. `/`, `/login`, `/signup`, and `/auth/callback` keep small inline composition because they are entry and session seams. `/` serves the public-site landing in the SaaS edition and redirects to `/login` otherwise. `/signup` redirects to `/login`. `/healthz` answers `{"status":"ok"}` without calling the backend. The [route map](/architecture/web/route-map.generated.md) is generated from `page.tsx` files.
 
 ## Shared layer

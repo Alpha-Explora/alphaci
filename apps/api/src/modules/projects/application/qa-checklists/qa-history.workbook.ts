@@ -68,7 +68,9 @@ export async function renderQaHistoryWorkbook(input: {
       event.requirementName || null,
       event.title,
       event.actorLogin ? `@${event.actorLogin}` : null,
-      EVENT_LABELS[event.type] ?? event.type,
+      event.payload?.['poStatus'] === 'passed'
+        ? 'Accepted by Product Owner'
+        : (EVENT_LABELS[event.type] ?? event.type),
       event.fromStatus,
       event.toStatus,
       describePayload(event.payload ?? {}) || null,

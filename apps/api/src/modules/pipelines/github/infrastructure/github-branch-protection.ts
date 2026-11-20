@@ -2,7 +2,7 @@ import type {
   GithubBranchProtectionOutcome,
   GithubPullRequestProtectionOptions,
 } from '#kernel/ports/github.port';
-import type { GithubHttp } from './github-http';
+import { githubTransportMessage, type GithubHttp } from './github-http';
 
 /**
  * Pull-request-only branch protection that never loosens what a branch
@@ -245,10 +245,9 @@ export async function ensurePullRequestProtection(
     }
     return { status: 'applied' };
   } catch (error) {
-    // Never include the token: only the message of the transport error.
     return {
       status: 'failed',
-      error: `GitHub could not be reached: ${error instanceof Error ? error.message : String(error)}`,
+      error: githubTransportMessage(error),
     };
   }
 }

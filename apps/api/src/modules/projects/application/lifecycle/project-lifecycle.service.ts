@@ -246,6 +246,16 @@ export class ProjectLifecycleService {
       );
     }
 
+    await (
+      this.auditEventPublisher ?? this.auditEventsService
+    )?.recordProjectEvent({
+      actorUserId: userId,
+      workspaceId: project.workspace_id ?? null,
+      eventCode: 'project_disconnected',
+      message: `Disconnected ${project.repo_full_name} from AlphaCI.`,
+      metadata: { projectId, repoFullName: project.repo_full_name },
+    });
+
     return {
       ok: true,
       githubRepoDeleted,

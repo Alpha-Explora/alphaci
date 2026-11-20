@@ -115,7 +115,7 @@ describe('GroupsRepository addMemberDirect', () => {
     await repo.addMemberDirect('group-1', 'user-2', 'actor-1');
 
     expect(db.query).not.toHaveBeenCalled();
-    const [sql, params] = db._clientMock.query.mock.calls[1] as [
+    const [sql, params] = db._clientMock.query.mock.calls[2] as [
       string,
       unknown[],
     ];

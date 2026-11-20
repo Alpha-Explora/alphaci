@@ -159,6 +159,16 @@ function DeliveryProjectDetail({
         actions={
           <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
             <LifecycleStatusBadge status={project.status} />
+            {vm.canReopen && (
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={vm.reopening}
+                onClick={() => void vm.reopen()}
+              >
+                {vm.reopening ? 'Reopening…' : 'Reopen Project'}
+              </button>
+            )}
             {/* "Iteration 3 · Delivered 14 Oct", and Start iteration 4 for a Product owner or admin. */}
             <IterationHeader
               deliveryProjectId={project.id}
@@ -169,6 +179,11 @@ function DeliveryProjectDetail({
           </div>
         }
       />
+      {vm.reopenError && (
+        <p role="alert" className="error-text">
+          {vm.reopenError}
+        </p>
+      )}
 
       <DeliveryProjectRepositories
         groupId={groupId}

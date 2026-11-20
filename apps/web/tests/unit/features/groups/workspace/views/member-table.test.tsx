@@ -2,6 +2,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { MemberTable } from '../../../../../../src/features/groups/workspace/views/member-table';
+import { removeGroupMember } from '../../../../../../src/features/groups/data/hierarchy-api';
 import type { GroupMember } from '../../../../../../src/features/groups';
 
 jest.mock('../../../../../../src/features/groups/data/hierarchy-api', () => ({
@@ -104,5 +105,24 @@ describe('MemberTable roles', () => {
     root = null;
     document.body.innerHTML = '';
     expect(hasRemove(render(rows, false))).toBe(false);
+  });
+
+  it('waits for confirmation before removing a member', async () => {
+    const remove = jest.mocked(removeGroupMember);
+    const container = render([member({})], true);
+    const button = (label: string) => {
+      const match = [...container.querySelectorAll('button')].find(
+        (candidate) => candidate.textContent === label,
+      );
+      if (!match) throw new Error(`Missing button ${label}`);
+      return match;
+    };
+    act(() => button('Remove').click());
+    expect(remove).not.toHaveBeenCalled();
+    act(() => button('Cancel').click());
+    expect(remove).not.toHaveBeenCalled();
+    act(() => button('Remove').click());
+    await act(async () => button('Confirm removal').click());
+    expect(remove).toHaveBeenCalledWith('g1', 'm1');
   });
 });

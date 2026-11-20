@@ -254,6 +254,13 @@ export interface QaReportErrorCopy {
 /** Why the report page has nothing to show, as a title and a next step. */
 export function reportErrorCopy(cause: unknown): QaReportErrorCopy {
   const status = errorStatus(cause);
+  if (status === 403) {
+    return {
+      title: 'You do not have access to this report',
+      text: 'Ask the Project owner for access.',
+      signIn: false,
+    };
+  }
   if (status === 404) {
     return {
       title: 'This report is not available',

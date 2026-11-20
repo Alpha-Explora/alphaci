@@ -50,6 +50,7 @@ describe('UsageQuotaService', () => {
     query = jest.fn();
     configService.getOrThrow.mockReturnValue({
       usageQuotas: { enabled: true },
+      subscription: { gateEnabled: true },
     });
     capabilityResolver.deployment.mockReturnValue(
       new Set(['billing.usage-quotas']),
@@ -98,6 +99,23 @@ describe('UsageQuotaService', () => {
           limit: 1,
           upgradeRequired: true,
         }),
+      ]),
+    });
+  });
+
+  it('uses Pro quota limits when subscription gating is disabled', async () => {
+    configService.getOrThrow.mockReturnValue({
+      subscription: { gateEnabled: false },
+      usageQuotas: { enabled: true },
+    });
+    query
+      .mockResolvedValueOnce({ rows: [{ is_internal: false }] })
+      .mockResolvedValueOnce({ rows: [{ projects: '4' }] });
+    await expect(service.getUsage('user-1')).resolves.toMatchObject({
+      enabled: true,
+      plan: 'pro',
+      items: expect.arrayContaining([
+        expect.objectContaining({ code: 'projects', current: 4, limit: 50 }),
       ]),
     });
   });

@@ -679,11 +679,18 @@ export class ReleaseRegistryService {
       input.environmentId,
     );
     if (!environment) throw new NotFoundException('Environment not found');
+    const name = input.name.trim();
+    if (!name) {
+      throw new BadRequestException({
+        code: 'HOST_NAME_REQUIRED',
+        message: 'Host name must contain a non-whitespace character.',
+      });
+    }
     const token = HOST_TOKEN_PREFIX + randomBytes(32).toString('base64url');
     const host = await this.releases.createHost({
       projectId: input.projectId,
       environmentId: environment.id,
-      name: input.name.trim(),
+      name,
       tokenPrefix: token.slice(0, 12),
       tokenSha256: sha256(token),
       createdBy: input.userId,

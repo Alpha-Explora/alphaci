@@ -56,6 +56,7 @@ export class DeliveryProjectMembersRepository {
         FROM hierarchy.delivery_project_members AS m
         LEFT JOIN identity.app_users AS u ON u.id = m.user_id
         WHERE m.delivery_project_id = $1 AND m.status = 'active'
+          AND u.archived_at IS NULL
         ORDER BY CASE m.member_kind WHEN 'developer' THEN 1 ELSE 2 END,
           lower(u.login) ASC;
       `,
@@ -86,8 +87,9 @@ export class DeliveryProjectMembersRepository {
   async findActive(
     deliveryProjectId: string,
     userId: string,
+    client: Pick<DatabaseService, 'query'> = this.databaseService,
   ): Promise<DeliveryProjectMemberRecord | null> {
-    const result = await this.databaseService.query<MemberRow>(
+    const result = await client.query<MemberRow>(
       `
         SELECT ${MEMBER_COLUMNS}
         FROM hierarchy.delivery_project_members AS m
@@ -109,11 +111,11 @@ export class DeliveryProjectMembersRepository {
       memberKind: DeliveryProjectMemberKind;
       addedBy: string;
     },
-  ): Promise<DeliveryProjectMemberRecord> {
+  ): Promise<{ member: DeliveryProjectMemberRecord; changed: boolean }> {
     const result = await client.query<MemberRow>(
       `
         WITH upserted AS (
-          INSERT INTO hierarchy.delivery_project_members (
+          INSERT INTO hierarchy.delivery_project_members AS existing (
             delivery_project_id, user_id, member_kind, status, added_by
           )
           VALUES ($1, $2, $3, 'active', $4)
@@ -123,6 +125,7 @@ export class DeliveryProjectMembersRepository {
             status = 'active',
             added_by = EXCLUDED.added_by,
             updated_at = NOW()
+          WHERE existing.status <> 'active' OR existing.member_kind <> EXCLUDED.member_kind
           RETURNING *
         )
         SELECT ${MEMBER_COLUMNS}
@@ -132,8 +135,15 @@ export class DeliveryProjectMembersRepository {
       [input.deliveryProjectId, input.userId, input.memberKind, input.addedBy],
     );
     const row = result.rows[0];
-    if (!row) throw new Error('Project member upsert did not return a row');
-    return this.toRecord(row);
+    if (row) return { member: this.toRecord(row), changed: true };
+    // ON CONFLICT locks the existing membership even when its WHERE is false.
+    const member = await this.findActive(
+      input.deliveryProjectId,
+      input.userId,
+      client,
+    );
+    if (!member) throw new Error('Active Project membership could not be read');
+    return { member, changed: false };
   }
 
   /** Marks one active member removed; null when they were not active. */

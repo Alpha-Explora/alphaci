@@ -26,6 +26,30 @@ export function PipelineTab({
       aria-labelledby="project-detail-tab-pipeline"
       className="pipeline-tab"
     >
+      {vm.pipelineConfigurationAvailable && (
+        <div
+          className="pipeline-tab__views"
+          role="group"
+          aria-label="Pipeline view"
+        >
+          <button
+            type="button"
+            className="ghost-button"
+            aria-pressed={vm.pipelineView === 'runs'}
+            onClick={() => vm.setPipelineView('runs')}
+          >
+            Runs
+          </button>
+          <button
+            type="button"
+            className="ghost-button"
+            aria-pressed={vm.pipelineView === 'configuration'}
+            onClick={() => vm.setPipelineView('configuration')}
+          >
+            Configuration
+          </button>
+        </div>
+      )}
       {vm.pipelineView === 'configuration' ? (
         <>
           <div className="pipeline-tab__head">

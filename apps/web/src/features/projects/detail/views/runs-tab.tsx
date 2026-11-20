@@ -19,7 +19,7 @@ export function RunsTab({
   return (
     <div style={{ display: 'grid', gap: '1.25rem' }}>
       <PipelineRunsTab projectId={project.id} appRole={vm.appRole} />
-      <ReportedResults project={project} vm={vm} />
+      <ReportedResults vm={vm} />
     </div>
   );
 }
@@ -27,7 +27,6 @@ export function RunsTab({
 function ReportedResults({
   vm,
 }: Readonly<{
-  project: ProvisionedProject;
   vm: ProjectDetailTabsViewModel;
 }>) {
   if (!vm.ciRunTrackingEnabled || !vm.overview?.capabilities.ciRunTracking) {

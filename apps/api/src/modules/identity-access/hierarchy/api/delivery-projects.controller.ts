@@ -66,6 +66,17 @@ export class DeliveryProjectsController {
     );
   }
 
+  @Post(':deliveryProjectId/reopen')
+  reopenDeliveryProject(
+    @Req() req: Request,
+    @Param('deliveryProjectId') deliveryProjectId: string,
+  ) {
+    return this.deliveryProjectsService.reopenDeliveryProject(
+      deliveryProjectId,
+      this.requireUserId(req),
+    );
+  }
+
   /**
    * Deletes this Project (delivery project) together with every repository
    * inside it. Destructive and irreversible — throttled tighter than the app

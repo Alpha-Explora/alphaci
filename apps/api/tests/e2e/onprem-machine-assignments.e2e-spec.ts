@@ -207,6 +207,70 @@ describe('Reusable machine assignment authorization', () => {
       ),
     ).rejects.toThrow(/not assigned/);
   });
+  it.each(['unassign', 'revoke', 'upgrade'] as const)(
+    'lets a new deployment proceed after %s ends the previous host assignment',
+    async (action) => {
+      const bound = await assignments.assign({
+        ...input(),
+        machineId: await enroll(),
+      });
+      const register = () =>
+        releases.registerRelease({
+          projectId,
+          sourceEnvironmentId: environmentId,
+          sourceBranch: 'dev',
+          commitSha: 'a'.repeat(40),
+          workflowRun: {
+            provider: 'github_actions',
+            repo: 'e2e/assignment',
+            runId: String(Date.now()),
+            url: 'https://github.example/e2e/assignment/actions/runs/1',
+          },
+          artifacts: [],
+          automaticTargetIds: [],
+          automaticDelivery: 'host',
+        });
+      const interrupted = await register();
+
+      if (action === 'upgrade') {
+        await pool.query(
+          'UPDATE env_provisioning.onprem_hosts SET revoked_at = NOW() WHERE id = $1',
+          [bound.id],
+        );
+        await pool.query(
+          readFileSync(
+            resolve(
+              'supabase/migrations/runtime/20261120010000_end_unassigned_host_deployments.sql',
+            ),
+            'utf8',
+          ),
+        );
+        await machines.revoke(workspaceId, bound.machineId);
+      } else if (action === 'unassign') {
+        await assignments.unassign(projectId, environmentId, bound.id);
+        await machines.revoke(workspaceId, bound.machineId);
+      } else {
+        await machines.revoke(workspaceId, bound.machineId);
+      }
+
+      const replacement = await assignments.assign(input());
+      try {
+        const deployments = await pool.query<{ status: string }>(
+          'SELECT status FROM env_provisioning.environment_deployments WHERE release_id=$1',
+          [interrupted.id],
+        );
+        expect(deployments.rows).toEqual([{ status: 'failed' }]);
+        const next = await register();
+        expect(next.id).not.toBe(interrupted.id);
+      } finally {
+        await assignments.unassign(projectId, environmentId, replacement.id);
+        await pool.query(
+          'DELETE FROM env_provisioning.environment_deployments WHERE project_id=$1',
+          [projectId],
+        );
+      }
+    },
+  );
   it('serializes legacy registration against machine replacement, retaining exactly one active binding', async () => {
     const result = await Promise.allSettled([
       assignments.assign(input()),
@@ -540,9 +604,7 @@ describe('Reusable machine assignment authorization', () => {
       'SELECT status FROM env_provisioning.environment_deployments WHERE id=$1',
       [deploymentId],
     );
-    expect(stored.rows[0]!.status).toBe(
-      race[0]?.status === 'fulfilled' ? 'deploying' : 'pending',
-    );
+    expect(stored.rows).toEqual([{ status: 'failed' }]);
     await expect(assignments.authorizeAgent(hash, 'machine')).rejects.toThrow(
       /revoked/,
     );

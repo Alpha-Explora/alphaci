@@ -5,7 +5,10 @@
  * output is actually streamed back.
  */
 
-import { markdownTableCell } from '#kernel/text/markdown-table-cell';
+import {
+  escapeMarkdownHtml,
+  markdownTableCell,
+} from '#kernel/text/markdown-table-cell';
 import type {
   QaChecklistTargetPersona,
   QaChecklistVerificationType,
@@ -37,7 +40,7 @@ const EM_DASH = '—';
 
 /** For text embedded in a heading: newlines collapsed to a space (a literal newline would start a new block). */
 function escapeInline(value: string): string {
-  return value
+  return escapeMarkdownHtml(value)
     .replace(/\r\n|\r|\n/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -45,7 +48,9 @@ function escapeInline(value: string): string {
 
 /** For prose outside a table (Notes/Summary/Conditions/fix-request note): newlines collapsed to `<br>`, no pipe escaping needed. */
 function collapseNewlines(value: string): string {
-  return value.replace(/\r\n|\r|\n/g, '<br>').trim();
+  return escapeMarkdownHtml(value)
+    .replace(/\r\n|\r|\n/g, '<br>')
+    .trim();
 }
 
 /** Notes column rule: escape as a table cell; empty (or originally null) becomes an em dash. */

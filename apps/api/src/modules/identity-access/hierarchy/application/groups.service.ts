@@ -371,6 +371,7 @@ export class GroupsService {
     const {
       member: removed,
       blockedLastOwner,
+      alreadyRemoved,
       assignments,
     } = await this.databaseService.withTransaction(async (client) => {
       const removal = await this.groupsRepository.removeMemberGuardedWithClient(
@@ -380,7 +381,11 @@ export class GroupsService {
         userId,
         reason,
       );
-      if (removal.blockedLastOwner || !removal.member) {
+      if (
+        removal.blockedLastOwner ||
+        !removal.member ||
+        removal.alreadyRemoved
+      ) {
         return { ...removal, assignments: [] };
       }
 
@@ -416,12 +421,15 @@ export class GroupsService {
     if (!removed) {
       throw memberNotFound();
     }
+    if (alreadyRemoved) return removed;
 
     await this.auditEventsService.recordProjectEvent({
       workspaceId: groupId,
       actorUserId: userId,
       eventCode: HIERARCHY_EVENT_CODES.memberRemoved,
-      message: `Member removed from Group`,
+      message: target.login
+        ? `@${target.login} removed from Group`
+        : 'Member removed from Group',
       metadata: {
         groupId,
         memberId,

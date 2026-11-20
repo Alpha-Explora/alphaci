@@ -83,9 +83,16 @@ describe('Platform admin tier', () => {
       [targetId],
     );
 
-    await agent
-      .post(`/api/v1/admin/users/${targetId}/role`)
-      .send({ role: 'admin' })
-      .expect(400);
+    try {
+      await agent
+        .post(`/api/v1/admin/users/${targetId}/role`)
+        .send({ role: 'admin' })
+        .expect(400);
+    } finally {
+      await e2e.query(
+        'DELETE FROM identity.platform_admins WHERE user_id = $1',
+        [userId],
+      );
+    }
   });
 });

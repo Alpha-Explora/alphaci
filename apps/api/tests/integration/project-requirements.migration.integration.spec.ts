@@ -11,6 +11,7 @@ import { QaProjectRunsRepository } from '../../src/modules/projects/infrastructu
 import { QaRequirementsRepository } from '../../src/modules/projects/infrastructure/qa-requirements.repository';
 import {
   QaProgressNotDoneError,
+  QaRunItemChangedError,
   QaRunsRepository,
 } from '../../src/modules/projects/infrastructure/qa-runs.repository';
 
@@ -784,8 +785,12 @@ describeDatabase('project_requirements migration', () => {
         storyA,
       ]);
 
-      expect(await requirements.deleteItem(featureId, appended.id)).toBe(true);
-      expect(await requirements.deleteItem(featureId, appended.id)).toBe(false);
+      expect(await requirements.deleteItem(featureId, appended.id)).toBe(
+        'deleted',
+      );
+      expect(await requirements.deleteItem(featureId, appended.id)).toBe(
+        'missing',
+      );
     });
 
     let runId: string;
@@ -966,6 +971,23 @@ describeDatabase('project_requirements migration', () => {
       expect(latest?.repositories.map((row) => row.head_sha)).toEqual([
         '2'.repeat(40),
       ]);
+
+      const [item] = items;
+      if (!item) throw new Error('Expected a run item');
+      await expect(
+        runs.rejectItem({
+          runId,
+          itemId: item.id,
+          expectedRowVersion: item.row_version + 1,
+          notes: 'Stale feedback',
+          defectSeverity: 'major',
+          previousStatus: item.status,
+          actor: dev,
+        }),
+      ).rejects.toBeInstanceOf(QaRunItemChangedError);
+      expect((await projectRuns.findLatestSignedOff(iterationB))?.run.id).toBe(
+        runId,
+      );
 
       await runs.reopenRun(runId, dev);
       expect(await projectRuns.findLatestSignedOff(iterationB)).toBeNull();

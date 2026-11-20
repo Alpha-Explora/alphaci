@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { useAuthSession } from '@/features/auth/session';
 import { canAccessAdmin, isSuperAdmin } from '../../model/admin-rules';
@@ -29,15 +30,25 @@ export function useAdminContext(): AdminContextValue {
  */
 export function AdminGate({ children }: { children: React.ReactNode }) {
   const { status, session } = useAuthSession();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  if (status === 'loading') {
+  useEffect(() => {
+    if (status === 'signed-out') {
+      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    }
+  }, [pathname, router, status]);
+
+  if (status === 'loading' || status === 'signed-out') {
     return (
       <main
         className="dash-shell"
         style={{ minHeight: '60vh', display: 'grid', placeItems: 'center' }}
       >
         <p style={{ color: 'var(--text-secondary)' }}>
-          Verifying admin access…
+          {status === 'signed-out'
+            ? 'Redirecting to sign in…'
+            : 'Verifying admin access…'}
         </p>
       </main>
     );

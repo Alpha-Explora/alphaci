@@ -59,9 +59,13 @@ function setup({
           _c: unknown,
           input: { userId: string; memberKind: 'developer' | 'qa' },
         ) =>
-          Promise.resolve(
-            member({ userId: input.userId, memberKind: input.memberKind }),
-          ),
+          Promise.resolve({
+            member: member({
+              userId: input.userId,
+              memberKind: input.memberKind,
+            }),
+            changed: true,
+          }),
       ),
     markRemovedWithClient: jest
       .fn()

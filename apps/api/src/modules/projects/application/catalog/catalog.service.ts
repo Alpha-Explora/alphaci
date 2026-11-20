@@ -555,20 +555,24 @@ export class CatalogService implements OnModuleInit {
 
   async listCategories() {
     const templates = await this.getTemplates();
-    const counts = new Map<string, number>();
+    const categories = new Map<string, { name: string; count: number }>();
 
     for (const template of templates) {
-      for (const category of template.categories) {
-        counts.set(category, (counts.get(category) ?? 0) + 1);
+      const seen = new Set<string>();
+      for (const name of template.categories) {
+        const key = name.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const category = categories.get(key);
+        if (category) category.count += 1;
+        else categories.set(key, { name, count: 1 });
       }
     }
 
-    return Array.from(counts.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort(
-        (left, right) =>
-          right.count - left.count || left.name.localeCompare(right.name),
-      );
+    return [...categories.values()].sort(
+      (left, right) =>
+        right.count - left.count || left.name.localeCompare(right.name),
+    );
   }
 
   async listTemplates(query: ListCatalogQueryDto = {}) {

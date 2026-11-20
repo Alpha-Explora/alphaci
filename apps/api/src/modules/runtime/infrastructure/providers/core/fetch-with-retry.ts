@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { BadGatewayException, Logger } from '@nestjs/common';
 
 import {
   ProviderRateLimitedError,
@@ -6,6 +6,24 @@ import {
 } from '../../../core/provider-rate-limited.error';
 
 const logger = new Logger('ProviderFetchWithRetry');
+
+export function fetchProviderConnection(
+  provider: string,
+  url: string,
+  headers: HeadersInit,
+): Promise<Response> {
+  return fetch(url, { headers }).catch((cause: unknown) => {
+    throw new BadGatewayException(
+      {
+        statusCode: 502,
+        error: 'Bad Gateway',
+        code: 'PROVIDER_CONNECTION_UNREACHABLE',
+        message: `Could not reach ${provider} to verify this connection.`,
+      },
+      { cause },
+    );
+  });
+}
 
 /**
  * Wraps fetch with bounded retry/backoff for provider rate limits (Render,

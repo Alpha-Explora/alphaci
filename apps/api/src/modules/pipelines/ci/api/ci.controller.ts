@@ -24,7 +24,7 @@ import { extractBearerToken } from './ci-bearer';
 import { CiReportBodyDto } from './dto/ci-report-body.dto';
 import { GetRunReportQueryDto } from './dto/get-run-report-query.dto';
 import { GetRunsQueryDto } from './dto/get-runs-query.dto';
-import type { ValidateCiRunDto } from './dto/validate-ci-run.dto';
+import { ValidateCiRunDto } from './dto/validate-ci-run.dto';
 
 @Controller('ci')
 export class CiController {
@@ -43,7 +43,7 @@ export class CiController {
     const input = {
       token,
       repoFullName: body.repo,
-      stage: body.stage,
+      stage: body.stage ?? 'access',
       ...(body.workflowRunId !== undefined && {
         workflowRunId: body.workflowRunId,
       }),

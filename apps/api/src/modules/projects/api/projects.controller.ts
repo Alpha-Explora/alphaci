@@ -23,7 +23,6 @@ import {
   DEPLOYMENT_HISTORY_QUERY,
   type DeploymentDriftQuery,
   type DeploymentHistoryQuery,
-  type ProjectDriftRepairAction,
 } from '#kernel/ports/deployment-runtime.port';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { SetupProjectDto } from './dto/setup-project.dto';
@@ -40,6 +39,8 @@ import { ProjectPreviewsApplicationService } from '../application/dashboard/proj
 import { ProjectWorkflowsService } from '../application/workflows/project-workflows.service';
 import { QueryString } from '#kernel/http/query-string.decorator';
 import { parseAuditCursor } from '#kernel/rules/audit-cursor.rules';
+import { RepairDriftFindingDto } from './dto/repair-drift-finding.dto';
+import { WorkflowSettingsPreviewDto } from './dto/workflow-settings-preview.dto';
 
 @Controller('projects')
 export class ProjectsController {
@@ -237,7 +238,7 @@ export class ProjectsController {
   async previewWorkflowSettings(
     @Req() req: Request,
     @Param('id') id: string,
-    @Body() body: Record<string, unknown>,
+    @Body() body: WorkflowSettingsPreviewDto,
   ) {
     const userId = req.session.user?.id ?? req.session.userId;
     if (!userId) {
@@ -264,7 +265,7 @@ export class ProjectsController {
   async createWorkflowUpdatePullRequest(
     @Req() req: Request,
     @Param('id') id: string,
-    @Body() body: Record<string, unknown>,
+    @Body() body: WorkflowSettingsPreviewDto,
   ) {
     const userId = req.session.user?.id ?? req.session.userId;
     if (!userId) {
@@ -423,7 +424,7 @@ export class ProjectsController {
     @Req() req: Request,
     @Param('id') id: string,
     @Param('findingId') findingId: string,
-    @Body() body: { action?: ProjectDriftRepairAction },
+    @Body() body: RepairDriftFindingDto,
   ) {
     const userId = req.session.user?.id ?? req.session.userId;
     if (!userId) {

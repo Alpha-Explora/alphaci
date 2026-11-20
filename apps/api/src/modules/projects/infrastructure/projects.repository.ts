@@ -288,16 +288,24 @@ export class ProjectsRepository
     projectId: string,
     environmentId: string,
     displayName: string,
+    branch?: { previous: string; next: string },
   ): Promise<ProjectEnvironmentRecord | null> {
     const result = await this.databaseService.query<ProjectEnvironmentRecord>(
       `
         UPDATE projects.project_environments
-        SET display_name = $3, updated_at = NOW()
+        SET display_name = $3, source_branch = COALESCE($4, source_branch), updated_at = NOW()
         WHERE project_id = $1 AND id = $2
+          AND ($4::text IS NULL OR source_branch = $5)
         RETURNING id, slug, display_name AS "displayName", position,
                   source_branch AS "sourceBranch", role, auto_deploy AS "autoDeploy";
       `,
-      [projectId, environmentId, displayName.trim()],
+      [
+        projectId,
+        environmentId,
+        displayName.trim(),
+        branch?.next ?? null,
+        branch?.previous ?? null,
+      ],
     );
     return result.rows[0] ?? null;
   }
@@ -837,36 +845,36 @@ export class ProjectsRepository
    * Scoped to userId to prevent cross-user deletions.
    * Returns true if a row was deleted, false if not found or wrong user.
    *
-   * `allowedRoles` defaults to the original permissive set (lead/delegated_lead/
-   * member) so every existing 2-arg call site is unaffected. This is the
-   * FINAL enforcement point for the delete itself — pass a tightened list
-   * (e.g. ['admin', 'delegated_lead']) for destructive variants (opt-in GitHub repo
-   * delete) so the restriction is enforced by the SQL statement that
-   * actually performs the delete, independent of any optional app-layer
-   * pre-check.
+   * Uses the same visibility rule as findByIdAndUser. The caller checks the
+   * persona before disconnecting a visible project.
    */
   async deleteByIdAndUser(
     id: string,
     userId: string,
-    allowedRoles: string[] = ['admin', 'delegated_lead', 'member'],
+    allowedRoles?: string[],
   ): Promise<boolean> {
     const result = await this.databaseService.query<{ id: string }>(
       `
-        DELETE FROM projects.provisioned_projects
-        WHERE id = $1
+        DELETE FROM projects.provisioned_projects AS pp
+        WHERE pp.id = $1
           AND (
-            user_id = $2
-            OR EXISTS (
-              SELECT 1
-              FROM orgs.workspace_members AS member
-              WHERE member.workspace_id = projects.provisioned_projects.workspace_id
-                AND member.user_id = $2
-                AND member.role = ANY($3::text[])
-            )
+            CASE WHEN $3::text[] IS NULL THEN
+              ${projectVisibilitySql('$2')}
+            ELSE
+              pp.user_id = $2
+              OR EXISTS (
+                SELECT 1
+                FROM orgs.workspace_members AS member
+                WHERE member.workspace_id = pp.workspace_id
+                  AND member.user_id = $2
+                  AND member.member_status = 'active'
+                  AND member.role = ANY($3::text[])
+              )
+            END
           )
         RETURNING id;
       `,
-      [id, userId, allowedRoles],
+      [id, userId, allowedRoles ?? null],
     );
     return (result.rowCount ?? 0) > 0;
   }

@@ -75,14 +75,14 @@ export class OnpremHostsService {
   ): Promise<EnrollmentReceipt> {
     this.enabled();
     await this.assertManager(workspaceId, userId);
-    this.trustKeys(); // Fail before producing a code that cannot configure a verifier.
-    const apiUrl = this.publicApiUrl();
-    const installer = await this.installerRelease();
     const name = input.name.trim();
     if (!name || name.length > 80)
       throw new BadRequestException(
         'Host name must contain 1 to 80 characters.',
       );
+    this.trustKeys(); // Fail before producing a code that cannot configure a verifier.
+    const apiUrl = this.publicApiUrl();
+    const installer = await this.installerRelease();
     const code = randomBytes(32).toString('base64url');
     const receipt = await this.machines.createEnrollment(
       workspaceId,

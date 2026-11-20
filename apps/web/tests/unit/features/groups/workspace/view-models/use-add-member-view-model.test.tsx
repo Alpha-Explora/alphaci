@@ -2,6 +2,7 @@ import { act, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { groupsRepository } from '../../../../../../src/features/groups/data/groups-repository';
+import { ApiError } from '../../../../../../src/shared/api/request';
 import type { InternalUserDirectoryEntry } from '../../../../../../src/features/groups/model/groups-types';
 import {
   DIRECTORY_SEARCH_DEBOUNCE_MS,
@@ -15,6 +16,7 @@ jest.mock(
     groupsRepository: {
       eligibleMembers: jest.fn(),
       addMember: jest.fn(),
+      members: jest.fn(),
       projectChoices: jest.fn(),
     },
   }),
@@ -230,6 +232,35 @@ describe('useAddMemberViewModel', () => {
     expect(onAdded).toHaveBeenCalledWith(member);
     expect(onClose).toHaveBeenCalled();
     expect(harness.latest?.selectedUsers).toEqual([]);
+  });
+
+  it('refreshes the roster when another manager added the selection first', async () => {
+    const member = {
+      id: 'member-9',
+      userId: 'bpramos-ae-id',
+      memberStatus: 'active',
+    };
+    jest.mocked(groupsRepository.members).mockResolvedValue([member as never]);
+    mockedAdd.mockRejectedValue(
+      new ApiError('Already active', 400, {
+        code: 'GROUP_MEMBER_ALREADY_ACTIVE',
+        message: 'Already active',
+      }),
+    );
+    const harness = render(true);
+    await flushSearch();
+    act(() => harness.latest!.toggleUser(entry('bpramos-ae')));
+
+    await act(async () => {
+      await harness.latest!.submit();
+    });
+
+    expect(onAdded).toHaveBeenCalledWith(member);
+    expect(harness.latest?.selectedUsers).toEqual([]);
+    expect(harness.latest?.results.map((user) => user.login)).toEqual([
+      'not-signed-in',
+    ]);
+    expect(harness.latest?.error).toBe('Already active');
   });
 
   it('adds everyone picked, each with the picked Projects, then closes', async () => {

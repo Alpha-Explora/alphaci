@@ -6,7 +6,6 @@ import {
   Injectable,
   NotFoundException,
   Optional,
-  UnauthorizedException,
 } from '@nestjs/common';
 
 import {
@@ -29,6 +28,7 @@ import {
   selfServicePullRequestBase,
 } from '#kernel/rules/persona-access.rules';
 import { CatalogService } from '../catalog/catalog.service';
+import { isWorkflowSourceBranch } from '../../domain/project-environment.policy';
 import { NotificationEventPublisher } from '#kernel/events/platform-event-publisher.js';
 import {
   USAGE_QUOTA,
@@ -480,6 +480,15 @@ export class ProjectWorkflowsService {
           settings.projectId,
         )
       : [];
+    const invalid = environments.find(
+      ({ sourceBranch }) => !isWorkflowSourceBranch(sourceBranch),
+    );
+    if (invalid) {
+      throw new BadRequestException({
+        code: 'ENVIRONMENT_SOURCE_BRANCH_INVALID',
+        message: `Environment "${invalid.displayName}" has an invalid source branch.`,
+      });
+    }
     // A regenerated environment pipeline keeps the signer identity its sign job needs.
     const releaseSigner =
       environments.length && this.configService
@@ -562,9 +571,11 @@ export class ProjectWorkflowsService {
     if (oauthAccessToken) {
       return oauthAccessToken;
     }
-    throw new UnauthorizedException(
-      'No usable GitHub token found. Link the GitHub App installation or re-authenticate via GitHub OAuth.',
-    );
+    throw new ConflictException({
+      code: 'GITHUB_REAUTH',
+      message:
+        'Link the GitHub App installation or sign in again with GitHub to create a workflow update pull request.',
+    });
   }
 
   private parseRepoFullName(repoFullName: string): [string, string] {

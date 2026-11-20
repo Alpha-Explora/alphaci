@@ -87,6 +87,80 @@ describe('QA release-tracker response contracts', () => {
     await e2e.close();
   });
 
+  it('enforces the requirement description limit on create and update', async () => {
+    const description = 'x'.repeat(4000);
+    const path = `/api/v1/delivery-projects/${projectId}/requirements`;
+    await agent
+      .post(path)
+      .send({
+        kind: 'functional',
+        name: 'Too long',
+        description: description + 'x',
+      })
+      .expect(400);
+    const created = await agent
+      .post(path)
+      .send({
+        kind: 'functional',
+        name: 'At the limit',
+        description,
+      })
+      .expect(201);
+    expect(created.body).toMatchObject({ description });
+    const { id, version } = created.body as { id: string; version: number };
+    await agent
+      .patch(`/api/v1/requirements/${id}`)
+      .send({
+        expectedVersion: version,
+        description: description + 'x',
+      })
+      .expect(400);
+  });
+
+  it('keeps a source item that an open Project run still needs', async () => {
+    const [source] = await e2e.query<{ requirementId: string; itemId: string }>(
+      `SELECT requirement.id AS "requirementId", item.id AS "itemId"
+         FROM projects.qa_checklists AS requirement
+         JOIN projects.qa_checklist_items AS item ON item.checklist_id = requirement.id
+        WHERE requirement.delivery_project_id = $1 AND item.title = 'Pay by card'`,
+      [projectId],
+    );
+    if (!source) throw new Error('Expected the fixture story');
+    const [snapshot] = await e2e.query<{ run_id: string }>(
+      `WITH run AS (
+         INSERT INTO projects.qa_verification_runs
+           (scope, delivery_project_id, heads_fingerprint, checklist_id,
+            checklist_version, checklist_name, branch, commit_source, created_by,
+            created_by_login, iteration_id)
+         SELECT 'project', delivery_project_id, $2, id, version, name, 'uat',
+                'branch_head', $3, 'qa', iteration_id
+           FROM projects.qa_checklists WHERE id = $1
+         RETURNING id
+       )
+       INSERT INTO projects.qa_run_items
+         (run_id, source_item_id, position, title, target_persona, verification_type)
+       SELECT id, $4, 0, 'Pay by card', 'all', 'manual' FROM run
+       RETURNING run_id`,
+      [source.requirementId, 'a'.repeat(64), userId, source.itemId],
+    );
+    if (!snapshot) throw new Error('Expected the fixture run');
+    try {
+      const response = await agent
+        .delete(
+          `/api/v1/requirements/${source.requirementId}/items/${source.itemId}`,
+        )
+        .expect(409);
+      expect(response.body).toMatchObject({
+        code: 'REQUIREMENT_ITEM_IN_OPEN_RUN',
+      });
+    } finally {
+      await e2e.query(
+        'DELETE FROM projects.qa_verification_runs WHERE id = $1',
+        [snapshot.run_id],
+      );
+    }
+  });
+
   it('team to-dos: add, list and tick', async () => {
     const base = `/api/v1/delivery-projects/${projectId}/todos`;
     const created = conforms(

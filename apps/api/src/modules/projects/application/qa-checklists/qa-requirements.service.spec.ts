@@ -490,6 +490,29 @@ describe('QaRequirementsService.setProgress', () => {
     expect(notifications.record).toHaveBeenCalledTimes(1);
   });
 
+  it('notifies QA in the workspace before the Project has a repository', async () => {
+    const { service, requirements, projectContext, notifications } = setup({
+      role: 'member',
+    });
+    projectContext.anchorProjectId.mockResolvedValue(null);
+    requirements.setProgress.mockResolvedValue(done());
+
+    const result = await service.setProgress('req-1', 'item-1', actor, {
+      progress: 'done',
+      expectedRowVersion: 1,
+    });
+
+    expect(result.readyForQaNotified).toBe(true);
+    expect(notifications.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'qa-1',
+        projectId: null,
+        workspaceId: 'group-1',
+        eventCode: 'qa.item.retest_requested',
+      }),
+    );
+  });
+
   it('moving away from done notifies nobody', async () => {
     const { service, requirements, notifications } = setup({ role: 'member' });
     requirements.setProgress.mockResolvedValue(itemRow({ row_version: 3 }));

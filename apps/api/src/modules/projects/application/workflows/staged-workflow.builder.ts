@@ -6,6 +6,7 @@ import type { ReleaseSigner } from '#kernel/config/release-signing.config';
 import { resolveCentralWorkflowBase } from '#kernel/config/central-workflow';
 import { ENV_GUARD_CHECK_CONTEXT } from '#kernel/ports/workflow-generation.port';
 import type { WorkflowTemplate } from '../catalog/catalog.service';
+import { isWorkflowSourceBranch } from '../../domain/project-environment.policy';
 import {
   VERCEL_ALIAS_VARIABLE,
   vercelAutomationBypassSecretName,
@@ -606,15 +607,12 @@ function resolveStagedContext(
   };
 }
 
-// Branch names go into workflow expressions, so only plain ref characters.
-const SAFE_BRANCH = /^[A-Za-z0-9._/-]{1,255}$/;
-
 function orderedEnvironments(
   environments: StagedWorkflowEnvironment[],
 ): StagedWorkflowEnvironment[] {
   const ordered = [...environments].sort((a, b) => a.position - b.position);
   for (const environment of ordered) {
-    if (!SAFE_BRANCH.test(environment.sourceBranch)) {
+    if (!isWorkflowSourceBranch(environment.sourceBranch)) {
       throw new Error(
         'Environment ' +
           environment.slug +

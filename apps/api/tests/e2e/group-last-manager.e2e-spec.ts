@@ -22,12 +22,13 @@ describe('Last manager of a team', () => {
   beforeAll(async () => {
     e2e = await startApplication();
     ({ agent: lead, userId: leadId } = await e2e.signIn('lead'));
-    groupId = (
+    const group = (
       await lead
         .post('/api/v1/groups')
         .send({ name: 'Last manager team' })
         .expect(201)
-    ).body.id as string;
+    ).body as { id: string };
+    groupId = group.id;
   });
 
   afterAll(async () => {
@@ -46,6 +47,7 @@ describe('Last manager of a team', () => {
        VALUES ($1, $2, $3)`,
       [groupId, id, storedRole],
     );
+    return id;
   }
 
   async function memberIdOf(userId: string): Promise<string> {
@@ -63,6 +65,37 @@ describe('Last manager of a team', () => {
       .delete(`/api/v1/groups/${groupId}/members/${await memberIdOf(leadId)}`)
       .expect(400);
     expect(response.body).toMatchObject({ code: 'GROUP_LAST_OWNER' });
+  });
+
+  it('records one audit event for each membership change when a request is retried', async () => {
+    const developerId = await addMember('member', 'member');
+    const project = (
+      await lead
+        .post(`/api/v1/groups/${groupId}/projects`)
+        .send({ name: 'Membership retries' })
+        .expect(201)
+    ).body as { id: string };
+    const add = () =>
+      lead
+        .post(`/api/v1/delivery-projects/${project.id}/members`)
+        .send({ userId: developerId })
+        .expect(201);
+    const [first, retry] = await Promise.all([add(), add()]);
+    expect(retry.body).toEqual(first.body);
+
+    const memberPath = `/api/v1/groups/${groupId}/members/${await memberIdOf(developerId)}`;
+    await lead.delete(memberPath).expect(200);
+    await lead.delete(memberPath).expect(200);
+    const events = await e2e.query<{ code: string }>(
+      `SELECT payload->>'eventCode' AS code FROM platform.outbox_events
+       WHERE payload->'metadata'->>'targetUserId' = $1
+       ORDER BY code`,
+      [developerId],
+    );
+    expect(events).toEqual([
+      { code: 'hierarchy.delivery_project.member_added' },
+      { code: 'hierarchy.group.member_removed' },
+    ]);
   });
 
   it('removes a lead once another lead remains, whatever their stored role', async () => {

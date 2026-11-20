@@ -12,7 +12,6 @@ import {
   SectionHeader,
 } from '@/features/groups/workspace';
 
-import { projectStatusVariant, repoShortName } from '../../model/groups-rules';
 import type { GroupSummary } from '../../model/groups-types';
 import { useGroupRouteViewModel, useGroupViewModel } from '@/features/groups';
 import { useGroupProjectsViewModel } from '../view-models/use-group-projects-view-model';
@@ -22,11 +21,12 @@ function ProjectsInner({ group }: Readonly<{ group: GroupSummary }>) {
 
   // "Create project" opens the New Project dialog on this group's Projects
   // page: a Product owner creates the Project, a Developer fills it.
-  const createButton = vm.canManage ? (
-    <Link className="primary-button" href={vm.createProjectHref}>
-      Create project
-    </Link>
-  ) : undefined;
+  const createButton =
+    vm.canManage && group.status === 'active' ? (
+      <Link className="primary-button" href={vm.createProjectHref}>
+        Create project
+      </Link>
+    ) : undefined;
 
   return (
     <>
@@ -42,7 +42,7 @@ function ProjectsInner({ group }: Readonly<{ group: GroupSummary }>) {
         subtitle="Projects owned by this group. A Product owner creates a Project; Developers add its repositories."
         actions={createButton}
       />
-      <GroupSubNav groupId={group.id} active="systems" />
+      <GroupSubNav group={group} active="systems" />
 
       {vm.status === 'ready' ? (
         <>
@@ -50,27 +50,43 @@ function ProjectsInner({ group }: Readonly<{ group: GroupSummary }>) {
           <div className="hier-card-grid">
             {vm.projects.map((project) => (
               <Link
-                key={project.id}
-                href={`/projects/${encodeURIComponent(project.id)}`}
+                key={project.deliveryProjectId}
+                href={`/groups/${encodeURIComponent(group.id)}/delivery-projects/${encodeURIComponent(project.deliveryProjectId)}`}
                 className="hier-card"
               >
                 <div className="hier-card-top">
-                  <h3 className="hier-card-name">
-                    {repoShortName(project.repoFullName)}
-                  </h3>
-                  <span
-                    className={`project-status-badge ${projectStatusVariant(project.status)}`}
-                  >
-                    {project.status}
-                  </span>
+                  <h3 className="hier-card-name">{project.name}</h3>
                 </div>
-                <p className="hier-card-desc">{project.repoFullName}</p>
                 <div className="hier-card-meta">
-                  <span>{project.serviceName}</span>
+                  <span>
+                    {project.repositories.length}{' '}
+                    {project.repositories.length === 1
+                      ? 'repository'
+                      : 'repositories'}
+                  </span>
                 </div>
               </Link>
             ))}
           </div>
+          {vm.unfiled.length > 0 && (
+            <>
+              <SectionHeader
+                title="Unfiled repositories"
+                count={vm.unfiled.length}
+              />
+              <div className="hier-card-grid">
+                {vm.unfiled.map((repository) => (
+                  <Link
+                    key={repository.id}
+                    href={`/projects/${encodeURIComponent(repository.id)}`}
+                    className="hier-card"
+                  >
+                    <h3 className="hier-card-name">{repository.name}</h3>
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
         </>
       ) : vm.status === 'loading' ? (
         <LoadingRows rows={3} />

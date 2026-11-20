@@ -15,11 +15,11 @@ import { SessionAuthGuard } from '#kernel/auth/session-auth.guard';
 import { SubscriptionGuard } from '#kernel/auth/subscription.guard';
 import { CapabilityGuard } from '#kernel/composition/capability.guard';
 import { RequiresCapability } from '#kernel/composition/requires-capability.decorator';
-import type { ProvisionEnvVarsDto } from './dto/provision-env-vars.dto';
 import {
-  EnvVarsService,
-  type ValidateEnvTextInput,
-} from '../application/env-vars.service';
+  ProvisionEnvVarsDto,
+  ValidateEnvTextDto,
+} from './dto/provision-env-vars.dto';
+import { EnvVarsService } from '../application/env-vars.service';
 
 /**
  * Every route here is gated by EnvVarsService.assertHttpAccess (app_role
@@ -61,7 +61,7 @@ export class EnvVarsController {
   async validate(
     @Req() req: Request,
     @Param('projectId') projectId: string,
-    @Body() body: ValidateEnvTextInput,
+    @Body() body: ValidateEnvTextDto,
   ) {
     const userId = this.requireUserId(req);
     await this.service.assertHttpAccess(projectId, userId);

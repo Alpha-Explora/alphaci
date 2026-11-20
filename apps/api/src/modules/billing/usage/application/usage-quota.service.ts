@@ -77,7 +77,11 @@ export class UsageQuotaService implements UsageQuotaPort {
     // Internal users share the same database as the paid platform but are never
     // quota-limited, so quotas read as disabled and nothing prompts an upgrade.
     const enabled = this.enabled() && !internal;
-    const plan = await this.resolvePlan(userId);
+    const config = this.configService.getOrThrow<AppConfig>('app');
+    const plan =
+      internal || config.subscription.gateEnabled === false
+        ? 'pro'
+        : await this.resolvePlan(userId);
     const counts = await this.loadCounts(userId);
     const limits = this.limitsForPlan(plan);
 
@@ -89,7 +93,9 @@ export class UsageQuotaService implements UsageQuotaPort {
         current: counts[code] ?? 0,
         limit: limits[code] ?? 0,
         upgradeRequired:
-          !internal && (counts[code] ?? 0) >= (limits[code] ?? 0),
+          enabled &&
+          plan === 'free' &&
+          (counts[code] ?? 0) >= (limits[code] ?? 0),
       })),
     };
   }

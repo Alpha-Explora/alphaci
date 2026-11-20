@@ -220,7 +220,7 @@ describe('ProjectsRepository', () => {
     ]);
   });
 
-  it('deletes a project row with the default permissive role list', async () => {
+  it('deletes a project row using the default visibility check', async () => {
     (db.query as jest.Mock).mockResolvedValueOnce({ rowCount: 1 });
 
     const result = await repo.deleteByIdAndUser('project-1', 'user-1');
@@ -229,7 +229,7 @@ describe('ProjectsRepository', () => {
     expect(db.query).toHaveBeenCalledWith(expect.any(String), [
       'project-1',
       'user-1',
-      ['admin', 'delegated_lead', 'member'],
+      null,
     ]);
   });
 

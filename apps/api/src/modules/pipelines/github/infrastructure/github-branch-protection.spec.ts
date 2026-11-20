@@ -272,7 +272,7 @@ describe('pull-request-only branch protection', () => {
 
       expect(outcome).toEqual({
         status: 'failed',
-        error: 'GitHub could not be reached: socket hang up',
+        error: 'GitHub could not be reached. Try again shortly.',
       });
       expect(JSON.stringify(outcome)).not.toContain('tok');
     });

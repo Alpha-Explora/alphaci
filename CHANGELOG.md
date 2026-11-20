@@ -76,6 +76,32 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 
 ### Fixed
 
+- **API:** Malformed request bodies return validation errors, and existing CI workflows can validate access using only the repository name.
+- **QA:** CSV and TSV imports preserve values such as `007` and `1.10`, and requirement descriptions are limited to 4,000 characters.
+- **Project drift:** Ignored findings stay ignored when the same project or target is scanned again.
+- **QA:** Deleting a requirement item referenced by an open Project QA run is blocked so the run can still be approved.
+- **QA:** An open Project QA run stays visible during temporary GitHub read failures when no readable branch head has moved.
+- **QA:** Rejecting an item and reopening its run happen together. Stale feedback preserves the existing sign-off.
+- **QA:** Moving a story to Done notifies QA even when its Project has no repository yet.
+- **Projects:** Admins can disconnect repositories they manage, and successful disconnects are recorded in the audit trail.
+- **Groups:** The Projects tab shows Projects immediately after creation, including those that have no repositories yet.
+- **Groups:** Archived Groups reject renames, new members, and new Projects. Archived accounts no longer appear as active members. Group, System, Project, and repository names require a visible character.
+- **Pipelines:** Project Pipeline tabs show the same reported runs as the Runs page, and environment setup rejects source branches that generated workflows cannot use.
+- **On-prem:** Assign a host before registering or promoting a release to an on-prem environment. The same request can be retried once a host is assigned.
+- **On-prem:** Unassigning a host or revoking it without a replacement ends in-flight deployments. Upgrading clears deployments already stuck without an assignment.
+- **Groups:** Removing a member now requires confirmation.
+- **Groups:** Repeated membership requests avoid duplicate audit entries. Add and remove entries identify the person when their login is available.
+- **Groups:** Member pickers refresh when a concurrent roster change makes a selected person ineligible.
+- **Groups:** Repository name edits appear in the team's activity feed.
+- **Catalog:** Category names that differ only by capitalization appear once.
+- **Integrations:** GitHub and hosting connection requests report connectivity failures. Providers that lack account connections are refused before validation.
+- **Projects:** Leads and admins can reopen archived Projects when their original name is available.
+- **Pipelines:** Switch between Runs and Configuration from the Pipeline tab. Reports explain access denials, and workflow updates explain when GitHub reauthentication is required.
+- **QA:** The checklist list identifies Project requirements correctly, the audit workbook labels Product Owner acceptance, and Markdown reports escape embedded HTML.
+- **Admin:** Signed-out visitors are sent to sign-in and returned to their requested admin page.
+- **Billing:** When subscription gating is off, enabled usage quotas apply the same Pro plan shown in the account.
+- **On-prem:** Host names are validated before enrollment setup, the Windows install command uses the system tar, and on-prem targets no longer report a missing provider connection.
+
 - **Projects:** Developers get GitHub Write on repositories whose names GitHub rewrites for team names, such as `web.app`; before this, only the first person granted got it. Each new grant or revoke request gets its full retry budget again.
 - **Teams:** Saving a team's details no longer hides its manage controls until the page is reloaded.
 - **Projects:** Several Projects created at once no longer stall the API for everyone; a taken name answers 409 at once, also when creating under a System or renaming.

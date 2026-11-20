@@ -208,6 +208,13 @@ export class ReleaseRegistryRepository {
   }): Promise<ReleaseRecord> {
     const releaseId = await this.databaseService.withTransaction(
       async (client) => {
+        if (input.automaticDelivery === 'host') {
+          await this.requireHost(
+            client,
+            input.projectId,
+            input.sourceEnvironmentId,
+          );
+        }
         const inserted = await client.query<{ id: string }>(
           `INSERT INTO env_provisioning.releases (
            project_id, source_environment_id, source_branch, commit_sha,
@@ -350,21 +357,46 @@ export class ReleaseRegistryRepository {
     delivery: DeploymentDelivery;
     requestedBy: string;
   }): Promise<EnvironmentDeploymentRecord> {
-    const result = await this.databaseService.query<DeploymentRow>(
-      `INSERT INTO env_provisioning.environment_deployments
+    return this.databaseService.withTransaction(async (client) => {
+      if (input.delivery === 'host') {
+        await this.requireHost(client, input.projectId, input.environmentId);
+      }
+      const result = await client.query<DeploymentRow>(
+        `INSERT INTO env_provisioning.environment_deployments
          (project_id, environment_id, release_id, trigger, target_ids, requested_by, delivery)
        VALUES ($1, $2, $3, 'promotion', $4::uuid[], $5, $6)
        RETURNING *`,
-      [
-        input.projectId,
-        input.environmentId,
-        input.releaseId,
-        input.targetIds,
-        input.requestedBy,
-        input.delivery,
-      ],
+        [
+          input.projectId,
+          input.environmentId,
+          input.releaseId,
+          input.targetIds,
+          input.requestedBy,
+          input.delivery,
+        ],
+      );
+      return toDeployment(requiredRow(result.rows[0]));
+    });
+  }
+
+  private async requireHost(
+    client: PoolClient,
+    projectId: string,
+    environmentId: string,
+  ): Promise<void> {
+    const host = await client.query(
+      `SELECT id FROM env_provisioning.onprem_hosts
+       WHERE project_id = $1 AND environment_id = $2 AND revoked_at IS NULL
+       FOR SHARE`,
+      [projectId, environmentId],
     );
-    return toDeployment(requiredRow(result.rows[0]));
+    if (!host.rows[0]) {
+      throw new ConflictException({
+        code: 'DEPLOYMENT_HOST_UNASSIGNED',
+        message:
+          'Assign an on-prem host to this environment and retry the deployment.',
+      });
+    }
   }
 
   /**

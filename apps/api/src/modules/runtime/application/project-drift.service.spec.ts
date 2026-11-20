@@ -1,4 +1,7 @@
 import { ProjectDriftService } from './project-drift.service';
+import type { DeploymentProvider } from '../core/deployment-provider.contract';
+import { DeploymentProviderRegistry } from '../core/deployment-provider.registry';
+import { OnpremComposeDeploymentProvider } from '../infrastructure/providers/onprem/onprem-compose.provider';
 
 describe('ProjectDriftService', () => {
   const projectReference = {
@@ -57,13 +60,18 @@ describe('ProjectDriftService', () => {
     );
   });
 
-  function createService() {
+  function createService(
+    providers?: DeploymentProviderRegistry<DeploymentProvider>,
+  ) {
     return new ProjectDriftService(
       findingsRepository as never,
       deploymentTargetsRepository as never,
       envVarsRepository as never,
       ciTokensRepository,
       capabilityResolver as never,
+      undefined,
+      undefined,
+      providers,
     );
   }
 
@@ -96,6 +104,28 @@ describe('ProjectDriftService', () => {
       deploymentTargetsRepository.listDeploymentTargets,
     ).not.toHaveBeenCalled();
     expect(findingsRepository.replaceActiveFindings).not.toHaveBeenCalled();
+  });
+
+  it('does not flag missing platform credentials for a provider that holds its own', async () => {
+    const providers = new DeploymentProviderRegistry<DeploymentProvider>();
+    const host = new OnpremComposeDeploymentProvider(true, providers);
+    host.onModuleInit();
+    deploymentTargetsRepository.listDeploymentTargets.mockResolvedValueOnce([
+      { id: 'host', provider: host.id, ownershipMode: 'byo' },
+      { id: 'hosted', provider: 'vercel', ownershipMode: 'byo' },
+    ]);
+
+    const response =
+      await createService(providers).runDetection(projectReference);
+
+    expect(
+      response.findings
+        .filter(
+          (finding) =>
+            finding.code === 'provider_connection_metadata_unavailable',
+        )
+        .map((finding) => finding.targetId),
+    ).toEqual(['hosted']);
   });
 
   describe('branch protection probe', () => {

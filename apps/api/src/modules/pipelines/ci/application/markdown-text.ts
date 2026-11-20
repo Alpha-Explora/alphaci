@@ -1,4 +1,7 @@
-import { markdownTableCell } from '#kernel/text/markdown-table-cell';
+import {
+  escapeMarkdownHtml,
+  markdownTableCell,
+} from '#kernel/text/markdown-table-cell';
 
 /**
  * Text helpers for the Markdown reports. Everything here takes `unknown`:
@@ -40,7 +43,7 @@ export function cell(value: unknown): string {
 
 /** A line of prose in a list: newlines folded so it stays one bullet. */
 export function line(value: unknown): string {
-  return textOf(value)
+  return escapeMarkdownHtml(textOf(value))
     .replace(/\s*\r?\n\s*/g, ' ')
     .trim();
 }

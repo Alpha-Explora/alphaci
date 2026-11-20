@@ -9,7 +9,10 @@ import {
 } from 'class-validator';
 import { ValidateNested } from 'class-validator';
 
-import { QA_REQUIREMENT_MAX_ITEMS } from '../qa-requirements.contracts';
+import {
+  QA_REQUIREMENT_DESCRIPTION_MAX_LENGTH,
+  QA_REQUIREMENT_MAX_ITEMS,
+} from '../qa-requirements.contracts';
 import { RequirementItemDto } from './requirement-item.dto';
 
 /** A requirement without its kind: the part shared by the single and batch create. */
@@ -21,6 +24,7 @@ export class RequirementDraftDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(QA_REQUIREMENT_DESCRIPTION_MAX_LENGTH)
   description?: string | null;
 
   @IsOptional()

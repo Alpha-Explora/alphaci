@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Inject,
   Injectable,
   Logger,
@@ -744,8 +745,15 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
     await this.iterations.assertRowWritable(row);
     this.assertNotArchived(row);
 
-    if (!(await this.requirements.deleteItem(id, itemId))) {
+    const result = await this.requirements.deleteItem(id, itemId);
+    if (result === 'missing') {
       throw new NotFoundException('Requirement item not found');
+    }
+    if (result === 'in_open_run') {
+      throw new ConflictException({
+        code: 'REQUIREMENT_ITEM_IN_OPEN_RUN',
+        message: 'This item belongs to an open QA run and cannot be deleted.',
+      });
     }
     await this.recordEvent(REQUIREMENT_EVENTS.updated, row, userId, {
       fields: ['items'],
@@ -870,12 +878,10 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
     const project = await this.projectContext.findProject(
       row.delivery_project_id,
     );
-    const anchor = project
-      ? await this.projectContext.anchorProjectId(project)
-      : null;
-    if (!project || !anchor) {
+    if (!project) {
       return false;
     }
+    const anchor = await this.projectContext.anchorProjectId(project);
     const qaIds = await this.access.listWorkspaceQaIds(project.groupId);
     const recipients = this.dedupeExcludingActor(
       [...previousVerifiers, ...qaIds],
@@ -895,6 +901,7 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
         notifications.record({
           userId,
           projectId: anchor,
+          workspaceId: project.groupId,
           eventCode: READY_FOR_QA_EVENT,
           title: `Ready for QA: "${item.title}"`,
           body,

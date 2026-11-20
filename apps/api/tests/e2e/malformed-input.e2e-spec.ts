@@ -17,12 +17,13 @@ describe('Malformed request values', () => {
   beforeAll(async () => {
     e2e = await startApplication();
     ({ agent } = await e2e.signIn('lead'));
-    groupId = (
+    const group = (
       await agent
         .post('/api/v1/groups')
         .send({ name: 'Malformed team' })
         .expect(201)
-    ).body.id as string;
+    ).body as { id: string };
+    groupId = group.id;
   });
 
   afterAll(async () => {

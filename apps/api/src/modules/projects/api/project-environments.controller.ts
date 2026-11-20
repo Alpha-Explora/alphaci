@@ -58,6 +58,7 @@ export class ProjectEnvironmentsController {
       environmentId,
       this.sessionUserId(req),
       body.displayName,
+      body.sourceBranch,
     );
   }
 

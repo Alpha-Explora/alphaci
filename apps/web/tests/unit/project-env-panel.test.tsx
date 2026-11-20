@@ -1,4 +1,5 @@
 import { act } from 'react';
+import { getRuns } from '@/features/runs';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { ProjectEnvPanel } from '../../src/features/projects/detail/views/project-env-panel';
@@ -11,6 +12,8 @@ import { getMyUsage } from '../../src/features/projects/detail/data/usage-api';
 import { disabledCapabilities } from '../../src/features/capabilities/current/data/capabilities-repository';
 import { capabilityViewFlags } from '../../src/features/capabilities/current/model/capability-flags';
 import type { CapabilitiesResponse } from '../../src/shared/api/contracts';
+
+jest.mock('@/features/runs/data/runs-api', () => ({ getRuns: jest.fn() }));
 
 jest.mock('framer-motion', () => {
   const React = jest.requireActual('react');
@@ -69,7 +72,6 @@ jest.mock('../../src/features/projects/detail/data/projects-api', () => ({
   previewWorkflowSettings: jest.fn(),
   createWorkflowUpdatePullRequest: jest.fn(),
   syncProjectSnapshot: jest.fn(),
-  getProjectCiRuns: jest.fn(),
   getProjectDeployments: jest.fn(),
   getProjectDrift: jest.fn(),
   getProjectAuditEvents: jest.fn(),
@@ -144,7 +146,6 @@ const mockedProjectApi = jest.requireMock(
   previewWorkflowSettings: jest.Mock;
   createWorkflowUpdatePullRequest: jest.Mock;
   syncProjectSnapshot: jest.Mock;
-  getProjectCiRuns: jest.Mock;
   getProjectDeployments: jest.Mock;
   getProjectDrift: jest.Mock;
   getProjectAuditEvents: jest.Mock;
@@ -558,13 +559,7 @@ describe('Project env provisioning UI', () => {
       pullRequestUrl: 'https://github.com/tone/orders-api/pull/42',
       status: 'created',
     });
-    mockedProjectApi.getProjectCiRuns.mockResolvedValue({
-      enabled: true,
-      mode: 'local_mock',
-      liveGithubEnabled: false,
-      githubActionsUrl: 'https://github.com/tone/orders-api/actions',
-      runs: [],
-    });
+    jest.mocked(getRuns).mockResolvedValue({ runs: [] });
     mockedProjectApi.getProjectDeployments.mockResolvedValue({
       enabled: true,
       mode: 'local_mock',
@@ -919,7 +914,7 @@ describe('Project env provisioning UI', () => {
     ).toBe('External');
   });
 
-  it('renders CI runs empty state from the local contract', async () => {
+  it('renders an empty state when the repository has no CI reports', async () => {
     mockCapabilities(true, true, false, false, false, true);
     mockEnvHook();
     mockedProjectApi.getProjectOverview.mockResolvedValue({
@@ -967,112 +962,41 @@ describe('Project env provisioning UI', () => {
 
     await openPipelineRuns(rendered.container);
 
-    expect(mockedProjectApi.getProjectCiRuns).toHaveBeenCalledWith('project-1');
-    expect(rendered.container.textContent).toContain(
-      'Live GitHub run sync is not enabled',
-    );
+    expect(getRuns).toHaveBeenCalledWith(provisionedProject.repoFullName);
     expect(rendered.container.textContent).toContain('No CI runs tracked yet.');
   });
 
-  it('renders failed CI run without a GitHub link and hides rerun when disabled', async () => {
+  it('shows reported CI runs for the repository when GitHub has no live runs', async () => {
     mockCapabilities(true, true, false, false, false, true);
     mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue({
-      ...projectOverviewWithTargets([]),
-      capabilities: {
-        envProvisioning: true,
-        workflowSettings: false,
-        syncSnapshots: true,
-        ciRunTracking: true,
-        deploymentHistory: false,
-        driftDetection: false,
-      },
-    });
-    mockedProjectApi.getProjectCiRuns.mockResolvedValue({
-      enabled: true,
-      mode: 'local_mock',
-      liveGithubEnabled: false,
-      githubActionsUrl: 'https://github.com/tone/orders-api/actions',
+    const overview = projectOverviewWithTargets([]);
+    overview.capabilities.ciRunTracking = true;
+    mockedProjectApi.getProjectOverview.mockResolvedValue(overview);
+    jest.mocked(getRuns).mockResolvedValue({
       runs: [
         {
-          id: 'local-project-1-quality',
-          stage: 'quality',
-          workflowName: 'ALPHACI Quality',
-          branch: 'test',
+          runId: 42,
+          repoFullName: provisionedProject.repoFullName,
+          branch: 'uat',
           commitSha: 'abc123',
-          actor: 'alphaci-local',
-          status: 'completed',
-          conclusion: 'failure',
-          createdAt: '2026-06-12T00:00:00.000Z',
-          updatedAt: '2026-06-12T00:05:00.000Z',
-          htmlUrl: 'https://github.com/tone/orders-api/actions/runs/1',
-          canRerun: false,
+          startedAt: '2026-06-12T00:00:00.000Z',
+          overallStatus: 'failure',
+          stages: [],
         },
       ],
     });
-
     const rendered = render(
       <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
     );
     root = rendered.root;
-
     await act(async () => {
       await Promise.resolve();
     });
-
     await openPipelineRuns(rendered.container);
-
-    expect(rendered.container.textContent).toContain('ALPHACI Quality');
-    expect(rendered.container.textContent).toContain('quality');
-    expect(rendered.container.textContent).toContain('test');
-    expect(rendered.container.textContent).toContain('abc123');
-    expect(rendered.container.textContent).toContain('failure');
-    expect(rendered.container.textContent).not.toContain('Rerun');
-    // The run's own page on GitHub is not offered: ALPHACI is the only UI.
-    expect(
-      rendered.container.querySelector('a[href*="github.com"]'),
-    ).toBeNull();
-  });
-
-  it('shows a simulated-data caveat for CI runs when live sync is enabled but nothing is connected', async () => {
-    mockCapabilities(true, true, false, false, false, true);
-    mockEnvHook();
-    mockedProjectApi.getProjectOverview.mockResolvedValue({
-      ...projectOverviewWithTargets([]),
-      capabilities: {
-        envProvisioning: true,
-        workflowSettings: false,
-        syncSnapshots: true,
-        ciRunTracking: true,
-        deploymentHistory: false,
-        driftDetection: false,
-      },
-    });
-    mockedProjectApi.getProjectCiRuns.mockResolvedValue({
-      enabled: true,
-      mode: 'local_mock',
-      liveGithubEnabled: true,
-      githubActionsUrl: 'https://github.com/tone/orders-api/actions',
-      runs: [],
-    });
-
-    const rendered = render(
-      <ProjectDetailTabs project={provisionedProject} appRole="admin" />,
-    );
-    root = rendered.root;
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    await openPipelineRuns(rendered.container);
-
-    expect(rendered.container.textContent).not.toContain(
-      'Live GitHub run sync is not enabled',
-    );
-    expect(rendered.container.textContent).toContain(
-      'Live sync is enabled, but no GitHub Actions integration is connected yet',
-    );
+    const reports = rendered.container.querySelector('.ws-reported');
+    expect(reports?.textContent).toContain('abc123');
+    expect(reports?.textContent).toContain('uat');
+    expect(reports?.textContent).toContain('failure');
   });
 
   it('renders Vercel and Render deployment target cards', async () => {
@@ -1971,9 +1895,7 @@ describe('Project env provisioning UI', () => {
       workflowSettings: true,
     };
     mockedProjectApi.getProjectOverview.mockResolvedValue(overview);
-    mockedProjectApi.getProjectCiRuns.mockRejectedValueOnce(
-      new Error('runs unavailable'),
-    );
+    jest.mocked(getRuns).mockRejectedValueOnce(new Error('runs unavailable'));
     mockedProjectApi.getProjectDeployments.mockRejectedValueOnce(
       new Error('deployments unavailable'),
     );

@@ -1,4 +1,4 @@
-import { act } from 'react';
+import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { PipelineTab } from '../../../../../../src/features/projects/detail/views/pipeline-tab';
@@ -33,8 +33,10 @@ function Harness({
   initial,
   available,
 }: Readonly<{ initial: PipelineView; available: boolean }>) {
+  const [pipelineView, setPipelineView] = useState(initial);
   const vm = {
-    pipelineView: initial,
+    pipelineView,
+    setPipelineView,
     pipelineConfigurationAvailable: available,
   } as unknown as ProjectDetailTabsViewModel;
   return <PipelineTab project={PROJECT} vm={vm} />;
@@ -64,7 +66,7 @@ describe('PipelineTab', () => {
   // The runs list draws its own "Workflows" heading beside its branch picker
   // (covered in pipeline-runs-branch-picker.test.tsx), so on the runs view the
   // tab adds no second heading.
-  it('opens on the runs list without its own heading, description or view toggle', () => {
+  it('opens the runs list and lets users switch to Configuration', () => {
     const container = render();
     const panel = container.querySelector('#project-detail-panel-pipeline')!;
     expect(panel.getAttribute('role')).toBe('tabpanel');
@@ -75,6 +77,11 @@ describe('PipelineTab', () => {
     expect(container.querySelector('.pipeline-tab__hint')).toBeNull();
     expect(container.querySelector('[role=tablist]')).toBeNull();
     expect(shownView(container)).toBe('runs');
+    const configuration = [...container.querySelectorAll('button')].find(
+      (button) => button.textContent === 'Configuration',
+    );
+    act(() => configuration?.click());
+    expect(shownView(container)).toBe('configuration');
   });
 
   it('keeps workflow settings available to a #workflow deep link', () => {
@@ -90,6 +97,7 @@ describe('PipelineTab', () => {
     const container = render('runs', false);
     expect(container.querySelector('[role="tablist"]')).toBeNull();
     expect(container.querySelector('.pipeline-tab__head')).toBeNull();
+    expect(container.querySelector('button')).toBeNull();
     expect(shownView(container)).toBe('runs');
   });
 });

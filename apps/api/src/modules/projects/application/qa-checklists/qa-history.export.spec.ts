@@ -62,7 +62,10 @@ describe('QA audit trail export', () => {
 
   it('pages through every event and writes notes as plain text', async () => {
     const first = Array.from({ length: 1001 }, (_, i) => event(i));
-    const second = [event(2000, { type: 'progress_changed', payload: {} })];
+    const second = [
+      event(2000, { type: 'progress_changed', payload: {} }),
+      event(2001, { type: 'edited', payload: { poStatus: 'passed' } }),
+    ];
     const { service, history } = fixture([first, second]);
 
     const file = await service.exportWorkbook('p', 'viewer', {});
@@ -76,7 +79,7 @@ describe('QA audit trail export', () => {
       limit: 1001,
     });
     const rows = await readRows(file.content);
-    expect(rows).toHaveLength(1 + 1000 + 1);
+    expect(rows).toHaveLength(1 + 1000 + 2);
     expect(rows[1]).toEqual([
       '2026-10-27 00:00:00',
       1,
@@ -89,5 +92,6 @@ describe('QA audit trail export', () => {
       'severity: major | notes: =HYPERLINK("x")',
     ]);
     expect(rows[1001]?.[5]).toBe('Developer progress');
+    expect(rows[1002]?.[5]).toBe('Accepted by Product Owner');
   });
 });

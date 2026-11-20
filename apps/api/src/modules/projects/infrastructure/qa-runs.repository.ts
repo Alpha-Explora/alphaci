@@ -273,6 +273,13 @@ export class QaRunNotSignedOffError extends Error {
   }
 }
 
+export class QaRunItemChangedError extends Error {
+  constructor(itemId: string) {
+    super(`QA run item ${itemId} changed`);
+    this.name = 'QaRunItemChangedError';
+  }
+}
+
 /**
  * The run's items changed after the signoff was validated and its report
  * built. Signing off anyway would freeze a report (and possibly an APPROVED
@@ -653,8 +660,9 @@ export class QaRunsRepository {
     actor: RunActor,
     previousStatus: QaRunItemStatus,
     rules?: QaProjectItemRules,
+    transaction?: PoolClient,
   ): Promise<QaRunItemRow | null> {
-    return this.databaseService.withTransaction(async (client) => {
+    const write = async (client: PoolClient) => {
       // Lock order, everywhere: run row -> requirement item -> run item. A
       // Progress write only ever takes the requirement item, so no cycle.
       await lockOpenRunForItemWrite(client, runId);
@@ -784,7 +792,10 @@ export class QaRunsRepository {
       }
 
       return updated;
-    });
+    };
+    return transaction
+      ? write(transaction)
+      : this.databaseService.withTransaction(write);
   }
 
   /**
@@ -1068,8 +1079,12 @@ export class QaRunsRepository {
     });
   }
 
-  async reopenRun(runId: string, actor: RunActor): Promise<QaAnyRunRow | null> {
-    return this.databaseService.withTransaction(async (client) => {
+  async reopenRun(
+    runId: string,
+    actor: RunActor,
+    transaction?: PoolClient,
+  ): Promise<QaAnyRunRow | null> {
+    const write = async (client: PoolClient) => {
       const runResult = await client.query<QaAnyRunRow>(
         `
           UPDATE projects.qa_verification_runs
@@ -1094,6 +1109,42 @@ export class QaRunsRepository {
       );
 
       return run;
+    };
+    return transaction
+      ? write(transaction)
+      : this.databaseService.withTransaction(write);
+  }
+
+  /** A stale rejection leaves the run and its active sign-off intact. */
+  async rejectItem(input: {
+    runId: string;
+    itemId: string;
+    expectedRowVersion: number;
+    notes: string;
+    defectSeverity: QaDefectSeverity;
+    previousStatus: QaRunItemStatus;
+    actor: RunActor;
+  }): Promise<{ run: QaAnyRunRow; item: QaRunItemRow }> {
+    return this.databaseService.withTransaction(async (client) => {
+      const run = await this.reopenRun(input.runId, input.actor, client);
+      if (!run) throw new QaRunNotSignedOffError(input.runId);
+      const item = await this.updateItem(
+        input.runId,
+        input.itemId,
+        input.expectedRowVersion,
+        {
+          status: 'failed',
+          notes: input.notes,
+          defectSeverity: input.defectSeverity,
+          reproductionSteps: undefined,
+        },
+        input.actor,
+        input.previousStatus,
+        { requireProgressDoneForPass: false, resetProgressOnReturn: true },
+        client,
+      );
+      if (!item) throw new QaRunItemChangedError(input.itemId);
+      return { run, item };
     });
   }
 

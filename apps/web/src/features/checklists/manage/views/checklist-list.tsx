@@ -123,9 +123,7 @@ function ChecklistRow({
             </span>
           ) : null}
           {checklistOwningProjectId(checklist) ? (
-            <span className="qa-meta-pill">
-              System requirement of a Project
-            </span>
+            <span className="qa-meta-pill">Project requirement</span>
           ) : (
             <span
               className={`qa-meta-pill${checklist.sharedProjectIds.length === 0 ? ' qa-meta-pill--quiet' : ''}`}

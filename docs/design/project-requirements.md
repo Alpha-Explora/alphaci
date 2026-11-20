@@ -111,7 +111,7 @@ interface Requirement {
 
 ### 2.2 Requirements
 
-Requirement routes read and write the Project's current Iteration.
+Requirement routes read and write the Project's current Iteration. Descriptions are limited to 4,000 characters on create, batch create, and update. Deleting an item referenced by an open Project QA run returns 409 with `REQUIREMENT_ITEM_IN_OPEN_RUN`.
 
 | Route | Who | Body / result |
 |---|---|---|

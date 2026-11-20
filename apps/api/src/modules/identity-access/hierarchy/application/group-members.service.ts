@@ -100,10 +100,9 @@ export class GroupMembersService {
             deliveryProjectIds,
           )
         : null;
-    let joinedProjects: Array<{
-      deliveryProjectId: string;
-      repositoriesQueued: number;
-    }> = [];
+    let joinedProjects: Awaited<
+      ReturnType<DeliveryProjectMembersService['joinProjectsWithClient']>
+    > = [];
 
     const added = await this.groupsRepository.addMemberDirect(
       groupId,

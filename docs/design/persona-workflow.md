@@ -65,7 +65,7 @@ Authorization uses the global `identity.app_users.app_role` column, synced from 
 | **Developer Resolution** | View "My QA items" (project-wide: every developer's items) | Read-Only | Can View | **Primary Role** | `GET /delivery-projects/:id/qa/my-items` (`returned`, `inProgress`, `todo`, `readyForQa`) |
 | | Mark an item `done` (re-queues a failed item for QA) | Can Submit | Restricted | **Primary Role** | `canSetProgress(role)`; the legacy `request-retest` route is an alias for Progress `done` |
 | **Release Promotion** | View the "Ready for production" gate | Can View | Can View | Can View (API) | `GET /projects/:id/qa/promotion`, readable by anyone who can see the repository; the card is shown in the studios |
-| | **`Merge to main`** (Release to Production), one repository or all | **Authorized** (with admins) | Restricted (Hidden) | Restricted (Hidden) | `canMergeQaPromotion(role)` (lead, admin; 403 for others) on `POST /projects/:id/qa/promotion/merge` and `POST /delivery-projects/:id/promotion/merge-all`; gate is per Project, see §5 |
+| | **`Merge to main`** (Release to Production), one repository or all | Authorized | Authorized | Authorized | `canMergeQaPromotion(role)` allows leads, admins, QA, and developers. Both promotion endpoints enforce the Project's release gate. See §5. |
 | **CI/CD & Code** | CI Stage Stepper & Tool Logs (`Runs` Tab) | Summary View | Summary View | **Deep Debug View** | FE `runs-by-branch.ts` |
 | | Browse branches and commits | All branches | `dev`, `uat`, `main` | All branches | `visibleBranchesFor(role, branches)`, see §4 |
 | | Create a branch from `dev` | Allowed | Restricted | **Primary Role** | `canCreateWorkspaceBranch(role)` (admin, lead, member); QA `403 BRANCH_CREATION_FORBIDDEN` |

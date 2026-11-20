@@ -42,6 +42,7 @@ import { QaProjectRunsRepository } from '../../infrastructure/qa-project-runs.re
 import { QaRequirementsRepository } from '../../infrastructure/qa-requirements.repository';
 import {
   QaProgressNotDoneError,
+  QaRunItemChangedError,
   QaRunItemsChangedError,
   QaRunNotOpenError,
   QaRunNotSignedOffError,
@@ -346,10 +347,20 @@ export class QaProjectRunsService {
       readings,
       coverage,
     );
+    const stale = headStatuses.some((head) => head.moved);
+    if (
+      latest?.status === 'open' &&
+      !stale &&
+      readings.some((head) => head.kind === 'unreadable') &&
+      readings.every((head) => head.kind !== 'branch_missing')
+    ) {
+      const run = await this.assembleStored(project, latest, role, readings);
+      return { run, heads: run.repositories, stale };
+    }
     return {
       run: null,
       heads: headStatuses,
-      stale: headStatuses.some((head) => head.moved),
+      stale,
     };
   }
 
@@ -1006,43 +1017,28 @@ export class QaProjectRunsService {
         'Say what is wrong, so the Developers know what to fix.',
       );
     }
-    const reopened = await this.runs.reopenRun(run.id, runActor);
-    if (!reopened) {
-      throw new ConflictException(
-        'This run was reopened. Reload it and try again.',
-      );
-    }
-    let failed: QaRunItemRow | null;
+    let rejection: Awaited<ReturnType<QaRunsRepository['rejectItem']>>;
     try {
-      failed = await this.runs.updateItem(
-        run.id,
+      rejection = await this.runs.rejectItem({
+        runId: run.id,
         itemId,
-        dto.expectedRowVersion,
-        {
-          status: 'failed',
-          notes: `Product owner: ${notes}`,
-          defectSeverity: dto.defectSeverity ?? item.defect_severity ?? 'major',
-          reproductionSteps: undefined,
-        },
-        runActor,
-        item.status,
-        {
-          requireProgressDoneForPass: false,
-          resetProgressOnReturn: true,
-          requireTestCasesResolvedForPass: false,
-        },
-      );
+        expectedRowVersion: dto.expectedRowVersion,
+        notes: `Product owner: ${notes}`,
+        defectSeverity: dto.defectSeverity ?? item.defect_severity ?? 'major',
+        previousStatus: item.status,
+        actor: runActor,
+      });
     } catch (error) {
-      if (error instanceof QaRunNotOpenError) {
+      if (error instanceof QaRunNotSignedOffError) {
         throw new ConflictException(
-          'This run changed. Reload it and try again.',
+          'This run was reopened. Reload it and try again.',
         );
       }
+      if (error instanceof QaRunItemChangedError)
+        throw itemStale(dto.expectedRowVersion);
       throw error;
     }
-    if (!failed) {
-      throw itemStale(dto.expectedRowVersion);
-    }
+    const { run: reopened, item: failed } = rejection;
     // As on Reopen: stories written since the run started join it as pending.
     if (run.iteration_id) {
       await this.projectRuns.appendMissingItemsToOpenRuns(run.iteration_id);

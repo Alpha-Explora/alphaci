@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 
 import { ProviderConnectionsService } from './provider-connections.service';
 
@@ -19,7 +19,7 @@ describe('ProviderConnectionsService', () => {
     getClient: jest.fn(),
   };
   const providerRegistry = {
-    get: jest.fn(),
+    find: jest.fn(),
   };
   const appRoleLookup = {
     findAppRole: jest.fn(),
@@ -40,7 +40,8 @@ describe('ProviderConnectionsService', () => {
       slug: 'flowci',
     });
     clientRegistry.getClient.mockReturnValue(vercelClient);
-    providerRegistry.get.mockReturnValue({
+    providerRegistry.find.mockReturnValue({
+      capabilities: { envProvisioning: true },
       prepareConnection: jest.fn(
         async (input: {
           token: string;
@@ -143,6 +144,22 @@ describe('ProviderConnectionsService', () => {
       }),
     ).rejects.toThrow('Vercel team access validation failed');
 
+    expect(repository.createProviderConnection).not.toHaveBeenCalled();
+  });
+
+  it('refuses a catalog provider that does not support account connections', async () => {
+    providerRegistry.find.mockReturnValueOnce({
+      capabilities: { envProvisioning: false },
+    });
+
+    await expect(
+      service.createProviderConnection('user-1', {
+        provider: 'gcp',
+        label: 'Cloud Run',
+        token: 'fixture-token',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(clientRegistry.getClient).not.toHaveBeenCalled();
     expect(repository.createProviderConnection).not.toHaveBeenCalled();
   });
 

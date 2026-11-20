@@ -27,6 +27,7 @@ export const QA_PROGRESS_VALUES: readonly QaProgress[] = [
 
 /** Max items per requirement, enforced at the DTO layer and defensively in the service. */
 export const QA_REQUIREMENT_MAX_ITEMS = 200;
+export const QA_REQUIREMENT_DESCRIPTION_MAX_LENGTH = 4000;
 /** Most requirements one batch create accepts. */
 export const QA_REQUIREMENT_BATCH_MAX = 20;
 /** Most test case categories one User story holds. */

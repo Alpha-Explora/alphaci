@@ -189,7 +189,10 @@ export function ciStageTitle(stage: StageId): string {
   return STAGE_TITLES[stage] ?? stage;
 }
 
-export function ciStageStatusLabel(status: StageStatus): string {
+export function ciStageStatusLabel(
+  status: StageStatus | 'not_applicable',
+): string {
+  if (status === 'not_applicable') return 'Not applicable';
   return STAGE_STATUS_LABELS[status] ?? status;
 }
 

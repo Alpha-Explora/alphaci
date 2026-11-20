@@ -45,10 +45,10 @@ describe('QA import preview', () => {
     expect(
       (
         await parseQaImportFile(
-          csv('Category\tTest case\nHappy\tSign in', 'cases.tsv'),
+          csv('Category\tTest case\n007\t1.10', 'cases.tsv'),
         )
       ).sheets[0]?.rows,
-    ).toEqual([['Happy', 'Sign in']]);
+    ).toEqual([['007', '1.10']]);
   });
   it('rejects actual workbook formulas rather than trusting their cached result', async () => {
     const file = await xlsx([

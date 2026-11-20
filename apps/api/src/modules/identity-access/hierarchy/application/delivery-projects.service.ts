@@ -288,6 +288,42 @@ export class DeliveryProjectsService {
     return deliveryProject;
   }
 
+  async reopenDeliveryProject(
+    deliveryProjectId: string,
+    userId: string,
+  ): Promise<DeliveryProjectRecord> {
+    const { groupId } = await this.accessService.assertDeliveryProjectManager(
+      deliveryProjectId,
+      userId,
+    );
+    const current =
+      await this.deliveryProjectsRepository.findById(deliveryProjectId);
+    if (!current) throw deliveryProjectNotFound();
+    if (current.status === 'active') return current;
+
+    const reopened = await this.deliveryProjectsRepository.reopen(current);
+    const project =
+      await this.deliveryProjectsRepository.findById(deliveryProjectId);
+    if (!project) throw deliveryProjectNotFound();
+    if (project.status !== 'active') {
+      throw new ConflictException({
+        code: 'PROJECT_REOPEN_CONFLICT',
+        message:
+          'The Project changed while it was being reopened. Reload and try again.',
+      });
+    }
+    if (reopened) {
+      await this.auditEventsService.recordProjectEvent({
+        workspaceId: groupId,
+        actorUserId: userId,
+        eventCode: HIERARCHY_EVENT_CODES.deliveryProjectReopened,
+        message: `Project "${project.name}" reopened`,
+        metadata: { groupId, deliveryProjectId },
+      });
+    }
+    return project;
+  }
+
   /**
    * Deletes a Project (delivery project / "folder") together with every
    * repository inside it. Each repository is handled sequentially:

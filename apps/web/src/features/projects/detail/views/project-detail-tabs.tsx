@@ -117,6 +117,7 @@ export function ProjectDetailTabs({
 }: Readonly<ProjectDetailTabsProps>) {
   const vm = useProjectDetailTabsViewModel({
     projectId: project.id,
+    repoFullName: project.repoFullName,
     workflowFilesFallback: project.workflowFiles,
     appRole,
     specialAccess,

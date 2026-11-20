@@ -130,7 +130,7 @@ export class DeliveryProjectMembersService {
     const memberKind = await this.memberKindOrThrow(dto.userId);
 
     const live = this.isLive();
-    const { member, queued } = await this.databaseService.withTransaction(
+    const joined = await this.databaseService.withTransaction(
       async (client) => {
         const [joined] = await this.joinProjectsWithClient(client, {
           deliveryProjectIds: [deliveryProjectId],
@@ -139,7 +139,7 @@ export class DeliveryProjectMembersService {
           actingUserId,
         });
         if (!joined) throw new Error('Project membership was not written');
-        return { member: joined.member, queued: joined.repositoriesQueued };
+        return joined;
       },
     );
 
@@ -148,10 +148,13 @@ export class DeliveryProjectMembersService {
       actingUserId,
       dto.userId,
       memberKind,
-      [{ deliveryProjectId, repositoriesQueued: queued }],
+      [joined],
     );
 
-    return { member, githubAccess: this.outcome(live, queued) };
+    return {
+      member: joined.member,
+      githubAccess: this.outcome(live, joined.repositoriesQueued),
+    };
   }
 
   /**
@@ -194,23 +197,22 @@ export class DeliveryProjectMembersService {
     Array<{
       deliveryProjectId: string;
       member: DeliveryProjectMemberRecord;
+      changed: boolean;
       repositoriesQueued: number;
     }>
   > {
     const live = this.isLive();
     const joined = [];
     for (const deliveryProjectId of input.deliveryProjectIds) {
-      const member = await this.membersRepository.upsertActiveWithClient(
-        client,
-        {
+      const { member, changed } =
+        await this.membersRepository.upsertActiveWithClient(client, {
           deliveryProjectId,
           userId: input.userId,
           memberKind: input.memberKind,
           addedBy: input.actingUserId,
-        },
-      );
+        });
       const repositoriesQueued =
-        input.memberKind === 'developer' && live
+        changed && input.memberKind === 'developer' && live
           ? await this.grantDeveloperOnProjectRepositoriesWithClient(
               client,
               deliveryProjectId,
@@ -218,7 +220,7 @@ export class DeliveryProjectMembersService {
               input.actingUserId,
             )
           : 0;
-      joined.push({ deliveryProjectId, member, repositoriesQueued });
+      joined.push({ deliveryProjectId, member, changed, repositoriesQueued });
     }
     return joined;
   }
@@ -231,15 +233,25 @@ export class DeliveryProjectMembersService {
     memberKind: DeliveryProjectMemberKind,
     joined: ReadonlyArray<{
       deliveryProjectId: string;
+      member: DeliveryProjectMemberRecord;
+      changed: boolean;
       repositoriesQueued: number;
     }>,
   ): Promise<void> {
-    for (const { deliveryProjectId, repositoriesQueued } of joined) {
+    for (const {
+      deliveryProjectId,
+      member,
+      changed,
+      repositoriesQueued,
+    } of joined) {
+      if (!changed) continue;
       await this.auditEventsService.recordProjectEvent({
         workspaceId: groupId,
         actorUserId: actingUserId,
         eventCode: HIERARCHY_EVENT_CODES.deliveryProjectMemberAdded,
-        message: `Project member added (${memberKind})`,
+        message: member.login
+          ? `@${member.login} added to Project (${memberKind})`
+          : `Project member added (${memberKind})`,
         metadata: {
           deliveryProjectId,
           targetUserId,

@@ -139,20 +139,35 @@ export class QaRequirementsRepository {
   }
 
   /**
-   * Deletes one item. Open run items keep their snapshot: qa_run_items.
-   * source_item_id is ON DELETE SET NULL. Returns false when it was not there.
+   * Historical runs keep their snapshots, but open Project runs still need the
+   * source item for progress and verification.
    */
-  async deleteItem(checklistId: string, itemId: string): Promise<boolean> {
+  async deleteItem(
+    checklistId: string,
+    itemId: string,
+  ): Promise<'deleted' | 'missing' | 'in_open_run'> {
     return this.databaseService.withTransaction(async (client) => {
-      const result = await client.query(
+      const item = await client.query(
+        `SELECT id FROM projects.qa_checklist_items
+         WHERE id = $1 AND checklist_id = $2 FOR UPDATE`,
+        [itemId, checklistId],
+      );
+      if (!item.rows.length) return 'missing';
+      const openRun = await client.query(
+        `SELECT 1 FROM projects.qa_run_items AS item
+         JOIN projects.qa_verification_runs AS run ON run.id = item.run_id
+         WHERE item.source_item_id = $1
+           AND run.delivery_project_id IS NOT NULL AND run.status = 'open'
+         LIMIT 1`,
+        [itemId],
+      );
+      if (openRun.rows.length) return 'in_open_run';
+      await client.query(
         `DELETE FROM projects.qa_checklist_items WHERE id = $1 AND checklist_id = $2;`,
         [itemId, checklistId],
       );
-      if ((result.rowCount ?? 0) === 0) {
-        return false;
-      }
       await this.touchChecklist(client, checklistId);
-      return true;
+      return 'deleted';
     });
   }
 

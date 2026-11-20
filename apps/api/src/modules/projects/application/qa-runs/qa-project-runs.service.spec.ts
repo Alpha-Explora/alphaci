@@ -167,6 +167,7 @@ function setup({
     findPriorItemSummaries: jest.fn().mockResolvedValue(new Map()),
     updateItem: jest.fn(),
     acceptItem: jest.fn(),
+    rejectItem: jest.fn(),
     createSignoff: jest.fn(),
     reopenRun: jest.fn(),
     listSupersededSignoffs: jest.fn().mockResolvedValue([]),
@@ -873,6 +874,28 @@ describe('QaProjectRunsService sign-off, reopen, current', () => {
     expect(stale.heads.find((head) => head.moved)?.repoFullName).toBe(
       'acme/web',
     );
+  });
+
+  it('keeps the open run visible when a head is unreadable unless another head moved', async () => {
+    const unavailable = setup({
+      readings: [reading(API, SHA_API), reading(WEB, null)],
+    });
+    unavailable.projectRuns.findNewestProjectRun.mockResolvedValue(runRow());
+    const current = await unavailable.service.current(DP, actor());
+    expect(current.run?.id).toBe('run-1');
+    expect(
+      current.heads.find((head) => head.repoFullName === 'acme/web')
+        ?.currentSha,
+    ).toBeNull();
+
+    const changed = setup({
+      readings: [reading(API, MOVED), reading(WEB, null)],
+    });
+    changed.projectRuns.findNewestProjectRun.mockResolvedValue(runRow());
+    await expect(changed.service.current(DP, actor())).resolves.toMatchObject({
+      run: null,
+      stale: true,
+    });
   });
 
   it('404s a Project the caller cannot see', async () => {
@@ -1730,14 +1753,14 @@ describe('QaProjectRunsService.acceptItem (the Product owner after QA)', () => {
 
   it('failing reopens the run, returns the story to the Developers as Failed, and tells QA and the Developers', async () => {
     const { service, runs, notifications, audit } = signedOff();
-    runs.reopenRun.mockResolvedValue(runRow({ status: 'open' }));
-    runs.updateItem.mockResolvedValue(
-      itemRow({
+    runs.rejectItem.mockResolvedValue({
+      run: runRow({ status: 'open' }),
+      item: itemRow({
         status: 'failed',
         defect_severity: 'major',
         notes: 'Product owner: Wrong header',
       }),
-    );
+    });
 
     await service.acceptItem(DP, actor('lead-1'), 'run-1', 'ri-1', {
       decision: 'failed',
@@ -1745,23 +1768,15 @@ describe('QaProjectRunsService.acceptItem (the Product owner after QA)', () => {
       notes: ' Wrong header ',
     });
 
-    expect(runs.reopenRun).toHaveBeenCalledWith('run-1', {
-      id: 'lead-1',
-      login: 'qa',
+    expect(runs.rejectItem).toHaveBeenCalledWith({
+      runId: 'run-1',
+      itemId: 'ri-1',
+      expectedRowVersion: 1,
+      notes: 'Product owner: Wrong header',
+      defectSeverity: 'major',
+      actor: { id: 'lead-1', login: 'qa' },
+      previousStatus: 'pending',
     });
-    expect(runs.updateItem).toHaveBeenCalledWith(
-      'run-1',
-      'ri-1',
-      1,
-      expect.objectContaining({
-        status: 'failed',
-        notes: 'Product owner: Wrong header',
-        defectSeverity: 'major',
-      }),
-      { id: 'lead-1', login: 'qa' },
-      'pending',
-      expect.objectContaining({ resetProgressOnReturn: true }),
-    );
     expect(audit.recordProjectEvent).toHaveBeenCalledWith(
       expect.objectContaining({ eventCode: 'qa.item.po_rejected' }),
     );

@@ -1,8 +1,8 @@
 import type { Group, GroupMember } from '@alphaci/api-contracts';
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
-import { DatabaseService } from '#kernel/db/database.service';
+import { DatabaseService, type SqlExecutor } from '#kernel/db/database.service';
 import type {
   GroupRole,
   LifecycleStatus,
@@ -18,6 +18,25 @@ export type GroupRecord = Omit<Group, 'role'> & { role?: GroupRole };
 
 /** The wire shape of a group member; defined once in @alphaci/api-contracts. */
 export type GroupMemberRecord = GroupMember;
+
+function archivedGroupConflict(): ConflictException {
+  return new ConflictException({
+    code: 'GROUP_ARCHIVED',
+    message: 'Reopen this group before making changes.',
+  });
+}
+
+/** Holds the group's lifecycle state steady until the dependent write commits. */
+export async function requireActiveGroup(
+  client: SqlExecutor,
+  groupId: string,
+): Promise<void> {
+  const result = await client.query<{ status: LifecycleStatus }>(
+    "SELECT status FROM orgs.workspaces WHERE id = $1 AND kind = 'team' FOR SHARE",
+    [groupId],
+  );
+  if (result.rows[0]?.status === 'archived') throw archivedGroupConflict();
+}
 
 export interface ActiveMembership {
   workspaceId: string;
@@ -209,7 +228,9 @@ export class GroupsRepository {
         SELECT
           workspace.id AS group_id,
           (SELECT count(*)::int FROM orgs.workspace_members m
-             WHERE m.workspace_id = workspace.id AND m.member_status = 'active') AS member_count,
+             JOIN identity.app_users u ON u.id = m.user_id
+             WHERE m.workspace_id = workspace.id AND m.member_status = 'active'
+               AND u.archived_at IS NULL) AS member_count,
           (SELECT count(*)::int FROM hierarchy.systems s
              WHERE s.group_id = workspace.id AND s.status = 'active') AS system_count
         FROM orgs.workspaces AS workspace
@@ -251,6 +272,7 @@ export class GroupsRepository {
         WHERE member.workspace_id = $1
           AND member.user_id = $2
           AND member.member_status = 'active'
+          AND app_user.archived_at IS NULL
           AND workspace.kind = 'team';
       `,
       [groupId, userId],
@@ -282,7 +304,7 @@ export class GroupsRepository {
           description = CASE WHEN $3::boolean THEN $4 ELSE description END,
           business_unit = CASE WHEN $5::boolean THEN $6 ELSE business_unit END,
           updated_at = NOW()
-        WHERE id = $1 AND kind = 'team'
+        WHERE id = $1 AND kind = 'team' AND status = 'active'
         RETURNING id, name, description, business_unit, status, archived_at, archived_by, created_at;
       `,
       [
@@ -295,7 +317,11 @@ export class GroupsRepository {
       ],
     );
     const row = result.rows[0];
-    if (!row) return null;
+    if (!row) {
+      const group = await this.findGroupById(groupId);
+      if (group?.status === 'archived') throw archivedGroupConflict();
+      return null;
+    }
     const counts = await this.getCountsForGroups([row.id]);
     return this.toGroup(row, counts.get(row.id));
   }
@@ -310,8 +336,8 @@ export class GroupsRepository {
         UPDATE orgs.workspaces
         SET
           status = $2,
-          archived_at = CASE WHEN $2 = 'archived' THEN NOW() ELSE NULL END,
-          archived_by = CASE WHEN $2 = 'archived' THEN $3::uuid ELSE NULL END,
+          archived_at = CASE WHEN $2 = 'archived' THEN COALESCE(archived_at, NOW()) ELSE NULL END,
+          archived_by = CASE WHEN $2 = 'archived' THEN COALESCE(archived_by, $3::uuid) ELSE NULL END,
           updated_at = NOW()
         WHERE id = $1 AND kind = 'team'
         RETURNING id, name, description, business_unit, status, archived_at, archived_by, created_at;
@@ -337,7 +363,7 @@ export class GroupsRepository {
           user_profile.login, user_profile.display_name, user_profile.email, user_profile.avatar_url
         FROM orgs.workspace_members AS member
         JOIN identity.app_users AS user_profile ON user_profile.id = member.user_id
-        WHERE member.workspace_id = $1
+        WHERE member.workspace_id = $1 AND user_profile.archived_at IS NULL
         ORDER BY
           CASE member.member_status WHEN 'active' THEN 1 WHEN 'invited' THEN 2 ELSE 3 END,
           CASE WHEN user_profile.app_role IN ('admin', 'lead') THEN 1 ELSE 2 END,
@@ -424,7 +450,11 @@ export class GroupsRepository {
     memberId: string,
     removedBy: string,
     reason?: string | null,
-  ): Promise<{ member: GroupMemberRecord | null; blockedLastOwner: boolean }> {
+  ): Promise<{
+    member: GroupMemberRecord | null;
+    blockedLastOwner: boolean;
+    alreadyRemoved?: true;
+  }> {
     await client.query(
       `
         SELECT id FROM orgs.workspace_members
@@ -452,6 +482,13 @@ export class GroupsRepository {
     const target = targetResult.rows[0];
     if (!target) {
       return { member: null, blockedLastOwner: false };
+    }
+    if (target.member_status === 'removed') {
+      return {
+        member: this.toMember(target),
+        blockedLastOwner: false,
+        alreadyRemoved: true,
+      };
     }
 
     const targetManages =
@@ -510,6 +547,7 @@ export class GroupsRepository {
     ) => Promise<void>,
   ): Promise<boolean> {
     return this.databaseService.withTransaction(async (client) => {
+      await requireActiveGroup(client, groupId);
       const added = await client.query<{ id: string }>(
         `
         INSERT INTO orgs.workspace_members (workspace_id, user_id, role, member_status, invited_by, invited_at)
