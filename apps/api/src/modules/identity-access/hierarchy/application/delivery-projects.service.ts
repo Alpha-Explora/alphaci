@@ -25,8 +25,10 @@ import {
   type DeliveryProjectRecord,
 } from '../infrastructure/delivery-projects.repository';
 import { RepositoriesRepository } from '../infrastructure/repositories.repository';
-import { SystemsRepository } from '../infrastructure/systems.repository';
-import { ProjectNameTakenException } from '../domain/project-name';
+import {
+  SystemsRepository,
+  type SystemRecord,
+} from '../infrastructure/systems.repository';
 import type { CreateDeliveryProjectDto } from '../api/dto/create-delivery-project.dto';
 import type { DeleteDeliveryProjectDto } from '../api/dto/delete-delivery-project.dto';
 import type { UpdateDeliveryProjectDto } from '../api/dto/update-delivery-project.dto';
@@ -99,25 +101,11 @@ export class DeliveryProjectsService {
     private readonly deliveryProjectDataCleanup: DeliveryProjectDataCleanupPort,
   ) {}
 
-  /** Throws 409 PROJECT_NAME_TAKEN when the team already has this Project name. */
-  async assertProjectNameAvailable(
-    groupId: string,
-    name: string,
-  ): Promise<void> {
-    if (await this.deliveryProjectsRepository.isNameTaken(groupId, name)) {
-      throw new ProjectNameTakenException(name.trim());
-    }
-  }
-
-  /** Serializes same-name Project creation for a team; see the repository. */
-  withProjectNameLock<T>(
-    groupId: string,
-    name: string,
-    fn: () => Promise<T>,
-  ): Promise<T> {
-    return this.deliveryProjectsRepository.withNameLock(groupId, name, fn);
-  }
-
+  /**
+   * Creates a Project under an existing System (POST
+   * /systems/:id/delivery-projects). Same unique-name rule as every other
+   * caller-named Project: 409 PROJECT_NAME_TAKEN.
+   */
   async createDeliveryProject(
     systemId: string,
     userId: string,
@@ -127,23 +115,88 @@ export class DeliveryProjectsService {
       systemId,
       userId,
     );
-    const deliveryProject = await this.deliveryProjectsRepository.create({
-      systemId,
-      groupId,
-      name: dto.name,
-      description: dto.description ?? null,
-      managerId: userId,
-    });
+    const deliveryProject =
+      await this.deliveryProjectsRepository.withUniqueName(
+        groupId,
+        dto.name,
+        (tx) =>
+          this.deliveryProjectsRepository.create(
+            {
+              systemId,
+              groupId,
+              name: dto.name,
+              description: dto.description ?? null,
+              managerId: userId,
+            },
+            tx,
+          ),
+      );
+    await this.recordCreated(deliveryProject, userId);
+    return deliveryProject;
+  }
 
+  /**
+   * Creates a System and its Project, both named `name`, in one transaction
+   * under the team's unique-name rule, so a taken name leaves no orphan
+   * System. The caller has already checked who may create here.
+   */
+  async createWithSystem(
+    groupId: string,
+    userId: string,
+    input: { name: string; description?: string | null },
+  ): Promise<{ system: SystemRecord; deliveryProject: DeliveryProjectRecord }> {
+    const created = await this.deliveryProjectsRepository.withUniqueName(
+      groupId,
+      input.name,
+      async (tx) => {
+        const system = await this.systemsRepository.create(
+          {
+            groupId,
+            name: input.name,
+            description: input.description ?? null,
+            ownerId: userId,
+          },
+          tx,
+        );
+        const deliveryProject = await this.deliveryProjectsRepository.create(
+          {
+            systemId: system.id,
+            groupId,
+            name: input.name,
+            description: input.description ?? null,
+            managerId: userId,
+          },
+          tx,
+        );
+        return { system, deliveryProject };
+      },
+    );
     await this.auditEventsService.recordProjectEvent({
       workspaceId: groupId,
       actorUserId: userId,
+      eventCode: HIERARCHY_EVENT_CODES.systemCreated,
+      message: `System "${created.system.name}" created`,
+      metadata: { groupId, systemId: created.system.id },
+    });
+    await this.recordCreated(created.deliveryProject, userId);
+    return created;
+  }
+
+  private async recordCreated(
+    deliveryProject: DeliveryProjectRecord,
+    userId: string,
+  ): Promise<void> {
+    await this.auditEventsService.recordProjectEvent({
+      workspaceId: deliveryProject.groupId,
+      actorUserId: userId,
       eventCode: HIERARCHY_EVENT_CODES.deliveryProjectCreated,
       message: `Delivery project "${deliveryProject.name}" created`,
-      metadata: { groupId, systemId, deliveryProjectId: deliveryProject.id },
+      metadata: {
+        groupId: deliveryProject.groupId,
+        systemId: deliveryProject.systemId,
+        deliveryProjectId: deliveryProject.id,
+      },
     });
-
-    return deliveryProject;
   }
 
   async listDeliveryProjects(
@@ -179,10 +232,22 @@ export class DeliveryProjectsService {
       deliveryProjectId,
       userId,
     );
-    const deliveryProject = await this.deliveryProjectsRepository.update(
-      deliveryProjectId,
-      dto,
-    );
+    // A rename keeps the team's unique-name rule; a description-only edit
+    // needs no lock.
+    const deliveryProject =
+      dto.name === undefined
+        ? await this.deliveryProjectsRepository.update(deliveryProjectId, dto)
+        : await this.deliveryProjectsRepository.withUniqueName(
+            groupId,
+            dto.name,
+            (tx) =>
+              this.deliveryProjectsRepository.update(
+                deliveryProjectId,
+                dto,
+                tx,
+              ),
+            deliveryProjectId,
+          );
     if (!deliveryProject) {
       throw deliveryProjectNotFound();
     }

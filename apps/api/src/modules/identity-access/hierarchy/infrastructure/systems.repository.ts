@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { DatabaseService } from '#kernel/db/database.service';
+import { DatabaseService, type SqlExecutor } from '#kernel/db/database.service';
 import type { LifecycleStatus } from '../domain/hierarchy.types';
 
 export interface SystemRecord {
@@ -33,13 +33,16 @@ interface SystemRow {
 export class SystemsRepository {
   constructor(private readonly databaseService: DatabaseService) {}
 
-  async create(input: {
-    groupId: string;
-    name: string;
-    description?: string | null;
-    ownerId: string;
-  }): Promise<SystemRecord> {
-    const result = await this.databaseService.query<SystemRow>(
+  async create(
+    input: {
+      groupId: string;
+      name: string;
+      description?: string | null;
+      ownerId: string;
+    },
+    db: SqlExecutor = this.databaseService,
+  ): Promise<SystemRecord> {
+    const result = await db.query<SystemRow>(
       `
         INSERT INTO hierarchy.systems (group_id, name, description, owner_id)
         VALUES ($1, $2, $3, $4)

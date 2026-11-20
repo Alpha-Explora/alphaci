@@ -27,6 +27,18 @@ const SERVICE_SCHEMA_SEARCH_PATH = [
   'public',
 ].join(',');
 
+/**
+ * Runs one statement: the pool (DatabaseService) or the client of an open
+ * transaction (withTransaction's argument). A repository method that takes one
+ * can join its caller's transaction instead of borrowing a second connection.
+ */
+export interface SqlExecutor {
+  query<T extends QueryResultRow = QueryResultRow>(
+    text: string,
+    values?: unknown[],
+  ): Promise<QueryResult<T>>;
+}
+
 @Injectable()
 export class DatabaseService implements OnModuleDestroy {
   private readonly logger = new Logger(DatabaseService.name);

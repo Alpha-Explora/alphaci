@@ -24,10 +24,22 @@ export const ACTIVE_PROJECT_NAME_EXISTS_SQL = `
   LIMIT 1;
 `;
 
+/** The ids of the team's non-archived Projects with this name. Same rule as above. */
+export const PROJECT_NAME_HOLDERS_SQL = `
+  SELECT id FROM hierarchy.delivery_projects
+  WHERE group_id = $1
+    AND status <> 'archived'
+    AND lower(btrim(name)) = lower(btrim($2));
+`;
+
 /**
- * Advisory-lock key text for (team, name). No unique index backs the rule
- * (no migration), so creators of the same name serialize on this lock and
- * re-check inside it. Usage: pg_advisory_[xact_]lock(hashtextextended($1, 0)).
+ * Advisory-lock key text for (team, name). No unique index backs the rule:
+ * legacy creation paths still name chains after a service, unchecked, so two
+ * repositories named "web" give two Projects named "web". Creators of a
+ * caller-chosen name serialize on this lock and re-check inside it. Take it
+ * only as a transaction lock (pg_advisory_xact_lock(hashtextextended($1, 0)))
+ * on the connection that does the writes; see
+ * DeliveryProjectsRepository.withUniqueName.
  */
 export function projectNameLockKey(groupId: string, name: string): string {
   return `delivery_project_name:${groupId}:${name.trim().toLowerCase()}`;

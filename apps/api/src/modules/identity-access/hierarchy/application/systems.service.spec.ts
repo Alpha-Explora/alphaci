@@ -106,10 +106,8 @@ function buildSystemsService(accessService: HierarchyAccessService) {
     repositoryCount: 0,
   };
   const deliveryProjectsService = {
-    createDeliveryProject: jest.fn(() => Promise.resolve(deliveryProject)),
-    assertProjectNameAvailable: jest.fn(() => Promise.resolve()),
-    withProjectNameLock: jest.fn(
-      (_groupId: string, _name: string, fn: () => Promise<unknown>) => fn(),
+    createWithSystem: jest.fn(() =>
+      Promise.resolve({ system: { id: 'system-1' }, deliveryProject }),
     ),
   } as unknown as jest.Mocked<DeliveryProjectsService>;
   const repositoriesService = {} as unknown as RepositoriesService;
@@ -152,14 +150,10 @@ describe('SystemsService.createEmptyProject', () => {
     }
   });
 
-  it('creates a system AND a delivery project, but no repository, and returns the DeliveryProject shape', async () => {
+  it('creates a system and its delivery project, no repository, and returns the DeliveryProject shape', async () => {
     const accessService = buildAccessService({ appRole: 'lead' });
-    const {
-      service,
-      systemsRepository,
-      deliveryProjectsService,
-      deliveryProject,
-    } = buildSystemsService(accessService);
+    const { service, deliveryProjectsService, deliveryProject } =
+      buildSystemsService(accessService);
 
     await expect(
       service.createEmptyProject('group-1', 'user-1', {
@@ -168,14 +162,8 @@ describe('SystemsService.createEmptyProject', () => {
       }),
     ).resolves.toEqual(deliveryProject);
 
-    expect(systemsRepository.create).toHaveBeenCalledWith({
-      groupId: 'group-1',
-      name: 'Payments',
-      description: 'Q3 payments initiative',
-      ownerId: 'user-1',
-    });
-    expect(deliveryProjectsService.createDeliveryProject).toHaveBeenCalledWith(
-      'system-1',
+    expect(deliveryProjectsService.createWithSystem).toHaveBeenCalledWith(
+      'group-1',
       'user-1',
       { name: 'Payments', description: 'Q3 payments initiative' },
     );
@@ -196,11 +184,11 @@ describe('SystemsService.createEmptyProject', () => {
     ).resolves.toMatchObject({ id: 'dp-1' });
   });
 
-  it('rejects a duplicate Project name with 409 PROJECT_NAME_TAKEN and creates nothing', async () => {
+  it('passes a 409 PROJECT_NAME_TAKEN through', async () => {
     const accessService = buildAccessService({ appRole: 'lead' });
-    const { service, systemsRepository, deliveryProjectsService } =
+    const { service, deliveryProjectsService } =
       buildSystemsService(accessService);
-    deliveryProjectsService.assertProjectNameAvailable.mockRejectedValue(
+    deliveryProjectsService.createWithSystem.mockRejectedValue(
       new ConflictException({
         code: 'PROJECT_NAME_TAKEN',
         message: 'A Project named "Payments" already exists in this team.',
@@ -212,26 +200,5 @@ describe('SystemsService.createEmptyProject', () => {
     ).rejects.toMatchObject({
       response: { code: 'PROJECT_NAME_TAKEN' },
     });
-    expect(systemsRepository.create).not.toHaveBeenCalled();
-    expect(
-      deliveryProjectsService.createDeliveryProject,
-    ).not.toHaveBeenCalled();
-  });
-
-  it('checks the name inside the per-(team, name) lock', async () => {
-    const accessService = buildAccessService({ appRole: 'lead' });
-    const { service, deliveryProjectsService } =
-      buildSystemsService(accessService);
-
-    await service.createEmptyProject('group-1', 'user-1', { name: 'Payments' });
-
-    expect(deliveryProjectsService.withProjectNameLock).toHaveBeenCalledWith(
-      'group-1',
-      'Payments',
-      expect.any(Function),
-    );
-    expect(
-      deliveryProjectsService.assertProjectNameAvailable,
-    ).toHaveBeenCalledWith('group-1', 'Payments');
   });
 });

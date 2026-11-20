@@ -78,6 +78,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 
 - **Projects:** Developers get GitHub Write on repositories whose names GitHub rewrites for team names, such as `web.app`; before this, only the first person granted got it. Each new grant or revoke request gets its full retry budget again.
 - **Teams:** Saving a team's details no longer hides its manage controls until the page is reloaded.
+- **Projects:** Several Projects created at once no longer stall the API for everyone; a taken name answers 409 at once, also when creating under a System or renaming.
 - **Teams:** Archiving or reopening a team no longer fails with a server error.
 - **API:** Error responses keep their `code` and details, so the web app can tell "moving removes access", quota limits and other coded refusals from a plain failure; they were dropped before.
 - **Capabilities:** Unknown, duplicate, or empty edition selections fail before catalog writes. Hosting metadata includes the Hosts page, and capability descriptions cover the current QA and delivery workflows.

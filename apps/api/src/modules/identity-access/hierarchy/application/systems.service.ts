@@ -64,36 +64,14 @@ export class SystemsService {
       );
     }
 
-    const system = await this.systemsRepository.create({
-      groupId,
-      name: dto.name,
-      description: dto.description ?? null,
-      ownerId: userId,
-    });
-
-    await this.auditEventsService.recordProjectEvent({
-      workspaceId: groupId,
-      actorUserId: userId,
-      eventCode: HIERARCHY_EVENT_CODES.systemCreated,
-      message: `System "${system.name}" created`,
-      metadata: { groupId, systemId: system.id },
-    });
-
-    // A system is the entry point for a repository: auto-create the
-    // intermediate delivery project, then the GitHub repository itself. The
-    // repository shares the system's name (the delivery project reuses it too),
-    // so the user only names the thing once.
-    const deliveryProject =
-      await this.deliveryProjectsService.createDeliveryProject(
-        system.id,
-        userId,
-        {
-          name: dto.name,
-          ...(dto.description !== undefined && {
-            description: dto.description,
-          }),
-        },
-      );
+    // A system is the entry point for a repository: create the system and
+    // its delivery project together (same name, the team's unique-name rule),
+    // then the GitHub repository itself, so the user names the thing once.
+    const { system, deliveryProject } =
+      await this.deliveryProjectsService.createWithSystem(groupId, userId, {
+        name: dto.name,
+        description: dto.description ?? null,
+      });
 
     const repository = await this.repositoriesService.createBareRepository(
       deliveryProject.id,
@@ -127,49 +105,13 @@ export class SystemsService {
     await this.accessService.assertCanCreateProjectInGroup(groupId, userId);
 
     // Same uniqueness rule as project creation (409 PROJECT_NAME_TAKEN),
-    // re-checked under a per-(team, name) lock so two concurrent creates of
-    // one name cannot both pass.
-    return this.deliveryProjectsService.withProjectNameLock(
-      groupId,
-      dto.name,
-      async () => {
-        await this.deliveryProjectsService.assertProjectNameAvailable(
-          groupId,
-          dto.name,
-        );
-        return this.createEmptyProjectUnlocked(groupId, userId, dto);
-      },
-    );
-  }
-
-  private async createEmptyProjectUnlocked(
-    groupId: string,
-    userId: string,
-    dto: CreateEmptyProjectDto,
-  ): Promise<DeliveryProjectRecord> {
-    const system = await this.systemsRepository.create({
-      groupId,
-      name: dto.name,
-      description: dto.description ?? null,
-      ownerId: userId,
-    });
-
-    await this.auditEventsService.recordProjectEvent({
-      workspaceId: groupId,
-      actorUserId: userId,
-      eventCode: HIERARCHY_EVENT_CODES.systemCreated,
-      message: `System "${system.name}" created`,
-      metadata: { groupId, systemId: system.id },
-    });
-
-    return this.deliveryProjectsService.createDeliveryProject(
-      system.id,
-      userId,
-      {
+    // checked and written in one transaction under a per-(team, name) lock.
+    const { deliveryProject } =
+      await this.deliveryProjectsService.createWithSystem(groupId, userId, {
         name: dto.name,
-        ...(dto.description !== undefined && { description: dto.description }),
-      },
-    );
+        description: dto.description ?? null,
+      });
+    return deliveryProject;
   }
 
   async listSystems(groupId: string, userId: string): Promise<SystemRecord[]> {
