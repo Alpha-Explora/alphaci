@@ -213,6 +213,48 @@ describe('AllExceptionsFilter', () => {
     });
   });
 
+  describe('Postgres errors caused by a request value', () => {
+    function postgresError(code: string, message: string): Error {
+      return Object.assign(new Error(message), { code });
+    }
+
+    it.each([
+      ['22P02', 'invalid input syntax for type uuid: "not-a-uuid"'],
+      ['22007', 'invalid input syntax for type timestamp with time zone'],
+      ['22003', 'value "99999999999" is out of range for type integer'],
+      ['22001', 'value too long for type character varying(80)'],
+      ['23514', 'new row violates check constraint "onprem_hosts_name_check"'],
+    ])(
+      'answers %s with 400 INVALID_INPUT, without the SQL detail',
+      (code, detail) => {
+        const res = makeResponse();
+        const host = makeHost(
+          { url: '/groups/x', method: 'GET', headers: {} },
+          res,
+        );
+
+        filter.catch(postgresError(code, detail), host);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res._body).toMatchObject({
+          statusCode: 400,
+          code: 'INVALID_INPUT',
+          message: 'A value in the request is not valid.',
+        });
+        expect(JSON.stringify(res._body)).not.toContain(detail);
+      },
+    );
+
+    it('keeps 500 for other Postgres errors', () => {
+      const res = makeResponse();
+      const host = makeHost({ url: '/x', method: 'GET', headers: {} }, res);
+
+      filter.catch(postgresError('57014', 'canceling statement'), host);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
+  });
+
   describe('non-HttpException handling', () => {
     it('returns 500 for a plain Error', () => {
       const res = makeResponse();

@@ -23,6 +23,31 @@ interface ErrorEnvelope extends Record<string, unknown> {
   path: string;
 }
 
+/**
+ * Postgres errors that mean a value from the request could not be stored or
+ * compared, not that the server broke: a malformed uuid, integer or timestamp
+ * in a path, query or body (22P02, 22007, 22008), a number out of range
+ * (22003), a string over a column limit (22001), or a value a check
+ * constraint refuses (23514). Every route that passes a request value to SQL
+ * without validating it first answers 400 instead of 500.
+ */
+const INVALID_INPUT_SQLSTATES = new Set([
+  '22P02',
+  '22007',
+  '22008',
+  '22003',
+  '22001',
+  '23514',
+]);
+
+function invalidInputSqlState(exception: unknown): string | null {
+  if (typeof exception !== 'object' || exception === null) return null;
+  const code = (exception as { code?: unknown }).code;
+  return typeof code === 'string' && INVALID_INPUT_SQLSTATES.has(code)
+    ? code
+    : null;
+}
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
@@ -64,6 +89,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
       this.logger.warn(
         `HTTP ${statusCode} on ${request.method} ${request.url}: ${message}`,
+      );
+    } else if (invalidInputSqlState(exception)) {
+      statusCode = HttpStatus.BAD_REQUEST;
+      message = 'A value in the request is not valid.';
+      error = 'Bad Request';
+      extras = { code: 'INVALID_INPUT' };
+      this.logger.warn(
+        `HTTP 400 on ${request.method} ${request.url}: Postgres ${String(invalidInputSqlState(exception))} ${exception instanceof Error ? exception.message : ''}`,
       );
     } else {
       statusCode = HttpStatus.INTERNAL_SERVER_ERROR;

@@ -5,6 +5,7 @@
 - **Update**: Team roles come only from the app role. `PATCH /groups/{groupId}/members/{memberId}` is retired and `POST /groups/{groupId}/members` no longer takes `role`; the last-manager guard (`GROUP_LAST_OWNER`) counts active, non-archived members whose app role is lead or admin, the same rule the permission checks use. Lead transfer moves only the team's owner and requires a lead or admin (`GROUP_MANAGER_NOT_LEAD`). Adding a lead or admin with Projects picked adds them to the team and skips the Project join.
 - **Update**: `identity.platform_admins` holds only `super_admin`; the Admin tier is `app_role = 'admin'`. Migration `20261120000000_platform_admin_super_only.sql` turns each bare `admin` row into a pinned (`manual`) Admin app role, deletes the row, and narrows the check. `POST /admin/users/{id}/role` accepts only `super_admin`.
 - **Update**: The session guard reads the account on every request and refuses an archived one, so deleting an account ends all of its sessions.
+- **Update**: The API's Error responses section documents `INVALID_INPUT`: `AllExceptionsFilter` answers Postgres errors caused by a request value with 400 instead of 500.
 
 ## 2026-11-13
 

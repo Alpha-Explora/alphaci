@@ -69,7 +69,7 @@ Each context has a `<context>.module.ts` composition root and an `index.ts` publ
 
 ## Error responses
 
-`AllExceptionsFilter` answers every failure with `{ statusCode, message, error, correlationId, timestamp, path }`. An exception thrown with an object body also sends that body's other fields beside the envelope (`code`, `people`, `limitCode`, `deliveryProjectId`); the envelope fields win over a same-named extra. Unhandled errors answer 500 with no detail.
+`AllExceptionsFilter` answers every failure with `{ statusCode, message, error, correlationId, timestamp, path }`. An exception thrown with an object body also sends that body's other fields beside the envelope (`code`, `people`, `limitCode`, `deliveryProjectId`); the envelope fields win over a same-named extra. A Postgres error caused by a request value (SQLSTATE `22P02`, `22007`, `22008`, `22003`, `22001` or `23514`: a malformed uuid, number or timestamp, a value out of range or too long, a check constraint) answers 400 with `code: 'INVALID_INPUT'` and no SQL detail. Other unhandled errors answer 500 with no detail.
 
 A refusal the web app has to tell apart carries a `code`: UPPER_SNAKE_CASE, naming the situation rather than the status, never reused for a different one. The factories in `src/kernel/http/coded-errors.ts` (`badRequest`, `unauthorized`, `forbidden`, `notFound`, `conflict`, `unprocessable`, `unavailable`) build the exception with the code, the sentence and optional extras. The message is for people and may be reworded; the code is the contract. Repeated answers get a named factory beside their module, such as `groupNotFound()` in the hierarchy's `hierarchy.errors.ts`.
 
