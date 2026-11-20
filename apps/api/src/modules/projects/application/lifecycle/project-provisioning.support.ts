@@ -261,12 +261,8 @@ export class ProjectProvisioningSupport {
     ));
   }
 
-  resolveRepositoryProvisioning(
-    userId: string,
-    accessToken: string | null,
-    dto: CreateProjectDto,
-  ) {
-    return this.tokens.resolveRepositoryProvisioning(userId, accessToken, dto);
+  resolveRepositoryProvisioning(userId: string, dto: CreateProjectDto) {
+    return this.tokens.resolveRepositoryProvisioning(userId, dto);
   }
 
   resolveSetupProvisioningToken(

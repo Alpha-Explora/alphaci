@@ -92,7 +92,10 @@ export class ProjectTodosService {
     const [rows, role, members] = await Promise.all([
       this.todos.list(deliveryProjectId),
       this.access.findAppRole(userId),
-      this.access.listWorkspaceMembers(project.groupId),
+      this.access.listWorkspaceMembers(
+        project.groupId,
+        project.deliveryProjectId,
+      ),
     ]);
     return {
       todos: rows.map((row) => this.toTodo(row, userId, role)),
@@ -267,7 +270,10 @@ export class ProjectTodosService {
     project: QaProjectContext,
     assigneeId: string,
   ): Promise<{ id: string; login: string }> {
-    const members = await this.access.listWorkspaceMembers(project.groupId);
+    const members = await this.access.listWorkspaceMembers(
+      project.groupId,
+      project.deliveryProjectId,
+    );
     const member = members.find((entry) => entry.id === assigneeId);
     if (!member) {
       throw todoError(

@@ -28,6 +28,8 @@ import {
 } from '#kernel/ports/deployment-runtime.port';
 import { DeploymentTargetsRepository } from '../infrastructure/repositories/deployment-targets.repository';
 import { EnvVarsRepository } from '../infrastructure/repositories/env-vars.repository';
+import type { DeploymentProvider } from '../core/deployment-provider.contract';
+import { DeploymentProviderRegistry } from '../core/deployment-provider.registry';
 import type {
   DeploymentTargetSummary,
   EnvVarMetadata,
@@ -110,6 +112,7 @@ function maybeCiTokenFinding(
 function maybeTargetFindings(
   projectId: string,
   targets: DeploymentTargetSummary[],
+  providers: DeploymentProviderRegistry<DeploymentProvider> | undefined,
 ): ProjectDriftFindingInput[] {
   const findings: ProjectDriftFindingInput[] = [];
   for (const target of targets) {
@@ -134,7 +137,12 @@ function maybeTargetFindings(
         details: { provider: target.provider },
       });
     }
-    if (target.ownershipMode === 'byo' && !target.providerConnectionId) {
+    if (
+      target.ownershipMode === 'byo' &&
+      !target.providerConnectionId &&
+      providers?.find(target.provider)?.capabilities.credentialCustody !==
+        'external'
+    ) {
       findings.push({
         projectId,
         targetId: target.id,
@@ -172,6 +180,8 @@ export class ProjectDriftService implements DeploymentDriftQuery {
     @Optional()
     @Inject(DEPLOYMENT_PROJECT_REFERENCE_LOOKUP)
     private readonly projects?: DeploymentProjectReferenceLookup,
+    @Optional()
+    private readonly providers?: DeploymentProviderRegistry<DeploymentProvider>,
   ) {}
 
   async listFindings(
@@ -253,7 +263,7 @@ export class ProjectDriftService implements DeploymentDriftQuery {
       findings.push(ciTokenFinding);
     }
 
-    findings.push(...maybeTargetFindings(projectId, targets));
+    findings.push(...maybeTargetFindings(projectId, targets, this.providers));
 
     if (targets.length > 0 && envMetadata.length === 0) {
       findings.push({

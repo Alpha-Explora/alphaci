@@ -1,10 +1,10 @@
 import type { Group, GroupMember } from '@alphaci/api-contracts';
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
-import { DatabaseService } from '#kernel/db/database.service';
+import { DatabaseService, type SqlExecutor } from '#kernel/db/database.service';
+import { conflict } from '#kernel/http/coded-errors';
 import type {
-  GrantableRole,
   GroupRole,
   LifecycleStatus,
   MemberStatus,
@@ -19,6 +19,25 @@ export type GroupRecord = Omit<Group, 'role'> & { role?: GroupRole };
 
 /** The wire shape of a group member; defined once in @alphaci/api-contracts. */
 export type GroupMemberRecord = GroupMember;
+
+function archivedGroupConflict(): ConflictException {
+  return new ConflictException({
+    code: 'GROUP_ARCHIVED',
+    message: 'Reopen this group before making changes.',
+  });
+}
+
+/** Holds the group's lifecycle state steady until the dependent write commits. */
+export async function requireActiveGroup(
+  client: SqlExecutor,
+  groupId: string,
+): Promise<void> {
+  const result = await client.query<{ status: LifecycleStatus }>(
+    "SELECT status FROM orgs.workspaces WHERE id = $1 AND kind = 'team' FOR SHARE",
+    [groupId],
+  );
+  if (result.rows[0]?.status === 'archived') throw archivedGroupConflict();
+}
 
 export interface ActiveMembership {
   workspaceId: string;
@@ -73,6 +92,11 @@ export class GroupsRepository {
     return this.databaseService.withClient(async (client) => {
       await client.query('BEGIN');
       try {
+        await this.requireAvailableName(
+          client,
+          input.creatorUserId,
+          input.name,
+        );
         const result = await client.query<GroupRow>(
           `
             INSERT INTO orgs.workspaces (owner_user_id, name, kind, description, business_unit, status)
@@ -106,48 +130,56 @@ export class GroupsRepository {
     });
   }
 
-  async transferLeadGuarded(
+  /**
+   * Moves the team's ownership (orgs.workspaces.owner_user_id) to an active
+   * member. What a person may do in the team comes from their app role, not
+   * from a stored team role, so nothing else changes. False when the target
+   * is not an active member.
+   */
+  async transferOwner(
     groupId: string,
-    newLeadUserId: string,
-  ): Promise<{ previousRole: GroupRole } | null> {
-    return this.databaseService.withClient(async (client) => {
-      await client.query('BEGIN');
-      try {
-        await client.query(
-          `SELECT id FROM orgs.workspace_members WHERE workspace_id = $1 AND member_status = 'active' FOR UPDATE;`,
-          [groupId],
+    newOwnerUserId: string,
+  ): Promise<boolean> {
+    return this.databaseService.withTransaction(async (client) => {
+      const current = await client.query<{
+        name: string;
+        owner_user_id: string;
+      }>(
+        `SELECT workspace.name, workspace.owner_user_id FROM orgs.workspaces AS workspace
+         WHERE workspace.id = $1 AND workspace.kind = 'team'
+           AND EXISTS (
+             SELECT 1 FROM orgs.workspace_members AS member
+             WHERE member.workspace_id = $1 AND member.user_id = $2
+               AND member.member_status = 'active'
+           ) FOR UPDATE`,
+        [groupId, newOwnerUserId],
+      );
+      const group = current.rows[0];
+      if (!group) return false;
+      if (group.owner_user_id !== newOwnerUserId) {
+        await this.requireAvailableName(
+          client,
+          newOwnerUserId,
+          group.name,
+          groupId,
         );
-        const targetResult = await client.query<{ role: GroupRole }>(
-          `
-            SELECT role
-            FROM orgs.workspace_members
-            WHERE workspace_id = $1 AND user_id = $2 AND member_status = 'active';
-          `,
-          [groupId, newLeadUserId],
-        );
-        const target = targetResult.rows[0];
-        if (!target) {
-          await client.query('ROLLBACK');
-          return null;
-        }
-        await client.query(
-          `
-            UPDATE orgs.workspace_members
-            SET role = CASE WHEN user_id = $2 THEN 'admin' ELSE 'delegated_lead' END
-            WHERE workspace_id = $1 AND member_status = 'active' AND (role = 'admin' OR user_id = $2);
-          `,
-          [groupId, newLeadUserId],
-        );
-        await client.query(
-          `UPDATE orgs.workspaces SET owner_user_id = $2, updated_at = NOW() WHERE id = $1 AND kind = 'team';`,
-          [groupId, newLeadUserId],
-        );
-        await client.query('COMMIT');
-        return { previousRole: target.role };
-      } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
       }
+      const result = await client.query(
+        `
+        UPDATE orgs.workspaces AS workspace
+        SET owner_user_id = $2, updated_at = NOW()
+        WHERE workspace.id = $1
+          AND workspace.kind = 'team'
+          AND EXISTS (
+            SELECT 1 FROM orgs.workspace_members AS member
+            WHERE member.workspace_id = $1
+              AND member.user_id = $2
+              AND member.member_status = 'active'
+          );
+      `,
+        [groupId, newOwnerUserId],
+      );
+      return (result.rowCount ?? 0) > 0;
     });
   }
 
@@ -227,7 +259,9 @@ export class GroupsRepository {
         SELECT
           workspace.id AS group_id,
           (SELECT count(*)::int FROM orgs.workspace_members m
-             WHERE m.workspace_id = workspace.id AND m.member_status = 'active') AS member_count,
+             JOIN identity.app_users u ON u.id = m.user_id
+             WHERE m.workspace_id = workspace.id AND m.member_status = 'active'
+               AND u.archived_at IS NULL) AS member_count,
           (SELECT count(*)::int FROM hierarchy.systems s
              WHERE s.group_id = workspace.id AND s.status = 'active') AS system_count
         FROM orgs.workspaces AS workspace
@@ -269,6 +303,7 @@ export class GroupsRepository {
         WHERE member.workspace_id = $1
           AND member.user_id = $2
           AND member.member_status = 'active'
+          AND app_user.archived_at IS NULL
           AND workspace.kind = 'team';
       `,
       [groupId, userId],
@@ -292,30 +327,81 @@ export class GroupsRepository {
       businessUnit?: string | null;
     },
   ): Promise<GroupRecord | null> {
-    const result = await this.databaseService.query<GroupRow>(
-      `
+    const row = await this.databaseService.withTransaction(async (client) => {
+      if (input.name !== undefined) {
+        const current = await client.query<{
+          owner_user_id: string;
+          renamed: boolean;
+          status: LifecycleStatus;
+        }>(
+          `SELECT owner_user_id, status, lower(btrim(name)) <> lower(btrim($2)) AS renamed
+           FROM orgs.workspaces WHERE id = $1 AND kind = 'team' FOR UPDATE`,
+          [groupId, input.name],
+        );
+        const group = current.rows[0];
+        if (group?.status === 'active' && group.renamed) {
+          await this.requireAvailableName(
+            client,
+            group.owner_user_id,
+            input.name,
+            groupId,
+          );
+        }
+      }
+      const result = await client.query<GroupRow>(
+        `
         UPDATE orgs.workspaces
         SET
           name = COALESCE($2, name),
           description = CASE WHEN $3::boolean THEN $4 ELSE description END,
           business_unit = CASE WHEN $5::boolean THEN $6 ELSE business_unit END,
           updated_at = NOW()
-        WHERE id = $1 AND kind = 'team'
+        WHERE id = $1 AND kind = 'team' AND status = 'active'
         RETURNING id, name, description, business_unit, status, archived_at, archived_by, created_at;
       `,
-      [
-        groupId,
-        input.name ?? null,
-        input.description !== undefined,
-        input.description ?? null,
-        input.businessUnit !== undefined,
-        input.businessUnit ?? null,
-      ],
-    );
-    const row = result.rows[0];
-    if (!row) return null;
+        [
+          groupId,
+          input.name ?? null,
+          input.description !== undefined,
+          input.description ?? null,
+          input.businessUnit !== undefined,
+          input.businessUnit ?? null,
+        ],
+      );
+      return result.rows[0];
+    });
+    if (!row) {
+      const group = await this.findGroupById(groupId);
+      if (group?.status === 'archived') throw archivedGroupConflict();
+      return null;
+    }
     const counts = await this.getCountsForGroups([row.id]);
     return this.toGroup(row, counts.get(row.id));
+  }
+
+  private async requireAvailableName(
+    client: PoolClient,
+    ownerId: string,
+    name: string,
+    groupId: string | null = null,
+  ): Promise<void> {
+    await client.query(
+      'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+      [`group-name:${ownerId}`],
+    );
+    const duplicate = await client.query(
+      `SELECT 1 FROM orgs.workspaces
+       WHERE kind = 'team' AND owner_user_id = $1
+         AND lower(btrim(name)) = lower(btrim($2)) AND id IS DISTINCT FROM $3::uuid
+       LIMIT 1`,
+      [ownerId, name, groupId],
+    );
+    if (duplicate.rows.length) {
+      throw conflict(
+        'GROUP_NAME_DUPLICATE',
+        'This owner already has a team with that name.',
+      );
+    }
   }
 
   async setArchiveStatus(
@@ -328,8 +414,8 @@ export class GroupsRepository {
         UPDATE orgs.workspaces
         SET
           status = $2,
-          archived_at = CASE WHEN $2 = 'archived' THEN NOW() ELSE NULL END,
-          archived_by = CASE WHEN $2 = 'archived' THEN $3::uuid ELSE NULL END,
+          archived_at = CASE WHEN $2 = 'archived' THEN COALESCE(archived_at, NOW()) ELSE NULL END,
+          archived_by = CASE WHEN $2 = 'archived' THEN COALESCE(archived_by, $3::uuid) ELSE NULL END,
           updated_at = NOW()
         WHERE id = $1 AND kind = 'team'
         RETURNING id, name, description, business_unit, status, archived_at, archived_by, created_at;
@@ -355,7 +441,7 @@ export class GroupsRepository {
           user_profile.login, user_profile.display_name, user_profile.email, user_profile.avatar_url
         FROM orgs.workspace_members AS member
         JOIN identity.app_users AS user_profile ON user_profile.id = member.user_id
-        WHERE member.workspace_id = $1
+        WHERE member.workspace_id = $1 AND user_profile.archived_at IS NULL
         ORDER BY
           CASE member.member_status WHEN 'active' THEN 1 WHEN 'invited' THEN 2 ELSE 3 END,
           CASE WHEN user_profile.app_role IN ('admin', 'lead') THEN 1 ELSE 2 END,
@@ -387,34 +473,6 @@ export class GroupsRepository {
     return row ? this.toMember(row) : null;
   }
 
-  async countActiveOwners(groupId: string): Promise<number> {
-    const result = await this.databaseService.query<{ count: number }>(
-      `
-        SELECT count(*)::int AS count
-        FROM orgs.workspace_members
-        WHERE workspace_id = $1 AND role = 'admin' AND member_status = 'active';
-      `,
-      [groupId],
-    );
-    return Number(result.rows[0]?.count ?? 0);
-  }
-
-  async updateMemberRole(
-    groupId: string,
-    memberId: string,
-    role: GroupRole,
-  ): Promise<GroupMemberRecord | null> {
-    await this.databaseService.query(
-      `
-        UPDATE orgs.workspace_members
-        SET role = $3
-        WHERE workspace_id = $1 AND id = $2;
-      `,
-      [groupId, memberId, role],
-    );
-    return this.findMemberById(groupId, memberId);
-  }
-
   /** Offboarding — recorded event, not a hard delete (member-management contract). */
   async markMemberRemoved(
     groupId: string,
@@ -434,93 +492,13 @@ export class GroupsRepository {
   }
 
   /**
-   * Race-free "last owner" guard for a role change (ciso finding, last-owner safety rule
-   * "last-manager protection ... race-condition safety in the transaction
-   * handling"). The naive check-then-act pattern (SELECT count, then
-   * UPDATE in two separate statements — see the now-unused combination of
-   * countActiveOwners + updateMemberRole above) lets two concurrent
-   * requests each read "2 active owners" before either commits, and both
-   * proceed, leaving the Group with zero owners. This method closes that
-   * window by taking a row lock (`FOR UPDATE`) on every active-owner row of
-   * the Group inside a single transaction before deciding — a second,
-   * concurrent call for the same Group blocks on that lock until the first
-   * transaction commits or rolls back, so the owner count it eventually
-   * reads is never stale.
-   */
-  async changeMemberRoleGuarded(
-    groupId: string,
-    memberId: string,
-    role: GroupRole,
-  ): Promise<{ member: GroupMemberRecord | null; blockedLastOwner: boolean }> {
-    return this.databaseService.withClient(async (client) => {
-      await client.query('BEGIN');
-      try {
-        await client.query(
-          `
-            SELECT id FROM orgs.workspace_members
-            WHERE workspace_id = $1 AND role = 'admin' AND member_status = 'active'
-            FOR UPDATE;
-          `,
-          [groupId],
-        );
-
-        const targetResult = await client.query<MemberRow>(
-          `
-            SELECT
-              member.id, member.workspace_id, member.user_id, member.role, member.member_status,
-              member.invited_by, member.invited_at, member.removed_at, member.removed_by, member.removal_reason,
-              member.created_at,
-              user_profile.login, user_profile.display_name, user_profile.email, user_profile.avatar_url
-            FROM orgs.workspace_members AS member
-            JOIN identity.app_users AS user_profile ON user_profile.id = member.user_id
-            WHERE member.workspace_id = $1 AND member.id = $2
-            FOR UPDATE OF member;
-          `,
-          [groupId, memberId],
-        );
-        const target = targetResult.rows[0];
-        if (!target) {
-          await client.query('ROLLBACK');
-          return { member: null, blockedLastOwner: false };
-        }
-
-        if (target.role === 'admin' && role !== 'admin') {
-          const countResult = await client.query<{ count: number }>(
-            `
-              SELECT count(*)::int AS count FROM orgs.workspace_members
-              WHERE workspace_id = $1 AND role = 'admin' AND member_status = 'active';
-            `,
-            [groupId],
-          );
-          const ownerCount = Number(countResult.rows[0]?.count ?? 0);
-          if (ownerCount <= 1) {
-            await client.query('ROLLBACK');
-            return { member: this.toMember(target), blockedLastOwner: true };
-          }
-        }
-
-        await client.query(
-          `UPDATE orgs.workspace_members SET role = $3 WHERE workspace_id = $1 AND id = $2;`,
-          [groupId, memberId, role],
-        );
-        await client.query('COMMIT');
-
-        return {
-          member: this.toMember({ ...target, role }),
-          blockedLastOwner: false,
-        };
-      } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-      }
-    });
-  }
-
-  /**
-   * Same race-free lock pattern as changeMemberRoleGuarded (see that
-   * method's comment), applied to member removal — the other path that can
-   * orphan a Group of its last owner (hierarchy ownership contract "must keep at least
-   * one owner").
+   * Race-free "keep at least one manager" guard for member removal (hierarchy
+   * ownership contract "must keep at least one owner"). A manager is an
+   * active member whose app role is lead or admin and whose account is not
+   * archived: the same rule findActiveMembership authorizes with, so the
+   * guard and the permission checks can never disagree. Every active member
+   * row of the team is locked first, so two concurrent removals cannot both
+   * read "two managers left" and leave none.
    */
   async removeMemberGuarded(
     groupId: string,
@@ -550,11 +528,15 @@ export class GroupsRepository {
     memberId: string,
     removedBy: string,
     reason?: string | null,
-  ): Promise<{ member: GroupMemberRecord | null; blockedLastOwner: boolean }> {
+  ): Promise<{
+    member: GroupMemberRecord | null;
+    blockedLastOwner: boolean;
+    alreadyRemoved?: true;
+  }> {
     await client.query(
       `
         SELECT id FROM orgs.workspace_members
-        WHERE workspace_id = $1 AND role = 'admin' AND member_status = 'active'
+        WHERE workspace_id = $1 AND member_status = 'active'
         FOR UPDATE;
       `,
       [groupId],
@@ -566,7 +548,8 @@ export class GroupsRepository {
           member.id, member.workspace_id, member.user_id, member.role, member.member_status,
           member.invited_by, member.invited_at, member.removed_at, member.removed_by, member.removal_reason,
           member.created_at,
-          user_profile.login, user_profile.display_name, user_profile.email, user_profile.avatar_url
+          user_profile.login, user_profile.display_name, user_profile.email, user_profile.avatar_url,
+          user_profile.app_role
         FROM orgs.workspace_members AS member
         JOIN identity.app_users AS user_profile ON user_profile.id = member.user_id
         WHERE member.workspace_id = $1 AND member.id = $2
@@ -578,12 +561,27 @@ export class GroupsRepository {
     if (!target) {
       return { member: null, blockedLastOwner: false };
     }
+    if (target.member_status === 'removed') {
+      return {
+        member: this.toMember(target),
+        blockedLastOwner: false,
+        alreadyRemoved: true,
+      };
+    }
 
-    if (target.role === 'admin') {
+    const targetManages =
+      target.member_status === 'active' &&
+      (target.app_role === 'admin' || target.app_role === 'lead');
+    if (targetManages) {
       const countResult = await client.query<{ count: number }>(
         `
-          SELECT count(*)::int AS count FROM orgs.workspace_members
-          WHERE workspace_id = $1 AND role = 'admin' AND member_status = 'active';
+          SELECT count(*)::int AS count
+          FROM orgs.workspace_members AS member
+          JOIN identity.app_users AS app_user ON app_user.id = member.user_id
+          WHERE member.workspace_id = $1
+            AND member.member_status = 'active'
+            AND app_user.app_role IN ('admin', 'lead')
+            AND app_user.archived_at IS NULL;
         `,
         [groupId],
       );
@@ -620,7 +618,6 @@ export class GroupsRepository {
   async addMemberDirect(
     groupId: string,
     userId: string,
-    role: GrantableRole,
     addedBy: string,
     onAdded?: (
       client: PoolClient,
@@ -628,18 +625,19 @@ export class GroupsRepository {
     ) => Promise<void>,
   ): Promise<boolean> {
     return this.databaseService.withTransaction(async (client) => {
+      await requireActiveGroup(client, groupId);
       const added = await client.query<{ id: string }>(
         `
         INSERT INTO orgs.workspace_members (workspace_id, user_id, role, member_status, invited_by, invited_at)
-        VALUES ($1, $2, $3, 'active', $4, NOW())
+        VALUES ($1, $2, 'member', 'active', $3, NOW())
         ON CONFLICT (workspace_id, user_id)
-        DO UPDATE SET role = EXCLUDED.role, member_status = 'active',
+        DO UPDATE SET role = 'member', member_status = 'active',
           invited_by = EXCLUDED.invited_by, invited_at = EXCLUDED.invited_at,
           removed_at = NULL, removed_by = NULL, removal_reason = NULL
         WHERE workspace_members.member_status <> 'active'
         RETURNING id;
       `,
-        [groupId, userId, role, addedBy],
+        [groupId, userId, addedBy],
       );
       if (!added.rows[0]) return false;
       if (onAdded) {

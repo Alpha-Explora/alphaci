@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import type { AppConfig } from '#kernel/config/app.config';
-import { throwIfRateLimited } from '../core/fetch-with-retry';
+import {
+  fetchProviderConnection,
+  throwIfRateLimited,
+} from '../core/fetch-with-retry';
 import type {
   CreateProviderTargetInput,
   DeleteProviderEnvInput,
@@ -56,9 +59,11 @@ export class RenderEnvClient implements DeploymentProvider {
   constructor(private readonly configService?: ConfigService) {}
 
   async validateConnection(token: string): Promise<ProviderAccountSummary> {
-    const response = await fetch(`${RENDER_API_URL}/owners?limit=1`, {
-      headers: this.headers(token),
-    });
+    const response = await fetchProviderConnection(
+      'Render',
+      `${RENDER_API_URL}/owners?limit=1`,
+      this.headers(token),
+    );
     await this.assertOk(response, 'Render connection validation failed');
     const owners = (await response.json()) as Array<{
       owner?: { id?: string; name?: string };

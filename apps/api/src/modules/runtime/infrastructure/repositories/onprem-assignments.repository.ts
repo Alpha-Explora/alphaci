@@ -25,6 +25,8 @@ import {
 } from '../../domain/onprem-tunnel';
 import {
   allowedDeploymentTransitions,
+  NO_HEALTHY_ROLLBACK_DETAIL,
+  readPinnedReleaseId,
   toDeployment,
   type DeploymentRow,
   type DeploymentStatus,
@@ -206,19 +208,41 @@ export async function moveMachineBindings(
 
 /**
  * End every active binding of a machine revoked without a replacement, so its
- * environments can be assigned or registered again without an Unassign. The
- * revoked_at trigger releases the reserved host ports. The caller holds the
- * machine row FOR UPDATE.
+ * environments can take another release after reassignment. The revoked_at
+ * trigger releases the reserved host ports. The caller holds the machine row
+ * FOR UPDATE.
  */
 export async function endMachineBindings(
   client: PoolClient,
   machineId: string,
-): Promise<number> {
-  const ended = await client.query(
-    'UPDATE env_provisioning.onprem_hosts SET revoked_at=NOW() WHERE machine_id=$1 AND revoked_at IS NULL',
+): Promise<void> {
+  const ended = await client.query<{ id: string }>(
+    'UPDATE env_provisioning.onprem_hosts SET revoked_at=NOW() WHERE machine_id=$1 AND revoked_at IS NULL RETURNING id',
     [machineId],
   );
-  return ended.rowCount ?? 0;
+  await failInterruptedDeployments(
+    client,
+    ended.rows.map(({ id }) => id),
+  );
+}
+
+/** Called in the same transaction that ends the assignment without replacing it. */
+async function failInterruptedDeployments(
+  client: PoolClient,
+  hostIds: string[],
+): Promise<void> {
+  if (hostIds.length === 0) return;
+  await client.query(
+    `UPDATE env_provisioning.environment_deployments AS deployment
+        SET status = 'failed', detail = 'On-prem host assignment ended.', updated_at = NOW()
+       FROM env_provisioning.onprem_hosts AS host
+      WHERE host.id = ANY($1::uuid[])
+        AND deployment.project_id = host.project_id
+        AND deployment.environment_id = host.environment_id
+        AND deployment.delivery = 'host'
+        AND deployment.status IN ('pending', 'deploying')`,
+    [hostIds],
+  );
 }
 
 async function insertBinding(
@@ -483,6 +507,7 @@ export class OnpremAssignmentsRepository {
       );
       if (!result.rowCount)
         throw new ConflictException('The host assignment changed. Reload it.');
+      await failInterruptedDeployments(client, [expectedId]);
     });
   }
   async authorizeAgent(hash: string, kind: 'machine' | 'legacy') {
@@ -522,12 +547,28 @@ export class OnpremAssignmentsRepository {
         throw new NotFoundException(
           'Deployment not assigned to this credential.',
         );
-      if (row.status === status) return toDeployment(row);
-      if (!allowedDeploymentTransitions(row.status).includes(status))
+      if (
+        status === 'rolled_back' &&
+        row.status === 'failed' &&
+        row.detail === NO_HEALTHY_ROLLBACK_DETAIL
+      ) {
+        return toDeployment(row);
+      }
+      const unconfirmedRollback =
+        status === 'rolled_back' &&
+        row.status === 'deploying' &&
+        !(await readPinnedReleaseId(client, row.environment_id));
+      const next = unconfirmedRollback ? 'failed' : status;
+      if (row.status === next) return toDeployment(row);
+      if (!allowedDeploymentTransitions(row.status).includes(next))
         throw new ConflictException('Invalid deployment status transition.');
       const changed = await client.query<DeploymentRow>(
         'UPDATE env_provisioning.environment_deployments SET status=$2,detail=$3,updated_at=NOW() WHERE id=$1 RETURNING *',
-        [deploymentId, status, detail],
+        [
+          deploymentId,
+          next,
+          unconfirmedRollback ? NO_HEALTHY_ROLLBACK_DETAIL : detail,
+        ],
       );
       return toDeployment(changed.rows[0]!);
     });

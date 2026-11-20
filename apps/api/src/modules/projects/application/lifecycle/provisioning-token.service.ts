@@ -5,6 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 
+import { forbidden } from '#kernel/http/coded-errors';
 import {
   GITHUB_PROJECT_PORT,
   type GithubProjectPort,
@@ -14,9 +15,8 @@ import type { CreateProjectDto } from '../../api/dto/create-project.dto';
 /**
  * GitHub token resolution for repository provisioning flows.
  *
- * Extracted verbatim from ProjectsService. Owns the three token strategies:
- * personal OAuth fallback, selected-org installation, and the enforced-org
- * override that routes every repository into the enforced organization.
+ * Creates repositories through an organization installation. Existing
+ * repositories can use a GitHub App installation or the user's OAuth token.
  */
 @Injectable()
 export class ProvisioningTokenService {
@@ -80,7 +80,6 @@ export class ProvisioningTokenService {
 
   async resolveRepositoryProvisioning(
     userId: string,
-    oauthAccessToken: string | null | undefined,
     dto: CreateProjectDto,
   ): Promise<{
     repositoryCreationToken: string;
@@ -144,16 +143,9 @@ export class ProvisioningTokenService {
         'installationId can only be used with an organization repository owner.',
       );
     }
-    if (!oauthAccessToken) {
-      throw new UnauthorizedException(
-        'A GitHub OAuth token is required to create a personal repository. Sign out and sign back in with GitHub.',
-      );
-    }
-
-    return {
-      repositoryCreationToken: oauthAccessToken,
-      provisioningToken: oauthAccessToken,
-      provisioningOwnerLogin: undefined,
-    };
+    throw forbidden(
+      'GITHUB_ORGANIZATION_REQUIRED',
+      'Choose a GitHub organization with an AlphaCI App installation, or ask your administrator to configure the organization for repository creation.',
+    );
   }
 }

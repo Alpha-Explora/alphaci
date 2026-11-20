@@ -34,9 +34,8 @@ export interface QaProjectContext {
 /**
  * Resolves a Project (hierarchy delivery project) for the QA slices through
  * PROJECT_LINK_PORT - never inline SQL on hierarchy.* - and applies the one
- * visibility rule: the caller must be an active member of the Project's group
- * (QaAccessService.canAccessWorkspace), otherwise it does not exist for them
- * (404, never a 403 that would confirm it).
+ * visibility rule: Developers and QA need active membership in the Project.
+ * Leads keep their group access, and Admins keep their existing visibility.
  */
 @Injectable()
 export class QaProjectContextService {
@@ -60,7 +59,11 @@ export class QaProjectContextService {
     const folder = await this.projectLink.getDeliveryProject(deliveryProjectId);
     if (
       !folder ||
-      !(await this.access.canAccessWorkspace(userId, folder.groupId))
+      !(await this.access.canAccessProject(
+        userId,
+        folder.groupId,
+        deliveryProjectId,
+      ))
     ) {
       throw new NotFoundException('Project not found');
     }

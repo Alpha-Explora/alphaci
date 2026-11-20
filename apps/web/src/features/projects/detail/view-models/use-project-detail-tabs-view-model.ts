@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { useCapabilities } from '@/features/capabilities/current';
+import { getRuns } from '@/features/runs';
 import { actingQaRole, type SpecialAccess } from '@/shared/api/special-access';
 import type { DeploymentLogFocus } from '@/features/projects/deployment-logs';
 import { projectsRepository } from '../../data/projects-repository';
@@ -10,7 +11,7 @@ import type { ProjectStatus } from '../../model/projects-types';
 import type {
   AppRole,
   DeploymentTarget,
-  ProjectCiRunsResponse,
+  RunsResponse,
   ProjectDeploymentsResponse,
   ProjectOverviewResponse,
   WorkflowFileMetadata,
@@ -133,7 +134,7 @@ export interface ProjectDetailTabsViewModel {
   workflowUpdatePrEnabled: boolean;
   /** Whether "Update the workflow" (Browser tests card) may send this viewer to the update pull request. */
   workflowUpdateAccess: WorkflowUpdateAccess;
-  ciRuns: ProjectCiRunsResponse | null;
+  ciRuns: RunsResponse | null;
   ciRunsError: string | null;
   deployments: ProjectDeploymentsResponse | null;
   deploymentsError: string | null;
@@ -148,10 +149,6 @@ function loadOverview(projectId: string): Promise<ProjectOverviewResponse> {
   return projectsRepository.overview(projectId);
 }
 
-function loadCiRuns(projectId: string): Promise<ProjectCiRunsResponse> {
-  return projectsRepository.ciRuns(projectId);
-}
-
 function loadDeployments(
   projectId: string,
 ): Promise<ProjectDeploymentsResponse> {
@@ -161,17 +158,21 @@ function loadDeployments(
 /** ViewModel for the project detail tab set. */
 export function useProjectDetailTabsViewModel(options: {
   projectId: string;
+  repoFullName?: string;
   workflowFilesFallback: WorkflowFileMetadata[] | null | undefined;
   appRole?: AppRole;
   specialAccess?: readonly SpecialAccess[];
   viewerLogin?: string;
+  canAccessQa?: boolean;
 }): ProjectDetailTabsViewModel {
   const {
     projectId,
+    repoFullName,
     workflowFilesFallback,
     appRole,
     specialAccess,
     viewerLogin,
+    canAccessQa = true,
   } = options;
   // A deep link (#qa) picks the first tab. Safe to read window here: the tab
   // set only mounts client-side, once the project overview has loaded.
@@ -206,9 +207,10 @@ export function useProjectDetailTabsViewModel(options: {
   );
 
   const caps = useCapabilities();
+  const qaChecklistsEnabled = caps.qaChecklistsEnabled && canAccessQa;
   const visibleTabs = visibleProjectDetailTabs(
     appRole,
-    { qaChecklistsEnabled: caps.qaChecklistsEnabled },
+    { qaChecklistsEnabled },
     specialAccess,
   );
   // Derived, not reset by an effect: if the flag turns off under a selected
@@ -238,15 +240,15 @@ export function useProjectDetailTabsViewModel(options: {
       overviewWorkflowSettings: overviewCaps.workflowSettings,
     }),
   });
-  const ciRunsQuery = useLazyProjectQuery<ProjectCiRunsResponse>({
-    projectId,
+  const ciRunsQuery = useLazyProjectQuery<RunsResponse>({
+    projectId: repoFullName ?? '',
     enabled: isCiRunsQueryEnabled({
       tab,
       pipelineView,
       ciRunTrackingEnabled: caps.ciRunTrackingEnabled,
       overviewCiRunTracking: overviewCaps.ciRunTracking,
     }),
-    load: loadCiRuns,
+    load: getRuns,
     errorMessage: 'Unable to load CI runs.',
   });
   const deploymentsQuery = useLazyProjectQuery<ProjectDeploymentsResponse>({
@@ -343,7 +345,7 @@ export function useProjectDetailTabsViewModel(options: {
     appRole,
     qaRole: actingQaRole(appRole, specialAccess),
     viewerLogin,
-    qaChecklistsEnabled: caps.qaChecklistsEnabled,
+    qaChecklistsEnabled,
     highlightMyQaItems,
     openMyQaItems,
     logFocus,

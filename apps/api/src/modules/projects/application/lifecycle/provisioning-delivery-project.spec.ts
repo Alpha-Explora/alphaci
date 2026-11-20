@@ -40,6 +40,10 @@ const makeGithubService = () =>
     getInstallationAccessTokenForUserRepo: jest.fn().mockResolvedValue(null),
     getInstallationOwnerLogin: jest.fn().mockResolvedValue(undefined),
     getEnforcedOrg: jest.fn().mockReturnValue(''),
+    getOrganizationProvisioningContext: jest.fn().mockResolvedValue({
+      accessToken: 'installation-token',
+      ownerLogin: 'owner',
+    }),
     createRepo: jest.fn().mockResolvedValue({
       repoUrl: 'https://github.com/owner/repo',
       ownerLogin: 'owner',
@@ -89,6 +93,8 @@ const makeProjectDeploymentProvisioningService = () => ({
 });
 
 const baseDto = {
+  ownerType: 'organization' as const,
+  installationId: 12345,
   repoName: 'repo',
   visibility: 'private' as const,
   repoShape: 'standalone',

@@ -136,6 +136,50 @@ describe('Project environments API', () => {
     expect(await storedEnvironments(projectId)).toHaveLength(1);
   });
 
+  it('rejects an invalid source branch before adding an environment', async () => {
+    const projectId = await legacyProject();
+    await agent
+      .post(path(projectId))
+      .send({
+        ...production,
+        sourceBranch: '../ invalid branch',
+      })
+      .expect(400);
+    expect(await storedEnvironments(projectId)).toEqual([]);
+    await agent
+      .post(path(projectId))
+      .send({
+        ...production,
+        sourceBranch: 'release/v1.0',
+      })
+      .expect(201);
+  });
+
+  it('repairs an existing invalid source branch without changing valid branches', async () => {
+    const projectId = await legacyProject();
+    const created = await agent
+      .post(path(projectId))
+      .send(production)
+      .expect(201);
+    const environment = `${path(projectId)}/${(created.body as EnvironmentBody).id}`;
+    const repair = () =>
+      agent.patch(environment).send({
+        displayName: 'Production',
+        sourceBranch: 'release/v1',
+      });
+    await repair().expect(409);
+    await e2e.query(
+      "UPDATE projects.project_environments SET source_branch = '../ old branch' WHERE id = $1",
+      [(created.body as EnvironmentBody).id],
+    );
+    const repaired = await repair().expect(200);
+    expect(repaired.body).toMatchObject({
+      id: (created.body as EnvironmentBody).id,
+      sourceBranch: 'release/v1',
+    });
+    await repair().expect(409);
+  });
+
   it('renames the display name and keeps the identity', async () => {
     const projectId = await legacyProject();
     const created = await agent
@@ -162,7 +206,7 @@ describe('Project environments API', () => {
     ['order', { position: 3 }],
   ])(
     'rejects a change to the %s of a live environment',
-    async (_field, change) => {
+    async (field, change) => {
       const projectId = await legacyProject();
       const created = await agent
         .post(path(projectId))
@@ -173,7 +217,7 @@ describe('Project environments API', () => {
       await agent
         .patch(path(projectId) + '/' + environment.id)
         .send({ displayName: 'Changed', ...change })
-        .expect(400);
+        .expect(field === 'source branch' ? 409 : 400);
 
       expect(await storedEnvironments(projectId)).toEqual([
         { slug: 'main', source_branch: 'main', role: 'production' },

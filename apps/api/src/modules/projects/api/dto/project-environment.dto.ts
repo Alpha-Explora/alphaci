@@ -51,4 +51,9 @@ export class RenameProjectEnvironmentDto {
   @MinLength(1)
   @MaxLength(80)
   displayName!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  sourceBranch?: string;
 }

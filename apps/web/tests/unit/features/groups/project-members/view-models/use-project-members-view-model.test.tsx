@@ -176,6 +176,29 @@ describe('useProjectMembersViewModel', () => {
     expect(cur().notice).toContain('QA Team get no GitHub write access');
   });
 
+  it('drops and refreshes a candidate removed from the team while the picker is open', async () => {
+    render('lead');
+    await poll(() => cur().status === 'ready');
+    act(() => cur().openAdd());
+    await poll(() => cur().candidatesStatus === 'ready');
+    act(() => cur().toggleUser('u-qa'));
+    jest.mocked(groupsRepository.members).mockResolvedValueOnce([]);
+    jest.mocked(addProjectMember).mockRejectedValueOnce(
+      new ApiError('Team changed', 400, {
+        code: 'PROJECT_MEMBER_NOT_IN_TEAM',
+      }),
+    );
+
+    await act(async () => {
+      await cur().add();
+    });
+    await poll(() => cur().candidatesStatus === 'ready');
+
+    expect(cur().candidates).toEqual([]);
+    expect(cur().selectedUserIds.size).toBe(0);
+    expect(cur().addError).toContain('Quinn QA');
+  });
+
   it('shows Granting Write on N repositories after adding a Developer in live mode', async () => {
     capabilities.hierarchyGithubSyncMode = 'live';
     (getProjectMembers as jest.Mock).mockResolvedValue({ items: [] });

@@ -6,7 +6,7 @@ import {
   PIPELINE_OWNERS_RULESET_NAME,
   PIPELINE_OWNERS_TEAM_SLUG,
 } from '#kernel/ports/github.port';
-import type { GithubHttp } from './github-http';
+import { githubTransportMessage, type GithubHttp } from './github-http';
 
 /**
  * Pipeline owners: the people who must approve a change to a repository's
@@ -207,7 +207,7 @@ export async function ensurePipelineOwnersRuleset(
   } catch (error) {
     return {
       status: 'failed',
-      error: `GitHub could not be reached: ${error instanceof Error ? error.message : String(error)}`,
+      error: githubTransportMessage(error),
     };
   }
 }
@@ -374,7 +374,7 @@ export async function ensurePipelineOwnersTeam(
   } catch (error) {
     return {
       status: 'failed',
-      error: `GitHub could not be reached: ${error instanceof Error ? error.message : String(error)}`,
+      error: githubTransportMessage(error),
     };
   }
 }

@@ -61,7 +61,10 @@ describe('WorkspaceGateService repository-create gate', () => {
       code: 'PROJECT_REQUIRED',
       message: 'Choose the Project this repository belongs to.',
     });
-    expect(projectsRepository.canCreateInWorkspace).not.toHaveBeenCalled();
+    expect(projectsRepository.canCreateInWorkspace).toHaveBeenCalledWith(
+      'user-1',
+      'ws-1',
+    );
   });
 
   it('a member into a Project of a team they belong to passes', async () => {
@@ -107,7 +110,10 @@ describe('WorkspaceGateService Feature-before-repository gate', () => {
     });
     expect(readiness.countActiveFeatures).toHaveBeenCalledWith(['dp-1']);
     // Refused up front: nothing after the gate ran.
-    expect(projectsRepository.canCreateInWorkspace).not.toHaveBeenCalled();
+    expect(projectsRepository.canCreateInWorkspace).toHaveBeenCalledWith(
+      'user-1',
+      'ws-1',
+    );
   });
 
   it('a member into a Project with one active Feature passes', async () => {

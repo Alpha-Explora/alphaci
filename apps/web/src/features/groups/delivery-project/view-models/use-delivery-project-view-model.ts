@@ -6,9 +6,12 @@ import { useApiResource } from '@/features/groups';
 import { useAuthSession } from '@/features/auth/session';
 import { useCapabilities } from '@/features/capabilities/current';
 import type { AppRole } from '@/shared/api/contracts';
+import { ApiError } from '@/shared/api/request';
+import { serverErrorMessage } from '@/shared/api/error-message';
 
 import { groupsRepository } from '../../data/groups-repository';
 import { canCreateRepositoryInProject } from '../../model/creation-role-rules';
+import { canManageProjectMembers } from '../../model/project-members-rules';
 import type {
   DeliveryProject,
   GroupSummary,
@@ -29,6 +32,10 @@ export interface DeliveryProjectViewModel {
   reloadRepositories: () => void;
   /** Whether the caller may create a repository here (Developer, admin). */
   canCreateRepository: boolean;
+  canReopen: boolean;
+  reopening: boolean;
+  reopenError: string | null;
+  reopen: () => Promise<void>;
   /** The caller's app role, for the Project's requirements and QA. */
   appRole: AppRole | null;
   /** Requirements and QA exist only with the qaChecklists capability. */
@@ -36,6 +43,21 @@ export interface DeliveryProjectViewModel {
   dialogOpen: boolean;
   setDialogOpen: (open: boolean) => void;
   prependRepository: (repository: HierarchyRepository) => void;
+}
+
+function availableProjectActions(
+  project: DeliveryProject | null,
+  group: GroupSummary | null,
+  appRole: AppRole | null,
+) {
+  return {
+    canCreateRepository:
+      project?.status === 'active' && canCreateRepositoryInProject(appRole),
+    canReopen:
+      project?.status === 'archived' &&
+      group?.status === 'active' &&
+      canManageProjectMembers(appRole),
+  };
 }
 
 /**
@@ -50,7 +72,10 @@ export function useDeliveryProjectViewModel(
   deliveryProjectId: string,
 ): DeliveryProjectViewModel {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [reopening, setReopening] = useState(false);
+  const [reopenError, setReopenError] = useState<string | null>(null);
   const { session } = useAuthSession();
+  const appRole = session?.appRole ?? null;
   const { qaChecklistsEnabled } = useCapabilities();
 
   const groupResource = useApiResource<GroupSummary>(
@@ -67,6 +92,24 @@ export function useDeliveryProjectViewModel(
     { emptyWhen: (repos) => repos.length === 0 },
   );
 
+  async function reopen() {
+    setReopening(true);
+    setReopenError(null);
+    try {
+      const reopened =
+        await groupsRepository.reopenDeliveryProject(deliveryProjectId);
+      projectResource.setData(() => reopened);
+    } catch (cause) {
+      const message =
+        cause instanceof ApiError
+          ? serverErrorMessage(cause.status, cause.details)
+          : null;
+      setReopenError(message ?? 'Could not reopen this Project.');
+    } finally {
+      setReopening(false);
+    }
+  }
+
   return {
     group: groupResource.data,
     project: projectResource.data,
@@ -75,9 +118,19 @@ export function useDeliveryProjectViewModel(
     repositories: reposResource.data ?? [],
     repositoriesStatus: reposResource.state,
     reloadRepositories: reposResource.reload,
-    canCreateRepository: canCreateRepositoryInProject(session?.appRole),
-    appRole: session?.appRole ?? null,
-    qaEnabled: qaChecklistsEnabled && Boolean(session?.appRole),
+    ...availableProjectActions(
+      projectResource.data,
+      groupResource.data,
+      appRole,
+    ),
+    reopening,
+    reopenError,
+    reopen,
+    appRole,
+    qaEnabled:
+      qaChecklistsEnabled &&
+      Boolean(appRole) &&
+      projectResource.data?.canAccessQa !== false,
     dialogOpen,
     setDialogOpen,
     prependRepository: (repository) =>

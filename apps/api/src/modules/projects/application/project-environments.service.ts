@@ -8,7 +8,10 @@ import {
 
 import { canManageHosting } from '#kernel/rules/persona-access.rules';
 import { ProjectsRepository } from '../infrastructure/projects.repository';
-import { validateProjectEnvironmentDefinition } from '../domain/project-environment.policy';
+import {
+  isWorkflowSourceBranch,
+  validateProjectEnvironmentDefinition,
+} from '../domain/project-environment.policy';
 import type {
   ProjectEnvironmentInput,
   ProjectEnvironmentRecord,
@@ -77,11 +80,48 @@ export class ProjectEnvironmentsService {
     environmentId: string,
     userId: string,
     displayName: string,
+    sourceBranch?: string,
   ): Promise<ProjectEnvironmentRecord> {
     await this.assertProjectMutationAccess(projectId, userId);
-    await this.findVisibleProject(projectId, userId);
     if (!displayName.trim()) {
       throw new BadRequestException('Display name must not be blank.');
+    }
+    if (sourceBranch != null) {
+      if (!isWorkflowSourceBranch(sourceBranch)) {
+        throw new BadRequestException({
+          code: 'ENVIRONMENT_SOURCE_BRANCH_INVALID',
+          message: 'Enter a valid source branch.',
+        });
+      }
+      const current = (
+        await this.projectsRepository.listProjectEnvironments(projectId)
+      ).find(({ id }) => id === environmentId);
+      if (!current) {
+        throw new NotFoundException({
+          code: 'PROJECT_ENVIRONMENT_NOT_FOUND',
+          message: 'Environment not found',
+        });
+      }
+      if (isWorkflowSourceBranch(current.sourceBranch)) {
+        throw new ConflictException({
+          code: 'ENVIRONMENT_SOURCE_BRANCH_LOCKED',
+          message: 'Only invalid legacy source branches can be repaired here.',
+        });
+      }
+      const repaired = await this.projectsRepository.renameProjectEnvironment(
+        projectId,
+        environmentId,
+        displayName,
+        { previous: current.sourceBranch, next: sourceBranch },
+      );
+      if (!repaired) {
+        throw new ConflictException({
+          code: 'ENVIRONMENT_SOURCE_BRANCH_CHANGED',
+          message:
+            'The source branch changed. Reload the environment and retry.',
+        });
+      }
+      return repaired;
     }
     const environment = await this.projectsRepository.renameProjectEnvironment(
       projectId,

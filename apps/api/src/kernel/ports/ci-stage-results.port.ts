@@ -90,6 +90,7 @@ export interface CiStageResult {
 }
 
 export interface CiStageResultsLookupInput {
+  projectId: string;
   repoFullName: string;
   branch: string;
   commitSha: string;

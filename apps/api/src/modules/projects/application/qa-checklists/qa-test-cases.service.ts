@@ -330,7 +330,11 @@ export class QaTestCasesService {
     const requirement = await this.checklists.findById(requirementId);
     if (
       !requirement ||
-      !(await this.access.canAccessWorkspace(userId, requirement.workspace_id))
+      !(await this.access.canAccessProject(
+        userId,
+        requirement.workspace_id,
+        requirement.delivery_project_id,
+      ))
     ) {
       throw new NotFoundException('Requirement not found');
     }

@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react';
 
 import { removeGroupMember, type GroupMember } from '@/features/groups';
+import { ApiError } from '@/shared/api/request';
+import { serverErrorMessage } from '@/shared/api/error-message';
 import { MemberRoleBadge, MemberStatusBadge } from './badges';
 import { Avatar, SectionHeader } from './primitives';
 
@@ -44,6 +46,7 @@ export function MemberTable({
   showHeader?: boolean;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const activeMembers = useMemo(
@@ -59,6 +62,7 @@ export function MemberTable({
   );
   async function handleRemove(member: GroupMember) {
     setBusyId(member.id);
+    setConfirmId(null);
     setError(null);
     try {
       await removeGroupMember(groupId, member.id);
@@ -69,8 +73,12 @@ export function MemberTable({
             : item,
         ),
       );
-    } catch {
-      setError('Member could not be removed.');
+    } catch (cause) {
+      const message =
+        cause instanceof ApiError
+          ? serverErrorMessage(cause.status, cause.details)
+          : null;
+      setError(message ?? 'Member could not be removed.');
     } finally {
       setBusyId(null);
     }
@@ -95,6 +103,8 @@ export function MemberTable({
               canManage={canManage}
               currentUserId={currentUserId}
               busyId={busyId}
+              confirming={confirmId === member.id}
+              onConfirm={setConfirmId}
               onRemove={handleRemove}
             />
           ))}
@@ -116,6 +126,8 @@ function MemberRow({
   canManage,
   currentUserId,
   busyId,
+  confirming,
+  onConfirm,
   onRemove,
 }: Readonly<{
   member: GroupMember;
@@ -123,6 +135,8 @@ function MemberRow({
   canManage: boolean;
   currentUserId: string;
   busyId: string | null;
+  confirming: boolean;
+  onConfirm: (memberId: string | null) => void;
   onRemove: (member: GroupMember) => Promise<void>;
 }>) {
   const isLastLead = member.role === 'admin' && leadCount <= 1;
@@ -152,6 +166,8 @@ function MemberRow({
             busy={busyId === member.id}
             isLastLead={isLastLead}
             isSelf={member.userId === currentUserId}
+            confirming={confirming}
+            onConfirm={onConfirm}
             onRemove={onRemove}
           />
         )}
@@ -165,14 +181,38 @@ function RemoveMemberButton({
   busy,
   isLastLead,
   isSelf,
+  confirming,
+  onConfirm,
   onRemove,
 }: Readonly<{
   member: GroupMember;
   busy: boolean;
   isLastLead: boolean;
   isSelf: boolean;
+  confirming: boolean;
+  onConfirm: (memberId: string | null) => void;
   onRemove: (member: GroupMember) => Promise<void>;
 }>) {
+  if (confirming && !isLastLead && !isSelf) {
+    return (
+      <span role="group" aria-label={`Remove @${member.login} from the group?`}>
+        <button
+          type="button"
+          className="ghost-button"
+          onClick={() => onConfirm(null)}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="hier-btn-danger"
+          onClick={() => void onRemove(member)}
+        >
+          Confirm removal
+        </button>
+      </span>
+    );
+  }
   const title = isLastLead
     ? 'A group must keep at least one group lead'
     : isSelf
@@ -184,7 +224,7 @@ function RemoveMemberButton({
       className="hier-btn-danger"
       disabled={busy || isLastLead || isSelf}
       title={title}
-      onClick={() => void onRemove(member)}
+      onClick={() => onConfirm(member.id)}
     >
       Remove
     </button>

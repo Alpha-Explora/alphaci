@@ -220,7 +220,7 @@ describe('ProjectsRepository', () => {
     ]);
   });
 
-  it('deletes a project row with the default permissive role list', async () => {
+  it('deletes a project row using the default visibility check', async () => {
     (db.query as jest.Mock).mockResolvedValueOnce({ rowCount: 1 });
 
     const result = await repo.deleteByIdAndUser('project-1', 'user-1');
@@ -229,7 +229,7 @@ describe('ProjectsRepository', () => {
     expect(db.query).toHaveBeenCalledWith(expect.any(String), [
       'project-1',
       'user-1',
-      ['admin', 'delegated_lead', 'member'],
+      null,
     ]);
   });
 
@@ -451,23 +451,6 @@ describe('ProjectsRepository', () => {
     });
   });
 
-  describe('listWorkspaceQaIds', () => {
-    it('allow-lists the qa persona of ACTIVE members only', async () => {
-      (db.query as jest.Mock).mockResolvedValueOnce({ rows: [{ id: 'qa-1' }] });
-
-      await expect(repo.listWorkspaceQaIds('workspace-1')).resolves.toEqual([
-        'qa-1',
-      ]);
-      const [query, values] = (db.query as jest.Mock).mock.calls[0] as [
-        string,
-        unknown[],
-      ];
-      expect(query).toContain("m.member_status = 'active'");
-      expect(query).toContain("u.app_role = 'qa'");
-      expect(values).toEqual(['workspace-1']);
-    });
-  });
-
   describe('findUserLogin', () => {
     it('returns the login, or null for an unknown user', async () => {
       (db.query as jest.Mock)
@@ -479,15 +462,15 @@ describe('ProjectsRepository', () => {
     });
   });
 
-  describe('listVisibleRepoNames', () => {
+  describe('listVisibleReportProjects', () => {
     it('applies the visibility predicate and an optional workspace filter', async () => {
       (db.query as jest.Mock).mockResolvedValueOnce({
-        rows: [{ repo: 'tone/orders-api' }],
+        rows: [{ id: 'project-1' }],
       });
 
-      await expect(repo.listVisibleRepoNames('u-1', 'w-1')).resolves.toEqual([
-        'tone/orders-api',
-      ]);
+      await expect(
+        repo.listVisibleReportProjects('u-1', 'w-1'),
+      ).resolves.toEqual(['project-1']);
 
       const [sql, values] = (db.query as jest.Mock).mock.calls[0] as [
         string,
@@ -495,13 +478,17 @@ describe('ProjectsRepository', () => {
       ];
       expect(sql).toContain('pp.workspace_id = $2::uuid');
       expect(sql).toContain("vm.member_status = 'active'");
-      expect(values).toEqual(['u-1', 'w-1']);
+      expect(values).toEqual(['u-1', 'w-1', null]);
     });
 
     it('passes a null workspace when unscoped', async () => {
       (db.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
-      await repo.listVisibleRepoNames('u-1');
-      expect((db.query as jest.Mock).mock.calls[0][1]).toEqual(['u-1', null]);
+      await repo.listVisibleReportProjects('u-1');
+      expect((db.query as jest.Mock).mock.calls[0][1]).toEqual([
+        'u-1',
+        null,
+        null,
+      ]);
     });
   });
 });

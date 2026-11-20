@@ -1,6 +1,11 @@
 import { markdownTableCell } from './markdown-table-cell';
 
 describe('markdownTableCell', () => {
+  it('renders tags and entity references as text', () => {
+    expect(markdownTableCell('<b>R&D</b> &lt;')).toBe(
+      '&lt;b>R&amp;D&lt;/b> &amp;lt;',
+    );
+  });
   it('keeps a cell to one row and one column', () => {
     expect(markdownTableCell(' a | b\r\nc\nd ')).toBe('a \\| b<br>c<br>d');
   });

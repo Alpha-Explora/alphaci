@@ -339,16 +339,27 @@ export class RepositoriesService {
     userId: string,
     dto: UpdateRepositoryDto,
   ): Promise<RepositoryRecord> {
-    await this.accessService.assertRepositoryManagerOrPlatformAdmin(
-      repositoryId,
-      userId,
-    );
+    const { groupId } =
+      await this.accessService.assertRepositoryManagerOrPlatformAdmin(
+        repositoryId,
+        userId,
+      );
     const repository = await this.repositoriesRepository.update(
       repositoryId,
       dto,
     );
     if (!repository) {
       throw repositoryNotFound();
+    }
+    if (typeof dto.name === 'string') {
+      await this.auditEventsService.recordProjectEvent({
+        workspaceId: groupId,
+        actorUserId: userId,
+        eventCode: HIERARCHY_EVENT_CODES.repositoryRenamed,
+        message: `Repository renamed to "${repository.name}"`,
+        projectId: repository.provisionedProjectId,
+        metadata: { groupId, repositoryId },
+      });
     }
     return repository;
   }

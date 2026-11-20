@@ -183,7 +183,13 @@ async function bothCounts(run: QaRunStatus | null, moved: boolean) {
     listGroupProjects: jest
       .fn()
       .mockResolvedValue([{ id: DP, name: 'Checkout' }]),
-    listOverviewFacts: jest.fn().mockResolvedValue(new Map()),
+    listOverviewFacts: jest
+      .fn()
+      .mockResolvedValue(
+        new Map([
+          [DP, { viewerKind: 'qa', developers: 0, qa: 1, repositories: [] }],
+        ]),
+      ),
   } as unknown as jest.Mocked<QaProjectContextService>;
   const heads = {
     readHeads: jest.fn().mockResolvedValue([

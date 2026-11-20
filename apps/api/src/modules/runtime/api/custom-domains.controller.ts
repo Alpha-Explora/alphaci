@@ -15,10 +15,8 @@ import { SessionAuthGuard } from '#kernel/auth/session-auth.guard';
 import { SubscriptionGuard } from '#kernel/auth/subscription.guard';
 import { CapabilityGuard } from '#kernel/composition/capability.guard';
 import { RequiresCapability } from '#kernel/composition/requires-capability.decorator';
-import {
-  CustomDomainsService,
-  type AddCustomDomainInput,
-} from '../application/custom-domains.service';
+import { CustomDomainsService } from '../application/custom-domains.service';
+import { AddCustomDomainDto } from './dto/add-custom-domain.dto';
 
 @Controller('projects/:projectId/domains')
 @RequiresCapability('runtime.env-provisioning')
@@ -35,7 +33,7 @@ export class CustomDomainsController {
   add(
     @Req() req: Request,
     @Param('projectId') projectId: string,
-    @Body() body: AddCustomDomainInput,
+    @Body() body: AddCustomDomainDto,
   ) {
     return this.service.addDomain(projectId, this.requireUserId(req), body);
   }

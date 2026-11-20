@@ -18,6 +18,12 @@ import {
 import { Transform, Type } from 'class-transformer';
 import type { DeploymentProviderId } from '#kernel/ports/deployment-runtime.port';
 import { CreateProjectEnvironmentDto } from './project-environment.dto';
+import {
+  WORKFLOW_SERVICE_NAME,
+  WORKFLOW_SERVICE_NAME_MESSAGE,
+  WORKFLOW_SERVICE_PATH,
+  WORKFLOW_SERVICE_PATH_MESSAGE,
+} from './workflow-values';
 
 /** Rejects C0/C1 control characters (incl. newlines and tabs). */
 export const PROJECT_NAME_PATTERN = /^[^\p{Cc}]*$/u;
@@ -226,11 +232,13 @@ export class MicroserviceSlotDto {
   @IsString()
   @MinLength(2)
   @MaxLength(80)
+  @Matches(WORKFLOW_SERVICE_NAME, { message: WORKFLOW_SERVICE_NAME_MESSAGE })
   serviceName!: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(200)
+  @Matches(WORKFLOW_SERVICE_PATH, { message: WORKFLOW_SERVICE_PATH_MESSAGE })
   servicePath?: string;
 }
 
@@ -258,6 +266,10 @@ export class CreateProjectDto {
   @IsString()
   @MinLength(1)
   @MaxLength(100)
+  @Matches(/^(?!\.{1,2}$)[A-Za-z0-9._-]+(?![\s\S])/, {
+    message:
+      'repoName must use only letters, numbers, dots, underscores or hyphens',
+  })
   repoName!: string;
 
   @IsIn(['private', 'public'])
@@ -296,11 +308,13 @@ export class CreateProjectDto {
   @IsString()
   @MinLength(2)
   @MaxLength(80)
+  @Matches(WORKFLOW_SERVICE_NAME, { message: WORKFLOW_SERVICE_NAME_MESSAGE })
   serviceName!: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(200)
+  @Matches(WORKFLOW_SERVICE_PATH, { message: WORKFLOW_SERVICE_PATH_MESSAGE })
   servicePath?: string;
 
   @IsOptional()

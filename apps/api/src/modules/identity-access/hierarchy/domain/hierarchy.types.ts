@@ -26,15 +26,6 @@ export const GROUP_ROLE_LABELS: Record<GroupRole, string> = {
 /** Roles that may invite/manage members, systems, delivery projects, repositories. */
 export const GROUP_MANAGER_ROLES: GroupRole[] = ['admin', 'delegated_lead'];
 
-/**
- * Roles a lead may grant when adding someone to a group — ownership only
- * changes via transfer (member-management contract).
- *
- * Named for the grant, not the delivery mechanism: members are added directly
- * and there is no invitation step.
- */
-export type GrantableRole = Exclude<GroupRole, 'admin'>;
-
 export type LifecycleStatus = 'active' | 'archived';
 
 /**
@@ -101,10 +92,12 @@ export const HIERARCHY_EVENT_CODES = {
   deliveryProjectCreated: 'hierarchy.delivery_project.created',
   deliveryProjectUpdated: 'hierarchy.delivery_project.updated',
   deliveryProjectArchived: 'hierarchy.delivery_project.archived',
+  deliveryProjectReopened: 'hierarchy.delivery_project.reopened',
   deliveryProjectDeleted: 'hierarchy.delivery_project.deleted',
   deliveryProjectMemberAdded: 'hierarchy.delivery_project.member_added',
   deliveryProjectMemberRemoved: 'hierarchy.delivery_project.member_removed',
   repositoryCreated: 'hierarchy.repository.created',
+  repositoryRenamed: 'hierarchy.repository.renamed',
   repositoryArchived: 'hierarchy.repository.archived',
   repositoryMoved: 'hierarchy.repository.moved',
   assignmentRequested: 'hierarchy.assignment.requested',

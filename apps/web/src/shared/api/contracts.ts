@@ -80,7 +80,7 @@ export interface SubscriptionInfo {
   interval?: 'month' | 'year';
 }
 
-export type PlatformRole = 'admin' | 'super_admin';
+export type PlatformRole = 'super_admin';
 
 /** Global hierarchy role — the single source of truth for create capabilities. */
 export type AppRole = 'admin' | 'lead' | 'qa' | 'member';

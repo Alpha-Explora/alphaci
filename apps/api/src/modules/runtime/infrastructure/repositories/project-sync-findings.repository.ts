@@ -98,7 +98,7 @@ export class ProjectSyncFindingsRepository implements DeploymentDriftFindingsSto
               UPDATE projects.project_sync_findings
               SET status = 'resolved',
                   resolved_at = NOW()
-              WHERE id = $1;
+              WHERE id = $1 AND status = 'active';
             `,
             [finding.id],
           ),
@@ -117,7 +117,7 @@ export class ProjectSyncFindingsRepository implements DeploymentDriftFindingsSto
                 message = $3,
                 details_json = $4::jsonb,
                 detected_at = NOW()
-            WHERE id = $1;
+            WHERE id = $1 AND status = 'active';
           `,
           [
             current.id,
@@ -139,7 +139,15 @@ export class ProjectSyncFindingsRepository implements DeploymentDriftFindingsSto
               details_json,
               status
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, 'active');
+            SELECT $1, $2, $3, $4, $5, $6, $7::jsonb, 'active'
+            WHERE NOT EXISTS (
+              SELECT 1
+              FROM projects.project_sync_findings
+              WHERE project_id = $1
+                AND target_id IS NOT DISTINCT FROM $2
+                AND code = $5
+                AND status = 'ignored'
+            );
           `,
           [
             projectId,

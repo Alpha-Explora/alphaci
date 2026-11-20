@@ -235,6 +235,15 @@ export function archiveDeliveryProject(
   );
 }
 
+export function reopenDeliveryProject(
+  deliveryProjectId: string,
+): Promise<DeliveryProject> {
+  return request<DeliveryProject>(
+    `/delivery-projects/${enc(deliveryProjectId)}/reopen`,
+    { method: 'POST' },
+  );
+}
+
 /* ── Repositories & assignments (plan §2.6) ────────────────────────────────── */
 
 /** "Add repository": the row plus its setup outcome (hosting may have failed). */

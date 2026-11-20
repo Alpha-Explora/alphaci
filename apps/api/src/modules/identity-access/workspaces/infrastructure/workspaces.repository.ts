@@ -160,7 +160,8 @@ export class WorkspacesRepository {
         JOIN orgs.workspace_members AS member
           ON member.workspace_id = project.workspace_id
         WHERE project.id = $1
-          AND member.user_id = $2;
+          AND member.user_id = $2
+          AND member.member_status = 'active';
       `,
       [projectId, userId],
     );

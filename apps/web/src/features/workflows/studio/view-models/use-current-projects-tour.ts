@@ -77,6 +77,7 @@ export function useCurrentProjectsTour({
   // Uses "2" to avoid collision with the setup tour's "?tour=1" param.
   const searchParams = useSearchParams();
   const tourParamActive = searchParams.get('tour') === '2';
+  const openingNewProject = searchParams.get('new') === 'project';
 
   const resolvedOnboardingCompleted =
     onboardingCompleted ?? session?.user?.onboardingCompleted ?? true;
@@ -125,6 +126,7 @@ export function useCurrentProjectsTour({
     if (guest) return;
     if (!session) return;
     if (resolvedOnboardingCompleted) return;
+    if (openingNewProject) return;
     if (!isCurrentTabActive) return;
 
     launchedRef.current = true;
@@ -140,6 +142,7 @@ export function useCurrentProjectsTour({
     guest,
     session,
     resolvedOnboardingCompleted,
+    openingNewProject,
     isCurrentTabActive,
     startTour,
   ]);
@@ -149,6 +152,7 @@ export function useCurrentProjectsTour({
   // param is present, regardless of onboardingCompleted status.
   useEffect(() => {
     if (!tourParamActive) return;
+    if (openingNewProject) return;
     if (!isCurrentTabActive) return;
     if (guest) return;
     if (!session) return;
@@ -163,7 +167,7 @@ export function useCurrentProjectsTour({
     // triggers — we want exactly one launch per URL load, not on every
     // session/guest change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tourParamActive, isCurrentTabActive]);
+  }, [tourParamActive, isCurrentTabActive, openingNewProject]);
 
   // Clean up on unmount.
   useEffect(() => {

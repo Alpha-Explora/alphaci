@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import { DatabaseService } from '#kernel/db/database.service';
+import { conflict } from '#kernel/http/coded-errors';
 import type { BacklogPriority } from '../domain/backlog-schedule.rules';
 import type { QaChecklistVerificationType } from '../application/qa-checklists/qa-checklists.contracts';
 import type {
@@ -65,6 +66,7 @@ export class QaRequirementsRepository {
     input: RequirementItemInput,
   ): Promise<QaChecklistItemRow> {
     return this.databaseService.withTransaction(async (client) => {
+      await this.requireAvailableStoryTitle(client, checklistId, input.title);
       const result = await client.query<QaChecklistItemRow>(
         `
           INSERT INTO projects.qa_checklist_items (
@@ -104,6 +106,14 @@ export class QaRequirementsRepository {
     patch: UpdateRequirementItemPatch,
   ): Promise<QaChecklistItemRow | null> {
     return this.databaseService.withTransaction(async (client) => {
+      if (patch.title !== undefined) {
+        await this.requireAvailableStoryTitle(
+          client,
+          checklistId,
+          patch.title,
+          itemId,
+        );
+      }
       const result = await client.query<QaChecklistItemRow>(
         `
           UPDATE projects.qa_checklist_items
@@ -138,21 +148,68 @@ export class QaRequirementsRepository {
     });
   }
 
+  private async requireAvailableStoryTitle(
+    client: PoolClient,
+    checklistId: string,
+    title: string,
+    itemId: string | null = null,
+  ): Promise<void> {
+    await client.query(
+      'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+      [`story-title:${checklistId}`],
+    );
+    const duplicate = await client.query(
+      `SELECT 1
+       FROM projects.qa_checklist_items AS item
+       JOIN projects.qa_checklists AS feature ON feature.id = item.checklist_id
+       WHERE feature.id = $1 AND feature.kind = 'functional'
+         AND lower(btrim(item.title)) = lower(btrim($2))
+         AND item.id IS DISTINCT FROM $3::uuid
+         AND NOT EXISTS (
+           SELECT 1 FROM projects.qa_checklist_items AS current
+           WHERE current.id = $3 AND lower(btrim(current.title)) = lower(btrim($2))
+         )
+       LIMIT 1`,
+      [checklistId, title, itemId],
+    );
+    if (duplicate.rows.length) {
+      throw conflict(
+        'QA_STORY_DUPLICATE',
+        'A story with this title already exists in the Feature.',
+      );
+    }
+  }
+
   /**
-   * Deletes one item. Open run items keep their snapshot: qa_run_items.
-   * source_item_id is ON DELETE SET NULL. Returns false when it was not there.
+   * Historical runs keep their snapshots, but open Project runs still need the
+   * source item for progress and verification.
    */
-  async deleteItem(checklistId: string, itemId: string): Promise<boolean> {
+  async deleteItem(
+    checklistId: string,
+    itemId: string,
+  ): Promise<'deleted' | 'missing' | 'in_open_run'> {
     return this.databaseService.withTransaction(async (client) => {
-      const result = await client.query(
+      const item = await client.query(
+        `SELECT id FROM projects.qa_checklist_items
+         WHERE id = $1 AND checklist_id = $2 FOR UPDATE`,
+        [itemId, checklistId],
+      );
+      if (!item.rows.length) return 'missing';
+      const openRun = await client.query(
+        `SELECT 1 FROM projects.qa_run_items AS item
+         JOIN projects.qa_verification_runs AS run ON run.id = item.run_id
+         WHERE item.source_item_id = $1
+           AND run.delivery_project_id IS NOT NULL AND run.status = 'open'
+         LIMIT 1`,
+        [itemId],
+      );
+      if (openRun.rows.length) return 'in_open_run';
+      await client.query(
         `DELETE FROM projects.qa_checklist_items WHERE id = $1 AND checklist_id = $2;`,
         [itemId, checklistId],
       );
-      if ((result.rowCount ?? 0) === 0) {
-        return false;
-      }
       await this.touchChecklist(client, checklistId);
-      return true;
+      return 'deleted';
     });
   }
 

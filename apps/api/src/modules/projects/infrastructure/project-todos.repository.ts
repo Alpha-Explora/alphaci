@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { DatabaseService } from '#kernel/db/database.service';
+import { conflict } from '#kernel/http/coded-errors';
 import type { BacklogPriority } from '../domain/backlog-schedule.rules';
 
 export type ProjectTodoStatus = 'open' | 'done';
@@ -87,29 +88,56 @@ export class ProjectTodosRepository {
   }
 
   async insert(input: CreateProjectTodoInput): Promise<ProjectTodoRow> {
-    const result = await this.databaseService.query<ProjectTodoRow>(
-      `
+    return this.databaseService.withTransaction(async (client) => {
+      await client.query(
+        'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+        [`todo-create:${input.deliveryProjectId}:${input.createdBy}`],
+      );
+      const duplicate = await client.query(
+        `SELECT 1 FROM projects.project_todos
+          WHERE delivery_project_id = $1 AND created_by = $2 AND status = 'open'
+            AND lower(btrim(title)) = lower(btrim($3)) AND notes IS NOT DISTINCT FROM $4
+            AND assignee_id IS NOT DISTINCT FROM $5 AND due_date IS NOT DISTINCT FROM $6::date
+            AND priority IS NOT DISTINCT FROM $7 LIMIT 1`,
+        [
+          input.deliveryProjectId,
+          input.createdBy,
+          input.title,
+          input.notes,
+          input.assignee?.id ?? null,
+          input.dueDate,
+          input.priority,
+        ],
+      );
+      if (duplicate.rows.length)
+        throw conflict(
+          'PROJECT_TODO_DUPLICATE',
+          'An identical open to-do already exists.',
+        );
+      const result = await client.query<ProjectTodoRow>(
+        `
         INSERT INTO projects.project_todos
           (delivery_project_id, title, notes, assignee_id, assignee_login,
            due_date, priority, created_by, created_by_login)
         VALUES ($1, $2, $3, $4, $5, $6::date, $7, $8, $9)
         RETURNING *;
       `,
-      [
-        input.deliveryProjectId,
-        input.title,
-        input.notes,
-        input.assignee?.id ?? null,
-        input.assignee?.login ?? null,
-        input.dueDate,
-        input.priority,
-        input.createdBy,
-        input.createdByLogin,
-      ],
-    );
-    const row = result.rows[0];
-    if (!row) throw new Error('project_todos insert returned no row');
-    return row;
+        [
+          input.deliveryProjectId,
+          input.title,
+          input.notes,
+          input.assignee?.id ?? null,
+          input.assignee?.login ?? null,
+          input.dueDate,
+          input.priority,
+          input.createdBy,
+          input.createdByLogin,
+        ],
+      );
+      const row = result.rows[0];
+      if (!row) throw new Error('project_todos insert returned no row');
+      return row;
+    });
   }
 
   /** Conditional on row_version: null when it moved or the to-do is gone. */

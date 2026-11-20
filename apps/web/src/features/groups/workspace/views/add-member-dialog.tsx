@@ -118,7 +118,7 @@ export function AddMemberDialog({
       open={open}
       onClose={vm.close}
       title="Add member"
-      description="Pick one or more members of your GitHub organization. They join as Members straight away — you can promote them to Lead afterward."
+      description="Pick one or more members of your GitHub organization. They join straight away. What they can do comes from their AlphaCI role, which an admin changes in the Admin Console."
       submitLabel={submitLabelFor(vm.selectedUsers.length)}
       submitting={vm.submitting}
       error={vm.error}

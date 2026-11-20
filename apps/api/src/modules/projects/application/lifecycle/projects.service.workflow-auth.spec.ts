@@ -54,10 +54,11 @@ const makeGithubService = () =>
     on: jest.fn(),
     getInstallationAccessTokenForUser: jest.fn().mockResolvedValue(null),
     getInstallationOwnerLogin: jest.fn().mockResolvedValue(undefined),
-    // This suite exercises workflow-file push + secret install, not org
-    // enforcement; an empty enforced org keeps the OAuth token as the
-    // provisioning token the assertions below expect.
-    getEnforcedOrg: jest.fn().mockReturnValue(''),
+    getEnforcedOrg: jest.fn().mockReturnValue('owner'),
+    getOrganizationProvisioningContextByLogin: jest.fn().mockResolvedValue({
+      accessToken: 'installation-token',
+      ownerLogin: 'owner',
+    }),
     createRepo: jest.fn().mockResolvedValue({
       repoUrl: 'https://github.com/owner/repo',
       ownerLogin: 'owner',
@@ -180,16 +181,20 @@ describe('ProjectProvisioningApplicationService workflow authorization', () => {
       githubService as unknown as { commitFilesToNewBranch: jest.Mock }
     ).commitFilesToNewBranch;
     expect(commitFiles).toHaveBeenCalledTimes(1);
-    expect(commitFiles).toHaveBeenCalledWith('gh-token', 'owner/repo', {
-      fromBranch: 'main',
-      newBranch: 'main',
-      replaceExisting: true,
-      message: 'ci: add ALPHACI workflow',
-      files: stagedWorkflowFiles.map((file) => ({
-        path: file.path,
-        content: file.yaml,
-      })),
-    });
+    expect(commitFiles).toHaveBeenCalledWith(
+      'installation-token',
+      'owner/repo',
+      {
+        fromBranch: 'main',
+        newBranch: 'main',
+        replaceExisting: true,
+        message: 'ci: add ALPHACI workflow',
+        files: stagedWorkflowFiles.map((file) => ({
+          path: file.path,
+          content: file.yaml,
+        })),
+      },
+    );
     const setActionsSecretStrict = (
       githubService as unknown as { setActionsSecretStrict: jest.Mock }
     ).setActionsSecretStrict;
@@ -201,7 +206,7 @@ describe('ProjectProvisioningApplicationService workflow authorization', () => {
     ).create;
 
     expect(setActionsSecretStrict).toHaveBeenCalledWith(
-      'gh-token',
+      'installation-token',
       'owner',
       'repo',
       'ALPHACI_TOKEN',

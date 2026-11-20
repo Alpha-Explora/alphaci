@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Inject,
   Injectable,
   Logger,
@@ -243,10 +244,19 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
     if (!(await this.access.canAccessWorkspace(userId, workspaceId))) {
       throw new NotFoundException('Workspace not found');
     }
-    const [projects, canManage] = await Promise.all([
+    const [workspaceProjects, canManage] = await Promise.all([
       this.projectContext.listGroupProjects(workspaceId),
       this.access.canManage(userId),
     ]);
+    const facts = await this.projectContext.listOverviewFacts(
+      workspaceProjects.map(({ id }) => id),
+      userId,
+    );
+    const projects = canManage
+      ? workspaceProjects
+      : workspaceProjects.filter(({ id }) =>
+          Boolean(facts.get(id)?.viewerKind),
+        );
     const projectIds = projects.map((project) => project.id);
     const iterationByProject =
       await this.iterations.ensureForProjects(projectIds);
@@ -254,14 +264,13 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
       (iteration) => iteration.id,
     );
 
-    const [rows, latestRuns, facts] = await Promise.all([
+    const [rows, latestRuns] = await Promise.all([
       this.requirements.listByWorkspace(
         workspaceId,
         includeArchived,
         iterationIds,
       ),
       this.projectRuns.findLatestRunHeadlines(iterationIds),
-      this.projectContext.listOverviewFacts(projectIds, userId),
     ]);
     const [itemsByRequirement, itemFactsByRun] = await Promise.all([
       this.checklists.listItemsByChecklistIds(rows.map((row) => row.id)),
@@ -744,8 +753,15 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
     await this.iterations.assertRowWritable(row);
     this.assertNotArchived(row);
 
-    if (!(await this.requirements.deleteItem(id, itemId))) {
+    const result = await this.requirements.deleteItem(id, itemId);
+    if (result === 'missing') {
       throw new NotFoundException('Requirement item not found');
+    }
+    if (result === 'in_open_run') {
+      throw new ConflictException({
+        code: 'REQUIREMENT_ITEM_IN_OPEN_RUN',
+        message: 'This item belongs to an open QA run and cannot be deleted.',
+      });
     }
     await this.recordEvent(REQUIREMENT_EVENTS.updated, row, userId, {
       fields: ['items'],
@@ -870,15 +886,23 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
     const project = await this.projectContext.findProject(
       row.delivery_project_id,
     );
-    const anchor = project
-      ? await this.projectContext.anchorProjectId(project)
-      : null;
-    if (!project || !anchor) {
+    if (!project) {
       return false;
     }
-    const qaIds = await this.access.listWorkspaceQaIds(project.groupId);
+    const anchor = await this.projectContext.anchorProjectId(project);
+    const [qaIds, eligiblePreviousVerifiers] = await Promise.all([
+      this.access.listWorkspaceQaIds(
+        project.groupId,
+        project.deliveryProjectId,
+      ),
+      this.access.filterProjectRecipients(
+        project.groupId,
+        project.deliveryProjectId,
+        previousVerifiers,
+      ),
+    ]);
     const recipients = this.dedupeExcludingActor(
-      [...previousVerifiers, ...qaIds],
+      [...eligiblePreviousVerifiers, ...qaIds],
       actor.userId,
     );
     if (recipients.length === 0) {
@@ -895,6 +919,7 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
         notifications.record({
           userId,
           projectId: anchor,
+          workspaceId: project.groupId,
           eventCode: READY_FOR_QA_EVENT,
           title: `Ready for QA: "${item.title}"`,
           body,
@@ -915,7 +940,11 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
     const row = await this.checklists.findById(id);
     if (
       !row ||
-      !(await this.access.canAccessWorkspace(userId, row.workspace_id))
+      !(await this.access.canAccessProject(
+        userId,
+        row.workspace_id,
+        row.delivery_project_id,
+      ))
     ) {
       throw new NotFoundException('Requirement not found');
     }

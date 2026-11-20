@@ -91,6 +91,9 @@ export function normaliseProjectFolder(
     deliveryProjectId: stringOrNull(raw.deliveryProjectId),
     groupId: stringOrNull(raw.groupId),
     name: typeof raw.name === 'string' ? raw.name.trim() : '',
+    ...(typeof raw.canAccessQa === 'boolean' && {
+      canAccessQa: raw.canAccessQa,
+    }),
     repositories,
   };
 }

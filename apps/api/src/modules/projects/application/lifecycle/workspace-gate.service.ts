@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 
 import { ProjectsRepository } from '../../infrastructure/projects.repository';
+import { forbidden } from '#kernel/http/coded-errors';
 import {
   PROJECT_REQUIREMENTS_READINESS,
   type ProjectRequirementsReadinessPort,
@@ -155,6 +156,15 @@ export class WorkspaceGateService {
     deliveryProjectId?: string | null,
     options: { requireFeatures?: boolean } = {},
   ): Promise<string | null> {
+    if (
+      workspaceId &&
+      !(await this.projectsRepository.canCreateInWorkspace(userId, workspaceId))
+    ) {
+      throw forbidden(
+        'WORKSPACE_MEMBERSHIP_REQUIRED',
+        'You are not a member of the selected group.',
+      );
+    }
     await this.assertCanCreateRepositories(userId, deliveryProjectId, options);
     if (!workspaceId) {
       // Workspaces disabled entirely: leave the project unscoped as before
@@ -163,15 +173,6 @@ export class WorkspaceGateService {
         return null;
       }
       return this.resolveImplicitWorkspaceId(userId);
-    }
-    const allowed = await this.projectsRepository.canCreateInWorkspace(
-      userId,
-      workspaceId,
-    );
-    if (!allowed) {
-      throw new ForbiddenException(
-        'You are not a member of the selected group.',
-      );
     }
     return workspaceId;
   }

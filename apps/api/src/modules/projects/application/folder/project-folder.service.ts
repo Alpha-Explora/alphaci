@@ -8,6 +8,7 @@ import {
 import { ProjectsRepository } from '../../infrastructure/projects.repository';
 import { CatalogService } from '../catalog/catalog.service';
 import { toWorkspaceProjectSummary } from '../lifecycle/project-provisioning.service';
+import { QaAccessService } from '../qa-checklists/qa-access.service';
 
 export interface ProjectFolderRepositoryView {
   /** Null when the repository row is not linked to an AlphaCI project. */
@@ -24,6 +25,7 @@ export interface ProjectFolderView {
   groupId: string | null;
   name: string;
   repositories: ProjectFolderRepositoryView[];
+  canAccessQa?: boolean;
 }
 
 const ROLE_ORDER: Record<WorkspaceProjectRole, number> = {
@@ -49,6 +51,7 @@ export class ProjectFolderService {
     private readonly catalogService: CatalogService,
     @Inject(PROJECT_LINK_PORT)
     private readonly projectLink: ProjectLinkPort,
+    private readonly qaAccess: QaAccessService,
   ) {}
 
   async getProjectFolder(
@@ -159,6 +162,11 @@ export class ProjectFolderService {
       groupId: folder.groupId,
       name: folder.name,
       repositories,
+      canAccessQa: await this.qaAccess.canAccessProject(
+        userId,
+        folder.groupId,
+        folder.deliveryProjectId,
+      ),
     };
   }
 }

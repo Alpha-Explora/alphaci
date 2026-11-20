@@ -1,5 +1,29 @@
 # Directory Update Log
 
+## 2026-11-20
+
+- **Update**: QA and team to-dos require active Project membership for Developers and QA Team members. A Developer with QA release access can pass stories marked Done by someone else.
+- **Update**: Project views use the viewer’s QA access to show navigation and request QA data.
+- **Update**: Concurrent duplicate submissions return conflicts for Feature stories, identical open to-dos from one creator, and team names belonging to one owner.
+- **Update**: CI reporting scopes reads and writes to the original Project record. Host rollbacks without a recorded healthy release appear as failed deployments.
+- **Update**: GitHub repository names and feedback text are validated before submission. Repository creation reports missing group access and destination organization configuration.
+- **Update**: Ending a host assignment without replacement fails its in-flight deployments. The upgrade reconciles existing in-flight host deployments with no active assignment.
+- **Update**: Membership retries avoid duplicate events. Provider connections require catalog support, and upstream connection failures return a coded 502.
+- **Update**: An unreadable UAT head no longer hides the latest open QA run while other readable heads match its snapshot.
+- **Update**: Product Owner rejection reopens the run, supersedes sign-off, and updates the item in one transaction.
+- **Update**: Ready for QA notifications use the workspace when a Project has no repository. Catalog category counts combine case variants, and repository name edits produce an activity event.
+- **Update**: The API validates typed JSON request bodies. CI access validation defaults an omitted stage to `access`. QA spreadsheet previews preserve delimited values as text, and requirement descriptions are limited to 4,000 characters.
+- **Update**: Open Project QA runs protect their source items from deletion. Project drift scans preserve ignored findings. The persona matrix reflects the existing gated production merge permissions.
+- **Update**: Disconnect uses project visibility and the lead or admin persona rule, and publishes a workspace audit event.
+- **Update**: The deployment runbook records the host assignment prerequisite. The frontend architecture records the Project folders and CI reports used by the Group and Pipeline tabs.
+- **Update**: The deployment runbook documents source branch validation and legacy branch repair. The API architecture records Pro quota limits when subscription gating is disabled.
+- **Update**: Archived Projects can be reopened under the existing team name rule. The Pipeline tab provides controls for Runs and Configuration.
+
+- **Update**: Team roles come only from the app role. `PATCH /groups/{groupId}/members/{memberId}` is retired and `POST /groups/{groupId}/members` no longer takes `role`; the last-manager guard (`GROUP_LAST_OWNER`) counts active, non-archived members whose app role is lead or admin, the same rule the permission checks use. Lead transfer moves only the team's owner and requires a lead or admin (`GROUP_MANAGER_NOT_LEAD`). Adding a lead or admin with Projects picked adds them to the team and skips the Project join.
+- **Update**: `identity.platform_admins` holds only `super_admin`; the Admin tier is `app_role = 'admin'`. Migration `20261120000000_platform_admin_super_only.sql` turns each bare `admin` row into a pinned (`manual`) Admin app role, deletes the row, and narrows the check. `POST /admin/users/{id}/role` accepts only `super_admin`.
+- **Update**: The session guard reads the account on every request and refuses an archived one, so deleting an account ends all of its sessions.
+- **Update**: The API's Error responses section documents `INVALID_INPUT`: `AllExceptionsFilter` answers Postgres errors caused by a request value with 400 instead of 500.
+
 ## 2026-11-13
 
 - **Update**: The enterprise GCE deploy runbook has a "Stop and start the VM" section for the new `enterprise-gce-power.yml` workflow (`status`, `start` with a health check, `stop`), which shares the deploy's concurrency group. `alphaci-deployer` holds the custom role `alphaciVmPower` on the instance, and the external IP is the reserved address `alphaci-enterprise-ip`. While the VM is not running, an automatic deploy skips with a notice and a manual one fails.

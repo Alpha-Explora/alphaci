@@ -19,7 +19,7 @@ Invoke-WebRequest -Uri ${psQuote(url)} -OutFile $archive
 if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne ${psQuote(sha256)}) { throw 'Installer checksum mismatch. Nothing was executed.' }
 $directory = Join-Path $env:TEMP ('alphaci-agent-' + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $directory | Out-Null
-tar -xzf $archive -C $directory
+& (Join-Path $env:SystemRoot 'System32/tar.exe') -xzf $archive -C $directory
 if ($LASTEXITCODE -ne 0) { throw 'Archive extraction failed.' }
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 & (Join-Path $directory 'windows/Install-AlphaCIHost.ps1') -Distro Ubuntu -ClientSubnets LocalSubnet -ApiUrl ${psQuote(receipt.apiUrl)}${replace ? ' -ReplaceCredential' : ''} -OnlyWhenSignedIn`,

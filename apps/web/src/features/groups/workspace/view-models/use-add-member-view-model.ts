@@ -13,6 +13,7 @@ import {
   describeDirectoryError,
   emptyDirectoryMessage,
 } from '../../model/member-directory-rules';
+import { apiErrorCode } from '../../model/project-members-rules';
 
 /** `idle` while closed; the list is not needed. */
 export type MemberDirectoryStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -156,6 +157,13 @@ function describeFailures(
     .join('\n');
 }
 
+async function reloadAddedMember(groupId: string, userId: string | null) {
+  const members = await groupsRepository.members(groupId).catch(() => []);
+  return members.find(
+    (member) => member.userId === userId && member.memberStatus === 'active',
+  );
+}
+
 export interface AddMemberViewModel {
   search: string;
   setSearch: (value: string) => void;
@@ -234,8 +242,7 @@ export function useAddMemberViewModel({
     }
     setSubmitting(true);
     setSubmitError(null);
-    // Everyone joins as a Member; a Lead can promote them afterward. Only
-    // Projects still offered are sent, in case the list changed.
+    // Send only Projects still offered, in case the list changed.
     const offered = new Set(
       teamProjects.projects.map((project) => project.deliveryProjectId),
     );
@@ -244,7 +251,11 @@ export function useAddMemberViewModel({
     );
     // One request per person, in turn, so each GitHub grant settles before
     // the next starts. A refusal skips only that person.
-    const failures: { user: InternalUserDirectoryEntry; reason: string }[] = [];
+    const failures: {
+      user: InternalUserDirectoryEntry;
+      reason: string;
+      retryable: boolean;
+    }[] = [];
     const added: string[] = [];
     for (const user of pending) {
       try {
@@ -255,7 +266,18 @@ export function useAddMemberViewModel({
         onAdded(member);
         added.push(user.login);
       } catch (cause) {
-        failures.push({ user, reason: describeAddMemberError(cause) });
+        const alreadyAdded =
+          apiErrorCode(cause) === 'GROUP_MEMBER_ALREADY_ACTIVE';
+        if (alreadyAdded) {
+          added.push(user.login);
+          const member = await reloadAddedMember(groupId, user.id);
+          if (member) onAdded(member);
+        }
+        failures.push({
+          user,
+          reason: describeAddMemberError(cause),
+          retryable: !alreadyAdded,
+        });
       }
     }
     setSubmitting(false);
@@ -264,7 +286,9 @@ export function useAddMemberViewModel({
       return;
     }
     // Keep only the people still to add, with why each was refused.
-    setSelectedUsers(failures.map(({ user }) => user));
+    setSelectedUsers(
+      failures.filter(({ retryable }) => retryable).map(({ user }) => user),
+    );
     setAddedLogins((current) => new Set([...current, ...added]));
     setSubmitError(describeFailures(failures));
   }, [

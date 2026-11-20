@@ -16,6 +16,7 @@ import { BrowserTestsService } from '../application/workspace/browser-tests.serv
 import { ProjectWorkspaceService } from '../application/workspace/project-workspace.service';
 import { CreatePullRequestDto } from './dto/create-pull-request.dto';
 import { CreateBranchDto } from './dto/create-branch.dto';
+import { MergePullRequestDto } from './dto/merge-pull-request.dto';
 import { QueryString } from '#kernel/http/query-string.decorator';
 
 /**
@@ -275,14 +276,9 @@ export class ProjectWorkspaceController {
     @Req() req: Request,
     @Param('projectId') projectId: string,
     @Param('number') pullNumber: string,
-    @Body() body: { method?: 'merge' | 'squash' | 'rebase' },
+    @Body() body: MergePullRequestDto,
   ) {
-    const method = body?.method ?? 'merge';
-    if (!['merge', 'squash', 'rebase'].includes(method)) {
-      throw new BadRequestException(
-        'Invalid merge method. Use merge, squash or rebase.',
-      );
-    }
+    const method = body.method ?? 'merge';
     return this.workspaceService.mergePullRequest(
       projectId,
       this.requireUserId(req),

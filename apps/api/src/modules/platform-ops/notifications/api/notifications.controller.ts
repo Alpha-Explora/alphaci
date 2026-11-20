@@ -21,6 +21,7 @@ import {
 } from '#kernel/composition/index.js';
 import { SessionAuthGuard } from '#kernel/auth/session-auth.guard';
 import { NotificationsService } from '../application/notifications.service';
+import { UpdateNotificationPreferencesDto } from './dto/update-notification-preferences.dto';
 
 @Controller('notifications')
 @UseGuards(SessionAuthGuard, CapabilityGuard)
@@ -83,7 +84,7 @@ export class NotificationsController {
   @Patch('preferences')
   updatePreferences(
     @Req() req: Request,
-    @Body() body: { inAppEnabled?: boolean; emailEnabled?: boolean },
+    @Body() body: UpdateNotificationPreferencesDto,
   ) {
     return this.notificationsService.updatePreferences(
       this.requireUserId(req),

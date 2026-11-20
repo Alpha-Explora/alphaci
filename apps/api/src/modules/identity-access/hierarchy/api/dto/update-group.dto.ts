@@ -1,10 +1,17 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class UpdateGroupDto {
   @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(200)
+  @Matches(/\S/, { message: 'name must contain a non-whitespace character' })
   name?: string;
 
   @IsOptional()

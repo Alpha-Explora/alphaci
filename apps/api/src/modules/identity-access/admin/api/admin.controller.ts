@@ -19,7 +19,6 @@ import { SessionAuthGuard } from '#kernel/auth/session-auth.guard';
 import {
   FEEDBACK_STATUSES,
   isFeedbackStatus,
-  type FeedbackStatus,
 } from '#kernel/ports/feedback.port';
 import { AdminService } from '../application/admin.service';
 import { GrantRoleDto } from './dto/grant-role.dto';
@@ -29,6 +28,7 @@ import { SetSpecialAccessDto } from './dto/set-special-access.dto';
 import { PlatformAdminGuard } from './guards/platform-admin.guard';
 import { SuperAdminGuard } from './guards/super-admin.guard';
 import { QueryString } from '#kernel/http/query-string.decorator';
+import { TriageFeedbackDto } from './dto/triage-feedback.dto';
 
 /**
  * Platform admin API. Every route is locked by the class-level guards
@@ -145,7 +145,7 @@ export class AdminController {
   triageFeedback(
     @Req() req: Request,
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: { status?: FeedbackStatus; adminResponse?: string },
+    @Body() body: TriageFeedbackDto,
   ) {
     return this.adminService.triageFeedback(this.actorId(req), id, body);
   }

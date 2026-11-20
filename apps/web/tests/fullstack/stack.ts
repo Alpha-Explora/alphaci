@@ -293,6 +293,38 @@ export function migrateDatabase(group: ProcessGroup): Promise<void> {
   );
 }
 
+/** Change only the quick-login fixture in the runner's disposable database. */
+export function setQuickLoginRole(role: 'lead' | 'member'): void {
+  const result = spawnSync(
+    'docker',
+    [
+      'compose',
+      '-f',
+      COMPOSE_FILE,
+      '-p',
+      COMPOSE_PROJECT,
+      'exec',
+      '-T',
+      'migration-test-postgres',
+      'psql',
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-U',
+      'alphaci_migration_test',
+      '-d',
+      'alphaci_migration_test',
+      '-c',
+      `UPDATE identity.app_users SET app_role = '${role}' WHERE github_user_id = 'alphaci-local-dev-quick-login'`,
+    ],
+    { cwd: WEB_ROOT, encoding: 'utf8' },
+  );
+  if (result.status !== 0 || result.stdout.trim() !== 'UPDATE 1') {
+    throw new Error('Could not set the quick-login fixture role.', {
+      cause: result.error ?? result.stderr,
+    });
+  }
+}
+
 // ---------------------------------------------------------------------------
 // API
 // ---------------------------------------------------------------------------
@@ -349,9 +381,14 @@ function applianceSettings(): Record<string, string> {
 function apiEnv(
   ports: StackPorts,
   egressEnv: Readonly<Record<string, string>>,
-  logDir: string,
 ): NodeJS.ProcessEnv {
   const web = loopbackOrigin(ports.web);
+  const localTemplates = join(REPO_ROOT, 'alphaci-workflow');
+  const templateRepo =
+    process.env.TEMPLATE_REPO_PATH ??
+    (existsSync(localTemplates)
+      ? localTemplates
+      : resolve(REPO_ROOT, '../alphaci-workflow'));
   return {
     ...baseEnv(),
     ...egressEnv,
@@ -384,9 +421,7 @@ function apiEnv(
     DEPLOYMENT_HISTORY_LIVE_PROVIDERS_ENABLED: 'false',
     // Members come from AlphaCI accounts, not the GitHub organization.
     MEMBER_DIRECTORY_SOURCE: 'accounts',
-    // No central workflow checkout, locally or in CI, so both load the same
-    // built-in catalog. The path is never created.
-    TEMPLATE_REPO_PATH: join(logDir, 'no-workflow-templates'),
+    TEMPLATE_REPO_PATH: resolve(REPO_ROOT, templateRepo),
   };
 }
 
@@ -394,11 +429,10 @@ export function startApi(
   group: ProcessGroup,
   ports: StackPorts,
   egressEnv: Readonly<Record<string, string>>,
-  logDir: string,
 ): Service {
   return group.start('api', process.execPath, ['dist/src/main.js'], {
     cwd: API_ROOT,
-    env: apiEnv(ports, egressEnv, logDir),
+    env: apiEnv(ports, egressEnv),
   });
 }
 

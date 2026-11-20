@@ -17,7 +17,6 @@ import { HierarchyAccessService } from './hierarchy-access.service';
 import {
   HIERARCHY_EVENT_CODES,
   type DeliveryProjectMemberKind,
-  type GrantableRole,
 } from '../domain/hierarchy.types';
 import {
   GroupsRepository,
@@ -66,7 +65,6 @@ export class GroupMembersService {
     actor: DirectoryCaller,
     input: {
       userId: string;
-      role?: GrantableRole;
       deliveryProjectIds?: readonly string[];
     },
   ): Promise<AddedGroupMember> {
@@ -75,10 +73,6 @@ export class GroupMembersService {
       groupId,
       actorUserId,
     );
-
-    // Ownership only moves via transfer, so 'admin' is never grantable here —
-    // the same rule the invitation flow enforced.
-    const role: GrantableRole = input.role ?? 'member';
 
     // The same directory the picker lists from, so a person offered there is
     // never refused here, and a crafted request cannot add someone outside it.
@@ -106,15 +100,13 @@ export class GroupMembersService {
             deliveryProjectIds,
           )
         : null;
-    let joinedProjects: Array<{
-      deliveryProjectId: string;
-      repositoriesQueued: number;
-    }> = [];
+    let joinedProjects: Awaited<
+      ReturnType<DeliveryProjectMembersService['joinProjectsWithClient']>
+    > = [];
 
     const added = await this.groupsRepository.addMemberDirect(
       groupId,
       input.userId,
-      role,
       actorUserId,
       async (client, context) => {
         await this.notifications.recordInTransaction(client, {
@@ -122,7 +114,7 @@ export class GroupMembersService {
           workspaceId: groupId,
           eventCode: HIERARCHY_EVENT_CODES.memberAdded,
           title: `You were added to ${context.groupName}`,
-          body: `${context.actorLogin ? `@${context.actorLogin}` : 'A workspace lead'} added you as a ${role === 'delegated_lead' ? 'Delegated lead' : role === 'viewer' ? 'Viewer' : 'Member'}.`,
+          body: `${context.actorLogin ? `@${context.actorLogin}` : 'A workspace lead'} added you to the team.`,
         });
         if (memberKind) {
           joinedProjects = await this.projectMembers.joinProjectsWithClient(
@@ -160,8 +152,8 @@ export class GroupMembersService {
       workspaceId: groupId,
       actorUserId,
       eventCode: HIERARCHY_EVENT_CODES.memberAdded,
-      message: `Member added with role ${role}`,
-      metadata: { groupId, addedUserId: input.userId, role },
+      message: 'Member added',
+      metadata: { groupId, addedUserId: input.userId },
     });
 
     if (!memberKind) return member;

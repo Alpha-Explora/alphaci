@@ -59,9 +59,13 @@ function setup({
           _c: unknown,
           input: { userId: string; memberKind: 'developer' | 'qa' },
         ) =>
-          Promise.resolve(
-            member({ userId: input.userId, memberKind: input.memberKind }),
-          ),
+          Promise.resolve({
+            member: member({
+              userId: input.userId,
+              memberKind: input.memberKind,
+            }),
+            changed: true,
+          }),
       ),
     markRemovedWithClient: jest
       .fn()
@@ -625,13 +629,11 @@ describe('DeliveryProjectMembersService joining Projects with a team add', () =>
     });
   });
 
-  it('refuses a lead, who sees every Project without joining one', async () => {
+  it('lets a lead join the team only: they see every Project without joining one', async () => {
     const { service } = setup();
     await expect(
       service.prepareJoinOnTeamAdd('group-1', 'lead-2', ['dp-1']),
-    ).rejects.toMatchObject({
-      response: { code: 'PROJECT_MEMBER_ROLE_NOT_ALLOWED' },
-    });
+    ).resolves.toBeNull();
   });
 
   it('queues GitHub Write on every repository of each Project for a Developer, in the given transaction', async () => {

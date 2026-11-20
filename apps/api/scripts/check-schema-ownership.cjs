@@ -126,6 +126,11 @@ const LEGACY_MIGRATION_REFERENCES = new Map([
     pairs(['identity.app_users']),
   ],
   [
+    // The one-time report ownership backfill matches the original connection lifetime.
+    'pipelines/20261120020000_scope_ci_reports_to_projects.sql',
+    pairs(['projects.provisioned_projects']),
+  ],
+  [
     'platform-ops/20260614000300_workspaces_audit_notifications.sql',
     pairs([
       'orgs.workspaces',

@@ -195,6 +195,15 @@ export class HierarchyProjectLinkRepository {
     return result.rows;
   }
 
+  async listActiveMemberIds(deliveryProjectId: string): Promise<string[]> {
+    const result = await this.databaseService.query<{ user_id: string }>(
+      `SELECT user_id FROM hierarchy.delivery_project_members
+       WHERE delivery_project_id = $1 AND status = 'active'`,
+      [deliveryProjectId],
+    );
+    return result.rows.map((row) => row.user_id);
+  }
+
   /** The Project by its own id, with every non-archived repository row of it. */
   async findDeliveryProject(
     deliveryProjectId: string,

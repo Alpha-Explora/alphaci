@@ -15,8 +15,8 @@ export interface GroupDetailViewModel {
   group: GroupSummary | null;
   status: ReturnType<typeof useApiResource<GroupSummary>>['state'];
   reload: () => void;
-  /** Whether the caller may edit this group. */
   canManage: boolean;
+  canEdit: boolean;
   editOpen: boolean;
   setEditOpen: (open: boolean) => void;
   /** True while an archive or reopen is in flight. */
@@ -34,6 +34,7 @@ export function useGroupDetailViewModel(groupId: string): GroupDetailViewModel {
   );
   const [editOpen, setEditOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const canManage = isGroupManagerRole(data?.role);
 
   async function toggleArchive() {
     if (!data) return;
@@ -70,7 +71,8 @@ export function useGroupDetailViewModel(groupId: string): GroupDetailViewModel {
     group: data,
     status: state,
     reload,
-    canManage: isGroupManagerRole(data?.role),
+    canManage,
+    canEdit: canManage && data?.status === 'active',
     editOpen,
     setEditOpen,
     busy,

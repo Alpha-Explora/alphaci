@@ -1,4 +1,7 @@
-import { markdownTableCell } from '#kernel/text/markdown-table-cell';
+import {
+  escapeMarkdownHtml,
+  markdownTableCell,
+} from '#kernel/text/markdown-table-cell';
 /**
  * QA report v2: the export of a Project run (docs/design/project-requirements.md,
  * section 2.4). v1 plus `repositories[]` (name, head SHA the run captured) and
@@ -149,7 +152,7 @@ function cell(value: string | null): string {
 }
 
 function inline(value: string): string {
-  return value.replace(/\s+/g, ' ').trim();
+  return escapeMarkdownHtml(value).replace(/\s+/g, ' ').trim();
 }
 
 function table(
@@ -264,7 +267,7 @@ export function renderQaProjectReportMarkdown(report: QaProjectReport): string {
       `# QA Report - ${inline(report.project.name)}`,
       '',
       `- **Run:** ${run.id} (${run.status === 'open' ? 'open' : 'signed off'})`,
-      `- **Branch:** ${run.branch}`,
+      `- **Branch:** ${inline(run.branch)}`,
       `- **Started:** ${utc(run.createdAt)} by ${run.createdBy.login}`,
       `- **Generated:** ${utc(report.generatedAt)}${report.frozen ? ' (frozen at sign-off)' : ''}`,
     ].join('\n'),

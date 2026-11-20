@@ -634,10 +634,10 @@ describe('ProjectExplorer', () => {
     expect(container.textContent).not.toContain('Requirements and QA');
   });
 
-  it('keeps the requirements for a Developer on a Project with no repository yet', async () => {
+  it('keeps the requirements for a Project member with no repository yet', async () => {
     mockSession.appRole = 'member';
     repo.list.mockResolvedValue(foldersSnapshot());
-    repo.requirementCounts.mockResolvedValue({});
+    repo.requirementCounts.mockResolvedValue({ 'dp-2': 0 });
     const container = await renderExplorer();
     await act(async () => button(container, 'wallet')!.click());
     expect(
@@ -645,6 +645,15 @@ describe('ProjectExplorer', () => {
         .querySelector('[data-testid="qa-workspace"]')
         ?.getAttribute('data-project'),
     ).toBe('dp-2');
+  });
+
+  it('keeps QA off the Project page for a Developer outside the Project', async () => {
+    mockSession.appRole = 'member';
+    repo.list.mockResolvedValue(foldersSnapshot());
+    repo.requirementCounts.mockResolvedValue({});
+    const container = await renderExplorer();
+    await act(async () => button(container, 'wallet')!.click());
+    expect(container.querySelector('[data-testid="qa-workspace"]')).toBeNull();
   });
 
   it('offers create-in-Project on an empty Project', async () => {

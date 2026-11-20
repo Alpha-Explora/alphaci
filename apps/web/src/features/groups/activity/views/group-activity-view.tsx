@@ -26,7 +26,7 @@ function ActivityInner({ group }: Readonly<{ group: GroupSummary }>) {
         title="Activity & audit"
         subtitle="Membership changes, assignment grants and revocations, configuration writes, and GitHub synchronization results for this group."
       />
-      <GroupSubNav groupId={group.id} active="activity" />
+      <GroupSubNav group={group} active="activity" />
 
       <GroupActivitySection groupId={group.id} />
     </>

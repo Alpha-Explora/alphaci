@@ -180,7 +180,10 @@ export interface QaProjectItemRules {
    * applicable (ADR-0014, amendment 10). Optional: legacy runs have none.
    */
   requireTestCasesResolvedForPass?: boolean;
+  forbidSelfVerification?: boolean;
 }
+
+export class QaSelfVerificationError extends Error {}
 
 /**
  * 'passed' was refused inside the transaction: the source requirement item's
@@ -270,6 +273,13 @@ export class QaRunNotSignedOffError extends Error {
   constructor(runId: string) {
     super(`QA run ${runId} is not signed off`);
     this.name = 'QaRunNotSignedOffError';
+  }
+}
+
+export class QaRunItemChangedError extends Error {
+  constructor(itemId: string) {
+    super(`QA run item ${itemId} changed`);
+    this.name = 'QaRunItemChangedError';
   }
 }
 
@@ -653,13 +663,19 @@ export class QaRunsRepository {
     actor: RunActor,
     previousStatus: QaRunItemStatus,
     rules?: QaProjectItemRules,
+    transaction?: PoolClient,
   ): Promise<QaRunItemRow | null> {
-    return this.databaseService.withTransaction(async (client) => {
+    const write = async (client: PoolClient) => {
       // Lock order, everywhere: run row -> requirement item -> run item. A
       // Progress write only ever takes the requirement item, so no cycle.
       await lockOpenRunForItemWrite(client, runId);
       if (rules?.requireProgressDoneForPass && patch.status === 'passed') {
-        await this.assertSourceProgressDone(client, runId, itemId);
+        await this.assertSourceProgressDone(
+          client,
+          runId,
+          itemId,
+          rules.forbidSelfVerification ? actor.id : undefined,
+        );
       }
       if (rules?.requireTestCasesResolvedForPass && patch.status === 'passed') {
         await this.assertTestCasesResolved(client, runId, itemId);
@@ -784,7 +800,10 @@ export class QaRunsRepository {
       }
 
       return updated;
-    });
+    };
+    return transaction
+      ? write(transaction)
+      : this.databaseService.withTransaction(write);
   }
 
   /**
@@ -823,6 +842,7 @@ export class QaRunsRepository {
     client: PoolClient,
     runId: string,
     itemId: string,
+    distinctVerifier?: string,
   ): Promise<void> {
     const source = await client.query<{ source_item_id: string | null }>(
       `SELECT source_item_id FROM projects.qa_run_items WHERE id = $1 AND run_id = $2;`,
@@ -832,12 +852,18 @@ export class QaRunsRepository {
     if (!sourceItemId) {
       throw new QaProgressNotDoneError(itemId);
     }
-    const progress = await client.query<{ progress: string }>(
-      `SELECT progress FROM projects.qa_checklist_items WHERE id = $1 FOR SHARE;`,
+    const progress = await client.query<{
+      progress: string;
+      progress_by: string | null;
+    }>(
+      `SELECT progress, progress_by FROM projects.qa_checklist_items WHERE id = $1 FOR SHARE;`,
       [sourceItemId],
     );
     if (progress.rows[0]?.progress !== 'done') {
       throw new QaProgressNotDoneError(itemId);
+    }
+    if (distinctVerifier && progress.rows[0].progress_by === distinctVerifier) {
+      throw new QaSelfVerificationError('The verifier marked this story Done.');
     }
   }
 
@@ -1068,8 +1094,12 @@ export class QaRunsRepository {
     });
   }
 
-  async reopenRun(runId: string, actor: RunActor): Promise<QaAnyRunRow | null> {
-    return this.databaseService.withTransaction(async (client) => {
+  async reopenRun(
+    runId: string,
+    actor: RunActor,
+    transaction?: PoolClient,
+  ): Promise<QaAnyRunRow | null> {
+    const write = async (client: PoolClient) => {
       const runResult = await client.query<QaAnyRunRow>(
         `
           UPDATE projects.qa_verification_runs
@@ -1094,6 +1124,42 @@ export class QaRunsRepository {
       );
 
       return run;
+    };
+    return transaction
+      ? write(transaction)
+      : this.databaseService.withTransaction(write);
+  }
+
+  /** A stale rejection leaves the run and its active sign-off intact. */
+  async rejectItem(input: {
+    runId: string;
+    itemId: string;
+    expectedRowVersion: number;
+    notes: string;
+    defectSeverity: QaDefectSeverity;
+    previousStatus: QaRunItemStatus;
+    actor: RunActor;
+  }): Promise<{ run: QaAnyRunRow; item: QaRunItemRow }> {
+    return this.databaseService.withTransaction(async (client) => {
+      const run = await this.reopenRun(input.runId, input.actor, client);
+      if (!run) throw new QaRunNotSignedOffError(input.runId);
+      const item = await this.updateItem(
+        input.runId,
+        input.itemId,
+        input.expectedRowVersion,
+        {
+          status: 'failed',
+          notes: input.notes,
+          defectSeverity: input.defectSeverity,
+          reproductionSteps: undefined,
+        },
+        input.actor,
+        input.previousStatus,
+        { requireProgressDoneForPass: false, resetProgressOnReturn: true },
+        client,
+      );
+      if (!item) throw new QaRunItemChangedError(input.itemId);
+      return { run, item };
     });
   }
 

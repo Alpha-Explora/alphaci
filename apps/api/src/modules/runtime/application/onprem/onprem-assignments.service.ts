@@ -213,6 +213,12 @@ export function validateAssignmentConfig(
     );
   // normalizeIngress has already checked the binding and derived its address.
   if (config.ingress.mode === 'bound') return;
+  if (config.ingress.publicUrl === undefined) {
+    throw new BadRequestException({
+      code: 'INGRESS_PUBLIC_URL_REQUIRED',
+      message: 'Set ingress.publicUrl to a URL or null.',
+    });
+  }
   // The machine reports a tunnel's address; a client never sets it.
   if (config.ingress.mode === 'tunnel' && config.ingress.publicUrl !== null)
     throw new BadRequestException(

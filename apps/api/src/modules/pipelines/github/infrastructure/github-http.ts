@@ -1,5 +1,24 @@
 import { BadGatewayException, type Logger } from '@nestjs/common';
 
+export class GithubUnreachableException extends BadGatewayException {
+  constructor(cause: unknown) {
+    super(
+      {
+        statusCode: 502,
+        error: 'Bad Gateway',
+        code: 'GITHUB_UNREACHABLE',
+        message: 'GitHub could not be reached. Try again shortly.',
+      },
+      { cause },
+    );
+  }
+}
+
+export function githubTransportMessage(error: unknown): string {
+  if (error instanceof GithubUnreachableException) return error.message;
+  return `GitHub could not be reached: ${error instanceof Error ? error.message : String(error)}`;
+}
+
 export class GithubHttp {
   constructor(private readonly logger: Logger) {}
 
@@ -22,7 +41,9 @@ export class GithubHttp {
     const maxWaitMs = 8_000;
 
     for (let attempt = 1; ; attempt += 1) {
-      const response = await fetch(input, init);
+      const response = await fetch(input, init).catch((cause: unknown) => {
+        throw new GithubUnreachableException(cause);
+      });
 
       const isRateLimited =
         response.status === 429 ||

@@ -19,6 +19,7 @@ import {
 } from '../../data/project-members-api';
 import {
   addedMessage,
+  apiErrorCode,
   canManageProjectMembers,
   eligibleProjectMemberCandidates,
   memberDisplayName,
@@ -85,6 +86,7 @@ async function addSelectedMembers(
   const notices: string[] = [];
   const errors: string[] = [];
   const failedIds = new Set<string>();
+  let teamChanged = false;
   for (const candidate of pending) {
     try {
       const { member, githubAccess } = await addProjectMember(
@@ -94,13 +96,15 @@ async function addSelectedMembers(
       onAdded(member);
       notices.push(addedMessage(member, githubAccess));
     } catch (cause) {
-      failedIds.add(candidate.userId);
+      if (apiErrorCode(cause) === 'PROJECT_MEMBER_NOT_IN_TEAM')
+        teamChanged = true;
+      else failedIds.add(candidate.userId);
       errors.push(
         `${memberDisplayName(candidate)}: ${projectMemberErrorMessage(cause, 'add')}`,
       );
     }
   }
-  return { notices, errors, failedIds };
+  return { notices, errors, failedIds, teamChanged };
 }
 
 /** Team members who could join, read when the picker opens. */
@@ -204,16 +208,14 @@ export function useProjectMembersViewModel(input: {
     setBusy('add');
     setAddError(null);
     try {
-      const { notices, errors, failedIds } = await addSelectedMembers(
-        deliveryProjectId,
-        pending,
-        upsert,
-      );
+      const { notices, errors, failedIds, teamChanged } =
+        await addSelectedMembers(deliveryProjectId, pending, upsert);
       setFeedback({
         notice: notices.join('\n') || null,
         error: null,
       });
       setSelectedUserIds(failedIds);
+      if (teamChanged) roster.load();
       if (errors.length === 0) setAddOpen(false);
       else setAddError(errors.join('\n'));
     } finally {

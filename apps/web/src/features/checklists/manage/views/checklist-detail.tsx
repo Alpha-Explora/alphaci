@@ -86,8 +86,8 @@ function MovedToProject({ href }: Readonly<{ href: string }>) {
   return (
     <div className="qa-detail__moved">
       <p>
-        This checklist is now a System requirement of a Project. It applies to
-        every repository in that Project and is edited there.
+        This checklist is now a Project requirement. It applies to every
+        repository in that Project and is edited there.
       </p>
       <Link className="ghost-button group-section-action" href={href}>
         Open the Project

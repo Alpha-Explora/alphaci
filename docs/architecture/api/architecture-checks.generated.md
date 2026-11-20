@@ -30,11 +30,11 @@ This snapshot is generated from the current source tree. It is descriptive evide
 | `billing` | 21 | 5 | 0 | 0 | 0 | 0 |
 | `identity-access` | 150 | 34 | 9 | 5 | 0 | 0 |
 | `pipelines` | 89 | 34 | 1 | 1 | 0 | 0 |
-| `platform-ops` | 37 | 10 | 0 | 0 | 0 | 0 |
-| `projects` | 378 | 143 | 20 | 5 | 0 | 0 |
-| `runtime` | 230 | 86 | 11 | 4 | 0 | 0 |
+| `platform-ops` | 38 | 10 | 0 | 0 | 0 | 0 |
+| `projects` | 382 | 143 | 20 | 5 | 0 | 0 |
+| `runtime` | 232 | 86 | 11 | 4 | 0 | 0 |
 
-| Total | 905 | 312 | 41 | 15 | 0 | 0 |
+| Total | 912 | 312 | 41 | 15 | 0 | 0 |
 
 Dead in-process adapters measured by the source report: **0**.
 

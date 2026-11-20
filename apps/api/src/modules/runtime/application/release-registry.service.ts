@@ -76,6 +76,7 @@ import { DeploymentTargetsRepository } from '../infrastructure/repositories/depl
 import {
   ReleaseRegistryRepository,
   allowedDeploymentTransitions,
+  NO_HEALTHY_ROLLBACK_DETAIL,
   type DeploymentDelivery,
   type DeploymentStatus,
   type EnvironmentDeploymentRecord,
@@ -679,11 +680,18 @@ export class ReleaseRegistryService {
       input.environmentId,
     );
     if (!environment) throw new NotFoundException('Environment not found');
+    const name = input.name.trim();
+    if (!name) {
+      throw new BadRequestException({
+        code: 'HOST_NAME_REQUIRED',
+        message: 'Host name must contain a non-whitespace character.',
+      });
+    }
     const token = HOST_TOKEN_PREFIX + randomBytes(32).toString('base64url');
     const host = await this.releases.createHost({
       projectId: input.projectId,
       environmentId: environment.id,
-      name: input.name.trim(),
+      name,
       tokenPrefix: token.slice(0, 12),
       tokenSha256: sha256(token),
       createdBy: input.userId,
@@ -915,6 +923,24 @@ export class ReleaseRegistryService {
       deployment.delivery !== 'host'
     ) {
       throw new NotFoundException('Deployment not found');
+    }
+    if (status === 'rolled_back') {
+      if (
+        deployment.status === 'failed' &&
+        deployment.detail === NO_HEALTHY_ROLLBACK_DETAIL
+      ) {
+        return deployment;
+      }
+      if (
+        deployment.status === 'deploying' &&
+        !(await this.releases.pinnedReleaseId(deployment.environmentId))
+      ) {
+        return this.transition(
+          deployment,
+          'failed',
+          NO_HEALTHY_ROLLBACK_DETAIL,
+        );
+      }
     }
     return this.transition(deployment, status, detail);
   }

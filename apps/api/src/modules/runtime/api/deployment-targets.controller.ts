@@ -19,10 +19,10 @@ import { SessionAuthGuard } from '#kernel/auth/session-auth.guard';
 import { SubscriptionGuard } from '#kernel/auth/subscription.guard';
 import { CapabilityGuard } from '#kernel/composition/capability.guard';
 import { RequiresCapability } from '#kernel/composition/requires-capability.decorator';
-import type { CreateDeploymentTargetDto } from './dto/create-deployment-target.dto';
+import { CreateDeploymentTargetDto } from './dto/create-deployment-target.dto';
+import { UpdateDeploymentTargetDto } from './dto/update-deployment-target.dto';
 import type { DetachDeploymentTargetDto } from './dto/detach-deployment-target.dto';
 import { DeploymentTargetsService } from '../application/deployment-targets.service';
-import type { UpdateDeploymentTargetMetadataInput } from '../core/deployments.types';
 import { parseDeploymentLogsQuery } from './deployment-logs-stream.util';
 import { DeploymentLogsHubService } from '../application/deployment-logs-hub.service';
 import { QueryString } from '#kernel/http/query-string.decorator';
@@ -163,7 +163,7 @@ export class DeploymentTargetsController {
     @Req() req: Request,
     @Param('projectId') projectId: string,
     @Param('targetId') targetId: string,
-    @Body() body: UpdateDeploymentTargetMetadataInput,
+    @Body() body: UpdateDeploymentTargetDto,
   ) {
     return this.service.updateDeploymentTargetMetadata(
       projectId,

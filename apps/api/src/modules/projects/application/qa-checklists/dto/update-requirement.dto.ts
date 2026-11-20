@@ -6,6 +6,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { QA_REQUIREMENT_DESCRIPTION_MAX_LENGTH } from '../qa-requirements.contracts';
 
 export class UpdateRequirementDto {
   @IsInt()
@@ -20,5 +21,6 @@ export class UpdateRequirementDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(QA_REQUIREMENT_DESCRIPTION_MAX_LENGTH)
   description?: string | null;
 }

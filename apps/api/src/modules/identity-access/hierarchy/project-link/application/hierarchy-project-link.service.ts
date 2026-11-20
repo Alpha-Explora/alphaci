@@ -106,6 +106,10 @@ export class HierarchyProjectLinkService
     return this.repository.listActiveDeliveryProjects(groupId);
   }
 
+  listActiveMemberIds(deliveryProjectId: string): Promise<string[]> {
+    return this.repository.listActiveMemberIds(deliveryProjectId);
+  }
+
   /**
    * See DeliveryProjectOverviewQuery.getOverviewFacts: members and the
    * viewer's own membership in one query, linked repositories in another,

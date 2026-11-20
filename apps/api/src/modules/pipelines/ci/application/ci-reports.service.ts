@@ -202,9 +202,12 @@ export class CiReportsService {
    * Resolves user ownership from the provisioned project, translates results
    * into friendly messages, then upserts the row.
    */
-  async ingestReport(body: CiReportBodyDto): Promise<{ received: true }> {
+  async ingestReport(
+    body: CiReportBodyDto,
+    projectId: string,
+  ): Promise<{ received: true }> {
     try {
-      const userId = await this.resolveUserIdByRepo(body.repoFullName);
+      const userId = await this.resolveUserId(projectId);
       const status = this.conclusionToStatus(body.conclusion);
       const friendlyMessages = translateResults(
         body.stage,
@@ -216,6 +219,7 @@ export class CiReportsService {
 
       await this.ciRunReportsRepository.upsert({
         userId,
+        projectId,
         repoFullName: body.repoFullName,
         branch: body.branch,
         commitSha: body.commitSha,
@@ -290,29 +294,18 @@ export class CiReportsService {
     offset?: number,
     workspaceId?: string,
   ): Promise<RunsResponse> {
-    if (repoFullName) {
-      await this.assertOwnership(userId, repoFullName);
-      const rows = await this.ciRunReportsRepository.findRecentByRepo(
-        repoFullName,
-        limit,
-        offset,
-      );
-      return {
-        runs: this.groupIntoRuns(rows, await this.environmentRepos(rows)),
-      };
-    }
-
-    const repos = await this.projectVisibility.listVisibleRepoNames(
+    const projects = await this.visibleProjects(
       userId,
       workspaceId,
+      repoFullName,
     );
-    const rows = await this.ciRunReportsRepository.findRecentByRepos(
-      repos,
+    const rows = await this.ciRunReportsRepository.findRecentByProjects(
+      projects,
       limit,
       offset,
     );
     return {
-      runs: this.groupIntoRuns(rows, await this.environmentRepos(rows)),
+      runs: this.groupIntoRuns(rows, await this.environmentProjects(rows)),
     };
   }
 
@@ -327,13 +320,20 @@ export class CiReportsService {
     branch: string,
     commitSha: string,
   ): Promise<CiRunReport> {
-    await this.assertOwnership(userId, repoFullName);
-    const rows = await this.ciRunReportsRepository.findByRepoBranchSha(
+    const projects = await this.visibleProjects(
+      userId,
+      undefined,
       repoFullName,
+    );
+    const rows = await this.ciRunReportsRepository.findByProjectBranchSha(
+      projects,
       branch,
       commitSha,
     );
-    const run = this.groupIntoRuns(rows)[0];
+    const run = this.groupIntoRuns(
+      rows,
+      await this.environmentProjects(rows),
+    )[0];
     if (!run) {
       throw new NotFoundException(
         `No CI results were reported for ${repoFullName} on ${branch} at ${commitSha.slice(0, 7)}.`,
@@ -350,42 +350,40 @@ export class CiReportsService {
    * environment and has no verify workflow, so waiting for a verify report
    * would mark every one of their runs as failed.
    */
-  private async environmentRepos(
-    rows: ReadonlyArray<{ repo_full_name: string }>,
+  private async environmentProjects(
+    rows: ReadonlyArray<{ project_id: string }>,
   ): Promise<ReadonlySet<string>> {
-    const repos = [...new Set(rows.map((row) => row.repo_full_name))];
-    if (repos.length === 0) return new Set();
+    const projects = [...new Set(rows.map((row) => row.project_id))];
+    if (projects.length === 0) return new Set();
     const result = await this.databaseService.query<{
-      repo_full_name: string;
+      project_id: string;
     }>(
       `
-        SELECT DISTINCT project.repo_full_name
-        FROM projects.provisioned_projects AS project
-        JOIN projects.project_environments AS environment
-          ON environment.project_id = project.id
-        WHERE project.repo_full_name = ANY($1::text[]);
+        SELECT DISTINCT project_id
+        FROM projects.project_environments
+        WHERE project_id = ANY($1::uuid[]);
       `,
-      [repos],
+      [projects],
     );
-    return new Set(result.rows.map((row) => row.repo_full_name));
+    return new Set(result.rows.map((row) => row.project_id));
   }
 
-  private async resolveUserIdByRepo(repoFullName: string): Promise<string> {
+  private async resolveUserId(projectId: string): Promise<string> {
     const result = await this.databaseService.query<OwnershipRow>(
       `
         SELECT user_id
         FROM projects.provisioned_projects
-        WHERE repo_full_name = $1
+        WHERE id = $1
           AND status = 'provisioned'
         LIMIT 1;
       `,
-      [repoFullName],
+      [projectId],
     );
 
     const row = result.rows[0];
     if (!row) {
       throw new NotFoundException(
-        `No provisioned project found for repository '${repoFullName}'.`,
+        `No provisioned project found for this CI report.`,
       );
     }
 
@@ -401,20 +399,23 @@ export class CiReportsService {
    * why this crosses the Pipelines/Projects boundary through a port instead
    * of a repository query here.
    */
-  private async assertOwnership(
+  private async visibleProjects(
     userId: string,
-    repoFullName: string,
-  ): Promise<void> {
-    const visible = await this.projectVisibility.isRepoVisibleToUser(
-      repoFullName,
+    workspaceId?: string,
+    repoFullName?: string,
+  ): Promise<string[]> {
+    const visible = await this.projectVisibility.listVisibleReportProjects(
       userId,
+      workspaceId,
+      repoFullName,
     );
 
-    if (!visible) {
+    if (repoFullName && visible.length === 0) {
       throw new ForbiddenException(
         `You do not have access to reports for repository '${repoFullName}'.`,
       );
     }
+    return visible;
   }
 
   private conclusionToStatus(
@@ -485,8 +486,8 @@ export class CiReportsService {
   }
 
   private groupIntoRuns(
-    rows: Awaited<ReturnType<CiRunReportsRepository['findRecentByRepo']>>,
-    environmentRepos: ReadonlySet<string> = new Set(),
+    rows: Awaited<ReturnType<CiRunReportsRepository['findRecentByProjects']>>,
+    environmentProjects: ReadonlySet<string>,
   ): RunGroup[] {
     // access/quality/package are three independent GitHub Actions workflows
     // chained via workflow_run, so each gets its own distinct run_id — they
@@ -509,6 +510,7 @@ export class CiReportsService {
     const groupMap = new Map<
       string,
       {
+        projectId: string;
         repoFullName: string;
         branch: string;
         commitSha: string;
@@ -527,11 +529,12 @@ export class CiReportsService {
       if (MERGE_REF.test(row.branch)) {
         continue;
       }
-      const groupKey = `${row.repo_full_name}::${row.branch}::${row.commit_sha}`;
+      const groupKey = `${row.project_id}::${row.repo_full_name.toLowerCase()}::${row.branch}::${row.commit_sha}`;
 
       if (!groupMap.has(groupKey)) {
         groupOrder.push(groupKey);
         groupMap.set(groupKey, {
+          projectId: row.project_id,
           repoFullName: row.repo_full_name,
           branch: row.branch,
           commitSha: row.commit_sha,
@@ -604,7 +607,7 @@ export class CiReportsService {
       );
 
       // Environment pipelines have no verify stage to wait for.
-      const expectedStages = environmentRepos.has(group.repoFullName)
+      const expectedStages = environmentProjects.has(group.projectId)
         ? ALL_STAGES.filter((stageName) => stageName !== 'verify')
         : ALL_STAGES;
 

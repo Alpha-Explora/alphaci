@@ -404,6 +404,25 @@ describe('Release registry and promotion', () => {
       expect((read.body as Release).releaseId).toBe(release.releaseId);
     });
 
+    it('lets CI retry the same release registration after a host is assigned', async () => {
+      const project = await releaseProject(['dev']);
+      const body = registration(project);
+      const refused = await request(e2e.http)
+        .post('/api/v1/ci/releases')
+        .set(ci(project))
+        .send(body)
+        .expect(409);
+      expect(refused.body).toMatchObject({
+        code: 'DEPLOYMENT_HOST_UNASSIGNED',
+      });
+      await addHost(project, project.dev);
+      await request(e2e.http)
+        .post('/api/v1/ci/releases')
+        .set(ci(project))
+        .send(body)
+        .expect(202);
+    });
+
     it('recovers an unsigned host release after signing fails without accepting a late signature', async () => {
       const project = await releaseProject(['dev']);
       const token = await addHost(project, project.dev);
@@ -440,6 +459,34 @@ describe('Release registry and promotion', () => {
           runId: '987654321',
         },
       });
+    });
+
+    it('records a failed deployment when an initial host release claims rollback', async () => {
+      const project = await releaseProject(['dev']);
+      const token = await addHost(project, project.dev);
+      const release = await register(project);
+      await attach(project, release, signedManifest(project, release)).expect(
+        200,
+      );
+      const status = (value: string) =>
+        request(e2e.http)
+          .post(
+            '/api/v1/onprem/deployments/' +
+              release.deployments[0]!.id +
+              '/status',
+          )
+          .set({ Authorization: 'Bearer ' + token })
+          .send({ status: value });
+      await status('deploying').expect(201);
+      const result = await status('rolled_back').expect(201);
+      expect(result.body).toMatchObject({
+        status: 'failed',
+        detail:
+          'Deployment failed. AlphaCI has no healthy release recorded for this environment.',
+      });
+      expect((await status('rolled_back').expect(201)).body).toEqual(
+        result.body,
+      );
     });
 
     it('replaces the active host token only in its own environment, including concurrent registrations', async () => {
@@ -488,6 +535,7 @@ describe('Release registry and promotion', () => {
 
     it('keeps CI from taking over a signed host deployment', async () => {
       const project = await releaseProject(['dev']);
+      const token = await addHost(project, project.dev);
       const release = await register(project);
       const report = (status: string) =>
         request(e2e.http)
@@ -505,7 +553,6 @@ describe('Release registry and promotion', () => {
       for (const status of ['deploying', 'healthy', 'failed', 'rolled_back']) {
         await report(status).expect(409);
       }
-      const token = await addHost(project, project.dev);
       await request(e2e.http)
         .post(
           '/api/v1/onprem/deployments/' +
@@ -521,6 +568,7 @@ describe('Release registry and promotion', () => {
     it('serializes signing against failure cleanup so exactly one can succeed', async () => {
       for (let attempt = 0; attempt < 4; attempt += 1) {
         const project = await releaseProject(['dev']);
+        await addHost(project, project.dev);
         const release = await register(project);
         const [signed, failed] = await Promise.all([
           attach(project, release, signedManifest(project, release)),
@@ -727,9 +775,6 @@ describe('Release registry and promotion', () => {
     it('gives each host only its environment and moves deployments forward only', async () => {
       const project = await releaseProject(['uat']);
       const release = await devRelease(project);
-      const promoted = (
-        await promote(project, project.uat, release).expect(201)
-      ).body as Deployment;
 
       const host = async (environmentId: string) =>
         (
@@ -746,6 +791,9 @@ describe('Release registry and promotion', () => {
         ).body as { token: string };
       const uatHost = await host(project.uat);
       const devHost = await host(project.dev);
+      const promoted = (
+        await promote(project, project.uat, release).expect(201)
+      ).body as Deployment;
       const as = (token: string) => ({ Authorization: 'Bearer ' + token });
 
       const assignments = await request(e2e.http)
@@ -806,8 +854,10 @@ describe('Release registry and promotion', () => {
     it('refuses to promote to an environment without a target, then promotes once it has one', async () => {
       const project = await releaseProject(['uat', 'main']);
       const release = await devRelease(project);
-      const uat = (await promote(project, project.uat, release).expect(201))
-        .body as Deployment;
+      const refused = await promote(project, project.uat, release).expect(409);
+      expect(refused.body).toMatchObject({
+        code: 'DEPLOYMENT_HOST_UNASSIGNED',
+      });
       const [host] = [
         (
           await agent
@@ -822,6 +872,8 @@ describe('Release registry and promotion', () => {
             .expect(201)
         ).body as { token: string },
       ];
+      const uat = (await promote(project, project.uat, release).expect(201))
+        .body as Deployment;
       for (const value of ['deploying', 'healthy']) {
         await request(e2e.http)
           .post('/api/v1/onprem/deployments/' + uat.id + '/status')
@@ -832,6 +884,7 @@ describe('Release registry and promotion', () => {
 
       await promote(project, project.main, release).expect(409);
       const mainTarget = await project.addMainTarget();
+      await addHost(project, project.main);
       const production = await promote(project, project.main, release).expect(
         201,
       );
@@ -1006,6 +1059,7 @@ describe('Release registry and promotion', () => {
     it('enforces promotion and host setup personas through HTTP', async () => {
       const project = await releaseProject(['uat', 'main']);
       const release = await devRelease(project);
+      await addHost(project, project.uat);
       try {
         for (const role of ['qa', 'member', 'lead']) {
           await e2e.query(

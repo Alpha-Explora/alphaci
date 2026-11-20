@@ -173,7 +173,7 @@ function GroupOverview({ groupId }: Readonly<{ groupId: string }>) {
           >
             <GroupStatusBadge status={group.status} />
             <RoleBadge role={group.role} />
-            {vm.canManage && (
+            {vm.canEdit && (
               <button
                 type="button"
                 className="hier-btn-sm"
@@ -198,7 +198,7 @@ function GroupOverview({ groupId }: Readonly<{ groupId: string }>) {
         }
       />
 
-      <GroupSubNav groupId={group.id} active="overview" />
+      <GroupSubNav group={group} active="overview" />
 
       <div className="hier-stat-row" style={{ marginBottom: '1.25rem' }}>
         <div className="hier-stat">
@@ -224,18 +224,24 @@ function GroupOverview({ groupId }: Readonly<{ groupId: string }>) {
         <NavCard
           href={`/groups/${group.id}/members`}
           title="Members"
-          description="Manage who belongs to this group and their roles. Members are added directly — there is no invitation to accept."
+          description={
+            vm.canManage
+              ? 'View, add, and remove group members.'
+              : 'See who belongs to this group.'
+          }
         />
         <NavCard
           href={`/groups/${group.id}/systems`}
           title="Projects"
-          description="Projects owned by this group. Each project provisions a GitHub repository."
+          description="Projects owned by this group and the repositories they contain."
         />
-        <NavCard
-          href={`/groups/${group.id}/activity`}
-          title="Activity & audit"
-          description="Membership changes, assignment grants/revokes, and GitHub synchronization results."
-        />
+        {vm.canManage && (
+          <NavCard
+            href={`/groups/${group.id}/activity`}
+            title="Activity & audit"
+            description="Membership changes, assignment grants/revokes, and GitHub synchronization results."
+          />
+        )}
       </div>
 
       <div className="hier-comingsoon" role="note">
@@ -255,7 +261,7 @@ function GroupOverview({ groupId }: Readonly<{ groupId: string }>) {
         Group communication (announcements &amp; channels) is coming soon.
       </div>
 
-      {vm.canManage && (
+      {vm.canEdit && (
         <EditGroupDialog
           open={vm.editOpen}
           group={group}

@@ -14,7 +14,7 @@ import { SessionAuthGuard } from '#kernel/auth/session-auth.guard';
 import { SubscriptionGuard } from '#kernel/auth/subscription.guard';
 import { CapabilityGuard } from '#kernel/composition/capability.guard';
 import { RequiresCapability } from '#kernel/composition/requires-capability.decorator';
-import type { CreateProviderConnectionDto } from './dto/create-provider-connection.dto';
+import { CreateProviderConnectionDto } from './dto/create-provider-connection.dto';
 import { ProviderConnectionsService } from '../application/provider-connections.service';
 
 @Controller('provider-connections')

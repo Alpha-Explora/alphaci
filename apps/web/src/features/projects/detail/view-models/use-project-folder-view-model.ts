@@ -25,6 +25,7 @@ export interface ProjectFolderViewModel extends RepoSwitchPresentation {
     deliveryProjectId: string | null;
     name: string | null;
     href: string | null;
+    canAccessQa?: boolean;
     /** Each repository's role (frontend, backend, …): what QA Studio's Playwright tab filters by. */
     repositories: Array<{
       projectId: string | null;
@@ -56,6 +57,9 @@ function projectOf(
     deliveryProjectId: folder?.deliveryProjectId ?? null,
     name: folder?.name || null,
     href: manageProjectHref(folder),
+    ...(folder?.canAccessQa !== undefined && {
+      canAccessQa: folder.canAccessQa,
+    }),
     repositories: (folder?.repositories ?? []).map((repository) => ({
       projectId: repository.projectId,
       role: repository.role,

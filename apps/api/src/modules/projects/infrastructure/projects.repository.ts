@@ -288,16 +288,24 @@ export class ProjectsRepository
     projectId: string,
     environmentId: string,
     displayName: string,
+    branch?: { previous: string; next: string },
   ): Promise<ProjectEnvironmentRecord | null> {
     const result = await this.databaseService.query<ProjectEnvironmentRecord>(
       `
         UPDATE projects.project_environments
-        SET display_name = $3, updated_at = NOW()
+        SET display_name = $3, source_branch = COALESCE($4, source_branch), updated_at = NOW()
         WHERE project_id = $1 AND id = $2
+          AND ($4::text IS NULL OR source_branch = $5)
         RETURNING id, slug, display_name AS "displayName", position,
                   source_branch AS "sourceBranch", role, auto_deploy AS "autoDeploy";
       `,
-      [projectId, environmentId, displayName.trim()],
+      [
+        projectId,
+        environmentId,
+        displayName.trim(),
+        branch?.next ?? null,
+        branch?.previous ?? null,
+      ],
     );
     return result.rows[0] ?? null;
   }
@@ -543,37 +551,26 @@ export class ProjectsRepository
     return result.rows.map((row) => row.id);
   }
 
-  /** Active workspace members whose persona is 'qa'. */
-  async listWorkspaceQaIds(workspaceId: string): Promise<string[]> {
-    const result = await this.databaseService.query<{ id: string }>(
-      `
-        SELECT DISTINCT u.id
-        FROM orgs.workspace_members m
-        JOIN identity.app_users u ON u.id = m.user_id
-        WHERE m.workspace_id = $1
-          AND m.member_status = 'active'
-          AND u.app_role = 'qa';
-      `,
-      [workspaceId],
-    );
-    return result.rows.map((row) => row.id);
-  }
-
   /** Active workspace members with a team persona, ordered by login. */
   async listWorkspaceMembers(
     workspaceId: string,
-  ): Promise<Array<{ id: string; login: string | null }>> {
+  ): Promise<
+    Array<{ id: string; login: string | null; role: PlatformAppRole }>
+  > {
     const result = await this.databaseService.query<{
       id: string;
       login: string | null;
+      role: PlatformAppRole;
     }>(
       `
-        SELECT DISTINCT u.id, u.login
+        SELECT DISTINCT u.id, u.login, CASE WHEN pa.user_id IS NOT NULL THEN 'admin' ELSE u.app_role END AS role
         FROM orgs.workspace_members m
         JOIN identity.app_users u ON u.id = m.user_id
+        LEFT JOIN identity.platform_admins pa ON pa.user_id = u.id
         WHERE m.workspace_id = $1
           AND m.member_status = 'active'
           AND u.app_role IN ('lead', 'member', 'qa', 'admin')
+          AND u.archived_at IS NULL
         ORDER BY u.login;
       `,
       [workspaceId],
@@ -723,44 +720,24 @@ export class ProjectsRepository
    * case-insensitively for the same reason deleteByRepoFullName does: GitHub
    * repo names are case-insensitive.
    */
-  async isRepoVisibleToUser(
-    repoFullName: string,
-    userId: string,
-  ): Promise<boolean> {
-    const result = await this.databaseService.query<{ visible: 1 }>(
-      `
-        SELECT 1 AS visible
-        FROM projects.provisioned_projects AS pp
-        WHERE lower(pp.repo_full_name) = lower($1)
-          AND (${projectVisibilitySql('$2')})
-        LIMIT 1;
-      `,
-      [repoFullName, userId],
-    );
-    return result.rows.length > 0;
-  }
-
-  /**
-   * Lower-cased repo names of every provisioned project the caller may see
-   * (same predicate as isRepoVisibleToUser), optionally limited to one
-   * workspace. Backs PROJECT_VISIBILITY_LOOKUP.listVisibleRepoNames.
-   */
-  async listVisibleRepoNames(
+  async listVisibleReportProjects(
     userId: string,
     workspaceId?: string,
+    repoFullName?: string,
   ): Promise<string[]> {
-    const result = await this.databaseService.query<{ repo: string }>(
+    const result = await this.databaseService.query<{ id: string }>(
       `
-        SELECT DISTINCT lower(pp.repo_full_name) AS repo
+        SELECT pp.id
         FROM projects.provisioned_projects AS pp
         WHERE pp.status = 'provisioned'
           AND pp.repo_full_name IS NOT NULL
           AND ($2::uuid IS NULL OR pp.workspace_id = $2::uuid)
+          AND ($3::text IS NULL OR lower(pp.repo_full_name) = lower($3))
           AND (${projectVisibilitySql('$1')});
       `,
-      [userId, workspaceId ?? null],
+      [userId, workspaceId ?? null, repoFullName ?? null],
     );
-    return result.rows.map((r) => r.repo);
+    return result.rows.map((r) => r.id);
   }
 
   /**
@@ -837,36 +814,36 @@ export class ProjectsRepository
    * Scoped to userId to prevent cross-user deletions.
    * Returns true if a row was deleted, false if not found or wrong user.
    *
-   * `allowedRoles` defaults to the original permissive set (lead/delegated_lead/
-   * member) so every existing 2-arg call site is unaffected. This is the
-   * FINAL enforcement point for the delete itself — pass a tightened list
-   * (e.g. ['admin', 'delegated_lead']) for destructive variants (opt-in GitHub repo
-   * delete) so the restriction is enforced by the SQL statement that
-   * actually performs the delete, independent of any optional app-layer
-   * pre-check.
+   * Uses the same visibility rule as findByIdAndUser. The caller checks the
+   * persona before disconnecting a visible project.
    */
   async deleteByIdAndUser(
     id: string,
     userId: string,
-    allowedRoles: string[] = ['admin', 'delegated_lead', 'member'],
+    allowedRoles?: string[],
   ): Promise<boolean> {
     const result = await this.databaseService.query<{ id: string }>(
       `
-        DELETE FROM projects.provisioned_projects
-        WHERE id = $1
+        DELETE FROM projects.provisioned_projects AS pp
+        WHERE pp.id = $1
           AND (
-            user_id = $2
-            OR EXISTS (
-              SELECT 1
-              FROM orgs.workspace_members AS member
-              WHERE member.workspace_id = projects.provisioned_projects.workspace_id
-                AND member.user_id = $2
-                AND member.role = ANY($3::text[])
-            )
+            CASE WHEN $3::text[] IS NULL THEN
+              ${projectVisibilitySql('$2')}
+            ELSE
+              pp.user_id = $2
+              OR EXISTS (
+                SELECT 1
+                FROM orgs.workspace_members AS member
+                WHERE member.workspace_id = pp.workspace_id
+                  AND member.user_id = $2
+                  AND member.member_status = 'active'
+                  AND member.role = ANY($3::text[])
+              )
+            END
           )
         RETURNING id;
       `,
-      [id, userId, allowedRoles],
+      [id, userId, allowedRoles ?? null],
     );
     return (result.rowCount ?? 0) > 0;
   }

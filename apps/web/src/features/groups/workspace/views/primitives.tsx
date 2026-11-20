@@ -15,6 +15,8 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 import type { ResourceState } from '@/features/groups';
+import type { GroupSummary } from '../../model/groups-types';
+import { isGroupManagerRole } from '../../model/groups-rules';
 
 const EASE_OUT: [number, number, number, number] = [0.25, 0, 0, 1];
 
@@ -110,21 +112,25 @@ export function SectionHeader({
 /* ── Group sub-navigation ─────────────────────────────────────────────────── */
 
 export function GroupSubNav({
-  groupId,
+  group,
   active,
 }: {
-  groupId: string;
+  group: GroupSummary;
   active: 'overview' | 'members' | 'systems' | 'activity';
 }) {
+  const { id: groupId, role } = group;
   const tabs: { key: typeof active; label: string; href: string }[] = [
     { key: 'overview', label: 'Overview', href: `/groups/${groupId}` },
     { key: 'members', label: 'Members', href: `/groups/${groupId}/members` },
     { key: 'systems', label: 'Projects', href: `/groups/${groupId}/systems` },
     { key: 'activity', label: 'Activity', href: `/groups/${groupId}/activity` },
   ];
+  const availableTabs = isGroupManagerRole(role)
+    ? tabs
+    : tabs.filter(({ key }) => key !== 'activity');
   return (
     <nav className="hier-subnav" aria-label="Group sections">
-      {tabs.map((tab) => (
+      {availableTabs.map((tab) => (
         <Link
           key={tab.key}
           href={tab.href}

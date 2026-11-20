@@ -32,11 +32,13 @@ export class QaAutomationService {
   ) {}
 
   async forRun(
+    projectId: string,
     repoFullName: string,
     branch: string,
     commitSha: string,
   ): Promise<QaRunAutomation> {
     const reports = await this.stageResults.latestStageReports({
+      projectId,
       repoFullName,
       branch,
       commitSha,

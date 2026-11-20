@@ -25,6 +25,9 @@ export const QA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   QA_PROJECT_REQUIRED:
     'This repository is not filed under a Project, and QA requirements belong to Projects. A Product owner moves it into a Project first.',
   QA_PROGRESS_NOT_DONE: 'A Developer marks this Done before QA can pass it.',
+  QA_SELF_VERIFICATION: 'Ask another verifier to pass a story you marked Done.',
+  QA_STORY_DUPLICATE: 'A story with this title already exists in the Feature.',
+  PROJECT_TODO_DUPLICATE: 'An identical open to-do already exists.',
   QA_VERIFICATION_STATUS_INVALID:
     'That verification status is not available. Choose Pending, Passed or Failed (Failed sends it back to the Developers).',
   VERIFICATION_FORBIDDEN:

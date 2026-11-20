@@ -295,6 +295,23 @@ export class UsersRepository implements SessionUserLookup {
     return this.findById(userId);
   }
 
+  /** SessionUserLookup: the session guard, on every request. */
+  async findActiveSessionUser(userId: string): Promise<SessionUser | null> {
+    const result = await this.databaseService.query<PersistedUserRow>(
+      `
+        SELECT id, login, display_name, email, avatar_url, onboarding_completed_at, is_internal
+        FROM app_users
+        WHERE id = $1
+          AND archived_at IS NULL
+        LIMIT 1;
+      `,
+      [userId],
+    );
+
+    const row = result.rows[0];
+    return row ? this.toSessionUser(row) : null;
+  }
+
   async markOnboardingComplete(userId: string): Promise<void> {
     await this.databaseService.query(
       `UPDATE app_users

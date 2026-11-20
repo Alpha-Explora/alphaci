@@ -162,7 +162,7 @@ export class ProjectProvisioningApplicationService {
   async createProject(
     userId: string,
     userLogin: string,
-    accessToken: string | null,
+    _accessToken: string | null,
     dto: CreateProjectDto,
   ): Promise<CreateProjectResponse> {
     if (dto.environments) {
@@ -247,11 +247,7 @@ export class ProjectProvisioningApplicationService {
       repositoryCreationToken,
       provisioningToken,
       provisioningOwnerLogin,
-    } = await this.support.resolveRepositoryProvisioning(
-      userId,
-      accessToken,
-      dto,
-    );
+    } = await this.support.resolveRepositoryProvisioning(userId, dto);
 
     const repoShape = normalizeRepoShape(dto.repoShape);
     if (repoShape === 'microservices') {

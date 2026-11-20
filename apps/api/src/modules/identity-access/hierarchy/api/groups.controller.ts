@@ -21,7 +21,6 @@ import { QueryActivityDto } from './dto/query-activity.dto';
 import { RemoveMemberDto } from './dto/remove-member.dto';
 import { TransferGroupDto } from './dto/transfer-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
-import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { GroupActivityService } from '../application/group-activity.service';
 import { AddGroupMemberDto } from './dto/add-group-member.dto';
 import { GroupMembersService } from '../application/group-members.service';
@@ -134,7 +133,6 @@ export class GroupsController {
   ) {
     return this.membersService.addMember(groupId, directoryCallerFrom(req), {
       userId: body.userId,
-      ...(body.role !== undefined && { role: body.role }),
       ...(body.deliveryProjectIds !== undefined && {
         deliveryProjectIds: body.deliveryProjectIds,
       }),
@@ -152,21 +150,6 @@ export class GroupsController {
       groupId,
       directoryCallerFrom(req),
       search,
-    );
-  }
-
-  @Patch(':groupId/members/:memberId')
-  updateMemberRole(
-    @Req() req: Request,
-    @Param('groupId') groupId: string,
-    @Param('memberId') memberId: string,
-    @Body() body: UpdateMemberRoleDto,
-  ) {
-    return this.groupsService.updateMemberRole(
-      groupId,
-      this.requireUserId(req),
-      memberId,
-      body,
     );
   }
 

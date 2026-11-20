@@ -39,7 +39,7 @@ function MembersInner({
             : 'People who belong to this group.'
         }
       />
-      <GroupSubNav groupId={group.id} active="members" />
+      <GroupSubNav group={group} active="members" />
 
       {vm.status === 'loading' ? (
         <LoadingRows rows={4} />
@@ -55,7 +55,7 @@ function MembersInner({
           currentUserId={currentUserId}
           onMembersChange={vm.applyMembers}
           addAction={
-            vm.canManage ? (
+            vm.canManage && group.status === 'active' ? (
               <button
                 type="button"
                 className="primary-button"
@@ -68,7 +68,7 @@ function MembersInner({
         />
       )}
 
-      {vm.canManage && (
+      {vm.canManage && group.status === 'active' && (
         <AddMemberDialog
           open={vm.addOpen}
           groupId={group.id}

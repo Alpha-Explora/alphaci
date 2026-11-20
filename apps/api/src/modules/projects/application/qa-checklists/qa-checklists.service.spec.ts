@@ -85,6 +85,7 @@ const makeRepository = (
 const makeAccess = (overrides: Partial<jest.Mocked<QaAccessService>> = {}) =>
   ({
     canAccessWorkspace: jest.fn().mockResolvedValue(true),
+    canAccessProject: jest.fn().mockResolvedValue(true),
     canManage: jest.fn().mockResolvedValue(true),
     findVisibleProjectWorkspace: jest.fn(),
     ...overrides,
@@ -95,6 +96,7 @@ describe('QaChecklistsService — permission matrix', () => {
     const repository = makeRepository();
     const access = makeAccess({
       canAccessWorkspace: jest.fn().mockResolvedValue(false),
+      canAccessProject: jest.fn().mockResolvedValue(false),
     });
     const service = new QaChecklistsService(
       repository,
@@ -113,6 +115,7 @@ describe('QaChecklistsService — permission matrix', () => {
     const repository = makeRepository();
     const access = makeAccess({
       canAccessWorkspace: jest.fn().mockResolvedValue(false),
+      canAccessProject: jest.fn().mockResolvedValue(false),
     });
     const service = new QaChecklistsService(
       repository,
@@ -497,6 +500,7 @@ describe('QaChecklistsService — project-scoped read', () => {
         .fn()
         .mockResolvedValue({ workspaceId: 'workspace-1' }),
       canAccessWorkspace: jest.fn().mockResolvedValue(true),
+      canAccessProject: jest.fn().mockResolvedValue(true),
       canManage: jest.fn().mockResolvedValue(true),
     });
     const service = new QaChecklistsService(

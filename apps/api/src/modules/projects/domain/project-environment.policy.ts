@@ -15,6 +15,18 @@ export interface ProjectEnvironmentRecord extends ProjectEnvironmentDefinition {
 
 export type ProjectEnvironmentInput = ProjectEnvironmentDefinition;
 
+export function isWorkflowSourceBranch(branch: string): boolean {
+  return (
+    /^[A-Za-z0-9._/-]{1,255}$/.test(branch) &&
+    !branch.startsWith('-') &&
+    !branch.endsWith('.') &&
+    !branch.includes('..') &&
+    branch
+      .split('/')
+      .every((part) => part && !part.startsWith('.') && !part.endsWith('.lock'))
+  );
+}
+
 export type ProjectEnvironmentViolation =
   | 'empty_environment_list'
   | 'duplicate_slug'
@@ -49,7 +61,8 @@ export function validateProjectEnvironmentDefinition(
     return 'invalid_slug';
   }
   if (!environment.displayName.trim()) return 'invalid_display_name';
-  if (!environment.sourceBranch.trim()) return 'invalid_source_branch';
+  if (!isWorkflowSourceBranch(environment.sourceBranch))
+    return 'invalid_source_branch';
   if (
     environment.role !== 'production' &&
     environment.role !== 'non_production'

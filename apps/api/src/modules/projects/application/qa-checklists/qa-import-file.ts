@@ -149,6 +149,7 @@ export async function parseQaImportFile(
       );
     } else {
       await workbook.csv.read(Readable.from([file.buffer]), {
+        map: (value: string) => value,
         parserOptions: {
           delimiter: extension === 'tsv' ? '\t' : ',',
           maxRows: MAX_ROWS + 2,
