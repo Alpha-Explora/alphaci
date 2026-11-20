@@ -4,11 +4,9 @@ import Link from 'next/link';
 import { createContext, useContext } from 'react';
 
 import { useAuthSession } from '@/features/auth/session';
-import type { PlatformRole } from '@/shared/api/contracts';
 import { canAccessAdmin, isSuperAdmin } from '../../model/admin-rules';
 
 interface AdminContextValue {
-  role: PlatformRole;
   isSuperAdmin: boolean;
   currentUserId: string;
 }
@@ -89,7 +87,6 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
   return (
     <AdminContext.Provider
       value={{
-        role: session?.platformRole ?? 'admin',
         isSuperAdmin: superAdmin,
         currentUserId: session!.user.id,
       }}

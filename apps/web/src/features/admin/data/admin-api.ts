@@ -156,20 +156,6 @@ export async function getPlatformAdmins(): Promise<PlatformAdminRecord[]> {
   return request<PlatformAdminRecord[]>(`/admin/admins`);
 }
 
-export async function grantPlatformRole(
-  id: string,
-  role: PlatformRole,
-): Promise<void> {
-  await request(`/admin/users/${id}/role`, {
-    method: 'POST',
-    body: JSON.stringify({ role }),
-  });
-}
-
-export async function revokePlatformRole(id: string): Promise<void> {
-  await request(`/admin/users/${id}/role`, { method: 'DELETE' });
-}
-
 /** Sets a user's global hierarchy role (Admin / Lead / Member). Super-admin only. */
 export async function setUserAppRole(id: string, role: AppRole): Promise<void> {
   await request(`/admin/users/${id}/app-role`, {

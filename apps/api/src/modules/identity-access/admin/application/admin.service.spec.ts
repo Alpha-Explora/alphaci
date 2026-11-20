@@ -58,7 +58,7 @@ describe('AdminService role changes', () => {
   describe('setSpecialAccess', () => {
     it('lets any admin grant qa_release', async () => {
       const { service, setSpecialAccess } = build({
-        platformRoles: { 'plain-admin': 'admin' },
+        platformRoles: {},
       });
       await expect(
         service.setSpecialAccess('plain-admin', TARGET, ['qa_release']),
@@ -67,14 +67,14 @@ describe('AdminService role changes', () => {
     });
 
     it('reserves granting or removing deployment_override for the super-admin', async () => {
-      const plain = build({ platformRoles: { 'plain-admin': 'admin' } });
+      const plain = build({ platformRoles: {} });
       await expect(
         plain.service.setSpecialAccess('plain-admin', TARGET, [
           'deployment_override',
         ]),
       ).rejects.toBeInstanceOf(ForbiddenException);
       const removing = build({
-        platformRoles: { 'plain-admin': 'admin' },
+        platformRoles: {},
         targetSpecialAccess: ['deployment_override'],
       });
       await expect(
@@ -110,7 +110,7 @@ describe('AdminService role changes', () => {
 
     it('still reserves Admin-tier changes for the super-admin', async () => {
       const { service, setAppRole } = build({
-        platformRoles: { 'plain-admin': 'admin' },
+        platformRoles: {},
         targetAppRole: 'admin',
       });
 
@@ -134,7 +134,7 @@ describe('AdminService role changes', () => {
 
     it('lets a regular admin shuffle the lower tiers', async () => {
       const { service, setAppRole } = build({
-        platformRoles: { 'plain-admin': 'admin' },
+        platformRoles: {},
         targetAppRole: 'member',
       });
 
@@ -156,7 +156,7 @@ describe('AdminService role changes', () => {
 
     it('still reserves unpinning an Admin for the super-admin', async () => {
       const { service, setAppRoleSource } = build({
-        platformRoles: { 'plain-admin': 'admin' },
+        platformRoles: {},
         targetAppRole: 'admin',
       });
 

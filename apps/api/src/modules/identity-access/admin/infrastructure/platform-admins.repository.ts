@@ -6,7 +6,7 @@ import {
   type SpecialAccess,
 } from '#kernel/rules/special-access.rules';
 
-export type PlatformRole = 'admin' | 'super_admin';
+export type PlatformRole = 'super_admin';
 
 /** Global hierarchy role — single source of truth for group capabilities. */
 export type AppRole = 'admin' | 'lead' | 'qa' | 'member';

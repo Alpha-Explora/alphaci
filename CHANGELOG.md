@@ -117,6 +117,7 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 - **On-prem:** Replacing a host revokes its previous credentials.
 - **On-prem:** A person removed from a team can no longer assign their project to the team's machines or deploy to them.
 - **Sign-in:** Deleting an account signs out all of its sessions, not only the one that deleted it.
+- **Admin:** The Admin tier is the Admin role everywhere; legacy platform-admin grants become it, Console included. Apply `20261120000000_platform_admin_super_only.sql`.
 
 ### Development
 

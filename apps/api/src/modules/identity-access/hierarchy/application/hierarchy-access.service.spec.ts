@@ -106,7 +106,7 @@ describe('HierarchyAccessService', () => {
 
   describe('assertGroupManagerOrPlatformAdmin', () => {
     it('lets a platform admin bypass group membership entirely', async () => {
-      platformAdminsRepository.findRole.mockResolvedValue('admin');
+      platformAdminsRepository.findRole.mockResolvedValue('super_admin');
       groupsRepository.findGroupById.mockResolvedValue({
         id: 'group-1',
         name: 'Group',
@@ -129,7 +129,7 @@ describe('HierarchyAccessService', () => {
     });
 
     it('404s for a platform admin when the group truly does not exist', async () => {
-      platformAdminsRepository.findRole.mockResolvedValue('admin');
+      platformAdminsRepository.findRole.mockResolvedValue('super_admin');
       groupsRepository.findGroupById.mockResolvedValue(null);
 
       await expect(
@@ -345,7 +345,7 @@ describe('HierarchyAccessService', () => {
 
     it('lets a platform admin create under any Project without membership', async () => {
       arrange('member', false);
-      platformAdminsRepository.findRole.mockResolvedValue('admin');
+      platformAdminsRepository.findRole.mockResolvedValue('super_admin');
       await expect(
         service.assertCanCreateUnderDeliveryProject('dp-1', 'user-1'),
       ).resolves.toEqual({ groupId: 'group-1' });
