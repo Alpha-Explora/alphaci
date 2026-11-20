@@ -3,6 +3,7 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import { DatabaseService, type SqlExecutor } from '#kernel/db/database.service';
+import { conflict } from '#kernel/http/coded-errors';
 import type {
   GroupRole,
   LifecycleStatus,
@@ -91,6 +92,11 @@ export class GroupsRepository {
     return this.databaseService.withClient(async (client) => {
       await client.query('BEGIN');
       try {
+        await this.requireAvailableName(
+          client,
+          input.creatorUserId,
+          input.name,
+        );
         const result = await client.query<GroupRow>(
           `
             INSERT INTO orgs.workspaces (owner_user_id, name, kind, description, business_unit, status)
@@ -134,8 +140,32 @@ export class GroupsRepository {
     groupId: string,
     newOwnerUserId: string,
   ): Promise<boolean> {
-    const result = await this.databaseService.query(
-      `
+    return this.databaseService.withTransaction(async (client) => {
+      const current = await client.query<{
+        name: string;
+        owner_user_id: string;
+      }>(
+        `SELECT workspace.name, workspace.owner_user_id FROM orgs.workspaces AS workspace
+         WHERE workspace.id = $1 AND workspace.kind = 'team'
+           AND EXISTS (
+             SELECT 1 FROM orgs.workspace_members AS member
+             WHERE member.workspace_id = $1 AND member.user_id = $2
+               AND member.member_status = 'active'
+           ) FOR UPDATE`,
+        [groupId, newOwnerUserId],
+      );
+      const group = current.rows[0];
+      if (!group) return false;
+      if (group.owner_user_id !== newOwnerUserId) {
+        await this.requireAvailableName(
+          client,
+          newOwnerUserId,
+          group.name,
+          groupId,
+        );
+      }
+      const result = await client.query(
+        `
         UPDATE orgs.workspaces AS workspace
         SET owner_user_id = $2, updated_at = NOW()
         WHERE workspace.id = $1
@@ -147,9 +177,10 @@ export class GroupsRepository {
               AND member.member_status = 'active'
           );
       `,
-      [groupId, newOwnerUserId],
-    );
-    return (result.rowCount ?? 0) > 0;
+        [groupId, newOwnerUserId],
+      );
+      return (result.rowCount ?? 0) > 0;
+    });
   }
 
   async listForUser(userId: string): Promise<Group[]> {
@@ -296,8 +327,29 @@ export class GroupsRepository {
       businessUnit?: string | null;
     },
   ): Promise<GroupRecord | null> {
-    const result = await this.databaseService.query<GroupRow>(
-      `
+    const row = await this.databaseService.withTransaction(async (client) => {
+      if (input.name !== undefined) {
+        const current = await client.query<{
+          owner_user_id: string;
+          renamed: boolean;
+          status: LifecycleStatus;
+        }>(
+          `SELECT owner_user_id, status, lower(btrim(name)) <> lower(btrim($2)) AS renamed
+           FROM orgs.workspaces WHERE id = $1 AND kind = 'team' FOR UPDATE`,
+          [groupId, input.name],
+        );
+        const group = current.rows[0];
+        if (group?.status === 'active' && group.renamed) {
+          await this.requireAvailableName(
+            client,
+            group.owner_user_id,
+            input.name,
+            groupId,
+          );
+        }
+      }
+      const result = await client.query<GroupRow>(
+        `
         UPDATE orgs.workspaces
         SET
           name = COALESCE($2, name),
@@ -307,16 +359,17 @@ export class GroupsRepository {
         WHERE id = $1 AND kind = 'team' AND status = 'active'
         RETURNING id, name, description, business_unit, status, archived_at, archived_by, created_at;
       `,
-      [
-        groupId,
-        input.name ?? null,
-        input.description !== undefined,
-        input.description ?? null,
-        input.businessUnit !== undefined,
-        input.businessUnit ?? null,
-      ],
-    );
-    const row = result.rows[0];
+        [
+          groupId,
+          input.name ?? null,
+          input.description !== undefined,
+          input.description ?? null,
+          input.businessUnit !== undefined,
+          input.businessUnit ?? null,
+        ],
+      );
+      return result.rows[0];
+    });
     if (!row) {
       const group = await this.findGroupById(groupId);
       if (group?.status === 'archived') throw archivedGroupConflict();
@@ -324,6 +377,31 @@ export class GroupsRepository {
     }
     const counts = await this.getCountsForGroups([row.id]);
     return this.toGroup(row, counts.get(row.id));
+  }
+
+  private async requireAvailableName(
+    client: PoolClient,
+    ownerId: string,
+    name: string,
+    groupId: string | null = null,
+  ): Promise<void> {
+    await client.query(
+      'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+      [`group-name:${ownerId}`],
+    );
+    const duplicate = await client.query(
+      `SELECT 1 FROM orgs.workspaces
+       WHERE kind = 'team' AND owner_user_id = $1
+         AND lower(btrim(name)) = lower(btrim($2)) AND id IS DISTINCT FROM $3::uuid
+       LIMIT 1`,
+      [ownerId, name, groupId],
+    );
+    if (duplicate.rows.length) {
+      throw conflict(
+        'GROUP_NAME_DUPLICATE',
+        'This owner already has a team with that name.',
+      );
+    }
   }
 
   async setArchiveStatus(

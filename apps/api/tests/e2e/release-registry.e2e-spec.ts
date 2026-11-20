@@ -461,6 +461,34 @@ describe('Release registry and promotion', () => {
       });
     });
 
+    it('records a failed deployment when an initial host release claims rollback', async () => {
+      const project = await releaseProject(['dev']);
+      const token = await addHost(project, project.dev);
+      const release = await register(project);
+      await attach(project, release, signedManifest(project, release)).expect(
+        200,
+      );
+      const status = (value: string) =>
+        request(e2e.http)
+          .post(
+            '/api/v1/onprem/deployments/' +
+              release.deployments[0]!.id +
+              '/status',
+          )
+          .set({ Authorization: 'Bearer ' + token })
+          .send({ status: value });
+      await status('deploying').expect(201);
+      const result = await status('rolled_back').expect(201);
+      expect(result.body).toMatchObject({
+        status: 'failed',
+        detail:
+          'Deployment failed. AlphaCI has no healthy release recorded for this environment.',
+      });
+      expect((await status('rolled_back').expect(201)).body).toEqual(
+        result.body,
+      );
+    });
+
     it('replaces the active host token only in its own environment, including concurrent registrations', async () => {
       const project = await releaseProject(['dev', 'uat']);
       const otherProject = await releaseProject(['dev']);

@@ -261,6 +261,12 @@ function setup({
       .fn()
       .mockResolvedValue(['lead-1', 'dev-1', 'qa-1']),
     listWorkspaceQaIds: jest.fn().mockResolvedValue(['qa-1', 'qa-2']),
+    filterProjectRecipients: jest
+      .fn()
+      .mockImplementation(
+        (_workspaceId: string, _projectId: string, ids: string[]) =>
+          Promise.resolve(ids),
+      ),
   } as unknown as jest.Mocked<QaAccessService>;
   const projectContext = {
     requireProject: jest.fn().mockResolvedValue(project),

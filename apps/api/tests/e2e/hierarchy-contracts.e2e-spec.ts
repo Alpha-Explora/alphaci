@@ -173,6 +173,32 @@ describe('hierarchy response contracts', () => {
     ).toBe('archived');
   });
 
+  it('rejects concurrent duplicate team names and conflicting renames for the same owner', async () => {
+    const create = (name: string) =>
+      agent.post('/api/v1/groups').send({ name });
+    const attempts = await Promise.all([
+      create('Delivery Team'),
+      create(' delivery team '),
+    ]);
+    expect(
+      attempts
+        .map((response) => response.status)
+        .sort((left, right) => left - right),
+    ).toEqual([201, 409]);
+    expect(
+      attempts.find((response) => response.status === 409)?.body,
+    ).toMatchObject({ code: 'GROUP_NAME_DUPLICATE' });
+
+    const other = (await create('Operations Team').expect(201)).body as {
+      id: string;
+    };
+    const rename = await agent
+      .patch(`/api/v1/groups/${other.id}`)
+      .send({ name: 'DELIVERY TEAM' })
+      .expect(409);
+    expect(rename.body).toMatchObject({ code: 'GROUP_NAME_DUPLICATE' });
+  });
+
   it('exercises every route it declares a contract for', () => {
     expect([...exercised].sort()).toEqual(
       Object.keys(HIERARCHY_CONTRACTS).sort(),

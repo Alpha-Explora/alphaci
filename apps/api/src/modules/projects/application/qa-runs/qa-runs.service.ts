@@ -438,6 +438,7 @@ export class QaRunsService {
           .filter((id): id is string => id !== null),
       ),
       this.automation.forRun(
+        project.id,
         project.repo_full_name,
         run.branch,
         run.commit_sha,

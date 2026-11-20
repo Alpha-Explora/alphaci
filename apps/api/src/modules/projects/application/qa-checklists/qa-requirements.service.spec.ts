@@ -190,10 +190,17 @@ function setup({
   const access = {
     findAppRole: jest.fn().mockResolvedValue(role),
     canAccessWorkspace: jest.fn().mockResolvedValue(member),
+    canAccessProject: jest.fn().mockResolvedValue(member),
     canManage: jest
       .fn()
       .mockResolvedValue(manage ?? (role === 'lead' || role === 'admin')),
     listWorkspaceQaIds: jest.fn().mockResolvedValue(['qa-1', 'dev-1']),
+    filterProjectRecipients: jest
+      .fn()
+      .mockImplementation(
+        (_workspaceId: string, _projectId: string, ids: string[]) =>
+          Promise.resolve(ids),
+      ),
   } as unknown as jest.Mocked<QaAccessService>;
   const projectContext = {
     requireProject: jest.fn().mockResolvedValue(project),
@@ -202,7 +209,9 @@ function setup({
     listGroupProjects: jest
       .fn()
       .mockResolvedValue([{ id: DP, name: 'Checkout' }]),
-    listOverviewFacts: jest.fn().mockResolvedValue(new Map()),
+    listOverviewFacts: jest
+      .fn()
+      .mockResolvedValue(new Map([[DP, overviewFacts({ viewerKind: 'qa' })]])),
   } as unknown as jest.Mocked<QaProjectContextService>;
   const audit = { recordProjectEvent: jest.fn().mockResolvedValue(undefined) };
   const notifications = { record: jest.fn().mockResolvedValue(undefined) };
@@ -861,10 +870,11 @@ describe('QaRequirementsService.overview - Project dashboard fields', () => {
   });
 
   it('a Project with no run: no latestRun, zero defects, no promotion; the Iteration is shown', async () => {
-    const { service, projectRuns } = setup({ role: 'qa' });
+    const { service, projectRuns, projectContext } = setup();
+    projectContext.listOverviewFacts.mockResolvedValue(new Map());
     projectRuns.findLatestRunHeadlines.mockResolvedValue(new Map());
 
-    const overview = await service.overview('group-1', 'qa-1', false);
+    const overview = await service.overview('group-1', 'lead-1', false);
 
     expect(overview.groups[0]).toMatchObject({
       latestRun: null,

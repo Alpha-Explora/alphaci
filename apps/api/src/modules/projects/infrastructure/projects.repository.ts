@@ -551,37 +551,26 @@ export class ProjectsRepository
     return result.rows.map((row) => row.id);
   }
 
-  /** Active workspace members whose persona is 'qa'. */
-  async listWorkspaceQaIds(workspaceId: string): Promise<string[]> {
-    const result = await this.databaseService.query<{ id: string }>(
-      `
-        SELECT DISTINCT u.id
-        FROM orgs.workspace_members m
-        JOIN identity.app_users u ON u.id = m.user_id
-        WHERE m.workspace_id = $1
-          AND m.member_status = 'active'
-          AND u.app_role = 'qa';
-      `,
-      [workspaceId],
-    );
-    return result.rows.map((row) => row.id);
-  }
-
   /** Active workspace members with a team persona, ordered by login. */
   async listWorkspaceMembers(
     workspaceId: string,
-  ): Promise<Array<{ id: string; login: string | null }>> {
+  ): Promise<
+    Array<{ id: string; login: string | null; role: PlatformAppRole }>
+  > {
     const result = await this.databaseService.query<{
       id: string;
       login: string | null;
+      role: PlatformAppRole;
     }>(
       `
-        SELECT DISTINCT u.id, u.login
+        SELECT DISTINCT u.id, u.login, CASE WHEN pa.user_id IS NOT NULL THEN 'admin' ELSE u.app_role END AS role
         FROM orgs.workspace_members m
         JOIN identity.app_users u ON u.id = m.user_id
+        LEFT JOIN identity.platform_admins pa ON pa.user_id = u.id
         WHERE m.workspace_id = $1
           AND m.member_status = 'active'
           AND u.app_role IN ('lead', 'member', 'qa', 'admin')
+          AND u.archived_at IS NULL
         ORDER BY u.login;
       `,
       [workspaceId],
@@ -731,44 +720,24 @@ export class ProjectsRepository
    * case-insensitively for the same reason deleteByRepoFullName does: GitHub
    * repo names are case-insensitive.
    */
-  async isRepoVisibleToUser(
-    repoFullName: string,
-    userId: string,
-  ): Promise<boolean> {
-    const result = await this.databaseService.query<{ visible: 1 }>(
-      `
-        SELECT 1 AS visible
-        FROM projects.provisioned_projects AS pp
-        WHERE lower(pp.repo_full_name) = lower($1)
-          AND (${projectVisibilitySql('$2')})
-        LIMIT 1;
-      `,
-      [repoFullName, userId],
-    );
-    return result.rows.length > 0;
-  }
-
-  /**
-   * Lower-cased repo names of every provisioned project the caller may see
-   * (same predicate as isRepoVisibleToUser), optionally limited to one
-   * workspace. Backs PROJECT_VISIBILITY_LOOKUP.listVisibleRepoNames.
-   */
-  async listVisibleRepoNames(
+  async listVisibleReportProjects(
     userId: string,
     workspaceId?: string,
+    repoFullName?: string,
   ): Promise<string[]> {
-    const result = await this.databaseService.query<{ repo: string }>(
+    const result = await this.databaseService.query<{ id: string }>(
       `
-        SELECT DISTINCT lower(pp.repo_full_name) AS repo
+        SELECT pp.id
         FROM projects.provisioned_projects AS pp
         WHERE pp.status = 'provisioned'
           AND pp.repo_full_name IS NOT NULL
           AND ($2::uuid IS NULL OR pp.workspace_id = $2::uuid)
+          AND ($3::text IS NULL OR lower(pp.repo_full_name) = lower($3))
           AND (${projectVisibilitySql('$1')});
       `,
-      [userId, workspaceId ?? null],
+      [userId, workspaceId ?? null, repoFullName ?? null],
     );
-    return result.rows.map((r) => r.repo);
+    return result.rows.map((r) => r.id);
   }
 
   /**

@@ -17,16 +17,22 @@ const ciStageResult = (
 });
 
 describe('QaAutomationService.forRun', () => {
-  it('asks the port for exactly (repoFullName, branch, commitSha, [quality, verify])', async () => {
+  it('asks the port for exactly (projectId, repoFullName, branch, commitSha, [quality, verify])', async () => {
     const latestStageReports = jest.fn().mockResolvedValue([]);
     const stageResults = {
       latestStageReports,
     } as unknown as CiStageResultsLookup;
     const service = new QaAutomationService(stageResults);
 
-    await service.forRun('acme/orders-api', 'main', 'a'.repeat(40));
+    await service.forRun(
+      'project-1',
+      'acme/orders-api',
+      'main',
+      'a'.repeat(40),
+    );
 
     expect(latestStageReports).toHaveBeenCalledWith({
+      projectId: 'project-1',
       repoFullName: 'acme/orders-api',
       branch: 'main',
       commitSha: 'a'.repeat(40),
@@ -42,7 +48,12 @@ describe('QaAutomationService.forRun', () => {
     } as unknown as CiStageResultsLookup;
     const service = new QaAutomationService(stageResults);
 
-    const automation = await service.forRun('acme/orders-api', 'main', 'sha');
+    const automation = await service.forRun(
+      'project-1',
+      'acme/orders-api',
+      'main',
+      'sha',
+    );
 
     expect(automation.verify).toBeNull();
     expect(automation.quality).toMatchObject({ stage: 'quality', runId: 10 });
@@ -66,7 +77,12 @@ describe('QaAutomationService.forRun', () => {
     } as unknown as CiStageResultsLookup;
     const service = new QaAutomationService(stageResults);
 
-    const automation = await service.forRun('acme/orders-api', 'main', 'sha');
+    const automation = await service.forRun(
+      'project-1',
+      'acme/orders-api',
+      'main',
+      'sha',
+    );
 
     expect(automation.verify).toEqual({
       stage: 'verify',

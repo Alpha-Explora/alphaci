@@ -244,10 +244,19 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
     if (!(await this.access.canAccessWorkspace(userId, workspaceId))) {
       throw new NotFoundException('Workspace not found');
     }
-    const [projects, canManage] = await Promise.all([
+    const [workspaceProjects, canManage] = await Promise.all([
       this.projectContext.listGroupProjects(workspaceId),
       this.access.canManage(userId),
     ]);
+    const facts = await this.projectContext.listOverviewFacts(
+      workspaceProjects.map(({ id }) => id),
+      userId,
+    );
+    const projects = canManage
+      ? workspaceProjects
+      : workspaceProjects.filter(({ id }) =>
+          Boolean(facts.get(id)?.viewerKind),
+        );
     const projectIds = projects.map((project) => project.id);
     const iterationByProject =
       await this.iterations.ensureForProjects(projectIds);
@@ -255,14 +264,13 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
       (iteration) => iteration.id,
     );
 
-    const [rows, latestRuns, facts] = await Promise.all([
+    const [rows, latestRuns] = await Promise.all([
       this.requirements.listByWorkspace(
         workspaceId,
         includeArchived,
         iterationIds,
       ),
       this.projectRuns.findLatestRunHeadlines(iterationIds),
-      this.projectContext.listOverviewFacts(projectIds, userId),
     ]);
     const [itemsByRequirement, itemFactsByRun] = await Promise.all([
       this.checklists.listItemsByChecklistIds(rows.map((row) => row.id)),
@@ -882,9 +890,19 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
       return false;
     }
     const anchor = await this.projectContext.anchorProjectId(project);
-    const qaIds = await this.access.listWorkspaceQaIds(project.groupId);
+    const [qaIds, eligiblePreviousVerifiers] = await Promise.all([
+      this.access.listWorkspaceQaIds(
+        project.groupId,
+        project.deliveryProjectId,
+      ),
+      this.access.filterProjectRecipients(
+        project.groupId,
+        project.deliveryProjectId,
+        previousVerifiers,
+      ),
+    ]);
     const recipients = this.dedupeExcludingActor(
-      [...previousVerifiers, ...qaIds],
+      [...eligiblePreviousVerifiers, ...qaIds],
       actor.userId,
     );
     if (recipients.length === 0) {
@@ -922,7 +940,11 @@ export class QaRequirementsService implements DeliveryProjectDataCleanupPort {
     const row = await this.checklists.findById(id);
     if (
       !row ||
-      !(await this.access.canAccessWorkspace(userId, row.workspace_id))
+      !(await this.access.canAccessProject(
+        userId,
+        row.workspace_id,
+        row.delivery_project_id,
+      ))
     ) {
       throw new NotFoundException('Requirement not found');
     }

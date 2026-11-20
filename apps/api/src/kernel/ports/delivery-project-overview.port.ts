@@ -29,6 +29,7 @@ export interface DeliveryProjectOverviewQuery {
     deliveryProjectIds: readonly string[],
     viewerUserId: string,
   ): Promise<Map<string, DeliveryProjectOverviewFacts>>;
+  listActiveMemberIds(deliveryProjectId: string): Promise<string[]>;
 }
 
 export const DELIVERY_PROJECT_OVERVIEW_QUERY = Symbol(

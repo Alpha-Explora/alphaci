@@ -77,7 +77,9 @@ Rollbacks are in `supabase/rollbacks/`. They fail closed when the older schema c
 
 ## 2. API contract
 
-Every route sits behind `@RequiresCapability('projects.qa-checklists')`. The caller must be an active member of the Project's group (`QaAccessService.canAccessWorkspace`), else 404. Errors use the shape `{ statusCode, code?, message, reasons? }`. Every write on a delivered Iteration answers `409 ITERATION_DELIVERED`.
+Every route sits behind `@RequiresCapability('projects.qa-checklists')`. Developers and QA Team members need active membership in both the group and the specific Project to use its QA and to-dos. Leads keep access through group membership, and admins retain their existing access. A caller without access receives 404. The same membership rule applies when assigning a team to-do. Errors use the shape `{ statusCode, code?, message, reasons? }`. Every write on a delivered Iteration answers `409 ITERATION_DELIVERED`.
+
+A Feature rejects duplicate story titles after trimming and case folding with `409 QA_STORY_DUPLICATE`. Creating the same open to-do twice as the same author returns `409 PROJECT_TODO_DUPLICATE` when the normalized title, notes, assignee, due date and priority match. A Developer with QA release access receives `403 QA_SELF_VERIFICATION` when they try to pass a story they marked Done.
 
 ### 2.1 Shapes
 

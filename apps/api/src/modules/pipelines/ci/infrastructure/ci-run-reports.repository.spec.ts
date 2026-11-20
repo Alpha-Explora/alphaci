@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import type { DatabaseService } from '#kernel/db/database.service';
 import { CiRunReportsRepository } from './ci-run-reports.repository';
 
-describe('CiRunReportsRepository.findByRepoBranchSha', () => {
+describe('CiRunReportsRepository.findByProjectBranchSha', () => {
   const rows = [{ id: 'row-1' }];
   let query: jest.Mock;
   let repository: CiRunReportsRepository;
@@ -17,8 +17,8 @@ describe('CiRunReportsRepository.findByRepoBranchSha', () => {
   });
 
   it('reads one execution by repository, branch and commit, as bound parameters', async () => {
-    const result = await repository.findByRepoBranchSha(
-      'acme/orders-api',
+    const result = await repository.findByProjectBranchSha(
+      ['project-1'],
       'uat',
       'a1b2c3d4e5f6',
     );
@@ -26,29 +26,29 @@ describe('CiRunReportsRepository.findByRepoBranchSha', () => {
     expect(result).toBe(rows);
     expect(query).toHaveBeenCalledTimes(1);
     const [sql, params] = query.mock.calls[0] as [string, unknown[]];
-    expect(params).toEqual(['acme/orders-api', 'uat', 'a1b2c3d4e5f6']);
-    expect(sql).toContain('repo_full_name = $1');
+    expect(params).toEqual([['project-1'], 'uat', 'a1b2c3d4e5f6']);
+    expect(sql).toContain('project_id = ANY($1::uuid[])');
     expect(sql).toContain('branch = $2');
     expect(sql).toContain('commit_sha = $3');
   });
 
   it('keys on the branch as well as the commit, because a promoted commit keeps its SHA', async () => {
-    await repository.findByRepoBranchSha('acme/orders-api', 'main', 'abc1234');
+    await repository.findByProjectBranchSha(['project-1'], 'main', 'abc1234');
 
     const [sql] = query.mock.calls[0] as [string, unknown[]];
     expect(sql).toMatch(/branch\s*=\s*\$2/);
   });
 
   it('returns the most recent attempt of a stage first', async () => {
-    await repository.findByRepoBranchSha('acme/orders-api', 'uat', 'abc1234');
+    await repository.findByProjectBranchSha(['project-1'], 'uat', 'abc1234');
 
     const [sql] = query.mock.calls[0] as [string, unknown[]];
     expect(sql).toMatch(/ORDER BY run_id DESC, stage ASC/);
   });
 
   it('never interpolates a value into the SQL', async () => {
-    await repository.findByRepoBranchSha(
-      "x'; DROP TABLE workflow.ci_run_reports; --",
+    await repository.findByProjectBranchSha(
+      ["x'; DROP TABLE workflow.ci_run_reports; --"],
       'uat',
       'abc1234',
     );
@@ -85,6 +85,7 @@ describe('CiRunReportsRepository.latestStageReports: per-test detail', () => {
       query,
     } as unknown as DatabaseService);
     const [result] = await repository.latestStageReports({
+      projectId: 'project-1',
       repoFullName: 'acme/web',
       branch: 'uat',
       commitSha: 'abc',
@@ -170,6 +171,7 @@ describe('CiRunReportsRepository.latestStageReports: a skipped stage is not a pa
     } as unknown as DatabaseService);
 
     const results = await repository.latestStageReports({
+      projectId: 'project-1',
       repoFullName: 'acme/web',
       branch: 'uat',
       commitSha: 'abc',

@@ -117,6 +117,22 @@ export function allowedDeploymentTransitions(
   return DEPLOYMENT_TRANSITIONS[status];
 }
 
+export async function readPinnedReleaseId(
+  db: Pick<DatabaseService, 'query'>,
+  environmentId: string,
+): Promise<string | null> {
+  const result = await db.query<{ release_id: string }>(
+    `SELECT release_id FROM env_provisioning.environment_deployments
+      WHERE environment_id = $1 AND status = 'healthy'
+      ORDER BY updated_at DESC, created_at DESC LIMIT 1`,
+    [environmentId],
+  );
+  return result.rows[0]?.release_id ?? null;
+}
+
+export const NO_HEALTHY_ROLLBACK_DETAIL =
+  'Deployment failed. AlphaCI has no healthy release recorded for this environment.';
+
 @Injectable()
 export class ReleaseRegistryRepository {
   constructor(private readonly databaseService: DatabaseService) {}
@@ -339,14 +355,7 @@ export class ReleaseRegistryRepository {
 
   /** The release an environment currently runs: its latest healthy deployment. */
   async pinnedReleaseId(environmentId: string): Promise<string | null> {
-    const result = await this.databaseService.query<{ release_id: string }>(
-      `SELECT release_id FROM env_provisioning.environment_deployments
-        WHERE environment_id = $1 AND status = 'healthy'
-        ORDER BY updated_at DESC, created_at DESC
-        LIMIT 1`,
-      [environmentId],
-    );
-    return result.rows[0]?.release_id ?? null;
+    return readPinnedReleaseId(this.databaseService, environmentId);
   }
 
   async createPromotion(input: {

@@ -131,7 +131,7 @@ describe('CiController', () => {
       repoFullName: 'owner/repo',
       stage: 'quality',
     });
-    expect(reportsService.ingestReport).toHaveBeenCalledWith(body);
+    expect(reportsService.ingestReport).toHaveBeenCalledWith(body, 'project-1');
     expect(result).toEqual({ received: true });
   });
 

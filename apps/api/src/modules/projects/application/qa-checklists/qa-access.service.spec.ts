@@ -1,3 +1,4 @@
+import type { ProjectLinkPort } from '#kernel/ports/project-link.port';
 import { QaAccessService } from './qa-access.service';
 import type { ProjectsRepository } from '../../infrastructure/projects.repository';
 
@@ -10,12 +11,24 @@ const makeProjectsRepository = (overrides: Partial<ProjectsRepository> = {}) =>
     ...overrides,
   }) as unknown as ProjectsRepository;
 
+const projectLink = {
+  getProjectFolder: jest.fn().mockResolvedValue(null),
+} as unknown as ProjectLinkPort;
+const overview = {
+  getOverviewFacts: jest.fn().mockResolvedValue(new Map()),
+  listActiveMemberIds: jest.fn().mockResolvedValue([]),
+};
+
 describe('QaAccessService', () => {
   it('canAccessWorkspace delegates to ProjectsRepository.canCreateInWorkspace', async () => {
     const projectsRepository = makeProjectsRepository({
       canCreateInWorkspace: jest.fn().mockResolvedValue(true),
     });
-    const access = new QaAccessService(projectsRepository);
+    const access = new QaAccessService(
+      projectsRepository,
+      overview,
+      projectLink,
+    );
 
     await expect(
       access.canAccessWorkspace('user-1', 'workspace-1'),
@@ -35,7 +48,11 @@ describe('QaAccessService', () => {
     const projectsRepository = makeProjectsRepository({
       findAppRole: jest.fn().mockResolvedValue(role),
     });
-    const access = new QaAccessService(projectsRepository);
+    const access = new QaAccessService(
+      projectsRepository,
+      overview,
+      projectLink,
+    );
 
     await expect(access.canManage('user-1')).resolves.toBe(expected);
     expect(projectsRepository.findAppRole).toHaveBeenCalledWith('user-1');
@@ -48,7 +65,11 @@ describe('QaAccessService', () => {
         workspace_id: 'workspace-1',
       }),
     });
-    const access = new QaAccessService(projectsRepository);
+    const access = new QaAccessService(
+      projectsRepository,
+      overview,
+      projectLink,
+    );
 
     const result = await access.findVisibleProjectWorkspace(
       'project-1',
@@ -66,7 +87,11 @@ describe('QaAccessService', () => {
     const projectsRepository = makeProjectsRepository({
       findByIdAndUser: jest.fn().mockResolvedValue(null),
     });
-    const access = new QaAccessService(projectsRepository);
+    const access = new QaAccessService(
+      projectsRepository,
+      overview,
+      projectLink,
+    );
 
     await expect(
       access.findVisibleProjectWorkspace('project-1', 'user-1'),
@@ -80,7 +105,11 @@ describe('QaAccessService', () => {
         workspace_id: null,
       }),
     });
-    const access = new QaAccessService(projectsRepository);
+    const access = new QaAccessService(
+      projectsRepository,
+      overview,
+      projectLink,
+    );
 
     await expect(
       access.findVisibleProjectWorkspace('project-1', 'user-1'),
@@ -97,7 +126,11 @@ describe('QaAccessService', () => {
     const projectsRepository = makeProjectsRepository({
       findByIdAndUser: jest.fn().mockResolvedValue(row),
     });
-    const access = new QaAccessService(projectsRepository);
+    const access = new QaAccessService(
+      projectsRepository,
+      overview,
+      projectLink,
+    );
 
     await expect(
       access.findVisibleProject('project-1', 'user-1'),
@@ -112,7 +145,11 @@ describe('QaAccessService', () => {
     const projectsRepository = makeProjectsRepository({
       findByIdAndUser: jest.fn().mockResolvedValue(null),
     });
-    const access = new QaAccessService(projectsRepository);
+    const access = new QaAccessService(
+      projectsRepository,
+      overview,
+      projectLink,
+    );
 
     await expect(
       access.findVisibleProject('project-1', 'user-1'),
@@ -123,7 +160,11 @@ describe('QaAccessService', () => {
     const projectsRepository = makeProjectsRepository({
       findAppRole: jest.fn().mockResolvedValue('lead'),
     });
-    const access = new QaAccessService(projectsRepository);
+    const access = new QaAccessService(
+      projectsRepository,
+      overview,
+      projectLink,
+    );
 
     await expect(access.findAppRole('user-1')).resolves.toBe('lead');
     expect(projectsRepository.findAppRole).toHaveBeenCalledWith('user-1');
@@ -133,7 +174,11 @@ describe('QaAccessService', () => {
     const projectsRepository = makeProjectsRepository({
       listWorkspaceLeadIds: jest.fn().mockResolvedValue(['lead-1', 'lead-2']),
     });
-    const access = new QaAccessService(projectsRepository);
+    const access = new QaAccessService(
+      projectsRepository,
+      overview,
+      projectLink,
+    );
 
     await expect(access.listWorkspaceLeadIds('workspace-1')).resolves.toEqual([
       'lead-1',

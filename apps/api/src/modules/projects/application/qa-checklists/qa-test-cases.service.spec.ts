@@ -80,6 +80,7 @@ function setup({
     findQaRole: jest.fn().mockResolvedValue(role),
     findSpecialAccess: jest.fn().mockResolvedValue([]),
     canAccessWorkspace: jest.fn().mockResolvedValue(member),
+    canAccessProject: jest.fn().mockResolvedValue(member),
   } as unknown as jest.Mocked<QaAccessService>;
   const audit = { recordProjectEvent: jest.fn().mockResolvedValue(undefined) };
   const { service: iterations } = fakeIterations(

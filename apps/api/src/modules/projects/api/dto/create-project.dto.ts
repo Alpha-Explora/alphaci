@@ -266,6 +266,10 @@ export class CreateProjectDto {
   @IsString()
   @MinLength(1)
   @MaxLength(100)
+  @Matches(/^(?!\.{1,2}$)[A-Za-z0-9._-]+(?![\s\S])/, {
+    message:
+      'repoName must use only letters, numbers, dots, underscores or hyphens',
+  })
   repoName!: string;
 
   @IsIn(['private', 'public'])

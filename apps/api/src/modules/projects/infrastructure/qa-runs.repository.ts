@@ -180,7 +180,10 @@ export interface QaProjectItemRules {
    * applicable (ADR-0014, amendment 10). Optional: legacy runs have none.
    */
   requireTestCasesResolvedForPass?: boolean;
+  forbidSelfVerification?: boolean;
 }
+
+export class QaSelfVerificationError extends Error {}
 
 /**
  * 'passed' was refused inside the transaction: the source requirement item's
@@ -667,7 +670,12 @@ export class QaRunsRepository {
       // Progress write only ever takes the requirement item, so no cycle.
       await lockOpenRunForItemWrite(client, runId);
       if (rules?.requireProgressDoneForPass && patch.status === 'passed') {
-        await this.assertSourceProgressDone(client, runId, itemId);
+        await this.assertSourceProgressDone(
+          client,
+          runId,
+          itemId,
+          rules.forbidSelfVerification ? actor.id : undefined,
+        );
       }
       if (rules?.requireTestCasesResolvedForPass && patch.status === 'passed') {
         await this.assertTestCasesResolved(client, runId, itemId);
@@ -834,6 +842,7 @@ export class QaRunsRepository {
     client: PoolClient,
     runId: string,
     itemId: string,
+    distinctVerifier?: string,
   ): Promise<void> {
     const source = await client.query<{ source_item_id: string | null }>(
       `SELECT source_item_id FROM projects.qa_run_items WHERE id = $1 AND run_id = $2;`,
@@ -843,12 +852,18 @@ export class QaRunsRepository {
     if (!sourceItemId) {
       throw new QaProgressNotDoneError(itemId);
     }
-    const progress = await client.query<{ progress: string }>(
-      `SELECT progress FROM projects.qa_checklist_items WHERE id = $1 FOR SHARE;`,
+    const progress = await client.query<{
+      progress: string;
+      progress_by: string | null;
+    }>(
+      `SELECT progress, progress_by FROM projects.qa_checklist_items WHERE id = $1 FOR SHARE;`,
       [sourceItemId],
     );
     if (progress.rows[0]?.progress !== 'done') {
       throw new QaProgressNotDoneError(itemId);
+    }
+    if (distinctVerifier && progress.rows[0].progress_by === distinctVerifier) {
+      throw new QaSelfVerificationError('The verifier marked this story Done.');
     }
   }
 

@@ -50,6 +50,7 @@ These are exact file-to-schema.table allowances for historical migrations that m
 | `identity-access/20260926010000_cascade_hierarchy_repository_on_project_delete.sql` | `projects.provisioned_projects` |
 | `pipelines/20260607000200_project_ci_tokens.sql` | `projects.provisioned_projects` |
 | `pipelines/20260614000100_ci_run_reports.sql` | `identity.app_users` |
+| `pipelines/20261120020000_scope_ci_reports_to_projects.sql` | `projects.provisioned_projects` |
 | `platform-ops/20260614000300_workspaces_audit_notifications.sql` | `orgs.workspace_members`, `orgs.workspaces`, `projects.provisioned_projects` |
 | `platform-ops/20260617000300_user_feedback.sql` | `identity.app_users` |
 | `platform-ops/20261002010000_backfill_dropped_audit_events.sql` | `orgs.workspaces`, `projects.provisioned_projects` |

@@ -19,6 +19,7 @@ export type CiRunStatus = 'success' | 'failure' | 'running' | 'cancelled';
 
 export interface UpsertCiRunReportInput {
   userId: string;
+  projectId: string;
   repoFullName: string;
   branch: string;
   commitSha: string;
@@ -32,6 +33,7 @@ export interface UpsertCiRunReportInput {
 
 export interface CiRunReportRow {
   id: string;
+  project_id: string;
   user_id: string;
   repo_full_name: string;
   branch: string;
@@ -254,13 +256,20 @@ export class CiRunReportsRepository implements CiStageResultsLookup {
           repo_full_name,
           updated_at
         FROM workflow.ci_run_reports
-        WHERE repo_full_name = $1
+        WHERE lower(repo_full_name) = lower($1)
           AND branch = $2
           AND commit_sha = $3
           AND stage = ANY($4::text[])
+          AND project_id = $5
         ORDER BY stage, run_id DESC;
       `,
-      [input.repoFullName, input.branch, input.commitSha, input.stages],
+      [
+        input.repoFullName,
+        input.branch,
+        input.commitSha,
+        input.stages,
+        input.projectId,
+      ],
     );
 
     // A stage skipped on purpose (nothing deployed to test) is stored as
@@ -284,9 +293,8 @@ export class CiRunReportsRepository implements CiStageResultsLookup {
   }
 
   /**
-   * Upsert a CI run report. The unique key is (repo_full_name, run_id, stage).
-   * On conflict the status, results, friendly_messages, raw_logs, and updated_at
-   * are refreshed.
+   * Update the stage report within its original connection. GitHub repository
+   * names are case-insensitive, including across reconnects.
    */
   async upsert(data: UpsertCiRunReportInput): Promise<void> {
     // Cap raw logs at 50 000 characters to keep the column bounded.
@@ -295,8 +303,27 @@ export class CiRunReportsRepository implements CiStageResultsLookup {
         ? data.rawLogs.slice(0, 50_000)
         : null;
 
-    await this.databaseService.query(
-      `
+    await this.databaseService.withTransaction(async (client) => {
+      await client.query(
+        'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+        [
+          `ci-report:${data.repoFullName.toLowerCase()}:${data.runId}:${data.stage}`,
+        ],
+      );
+      const previous = await client.query<
+        Pick<CiRunReportRow, 'repo_full_name'> & {
+          project_id: string | null;
+        }
+      >(
+        `SELECT repo_full_name, project_id FROM workflow.ci_run_reports
+         WHERE lower(repo_full_name) = lower($1) AND run_id = $2 AND stage = $3
+         ORDER BY created_at, id LIMIT 1`,
+        [data.repoFullName, data.runId, data.stage],
+      );
+      const report = previous.rows[0];
+      if (report && report.project_id !== data.projectId) return;
+      await client.query(
+        `
         INSERT INTO workflow.ci_run_reports (
           user_id,
           repo_full_name,
@@ -307,70 +334,34 @@ export class CiRunReportsRepository implements CiStageResultsLookup {
           status,
           results,
           friendly_messages,
-          raw_logs
+          raw_logs,
+          project_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         ON CONFLICT (repo_full_name, run_id, stage)
         DO UPDATE SET
           status            = EXCLUDED.status,
           results           = EXCLUDED.results,
           friendly_messages = EXCLUDED.friendly_messages,
           raw_logs          = EXCLUDED.raw_logs,
-          updated_at        = NOW();
+          updated_at        = NOW()
+        WHERE ci_run_reports.project_id = EXCLUDED.project_id;
       `,
-      [
-        data.userId,
-        data.repoFullName,
-        data.branch,
-        data.commitSha,
-        data.runId,
-        data.stage,
-        data.status,
-        JSON.stringify(data.results),
-        JSON.stringify(data.friendlyMessages),
-        rawLogs,
-      ],
-    );
-  }
-
-  /**
-   * Fetch run-stage rows for a repo, ordered most-recent run first then stages
-   * in consistent order within each run.
-   *
-   * @param repoFullName - The repository to filter by.
-   * @param limit - Maximum rows to return (default 150, max 500).
-   * @param offset - Rows to skip for pagination (default 0).
-   */
-  async findRecentByRepo(
-    repoFullName: string,
-    limit = 150,
-    offset = 0,
-  ): Promise<CiRunReportRow[]> {
-    const result = await this.databaseService.query<CiRunReportRow>(
-      `
-        SELECT
-          id,
-          user_id,
-          repo_full_name,
-          branch,
-          commit_sha,
-          run_id::text AS run_id,
-          stage,
-          status,
-          results,
-          friendly_messages,
-          raw_logs,
-          created_at,
-          updated_at
-        FROM workflow.ci_run_reports
-        WHERE repo_full_name = $1
-        ORDER BY run_id DESC, stage ASC
-        LIMIT $2 OFFSET $3;
-      `,
-      [repoFullName, limit, offset],
-    );
-
-    return result.rows;
+        [
+          data.userId,
+          report?.repo_full_name ?? data.repoFullName,
+          data.branch,
+          data.commitSha,
+          data.runId,
+          data.stage,
+          data.status,
+          JSON.stringify(data.results),
+          JSON.stringify(data.friendlyMessages),
+          rawLogs,
+          data.projectId,
+        ],
+      );
+    });
   }
 
   /**
@@ -380,8 +371,8 @@ export class CiRunReportsRepository implements CiStageResultsLookup {
    * Most-recent attempt first within a stage, so the first row per stage is
    * the one to show.
    */
-  async findByRepoBranchSha(
-    repoFullName: string,
+  async findByProjectBranchSha(
+    projectIds: string[],
     branch: string,
     commitSha: string,
   ): Promise<CiRunReportRow[]> {
@@ -389,6 +380,7 @@ export class CiRunReportsRepository implements CiStageResultsLookup {
       `
         SELECT
           id,
+          project_id,
           user_id,
           repo_full_name,
           branch,
@@ -402,38 +394,31 @@ export class CiRunReportsRepository implements CiStageResultsLookup {
           created_at,
           updated_at
         FROM workflow.ci_run_reports
-        WHERE repo_full_name = $1
+        WHERE project_id = ANY($1::uuid[])
           AND branch = $2
           AND commit_sha = $3
         ORDER BY run_id DESC, stage ASC;
       `,
-      [repoFullName, branch, commitSha],
+      [projectIds, branch, commitSha],
     );
 
     return result.rows;
   }
 
   /**
-   * Fetch run-stage rows for a set of repositories, most-recent run first.
-   * Used when GET /ci/runs is called without a repoFullName filter. The caller
-   * resolves the repo set through PROJECT_VISIBILITY_LOOKUP (projects the user
-   * can see, optionally one workspace), so this table is never joined to
-   * projects.* here. Matching is case-insensitive; names must be lower-cased.
-   *
-   * @param repoFullNamesLower - Lower-cased repo_full_name values to include.
-   * @param limit - Maximum rows to return (default 150, max 500).
-   * @param offset - Rows to skip for pagination (default 0).
+   * Fetch recent stages for the project IDs the caller is allowed to see.
    */
-  async findRecentByRepos(
-    repoFullNamesLower: string[],
+  async findRecentByProjects(
+    projectIds: string[],
     limit = 150,
     offset = 0,
   ): Promise<CiRunReportRow[]> {
-    if (repoFullNamesLower.length === 0) return [];
+    if (projectIds.length === 0) return [];
     const result = await this.databaseService.query<CiRunReportRow>(
       `
         SELECT
           id,
+          project_id,
           user_id,
           repo_full_name,
           branch,
@@ -447,11 +432,11 @@ export class CiRunReportsRepository implements CiStageResultsLookup {
           created_at,
           updated_at
         FROM workflow.ci_run_reports
-        WHERE lower(repo_full_name) = ANY($1::text[])
+        WHERE project_id = ANY($1::uuid[])
         ORDER BY run_id DESC, stage ASC
         LIMIT $2 OFFSET $3;
       `,
-      [repoFullNamesLower, limit, offset],
+      [projectIds, limit, offset],
     );
 
     return result.rows;

@@ -76,6 +76,11 @@ Notable changes to AlphaCI, both images. One line per change, written for the pe
 
 ### Fixed
 
+- **QA:** Developers and QA Team members need active Project membership to access QA and team to-dos. Developers with QA release access need another verifier for stories they marked Done.
+- **Projects:** Duplicate story titles within a Feature and identical open to-dos from the same creator return a conflict. Team names are unique per owner.
+- **Pipelines:** CI reports stay with their original Project record when a repository reconnects.
+- **On-prem:** A rollback report with no healthy release recorded for the environment is recorded as a failed deployment.
+- **Setup:** Repository creation validates GitHub names and explains when the destination organization or selected group access is missing. Feedback requires a subject and message with visible text.
 - **API:** Malformed request bodies return validation errors, and existing CI workflows can validate access using only the repository name.
 - **QA:** CSV and TSV imports preserve values such as `007` and `1.10`, and requirement descriptions are limited to 4,000 characters.
 - **Project drift:** Ignored findings stay ignored when the same project or target is scanned again.

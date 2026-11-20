@@ -112,6 +112,9 @@ const CREATION_MESSAGES: Readonly<Record<string, string>> = {
   REPOSITORY_CREATE_FORBIDDEN: REPOSITORY_CREATE_FORBIDDEN_MESSAGE,
   PROJECT_REQUIRED: PROJECT_REQUIRED_MESSAGE,
   PROJECT_FEATURES_REQUIRED: PROJECT_FEATURES_REQUIRED_MESSAGE,
+  WORKSPACE_MEMBERSHIP_REQUIRED: 'You are not a member of the selected group.',
+  GITHUB_ORGANIZATION_REQUIRED:
+    'Choose a GitHub organization with an AlphaCI App installation, or ask your administrator to configure the organization for repository creation.',
 };
 
 /** The `code` of an ApiError-shaped failure (its parsed body in `details`). */

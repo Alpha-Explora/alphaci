@@ -1,4 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import {
+  DELIVERY_PROJECT_OVERVIEW_QUERY,
+  type DeliveryProjectOverviewQuery,
+} from '#kernel/ports/delivery-project-overview.port';
+import {
+  PROJECT_LINK_PORT,
+  type ProjectLinkPort,
+} from '#kernel/ports/project-link.port';
 
 import {
   ProjectsRepository,
@@ -28,7 +36,13 @@ import {
  */
 @Injectable()
 export class QaAccessService {
-  constructor(private readonly projectsRepository: ProjectsRepository) {}
+  constructor(
+    private readonly projectsRepository: ProjectsRepository,
+    @Inject(DELIVERY_PROJECT_OVERVIEW_QUERY)
+    private readonly overview: DeliveryProjectOverviewQuery,
+    @Inject(PROJECT_LINK_PORT)
+    private readonly projectLink: ProjectLinkPort,
+  ) {}
 
   /**
    * True for an active member of the workspace, or any global admin. This is
@@ -42,6 +56,42 @@ export class QaAccessService {
     workspaceId: string,
   ): Promise<boolean> {
     return this.projectsRepository.canCreateInWorkspace(userId, workspaceId);
+  }
+
+  async canAccessProject(
+    userId: string,
+    workspaceId: string,
+    projectId: string | null,
+  ): Promise<boolean> {
+    if (!(await this.canAccessWorkspace(userId, workspaceId))) return false;
+    if (!projectId || (await this.canManage(userId))) return true;
+    return (await this.listMemberProjectIds(userId, [projectId])).has(
+      projectId,
+    );
+  }
+
+  async listMemberProjectIds(
+    userId: string,
+    projectIds: readonly string[],
+  ): Promise<ReadonlySet<string>> {
+    if (!projectIds.length) return new Set();
+    const facts = await this.overview.getOverviewFacts(projectIds, userId);
+    return new Set(projectIds.filter((id) => facts.get(id)?.viewerKind));
+  }
+
+  async filterProjectRecipients(
+    workspaceId: string,
+    projectId: string,
+    userIds: readonly (string | null)[],
+  ): Promise<string[]> {
+    const eligible = await Promise.all(
+      userIds.map(async (id) =>
+        id && (await this.canAccessProject(id, workspaceId, projectId))
+          ? id
+          : null,
+      ),
+    );
+    return eligible.filter((id) => id !== null);
   }
 
   /**
@@ -90,7 +140,23 @@ export class QaAccessService {
     projectId: string,
     userId: string,
   ): Promise<ProvisionedProjectRow | null> {
-    return this.projectsRepository.findByIdAndUser(projectId, userId);
+    const project = await this.projectsRepository.findByIdAndUser(
+      projectId,
+      userId,
+    );
+    if (!project) return null;
+    const folder = await this.projectLink.getProjectFolder(projectId);
+    if (
+      folder &&
+      !(await this.canAccessProject(
+        userId,
+        folder.groupId,
+        folder.deliveryProjectId,
+      ))
+    ) {
+      return null;
+    }
+    return project;
   }
 
   /**
@@ -137,21 +203,51 @@ export class QaAccessService {
   /** Active workspace members whose persona is 'lead' or 'member' (developer). */
   async listWorkspaceLeadAndDeveloperIds(
     workspaceId: string,
+    deliveryProjectId: string,
   ): Promise<string[]> {
-    return this.projectsRepository.listWorkspaceLeadAndDeveloperIds(
+    const members = await this.listEligibleProjectMembers(
       workspaceId,
+      deliveryProjectId,
     );
+    return members
+      .filter(({ role }) => role === 'lead' || role === 'member')
+      .map(({ id }) => id);
   }
 
-  /** Active workspace members whose persona is 'qa'. */
-  async listWorkspaceQaIds(workspaceId: string): Promise<string[]> {
-    return this.projectsRepository.listWorkspaceQaIds(workspaceId);
+  async listWorkspaceQaIds(
+    workspaceId: string,
+    deliveryProjectId: string,
+  ): Promise<string[]> {
+    const members = await this.listEligibleProjectMembers(
+      workspaceId,
+      deliveryProjectId,
+    );
+    return members.filter(({ role }) => role === 'qa').map(({ id }) => id);
   }
 
-  /** Active workspace members with a team persona, by login: who a team to-do can be assigned to. */
   async listWorkspaceMembers(
     workspaceId: string,
+    deliveryProjectId: string,
   ): Promise<Array<{ id: string; login: string | null }>> {
-    return this.projectsRepository.listWorkspaceMembers(workspaceId);
+    const members = await this.listEligibleProjectMembers(
+      workspaceId,
+      deliveryProjectId,
+    );
+    return members.map(({ id, login }) => ({ id, login }));
+  }
+
+  private async listEligibleProjectMembers(
+    workspaceId: string,
+    deliveryProjectId: string,
+  ) {
+    const [members, projectMemberIds] = await Promise.all([
+      this.projectsRepository.listWorkspaceMembers(workspaceId),
+      this.overview.listActiveMemberIds(deliveryProjectId),
+    ]);
+    const projectMembers = new Set(projectMemberIds);
+    return members.filter(
+      ({ id, role }) =>
+        role === 'lead' || role === 'admin' || projectMembers.has(id),
+    );
   }
 }

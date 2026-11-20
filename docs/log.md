@@ -2,6 +2,10 @@
 
 ## 2026-11-20
 
+- **Update**: QA and team to-dos require active Project membership for Developers and QA Team members. A Developer with QA release access can pass stories marked Done by someone else.
+- **Update**: Concurrent duplicate submissions return conflicts for Feature stories, identical open to-dos from one creator, and team names belonging to one owner.
+- **Update**: CI reporting scopes reads and writes to the original Project record. Host rollbacks without a recorded healthy release appear as failed deployments.
+- **Update**: GitHub repository names and feedback text are validated before submission. Repository creation reports missing group access and destination organization configuration.
 - **Update**: Ending a host assignment without replacement fails its in-flight deployments. The upgrade reconciles existing in-flight host deployments with no active assignment.
 - **Update**: Membership retries avoid duplicate events. Provider connections require catalog support, and upstream connection failures return a coded 502.
 - **Update**: An unreadable UAT head no longer hides the latest open QA run while other readable heads match its snapshot.

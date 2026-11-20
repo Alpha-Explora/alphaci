@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import { DatabaseService } from '#kernel/db/database.service';
+import { conflict } from '#kernel/http/coded-errors';
 import type { BacklogPriority } from '../domain/backlog-schedule.rules';
 import type {
   QaChecklistItemInput,
@@ -136,6 +137,15 @@ export class QaChecklistsRepository {
     client: Pick<PoolClient, 'query'>,
     input: CreateQaChecklistInput,
   ): Promise<{ checklist: QaChecklistRow; items: QaChecklistItemRow[] }> {
+    if (input.kind === 'functional') {
+      const titles = input.items.map((item) => item.title.trim().toLowerCase());
+      if (new Set(titles).size !== titles.length) {
+        throw conflict(
+          'QA_STORY_DUPLICATE',
+          'A story with this title already exists in the Feature.',
+        );
+      }
+    }
     const result = await client.query<QaChecklistRow>(
       `
         INSERT INTO projects.qa_checklists

@@ -5,7 +5,6 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 
 import type { CatalogService } from '../catalog/catalog.service.js';
@@ -475,28 +474,6 @@ jobs:
     jest.restoreAllMocks();
   });
 
-  it('prefers the OAuth token over a linked GitHub App installation token for project provisioning', async () => {
-    await service.createProject('user-1', 'tone', 'oauth-token', {
-      repoName: 'orders-api',
-      visibility: 'private',
-      projectTypeId: 'nestjs-api',
-      workflowRecipeId: 'backend-api-ci',
-      serviceName: 'orders-api',
-      servicePath: '.',
-      nodeVersion: '24',
-      coverageThreshold: 80,
-    });
-
-    expect(
-      githubServiceMock.getInstallationAccessTokenForUser,
-    ).not.toHaveBeenCalled();
-    expect(githubServiceMock.createRepo).toHaveBeenCalledWith(
-      'oauth-token',
-      expect.objectContaining({ repoName: 'orders-api' }),
-      undefined,
-    );
-  });
-
   it('uses the selected installation to create and configure an organization repository', async () => {
     await service.createProject('user-1', 'tone', 'oauth-token', {
       repoName: 'orders-api',
@@ -660,6 +637,8 @@ jobs:
       });
 
     await eventService.createProject('user-1', 'tone', 'oauth-token', {
+      ownerType: 'organization',
+      installationId: 12345,
       repoName: 'orders-api',
       visibility: 'private',
       projectTypeId: 'nestjs-api',
@@ -794,6 +773,8 @@ jobs:
       });
 
     await workspaceService.createProject('user-1', 'tone', 'oauth-token', {
+      ownerType: 'organization',
+      installationId: 12345,
       repoName: 'orders-api',
       visibility: 'private',
       projectTypeId: 'nestjs-api',
@@ -807,41 +788,23 @@ jobs:
     );
   });
 
-  it('falls back to the OAuth token when no installation token is available', async () => {
-    githubServiceMock.getInstallationAccessTokenForUser.mockResolvedValueOnce(
-      null,
-    );
-
-    await service.createProject('user-1', 'tone', 'oauth-token', {
-      repoName: 'orders-api',
-      visibility: 'private',
-      projectTypeId: 'nestjs-api',
-      workflowRecipeId: 'backend-api-ci',
-      serviceName: 'orders-api',
-    });
-
-    expect(githubServiceMock.createRepo).toHaveBeenCalledWith(
-      'oauth-token',
-      expect.any(Object),
-      undefined,
-    );
-  });
-
-  it('throws an actionable error when no GitHub token source is available', async () => {
-    githubServiceMock.getInstallationAccessTokenForUser.mockResolvedValueOnce(
-      null,
-    );
-
-    await expect(
-      service.createProject('user-1', 'tone', null, {
-        repoName: 'orders-api',
-        visibility: 'private',
-        projectTypeId: 'nestjs-api',
-        workflowRecipeId: 'backend-api-ci',
-        serviceName: 'orders-api',
-      }),
-    ).rejects.toThrow(UnauthorizedException);
-  });
+  it.each(['oauth-token', null])(
+    'requires an organization for repository creation with session token %s',
+    async (token) => {
+      await expect(
+        service.createProject('user-1', 'tone', token, {
+          repoName: 'orders-api',
+          visibility: 'private',
+          projectTypeId: 'nestjs-api',
+          workflowRecipeId: 'backend-api-ci',
+          serviceName: 'orders-api',
+        }),
+      ).rejects.toMatchObject({
+        response: { code: 'GITHUB_ORGANIZATION_REQUIRED' },
+      });
+      expect(githubServiceMock.createRepo).not.toHaveBeenCalled();
+    },
+  );
 
   it('passes selected workspace id into project listing', async () => {
     const projectsRepository =
@@ -930,6 +893,8 @@ jobs:
 
   it('omits Vercel deploy jobs for frontend single-repo creation', async () => {
     await service.createProject('user-1', 'tone', 'oauth-token', {
+      ownerType: 'organization',
+      installationId: 12345,
       repoName: 'orders-ui',
       visibility: 'private',
       projectTypeId: 'react-app',
@@ -971,6 +936,8 @@ jobs:
 
   it('emits managed Vercel deploy jobs for frontend single-repo creation', async () => {
     await service.createProject('user-1', 'tone', 'oauth-token', {
+      ownerType: 'organization',
+      installationId: 12345,
       repoName: 'orders-ui',
       visibility: 'private',
       projectTypeId: 'react-app',
@@ -1318,6 +1285,8 @@ jobs:
       'tone',
       'oauth-token',
       {
+        ownerType: 'organization',
+        installationId: 12345,
         repoName: 'orders-api',
         visibility: 'private',
         projectTypeId: 'nestjs-api',
@@ -1343,7 +1312,7 @@ jobs:
       projectId: 'project-1',
       userId: 'user-1',
       repoFullName: 'tone/orders-api',
-      githubAccessToken: 'oauth-token',
+      githubAccessToken: 'installation-token',
       request: {
         enabled: true,
         targets: [
@@ -1361,6 +1330,8 @@ jobs:
 
   it('defaults backend repo creation to managed Render provisioning when the UI sends no deployment request', async () => {
     await service.createProject('user-1', 'tone', 'oauth-token', {
+      ownerType: 'organization',
+      installationId: 12345,
       repoName: 'orders-api',
       visibility: 'private',
       projectTypeId: 'nestjs-api',
@@ -1375,7 +1346,7 @@ jobs:
         projectId: 'project-1',
         userId: 'user-1',
         repoFullName: 'tone/orders-api',
-        githubAccessToken: 'oauth-token',
+        githubAccessToken: 'installation-token',
         request: {
           enabled: true,
           targets: [
@@ -1418,21 +1389,21 @@ jobs:
     expect(packageWorkflow?.[4]).toContain('release.yml@');
     expect(packageWorkflow?.[4]).not.toMatch(/secrets\.RENDER/);
     expect(githubServiceMock.createBranch).toHaveBeenCalledWith(
-      'oauth-token',
+      'installation-token',
       'tone',
       'orders-api',
       'dev',
       'main',
     );
     expect(githubServiceMock.createBranch).toHaveBeenCalledWith(
-      'oauth-token',
+      'installation-token',
       'tone',
       'orders-api',
       'uat',
       'main',
     );
     expect(githubServiceMock.createBranch).not.toHaveBeenCalledWith(
-      'oauth-token',
+      'installation-token',
       'tone',
       'orders-api',
       'test',
@@ -1440,21 +1411,21 @@ jobs:
     );
     expect(githubServiceMock.ensurePullRequestProtection.mock.calls).toEqual([
       [
-        'oauth-token',
+        'installation-token',
         'tone',
         'orders-api',
         'dev',
         { seedStatusChecks: ['env-guard'] },
       ],
       [
-        'oauth-token',
+        'installation-token',
         'tone',
         'orders-api',
         'uat',
         { seedStatusChecks: ['env-guard'] },
       ],
       [
-        'oauth-token',
+        'installation-token',
         'tone',
         'orders-api',
         'main',
@@ -1465,6 +1436,8 @@ jobs:
 
   it('forces BYO provisioning requests onto centralized hosting and drops connection ids', async () => {
     await service.createProject('user-1', 'tone', 'oauth-token', {
+      ownerType: 'organization',
+      installationId: 12345,
       repoName: 'orders-api',
       visibility: 'private',
       projectTypeId: 'nestjs-api',
@@ -1516,6 +1489,8 @@ jobs:
       'tone',
       'oauth-token',
       {
+        ownerType: 'organization',
+        installationId: 12345,
         repoName: 'orders-api',
         visibility: 'private',
         projectTypeId: 'nestjs-api',
@@ -1546,6 +1521,8 @@ jobs:
       'tone',
       'oauth-token',
       {
+        ownerType: 'organization',
+        installationId: 12345,
         repoName: 'orders-api',
         visibility: 'private',
         projectTypeId: 'nestjs-api',
@@ -1564,6 +1541,8 @@ jobs:
       'tone',
       'oauth-token',
       {
+        ownerType: 'organization',
+        installationId: 12345,
         repoName: 'orders',
         visibility: 'private',
         repoShape: 'multi',
@@ -1590,15 +1569,15 @@ jobs:
     expect(githubServiceMock.createRepo).toHaveBeenCalledTimes(2);
     expect(githubServiceMock.createRepo).toHaveBeenNthCalledWith(
       1,
-      'oauth-token',
+      'installation-token',
       expect.objectContaining({ repoName: 'orders-be' }),
-      undefined,
+      'tone',
     );
     expect(githubServiceMock.createRepo).toHaveBeenNthCalledWith(
       2,
-      'oauth-token',
+      'installation-token',
       expect.objectContaining({ repoName: 'orders-fe' }),
-      undefined,
+      'tone',
     );
     expect(result.secondaryRepoFullName).toBeDefined();
     expect(
@@ -1622,6 +1601,8 @@ jobs:
 
   it("renders the monorepo scaffold for the catalog shape ID 'mono'", async () => {
     await service.createProject('user-1', 'tone', 'oauth-token', {
+      ownerType: 'organization',
+      installationId: 12345,
       repoName: 'orders',
       visibility: 'private',
       repoShape: 'mono',
@@ -1650,6 +1631,8 @@ jobs:
 
   it('normalizes legacy project type IDs when creating starter files', async () => {
     await service.createProject('user-1', 'tone', 'oauth-token', {
+      ownerType: 'organization',
+      installationId: 12345,
       repoName: 'orders',
       visibility: 'private',
       projectTypeId: 'nestjs-api',
@@ -1678,6 +1661,8 @@ jobs:
 
   it('pushes variant-suffixed workflow files for the microservices shape so the slots do not collide', async () => {
     await service.createProject('user-1', 'tone', 'oauth-token', {
+      ownerType: 'organization',
+      installationId: 12345,
       repoName: 'orders',
       visibility: 'private',
       repoShape: 'microservices',

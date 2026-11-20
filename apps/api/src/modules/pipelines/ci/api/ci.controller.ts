@@ -66,13 +66,16 @@ export class CiController {
   ) {
     // Verify the ALPHACI_TOKEN is valid for this repo before accepting the report
     const token = extractBearerToken(authorization);
-    await this.ciService.validateRun({
+    const identity = await this.ciService.validateRun({
       token,
       repoFullName: body.repoFullName,
       stage: body.stage,
     });
 
-    return this.ciReportsService.ingestReport(body);
+    return this.ciReportsService.ingestReport(
+      { ...body, repoFullName: identity.repoFullName },
+      identity.projectId,
+    );
   }
 
   /**

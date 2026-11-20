@@ -19,7 +19,7 @@ It is additive; its rollback is `supabase/rollbacks/20261028000000_app_user_spec
 
 Special access sits on top of the persona (`app_role`). GitHub team sync never writes it, so a grant survives the next login. Set it with `PATCH /api/v1/admin/users/{id}/special-access` and body `{"access": ["qa_release"]}`. The response returns the stored list; `GET /api/v1/auth/me` returns it as `specialAccess`.
 
-* `qa_release` lets a Developer act as the QA Team. They can start a run, verify items, author test-case definitions, record test results, attach evidence, dispatch Playwright and sign off. The Developer keeps their existing progress permissions. Merge to main is open to every persona once the gate passes. Product owner work stays with `lead`/`admin`, including writing requirements, accepting items, reopening a signed-off run and starting the next iteration. Any platform admin may change it.
+* `qa_release` lets a Developer act as the QA Team on Projects where they are an active member. They can start a run, verify items, author test-case definitions, record test results, attach evidence, dispatch Playwright and sign off. The Developer keeps their existing progress permissions. A different verifier must pass stories the Developer marked Done. Merge to main is open to every persona once the gate passes. Product owner work stays with `lead`/`admin`, including writing requirements, accepting items, reopening a signed-off run and starting the next iteration. Any platform admin may change it.
 * `deployment_override` lets a person merge to main while the promotion gate is blocked. Admins always have it. Only the super-admin may grant or remove it.
 
 Every change is recorded as the `admin.special_access.set` security audit event with the previous and new lists.

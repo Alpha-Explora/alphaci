@@ -452,8 +452,14 @@ export class QaProjectDeliveryService {
       return;
     }
     const [leadsAndDevelopers, qa] = await Promise.all([
-      this.access.listWorkspaceLeadAndDeveloperIds(project.groupId),
-      this.access.listWorkspaceQaIds(project.groupId),
+      this.access.listWorkspaceLeadAndDeveloperIds(
+        project.groupId,
+        project.deliveryProjectId,
+      ),
+      this.access.listWorkspaceQaIds(
+        project.groupId,
+        project.deliveryProjectId,
+      ),
     ]);
     const recipients = new Set(
       [...leadsAndDevelopers, ...qa].filter((id) => id !== actor.userId),

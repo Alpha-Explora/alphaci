@@ -76,6 +76,7 @@ import { DeploymentTargetsRepository } from '../infrastructure/repositories/depl
 import {
   ReleaseRegistryRepository,
   allowedDeploymentTransitions,
+  NO_HEALTHY_ROLLBACK_DETAIL,
   type DeploymentDelivery,
   type DeploymentStatus,
   type EnvironmentDeploymentRecord,
@@ -922,6 +923,24 @@ export class ReleaseRegistryService {
       deployment.delivery !== 'host'
     ) {
       throw new NotFoundException('Deployment not found');
+    }
+    if (status === 'rolled_back') {
+      if (
+        deployment.status === 'failed' &&
+        deployment.detail === NO_HEALTHY_ROLLBACK_DETAIL
+      ) {
+        return deployment;
+      }
+      if (
+        deployment.status === 'deploying' &&
+        !(await this.releases.pinnedReleaseId(deployment.environmentId))
+      ) {
+        return this.transition(
+          deployment,
+          'failed',
+          NO_HEALTHY_ROLLBACK_DETAIL,
+        );
+      }
     }
     return this.transition(deployment, status, detail);
   }

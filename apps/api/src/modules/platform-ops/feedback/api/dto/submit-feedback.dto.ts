@@ -2,6 +2,7 @@ import {
   IsIn,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -16,10 +17,12 @@ export class SubmitFeedbackDto {
   @IsString()
   @MinLength(3)
   @MaxLength(160)
+  @Matches(/\S/, { message: 'subject must contain visible text' })
   subject!: string;
 
   @IsString()
   @MinLength(3)
   @MaxLength(4000)
+  @Matches(/\S/, { message: 'body must contain visible text' })
   body!: string;
 }

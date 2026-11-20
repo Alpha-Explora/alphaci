@@ -152,6 +152,41 @@ describe('Request body validation', () => {
       .expect(400);
   });
 
+  it.each(['team/api', '..', 'api\n'])(
+    'rejects an invalid repository name %j before provisioning',
+    async (repoName) => {
+      const previousCalls = e2e.externalCalls.length;
+      const response = await agent
+        .post('/api/v1/projects')
+        .send({
+          repoName,
+          visibility: 'private',
+          projectTypeId: 'nestjs-api',
+          serviceName: 'api',
+        })
+        .expect(400);
+      expect(JSON.stringify(response.body)).toContain('repoName must use');
+      expect(e2e.externalCalls).toHaveLength(previousCalls);
+    },
+  );
+
+  it.each(['subject', 'body'] as const)(
+    'rejects feedback with a blank %s',
+    async (field) => {
+      const response = await agent
+        .post('/api/v1/feedback')
+        .send({
+          subject: 'A useful subject',
+          body: 'A useful message',
+          [field]: ' \t\n ',
+        })
+        .expect(400);
+      expect(JSON.stringify(response.body)).toContain(
+        `${field} must contain visible text`,
+      );
+    },
+  );
+
   it('keeps an ignored drift finding out of subsequent scans', async () => {
     await e2e.query(
       "UPDATE projects.provisioned_projects SET workflow_path = '' WHERE id = $1",

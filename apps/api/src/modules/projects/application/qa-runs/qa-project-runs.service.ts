@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 
 import { QA_BRANCH } from '#kernel/config/pipeline-branches';
+import { forbidden } from '#kernel/http/coded-errors';
 import {
   CAPABILITY_OPTIONS,
   type CapabilityOptionsPort,
@@ -42,6 +43,7 @@ import { QaProjectRunsRepository } from '../../infrastructure/qa-project-runs.re
 import { QaRequirementsRepository } from '../../infrastructure/qa-requirements.repository';
 import {
   QaProgressNotDoneError,
+  QaSelfVerificationError,
   QaRunItemChangedError,
   QaRunItemsChangedError,
   QaRunNotOpenError,
@@ -649,6 +651,10 @@ export class QaProjectRunsService {
     }
 
     const runActor = { id: actor.userId, login: actor.userLogin };
+    const forbidSelfVerification =
+      dto.status === 'passed' &&
+      role === 'qa' &&
+      (await this.access.findAppRole(actor.userId)) === 'member';
     let updated: QaRunItemRow | null;
     try {
       updated = await this.runs.updateItem(
@@ -667,11 +673,18 @@ export class QaProjectRunsService {
           requireProgressDoneForPass: true,
           resetProgressOnReturn: true,
           requireTestCasesResolvedForPass: true,
+          ...(forbidSelfVerification && { forbidSelfVerification }),
         },
       );
     } catch (error) {
       if (error instanceof QaProgressNotDoneError) {
         throw qaProgressNotDone();
+      }
+      if (error instanceof QaSelfVerificationError) {
+        throw forbidden(
+          'QA_SELF_VERIFICATION',
+          'Ask another verifier to pass a story you marked Done.',
+        );
       }
       if (error instanceof QaTestCasesOpenError) {
         throw qaTestCasesOpen(error.open, 'item');
@@ -1450,6 +1463,7 @@ export class QaProjectRunsService {
         projectId: row.project_id,
         repoFullName: row.repo_full_name,
         automation: await this.automation.forRun(
+          row.project_id,
           row.repo_full_name,
           QA_PROJECT_RUN_BRANCH,
           row.head_sha,
@@ -1567,7 +1581,10 @@ export class QaProjectRunsService {
     }
     const [anchor, teamIds] = await Promise.all([
       this.projectContext.anchorProjectId(project),
-      this.access.listWorkspaceLeadAndDeveloperIds(project.groupId),
+      this.access.listWorkspaceLeadAndDeveloperIds(
+        project.groupId,
+        project.deliveryProjectId,
+      ),
     ]);
     const ownerId = anchor
       ? await this.access.findProjectOwnerId(anchor)
@@ -1578,8 +1595,13 @@ export class QaProjectRunsService {
         ? this.truncate(updated.notes, NOTIFICATION_BODY_TRUNCATE_LENGTH)
         : null,
     ].filter((part): part is string => Boolean(part));
+    const owners = await this.access.filterProjectRecipients(
+      project.groupId,
+      project.deliveryProjectId,
+      [ownerId],
+    );
     await this.notifyMany(
-      this.dedupeExcludingActor([ownerId, ...teamIds], actorId),
+      this.dedupeExcludingActor([...owners, ...teamIds], actorId),
       anchor,
       notice.eventCode,
       `QA ${notice.verb} "${updated.title}" in ${project.name}`,
@@ -1596,14 +1618,22 @@ export class QaProjectRunsService {
     const [anchor, leadIds] = await Promise.all([
       this.projectContext.anchorProjectId(project),
       signoff.verdict === 'REJECTED'
-        ? this.access.listWorkspaceLeadAndDeveloperIds(project.groupId)
+        ? this.access.listWorkspaceLeadAndDeveloperIds(
+            project.groupId,
+            project.deliveryProjectId,
+          )
         : this.access.listWorkspaceLeadIds(project.groupId),
     ]);
     const ownerId = anchor
       ? await this.access.findProjectOwnerId(anchor)
       : null;
+    const participants = await this.access.filterProjectRecipients(
+      project.groupId,
+      project.deliveryProjectId,
+      [run.created_by, ownerId],
+    );
     await this.notifyMany(
-      this.dedupeExcludingActor([run.created_by, ownerId, ...leadIds], actorId),
+      this.dedupeExcludingActor([...participants, ...leadIds], actorId),
       anchor,
       signoff.verdict === 'REJECTED' ? 'qa.run.rejected' : 'qa.run.signed_off',
       `QA run signed off (${signoff.verdict}) for ${project.name}`,
@@ -1629,15 +1659,26 @@ export class QaProjectRunsService {
   ): Promise<void> {
     const [anchor, qaIds, teamIds] = await Promise.all([
       this.projectContext.anchorProjectId(project),
-      this.access.listWorkspaceQaIds(project.groupId),
-      this.access.listWorkspaceLeadAndDeveloperIds(project.groupId),
+      this.access.listWorkspaceQaIds(
+        project.groupId,
+        project.deliveryProjectId,
+      ),
+      this.access.listWorkspaceLeadAndDeveloperIds(
+        project.groupId,
+        project.deliveryProjectId,
+      ),
     ]);
     const ownerId = anchor
       ? await this.access.findProjectOwnerId(anchor)
       : null;
+    const participants = await this.access.filterProjectRecipients(
+      project.groupId,
+      project.deliveryProjectId,
+      [run.created_by, signoff.signed_by, ownerId],
+    );
     await this.notifyMany(
       this.dedupeExcludingActor(
-        [run.created_by, signoff.signed_by, ownerId, ...qaIds, ...teamIds],
+        [...participants, ...qaIds, ...teamIds],
         actorId,
       ),
       anchor,

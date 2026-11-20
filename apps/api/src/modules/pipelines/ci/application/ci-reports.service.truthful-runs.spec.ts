@@ -19,19 +19,18 @@ const makeDatabaseService = () =>
 const makeRunReportsRepository = () =>
   ({
     upsert: jest.fn(),
-    findRecentByRepo: jest.fn(),
-    findRecentByRepos: jest.fn(),
-    findByRepoBranchSha: jest.fn(),
+    findRecentByProjects: jest.fn(),
+    findByProjectBranchSha: jest.fn(),
   }) as unknown as CiRunReportsRepository;
 
 const makeProjectVisibility = (): ProjectVisibilityLookup => ({
-  isRepoVisibleToUser: jest.fn().mockResolvedValue(true),
-  listVisibleRepoNames: jest.fn().mockResolvedValue(['acme/orders-api']),
+  listVisibleReportProjects: jest.fn().mockResolvedValue(['project-1']),
 });
 
 function row(overrides: Partial<CiRunReportRow>): CiRunReportRow {
   return {
     id: 'id',
+    project_id: 'project-1',
     user_id: 'user-1',
     repo_full_name: 'acme/orders-api',
     branch: 'uat',
@@ -55,9 +54,9 @@ describe('CiReportsService.getRuns, truthful runs', () => {
   let service: CiReportsService;
 
   const groupsOf = async (rows: CiRunReportRow[]) => {
-    (runReportsRepository.findRecentByRepos as jest.Mock).mockResolvedValueOnce(
-      rows,
-    );
+    (
+      runReportsRepository.findRecentByProjects as jest.Mock
+    ).mockResolvedValueOnce(rows);
     return (await service.getRuns('user-1')).runs;
   };
 
@@ -321,6 +320,7 @@ describe('CiReportsService.ingestReport, truthful reports', () => {
       body({
         results: { skipped: { reason: 'Nothing was deployed for uat' } },
       }),
+      'project-1',
     );
 
     const call = (repository.upsert as jest.Mock).mock.calls[0]![0] as {
@@ -356,6 +356,7 @@ describe('CiReportsService.ingestReport, truthful reports', () => {
           },
         },
       }),
+      'project-1',
     );
 
     const call = (repository.upsert as jest.Mock).mock.calls[0]![0] as {

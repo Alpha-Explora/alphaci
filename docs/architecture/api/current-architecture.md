@@ -71,6 +71,10 @@ Each context has a `<context>.module.ts` composition root and an `index.ts` publ
 
 Typed JSON bodies are validated before reaching application services. Invalid field values and unknown fields return HTTP 400. The CI validation endpoint accepts a repository-only request and defaults the stage to `access`.
 
+CI reports carry the provisioned Project ID from the authenticated CI token. The Runs page, exported reports and QA automation read results by Project ID. Disconnecting a repository preserves the stored reports under the original ID. A new connection sees its own results. The ownership migration links reports from identifiable connection lifetimes and preserves unlinked rows outside the Runs views.
+
+Repository creation requires a GitHub organization with an AlphaCI App installation. Teams can reuse the same name across owners. Within one owner's teams, names are unique after trimming and case folding.
+
 With subscription gating disabled, the usage API selects the Pro plan. Deployments that enable usage quotas still apply the Pro limits.
 
 Team leads and admins can reopen an archived Project with `POST /api/v1/delivery-projects/{deliveryProjectId}/reopen`. The Project's team must be active and the name must still be available in that team.

@@ -25,6 +25,8 @@ import {
 } from '../../domain/onprem-tunnel';
 import {
   allowedDeploymentTransitions,
+  NO_HEALTHY_ROLLBACK_DETAIL,
+  readPinnedReleaseId,
   toDeployment,
   type DeploymentRow,
   type DeploymentStatus,
@@ -545,12 +547,28 @@ export class OnpremAssignmentsRepository {
         throw new NotFoundException(
           'Deployment not assigned to this credential.',
         );
-      if (row.status === status) return toDeployment(row);
-      if (!allowedDeploymentTransitions(row.status).includes(status))
+      if (
+        status === 'rolled_back' &&
+        row.status === 'failed' &&
+        row.detail === NO_HEALTHY_ROLLBACK_DETAIL
+      ) {
+        return toDeployment(row);
+      }
+      const unconfirmedRollback =
+        status === 'rolled_back' &&
+        row.status === 'deploying' &&
+        !(await readPinnedReleaseId(client, row.environment_id));
+      const next = unconfirmedRollback ? 'failed' : status;
+      if (row.status === next) return toDeployment(row);
+      if (!allowedDeploymentTransitions(row.status).includes(next))
         throw new ConflictException('Invalid deployment status transition.');
       const changed = await client.query<DeploymentRow>(
         'UPDATE env_provisioning.environment_deployments SET status=$2,detail=$3,updated_at=NOW() WHERE id=$1 RETURNING *',
-        [deploymentId, status, detail],
+        [
+          deploymentId,
+          next,
+          unconfirmedRollback ? NO_HEALTHY_ROLLBACK_DETAIL : detail,
+        ],
       );
       return toDeployment(changed.rows[0]!);
     });

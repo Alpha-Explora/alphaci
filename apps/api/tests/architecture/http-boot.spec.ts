@@ -310,7 +310,7 @@ describe('HTTP application boot', () => {
     try {
       const lookup = app.get(PROJECT_VISIBILITY_LOOKUP, { strict: false });
       expect(lookup).toBeInstanceOf(ProjectsRepository);
-      expect(typeof lookup.isRepoVisibleToUser).toBe('function');
+      expect(typeof lookup.listVisibleReportProjects).toBe('function');
     } finally {
       await app.close();
     }

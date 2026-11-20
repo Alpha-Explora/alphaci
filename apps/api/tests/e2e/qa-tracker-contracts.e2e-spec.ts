@@ -196,6 +196,178 @@ describe('QA release-tracker response contracts', () => {
     expect(ticked.status).toBe('done');
   });
 
+  it('rejects duplicate stories and simultaneous identical open to-dos', async () => {
+    const requirements = `/api/v1/delivery-projects/${projectId}/requirements`;
+    const rejected = await agent
+      .post(requirements)
+      .send({
+        kind: 'functional',
+        name: 'Duplicate on create',
+        items: [{ title: 'Confirm order' }, { title: ' confirm ORDER ' }],
+      })
+      .expect(409);
+    expect(rejected.body).toMatchObject({ code: 'QA_STORY_DUPLICATE' });
+
+    const feature = (
+      await agent
+        .post(requirements)
+        .send({
+          kind: 'functional',
+          name: 'Concurrent stories',
+        })
+        .expect(201)
+    ).body as { id: string };
+    const story = () =>
+      agent
+        .post(`/api/v1/requirements/${feature.id}/items`)
+        .send({ title: 'Confirm order' });
+    const responses = await Promise.all([story(), story()]);
+    expect(
+      responses
+        .map((response) => response.status)
+        .sort((left, right) => left - right),
+    ).toEqual([201, 409]);
+    expect(
+      responses.find((response) => response.status === 409)?.body,
+    ).toMatchObject({ code: 'QA_STORY_DUPLICATE' });
+    await e2e.query('DELETE FROM projects.qa_checklists WHERE id = $1', [
+      feature.id,
+    ]);
+
+    const todo = () =>
+      agent
+        .post(`/api/v1/delivery-projects/${projectId}/todos`)
+        .send({ title: 'Check the delivery' });
+    const todos = await Promise.all([todo(), todo()]);
+    expect(
+      todos
+        .map((response) => response.status)
+        .sort((left, right) => left - right),
+    ).toEqual([201, 409]);
+    expect(
+      todos.find((response) => response.status === 409)?.body,
+    ).toMatchObject({ code: 'PROJECT_TODO_DUPLICATE' });
+  });
+
+  it('requires active Project membership for QA and to-dos and a different verifier', async () => {
+    const requirements = `/api/v1/delivery-projects/${projectId}/requirements`;
+    const todos = `/api/v1/delivery-projects/${projectId}/todos`;
+    const [source] = await e2e.query<{
+      requirement_id: string;
+      item_id: string;
+      row_version: number;
+    }>(
+      `SELECT requirement.id AS requirement_id, item.id AS item_id, item.row_version
+       FROM projects.qa_checklists requirement
+       JOIN projects.qa_checklist_items item ON item.checklist_id = requirement.id
+       WHERE requirement.delivery_project_id = $1 AND item.title = 'Pay by card'`,
+      [projectId],
+    );
+    if (!source) throw new Error('Expected fixture story');
+    await e2e.query(
+      "UPDATE identity.app_users SET app_role='member', special_access=ARRAY['qa_release'] WHERE id=$1",
+      [userId],
+    );
+    try {
+      await agent.get(requirements).expect(404);
+      await agent
+        .get(`/api/v1/requirements/${source.requirement_id}`)
+        .expect(404);
+      await agent.get(todos).expect(404);
+      await agent.post(todos).send({ title: 'Out of scope' }).expect(404);
+
+      await e2e.query(
+        "INSERT INTO hierarchy.delivery_project_members (delivery_project_id, user_id, member_kind, status) VALUES ($1,$2,'developer','active')",
+        [projectId, userId],
+      );
+      await agent.get(requirements).expect(200);
+      await agent.get(todos).expect(200);
+      await agent
+        .patch(
+          `/api/v1/requirements/${source.requirement_id}/items/${source.item_id}/progress`,
+        )
+        .send({ progress: 'done', expectedRowVersion: source.row_version })
+        .expect(200);
+
+      const [snapshot] = await e2e.query<{
+        run_id: string;
+        id: string;
+        row_version: number;
+      }>(
+        `WITH run AS (
+           INSERT INTO projects.qa_verification_runs
+             (scope, delivery_project_id, heads_fingerprint, checklist_id,
+              checklist_version, checklist_name, branch, commit_source, created_by,
+              created_by_login, iteration_id)
+           SELECT 'project', delivery_project_id, $2, id, version, name, 'uat',
+                  'branch_head', $3, 'qa', iteration_id
+           FROM projects.qa_checklists WHERE id = $1
+           RETURNING id
+         )
+         INSERT INTO projects.qa_run_items
+           (run_id, source_item_id, position, title, target_persona, verification_type)
+         SELECT id, $4, 0, 'Pay by card', 'all', 'manual' FROM run
+         RETURNING run_id, id, row_version`,
+        [source.requirement_id, 'b'.repeat(64), userId, source.item_id],
+      );
+      if (!snapshot) throw new Error('Expected fixture run');
+      const result = await agent
+        .patch(
+          `/api/v1/delivery-projects/${projectId}/qa-runs/${snapshot.run_id}/items/${snapshot.id}`,
+        )
+        .send({ status: 'passed', expectedRowVersion: snapshot.row_version })
+        .expect(403);
+      expect(result.body).toMatchObject({ code: 'QA_SELF_VERIFICATION' });
+      expect(
+        await e2e.query(
+          'SELECT status FROM projects.qa_run_items WHERE id=$1',
+          [snapshot.id],
+        ),
+      ).toEqual([{ status: 'pending' }]);
+      const [otherDeveloper] = await e2e.query<{ id: string }>(
+        "INSERT INTO identity.app_users (login, github_user_id) VALUES ('other-verification-dev', 'other-verification-dev') RETURNING id",
+      );
+      if (!otherDeveloper) throw new Error('Expected another developer');
+      await e2e.query(
+        'UPDATE projects.qa_checklist_items SET progress_by=$1 WHERE id=$2',
+        [otherDeveloper.id, source.item_id],
+      );
+      await agent
+        .patch(
+          `/api/v1/delivery-projects/${projectId}/qa-runs/${snapshot.run_id}/items/${snapshot.id}`,
+        )
+        .send({ status: 'passed', expectedRowVersion: snapshot.row_version })
+        .expect(200);
+      expect(
+        await e2e.query(
+          'SELECT status FROM projects.qa_run_items WHERE id=$1',
+          [snapshot.id],
+        ),
+      ).toEqual([{ status: 'passed' }]);
+      await e2e.query(
+        "UPDATE hierarchy.delivery_project_members SET status='removed' WHERE delivery_project_id=$1 AND user_id=$2",
+        [projectId, userId],
+      );
+      await agent.get(todos).expect(404);
+      await e2e.query(
+        "UPDATE identity.app_users SET app_role='qa' WHERE id=$1",
+        [userId],
+      );
+      await agent.get(requirements).expect(404);
+      await e2e.query(
+        "UPDATE identity.app_users SET app_role='lead' WHERE id=$1",
+        [userId],
+      );
+      await agent.get(requirements).expect(200);
+      await agent.get(todos).expect(200);
+    } finally {
+      await e2e.query(
+        "UPDATE identity.app_users SET app_role='admin', special_access='{}' WHERE id=$1",
+        [userId],
+      );
+    }
+  });
+
   it('QA history and semantic coverage', async () => {
     conforms(
       'GET /api/v1/delivery-projects/{deliveryProjectId}/qa-history',

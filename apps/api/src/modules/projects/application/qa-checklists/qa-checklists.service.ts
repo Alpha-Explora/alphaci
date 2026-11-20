@@ -10,6 +10,7 @@ import {
 import type { WorkspaceDataCleanupPort } from '#kernel/ports/workspace-data-cleanup.port';
 
 import { AuditEventPublisher } from '#kernel/events/platform-event-publisher.js';
+import { notFound } from '#kernel/http/coded-errors';
 import {
   PROJECT_LINK_PORT,
   type ProjectLinkPort,
@@ -83,7 +84,25 @@ export class QaChecklistsService implements WorkspaceDataCleanupPort {
       workspaceId,
       includeArchived,
     );
-    return { items: await this.assembleMany(rows), canManage };
+    const projectIds = [
+      ...new Set(
+        rows.flatMap((row) =>
+          row.delivery_project_id ? [row.delivery_project_id] : [],
+        ),
+      ),
+    ];
+    const memberships =
+      canManage || !projectIds.length
+        ? null
+        : await this.access.listMemberProjectIds(userId, projectIds);
+    const visible = memberships
+      ? rows.filter(
+          (row) =>
+            !row.delivery_project_id ||
+            memberships.has(row.delivery_project_id),
+        )
+      : rows;
+    return { items: await this.assembleMany(visible), canManage };
   }
 
   async createForWorkspace(
@@ -126,7 +145,7 @@ export class QaChecklistsService implements WorkspaceDataCleanupPort {
 
   async getById(id: string, userId: string): Promise<QaChecklist> {
     const checklist = await this.requireChecklist(id);
-    await this.assertWorkspaceAccess(userId, checklist.workspace_id);
+    await this.assertChecklistAccess(userId, checklist);
     return this.assembleOne(checklist);
   }
 
@@ -136,7 +155,7 @@ export class QaChecklistsService implements WorkspaceDataCleanupPort {
     dto: UpdateQaChecklistDto,
   ): Promise<QaChecklist> {
     const checklist = await this.requireChecklist(id);
-    await this.assertWorkspaceAccess(userId, checklist.workspace_id);
+    await this.assertChecklistAccess(userId, checklist);
     await this.assertManage(userId);
     this.assertNotMovedToProject(checklist);
     this.assertNotArchived(checklist);
@@ -201,7 +220,7 @@ export class QaChecklistsService implements WorkspaceDataCleanupPort {
     dto: ReplaceQaChecklistItemsDto,
   ): Promise<QaChecklist> {
     const checklist = await this.requireChecklist(id);
-    await this.assertWorkspaceAccess(userId, checklist.workspace_id);
+    await this.assertChecklistAccess(userId, checklist);
     await this.assertManage(userId);
     this.assertNotMovedToProject(checklist);
     this.assertNotArchived(checklist);
@@ -230,7 +249,7 @@ export class QaChecklistsService implements WorkspaceDataCleanupPort {
 
   async archive(id: string, userId: string): Promise<QaChecklist> {
     const checklist = await this.requireChecklist(id);
-    await this.assertWorkspaceAccess(userId, checklist.workspace_id);
+    await this.assertChecklistAccess(userId, checklist);
     await this.assertManage(userId);
     this.assertNotMovedToProject(checklist);
 
@@ -257,7 +276,7 @@ export class QaChecklistsService implements WorkspaceDataCleanupPort {
     dto: ShareQaChecklistProjectsDto,
   ): Promise<QaChecklist> {
     const checklist = await this.requireChecklist(id);
-    await this.assertWorkspaceAccess(userId, checklist.workspace_id);
+    await this.assertChecklistAccess(userId, checklist);
     await this.assertManage(userId);
     this.assertNotMovedToProject(checklist);
     this.assertNotArchived(checklist);
@@ -305,7 +324,7 @@ export class QaChecklistsService implements WorkspaceDataCleanupPort {
     dto: UpdateQaChecklistProjectsDto,
   ): Promise<QaChecklist> {
     const checklist = await this.requireChecklist(id);
-    await this.assertWorkspaceAccess(userId, checklist.workspace_id);
+    await this.assertChecklistAccess(userId, checklist);
     await this.assertManage(userId);
     this.assertNotMovedToProject(checklist);
     this.assertNotArchived(checklist);
@@ -370,7 +389,7 @@ export class QaChecklistsService implements WorkspaceDataCleanupPort {
       userId,
     );
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw notFound('QA_PROJECT_NOT_FOUND', 'Project not found');
     }
 
     const canManage = project.workspaceId
@@ -382,6 +401,16 @@ export class QaChecklistsService implements WorkspaceDataCleanupPort {
     // no Project falls back to what was shared to it before requirements
     // belonged to Projects.
     const folder = await this.projectLink.getProjectFolder(projectId);
+    if (
+      folder &&
+      !(await this.access.canAccessProject(
+        userId,
+        folder.groupId,
+        folder.deliveryProjectId,
+      ))
+    ) {
+      throw notFound('QA_PROJECT_NOT_FOUND', 'Project not found');
+    }
     const rows = folder
       ? await this.repository.listByIteration(
           (
@@ -398,7 +427,7 @@ export class QaChecklistsService implements WorkspaceDataCleanupPort {
   private async requireChecklist(id: string): Promise<QaChecklistRow> {
     const checklist = await this.repository.findById(id);
     if (!checklist) {
-      throw new NotFoundException('Checklist not found');
+      throw notFound('QA_CHECKLIST_NOT_FOUND', 'Checklist not found');
     }
     return checklist;
   }
@@ -414,6 +443,21 @@ export class QaChecklistsService implements WorkspaceDataCleanupPort {
   ): Promise<void> {
     if (!(await this.access.canAccessWorkspace(userId, workspaceId))) {
       throw new NotFoundException('Checklist not found');
+    }
+  }
+
+  private async assertChecklistAccess(
+    userId: string,
+    checklist: QaChecklistRow,
+  ): Promise<void> {
+    if (
+      !(await this.access.canAccessProject(
+        userId,
+        checklist.workspace_id,
+        checklist.delivery_project_id,
+      ))
+    ) {
+      throw notFound('QA_CHECKLIST_NOT_FOUND', 'Checklist not found');
     }
   }
 
