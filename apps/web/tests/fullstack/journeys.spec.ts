@@ -1,6 +1,7 @@
 import { expect, test as base, type Page } from '@playwright/test';
 
 import { expectVisibleText } from '../e2e/support';
+import { setQuickLoginRole } from './stack';
 
 /* Journeys against the real API, started by run.ts (npm run test:fullstack).
  * Each test signs in on its own, so they run in any order. Every assertion
@@ -96,6 +97,54 @@ const test = base.extend<{
   ],
 });
 
+test.describe('workspace projects', () => {
+  test.use({
+    expectedResponses: [
+      { status: 401, method: 'GET', path: '/api/v1/auth/me' },
+    ],
+  });
+
+  test('creates a Project and lists it before a repository is added', async ({
+    page,
+  }) => {
+    await quickLogin(page);
+    setQuickLoginRole('lead');
+    try {
+      const response = await page.request.post('/api/v1/groups', {
+        data: { name: 'Full-stack Project team' },
+      });
+      expect(response.status()).toBe(201);
+      const team = (await response.json()) as { id: string };
+      const projectsPath = `/groups/${team.id}/systems`;
+
+      await page.goto(projectsPath);
+      await expectVisibleText(page, 'No projects yet');
+      await page
+        .getByRole('link', { name: 'Create project', exact: true })
+        .first()
+        .click();
+      const dialog = page.getByRole('dialog', { name: 'New Project' });
+      await dialog
+        .getByRole('textbox', { name: 'Name', exact: true })
+        .fill('Checkout');
+      await dialog
+        .getByRole('button', { name: 'Create Project', exact: true })
+        .click();
+      await expect(dialog).toBeHidden();
+
+      await page.goto(projectsPath);
+      const project = page.getByRole('link', { name: /Checkout/ });
+      await expect(project).toContainText('0 repositories');
+      await project.click();
+      await expect(
+        page.getByRole('heading', { name: 'Checkout', exact: true }),
+      ).toBeVisible();
+    } finally {
+      setQuickLoginRole('member');
+    }
+  });
+});
+
 /** Signs in the way the quick-login button does: from the page, same origin,
  * through the web server's /api/v1 proxy to the API. */
 async function quickLogin(page: Page): Promise<void> {
@@ -154,5 +203,18 @@ test.describe('sign-in', () => {
     await page.goto('/settings');
     await expectVisibleText(page, `@${QUICK_LOGIN_ACCOUNT.login}`);
     await expectVisibleText(page, QUICK_LOGIN_ACCOUNT.email);
+  });
+
+  test('a signed-out admin visit preserves its destination at sign-in', async ({
+    page,
+  }) => {
+    await page.goto('/admin/feedback');
+    await expect
+      .poll(() => {
+        const url = new URL(page.url());
+        return [url.pathname, url.searchParams.get('next')];
+      })
+      .toEqual(['/login', '/admin/feedback']);
+    await expectVisibleText(page, 'Continue with GitHub');
   });
 });

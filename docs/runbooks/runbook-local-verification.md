@@ -117,6 +117,8 @@ CI (the `Web …` jobs of `.github/workflows/ci.yml`) also runs `npm run check:p
 
 There is no accepted web test failure baseline. `npm test` runs the whole suite with coverage and fails below the coverage floor in `apps/web/jest.config.js`. Compare a failing run with the same command on `main` before attributing a failure to a change.
 
+`npm run test:fullstack` boots the web app, API, and a disposable Postgres database for Playwright. It uses the `Alpha-Explora/alphaci-workflow` checkout inside or next to the monorepo. Set `TEMPLATE_REPO_PATH` to use another checkout. The runner blocks external provider calls.
+
 ## Evidence
 
 Record the commands run, pass/fail result, intentionally skipped integration or authenticated checks, and any external environment required. A static pass does not prove live PostgreSQL, a live session cookie, CORS, provider APIs, deployed scheduling, or rollback behavior.

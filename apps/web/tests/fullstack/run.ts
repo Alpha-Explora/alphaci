@@ -188,7 +188,7 @@ async function main(): Promise<void> {
           : step('build API', () => buildApi(group)),
       ]);
       await step('migrate database', () => migrateDatabase(group));
-      const api = startApi(group, ports, egressEnv, REPORT_DIR);
+      const api = startApi(group, ports, egressEnv);
       await step('start API', () =>
         waitForHttp(
           `${loopbackOrigin(ports.api)}/api/v1/health`,
